@@ -1,0 +1,2 @@
+add_subdirectory(argumentum)
+add_subdirectory(catch2)
