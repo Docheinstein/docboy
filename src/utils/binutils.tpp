@@ -9,6 +9,18 @@ void set_byte(T &dest, uint8_t value) {
     dest |= (value << (8 * n));
 }
 
+
+template<uint8_t n, typename T>
+bool get_bit(T value) {
+    return (value >> n) & 1;
+}
+
+template<uint8_t n, typename T>
+void set_bit(T &dest, bool value) {
+    dest &= (~((uint8_t) 1 << n));
+    dest |= ((value ? 1 : 0) << n);
+}
+
 template<typename T>
 std::string bin(T value) {
     std::stringstream ss;

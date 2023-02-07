@@ -13,6 +13,14 @@ uint8_t get_byte(T value);
 template<uint8_t n, typename T>
 void set_byte(T &dest, uint8_t value);
 
+uint16_t concat_bytes(uint8_t msb, uint8_t lsb);
+
+template<uint8_t n, typename T>
+bool get_bit(T value);
+
+template<uint8_t n, typename T>
+void set_bit(T &dest, bool value);
+
 void bin(uint8_t value, std::ostream &os);
 void bin(uint16_t value, std::ostream &os);
 

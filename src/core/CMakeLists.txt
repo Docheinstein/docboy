@@ -5,6 +5,7 @@ set(SOURCES
     cartridge.cpp
     cpu.h
     cpu.cpp
+    definitions.h
     gible.h
     gible.cpp
     memory.h

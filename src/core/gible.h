@@ -17,7 +17,7 @@ public:
 private:
     Cartridge cartridge;
     Memory memory;
-    Bus bus;
+    BusImpl bus;
     CPU cpu;
 };
 #endif // GIBLE_H

@@ -1,42 +1,59 @@
+
 #include "catch2/catch_session.hpp"
 #include "core/gible.h"
 #include "catch2/generators/catch_generators.hpp"
+#include "catch2/generators/catch_generators_range.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include "core/cartridge.h"
 #include "utils/binutils.h"
+#include "core/definitions.h"
+#include "log/log.h"
+#include <queue>
 #include <iostream>
+#include <type_traits>
 
-#define TESTS_PATH "../tests"
+#define GENERATE_TABLE_1(t1, data) GENERATE(table<t1> data)
+#define GENERATE_TABLE_2(t1, t2, data) GENERATE(table<t1, t2> data)
+#define GENERATE_TABLE_3(t1, t2, t3, data) GENERATE(table<t1, t2, t3> data)
 
-#define DATA1(t1, v1, data) \
-    auto [v1] = GENERATE(table<t1> data)
-#define DATA2(t1, v1, t2, v2, data) \
-    auto [v1, v2] = GENERATE(table<t1, t2> data)
-#define DATA3(t1, v1, t2, v2, t3, v3, data) \
-    auto [v1, v2, v3] = GENERATE(table<t1, t2, t3> data)
-#define DATA4(t1, v1, t2, v2, t3, v3, t4, v4, data) \
-    auto [v1, v2, v3, v4] = GENERATE(table<t1, t2, t3, t4> data)
-#define DATA5(t1, v1, t2, v2, t3, v3, t4, v4, t5, v5, data) \
-    auto [v1, v2, v3, v4, v5] = GENERATE(table<t1, t2, t3, t4, t5> data)
-#define DATA6(t1, v1, t2, v2, t3, v3, t4, v4, t5, v5, t6, v6, data) \
-    auto [v1, v2, v3, v4, v5, v6] = GENERATE(table<t1, t2, t3, t4, t5, t6> data)
-#define DATA7(t1, v1, t2, v2, t3, v3, t4, v4, t5, v5, t6, v6, t7, v7, data) \
-    auto [v1, v2, v3, v4, v5, v6, v7] = GENERATE(table<t1, t2, t3, t4, t5, t6, t7> data)
-
-#define DATA_PICKER(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, FUNC, ...) FUNC
-#define DATA(...) DATA_PICKER( \
+#define GENERATE_TABLE_PICKER(_1, _2, _3, _4, FUNC, ...) FUNC
+#define GENERATE_TABLE(...) GENERATE_TABLE_PICKER( \
     __VA_ARGS__, \
-    DATA7, DATA7, \
-    DATA6, DATA6, \
-    DATA5, DATA5, \
-    DATA4, DATA4, \
-    DATA3, DATA3, \
-    DATA2, DATA2, \
-    DATA1, DATA1 \
+    GENERATE_TABLE_3, \
+    GENERATE_TABLE_2, \
+    GENERATE_TABLE_1 \
 )(__VA_ARGS__)
 
 
 TEST_CASE("binutils", "[binutils]") {
+    SECTION("get and set bit") {
+        uint8_t B = 0;
+        REQUIRE(get_bit<7>(B) == 0);
+        REQUIRE(get_bit<6>(B) == 0);
+        REQUIRE(get_bit<5>(B) == 0);
+        REQUIRE(get_bit<4>(B) == 0);
+        REQUIRE(get_bit<3>(B) == 0);
+        REQUIRE(get_bit<2>(B) == 0);
+        REQUIRE(get_bit<1>(B) == 0);
+        REQUIRE(get_bit<0>(B) == 0);
+
+        B = ~B;
+
+        REQUIRE(get_bit<7>(B) == 1);
+        REQUIRE(get_bit<6>(B) == 1);
+        REQUIRE(get_bit<5>(B) == 1);
+        REQUIRE(get_bit<4>(B) == 1);
+        REQUIRE(get_bit<3>(B) == 1);
+        REQUIRE(get_bit<2>(B) == 1);
+        REQUIRE(get_bit<1>(B) == 1);
+        REQUIRE(get_bit<0>(B) == 1);
+
+        set_bit<0>(B, false);
+        REQUIRE(get_bit<0>(B) == 0);
+
+        REQUIRE(B == 0xFE);
+    }
+
     SECTION("get and set byte") {
         uint16_t AF = 0;
         REQUIRE(get_byte<0>(AF) == 0);
@@ -51,23 +68,114 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(get_byte<1>(AF) == 1);
         REQUIRE(AF == 256);
     }
+
+    SECTION("concat bytes") {
+        uint8_t A = 0x03;
+        uint8_t B = 0x01;
+        REQUIRE(concat_bytes(A, B) == 0x0301);
+        REQUIRE(concat_bytes(B, A) == 0x0103);
+    }
 }
 
 
 TEST_CASE("CPU", "[cpu]") {
-    SECTION("all instructions implemented") {
-        // TODO
+    class FakeBus : public IBus {
+    public:
+        FakeBus() {
+
+        }
+        ~FakeBus() override = default;
+
+        uint8_t read(uint16_t addr) override {
+            io++;
+            uint8_t b = 0;
+            if (!data.empty()) {
+                b = data.front();
+                data.pop();
+            }
+            DEBUG(1) << "FakeBus:read(" << addr << ") -> " << (uint16_t) b <<  " [FakeBus.size() = " << data.size() << "]";
+            return b;
+        }
+
+        void write(uint16_t addr, uint8_t value) override {
+            io++;
+        }
+
+        [[nodiscard]] unsigned long long ioCount() const {
+            return io;
+        }
+
+        void clear() {
+            while (!data.empty())
+                data.pop();
+        }
+
+        void feed(uint8_t b) {
+            data.push(b);
+        }
+
+    private:
+        std::queue<uint8_t> data;
+        unsigned long long io;
+    };
+
+    FakeBus fakeBus;
+    CPU cpu(fakeBus);
+
+    auto instr = GENERATE(range(0, 0xFF));
+    auto info = INSTRUCTIONS[instr];
+    if (!info.duration.min)
+        return;
+
+//    SECTION("instruction implemented") {
+//        fakeBus.feed(instr);
+//        cpu.tick(); // fetch
+//        REQUIRE_NOTHROW(cpu.tick());
+//    }
+
+    SECTION("correct duration") {
+        fakeBus.feed(instr); // feed with instruction
+        for (int i = 0; i < 10; i++)
+            fakeBus.feed(instr + 1); // feed with something else != instr
+        cpu.tick(); // fetch
+
+        uint8_t op = cpu.getCurrentInstructionOpcode();
+
+        try {
+            for (int m = 0; m < info.duration.min - 1; m++) {
+                cpu.tick();
+                REQUIRE((uint16_t) op == (uint16_t) cpu.getCurrentInstructionOpcode());
+            }
+            cpu.tick();
+            // TODO: ok for jmp/halt/... ?
+            REQUIRE((uint16_t) op != (uint16_t) cpu.getCurrentInstructionOpcode());
+        } catch (const CPU::InstructionNotImplementedException &e) {}
+    }
+
+
+    SECTION("no more than one read/write per m-cycle") {
+        fakeBus.feed(instr);
+        cpu.tick();
+
+        try {
+            for (int m = 0; m < info.duration.min; m++) {
+                auto ioCountBefore = fakeBus.ioCount();
+                cpu.tick();
+                auto ioCountAfter = fakeBus.ioCount();
+                REQUIRE(ioCountAfter - ioCountBefore <= 1);
+            }
+        } catch (const CPU::InstructionNotImplementedException &e) {}
     }
 }
 
 TEST_CASE("Cartridge", "[cartridge]") {
-    DATA(
-        std::string, rom,
-        std::string, title,
+    auto [rom, title] = GENERATE_TABLE(
+        std::string,
+        std::string,
         ({
-            { TESTS_PATH "/roms/tetris.gb", "TETRIS" },
-            { TESTS_PATH "/roms/alleyway.gb", "ALLEY WAY" },
-            { TESTS_PATH "/roms/pokemon-red.gb", "POKEMON RED" },
+            { "tests/roms/tetris.gb", "TETRIS" },
+            { "tests/roms/alleyway.gb", "ALLEY WAY" },
+            { "tests/roms/pokemon-red.gb", "POKEMON RED" },
         })
     );
 
@@ -87,5 +195,6 @@ TEST_CASE("Cartridge", "[cartridge]") {
 
 int main(int argc, char* argv[]) {
     Catch::Session session;
+    session.applyCommandLine(argc, argv);
     return session.run();
 }
