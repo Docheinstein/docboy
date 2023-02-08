@@ -8,16 +8,16 @@ IBus::~IBus() {
 
 }
 
-BusImpl::BusImpl(Cartridge &cartridge, Memory &memory) : cartridge(cartridge), memory(memory) {
+Bus::Bus(Cartridge &cartridge, Memory &memory) : cartridge(cartridge), memory(memory) {
 
 }
 
-BusImpl::~BusImpl() {
+Bus::~Bus() {
 
 }
 
 
-uint8_t BusImpl::read(uint16_t addr) {
+uint8_t Bus::read(uint16_t addr) {
     DEBUG(1) << "Bus:read(" << hex(addr) << ")" << std::endl;
     if (addr < 0x4000) {
         return cartridge[addr];
@@ -29,7 +29,7 @@ uint8_t BusImpl::read(uint16_t addr) {
     }
 }
 
-void BusImpl::write(uint16_t addr, uint8_t value) {
+void Bus::write(uint16_t addr, uint8_t value) {
     DEBUG(1) << "Bus:write(" << hex(value) << ")" << std::endl;
     if (addr < 0x4000) {
         throw std::runtime_error("Invalid write. Memory address " + hex(addr) + " is read only");

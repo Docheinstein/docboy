@@ -11,7 +11,7 @@ CPU::IllegalInstructionException::IllegalInstructionException(const std::string 
 
 }
 
-CPU::CPU(Bus &bus) :
+CPU::CPU(IBus &bus) :
         bus(bus),
         mCycles(0),
         PC(0x100),
@@ -28,65 +28,65 @@ CPU::CPU(Bus &bus) :
 	/* 00 */ { &CPU::NOP_m1 },
 	/* 01 */ { &CPU::LD_rr_nn_m1<Register16::BC>, &CPU::LD_rr_nn_m2<Register16::BC>, &CPU::LD_rr_nn_m3<Register16::BC> },
 	/* 02 */ { &CPU::LD_arr_r_m1<Register16::BC, Register8::A>, &CPU::LD_arr_r_m2<Register16::BC, Register8::A> },
-	/* 03 */ { &CPU::instructionNotImplemented },
-	/* 04 */ { &CPU::instructionNotImplemented },
-	/* 05 */ { &CPU::instructionNotImplemented },
+	/* 03 */ { &CPU::INC_rr_m1<Register16::BC>, &CPU::INC_rr_m2<Register16::BC> },
+	/* 04 */ { &CPU::INC_r_m1<Register8::B> },
+	/* 05 */ { &CPU::DEC_r_m1<Register8::B> },
 	/* 06 */ { &CPU::LD_r_n_m1<Register8::B>, &CPU::LD_r_n_m2<Register8::B> },
 	/* 07 */ { &CPU::instructionNotImplemented },
 	/* 08 */ { &CPU::LD_ann_rr_m1<Register16::SP>, &CPU::LD_ann_rr_m2<Register16::SP>, &CPU::LD_ann_rr_m3<Register16::SP>, &CPU::LD_ann_rr_m4<Register16::SP>, &CPU::LD_ann_rr_m5<Register16::SP> },
 	/* 09 */ { &CPU::instructionNotImplemented },
 	/* 0A */ { &CPU::LD_r_arr_m1<Register8::A, Register16::BC>, &CPU::LD_r_arr_m2<Register8::A, Register16::BC> },
-	/* 0B */ { &CPU::instructionNotImplemented },
-	/* 0C */ { &CPU::instructionNotImplemented },
-	/* 0D */ { &CPU::instructionNotImplemented },
+	/* 0B */ { &CPU::DEC_rr_m1<Register16::BC>, &CPU::DEC_rr_m2<Register16::BC> },
+	/* 0C */ { &CPU::INC_r_m1<Register8::C> },
+	/* 0D */ { &CPU::DEC_r_m1<Register8::D> },
 	/* 0E */ { &CPU::LD_r_n_m1<Register8::C>, &CPU::LD_r_n_m2<Register8::C> },
 	/* 0F */ { &CPU::instructionNotImplemented },
 	/* 10 */ { &CPU::instructionNotImplemented },
 	/* 11 */ { &CPU::LD_rr_nn_m1<Register16::DE>, &CPU::LD_rr_nn_m2<Register16::DE>, &CPU::LD_rr_nn_m3<Register16::DE> },
 	/* 12 */ { &CPU::LD_arr_r_m1<Register16::DE, Register8::A>, &CPU::LD_arr_r_m2<Register16::DE, Register8::A> },
-	/* 13 */ { &CPU::instructionNotImplemented },
-	/* 14 */ { &CPU::instructionNotImplemented },
-	/* 15 */ { &CPU::instructionNotImplemented },
+	/* 13 */ { &CPU::INC_rr_m1<Register16::DE>, &CPU::INC_rr_m2<Register16::DE> },
+	/* 14 */ { &CPU::INC_r_m1<Register8::D> },
+	/* 15 */ { &CPU::DEC_r_m1<Register8::D> },
 	/* 16 */ { &CPU::LD_r_n_m1<Register8::D>, &CPU::LD_r_n_m2<Register8::D> },
 	/* 17 */ { &CPU::instructionNotImplemented },
 	/* 18 */ { &CPU::instructionNotImplemented },
 	/* 19 */ { &CPU::instructionNotImplemented },
 	/* 1A */ { &CPU::LD_r_arr_m1<Register8::A, Register16::DE>, &CPU::LD_r_arr_m2<Register8::A, Register16::DE> },
-	/* 1B */ { &CPU::instructionNotImplemented },
-	/* 1C */ { &CPU::instructionNotImplemented },
-	/* 1D */ { &CPU::instructionNotImplemented },
+	/* 1B */ { &CPU::DEC_rr_m1<Register16::DE>, &CPU::DEC_rr_m2<Register16::DE> },
+	/* 1C */ { &CPU::INC_r_m1<Register8::E> },
+	/* 1D */ { &CPU::DEC_r_m1<Register8::E> },
 	/* 1E */ { &CPU::LD_r_n_m1<Register8::E>, &CPU::LD_r_n_m2<Register8::E> },
 	/* 1F */ { &CPU::instructionNotImplemented },
 	/* 20 */ { &CPU::instructionNotImplemented },
 	/* 21 */ { &CPU::LD_rr_nn_m1<Register16::HL>, &CPU::LD_rr_nn_m2<Register16::HL>, &CPU::LD_rr_nn_m3<Register16::HL> },
 	/* 22 */ { &CPU::LD_arr_r_m1<Register16::HL, Register8::A, 1>, &CPU::LD_arr_r_m2<Register16::HL, Register8::A, 1> },
-	/* 23 */ { &CPU::instructionNotImplemented },
-	/* 24 */ { &CPU::instructionNotImplemented },
-	/* 25 */ { &CPU::instructionNotImplemented },
+	/* 23 */ { &CPU::INC_rr_m1<Register16::HL>, &CPU::INC_rr_m2<Register16::HL> },
+	/* 24 */ { &CPU::INC_r_m1<Register8::H> },
+	/* 25 */ { &CPU::DEC_r_m1<Register8::H> },
 	/* 26 */ { &CPU::LD_r_n_m1<Register8::H>, &CPU::LD_r_n_m2<Register8::H> },
 	/* 27 */ { &CPU::instructionNotImplemented },
 	/* 28 */ { &CPU::instructionNotImplemented },
 	/* 29 */ { &CPU::instructionNotImplemented },
 	/* 2A */ { &CPU::LD_r_arr_m1<Register8::A, Register16::HL, 1>, &CPU::LD_r_arr_m2<Register8::A, Register16::HL, 1> },
-	/* 2B */ { &CPU::instructionNotImplemented },
-	/* 2C */ { &CPU::instructionNotImplemented },
-	/* 2D */ { &CPU::instructionNotImplemented },
+	/* 2B */ { &CPU::DEC_rr_m1<Register16::HL>, &CPU::DEC_rr_m2<Register16::HL> },
+	/* 2C */ { &CPU::INC_r_m1<Register8::L> },
+	/* 2D */ { &CPU::DEC_r_m1<Register8::L> },
 	/* 2E */ { &CPU::LD_r_n_m1<Register8::L>, &CPU::LD_r_n_m2<Register8::L> },
 	/* 2F */ { &CPU::instructionNotImplemented },
 	/* 30 */ { &CPU::instructionNotImplemented },
 	/* 31 */ { &CPU::LD_rr_nn_m1<Register16::SP>, &CPU::LD_rr_nn_m2<Register16::SP>, &CPU::LD_rr_nn_m3<Register16::SP> },
 	/* 32 */ { &CPU::LD_arr_r_m1<Register16::HL, Register8::A, -1>, &CPU::LD_arr_r_m2<Register16::HL, Register8::A, -1> },
-	/* 33 */ { &CPU::instructionNotImplemented },
-	/* 34 */ { &CPU::instructionNotImplemented },
-	/* 35 */ { &CPU::instructionNotImplemented },
+	/* 33 */ { &CPU::INC_rr_m1<Register16::SP>, &CPU::INC_rr_m2<Register16::SP> },
+	/* 34 */ { &CPU::INC_arr_m1<Register16::HL>, &CPU::INC_arr_m2<Register16::HL>, &CPU::INC_arr_m3<Register16::HL> },
+	/* 35 */ { &CPU::DEC_arr_m1<Register16::HL>, &CPU::DEC_arr_m2<Register16::HL>, &CPU::DEC_arr_m3<Register16::HL> },
 	/* 36 */ { &CPU::instructionNotImplemented },
 	/* 37 */ { &CPU::instructionNotImplemented },
 	/* 38 */ { &CPU::instructionNotImplemented },
 	/* 39 */ { &CPU::instructionNotImplemented },
 	/* 3A */ { &CPU::LD_r_arr_m1<Register8::A, Register16::HL, -1>, &CPU::LD_r_arr_m2<Register8::A, Register16::HL, -1> },
-	/* 3B */ { &CPU::instructionNotImplemented },
-	/* 3C */ { &CPU::instructionNotImplemented },
-	/* 3D */ { &CPU::instructionNotImplemented },
+	/* 3B */ { &CPU::DEC_rr_m1<Register16::SP>, &CPU::DEC_rr_m2<Register16::SP> },
+	/* 3C */ { &CPU::INC_r_m1<Register8::C> },
+	/* 3D */ { &CPU::DEC_r_m1<Register8::A> },
 	/* 3E */ { &CPU::LD_r_n_m1<Register8::A>, &CPU::LD_r_n_m2<Register8::A> },
 	/* 3F */ { &CPU::instructionNotImplemented },
 	/* 40 */ { &CPU::LD_r_r_m1<Register8::B, Register8::B> },
@@ -794,26 +794,127 @@ void CPU::LD_rr_rr_m2() {
 
 // e.g. F8 | LD HL,SP+r8
 
-// TODO: when are flags set?
 
 template<CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rrn_m1() {
-    s1 = (int8_t) bus.read(PC++);
+    u1 = (int8_t) bus.read(PC++);
+    // TODO: when are flags set?
     writeFlag<Flag::Z>(false);
     writeFlag<Flag::N>(false);
 }
 
 template<CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rrn_m2() {
-    int64_t result = readRegister16<rr2>() + u1;
-    writeFlag<Flag::C>(result < 0 || result > 0xFFFF);
+    uu1 = readRegister16<rr2>();
+    auto [result, c, h] = sum_carry<7, 3>(uu1, u1);
     writeRegister16<rr1>(result);
-    // TODO: half carry...
+    writeFlag<Flag::C>(c);
+    writeFlag<Flag::H>(h);
     // TODO: does it work?
 }
 
 template<CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rrn_m3() {
+    fetch();
+}
+
+// e.g. 04 | INC B
+
+template<CPU::Register8 r>
+void CPU::INC_r_m1() {
+    uint8_t tmp = readRegister8<r>();
+    auto [result, h] = sum_carry<3>(tmp, 1);
+    writeRegister8<r>(result);
+    writeFlag<Flag::Z>(result == 0);
+    writeFlag<Flag::N>(false);
+    writeFlag<Flag::H>(h);
+    fetch();
+}
+
+
+// e.g. 03 | INC BC
+
+template<CPU::Register16 rr>
+void CPU::INC_rr_m1() {
+    uint16_t tmp = readRegister16<rr>();
+    uint32_t result = tmp + 1;
+    writeRegister16<rr>(result);
+    // TODO: no flags?
+}
+
+template<CPU::Register16 rr>
+void CPU::INC_rr_m2() {
+    fetch();
+}
+
+// e.g. 34 | INC (HL)
+
+template<CPU::Register16 rr>
+void CPU::INC_arr_m1() {
+    u1 = bus.read(readRegister16<rr>());
+}
+
+template<CPU::Register16 rr>
+void CPU::INC_arr_m2() {
+    auto [result, h] = sum_carry<3>(u1, 1);
+    bus.write(readRegister16<rr>(), result);
+    writeFlag<Flag::Z>(result == 0);
+    writeFlag<Flag::N>(false);
+    writeFlag<Flag::H>(h);
+}
+
+template<CPU::Register16 rr>
+void CPU::INC_arr_m3() {
+    fetch();
+}
+
+// e.g. 05 | DEC B
+
+template<CPU::Register8 r>
+void CPU::DEC_r_m1() {
+    uint8_t tmp = readRegister8<r>();
+    auto [result, h] = sum_carry<3>(tmp, -1);
+    writeRegister8<r>(result);
+    writeFlag<Flag::Z>(result == 0);
+    writeFlag<Flag::N>(true);
+    writeFlag<Flag::H>(h);
+    fetch();
+}
+
+
+// e.g. 0B | DEC BC
+
+template<CPU::Register16 rr>
+void CPU::DEC_rr_m1() {
+    uint16_t tmp = readRegister16<rr>();
+    uint32_t result = tmp - 1;
+    writeRegister16<rr>(result);
+    // TODO: no flags?
+}
+
+template<CPU::Register16 rr>
+void CPU::DEC_rr_m2() {
+    fetch();
+}
+
+// e.g. 35 | DEC (HL)
+
+template<CPU::Register16 rr>
+void CPU::DEC_arr_m1() {
+    u1 = bus.read(readRegister16<rr>());
+}
+
+template<CPU::Register16 rr>
+void CPU::DEC_arr_m2() {
+    auto [result, h] = sum_carry<3>(u1, -1);
+    bus.write(readRegister16<rr>(), result);
+    writeFlag<Flag::Z>(result == 0);
+    writeFlag<Flag::N>(true);
+    writeFlag<Flag::H>(h);
+}
+
+template<CPU::Register16 rr>
+void CPU::DEC_arr_m3() {
     fetch();
 }
 
@@ -864,6 +965,7 @@ uint8_t CPU::getCurrentInstructionOpcode() const {
 uint8_t CPU::getCurrentInstructionMicroOperation() const {
     return currentInstruction.microop;
 }
+
 
 template<CPU::Register8 r>
 void CPU::XOR_r_m1() {

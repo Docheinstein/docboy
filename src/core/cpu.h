@@ -18,7 +18,7 @@ public:
         explicit IllegalInstructionException(const std::string &what);
     };
 
-    explicit CPU(Bus &bus);
+    explicit CPU(IBus &bus);
 
     void reset();
     void tick();
@@ -62,7 +62,7 @@ private:
         C,
     };
 
-    Bus &bus;
+    IBus &bus;
 
     uint16_t AF;
     uint16_t BC;
@@ -78,7 +78,6 @@ private:
         uint8_t microop;
     } currentInstruction;
 
-    int8_t s1;
     uint8_t u1;
     uint8_t u2;
     uint16_t uu1;
@@ -221,6 +220,36 @@ private:
     void LD_rr_rrn_m2();
     template<Register16 rr1, Register16 rr2>
     void LD_rr_rrn_m3();
+
+    template<Register8 r>
+    void INC_r_m1();
+
+    template<Register16 rr>
+    void INC_rr_m1();
+    template<Register16 rr>
+    void INC_rr_m2();
+
+    template<Register16 rr>
+    void INC_arr_m1();
+    template<Register16 rr>
+    void INC_arr_m2();
+    template<Register16 rr>
+    void INC_arr_m3();
+
+    template<Register8 r>
+    void DEC_r_m1();
+
+    template<Register16 rr>
+    void DEC_rr_m1();
+    template<Register16 rr>
+    void DEC_rr_m2();
+
+    template<Register16 rr>
+    void DEC_arr_m1();
+    template<Register16 rr>
+    void DEC_arr_m2();
+    template<Register16 rr>
+    void DEC_arr_m3();
 
     void JP_nn_m1();
     void JP_nn_m2();

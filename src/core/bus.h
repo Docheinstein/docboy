@@ -15,10 +15,10 @@ public:
     virtual void write(uint16_t addr, uint8_t value) = 0;
 };
 
-class BusImpl : public IBus {
+class Bus : public IBus {
 public:
-    BusImpl(Cartridge &cartridge, Memory &memory);
-    ~BusImpl() override;
+    Bus(Cartridge &cartridge, Memory &memory);
+    ~Bus() override;
 
     [[nodiscard]]
 
@@ -30,16 +30,5 @@ private:
     Memory &memory;
 };
 
-#ifndef TESTING
-#define TESTING 0
-#endif
-
-//typedef std::conditional<TESTING, IBus, BusImpl>::type  Bus;
-
-#ifdef TESTING
-using Bus = IBus;
-#else
-using Bus = BusImpl;
-#endif
 
 #endif // BUS_H

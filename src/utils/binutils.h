@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <vector>
 #include <iosfwd>
+#include <tuple>
 
 template<uint8_t n, typename T>
 uint8_t get_byte(T value);
@@ -20,6 +21,20 @@ bool get_bit(T value);
 
 template<uint8_t n, typename T>
 void set_bit(T &dest, bool value);
+
+template<uint8_t n>
+uint64_t bitmask();
+
+
+template<uint8_t b, typename T1, typename T2>
+bool sum_get_carry_bit(T1 v1, T2 v2);
+
+template<uint8_t b, typename T1, typename T2>
+std::tuple<uint64_t, bool> sum_carry(T1 v1, T2 v2);
+
+template<uint8_t b1, uint8_t b2, typename T1, typename T2>
+std::tuple<uint64_t, bool, bool> sum_carry(T1 v1, T2 v2);
+
 
 void bin(uint8_t value, std::ostream &os);
 void bin(uint16_t value, std::ostream &os);

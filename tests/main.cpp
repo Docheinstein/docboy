@@ -12,6 +12,18 @@
 #include <iostream>
 #include <type_traits>
 
+#undef SECTION
+#undef DYNAMIC_SECTION
+#define STATIC_SECTION(name) INTERNAL_CATCH_SECTION(name)
+#define DYNAMIC_SECTION(name, param) INTERNAL_CATCH_DYNAMIC_SECTION(name << " (" << param << ")")
+#define SECTION_PICKER(_1, _2, FUNC, ...) FUNC
+#define SECTION(...) SECTION_PICKER( \
+    __VA_ARGS__, \
+    DYNAMIC_SECTION, \
+    STATIC_SECTION \
+)(__VA_ARGS__)
+
+
 #define GENERATE_TABLE_1(t1, data) GENERATE(table<t1> data)
 #define GENERATE_TABLE_2(t1, t2, data) GENERATE(table<t1, t2> data)
 #define GENERATE_TABLE_3(t1, t2, t3, data) GENERATE(table<t1, t2, t3> data)
@@ -75,6 +87,48 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(concat_bytes(A, B) == 0x0301);
         REQUIRE(concat_bytes(B, A) == 0x0103);
     }
+
+    SECTION("bitmask") {
+        REQUIRE(bitmask<0>() == 0x0);
+        REQUIRE(bitmask<1>() == 0x1);
+        REQUIRE(bitmask<2>() == 0x3);
+        REQUIRE(bitmask<3>() == 0x7);
+        REQUIRE(bitmask<4>() == 0xF);
+        REQUIRE(bitmask<5>() == 0x1F);
+        REQUIRE(bitmask<6>() == 0x3F);
+        REQUIRE(bitmask<7>() == 0x7F);
+        REQUIRE(bitmask<8>() == 0xFF);
+        REQUIRE(bitmask<9>() == 0x1FF);
+        REQUIRE(bitmask<10>() == 0x3FF);
+        REQUIRE(bitmask<11>() == 0x7FF);
+        REQUIRE(bitmask<12>() == 0xFFF);
+        REQUIRE(bitmask<13>() == 0x1FFF);
+        REQUIRE(bitmask<14>() == 0x3FFF);
+        REQUIRE(bitmask<15>() == 0x7FFF);
+        REQUIRE(bitmask<16>() == 0xFFFF);
+    }
+
+    SECTION("carry bit") {
+        uint8_t u1 = 3;
+        uint8_t u2 = 1;
+        REQUIRE(sum_get_carry_bit<0>(u1, u2));
+        REQUIRE(sum_get_carry_bit<1>(u1, u2));
+        REQUIRE_FALSE(sum_get_carry_bit<2>(u1, u2));
+
+        auto [result, c0, c1] = sum_carry<0, 1>(u1, u2);
+        REQUIRE(result == 4);
+        REQUIRE(c0);
+        REQUIRE(c1);
+
+        uint16_t uu1 = 0xB;
+        uint16_t uu2 = 0x7;
+        REQUIRE(sum_get_carry_bit<3>(uu1, uu2));
+        REQUIRE_FALSE(sum_get_carry_bit<4>(uu1, uu2));
+
+        uu1 = 0xFFFF;
+        uu2 = 0xFFFF;
+        REQUIRE(sum_get_carry_bit<7>(uu1, uu2));
+    }
 }
 
 
@@ -122,18 +176,18 @@ TEST_CASE("CPU", "[cpu]") {
     FakeBus fakeBus;
     CPU cpu(fakeBus);
 
-    auto instr = GENERATE(range(0, 0xFF));
+    uint8_t instr = GENERATE(range(0, 0xFF));
     auto info = INSTRUCTIONS[instr];
     if (!info.duration.min)
         return;
 
-//    SECTION("instruction implemented") {
-//        fakeBus.feed(instr);
-//        cpu.tick(); // fetch
-//        REQUIRE_NOTHROW(cpu.tick());
-//    }
+    SECTION("instruction implemented", hex(instr)) {
+        fakeBus.feed(instr);
+        cpu.tick(); // fetch
+        REQUIRE_NOTHROW(cpu.tick());
+    }
 
-    SECTION("correct duration") {
+    SECTION("instruction duration", hex(instr)) {
         fakeBus.feed(instr); // feed with instruction
         for (int i = 0; i < 10; i++)
             fakeBus.feed(instr + 1); // feed with something else != instr
@@ -153,7 +207,7 @@ TEST_CASE("CPU", "[cpu]") {
     }
 
 
-    SECTION("no more than one read/write per m-cycle") {
+    SECTION("no more than one read/write per m-cycle", hex(instr)) {
         fakeBus.feed(instr);
         cpu.tick();
 

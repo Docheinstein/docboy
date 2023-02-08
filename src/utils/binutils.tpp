@@ -21,6 +21,37 @@ void set_bit(T &dest, bool value) {
     dest |= ((value ? 1 : 0) << n);
 }
 
+template<uint8_t n>
+uint64_t bitmask() {
+    return (((uint64_t) 1) << n) - 1;
+}
+
+template<uint8_t b, typename T1, typename T2>
+bool sum_get_carry_bit(T1 v1, T2 v2) {
+    uint64_t mask = bitmask<b + 1>();
+    return (((uint64_t) v1 ) & mask) + (((uint64_t) v2) & mask) & (1 << (b + 1));
+}
+
+template<uint8_t b, typename T1, typename T2>
+std::tuple<uint64_t, bool> sum_carry(T1 v1, T2 v2) {
+    uint64_t result = v1 + v2;
+    return std::make_tuple(
+            result,
+            sum_get_carry_bit<b>(v1, v2)
+    );
+}
+
+template<uint8_t b1, uint8_t b2, typename T1, typename T2>
+std::tuple<uint64_t, bool, bool> sum_carry(T1 v1, T2 v2) {
+    uint64_t result = v1 + v2;
+    return std::make_tuple(
+            result,
+            sum_get_carry_bit<b1>(v1, v2),
+            sum_get_carry_bit<b2>(v1, v2)
+    );
+}
+
+
 template<typename T>
 std::string bin(T value) {
     std::stringstream ss;
