@@ -71,6 +71,8 @@ private:
     uint16_t PC;
     uint16_t SP;
 
+    bool IME;
+
     uint64_t mCycles;
 
     struct {
@@ -120,6 +122,10 @@ private:
      */
 
     void NOP_m1();
+    void STOP_m1();
+    void HALT_m1();
+    void DI_m1();
+    void EI_m1();
 
     template<Register16 rr>
     void LD_rr_nn_m1();
@@ -127,6 +133,13 @@ private:
     void LD_rr_nn_m2();
     template<Register16 rr>
     void LD_rr_nn_m3();
+
+    template<Register16 rr>
+    void LD_arr_n_m1();
+    template<Register16 rr>
+    void LD_arr_n_m2();
+    template<Register16 rr>
+    void LD_arr_n_m3();
 
     template<Register16 rr, Register8 r>
     void LD_arr_r_m1();
@@ -251,18 +264,163 @@ private:
     template<Register16 rr>
     void DEC_arr_m3();
 
+    template<Register8 r>
+    void ADD_r_m1();
+
+    template<Register16 rr>
+    void ADD_arr_m1();
+    template<Register16 r2>
+    void ADD_arr_m2();
+
+    template<Register8 r>
+    void ADC_r_m1();
+
+    template<Register16 rr>
+    void ADC_arr_m1();
+    template<Register16 r2>
+    void ADC_arr_m2();
+
+    template<Register16 rr1, Register16 rr2>
+    void ADD_rr_rr_m1();
+    template<Register16 rr1, Register16 rr2>
+    void ADD_rr_rr_m2();
+
+    template<Register16 rr>
+    void ADD_rr_n_m1();
+    template<Register16 rr>
+    void ADD_rr_n_m2();
+    template<Register16 rr>
+    void ADD_rr_n_m3();
+    template<Register16 rr>
+    void ADD_rr_n_m4();
+
+    void ADD_n_m1();
+    void ADD_n_m2();
+
+    void ADC_n_m1();
+    void ADC_n_m2();
+
+    template<Register8 r>
+    void SUB_r_m1();
+
+    template<Register16 rr>
+    void SUB_arr_m1();
+    template<Register16 r2>
+    void SUB_arr_m2();
+
+    template<Register8 r>
+    void SBC_r_m1();
+
+    template<Register16 rr>
+    void SBC_arr_m1();
+    template<Register16 r2>
+    void SBC_arr_m2();
+
+    void SUB_n_m1();
+    void SUB_n_m2();
+
+    void SBC_n_m1();
+    void SBC_n_m2();
+
+    template<Register8 r>
+    void AND_r_m1();
+
+    template<Register16 rr>
+    void AND_arr_m1();
+    template<Register16 rr>
+    void AND_arr_m2();
+
+    void AND_n_m1();
+    void AND_n_m2();
+
+    template<Register8 r>
+    void OR_r_m1();
+
+    template<Register16 rr>
+    void OR_arr_m1();
+    template<Register16 rr>
+    void OR_arr_m2();
+
+    void OR_n_m1();
+    void OR_n_m2();
+
+    template<Register8 r>
+    void XOR_r_m1();
+
+    template<Register16 rr>
+    void XOR_arr_m1();
+    template<Register16 rr>
+    void XOR_arr_m2();
+
+    void XOR_n_m1();
+    void XOR_n_m2();
+
+    template<Register8 r>
+    void CP_r_m1();
+
+    template<Register16 rr>
+    void CP_arr_m1();
+    template<Register16 rr>
+    void CP_arr_m2();
+
+    void CP_n_m1();
+    void CP_n_m2();
+
+    void DAA_m1();
+    void SCF_m1();
+
+    void CPL_m1();
+    void CCF_m1();
+
+    void RLCA_m1();
+    void RLA_m1();
+
+    void RRCA_m1();
+    void RRA_m1();
+
+    void JR_n_m1();
+    void JR_n_m2();
+    void JR_n_m3();
+
+    template<Flag f>
+    void JR_c_n_m1();
+    template<Flag f>
+    void JR_c_n_m2();
+    template<Flag f>
+    void JR_c_n_m3();
+
+    template<Flag f1, Flag f2>
+    void JR_cc_n_m1();
+    template<Flag f1, Flag f2>
+    void JR_cc_n_m2();
+    template<Flag f1, Flag f2>
+    void JR_cc_n_m3();
+
     void JP_nn_m1();
     void JP_nn_m2();
     void JP_nn_m3();
     void JP_nn_m4();
 
-    template<Register8 r>
-    void XOR_r_m1();
-    template<Register16 rr>
-    void XOR_arr_m1();
+    template<Register16>
+    void JP_rr_m1();
 
-    template<Register16 rr>
-    void XOR_arr_m2();
+    template<Flag f>
+    void JP_c_nn_m1();
+    template<Flag f>
+    void JP_c_nn_m2();
+    template<Flag f>
+    void JP_c_nn_m3();
+    template<Flag f>
+    void JP_c_nn_m4();
+
+    template<Flag f1, Flag f2>
+    void JP_cc_nn_m1();
+    template<Flag f1, Flag f2>
+    void JP_cc_nn_m2();
+    template<Flag f1, Flag f2>
+    void JP_cc_nn_m3();
+    template<Flag f1, Flag f2>
+    void JP_cc_nn_m4();
 };
 
 #endif // CPU_H
