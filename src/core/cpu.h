@@ -104,9 +104,13 @@ private:
     template<Flag f>
     [[nodiscard]] bool readFlag() const;
 
+    template<Flag f, Flag...>
+    [[nodiscard]] bool readFlags() const;
+
     template<Flag f>
     void writeFlag(bool value);
 
+    void invalidInstruction();
     void instructionNotImplemented();
     void fetch();
 
@@ -382,19 +386,19 @@ private:
     void JR_n_m2();
     void JR_n_m3();
 
-    template<Flag f>
+    template<Flag ...fs>
     void JR_c_n_m1();
-    template<Flag f>
+    template<Flag ...fs>
     void JR_c_n_m2();
-    template<Flag f>
+    template<Flag ...fs>
     void JR_c_n_m3();
 
-    template<Flag f1, Flag f2>
-    void JR_cc_n_m1();
-    template<Flag f1, Flag f2>
-    void JR_cc_n_m2();
-    template<Flag f1, Flag f2>
-    void JR_cc_n_m3();
+//    template<Flag f1, Flag f2>
+//    void JR_cc_n_m1();
+//    template<Flag f1, Flag f2>
+//    void JR_cc_n_m2();
+//    template<Flag f1, Flag f2>
+//    void JR_cc_n_m3();
 
     void JP_nn_m1();
     void JP_nn_m2();
@@ -404,23 +408,82 @@ private:
     template<Register16>
     void JP_rr_m1();
 
-    template<Flag f>
+    template<Flag ...fs>
     void JP_c_nn_m1();
-    template<Flag f>
+    template<Flag ...fs>
     void JP_c_nn_m2();
-    template<Flag f>
+    template<Flag ...fs>
     void JP_c_nn_m3();
-    template<Flag f>
+    template<Flag ...fs>
     void JP_c_nn_m4();
 
-    template<Flag f1, Flag f2>
-    void JP_cc_nn_m1();
-    template<Flag f1, Flag f2>
-    void JP_cc_nn_m2();
-    template<Flag f1, Flag f2>
-    void JP_cc_nn_m3();
-    template<Flag f1, Flag f2>
-    void JP_cc_nn_m4();
+    void CALL_nn_m1();
+    void CALL_nn_m2();
+    void CALL_nn_m3();
+    void CALL_nn_m4();
+    void CALL_nn_m5();
+    void CALL_nn_m6();
+
+    template<Flag ...fs>
+    void CALL_c_nn_m1();
+    template<Flag ...fs>
+    void CALL_c_nn_m2();
+    template<Flag ...fs>
+    void CALL_c_nn_m3();
+    template<Flag ...fs>
+    void CALL_c_nn_m4();
+    template<Flag ...fs>
+    void CALL_c_nn_m5();
+    template<Flag ...fs>
+    void CALL_c_nn_m6();
+
+    template<uint8_t n>
+    void RST_m1();
+    template<uint8_t n>
+    void RST_m2();
+    template<uint8_t n>
+    void RST_m3();
+    template<uint8_t n>
+    void RST_m4();
+
+    void RET_nn_m1();
+    void RET_nn_m2();
+    void RET_nn_m3();
+    void RET_nn_m4();
+
+    void RETI_nn_m1();
+    void RETI_nn_m2();
+    void RETI_nn_m3();
+    void RETI_nn_m4();
+
+    template<Flag ...fs>
+    void RET_c_nn_m1();
+    template<Flag ...fs>
+    void RET_c_nn_m2();
+    template<Flag ...fs>
+    void RET_c_nn_m3();
+    template<Flag ...fs>
+    void RET_c_nn_m4();
+    template<Flag ...fs>
+    void RET_c_nn_m5();
+
+    template<Register16 rr>
+    void PUSH_rr_m1();
+    template<Register16 rr>
+    void PUSH_rr_m2();
+    template<Register16 rr>
+    void PUSH_rr_m3();
+    template<Register16 rr>
+    void PUSH_rr_m4();
+
+    template<Register16 rr>
+    void POP_rr_m1();
+    template<Register16 rr>
+    void POP_rr_m2();
+    template<Register16 rr>
+    void POP_rr_m3();
+
+    void CB_m1();
 };
 
 #endif // CPU_H

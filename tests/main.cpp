@@ -243,10 +243,9 @@ TEST_CASE("CPU", "[cpu]") {
             return length;
         };
 
-
-        //    SECTION("instruction implemented", hex(instr)) {
-        //        REQUIRE_NOTHROW(cpu.tick());
-        //    }
+        SECTION("instruction implemented", hex(instr)) {
+            REQUIRE_NOTHROW(cpu.tick());
+        }
 
         SECTION("instruction duration", hex(instr)) {
             setupInstruction();

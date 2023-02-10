@@ -59,7 +59,7 @@ CPU::CPU(IBus &bus) :
 	/* 1D */ { &CPU::DEC_r_m1<Register8::E> },
 	/* 1E */ { &CPU::LD_r_n_m1<Register8::E>, &CPU::LD_r_n_m2<Register8::E> },
 	/* 1F */ { &CPU::RRA_m1 },
-	/* 20 */ { &CPU::JR_cc_n_m1<Flag::N, Flag::Z>, &CPU::JR_cc_n_m2<Flag::N, Flag::Z>, &CPU::JR_cc_n_m3<Flag::N, Flag::Z> },
+	/* 20 */ { &CPU::JR_c_n_m1<Flag::N, Flag::Z>, &CPU::JR_c_n_m2<Flag::N, Flag::Z>, &CPU::JR_c_n_m3<Flag::N, Flag::Z> },
 	/* 21 */ { &CPU::LD_rr_nn_m1<Register16::HL>, &CPU::LD_rr_nn_m2<Register16::HL>, &CPU::LD_rr_nn_m3<Register16::HL> },
 	/* 22 */ { &CPU::LD_arr_r_m1<Register16::HL, Register8::A, 1>, &CPU::LD_arr_r_m2<Register16::HL, Register8::A, 1> },
 	/* 23 */ { &CPU::INC_rr_m1<Register16::HL>, &CPU::INC_rr_m2<Register16::HL> },
@@ -75,7 +75,7 @@ CPU::CPU(IBus &bus) :
 	/* 2D */ { &CPU::DEC_r_m1<Register8::L> },
 	/* 2E */ { &CPU::LD_r_n_m1<Register8::L>, &CPU::LD_r_n_m2<Register8::L> },
 	/* 2F */ { &CPU::CPL_m1 },
-	/* 30 */ { &CPU::JR_cc_n_m1<Flag::N, Flag::C>, &CPU::JR_cc_n_m2<Flag::N, Flag::C>, &CPU::JR_cc_n_m3<Flag::N, Flag::C> },
+	/* 30 */ { &CPU::JR_c_n_m1<Flag::N, Flag::C>, &CPU::JR_c_n_m2<Flag::N, Flag::C>, &CPU::JR_c_n_m3<Flag::N, Flag::C> },
 	/* 31 */ { &CPU::LD_rr_nn_m1<Register16::SP>, &CPU::LD_rr_nn_m2<Register16::SP>, &CPU::LD_rr_nn_m3<Register16::SP> },
 	/* 32 */ { &CPU::LD_arr_r_m1<Register16::HL, Register8::A, -1>, &CPU::LD_arr_r_m2<Register16::HL, Register8::A, -1> },
 	/* 33 */ { &CPU::INC_rr_m1<Register16::SP>, &CPU::INC_rr_m2<Register16::SP> },
@@ -219,70 +219,79 @@ CPU::CPU(IBus &bus) :
 	/* BD */ { &CPU::CP_r_m1<Register8::L> },
 	/* BE */ { &CPU::CP_arr_m1<Register16::HL>, &CPU::CP_arr_m2<Register16::HL> },
 	/* BF */ { &CPU::CP_r_m1<Register8::A> },
-	/* C0 */ { &CPU::instructionNotImplemented },
-	/* C1 */ { &CPU::instructionNotImplemented },
-	/* C2 */ { &CPU::JP_cc_nn_m1<Flag::N, Flag::Z>, &CPU::JP_cc_nn_m2<Flag::N, Flag::Z>, &CPU::JP_cc_nn_m3<Flag::N, Flag::Z>, &CPU::JP_cc_nn_m4<Flag::N, Flag::Z> },
+	/* C0 */ { &CPU::RET_c_nn_m1<Flag::N, Flag::C>, &CPU::RET_c_nn_m2<Flag::N, Flag::C>, &CPU::CALL_c_nn_m3<Flag::N, Flag::C>,
+	            &CPU::RET_c_nn_m4<Flag::N, Flag::C>, &CPU::RET_c_nn_m5<Flag::N, Flag::C> },
+	/* C1 */ { &CPU::POP_rr_m1<Register16::BC>, &CPU::POP_rr_m2<Register16::BC>, &CPU::POP_rr_m3<Register16::BC> },
+	/* C2 */ { &CPU::JP_c_nn_m1<Flag::N, Flag::Z>, &CPU::JP_c_nn_m2<Flag::N, Flag::Z>, &CPU::JP_c_nn_m3<Flag::N, Flag::Z>, &CPU::JP_c_nn_m4<Flag::N, Flag::Z> },
 	/* C3 */ { &CPU::JP_nn_m1, &CPU::JP_nn_m2, &CPU::JP_nn_m3, &CPU::JP_nn_m4 },
-	/* C4 */ { &CPU::instructionNotImplemented },
-	/* C5 */ { &CPU::instructionNotImplemented },
+	/* C4 */ { &CPU::CALL_c_nn_m1<Flag::N, Flag::Z>, &CPU::CALL_c_nn_m2<Flag::N, Flag::Z>, &CPU::CALL_c_nn_m3<Flag::N, Flag::Z>,
+	            &CPU::CALL_c_nn_m4<Flag::N, Flag::Z>, &CPU::CALL_c_nn_m5<Flag::N, Flag::Z>, &CPU::CALL_c_nn_m6<Flag::N, Flag::Z>, },
+	/* C5 */ { &CPU::PUSH_rr_m1<Register16::BC>, &CPU::PUSH_rr_m2<Register16::BC>, &CPU::PUSH_rr_m3<Register16::BC>, &CPU::PUSH_rr_m4<Register16::BC> },
 	/* C6 */ { &CPU::ADD_n_m1, &CPU::ADD_n_m2 },
-	/* C7 */ { &CPU::instructionNotImplemented },
-	/* C8 */ { &CPU::instructionNotImplemented },
-	/* C9 */ { &CPU::instructionNotImplemented },
+	/* C7 */ { &CPU::RST_m1<0x00>, &CPU::RST_m2<0x00>, &CPU::RST_m3<0x00>, &CPU::RST_m4<0x00> },
+	/* C8 */ { &CPU::RET_c_nn_m1<Flag::Z>, &CPU::RET_c_nn_m2<Flag::Z>, &CPU::CALL_c_nn_m3<Flag::Z>,
+	            &CPU::RET_c_nn_m4<Flag::Z>, &CPU::RET_c_nn_m5<Flag::Z> },
+	/* C9 */ { &CPU::RET_nn_m1, &CPU::RET_nn_m2, &CPU::RET_nn_m3, &CPU::RET_nn_m4 },
 	/* CA */ { &CPU::JP_c_nn_m1<Flag::Z>, &CPU::JP_c_nn_m2<Flag::Z>, &CPU::JP_c_nn_m3<Flag::Z>, &CPU::JP_c_nn_m4<Flag::Z> },
-	/* CB */ { &CPU::instructionNotImplemented },
-	/* CC */ { &CPU::instructionNotImplemented },
-	/* CD */ { &CPU::instructionNotImplemented },
+	/* CB */ { &CPU::CB_m1 },
+	/* CC */ { &CPU::CALL_c_nn_m1<Flag::Z>, &CPU::CALL_c_nn_m2<Flag::Z>, &CPU::CALL_c_nn_m3<Flag::Z>,
+	            &CPU::CALL_c_nn_m4<Flag::Z>, &CPU::CALL_c_nn_m5<Flag::Z>, &CPU::CALL_c_nn_m6<Flag::Z>, },
+	/* CD */ { &CPU::CALL_nn_m1, &CPU::CALL_nn_m2, &CPU::CALL_nn_m3,
+	            &CPU::CALL_nn_m4, &CPU::CALL_nn_m5, &CPU::CALL_nn_m6, },
 	/* CE */ { &CPU::ADC_n_m1, &CPU::ADC_n_m2 },
-	/* CF */ { &CPU::instructionNotImplemented },
-	/* D0 */ { &CPU::instructionNotImplemented },
-	/* D1 */ { &CPU::instructionNotImplemented },
-	/* D2 */ { &CPU::JP_cc_nn_m1<Flag::N, Flag::C>, &CPU::JP_cc_nn_m2<Flag::N, Flag::C>, &CPU::JP_cc_nn_m3<Flag::N, Flag::C>, &CPU::JP_cc_nn_m4<Flag::N, Flag::C> },
-	/* D3 */ { &CPU::instructionNotImplemented },
-	/* D4 */ { &CPU::instructionNotImplemented },
-	/* D5 */ { &CPU::instructionNotImplemented },
+	/* CF */ { &CPU::RST_m1<0x08>, &CPU::RST_m2<0x08>, &CPU::RST_m3<0x08>, &CPU::RST_m4<0x08> },
+	/* D0 */ { &CPU::RET_c_nn_m1<Flag::N, Flag::Z>, &CPU::RET_c_nn_m2<Flag::N, Flag::Z>, &CPU::CALL_c_nn_m3<Flag::N, Flag::Z>,
+	            &CPU::RET_c_nn_m4<Flag::N, Flag::Z>, &CPU::RET_c_nn_m5<Flag::N, Flag::Z> },
+	/* D1 */ { &CPU::POP_rr_m1<Register16::DE>, &CPU::POP_rr_m2<Register16::DE>, &CPU::POP_rr_m3<Register16::DE> },
+	/* D2 */ { &CPU::JP_c_nn_m1<Flag::N, Flag::C>, &CPU::JP_c_nn_m2<Flag::N, Flag::C>, &CPU::JP_c_nn_m3<Flag::N, Flag::C>, &CPU::JP_c_nn_m4<Flag::N, Flag::C> },
+	/* D3 */ { &CPU::invalidInstruction },
+	/* D4 */ { &CPU::CALL_c_nn_m1<Flag::N, Flag::C>, &CPU::CALL_c_nn_m2<Flag::N, Flag::C>, &CPU::CALL_c_nn_m3<Flag::N, Flag::C>,
+	            &CPU::CALL_c_nn_m4<Flag::N, Flag::C>, &CPU::CALL_c_nn_m5<Flag::N, Flag::C>, &CPU::CALL_c_nn_m6<Flag::N, Flag::C>, },
+	/* D5 */ { &CPU::PUSH_rr_m1<Register16::DE>, &CPU::PUSH_rr_m2<Register16::DE>, &CPU::PUSH_rr_m3<Register16::DE>, &CPU::PUSH_rr_m4<Register16::DE> },
 	/* D6 */ { &CPU::SUB_n_m1, &CPU::SUB_n_m2 },
-	/* D7 */ { &CPU::instructionNotImplemented },
-	/* D8 */ { &CPU::instructionNotImplemented },
-	/* D9 */ { &CPU::instructionNotImplemented },
+	/* D7 */ { &CPU::RST_m1<0x10>, &CPU::RST_m2<0x10>, &CPU::RST_m3<0x10>, &CPU::RST_m4<0x10> },
+	/* D8 */ { &CPU::RET_c_nn_m1<Flag::C>, &CPU::RET_c_nn_m2<Flag::C>, &CPU::CALL_c_nn_m3<Flag::C>,
+	            &CPU::RET_c_nn_m4<Flag::C>, &CPU::RET_c_nn_m5<Flag::C> },
+	/* D9 */ { &CPU::RETI_nn_m1, &CPU::RETI_nn_m2, &CPU::RETI_nn_m3, &CPU::RETI_nn_m4 },
 	/* DA */ { &CPU::JP_c_nn_m1<Flag::C>, &CPU::JP_c_nn_m2<Flag::C>, &CPU::JP_c_nn_m3<Flag::C>, &CPU::JP_c_nn_m4<Flag::C> },
-	/* DB */ { &CPU::instructionNotImplemented },
-	/* DC */ { &CPU::instructionNotImplemented },
-	/* DD */ { &CPU::instructionNotImplemented },
+	/* DB */ { &CPU::invalidInstruction },
+	/* DC */ { &CPU::CALL_c_nn_m1<Flag::C>, &CPU::CALL_c_nn_m2<Flag::C>, &CPU::CALL_c_nn_m3<Flag::C>,
+	            &CPU::CALL_c_nn_m4<Flag::C>, &CPU::CALL_c_nn_m5<Flag::C>, &CPU::CALL_c_nn_m6<Flag::C>, },
+	/* DD */ { &CPU::invalidInstruction },
 	/* DE */ { &CPU::SBC_n_m1, &CPU::SBC_n_m2 },
-	/* DF */ { &CPU::instructionNotImplemented },
+	/* DF */ { &CPU::RST_m1<0x18>, &CPU::RST_m2<0x18>, &CPU::RST_m3<0x18>, &CPU::RST_m4<0x18> },
 	/* E0 */ { &CPU::LDH_an_r_m1<Register8::A>, &CPU::LDH_an_r_m2<Register8::A>, &CPU::LDH_an_r_m3<Register8::A> },
-	/* E1 */ { &CPU::instructionNotImplemented },
+	/* E1 */ { &CPU::POP_rr_m1<Register16::HL>, &CPU::POP_rr_m2<Register16::HL>, &CPU::POP_rr_m3<Register16::HL> },
 	/* E2 */ { &CPU::LDH_ar_r_m1<Register8::C, Register8::A>, &CPU::LDH_ar_r_m2<Register8::C, Register8::A> },
-	/* E3 */ { &CPU::instructionNotImplemented },
-	/* E4 */ { &CPU::instructionNotImplemented },
-	/* E5 */ { &CPU::instructionNotImplemented },
+	/* E3 */ { &CPU::invalidInstruction },
+	/* E4 */ { &CPU::invalidInstruction },
+	/* E5 */ { &CPU::PUSH_rr_m1<Register16::HL>, &CPU::PUSH_rr_m2<Register16::HL>, &CPU::PUSH_rr_m3<Register16::HL>, &CPU::PUSH_rr_m4<Register16::HL> },
 	/* E6 */ { &CPU::AND_n_m1, &CPU::AND_n_m2 },
-	/* E7 */ { &CPU::instructionNotImplemented },
+	/* E7 */ { &CPU::RST_m1<0x20>, &CPU::RST_m2<0x20>, &CPU::RST_m3<0x20>, &CPU::RST_m4<0x20> },
 	/* E8 */ { &CPU::ADD_rr_n_m1<Register16::SP>, &CPU::ADD_rr_n_m2<Register16::SP>, &CPU::ADD_rr_n_m3<Register16::SP>, &CPU::ADD_rr_n_m4<Register16::SP> },
 	/* E9 */ { &CPU::JP_rr_m1<Register16::HL> },
 	/* EA */ { &CPU::LD_ann_r_m1<Register8::A>, &CPU::LD_ann_r_m2<Register8::A>, &CPU::LD_ann_r_m3<Register8::A>, &CPU::LD_ann_r_m4<Register8::A> },
-	/* EB */ { &CPU::instructionNotImplemented },
-	/* EC */ { &CPU::instructionNotImplemented },
-	/* ED */ { &CPU::instructionNotImplemented },
+	/* EB */ { &CPU::invalidInstruction },
+	/* EC */ { &CPU::invalidInstruction },
+	/* ED */ { &CPU::invalidInstruction },
 	/* EE */ { &CPU::XOR_n_m1, &CPU::XOR_n_m2 },
-	/* EF */ { &CPU::instructionNotImplemented },
+	/* EF */ { &CPU::RST_m1<0x28>, &CPU::RST_m2<0x28>, &CPU::RST_m3<0x28>, &CPU::RST_m4<0x28> },
 	/* F0 */ { &CPU::LDH_r_an_m1<Register8::A>, &CPU::LDH_r_an_m2<Register8::A>, &CPU::LDH_r_an_m3<Register8::A> },
-	/* F1 */ { &CPU::instructionNotImplemented },
+	/* F1 */ { &CPU::POP_rr_m1<Register16::AF>, &CPU::POP_rr_m2<Register16::AF>, &CPU::POP_rr_m3<Register16::AF> },
 	/* F2 */ { &CPU::LDH_r_ar_m1<Register8::A, Register8::C>, &CPU::LDH_r_ar_m2<Register8::A, Register8::C> },
 	/* F3 */ { &CPU::DI_m1 },
-	/* F4 */ { &CPU::instructionNotImplemented },
-	/* F5 */ { &CPU::instructionNotImplemented },
+	/* F4 */ { &CPU::invalidInstruction },
+	/* F5 */ { &CPU::PUSH_rr_m1<Register16::AF>, &CPU::PUSH_rr_m2<Register16::AF>, &CPU::PUSH_rr_m3<Register16::AF>, &CPU::PUSH_rr_m4<Register16::AF> },
 	/* F6 */ { &CPU::OR_n_m1, &CPU::OR_n_m2 },
-	/* F7 */ { &CPU::instructionNotImplemented },
+	/* F7 */ { &CPU::RST_m1<0x30>, &CPU::RST_m2<0x30>, &CPU::RST_m3<0x30>, &CPU::RST_m4<0x30> },
 	/* F8 */ { &CPU::LD_rr_rrn_m1<Register16::HL, Register16::SP>, &CPU::LD_rr_rrn_m2<Register16::HL, Register16::SP>, &CPU::LD_rr_rrn_m3<Register16::HL, Register16::SP> },
 	/* F9 */ { &CPU::LD_rr_rr_m1<Register16::SP, Register16::HL>, &CPU::LD_rr_rr_m2<Register16::SP, Register16::HL> },
 	/* FA */ { &CPU::LD_r_ann_m1<Register8::A>, &CPU::LD_r_ann_m2<Register8::A>, &CPU::LD_r_ann_m3<Register8::A>, &CPU::LD_r_ann_m4<Register8::A> },
 	/* FB */ { &CPU::EI_m1 },
-	/* FC */ { &CPU::instructionNotImplemented },
-	/* FD */ { &CPU::instructionNotImplemented },
+	/* FC */ { &CPU::invalidInstruction },
+	/* FD */ { &CPU::invalidInstruction },
 	/* FE */ { &CPU::CP_n_m1, &CPU::CP_n_m2 },
-	/* FF */ { &CPU::instructionNotImplemented },
+	/* FF */ { &CPU::RST_m1<0x38>, &CPU::RST_m2<0x38>, &CPU::RST_m3<0x38>, &CPU::RST_m4<0x38> },
     } {
 
 }
@@ -495,6 +504,39 @@ template<>
     return get_bit<4>(AF);
 }
 
+
+template<>
+[[nodiscard]] bool CPU::readFlags<CPU::Flag::Z>() const {
+    return readFlag<CPU::Flag::Z>();
+}
+
+template<>
+[[nodiscard]] bool CPU::readFlags<CPU::Flag::N>() const {
+    return readFlag<CPU::Flag::N>();
+}
+
+template<>
+[[nodiscard]] bool CPU::readFlags<CPU::Flag::H>() const {
+    return readFlag<CPU::Flag::H>();
+}
+
+template<>
+[[nodiscard]] bool CPU::readFlags<CPU::Flag::C>() const {
+    return readFlag<CPU::Flag::C>();
+}
+
+template<>
+[[nodiscard]] bool CPU::readFlags<CPU::Flag::N, CPU::Flag::C>() const {
+    return readFlag<CPU::Flag::N>() && readFlag<CPU::Flag::C>();
+}
+
+
+template<>
+[[nodiscard]] bool CPU::readFlags<CPU::Flag::N, CPU::Flag::Z>() const {
+    return readFlag<CPU::Flag::N>() && readFlag<CPU::Flag::Z>();
+}
+
+
 template<>
 void CPU::writeFlag<CPU::Flag::Z>(bool value) {
     set_bit<7>(AF, value);
@@ -546,6 +588,13 @@ void CPU::fetch() {
     DEBUG(2) << "<fetch>" << std::endl;
     currentInstruction.opcode = bus.read(PC++);
     currentInstruction.microop = 0;
+}
+
+void CPU::invalidInstruction() {
+    DEBUG(2) << "<invalid" << std::endl;
+    throw InstructionNotImplementedException(
+            "Invalid instruction: " + hex(currentInstruction.opcode) +
+            " [MicroOp=" + std::to_string(currentInstruction.microop + 1) + "]");
 }
 
 void CPU::instructionNotImplemented() {
@@ -1488,47 +1537,28 @@ void  CPU::JR_n_m3() {
 }
 
 // e.g. 28 | JR Z,r8
+// e.g. 20 | JR NZ,r8
 
-template<CPU::Flag f>
+template<CPU::Flag ...fs>
 void CPU::JR_c_n_m1() {
     u1 = bus.read(PC++);
 }
 
-template<CPU::Flag f>
+template<CPU::Flag ...fs>
 void CPU::JR_c_n_m2() {
-    if (readFlag<f>()) {
+    if (readFlags<fs...>()) {
         PC += u1;
     } else {
         fetch();
     }
 }
 
-template<CPU::Flag f>
+template<CPU::Flag ...fs>
 void CPU::JR_c_n_m3() {
     fetch();
 }
 
 
-// e.g. 20 | JR NZ,r8
-
-template<CPU::Flag f1, CPU::Flag f2>
-void CPU::JR_cc_n_m1() {
-    u1 = bus.read(PC++);
-}
-
-template<CPU::Flag f1, CPU::Flag f2>
-void CPU::JR_cc_n_m2() {
-    if (readFlag<f1>() && readFlag<f2>()) {
-        PC += u1;
-    } else {
-        fetch();
-    }
-}
-
-template<CPU::Flag f1, CPU::Flag f2>
-void CPU::JR_cc_n_m3() {
-    fetch();
-}
 
 // e.g. C3 | JP a16
 
@@ -1557,55 +1587,224 @@ void CPU::JP_rr_m1() {
 }
 
 // e.g. CA | JP Z,a16
+// e.g. C2 | JP NZ,a16
 
-template<CPU::Flag f>
+template<CPU::Flag ...fs>
 void CPU::JP_c_nn_m1() {
     u1 = bus.read(PC++);
 }
 
-template<CPU::Flag f>
+template<CPU::Flag ...fs>
 void CPU::JP_c_nn_m2() {
     u2 = bus.read(PC++);
 }
 
-template<CPU::Flag f>
+template<CPU::Flag ...fs>
 void CPU::JP_c_nn_m3() {
-    if (readFlag<f>()) {
+    if (readFlags<fs...>()) {
         PC = concat_bytes(u2, u1);
     } else {
         fetch();
     }
 }
 
-template<CPU::Flag f>
+template<CPU::Flag ...fs>
 void CPU::JP_c_nn_m4() {
     fetch();
 }
 
+// CD | CALL a16
 
-// e.g. C2 | JP NZ,a16
-
-template<CPU::Flag f1, CPU::Flag f2>
-void CPU::JP_cc_nn_m1() {
+void CPU::CALL_nn_m1() {
     u1 = bus.read(PC++);
 }
 
-template<CPU::Flag f1, CPU::Flag f2>
-void CPU::JP_cc_nn_m2() {
+void CPU::CALL_nn_m2() {
     u2 = bus.read(PC++);
 }
 
-template<CPU::Flag f1, CPU::Flag f2>
-void CPU::JP_cc_nn_m3() {
-    if (readFlag<f1>() && readFlag<f2>()) {
-        PC = concat_bytes(u2, u1);
+void CPU::CALL_nn_m3() {
+    bus.write(--SP, readRegister8<Register8::P>());
+}
+
+void CPU::CALL_nn_m4() {
+    bus.write(--SP, readRegister8<Register8::C>());
+}
+
+void CPU::CALL_nn_m5() {
+    PC = concat_bytes(u2, u1);
+}
+
+void CPU::CALL_nn_m6() {
+    fetch();
+}
+
+// e.g. C4 | CALL NZ,a16
+
+template<CPU::Flag... fs>
+void CPU::CALL_c_nn_m1() {
+    u1 = bus.read(PC++);
+}
+
+template<CPU::Flag... fs>
+void CPU::CALL_c_nn_m2() {
+    u2 = bus.read(PC++);
+}
+template<CPU::Flag... fs>
+void CPU::CALL_c_nn_m3() {
+    if (readFlags<fs...>()) {
+        bus.write(--SP, readRegister8<Register8::P>());
     } else {
         fetch();
     }
 }
 
-template<CPU::Flag f1, CPU::Flag f2>
-void CPU::JP_cc_nn_m4() {
+template<CPU::Flag... fs>
+void CPU::CALL_c_nn_m4() {
+    bus.write(--SP, readRegister8<Register8::C>());
+}
+
+template<CPU::Flag... fs>
+void CPU::CALL_c_nn_m5() {
+    PC = concat_bytes(u2, u1);
+}
+
+template<CPU::Flag... fs>
+void CPU::CALL_c_nn_m6() {
+    fetch();
+}
+
+// C7 | RST 00H
+
+template<uint8_t n>
+void CPU::RST_m1() {
+    bus.write(--SP, readRegister8<Register8::P>());
+}
+
+template<uint8_t n>
+void CPU::RST_m2() {
+    bus.write(--SP, readRegister8<Register8::P>());
+}
+
+template<uint8_t n>
+void CPU::RST_m3() {
+    PC = concat_bytes(0x00, n);
+}
+
+template<uint8_t n>
+void CPU::RST_m4() {
+    fetch();
+}
+
+// C9 | RET
+
+void CPU::RET_nn_m1() {
+    u1 = bus.read(SP++);
+}
+
+void CPU::RET_nn_m2() {
+    u2 = bus.read(SP++);
+}
+
+void CPU::RET_nn_m3() {
+    PC = concat_bytes(u2, u1);
+}
+
+void CPU::RET_nn_m4() {
+    fetch();
+}
+
+// D9 | RETI
+
+void CPU::RETI_nn_m1() {
+    u1 = bus.read(SP++);
+}
+
+void CPU::RETI_nn_m2() {
+    u2 = bus.read(SP++);
+}
+
+void CPU::RETI_nn_m3() {
+    PC = concat_bytes(u2, u1);
+    IME = true;
+}
+
+void CPU::RETI_nn_m4() {
+    fetch();
+}
+
+// e.g. C0 | RET NZ
+
+template<CPU::Flag... fs>
+void CPU::RET_c_nn_m1() {
+    // TODO: really bad but don't know why this lasts 2 m cycle if false
+}
+
+template<CPU::Flag... fs>
+void CPU::RET_c_nn_m2() {
+    // TODO: really bad but don't know why this lasts 2 m cycle if false
+    if (readFlags<fs...>()) {
+        u1 = bus.read(SP++);
+    } else {
+        fetch();
+    }
+}
+
+template<CPU::Flag... fs>
+void CPU::RET_c_nn_m3() {
+    u2 = bus.read(SP++);
+}
+
+template<CPU::Flag... fs>
+void CPU::RET_c_nn_m4() {
+    PC = concat_bytes(u2, u1);
+}
+
+template<CPU::Flag... fs>
+void CPU::RET_c_nn_m5() {
+    fetch();
+}
+
+// e.g. C5 | PUSH BC
+
+template<CPU::Register16 rr>
+void CPU::PUSH_rr_m1() {
+}
+
+template<CPU::Register16 rr>
+void CPU::PUSH_rr_m2() {
+    bus.write(--SP, readRegister8<Register8::B>());
+}
+
+template<CPU::Register16 rr>
+void CPU::PUSH_rr_m3() {
+    bus.write(--SP, readRegister8<Register8::B>());
+}
+
+template<CPU::Register16 rr>
+void CPU::PUSH_rr_m4() {
+    fetch();
+}
+
+// e.g. C1 | POP BC
+
+template<CPU::Register16 rr>
+void CPU::POP_rr_m1() {
+    u1 = bus.read(SP++);
+}
+
+template<CPU::Register16 rr>
+void CPU::POP_rr_m2() {
+    u2 = bus.read(SP++);
+}
+
+template<CPU::Register16 rr>
+void CPU::POP_rr_m3() {
+    writeRegister16<rr>(concat_bytes(u2, u1));
+    fetch();
+}
+
+void CPU::CB_m1() {
     fetch();
 }
 
