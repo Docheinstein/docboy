@@ -249,10 +249,10 @@ TEST_CASE("CPU", "[cpu]") {
     };
 
 
-//    SECTION("instruction implemented", instr_name) {
-//        setupInstruction();
-//        REQUIRE_NOTHROW(cpu.tick());
-//    }
+    SECTION("instruction implemented", instr_name) {
+        setupInstruction();
+        REQUIRE_NOTHROW(cpu.tick());
+    }
 
     SECTION("instruction duration", instr_name) {
         setupInstruction();

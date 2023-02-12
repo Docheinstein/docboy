@@ -341,14 +341,14 @@ CPU::CPU(IBus &bus) :
 	/* 2D */ { &CPU::SRA_r_m1<Register8::L> },
 	/* 2E */ { &CPU::SRA_arr_m1<Register16::HL>, &CPU::SRA_arr_m2<Register16::HL>, &CPU::SRA_arr_m3<Register16::HL> },
 	/* 2F */ { &CPU::SRA_r_m1<Register8::A> },
-	/* 30 */ { &CPU::instructionNotImplemented },
-	/* 31 */ { &CPU::instructionNotImplemented },
-	/* 32 */ { &CPU::instructionNotImplemented },
-	/* 33 */ { &CPU::instructionNotImplemented },
-	/* 34 */ { &CPU::instructionNotImplemented },
-	/* 35 */ { &CPU::instructionNotImplemented },
-	/* 36 */ { &CPU::instructionNotImplemented },
-	/* 37 */ { &CPU::instructionNotImplemented },
+	/* 30 */ { &CPU::SWAP_r_m1<Register8::B> },
+	/* 31 */ { &CPU::SWAP_r_m1<Register8::C> },
+	/* 32 */ { &CPU::SWAP_r_m1<Register8::D> },
+	/* 33 */ { &CPU::SWAP_r_m1<Register8::E> },
+	/* 34 */ { &CPU::SWAP_r_m1<Register8::H> },
+	/* 35 */ { &CPU::SWAP_r_m1<Register8::L> },
+	/* 36 */ { &CPU::SWAP_arr_m1<Register16::HL>, &CPU::SWAP_arr_m2<Register16::HL>, &CPU::SWAP_arr_m3<Register16::HL> },
+	/* 37 */ { &CPU::SWAP_r_m1<Register8::A> },
 	/* 38 */ { &CPU::SRL_r_m1<Register8::B> },
 	/* 39 */ { &CPU::SRL_r_m1<Register8::C> },
 	/* 3A */ { &CPU::SRL_r_m1<Register8::D> },
@@ -357,198 +357,198 @@ CPU::CPU(IBus &bus) :
 	/* 3D */ { &CPU::SRL_r_m1<Register8::L> },
 	/* 3E */ { &CPU::SRL_arr_m1<Register16::HL>, &CPU::SRL_arr_m2<Register16::HL>, &CPU::SRL_arr_m3<Register16::HL> },
 	/* 3F */ { &CPU::SRL_r_m1<Register8::A> },
-	/* 40 */ { &CPU::instructionNotImplemented },
-	/* 41 */ { &CPU::instructionNotImplemented },
-	/* 42 */ { &CPU::instructionNotImplemented },
-	/* 43 */ { &CPU::instructionNotImplemented },
-	/* 44 */ { &CPU::instructionNotImplemented },
-	/* 45 */ { &CPU::instructionNotImplemented },
-	/* 46 */ { &CPU::instructionNotImplemented },
-	/* 47 */ { &CPU::instructionNotImplemented },
-	/* 48 */ { &CPU::instructionNotImplemented },
-	/* 49 */ { &CPU::instructionNotImplemented },
-	/* 4A */ { &CPU::instructionNotImplemented },
-	/* 4B */ { &CPU::instructionNotImplemented },
-	/* 4C */ { &CPU::instructionNotImplemented },
-	/* 4D */ { &CPU::instructionNotImplemented },
-	/* 4E */ { &CPU::instructionNotImplemented },
-	/* 4F */ { &CPU::instructionNotImplemented },
-	/* 50 */ { &CPU::instructionNotImplemented },
-	/* 51 */ { &CPU::instructionNotImplemented },
-	/* 52 */ { &CPU::instructionNotImplemented },
-	/* 53 */ { &CPU::instructionNotImplemented },
-	/* 54 */ { &CPU::instructionNotImplemented },
-	/* 55 */ { &CPU::instructionNotImplemented },
-	/* 56 */ { &CPU::instructionNotImplemented },
-	/* 57 */ { &CPU::instructionNotImplemented },
-	/* 58 */ { &CPU::instructionNotImplemented },
-	/* 59 */ { &CPU::instructionNotImplemented },
-	/* 5A */ { &CPU::instructionNotImplemented },
-	/* 5B */ { &CPU::instructionNotImplemented },
-	/* 5C */ { &CPU::instructionNotImplemented },
-	/* 5D */ { &CPU::instructionNotImplemented },
-	/* 5E */ { &CPU::instructionNotImplemented },
-	/* 5F */ { &CPU::instructionNotImplemented },
-	/* 60 */ { &CPU::instructionNotImplemented },
-	/* 61 */ { &CPU::instructionNotImplemented },
-	/* 62 */ { &CPU::instructionNotImplemented },
-	/* 63 */ { &CPU::instructionNotImplemented },
-	/* 64 */ { &CPU::instructionNotImplemented },
-	/* 65 */ { &CPU::instructionNotImplemented },
-	/* 66 */ { &CPU::instructionNotImplemented },
-	/* 67 */ { &CPU::instructionNotImplemented },
-	/* 68 */ { &CPU::instructionNotImplemented },
-	/* 69 */ { &CPU::instructionNotImplemented },
-	/* 6A */ { &CPU::instructionNotImplemented },
-	/* 6B */ { &CPU::instructionNotImplemented },
-	/* 6C */ { &CPU::instructionNotImplemented },
-	/* 6D */ { &CPU::instructionNotImplemented },
-	/* 6E */ { &CPU::instructionNotImplemented },
-	/* 6F */ { &CPU::instructionNotImplemented },
-	/* 70 */ { &CPU::instructionNotImplemented },
-	/* 71 */ { &CPU::instructionNotImplemented },
-	/* 72 */ { &CPU::instructionNotImplemented },
-	/* 73 */ { &CPU::instructionNotImplemented },
-	/* 74 */ { &CPU::instructionNotImplemented },
-	/* 75 */ { &CPU::instructionNotImplemented },
-	/* 76 */ { &CPU::instructionNotImplemented },
-	/* 77 */ { &CPU::instructionNotImplemented },
-	/* 78 */ { &CPU::instructionNotImplemented },
-	/* 79 */ { &CPU::instructionNotImplemented },
-	/* 7A */ { &CPU::instructionNotImplemented },
-	/* 7B */ { &CPU::instructionNotImplemented },
-	/* 7C */ { &CPU::instructionNotImplemented },
-	/* 7D */ { &CPU::instructionNotImplemented },
-	/* 7E */ { &CPU::instructionNotImplemented },
-	/* 7F */ { &CPU::instructionNotImplemented },
-	/* 80 */ { &CPU::instructionNotImplemented },
-	/* 81 */ { &CPU::instructionNotImplemented },
-	/* 82 */ { &CPU::instructionNotImplemented },
-	/* 83 */ { &CPU::instructionNotImplemented },
-	/* 84 */ { &CPU::instructionNotImplemented },
-	/* 85 */ { &CPU::instructionNotImplemented },
-	/* 86 */ { &CPU::instructionNotImplemented },
-	/* 87 */ { &CPU::instructionNotImplemented },
-	/* 88 */ { &CPU::instructionNotImplemented },
-	/* 89 */ { &CPU::instructionNotImplemented },
-	/* 8A */ { &CPU::instructionNotImplemented },
-	/* 8B */ { &CPU::instructionNotImplemented },
-	/* 8C */ { &CPU::instructionNotImplemented },
-	/* 8D */ { &CPU::instructionNotImplemented },
-	/* 8E */ { &CPU::instructionNotImplemented },
-	/* 8F */ { &CPU::instructionNotImplemented },
-	/* 90 */ { &CPU::instructionNotImplemented },
-	/* 91 */ { &CPU::instructionNotImplemented },
-	/* 92 */ { &CPU::instructionNotImplemented },
-	/* 93 */ { &CPU::instructionNotImplemented },
-	/* 94 */ { &CPU::instructionNotImplemented },
-	/* 95 */ { &CPU::instructionNotImplemented },
-	/* 96 */ { &CPU::instructionNotImplemented },
-	/* 97 */ { &CPU::instructionNotImplemented },
-	/* 98 */ { &CPU::instructionNotImplemented },
-	/* 99 */ { &CPU::instructionNotImplemented },
-	/* 9A */ { &CPU::instructionNotImplemented },
-	/* 9B */ { &CPU::instructionNotImplemented },
-	/* 9C */ { &CPU::instructionNotImplemented },
-	/* 9D */ { &CPU::instructionNotImplemented },
-	/* 9E */ { &CPU::instructionNotImplemented },
-	/* 9F */ { &CPU::instructionNotImplemented },
-	/* A0 */ { &CPU::instructionNotImplemented },
-	/* A1 */ { &CPU::instructionNotImplemented },
-	/* A2 */ { &CPU::instructionNotImplemented },
-	/* A3 */ { &CPU::instructionNotImplemented },
-	/* A4 */ { &CPU::instructionNotImplemented },
-	/* A5 */ { &CPU::instructionNotImplemented },
-	/* A6 */ { &CPU::instructionNotImplemented },
-	/* A7 */ { &CPU::instructionNotImplemented },
-	/* A8 */ { &CPU::instructionNotImplemented },
-	/* A9 */ { &CPU::instructionNotImplemented },
-	/* AA */ { &CPU::instructionNotImplemented },
-	/* AB */ { &CPU::instructionNotImplemented },
-	/* AC */ { &CPU::instructionNotImplemented },
-	/* AD */ { &CPU::instructionNotImplemented },
-	/* AE */ { &CPU::instructionNotImplemented },
-	/* AF */ { &CPU::instructionNotImplemented },
-	/* B0 */ { &CPU::instructionNotImplemented },
-	/* B1 */ { &CPU::instructionNotImplemented },
-	/* B2 */ { &CPU::instructionNotImplemented },
-	/* B3 */ { &CPU::instructionNotImplemented },
-	/* B4 */ { &CPU::instructionNotImplemented },
-	/* B5 */ { &CPU::instructionNotImplemented },
-	/* B6 */ { &CPU::instructionNotImplemented },
-	/* B7 */ { &CPU::instructionNotImplemented },
-	/* B8 */ { &CPU::instructionNotImplemented },
-	/* B9 */ { &CPU::instructionNotImplemented },
-	/* BA */ { &CPU::instructionNotImplemented },
-	/* BB */ { &CPU::instructionNotImplemented },
-	/* BC */ { &CPU::instructionNotImplemented },
-	/* BD */ { &CPU::instructionNotImplemented },
-	/* BE */ { &CPU::instructionNotImplemented },
-	/* BF */ { &CPU::instructionNotImplemented },
-	/* C0 */ { &CPU::instructionNotImplemented },
-	/* C1 */ { &CPU::instructionNotImplemented },
-	/* C2 */ { &CPU::instructionNotImplemented },
-	/* C3 */ { &CPU::instructionNotImplemented },
-	/* C4 */ { &CPU::instructionNotImplemented },
-	/* C5 */ { &CPU::instructionNotImplemented },
-	/* C6 */ { &CPU::instructionNotImplemented },
-	/* C7 */ { &CPU::instructionNotImplemented },
-	/* C8 */ { &CPU::instructionNotImplemented },
-	/* C9 */ { &CPU::instructionNotImplemented },
-	/* CA */ { &CPU::instructionNotImplemented },
-	/* CB */ { &CPU::instructionNotImplemented },
-	/* CC */ { &CPU::instructionNotImplemented },
-	/* CD */ { &CPU::instructionNotImplemented },
-	/* CE */ { &CPU::instructionNotImplemented },
-	/* CF */ { &CPU::instructionNotImplemented },
-	/* D0 */ { &CPU::instructionNotImplemented },
-	/* D1 */ { &CPU::instructionNotImplemented },
-	/* D2 */ { &CPU::instructionNotImplemented },
-	/* D3 */ { &CPU::instructionNotImplemented },
-	/* D4 */ { &CPU::instructionNotImplemented },
-	/* D5 */ { &CPU::instructionNotImplemented },
-	/* D6 */ { &CPU::instructionNotImplemented },
-	/* D7 */ { &CPU::instructionNotImplemented },
-	/* D8 */ { &CPU::instructionNotImplemented },
-	/* D9 */ { &CPU::instructionNotImplemented },
-	/* DA */ { &CPU::instructionNotImplemented },
-	/* DB */ { &CPU::instructionNotImplemented },
-	/* DC */ { &CPU::instructionNotImplemented },
-	/* DD */ { &CPU::instructionNotImplemented },
-	/* DE */ { &CPU::instructionNotImplemented },
-	/* DF */ { &CPU::instructionNotImplemented },
-	/* E0 */ { &CPU::instructionNotImplemented },
-	/* E1 */ { &CPU::instructionNotImplemented },
-	/* E2 */ { &CPU::instructionNotImplemented },
-	/* E3 */ { &CPU::instructionNotImplemented },
-	/* E4 */ { &CPU::instructionNotImplemented },
-	/* E5 */ { &CPU::instructionNotImplemented },
-	/* E6 */ { &CPU::instructionNotImplemented },
-	/* E7 */ { &CPU::instructionNotImplemented },
-	/* E8 */ { &CPU::instructionNotImplemented },
-	/* E9 */ { &CPU::instructionNotImplemented },
-	/* EA */ { &CPU::instructionNotImplemented },
-	/* EB */ { &CPU::instructionNotImplemented },
-	/* EC */ { &CPU::instructionNotImplemented },
-	/* ED */ { &CPU::instructionNotImplemented },
-	/* EE */ { &CPU::instructionNotImplemented },
-	/* EF */ { &CPU::instructionNotImplemented },
-	/* F0 */ { &CPU::instructionNotImplemented },
-	/* F1 */ { &CPU::instructionNotImplemented },
-	/* F2 */ { &CPU::instructionNotImplemented },
-	/* F3 */ { &CPU::instructionNotImplemented },
-	/* F4 */ { &CPU::instructionNotImplemented },
-	/* F5 */ { &CPU::instructionNotImplemented },
-	/* F6 */ { &CPU::instructionNotImplemented },
-	/* F7 */ { &CPU::instructionNotImplemented },
-	/* F8 */ { &CPU::instructionNotImplemented },
-	/* F9 */ { &CPU::instructionNotImplemented },
-	/* FA */ { &CPU::instructionNotImplemented },
-	/* FB */ { &CPU::instructionNotImplemented },
-	/* FC */ { &CPU::instructionNotImplemented },
-	/* FD */ { &CPU::instructionNotImplemented },
-	/* FE */ { &CPU::instructionNotImplemented },
-	/* FF */ { &CPU::instructionNotImplemented }
+	/* 40 */ { &CPU::BIT_r_m1<0, Register8::B> },
+	/* 41 */ { &CPU::BIT_r_m1<0, Register8::C> },
+	/* 42 */ { &CPU::BIT_r_m1<0, Register8::D> },
+	/* 43 */ { &CPU::BIT_r_m1<0, Register8::E> },
+	/* 44 */ { &CPU::BIT_r_m1<0, Register8::H> },
+	/* 45 */ { &CPU::BIT_r_m1<0, Register8::L> },
+	/* 46 */ { &CPU::BIT_arr_m1<0, Register16::HL>, &CPU::BIT_arr_m2<0, Register16::HL> },
+	/* 47 */ { &CPU::BIT_r_m1<0, Register8::A> },
+	/* 48 */ { &CPU::BIT_r_m1<1, Register8::B> },
+	/* 49 */ { &CPU::BIT_r_m1<1, Register8::C> },
+	/* 4A */ { &CPU::BIT_r_m1<1, Register8::D> },
+	/* 4B */ { &CPU::BIT_r_m1<1, Register8::E> },
+	/* 4C */ { &CPU::BIT_r_m1<1, Register8::H> },
+	/* 4D */ { &CPU::BIT_r_m1<1, Register8::L> },
+	/* 4E */ { &CPU::BIT_arr_m1<1, Register16::HL>, &CPU::BIT_arr_m2<1, Register16::HL> },
+	/* 4F */ { &CPU::BIT_r_m1<1, Register8::A> },
+	/* 50 */ { &CPU::BIT_r_m1<2, Register8::B> },
+	/* 51 */ { &CPU::BIT_r_m1<2, Register8::C> },
+	/* 52 */ { &CPU::BIT_r_m1<2, Register8::D> },
+	/* 53 */ { &CPU::BIT_r_m1<2, Register8::E> },
+	/* 54 */ { &CPU::BIT_r_m1<2, Register8::H> },
+	/* 55 */ { &CPU::BIT_r_m1<2, Register8::L> },
+	/* 56 */ { &CPU::BIT_arr_m1<2, Register16::HL>, &CPU::BIT_arr_m2<2, Register16::HL> },
+	/* 57 */ { &CPU::BIT_r_m1<2, Register8::A> },
+	/* 58 */ { &CPU::BIT_r_m1<3, Register8::B> },
+	/* 59 */ { &CPU::BIT_r_m1<3, Register8::C> },
+	/* 5A */ { &CPU::BIT_r_m1<3, Register8::D> },
+	/* 5B */ { &CPU::BIT_r_m1<3, Register8::E> },
+	/* 5C */ { &CPU::BIT_r_m1<3, Register8::H> },
+	/* 5D */ { &CPU::BIT_r_m1<3, Register8::L> },
+	/* 5E */ { &CPU::BIT_arr_m1<3, Register16::HL>, &CPU::BIT_arr_m2<3, Register16::HL> },
+	/* 5F */ { &CPU::BIT_r_m1<3, Register8::A> },
+	/* 60 */ { &CPU::BIT_r_m1<4, Register8::B> },
+	/* 61 */ { &CPU::BIT_r_m1<4, Register8::C> },
+	/* 62 */ { &CPU::BIT_r_m1<4, Register8::D> },
+	/* 63 */ { &CPU::BIT_r_m1<4, Register8::E> },
+	/* 64 */ { &CPU::BIT_r_m1<4, Register8::H> },
+	/* 65 */ { &CPU::BIT_r_m1<4, Register8::L> },
+	/* 66 */ { &CPU::BIT_arr_m1<4, Register16::HL>, &CPU::BIT_arr_m2<4, Register16::HL> },
+	/* 67 */ { &CPU::BIT_r_m1<4, Register8::A> },
+	/* 68 */ { &CPU::BIT_r_m1<5, Register8::B> },
+	/* 69 */ { &CPU::BIT_r_m1<5, Register8::C> },
+	/* 6A */ { &CPU::BIT_r_m1<5, Register8::D> },
+	/* 6B */ { &CPU::BIT_r_m1<5, Register8::E> },
+	/* 6C */ { &CPU::BIT_r_m1<5, Register8::H> },
+	/* 6D */ { &CPU::BIT_r_m1<5, Register8::L> },
+	/* 6E */ { &CPU::BIT_arr_m1<5, Register16::HL>, &CPU::BIT_arr_m2<5, Register16::HL> },
+	/* 6F */ { &CPU::BIT_r_m1<5, Register8::A> },
+	/* 70 */ { &CPU::BIT_r_m1<6, Register8::B> },
+	/* 71 */ { &CPU::BIT_r_m1<6, Register8::C> },
+	/* 72 */ { &CPU::BIT_r_m1<6, Register8::D> },
+	/* 73 */ { &CPU::BIT_r_m1<6, Register8::E> },
+	/* 74 */ { &CPU::BIT_r_m1<6, Register8::H> },
+	/* 75 */ { &CPU::BIT_r_m1<6, Register8::L> },
+	/* 76 */ { &CPU::BIT_arr_m1<6, Register16::HL>, &CPU::BIT_arr_m2<6, Register16::HL> },
+	/* 77 */ { &CPU::BIT_r_m1<6, Register8::A> },
+	/* 78 */ { &CPU::BIT_r_m1<7, Register8::B> },
+	/* 79 */ { &CPU::BIT_r_m1<7, Register8::C> },
+	/* 7A */ { &CPU::BIT_r_m1<7, Register8::D> },
+	/* 7B */ { &CPU::BIT_r_m1<7, Register8::E> },
+	/* 7C */ { &CPU::BIT_r_m1<7, Register8::H> },
+	/* 7D */ { &CPU::BIT_r_m1<7, Register8::L> },
+	/* 7E */ { &CPU::BIT_arr_m1<7, Register16::HL>, &CPU::BIT_arr_m2<7, Register16::HL> },
+	/* 7F */ { &CPU::BIT_r_m1<7, Register8::A> },
+	/* 80 */ { &CPU::RES_r_m1<0, Register8::B> },
+	/* 81 */ { &CPU::RES_r_m1<0, Register8::C> },
+	/* 82 */ { &CPU::RES_r_m1<0, Register8::D> },
+	/* 83 */ { &CPU::RES_r_m1<0, Register8::E> },
+	/* 84 */ { &CPU::RES_r_m1<0, Register8::H> },
+	/* 85 */ { &CPU::RES_r_m1<0, Register8::L> },
+	/* 86 */ { &CPU::RES_arr_m1<0, Register16::HL>, &CPU::RES_arr_m2<0, Register16::HL>, &CPU::RES_arr_m3<0, Register16::HL> },
+	/* 87 */ { &CPU::RES_r_m1<0, Register8::A> },
+	/* 88 */ { &CPU::RES_r_m1<1, Register8::B> },
+	/* 89 */ { &CPU::RES_r_m1<1, Register8::C> },
+	/* 8A */ { &CPU::RES_r_m1<1, Register8::D> },
+	/* 8B */ { &CPU::RES_r_m1<1, Register8::E> },
+	/* 8C */ { &CPU::RES_r_m1<1, Register8::H> },
+	/* 8D */ { &CPU::RES_r_m1<1, Register8::L> },
+	/* 8E */ { &CPU::RES_arr_m1<1, Register16::HL>, &CPU::RES_arr_m2<1, Register16::HL>, &CPU::RES_arr_m3<1, Register16::HL> },
+	/* 8F */ { &CPU::RES_r_m1<1, Register8::A> },
+	/* 90 */ { &CPU::RES_r_m1<2, Register8::B> },
+	/* 91 */ { &CPU::RES_r_m1<2, Register8::C> },
+	/* 92 */ { &CPU::RES_r_m1<2, Register8::D> },
+	/* 93 */ { &CPU::RES_r_m1<2, Register8::E> },
+	/* 94 */ { &CPU::RES_r_m1<2, Register8::H> },
+	/* 95 */ { &CPU::RES_r_m1<2, Register8::L> },
+	/* 96 */ { &CPU::RES_arr_m1<2, Register16::HL>, &CPU::RES_arr_m2<2, Register16::HL>, &CPU::RES_arr_m3<2, Register16::HL> },
+	/* 97 */ { &CPU::RES_r_m1<2, Register8::A> },
+	/* 98 */ { &CPU::RES_r_m1<3, Register8::B> },
+	/* 99 */ { &CPU::RES_r_m1<3, Register8::C> },
+	/* 9A */ { &CPU::RES_r_m1<3, Register8::D> },
+	/* 9B */ { &CPU::RES_r_m1<3, Register8::E> },
+	/* 9C */ { &CPU::RES_r_m1<3, Register8::H> },
+	/* 9D */ { &CPU::RES_r_m1<3, Register8::L> },
+	/* 9E */ { &CPU::RES_arr_m1<3, Register16::HL>, &CPU::RES_arr_m2<3, Register16::HL>, &CPU::RES_arr_m3<3, Register16::HL> },
+	/* 9F */ { &CPU::RES_r_m1<3, Register8::A> },
+	/* A0 */ { &CPU::RES_r_m1<4, Register8::B> },
+	/* A1 */ { &CPU::RES_r_m1<4, Register8::C> },
+	/* A2 */ { &CPU::RES_r_m1<4, Register8::D> },
+	/* A3 */ { &CPU::RES_r_m1<4, Register8::E> },
+	/* A4 */ { &CPU::RES_r_m1<4, Register8::H> },
+	/* A5 */ { &CPU::RES_r_m1<4, Register8::L> },
+	/* A6 */ { &CPU::RES_arr_m1<4, Register16::HL>, &CPU::RES_arr_m2<4, Register16::HL>, &CPU::RES_arr_m3<4, Register16::HL> },
+	/* A7 */ { &CPU::RES_r_m1<4, Register8::A> },
+	/* A8 */ { &CPU::RES_r_m1<5, Register8::B> },
+	/* A9 */ { &CPU::RES_r_m1<5, Register8::C> },
+	/* AA */ { &CPU::RES_r_m1<5, Register8::D> },
+	/* AB */ { &CPU::RES_r_m1<5, Register8::E> },
+	/* AC */ { &CPU::RES_r_m1<5, Register8::H> },
+	/* AD */ { &CPU::RES_r_m1<5, Register8::L> },
+	/* AE */ { &CPU::RES_arr_m1<5, Register16::HL>, &CPU::RES_arr_m2<5, Register16::HL>, &CPU::RES_arr_m3<5, Register16::HL> },
+	/* AF */ { &CPU::RES_r_m1<5, Register8::A> },
+	/* B0 */ { &CPU::RES_r_m1<6, Register8::B> },
+	/* B1 */ { &CPU::RES_r_m1<6, Register8::C> },
+	/* B2 */ { &CPU::RES_r_m1<6, Register8::D> },
+	/* B3 */ { &CPU::RES_r_m1<6, Register8::E> },
+	/* B4 */ { &CPU::RES_r_m1<6, Register8::H> },
+	/* B5 */ { &CPU::RES_r_m1<6, Register8::L> },
+	/* B6 */ { &CPU::RES_arr_m1<6, Register16::HL>, &CPU::RES_arr_m2<6, Register16::HL>, &CPU::RES_arr_m3<6, Register16::HL> },
+	/* B7 */ { &CPU::RES_r_m1<6, Register8::A> },
+	/* B8 */ { &CPU::RES_r_m1<7, Register8::B> },
+	/* B9 */ { &CPU::RES_r_m1<7, Register8::C> },
+	/* BA */ { &CPU::RES_r_m1<7, Register8::D> },
+	/* BB */ { &CPU::RES_r_m1<7, Register8::E> },
+	/* BC */ { &CPU::RES_r_m1<7, Register8::H> },
+	/* BD */ { &CPU::RES_r_m1<7, Register8::L> },
+	/* BE */ { &CPU::RES_arr_m1<7, Register16::HL>, &CPU::RES_arr_m2<7, Register16::HL>, &CPU::RES_arr_m3<7, Register16::HL> },
+	/* BF */ { &CPU::RES_r_m1<7, Register8::A> },
+    /* C0 */ { &CPU::SET_r_m1<0, Register8::B> },
+	/* C1 */ { &CPU::SET_r_m1<0, Register8::C> },
+	/* C2 */ { &CPU::SET_r_m1<0, Register8::D> },
+	/* C3 */ { &CPU::SET_r_m1<0, Register8::E> },
+	/* C4 */ { &CPU::SET_r_m1<0, Register8::H> },
+	/* C5 */ { &CPU::SET_r_m1<0, Register8::L> },
+	/* C6 */ { &CPU::SET_arr_m1<0, Register16::HL>, &CPU::SET_arr_m2<0, Register16::HL>, &CPU::SET_arr_m3<0, Register16::HL> },
+	/* C7 */ { &CPU::SET_r_m1<0, Register8::A> },
+	/* C8 */ { &CPU::SET_r_m1<1, Register8::B> },
+	/* C9 */ { &CPU::SET_r_m1<1, Register8::C> },
+	/* CA */ { &CPU::SET_r_m1<1, Register8::D> },
+	/* CB */ { &CPU::SET_r_m1<1, Register8::E> },
+	/* CC */ { &CPU::SET_r_m1<1, Register8::H> },
+	/* CD */ { &CPU::SET_r_m1<1, Register8::L> },
+	/* CE */ { &CPU::SET_arr_m1<1, Register16::HL>, &CPU::SET_arr_m2<1, Register16::HL>, &CPU::SET_arr_m3<1, Register16::HL> },
+	/* CF */ { &CPU::SET_r_m1<1, Register8::A> },
+	/* D0 */ { &CPU::SET_r_m1<2, Register8::B> },
+	/* D1 */ { &CPU::SET_r_m1<2, Register8::C> },
+	/* D2 */ { &CPU::SET_r_m1<2, Register8::D> },
+	/* D3 */ { &CPU::SET_r_m1<2, Register8::E> },
+	/* D4 */ { &CPU::SET_r_m1<2, Register8::H> },
+	/* D5 */ { &CPU::SET_r_m1<2, Register8::L> },
+	/* D6 */ { &CPU::SET_arr_m1<2, Register16::HL>, &CPU::SET_arr_m2<2, Register16::HL>, &CPU::SET_arr_m3<2, Register16::HL> },
+	/* D7 */ { &CPU::SET_r_m1<2, Register8::A> },
+	/* D8 */ { &CPU::SET_r_m1<3, Register8::B> },
+	/* D9 */ { &CPU::SET_r_m1<3, Register8::C> },
+	/* DA */ { &CPU::SET_r_m1<3, Register8::D> },
+	/* DB */ { &CPU::SET_r_m1<3, Register8::E> },
+	/* DC */ { &CPU::SET_r_m1<3, Register8::H> },
+	/* DD */ { &CPU::SET_r_m1<3, Register8::L> },
+	/* DE */ { &CPU::SET_arr_m1<3, Register16::HL>, &CPU::SET_arr_m2<3, Register16::HL>, &CPU::SET_arr_m3<3, Register16::HL> },
+	/* DF */ { &CPU::SET_r_m1<3, Register8::A> },
+	/* E0 */ { &CPU::SET_r_m1<4, Register8::B> },
+	/* E1 */ { &CPU::SET_r_m1<4, Register8::C> },
+	/* E2 */ { &CPU::SET_r_m1<4, Register8::D> },
+	/* E3 */ { &CPU::SET_r_m1<4, Register8::E> },
+	/* E4 */ { &CPU::SET_r_m1<4, Register8::H> },
+	/* E5 */ { &CPU::SET_r_m1<4, Register8::L> },
+	/* E6 */ { &CPU::SET_arr_m1<4, Register16::HL>, &CPU::SET_arr_m2<4, Register16::HL>, &CPU::SET_arr_m3<4, Register16::HL> },
+	/* E7 */ { &CPU::SET_r_m1<4, Register8::A> },
+	/* E8 */ { &CPU::SET_r_m1<5, Register8::B> },
+	/* E9 */ { &CPU::SET_r_m1<5, Register8::C> },
+	/* EA */ { &CPU::SET_r_m1<5, Register8::D> },
+	/* EB */ { &CPU::SET_r_m1<5, Register8::E> },
+	/* EC */ { &CPU::SET_r_m1<5, Register8::H> },
+	/* ED */ { &CPU::SET_r_m1<5, Register8::L> },
+	/* EE */ { &CPU::SET_arr_m1<5, Register16::HL>, &CPU::SET_arr_m2<5, Register16::HL>, &CPU::SET_arr_m3<5, Register16::HL> },
+	/* EF */ { &CPU::SET_r_m1<5, Register8::A> },
+	/* F0 */ { &CPU::SET_r_m1<6, Register8::B> },
+	/* F1 */ { &CPU::SET_r_m1<6, Register8::C> },
+	/* F2 */ { &CPU::SET_r_m1<6, Register8::D> },
+	/* F3 */ { &CPU::SET_r_m1<6, Register8::E> },
+	/* F4 */ { &CPU::SET_r_m1<6, Register8::H> },
+	/* F5 */ { &CPU::SET_r_m1<6, Register8::L> },
+	/* F6 */ { &CPU::SET_arr_m1<6, Register16::HL>, &CPU::SET_arr_m2<6, Register16::HL>, &CPU::SET_arr_m3<6, Register16::HL> },
+	/* F7 */ { &CPU::SET_r_m1<6, Register8::A> },
+	/* F8 */ { &CPU::SET_r_m1<7, Register8::B> },
+	/* F9 */ { &CPU::SET_r_m1<7, Register8::C> },
+	/* FA */ { &CPU::SET_r_m1<7, Register8::D> },
+	/* FB */ { &CPU::SET_r_m1<7, Register8::E> },
+	/* FC */ { &CPU::SET_r_m1<7, Register8::H> },
+	/* FD */ { &CPU::SET_r_m1<7, Register8::L> },
+	/* FE */ { &CPU::SET_arr_m1<7, Register16::HL>, &CPU::SET_arr_m2<7, Register16::HL>, &CPU::SET_arr_m3<7, Register16::HL> },
+	/* FF */ { &CPU::SET_r_m1<7, Register8::A> }
 } {
 
 }
@@ -2364,6 +2364,129 @@ void CPU::SLA_arr_m3() {
     fetch();
 }
 
+// e.g. CB 30 | SWAP B
+
+template<CPU::Register8 r>
+void CPU::SWAP_r_m1() {
+    u = readRegister8<r>();
+    u = ((u & 0x0F) << 4) | ((u & 0xF0) >> 4);
+    writeRegister8<r>(u);
+    writeFlag<Flag::Z>(u == 0);
+    writeFlag<Flag::N>(false);
+    writeFlag<Flag::H>(false);
+    writeFlag<Flag::C>(false);
+    fetch();
+}
+
+// e.g. CB 36 | SWAP (HL)
+
+template<CPU::Register16 rr>
+void CPU::SWAP_arr_m1() {
+    addr = readRegister16<rr>();
+    u = bus.read(addr);
+}
+
+template<CPU::Register16 rr>
+void CPU::SWAP_arr_m2() {
+    u = ((u & 0x0F) << 4) | ((u & 0xF0) >> 4);
+    bus.write(addr, u);
+    writeFlag<Flag::Z>(u == 0);
+    writeFlag<Flag::N>(false);
+    writeFlag<Flag::H>(false);
+    writeFlag<Flag::C>(false);
+}
+
+template<CPU::Register16 rr>
+void CPU::SWAP_arr_m3() {
+    fetch();
+}
+
+// e.g. CB 40 | BIT 0,B
+
+template<uint8_t n, CPU::Register8 r>
+void CPU::BIT_r_m1() {
+    writeFlag<Flag::Z>(get_bit<n>(readRegister8<r>()) == 0);
+    writeFlag<Flag::N>(false);
+    writeFlag<Flag::H>(false);
+    fetch();
+}
+
+// e.g. CB 46 | BIT 0,(HL)
+
+template<uint8_t n, CPU::Register16 rr>
+void CPU::BIT_arr_m1() {
+    addr = readRegister16<rr>();
+    u = bus.read(addr);
+}
+
+template<uint8_t n, CPU::Register16 rr>
+void CPU::BIT_arr_m2() {
+    b = get_bit<n>(u) == 0;
+    writeFlag<Flag::Z>(b == 0);
+    writeFlag<Flag::N>(false);
+    writeFlag<Flag::H>(false);
+    fetch();
+}
+
+// e.g. CB 80 | RES 0,B
+
+template<uint8_t n, CPU::Register8 r>
+void CPU::RES_r_m1() {
+    u = readRegister8<r>();
+    set_bit<n>(u, false);
+    writeRegister8<r>(u);
+    fetch();
+}
+
+// e.g. CB 86 | RES 0,(HL)
+
+template<uint8_t n, CPU::Register16 rr>
+void CPU::RES_arr_m1() {
+    addr = readRegister16<rr>();
+    u = bus.read(addr);
+}
+
+template<uint8_t n, CPU::Register16 rr>
+void CPU::RES_arr_m2() {
+    set_bit<n>(u, false);
+    bus.write(addr, u);
+}
+
+template<uint8_t n, CPU::Register16 rr>
+void CPU::RES_arr_m3() {
+    fetch();
+}
+
+
+// e.g. CB C0 | SET 0,B
+
+template<uint8_t n, CPU::Register8 r>
+void CPU::SET_r_m1() {
+    u = readRegister8<r>();
+    set_bit<n>(u, true);
+    writeRegister8<r>(u);
+    fetch();
+}
+
+// e.g. CB C6 | SET 0,(HL)
+
+template<uint8_t n, CPU::Register16 rr>
+void CPU::SET_arr_m1() {
+    addr = readRegister16<rr>();
+    u = bus.read(addr);
+}
+
+template<uint8_t n, CPU::Register16 rr>
+void CPU::SET_arr_m2() {
+    set_bit<n>(u, true);
+    bus.write(addr, u);
+}
+
+template<uint8_t n, CPU::Register16 rr>
+void CPU::SET_arr_m3() {
+    fetch();
+}
+
 
 // ----
 
@@ -2398,3 +2521,4 @@ uint8_t CPU::getCurrentInstructionOpcode() const {
 uint8_t CPU::getCurrentInstructionMicroOperation() const {
     return currentInstruction.microop;
 }
+

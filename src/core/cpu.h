@@ -82,6 +82,7 @@ private:
     } currentInstruction;
 
     union {
+        bool b;
         uint8_t u;
         uint8_t u1;
         uint8_t lsb;
@@ -561,6 +562,44 @@ private:
     void SRL_arr_m2();
     template<Register16 rr>
     void SRL_arr_m3();
+
+    template<Register8 r>
+    void SWAP_r_m1();
+
+    template<Register16 rr>
+    void SWAP_arr_m1();
+    template<Register16 rr>
+    void SWAP_arr_m2();
+    template<Register16 rr>
+    void SWAP_arr_m3();
+
+    template<uint8_t n, Register8 r>
+    void BIT_r_m1();
+
+    template<uint8_t n, Register16 r>
+    void BIT_arr_m1();
+    template<uint8_t n, Register16 r>
+    void BIT_arr_m2();
+
+    template<uint8_t n, Register8 r>
+    void RES_r_m1();
+
+    template<uint8_t n, Register16 r>
+    void RES_arr_m1();
+    template<uint8_t n, Register16 r>
+    void RES_arr_m2();
+    template<uint8_t n, Register16 r>
+    void RES_arr_m3();
+
+    template<uint8_t n, Register8 r>
+    void SET_r_m1();
+
+    template<uint8_t n, Register16 r>
+    void SET_arr_m1();
+    template<uint8_t n, Register16 r>
+    void SET_arr_m2();
+    template<uint8_t n, Register16 r>
+    void SET_arr_m3();
 };
 
 #endif // CPU_H
