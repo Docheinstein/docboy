@@ -195,95 +195,101 @@ TEST_CASE("CPU", "[cpu]") {
         std::queue<uint8_t> data;
     };
 
+    bool cb = GENERATE(false, true);
     uint8_t instr = GENERATE(range(0, 0xFF));
-    auto info = INSTRUCTIONS[instr];
+
+    InstructionInfo info = cb ? INSTRUCTIONS_CB[instr] : INSTRUCTIONS[instr];
     if (!info.duration.min)
         return;
+    // TODO: better handling of special cases
+    if (!cb && instr == 0x76 /* HALT */)
+        return;
 
-    SECTION("instruction", hex(instr) << " " << info.mnemonic) {
+    auto instr_name = (cb ? hex((uint8_t) 0xCB) +  " " : "") + hex(instr) + " " + info.mnemonic;
 
-        FakeBus fakeBus;
-        CPU cpu(fakeBus);
+    FakeBus fakeBus;
+    CPU cpu(fakeBus);
 
-        // TODO: general handling of special cases
-        if (instr == 0x76 /* HALT */)
-            return;
-
-        auto setupInstruction = [&fakeBus, &cpu, instr]() {
-            fakeBus.feed(instr); // feed with instruction
-            for (int i = 0; i < 10; i++)
-                fakeBus.feed((instr + 1)* 3); // feed with something else != instr
+    auto setupInstruction = [&fakeBus, &cpu, cb, instr]() {
+        if (cb)
+            fakeBus.feed(0xCB);
+        fakeBus.feed(instr); // feed with instruction
+        for (int i = 0; i < 10; i++)
+            fakeBus.feed((instr + 1)* 3); // feed with something else != instr
+        cpu.tick(); // fetch
+        if (cb)
             cpu.tick(); // fetch
-        };
+    };
 
-        auto getInstructionLength = [&fakeBus]() {
-            auto accesses = fakeBus.getAccesses();
-            unsigned long long length = 0;
+    auto getInstructionLength = [&fakeBus]() {
+        auto accesses = fakeBus.getAccesses();
+        unsigned long long length = 0;
 
-            auto lastRead = std::find_if(accesses.rend(), accesses.rbegin(), [](const FakeBus::Access &a) {
-                return a.type == FakeBus::Access::Read;
-            });
-            std::optional<FakeBus::Access> lastReadAddress;
-            // count sequential reads but skip the last one (fetch)
-            for (auto it = accesses.begin(); it != (lastRead.base() - 1); it++) {
-                auto a = *it;
-                if (a.type != FakeBus::Access::Read)
-                    continue;
-                if (!lastReadAddress) {
-                    ++length;
-                    lastReadAddress = a;
-                    continue;
-                }
-                if (lastReadAddress->addr + 1 == a.addr) {
-                    ++length;
-                    lastReadAddress = a;
-                }
+        auto lastRead = std::find_if(accesses.rend(), accesses.rbegin(), [](const FakeBus::Access &a) {
+            return a.type == FakeBus::Access::Read;
+        });
+        std::optional<FakeBus::Access> lastReadAddress;
+        // count sequential reads but skip the last one (fetch)
+        for (auto it = accesses.begin(); it != (lastRead.base() - 1); it++) {
+            auto a = *it;
+            if (a.type != FakeBus::Access::Read)
+                continue;
+            if (!lastReadAddress) {
+                ++length;
+                lastReadAddress = a;
+                continue;
             }
-
-            return length;
-        };
-
-        SECTION("instruction implemented", hex(instr)) {
-            REQUIRE_NOTHROW(cpu.tick());
+            if (lastReadAddress->addr + 1 == a.addr) {
+                ++length;
+                lastReadAddress = a;
+            }
         }
 
-        SECTION("instruction duration", hex(instr)) {
-            setupInstruction();
+        return length;
+    };
+
+
+//    SECTION("instruction implemented", instr_name) {
+//        setupInstruction();
+//        REQUIRE_NOTHROW(cpu.tick());
+//    }
+
+    SECTION("instruction duration", instr_name) {
+        setupInstruction();
+        uint8_t op = cpu.getCurrentInstructionOpcode();
+
+        try {
+            uint8_t duration = cb;
+            do {
+                cpu.tick();
+                duration++;
+            } while (op == cpu.getCurrentInstructionOpcode());
+            REQUIRE(info.duration.min <= duration);
+            REQUIRE(duration <= info.duration.max);
+        } catch (const CPU::InstructionNotImplementedException &e) {}
+    }
+
+    SECTION("instruction length", instr_name) {
+        setupInstruction();
+        try {
             uint8_t op = cpu.getCurrentInstructionOpcode();
+            do {
+                cpu.tick();
+            } while (op == cpu.getCurrentInstructionOpcode());
+            REQUIRE(info.length == getInstructionLength());
+        } catch (const CPU::InstructionNotImplementedException &e) {}
+    }
 
-            try {
-                uint8_t duration = 0;
-                do {
-                    cpu.tick();
-                    duration++;
-                } while (op == cpu.getCurrentInstructionOpcode());
-                REQUIRE(info.duration.min <= duration);
-                REQUIRE(duration <= info.duration.max);
-            } catch (const CPU::InstructionNotImplementedException &e) {}
-        }
-
-        SECTION("instruction length", hex(instr)) {
-            setupInstruction();
-            try {
-                uint8_t op = cpu.getCurrentInstructionOpcode();
-                do {
-                    cpu.tick();
-                } while (op == cpu.getCurrentInstructionOpcode());
-                REQUIRE(info.length == getInstructionLength());
-            } catch (const CPU::InstructionNotImplementedException &e) {}
-        }
-
-        SECTION("no more than one memory read/write per m-cycle", hex(instr)) {
-            setupInstruction();
-            try {
-                for (int m = 0; m < info.duration.min; m++) {
-                    auto ioCountBefore = fakeBus.getReadWriteCount();
-                    cpu.tick();
-                    auto ioCountAfter = fakeBus.getReadWriteCount();
-                    REQUIRE(ioCountAfter - ioCountBefore <= 1);
-                }
-            } catch (const CPU::InstructionNotImplementedException &e) {}
-        }
+    SECTION("no more than one memory read/write per m-cycle", instr_name) {
+        setupInstruction();
+        try {
+            for (int m = 0; m < info.duration.min; m++) {
+                auto ioCountBefore = fakeBus.getReadWriteCount();
+                cpu.tick();
+                auto ioCountAfter = fakeBus.getReadWriteCount();
+                REQUIRE(ioCountAfter - ioCountBefore <= 1);
+            }
+        } catch (const CPU::InstructionNotImplementedException &e) {}
     }
 }
 

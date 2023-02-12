@@ -76,16 +76,29 @@ private:
     uint64_t mCycles;
 
     struct {
+        bool CB;
         uint8_t opcode;
         uint8_t microop;
     } currentInstruction;
 
-    uint8_t u1;
-    uint8_t u2;
-    uint16_t uu1;
+    union {
+        uint8_t u;
+        uint8_t u1;
+        uint8_t lsb;
+    };
+    union {
+        uint8_t u2;
+        uint8_t msb;
+    };
+    union {
+        uint16_t uu;
+        uint16_t uu1;
+        uint16_t addr;
+    };
 
     typedef void (CPU::*InstructionMicroOperation)();
     InstructionMicroOperation instructions[256][6];
+    InstructionMicroOperation instructionsCB[256][4];
 
     [[nodiscard]] std::string status() const;
 
@@ -112,7 +125,7 @@ private:
 
     void invalidInstruction();
     void instructionNotImplemented();
-    void fetch();
+    void fetch(bool cbInstruction = false);
 
     /*
      * r: 8 bit register
@@ -393,13 +406,6 @@ private:
     template<Flag ...fs>
     void JR_c_n_m3();
 
-//    template<Flag f1, Flag f2>
-//    void JR_cc_n_m1();
-//    template<Flag f1, Flag f2>
-//    void JR_cc_n_m2();
-//    template<Flag f1, Flag f2>
-//    void JR_cc_n_m3();
-
     void JP_nn_m1();
     void JP_nn_m2();
     void JP_nn_m3();
@@ -484,6 +490,77 @@ private:
     void POP_rr_m3();
 
     void CB_m1();
+
+    template<Register8 r>
+    void RLC_r_m1();
+
+    template<Register16 rr>
+    void RLC_arr_m1();
+    template<Register16 rr>
+    void RLC_arr_m2();
+    template<Register16 rr>
+    void RLC_arr_m3();
+
+    template<Register8 r>
+    void RRC_r_m1();
+
+    template<Register16 rr>
+    void RRC_arr_m1();
+    template<Register16 rr>
+    void RRC_arr_m2();
+    template<Register16 rr>
+    void RRC_arr_m3();
+
+
+    template<Register8 r>
+    void RL_r_m1();
+
+    template<Register16 rr>
+    void RL_arr_m1();
+    template<Register16 rr>
+    void RL_arr_m2();
+    template<Register16 rr>
+    void RL_arr_m3();
+
+    template<Register8 r>
+    void RR_r_m1();
+
+    template<Register16 rr>
+    void RR_arr_m1();
+    template<Register16 rr>
+    void RR_arr_m2();
+    template<Register16 rr>
+    void RR_arr_m3();
+
+    template<Register8 r>
+    void SLA_r_m1();
+
+    template<Register16 rr>
+    void SLA_arr_m1();
+    template<Register16 rr>
+    void SLA_arr_m2();
+    template<Register16 rr>
+    void SLA_arr_m3();
+
+    template<Register8 r>
+    void SRA_r_m1();
+
+    template<Register16 rr>
+    void SRA_arr_m1();
+    template<Register16 rr>
+    void SRA_arr_m2();
+    template<Register16 rr>
+    void SRA_arr_m3();
+
+    template<Register8 r>
+    void SRL_r_m1();
+
+    template<Register16 rr>
+    void SRL_arr_m1();
+    template<Register16 rr>
+    void SRL_arr_m2();
+    template<Register16 rr>
+    void SRL_arr_m3();
 };
 
 #endif // CPU_H
