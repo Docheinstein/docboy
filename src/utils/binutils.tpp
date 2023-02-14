@@ -5,7 +5,7 @@ uint8_t get_byte(T value) {
 
 template<uint8_t n, typename T>
 void set_byte(T &dest, uint8_t value) {
-    dest &= ((uint8_t) 0) << (8 * n);
+    dest &= (T) (~(((T) (0xFF)) << (8 * n)));
     dest |= (value << (8 * n));
 }
 

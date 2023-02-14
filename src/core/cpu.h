@@ -29,6 +29,7 @@ public:
     [[nodiscard]] uint16_t getHL() const;
     [[nodiscard]] uint16_t getPC() const;
     [[nodiscard]] uint16_t getSP() const;
+    [[nodiscard]] uint16_t getCurrentInstructionAddress() const;
     [[nodiscard]] uint8_t getCurrentInstructionOpcode() const;
     [[nodiscard]] uint8_t getCurrentInstructionMicroOperation() const;
 
@@ -77,6 +78,7 @@ private:
 
     struct {
         bool CB;
+        uint16_t address;
         uint8_t opcode;
         uint8_t microop;
     } currentInstruction;
@@ -86,10 +88,13 @@ private:
         uint8_t u;
         uint8_t u1;
         uint8_t lsb;
+        int8_t s;
+        int8_t s1;
     };
     union {
         uint8_t u2;
         uint8_t msb;
+        int8_t s2;
     };
     union {
         uint16_t uu;
@@ -117,9 +122,8 @@ private:
 
     template<Flag f>
     [[nodiscard]] bool readFlag() const;
-
-    template<Flag f, Flag...>
-    [[nodiscard]] bool readFlags() const;
+    template<Flag f, bool y = true>
+    [[nodiscard]] bool checkFlag() const;
 
     template<Flag f>
     void writeFlag(bool value);
@@ -146,18 +150,18 @@ private:
     void EI_m1();
 
     template<Register16 rr>
-    void LD_rr_nn_m1();
+    void LD_rr_uu_m1();
     template<Register16 rr>
-    void LD_rr_nn_m2();
+    void LD_rr_uu_m2();
     template<Register16 rr>
-    void LD_rr_nn_m3();
+    void LD_rr_uu_m3();
 
     template<Register16 rr>
-    void LD_arr_n_m1();
+    void LD_arr_u_m1();
     template<Register16 rr>
-    void LD_arr_n_m2();
+    void LD_arr_u_m2();
     template<Register16 rr>
-    void LD_arr_n_m3();
+    void LD_arr_u_m3();
 
     template<Register16 rr, Register8 r>
     void LD_arr_r_m1();
@@ -170,9 +174,9 @@ private:
     void LD_arr_r_m2();
 
     template<Register8 r>
-    void LD_r_n_m1();
+    void LD_r_u_m1();
     template<Register8 r>
-    void LD_r_n_m2();
+    void LD_r_u_m2();
 
     template<Register16 rr>
     void LD_ann_rr_m1();
@@ -246,11 +250,11 @@ private:
     void LD_rr_rr_m2();
 
     template<Register16 rr1, Register16 rr2>
-    void LD_rr_rrn_m1();
+    void LD_rr_rrs_m1();
     template<Register16 rr1, Register16 rr2>
-    void LD_rr_rrn_m2();
+    void LD_rr_rrs_m2();
     template<Register16 rr1, Register16 rr2>
-    void LD_rr_rrn_m3();
+    void LD_rr_rrs_m3();
 
     template<Register8 r>
     void INC_r_m1();
@@ -304,19 +308,19 @@ private:
     void ADD_rr_rr_m2();
 
     template<Register16 rr>
-    void ADD_rr_n_m1();
+    void ADD_rr_s_m1();
     template<Register16 rr>
-    void ADD_rr_n_m2();
+    void ADD_rr_s_m2();
     template<Register16 rr>
-    void ADD_rr_n_m3();
+    void ADD_rr_s_m3();
     template<Register16 rr>
-    void ADD_rr_n_m4();
+    void ADD_rr_s_m4();
 
-    void ADD_n_m1();
-    void ADD_n_m2();
+    void ADD_u_m1();
+    void ADD_u_m2();
 
-    void ADC_n_m1();
-    void ADC_n_m2();
+    void ADC_u_m1();
+    void ADC_u_m2();
 
     template<Register8 r>
     void SUB_r_m1();
@@ -334,11 +338,11 @@ private:
     template<Register16 r2>
     void SBC_arr_m2();
 
-    void SUB_n_m1();
-    void SUB_n_m2();
+    void SUB_u_m1();
+    void SUB_u_m2();
 
-    void SBC_n_m1();
-    void SBC_n_m2();
+    void SBC_u_m1();
+    void SBC_u_m2();
 
     template<Register8 r>
     void AND_r_m1();
@@ -348,8 +352,8 @@ private:
     template<Register16 rr>
     void AND_arr_m2();
 
-    void AND_n_m1();
-    void AND_n_m2();
+    void AND_u_m1();
+    void AND_u_m2();
 
     template<Register8 r>
     void OR_r_m1();
@@ -359,8 +363,8 @@ private:
     template<Register16 rr>
     void OR_arr_m2();
 
-    void OR_n_m1();
-    void OR_n_m2();
+    void OR_u_m1();
+    void OR_u_m2();
 
     template<Register8 r>
     void XOR_r_m1();
@@ -370,8 +374,8 @@ private:
     template<Register16 rr>
     void XOR_arr_m2();
 
-    void XOR_n_m1();
-    void XOR_n_m2();
+    void XOR_u_m1();
+    void XOR_u_m2();
 
     template<Register8 r>
     void CP_r_m1();
@@ -381,8 +385,8 @@ private:
     template<Register16 rr>
     void CP_arr_m2();
 
-    void CP_n_m1();
-    void CP_n_m2();
+    void CP_u_m1();
+    void CP_u_m2();
 
     void DAA_m1();
     void SCF_m1();
@@ -396,53 +400,53 @@ private:
     void RRCA_m1();
     void RRA_m1();
 
-    void JR_n_m1();
-    void JR_n_m2();
-    void JR_n_m3();
+    void JR_s_m1();
+    void JR_s_m2();
+    void JR_s_m3();
 
-    template<Flag ...fs>
-    void JR_c_n_m1();
-    template<Flag ...fs>
-    void JR_c_n_m2();
-    template<Flag ...fs>
-    void JR_c_n_m3();
+    template<Flag f, bool y = true>
+    void JR_c_s_m1();
+    template<Flag f, bool y = true>
+    void JR_c_s_m2();
+    template<Flag f, bool y = true>
+    void JR_c_s_m3();
 
-    void JP_nn_m1();
-    void JP_nn_m2();
-    void JP_nn_m3();
-    void JP_nn_m4();
+    void JP_uu_m1();
+    void JP_uu_m2();
+    void JP_uu_m3();
+    void JP_uu_m4();
 
     template<Register16>
     void JP_rr_m1();
 
-    template<Flag ...fs>
-    void JP_c_nn_m1();
-    template<Flag ...fs>
-    void JP_c_nn_m2();
-    template<Flag ...fs>
-    void JP_c_nn_m3();
-    template<Flag ...fs>
-    void JP_c_nn_m4();
+    template<Flag f, bool y = true>
+    void JP_c_uu_m1();
+    template<Flag f, bool y = true>
+    void JP_c_uu_m2();
+    template<Flag f, bool y = true>
+    void JP_c_uu_m3();
+    template<Flag f, bool y = true>
+    void JP_c_uu_m4();
 
-    void CALL_nn_m1();
-    void CALL_nn_m2();
-    void CALL_nn_m3();
-    void CALL_nn_m4();
-    void CALL_nn_m5();
-    void CALL_nn_m6();
+    void CALL_uu_m1();
+    void CALL_uu_m2();
+    void CALL_uu_m3();
+    void CALL_uu_m4();
+    void CALL_uu_m5();
+    void CALL_uu_m6();
 
-    template<Flag ...fs>
-    void CALL_c_nn_m1();
-    template<Flag ...fs>
-    void CALL_c_nn_m2();
-    template<Flag ...fs>
-    void CALL_c_nn_m3();
-    template<Flag ...fs>
-    void CALL_c_nn_m4();
-    template<Flag ...fs>
-    void CALL_c_nn_m5();
-    template<Flag ...fs>
-    void CALL_c_nn_m6();
+    template<Flag f, bool y = true>
+    void CALL_c_uu_m1();
+    template<Flag f, bool y = true>
+    void CALL_c_uu_m2();
+    template<Flag f, bool y = true>
+    void CALL_c_uu_m3();
+    template<Flag f, bool y = true>
+    void CALL_c_uu_m4();
+    template<Flag f, bool y = true>
+    void CALL_c_uu_m5();
+    template<Flag f, bool y = true>
+    void CALL_c_uu_m6();
 
     template<uint8_t n>
     void RST_m1();
@@ -453,26 +457,26 @@ private:
     template<uint8_t n>
     void RST_m4();
 
-    void RET_nn_m1();
-    void RET_nn_m2();
-    void RET_nn_m3();
-    void RET_nn_m4();
+    void RET_uu_m1();
+    void RET_uu_m2();
+    void RET_uu_m3();
+    void RET_uu_m4();
 
-    void RETI_nn_m1();
-    void RETI_nn_m2();
-    void RETI_nn_m3();
-    void RETI_nn_m4();
+    void RETI_uu_m1();
+    void RETI_uu_m2();
+    void RETI_uu_m3();
+    void RETI_uu_m4();
 
-    template<Flag ...fs>
-    void RET_c_nn_m1();
-    template<Flag ...fs>
-    void RET_c_nn_m2();
-    template<Flag ...fs>
-    void RET_c_nn_m3();
-    template<Flag ...fs>
-    void RET_c_nn_m4();
-    template<Flag ...fs>
-    void RET_c_nn_m5();
+    template<Flag f, bool y = true>
+    void RET_c_uu_m1();
+    template<Flag f, bool y = true>
+    void RET_c_uu_m2();
+    template<Flag f, bool y = true>
+    void RET_c_uu_m3();
+    template<Flag f, bool y = true>
+    void RET_c_uu_m4();
+    template<Flag f, bool y = true>
+    void RET_c_uu_m5();
 
     template<Register16 rr>
     void PUSH_rr_m1();

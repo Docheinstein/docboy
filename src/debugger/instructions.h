@@ -1,11 +1,12 @@
 #ifndef INSTRUCTIONS_H
-#define DEFINITIONS_H
+#define INSTRUCTIONS_H
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 struct InstructionInfo {
-    std::string mnemonic;
+    const char *mnemonic;
     uint8_t length;
     struct {
         uint8_t min;
@@ -39,7 +40,7 @@ static InstructionInfo INSTRUCTIONS[256] = {
 	/* 15 */ { "DEC D", 1, 1, 1 },
 	/* 16 */ { "LD D,$%02X", 2, 2, 2 },
 	/* 17 */ { "RLA", 1, 1, 1 },
-	/* 18 */ { "JR $%04X  [%+d]", 2, 3, 3 },
+	/* 18 */ { "JR $%d", 2, 3, 3 },
 	/* 19 */ { "ADD HL,DE", 1, 2, 2 },
 	/* 1A */ { "LD A,(DE)", 1, 2, 2 },
 	/* 1B */ { "DEC DE", 1, 2, 2 },
@@ -47,7 +48,7 @@ static InstructionInfo INSTRUCTIONS[256] = {
 	/* 1D */ { "DEC E", 1, 1, 1 },
 	/* 1E */ { "LD E,$%02X", 2, 2, 2 },
 	/* 1F */ { "RRA", 1, 1, 1 },
-	/* 20 */ { "JR NZ,$%04X  [%+d]", 2, 2, 3 },
+	/* 20 */ { "JR $%d", 2, 2, 3 },
 	/* 21 */ { "LD HL,$%04X", 3, 3, 3 },
 	/* 22 */ { "LD (HL+),A", 1, 2, 2 },
 	/* 23 */ { "INC HL", 1, 2, 2 },
@@ -55,7 +56,7 @@ static InstructionInfo INSTRUCTIONS[256] = {
 	/* 25 */ { "DEC H", 1, 1, 1 },
 	/* 26 */ { "LD H,$%02X", 2, 2, 2 },
 	/* 27 */ { "DAA", 1, 1, 1 },
-	/* 28 */ { "JR Z,$%04X  [%+d]", 2, 2, 3 },
+	/* 28 */ { "JR Z,$%d", 2, 2, 3 },
 	/* 29 */ { "ADD HL,HL", 1, 2, 2 },
 	/* 2A */ { "LD A,(HL+)", 1, 2, 2 },
 	/* 2B */ { "DEC HL", 1, 2, 2 },
@@ -63,7 +64,7 @@ static InstructionInfo INSTRUCTIONS[256] = {
 	/* 2D */ { "DEC L", 1, 1, 1 },
 	/* 2E */ { "LD L,$%02X", 2, 2, 2 },
 	/* 2F */ { "CPL", 1, 1, 1 },
-	/* 30 */ { "JR NC,$%04X  [%+d]", 2, 2, 3 },
+	/* 30 */ { "JR NC,$%d", 2, 2, 3 },
 	/* 31 */ { "LD SP,$%04X", 3, 3, 3 },
 	/* 32 */ { "LD (HL-),A", 1, 2, 2 },
 	/* 33 */ { "INC SP", 1, 2, 2 },
@@ -239,7 +240,7 @@ static InstructionInfo INSTRUCTIONS[256] = {
 	/* DD */ { "[UNUSED]", 1, 0, 0 },
 	/* DE */ { "SBC A,$%02X", 2, 2, 2 },
 	/* DF */ { "RST $18", 1, 4, 4 },
-	/* E0 */ { "LD ($FF00+$%02X),A  [%s]", 2, 3, 3 },
+	/* E0 */ { "LD ($FF00+$%02X),A", 2, 3, 3 },
 	/* E1 */ { "POP HL", 1, 3, 3 },
 	/* E2 */ { "LD ($FF00+C),A", 1, 2, 2 },
 	/* E3 */ { "[UNUSED]", 1, 0, 0 },
@@ -247,7 +248,7 @@ static InstructionInfo INSTRUCTIONS[256] = {
 	/* E5 */ { "PUSH HL", 1, 4, 4 },
 	/* E6 */ { "AND $%02X", 2, 2, 2 },
 	/* E7 */ { "RST $20", 1, 4, 4 },
-	/* E8 */ { "ADD SP,%+d", 2, 4, 4 },
+	/* E8 */ { "ADD SP,$%d", 2, 4, 4 },
 	/* E9 */ { "JP (HL)", 1, 1, 1 },
 	/* EA */ { "LD ($%04X),A", 3, 4, 4 },
 	/* EB */ { "[UNUSED]", 1, 0, 0 },
@@ -255,7 +256,7 @@ static InstructionInfo INSTRUCTIONS[256] = {
 	/* ED */ { "[UNUSED]", 1, 0, 0 },
 	/* EE */ { "XOR $%02X", 2, 2, 2 },
 	/* EF */ { "RST $28", 1, 4, 4 },
-	/* F0 */ { "LD A,($FF00+$%02X)  [%s]", 2, 3, 3 },
+	/* F0 */ { "LD A,($FF00+$%02X)", 2, 3, 3 },
 	/* F1 */ { "POP AF", 1, 3, 3 },
 	/* F2 */ { "LD A,($FF00+C)", 1, 2, 2 },
 	/* F3 */ { "DI", 1, 1, 1 },
@@ -531,5 +532,7 @@ static InstructionInfo INSTRUCTIONS_CB[256] = {
 	/* FE */ { "SET 7 (HL)", 2, 4, 4 },
 	/* FF */ { "SET 7 A", 2, 2, 2 },
 };
+
+std::string instruction_to_string(std::vector<uint8_t> instruction);
 
 #endif // INSTRUCTIONS_H

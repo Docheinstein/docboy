@@ -80,6 +80,10 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(get_byte<0>(AF) == 0);
         REQUIRE(get_byte<1>(AF) == 1);
         REQUIRE(AF == 256);
+
+        set_byte<0>(AF, 3);
+        set_byte<1>(AF, 4);
+        REQUIRE(AF == 0x0403);
     }
 
     SECTION("concat bytes") {
@@ -319,6 +323,16 @@ TEST_CASE("Cartridge", "[cartridge]") {
 }
 
 int main(int argc, char* argv[]) {
+//    uint16_t mask = (uint16_t) ~((uint16_t) 0xFF00);
+//    std::cout << hex(mask) << std::endl;
+//    exit(0);
+//    uint16_t uu = 0xFFFF;
+//    uu &= ~(0xF << (8));
+//    std::cout << hex<uint16_t>(0xF) << std::endl;
+//    std::cout << hex<uint16_t>(0xF << (8)) << std::endl;
+//    std::cout << hex<uint16_t>(~(0xF << (8))) << std::endl;
+//    std::cout << hex(uu) << std::endl;
+
     Catch::Session session;
     session.applyCommandLine(argc, argv);
     return session.run();

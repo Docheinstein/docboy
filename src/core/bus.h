@@ -3,7 +3,7 @@
 
 
 class Cartridge;
-class Memory;
+class IMemory;
 
 #include <cstdint>
 #include <type_traits>
@@ -17,7 +17,7 @@ public:
 
 class Bus : public IBus {
 public:
-    Bus(Cartridge &cartridge, Memory &memory);
+    Bus(Cartridge &cartridge, IMemory &wram1, IMemory &wram2);
     ~Bus() override;
 
     [[nodiscard]]
@@ -27,7 +27,8 @@ public:
 
 private:
     Cartridge &cartridge;
-    Memory &memory;
+    IMemory &wram1;
+    IMemory &wram2;
 };
 
 

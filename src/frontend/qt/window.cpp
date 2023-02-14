@@ -1,5 +1,5 @@
 #include "window.h"
-#include "ui_mainwindow.h"
+#include "ui_window.h"
 #include "log/log.h"
 #include "core/gible.h"
 #include <QFileDialog>
