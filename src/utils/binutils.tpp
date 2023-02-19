@@ -29,12 +29,25 @@ uint64_t bitmask() {
 template<uint8_t b, typename T1, typename T2>
 bool sum_get_carry_bit(T1 v1, T2 v2) {
     uint64_t mask = bitmask<b + 1>();
-    return (((uint64_t) v1 ) & mask) + (((uint64_t) v2) & mask) & (1 << (b + 1));
+
+
+    if (v2 > 0) {
+        uint64_t vm1 = (((uint64_t) v1) & mask);
+        uint64_t vm2 = (((uint64_t) v2) & mask);
+        uint64_t result = vm1 + vm2;
+        return get_bit<b + 1>(result);
+    } else {
+        v2 = v2 < 0 ? -v2 : v2;
+        uint64_t vm1 = (((uint64_t) v1) & mask);
+        uint64_t vm2 = (((uint64_t) v2) & mask);
+        return vm2 > vm1;
+    }
+
 }
 
 template<uint8_t b, typename T1, typename T2>
-std::tuple<uint64_t, bool> sum_carry(T1 v1, T2 v2) {
-    uint64_t result = v1 + v2;
+std::tuple<T1, bool> sum_carry(T1 v1, T2 v2) {
+    T1 result = v1 + v2;
     return std::make_tuple(
             result,
             sum_get_carry_bit<b>(v1, v2)
@@ -42,8 +55,8 @@ std::tuple<uint64_t, bool> sum_carry(T1 v1, T2 v2) {
 }
 
 template<uint8_t b1, uint8_t b2, typename T1, typename T2>
-std::tuple<uint64_t, bool, bool> sum_carry(T1 v1, T2 v2) {
-    uint64_t result = v1 + v2;
+std::tuple<T1, bool, bool> sum_carry(T1 v1, T2 v2) {
+   T1 result = v1 + v2;
     return std::make_tuple(
             result,
             sum_get_carry_bit<b1>(v1, v2),
@@ -91,25 +104,53 @@ std::string hex(const T *data, size_t length) {
 }
 
 template<typename T>
-std::string hexdump(const T *data, size_t length, int columns) {
+std::string hexdump(const T *data, size_t length, bool addr, bool ascii, int columns) {
     std::stringstream ss;
-    for (size_t i = 0; i < length; i++) {
-        if (i % columns == 0)
-            ss << std::hex << std::setfill('0') << std::setw(8) << i << " | ";
-        hex(data[i], ss);
+    std::string asciistr;
+
+    size_t i;
+    for (i = 0; i < length; i++) {
+        if (addr) {
+            if (i % columns == 0)
+                ss << std::hex << std::setfill('0') << std::setw(8) << i << " | ";
+        }
+
+        auto c = data[i];
+        hex(c, ss);
+        if (ascii) {
+            asciistr += isprint(c) ? c : '.';
+        }
         if ((i + 1) % columns == 0) {
-            if ((i + 1) < length)
+            if (ascii) {
+                ss << " | " << asciistr;
+                asciistr = "";
+            }
+            if ((i + 1) < length) {
                 ss << std::endl;
+            }
         } else {
             ss << " ";
             if ((i + 1) % 8 == 0)
                 ss << " ";
         }
     }
+    if (ascii) {
+        i = i % columns;
+        while (i < columns) {
+            ss << " ";
+            if (i + 1 < columns)
+                ss << "  ";
+            if ((i + 1) % 8 == 0)
+                ss << " ";
+            ++i;
+        }
+        ss << " | " << asciistr;
+    }
+
     return ss.str();
 }
 
 template<typename T>
-std::string hexdump(const std::vector<T> &vec) {
-    return hexdump(vec.data(), vec.size() * sizeof(T));
+std::string hexdump(const std::vector<T> &vec, bool addr, bool ascii, int columns) {
+    return hexdump(vec.data(), vec.size() * sizeof(T), addr, ascii, columns);
 }

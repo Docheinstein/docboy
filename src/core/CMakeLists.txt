@@ -8,8 +8,14 @@ set(SOURCES
     definitions.h
     gible.h
     gible.cpp
+    io.h
+    io.cpp
     memory.h
     memory.cpp
+    serial.h
+    serial.cpp
+    serialconsole.h
+    serialconsole.cpp
 )
 
 add_library(core STATIC ${SOURCES})

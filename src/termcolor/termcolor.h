@@ -12,6 +12,12 @@ namespace termcolor {
     }
 
     template <uint8_t code, typename CharT>
+    std::basic_ostream<CharT> & on_color(std::basic_ostream<CharT> &os) {
+        os << "\033[48;5;" << +code << "m";
+        return os;
+    }
+
+    template <uint8_t code, typename CharT>
     std::basic_ostream<CharT> & attr(std::basic_ostream<CharT> &os) {
         os << "\033[" << +code << "m";
         return os;
@@ -68,42 +74,42 @@ namespace termcolor {
     }
 
     template <typename CharT>
-    std::basic_ostream<CharT> & bgblack(std::basic_ostream<CharT> &os) {
+    std::basic_ostream<CharT> & on_black(std::basic_ostream<CharT> &os) {
         return attr<40>(os);
     }
 
     template <typename CharT>
-    std::basic_ostream<CharT> & bgred(std::basic_ostream<CharT> &os) {
+    std::basic_ostream<CharT> & on_red(std::basic_ostream<CharT> &os) {
         return attr<41>(os);
     }
 
     template <typename CharT>
-    std::basic_ostream<CharT> & bggreen(std::basic_ostream<CharT> &os) {
+    std::basic_ostream<CharT> & on_green(std::basic_ostream<CharT> &os) {
         return attr<42>(os);
     }
 
     template <typename CharT>
-    std::basic_ostream<CharT> & bgyellow(std::basic_ostream<CharT> &os) {
+    std::basic_ostream<CharT> & on_yellow(std::basic_ostream<CharT> &os) {
         return attr<43>(os);
     }
 
     template <typename CharT>
-    std::basic_ostream<CharT> & bgblue(std::basic_ostream<CharT> &os) {
+    std::basic_ostream<CharT> & on_blue(std::basic_ostream<CharT> &os) {
         return attr<44>(os);
     }
 
     template <typename CharT>
-    std::basic_ostream<CharT> & bgmagenta(std::basic_ostream<CharT> &os) {
+    std::basic_ostream<CharT> & on_magenta(std::basic_ostream<CharT> &os) {
         return attr<45>(os);
     }
 
     template <typename CharT>
-    std::basic_ostream<CharT> & bgcyan(std::basic_ostream<CharT> &os) {
+    std::basic_ostream<CharT> & on_cyan(std::basic_ostream<CharT> &os) {
         return attr<46>(os);
     }
 
     template <typename CharT>
-    std::basic_ostream<CharT> & bgwhite(std::basic_ostream<CharT> &os) {
+    std::basic_ostream<CharT> & on_white(std::basic_ostream<CharT> &os) {
         return attr<47>(os);
     }
 }

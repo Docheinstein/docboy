@@ -10,11 +10,11 @@ void bin(uint16_t value, std::ostream &os) {
 }
 
 void hex(uint8_t value, std::ostream &os) {
-    os << std::hex << std::setfill('0') << std::setw(2) << +value;
+    os << std::uppercase << std::hex << std::setfill('0') << std::setw(2) << +value;
 }
 
 void hex(uint16_t value, std::ostream &os) {
-    os << std::hex << std::setfill('0') << std::setw(4) << value;
+    os << std::uppercase << std::hex << std::setfill('0') << std::setw(4) << value;
 }
 
 uint16_t concat_bytes(uint8_t msb, uint8_t lsb) {

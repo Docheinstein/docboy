@@ -1,7 +1,24 @@
+#include <optional>
 #include "instructions.h"
 #include "utils/binutils.h"
 
-std::string instruction_to_string(std::vector<uint8_t> instruction) {
+
+std::optional<InstructionInfo> instruction_info(const std::vector<uint8_t> &instruction) {
+    if (instruction.empty())
+        return std::nullopt;
+
+    uint8_t opcode = instruction[0];
+
+    if (opcode == 0xCB) {
+        if (instruction.size() < 2)
+            return std::nullopt;
+        return INSTRUCTIONS_CB[instruction[1]];
+    }
+
+    return INSTRUCTIONS[opcode];
+}
+
+std::string instruction_to_string(const std::vector<uint8_t> &instruction) {
     if (instruction.empty())
         return "[INVALID]";
     uint8_t opcode = instruction[0];

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <optional>
 
 struct InstructionInfo {
     const char *mnemonic;
@@ -48,7 +49,7 @@ static InstructionInfo INSTRUCTIONS[256] = {
 	/* 1D */ { "DEC E", 1, 1, 1 },
 	/* 1E */ { "LD E,$%02X", 2, 2, 2 },
 	/* 1F */ { "RRA", 1, 1, 1 },
-	/* 20 */ { "JR $%d", 2, 2, 3 },
+	/* 20 */ { "JR NZ,$%d", 2, 2, 3 },
 	/* 21 */ { "LD HL,$%04X", 3, 3, 3 },
 	/* 22 */ { "LD (HL+),A", 1, 2, 2 },
 	/* 23 */ { "INC HL", 1, 2, 2 },
@@ -72,7 +73,7 @@ static InstructionInfo INSTRUCTIONS[256] = {
 	/* 35 */ { "DEC (HL)", 1, 3, 3 },
 	/* 36 */ { "LD (HL),$%02X", 2, 3, 3 },
 	/* 37 */ { "SCF", 1, 1, 1 },
-	/* 38 */ { "JR C,$%04X  [%+d]", 2, 2, 3 },
+	/* 38 */ { "JR C,$%d", 2, 2, 3 },
 	/* 39 */ { "ADD HL,SP", 1, 2, 2 },
 	/* 3A */ { "LD A,(HL-)", 1, 2, 2 },
 	/* 3B */ { "DEC SP", 1, 2, 2 },
@@ -533,6 +534,7 @@ static InstructionInfo INSTRUCTIONS_CB[256] = {
 	/* FF */ { "SET 7 A", 2, 2, 2 },
 };
 
-std::string instruction_to_string(std::vector<uint8_t> instruction);
+std::string instruction_to_string(const std::vector<uint8_t> &instruction);
+std::optional<InstructionInfo> instruction_info(const std::vector<uint8_t> &instruction);
 
 #endif // INSTRUCTIONS_H

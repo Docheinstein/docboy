@@ -114,8 +114,11 @@ TEST_CASE("binutils", "[binutils]") {
     }
 
     SECTION("carry bit") {
-        uint8_t u1 = 3;
-        uint8_t u2 = 1;
+        int8_t s1;
+        uint8_t u1, u2;
+
+        u1 = 3;
+        u2 = 1;
         REQUIRE(sum_get_carry_bit<0>(u1, u2));
         REQUIRE(sum_get_carry_bit<1>(u1, u2));
         REQUIRE_FALSE(sum_get_carry_bit<2>(u1, u2));
@@ -133,6 +136,32 @@ TEST_CASE("binutils", "[binutils]") {
         uu1 = 0xFFFF;
         uu2 = 0xFFFF;
         REQUIRE(sum_get_carry_bit<7>(uu1, uu2));
+
+        u1 = 0xFF;
+        auto [result2, _1] = sum_carry<3>(u1, (uint8_t) 1);
+        REQUIRE(result2 == 0);
+
+        u1 = 4;
+        auto [result3, _2] = sum_carry<3>(u1, -1);
+        REQUIRE(result3 == 3);
+
+        u1 = 0;
+        s1 = -1;
+        auto [result4, b0] = sum_carry<3>(u1, s1);
+        REQUIRE(result4 == 0xFF);
+        REQUIRE(b0);
+
+        u1 = 1;
+        s1 = -1;
+        auto [result5, b1] = sum_carry<3>(u1, s1);
+        REQUIRE(result5 == 0);
+        REQUIRE_FALSE(b1);
+
+        u1 = 0x10;
+        s1 = -1;
+        auto [result6, b2] = sum_carry<3>(u1, s1);
+        REQUIRE(result6 == 0x0F);
+        REQUIRE(b2);
     }
 }
 
@@ -323,16 +352,6 @@ TEST_CASE("Cartridge", "[cartridge]") {
 }
 
 int main(int argc, char* argv[]) {
-//    uint16_t mask = (uint16_t) ~((uint16_t) 0xFF00);
-//    std::cout << hex(mask) << std::endl;
-//    exit(0);
-//    uint16_t uu = 0xFFFF;
-//    uu &= ~(0xF << (8));
-//    std::cout << hex<uint16_t>(0xF) << std::endl;
-//    std::cout << hex<uint16_t>(0xF << (8)) << std::endl;
-//    std::cout << hex<uint16_t>(~(0xF << (8))) << std::endl;
-//    std::cout << hex(uu) << std::endl;
-
     Catch::Session session;
     session.applyCommandLine(argc, argv);
     return session.run();

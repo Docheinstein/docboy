@@ -29,9 +29,16 @@ public:
     [[nodiscard]] uint16_t getHL() const;
     [[nodiscard]] uint16_t getPC() const;
     [[nodiscard]] uint16_t getSP() const;
+    [[nodiscard]] bool getZ() const;
+    [[nodiscard]] bool getN() const;
+    [[nodiscard]] bool getH() const;
+    [[nodiscard]] bool getC() const;
     [[nodiscard]] uint16_t getCurrentInstructionAddress() const;
     [[nodiscard]] uint8_t getCurrentInstructionOpcode() const;
     [[nodiscard]] uint8_t getCurrentInstructionMicroOperation() const;
+    [[nodiscard]] bool getCurrentInstructionCB() const;
+    [[nodiscard]] uint64_t getCurrentMcycle() const;
+    [[nodiscard]] uint64_t getCurrentCycle() const;
 
 private:
     enum class Register8 {
@@ -43,8 +50,10 @@ private:
         F,
         H,
         L,
-        S,
-        P,
+        SP_S,
+        SP_P,
+        PC_P,
+        PC_C
     };
 
     enum class Register16 {
@@ -75,8 +84,10 @@ private:
     bool IME;
 
     uint64_t mCycles;
+    uint64_t cycles;
 
-    struct {
+    // TODO: better design
+    struct CurrentInstruction {
         bool CB;
         uint16_t address;
         uint8_t opcode;
@@ -169,9 +180,9 @@ private:
     void LD_arr_r_m2();
 
     template<Register16 rr, Register8 r, int8_t inc>
-    void LD_arr_r_m1();
+    void LD_arri_r_m1();
     template<Register16 rr, Register8 r, int8_t inc>
-    void LD_arr_r_m2();
+    void LD_arri_r_m2();
 
     template<Register8 r>
     void LD_r_u_m1();
@@ -195,9 +206,9 @@ private:
     void LD_r_arr_m2();
 
     template<Register8 r, Register16 rr, int8_t inc>
-    void LD_r_arr_m1();
+    void LD_r_arri_m1();
     template<Register8 r, Register16 rr, int8_t inc>
-    void LD_r_arr_m2();
+    void LD_r_arri_m2();
 
     template<Register8 r1, Register8 r2>
     void LD_r_r_m1();
