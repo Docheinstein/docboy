@@ -17,7 +17,6 @@ CPU::CPU(IBus &bus) :
         mCycles(),
         AF(), BC(), DE(), HL(), PC(), SP(), IME(),
         currentInstruction(),
-        u1(), u2(), uu1(),
         instructions {
 	/* 00 */ { &CPU::NOP_m1 },
 	/* 01 */ { &CPU::LD_rr_uu_m1<Register16::BC>, &CPU::LD_rr_uu_m2<Register16::BC>, &CPU::LD_rr_uu_m3<Register16::BC> },
@@ -557,9 +556,13 @@ void CPU::reset() {
     SP = 0xFFFE;
     IME = false;
     currentInstruction = CurrentInstruction();
-    u1 = 0;
-    u2 = 0;
-    uu1 = 0;
+    b = false;
+    u = 0;
+    s = 0;
+    uu = 0;
+    lsb = 0;
+    msb = 0;
+    addr = 0;
 }
 
 void CPU::tick() {
@@ -1151,7 +1154,7 @@ void CPU::LD_rr_rrs_m1() {
 template<CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rrs_m2() {
     uu = readRegister16<rr2>();
-    auto [result, h, c] = sum_carry<11, 15>(uu, s);
+    auto [result, h, c] = sum_carry<3, 7>(uu, s);
     writeRegister16<rr1>(result);
     writeFlag<Flag::Z>(false);
     writeFlag<Flag::N>(false);
@@ -1222,7 +1225,7 @@ void CPU::INC_arr_m3() {
 template<CPU::Register8 r>
 void CPU::DEC_r_m1() {
     uint8_t tmp = readRegister8<r>();
-    auto [result, h] = sum_carry<3>(tmp, (int8_t) -1);
+    auto [result, h] = sub_borrow<3>(tmp, 1);
     writeRegister8<r>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
@@ -1256,7 +1259,7 @@ void CPU::DEC_arr_m1() {
 
 template<CPU::Register16 rr>
 void CPU::DEC_arr_m2() {
-    auto [result, h] = sum_carry<3>(u, -1);
+    auto [result, h] = sub_borrow<3>(u, 1);
     bus.write(addr, result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
@@ -1397,7 +1400,7 @@ void CPU::ADD_rr_s_m2() {
     writeFlag<Flag::Z>(false);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(h);
-    writeFlag<Flag::H>(c);
+    writeFlag<Flag::C>(c);
 }
 
 
@@ -1417,7 +1420,7 @@ void CPU::ADD_rr_s_m4() {
 
 template<CPU::Register8 r>
 void CPU::SUB_r_m1() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), -readRegister8<r>());
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), readRegister8<r>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
@@ -1435,7 +1438,7 @@ void CPU::SUB_arr_m1() {
 
 template<CPU::Register16 rr>
 void CPU::SUB_arr_m2() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), -u);
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
@@ -1452,7 +1455,7 @@ void CPU::SUB_u_m1() {
 }
 
 void CPU::SUB_u_m2() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), -u);
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
@@ -1466,8 +1469,8 @@ void CPU::SUB_u_m2() {
 template<CPU::Register8 r>
 void CPU::SBC_r_m1() {
     // TODO: is this ok?
-    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), -readRegister8<r>());
-    auto [result, h, c] = sum_carry<3, 7>(tmp, -readFlag<Flag::C>());
+    auto [tmp, h0, c0] = sub_borrow<3, 7>(readRegister8<Register8::A>(), readRegister8<r>());
+    auto [result, h, c] = sub_borrow<3, 7>(tmp, readFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
@@ -1486,8 +1489,8 @@ void CPU::SBC_arr_m1() {
 template<CPU::Register16 rr>
 void CPU::SBC_arr_m2() {
     // TODO: dont like this - C very much...
-    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), -u);
-    auto [result, h, c] = sum_carry<3, 7>(tmp, -readFlag<Flag::C>());
+    auto [tmp, h0, c0] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sub_borrow<3, 7>(tmp, readFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
@@ -1504,8 +1507,8 @@ void CPU::SBC_u_m1() {
 }
 
 void CPU::SBC_u_m2() {
-    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), -u);
-    auto [result, h, c] = sum_carry<3, 7>(tmp, -readFlag<Flag::C>());
+    auto [tmp, h0, c0] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sub_borrow<3, 7>(tmp, readFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
@@ -1659,7 +1662,7 @@ void CPU::XOR_u_m2() {
 
 template<CPU::Register8 r>
 void CPU::CP_r_m1() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), -readRegister8<r>());
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), readRegister8<r>());
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
     writeFlag<Flag::H>(h);
@@ -1674,7 +1677,7 @@ void CPU::CP_arr_m1() {
 
 template<CPU::Register16 rr>
 void CPU::CP_arr_m2() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), -u);
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
     writeFlag<Flag::H>(h);
@@ -1690,7 +1693,7 @@ void CPU::CP_u_m1() {
 }
 
 void CPU::CP_u_m2() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), -u);
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
     writeFlag<Flag::H>(h);
@@ -2259,7 +2262,7 @@ template<CPU::Register8 r>
 void CPU::SRA_r_m1() {
     u = readRegister8<r>();
     bool b0 = get_bit<0>(u);
-    u = (u >> 1) | (u & bit<7>());
+    u = (u >> 1) | (u & bit<7>);
     writeRegister8<r>(u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
@@ -2279,7 +2282,7 @@ void CPU::SRA_arr_m1() {
 template<CPU::Register16 rr>
 void CPU::SRA_arr_m2() {
     bool b0 = get_bit<0>(u);
-    u = (u >> 1) | (u & bit<7>());
+    u = (u >> 1) | (u & bit<7>);
     bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);

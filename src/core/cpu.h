@@ -94,22 +94,14 @@ private:
         uint8_t microop;
     } currentInstruction;
 
-    union {
+    // scratchpad
+    struct {
         bool b;
         uint8_t u;
-        uint8_t u1;
-        uint8_t lsb;
         int8_t s;
-        int8_t s1;
-    };
-    union {
-        uint8_t u2;
-        uint8_t msb;
-        int8_t s2;
-    };
-    union {
         uint16_t uu;
-        uint16_t uu1;
+        uint8_t lsb;
+        uint8_t msb;
         uint16_t addr;
     };
 

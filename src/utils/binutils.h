@@ -23,14 +23,11 @@ template<uint8_t n, typename T>
 void set_bit(T &dest, bool value);
 
 template<uint8_t n>
-uint64_t bitmask();
+constexpr uint64_t bitmask = (((uint64_t) 1) << n) - 1;
 
 template<uint8_t n>
-uint64_t bit();
+constexpr uint64_t bit = (((uint64_t) 1) << n);
 
-
-template<uint8_t b, typename T1, typename T2>
-bool sum_get_carry_bit(T1 v1, T2 v2);
 
 template<uint8_t b, typename T1, typename T2>
 std::tuple<T1, bool> sum_carry(T1 v1, T2 v2);
@@ -38,6 +35,11 @@ std::tuple<T1, bool> sum_carry(T1 v1, T2 v2);
 template<uint8_t b1, uint8_t b2, typename T1, typename T2>
 std::tuple<T1, bool, bool> sum_carry(T1 v1, T2 v2);
 
+template<uint8_t b, typename T1, typename T2>
+std::tuple<T1, bool> sub_borrow(T1 v1, T2 v2);
+
+template<uint8_t b1, uint8_t b2, typename T1, typename T2>
+std::tuple<T1, bool, bool> sub_borrow(T1 v1, T2 v2);
 
 void bin(uint8_t value, std::ostream &os);
 void bin(uint16_t value, std::ostream &os);

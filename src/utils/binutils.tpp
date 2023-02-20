@@ -21,32 +21,23 @@ void set_bit(T &dest, bool value) {
     dest |= ((value ? 1 : 0) << n);
 }
 
-template<uint8_t n>
-uint64_t bitmask() {
-    return (((uint64_t) 1) << n) - 1;
-}
-
-template<uint8_t n>
-uint64_t bit() {
-    return (((uint64_t) 1) << n);
-}
-
 template<uint8_t b, typename T1, typename T2>
 bool sum_get_carry_bit(T1 v1, T2 v2) {
-    uint64_t mask = bitmask<b + 1>();
-
-
-    if (v2 > 0) {
-        uint64_t vm1 = (((uint64_t) v1) & mask);
-        uint64_t vm2 = (((uint64_t) v2) & mask);
-        uint64_t result = vm1 + vm2;
-        return get_bit<b + 1>(result);
-    } else {
-        v2 = v2 < 0 ? -v2 : v2;
-        uint64_t vm1 = (((uint64_t) v1) & mask);
-        uint64_t vm2 = (((uint64_t) v2) & mask);
-        return vm2 > vm1;
-    }
+    uint64_t mask = bitmask<b + 1>;
+    return ((((uint64_t) v1) & mask) + (((uint64_t) v2) & mask)) & bit<b + 1>;
+//    T1 result = v1 + v2;
+//    return (v1 ^ v2 ^ result) & bit<b + 1>;
+//    if (v2 > 0) {
+//        uint64_t vm1 = (((uint64_t) v1) & mask);
+//        uint64_t vm2 = (((uint64_t) v2) & mask);
+//        uint64_t result = vm1 + vm2;
+//        return get_bit<b + 1>(result);
+//    } else {
+//        v2 = v2 < 0 ? -v2 : v2;
+//        uint64_t vm1 = (((uint64_t) v1) & mask);
+//        uint64_t vm2 = (((uint64_t) v2) & mask);
+//        return vm2 > vm1;
+//    }
 
 }
 
@@ -68,7 +59,36 @@ std::tuple<T1, bool, bool> sum_carry(T1 v1, T2 v2) {
             sum_get_carry_bit<b2>(v1, v2)
     );
 }
+//
+//
+template<uint8_t b, typename T1, typename T2>
+bool sub_get_borrow_bit(T1 v1, T2 v2) {
+    uint64_t mask = bitmask<b + 1>;
+//    return ((((uint64_t) v1) & mask) - (((uint64_t) v2) & mask)) & bit<b + 1>;
+    v2 = v2 < 0 ? -v2 : v2;
+    uint64_t vm1 = (((uint64_t) v1) & mask);
+    uint64_t vm2 = (((uint64_t) v2) & mask);
+    return vm2 > vm1;
+}
 
+template<uint8_t b, typename T1, typename T2>
+std::tuple<T1, bool> sub_borrow(T1 v1, T2 v2) {
+    T1 result = v1 - v2;
+    return std::make_tuple(
+            result,
+            sub_get_borrow_bit<b>(v1, v2)
+    );
+}
+
+template<uint8_t b1, uint8_t b2, typename T1, typename T2>
+std::tuple<T1, bool, bool> sub_borrow(T1 v1, T2 v2) {
+   T1 result = v1 - v2;
+    return std::make_tuple(
+            result,
+            sub_get_borrow_bit<b1>(v1, v2),
+            sub_get_borrow_bit<b2>(v1, v2)
+    );
+}
 
 template<typename T>
 std::string bin(T value) {

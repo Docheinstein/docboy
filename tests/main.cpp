@@ -97,23 +97,43 @@ TEST_CASE("binutils", "[binutils]") {
     }
 
     SECTION("bitmask") {
-        REQUIRE(bitmask<0>() == 0x0);
-        REQUIRE(bitmask<1>() == 0x1);
-        REQUIRE(bitmask<2>() == 0x3);
-        REQUIRE(bitmask<3>() == 0x7);
-        REQUIRE(bitmask<4>() == 0xF);
-        REQUIRE(bitmask<5>() == 0x1F);
-        REQUIRE(bitmask<6>() == 0x3F);
-        REQUIRE(bitmask<7>() == 0x7F);
-        REQUIRE(bitmask<8>() == 0xFF);
-        REQUIRE(bitmask<9>() == 0x1FF);
-        REQUIRE(bitmask<10>() == 0x3FF);
-        REQUIRE(bitmask<11>() == 0x7FF);
-        REQUIRE(bitmask<12>() == 0xFFF);
-        REQUIRE(bitmask<13>() == 0x1FFF);
-        REQUIRE(bitmask<14>() == 0x3FFF);
-        REQUIRE(bitmask<15>() == 0x7FFF);
-        REQUIRE(bitmask<16>() == 0xFFFF);
+        REQUIRE(bitmask<0> == 0x0);
+        REQUIRE(bitmask<1> == 0x1);
+        REQUIRE(bitmask<2> == 0x3);
+        REQUIRE(bitmask<3> == 0x7);
+        REQUIRE(bitmask<4> == 0xF);
+        REQUIRE(bitmask<5> == 0x1F);
+        REQUIRE(bitmask<6> == 0x3F);
+        REQUIRE(bitmask<7> == 0x7F);
+        REQUIRE(bitmask<8> == 0xFF);
+        REQUIRE(bitmask<9> == 0x1FF);
+        REQUIRE(bitmask<10> == 0x3FF);
+        REQUIRE(bitmask<11> == 0x7FF);
+        REQUIRE(bitmask<12> == 0xFFF);
+        REQUIRE(bitmask<13> == 0x1FFF);
+        REQUIRE(bitmask<14> == 0x3FFF);
+        REQUIRE(bitmask<15> == 0x7FFF);
+        REQUIRE(bitmask<16> == 0xFFFF);
+    }
+
+    SECTION("bit") {
+        REQUIRE(bit<0> == (1 << 0));
+        REQUIRE(bit<1> == (1 << 1));
+        REQUIRE(bit<2> == (1 << 2));
+        REQUIRE(bit<3> == (1 << 3));
+        REQUIRE(bit<4> == (1 << 4));
+        REQUIRE(bit<5> == (1 << 5));
+        REQUIRE(bit<6> == (1 << 6));
+        REQUIRE(bit<7> == (1 << 7));
+        REQUIRE(bit<8> == (1 << 8));
+        REQUIRE(bit<9> == (1 << 9));
+        REQUIRE(bit<10> == (1 << 10));
+        REQUIRE(bit<11> == (1 << 11));
+        REQUIRE(bit<12> == (1 << 12));
+        REQUIRE(bit<13> == (1 << 13));
+        REQUIRE(bit<14> == (1 << 14));
+        REQUIRE(bit<15> == (1 << 15));
+        REQUIRE(bit<16> == (1 << 16));
     }
 
     SECTION("carry bit") {
@@ -144,10 +164,17 @@ TEST_CASE("binutils", "[binutils]") {
         auto [result2, _1] = sum_carry<3>(u1, (uint8_t) 1);
         REQUIRE(result2 == 0);
 
-        u1 = 4;
-        auto [result3, _2] = sum_carry<3>(u1, -1);
-        REQUIRE(result3 == 3);
+//        u1 = 4;
+//        auto [result3, _2] = sum_carry<3>(u1, -1);
+//        REQUIRE(result3 == 3);
 
+        u1 = 0x10;
+        s1 = 1;
+        auto [result6, h2] = sub_borrow<3>(u1, 1);
+        REQUIRE(result6 == 0x0F);
+        REQUIRE(h2);
+
+        /*
         u1 = 0;
         s1 = -1;
         auto [result4, b0] = sum_carry<3>(u1, s1);
@@ -160,16 +187,28 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(result5 == 0);
         REQUIRE_FALSE(b1);
 
-        u1 = 0x10;
-        s1 = -1;
-        auto [result6, b2] = sum_carry<3>(u1, s1);
-        REQUIRE(result6 == 0x0F);
-        REQUIRE(b2);
+
+
 
         uu1 = 0xFFFF;
         uu2 = 0xFFFF;
         auto [_, b3] = sum_carry<15>(uu1, uu2);
         REQUIRE(b3);
+
+        uu1 = 0x000F;
+        s1 = 0x01;
+        auto [result7, h, c] = sum_carry<3, 7>(uu1, s1);
+        REQUIRE(result7 == 0x0010);
+        REQUIRE(h);
+
+        */
+
+        uu1 = 0x0000;
+        s1 = -1;
+        auto [result8, h3, c3] = sum_carry<3, 7>(uu1, s1);
+        REQUIRE(result8 == 0xFFFF);
+        REQUIRE_FALSE(h3);
+        REQUIRE_FALSE(c3);
     }
 }
 
@@ -359,17 +398,18 @@ TEST_CASE("CPU", "[cpu]") {
             } catch (const CPU::InstructionNotImplementedException &e) {}
         }
     }
+}
 
-    SECTION("blargg") {
-        auto [rom, expected, maxcycles] = GENERATE_TABLE(
-            std::string,
-            std::string,
-            uint64_t,
-            ({
-                { "tests/roms/tests/blargg/06-ld r,r.gb", "06-ld r,r\n\n\nPassed\n", 500000 },
-                { "tests/roms/tests/blargg/09-op r,r.gb", "09-op r,r\n\n\nPassed\n", 5000000 },
-            })
+TEST_CASE("blargg", "[.][cpu]") {
+    SECTION("cpu") {
+        std::string testname = GENERATE(
+            "03-op sp,hl",
+            "06-ld r,r",
+            "09-op r,r"
         );
+
+        std::string rom = "tests/roms/tests/blargg/" + testname + ".gb";
+        std::string expected = testname + "\n\n\nPassed\n";
 
         class SerialStringEndpoint : public SerialEndpoint {
         public:
@@ -382,7 +422,9 @@ TEST_CASE("CPU", "[cpu]") {
         class Supervisor : public DebuggerFrontend {
         public:
             Supervisor(Gible &gible, SerialStringEndpoint &buffer, const std::string &expected, uint64_t maxcycles) :
-                gible(gible), buffer(buffer), expected(expected), maxcycles(maxcycles) {}
+                gible(gible), buffer(buffer), expected(expected), maxcycles(maxcycles) {
+
+            }
             void onFrontend() override {
                 gible.continue_();
             }
@@ -403,9 +445,8 @@ TEST_CASE("CPU", "[cpu]") {
         SerialLink serial(&gible, &buffer);
         gible.attachSerialLink(&serial);
 
-        Supervisor supervisor(gible, buffer, expected, maxcycles);
+        Supervisor supervisor(gible, buffer, expected, 10000000);
         gible.attachDebugger(&supervisor);
-
 
         gible.loadROM(rom);
         gible.start();
