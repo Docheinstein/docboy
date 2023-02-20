@@ -38,7 +38,7 @@ Cartridge::Header Cartridge::header() const {
     memcpy_range_v(h.nintendo_logo, raw_data, 0x104, 0x133);
 
     // Title (0x134 - 0x143)
-    char title[0x143 - 0x134 + sizeof('\0')];
+    char title[0x143 - 0x134 + 1 + sizeof('\0')];
     memcpy_range_s(title, raw_data, 0x134, 0x143);
     h.title = title;
 

@@ -1290,7 +1290,6 @@ void CPU::ADD_arr_m1() {
 
 template<CPU::Register16 rr>
 void CPU::ADD_arr_m2() {
-    // TODO: dont like this + C very much...
     auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), u);
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
@@ -1321,12 +1320,13 @@ void CPU::ADD_u_m2() {
 template<CPU::Register8 r>
 void CPU::ADC_r_m1() {
     // TODO: dont like this + C very much...
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), readRegister8<r>() + readFlag<Flag::C>());
+    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), readRegister8<r>());
+    auto [result, h, c] = sum_carry<3, 7>(tmp, readFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(false);
-    writeFlag<Flag::H>(h);
-    writeFlag<Flag::C>(c);
+    writeFlag<Flag::H>(h | h0);
+    writeFlag<Flag::C>(c | c0);
     fetch();
 }
 
@@ -1339,13 +1339,14 @@ void CPU::ADC_arr_m1() {
 
 template<CPU::Register16 rr>
 void CPU::ADC_arr_m2() {
-    // TODO: dont like this + C very much...
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), u + readFlag<Flag::C>());
+    // TODO: is this ok?
+    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sum_carry<3, 7>(tmp, readFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(false);
-    writeFlag<Flag::H>(h);
-    writeFlag<Flag::C>(c);
+    writeFlag<Flag::H>(h | h0);
+    writeFlag<Flag::C>(c | c0);
     fetch();
 }
 
@@ -1464,13 +1465,14 @@ void CPU::SUB_u_m2() {
 
 template<CPU::Register8 r>
 void CPU::SBC_r_m1() {
-    // TODO: dont like this - C very much...
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), - readRegister8<r>() - readFlag<Flag::C>());
+    // TODO: is this ok?
+    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), -readRegister8<r>());
+    auto [result, h, c] = sum_carry<3, 7>(tmp, -readFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
-    writeFlag<Flag::H>(h);
-    writeFlag<Flag::C>(c);
+    writeFlag<Flag::H>(h | h0);
+    writeFlag<Flag::C>(c | c0);
     fetch();
 }
 
@@ -1484,12 +1486,13 @@ void CPU::SBC_arr_m1() {
 template<CPU::Register16 rr>
 void CPU::SBC_arr_m2() {
     // TODO: dont like this - C very much...
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), - u - readFlag<Flag::C>());
+    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), -u);
+    auto [result, h, c] = sum_carry<3, 7>(tmp, -readFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
-    writeFlag<Flag::H>(h);
-    writeFlag<Flag::C>(c);
+    writeFlag<Flag::H>(h | h0);
+    writeFlag<Flag::C>(c | c0);
     fetch();
 }
 
@@ -1501,12 +1504,13 @@ void CPU::SBC_u_m1() {
 }
 
 void CPU::SBC_u_m2() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), - u - readFlag<Flag::C>());
+    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), -u);
+    auto [result, h, c] = sum_carry<3, 7>(tmp, -readFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
-    writeFlag<Flag::H>(h);
-    writeFlag<Flag::C>(c);
+    writeFlag<Flag::H>(h | h0);
+    writeFlag<Flag::C>(c | c0);
     fetch();
 }
 
@@ -1515,6 +1519,7 @@ void CPU::SBC_u_m2() {
 template<CPU::Register8 r>
 void CPU::AND_r_m1() {
     uint8_t result = readRegister8<Register8::A>() & readRegister8<r>();
+    writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(true);
@@ -1532,6 +1537,7 @@ void CPU::AND_arr_m1() {
 template<CPU::Register16 rr>
 void CPU::AND_arr_m2() {
     uint8_t result = readRegister8<Register8::A>() & u;
+    writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(true);
@@ -1740,8 +1746,8 @@ void CPU::CPL_m1() {
 // 3F | CCF_m1
 
 void CPU::CCF_m1() {
-    writeFlag<Flag::N>(true);
-    writeFlag<Flag::H>(true);
+    writeFlag<Flag::N>(false);
+    writeFlag<Flag::H>(false);
     writeFlag<Flag::C>(!readFlag<Flag::C>());
     fetch();
 }
@@ -2253,7 +2259,7 @@ template<CPU::Register8 r>
 void CPU::SRA_r_m1() {
     u = readRegister8<r>();
     bool b0 = get_bit<0>(u);
-    u = (u >> 1) | (u & bitmask<7>());
+    u = (u >> 1) | (u & bit<7>());
     writeRegister8<r>(u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
@@ -2273,7 +2279,7 @@ void CPU::SRA_arr_m1() {
 template<CPU::Register16 rr>
 void CPU::SRA_arr_m2() {
     bool b0 = get_bit<0>(u);
-    u = (u >> 1) | (u & bitmask<7>());
+    u = (u >> 1) | (u & bit<7>());
     bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);

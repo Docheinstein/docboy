@@ -25,6 +25,9 @@ void set_bit(T &dest, bool value);
 template<uint8_t n>
 uint64_t bitmask();
 
+template<uint8_t n>
+uint64_t bit();
+
 
 template<uint8_t b, typename T1, typename T2>
 bool sum_get_carry_bit(T1 v1, T2 v2);

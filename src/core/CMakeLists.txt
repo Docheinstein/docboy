@@ -12,11 +12,13 @@ set(SOURCES
     io.cpp
     memory.h
     memory.cpp
-    serial.h
-    serial.cpp
-    serialconsole.h
-    serialconsole.cpp
 )
 
 add_library(core STATIC ${SOURCES})
+
+
+if (GAMEBOY_DOCTOR)
+    target_compile_definitions(core PUBLIC GAMEBOY_DOCTOR)
+endif()
+
 target_include_directories(core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")

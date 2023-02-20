@@ -55,10 +55,9 @@ Gible::Gible() :
         debugger(),
         breakpoints(),
         watchpoints(),
-        serialConsole() {
-//    serialConsole.disable();
-    serialLink.setMaster(this);
-    serialLink.setSlave(&serialConsole);
+        serialLink(),
+        debuggerAbortRequest(),
+        debuggerInterruptRequest() {
 }
 
 Gible::~Gible() {
@@ -102,26 +101,27 @@ bool Gible::loadROM(const std::string &rom) {
 }
 
 void Gible::start() {
-    while (true) {
+    while (!debuggerAbortRequest) {
         if (debugger) {
-            do {
-                if (!debugger->callback())
-                    break;
-            } while (true);
+            debugger->onFrontend();
         } else {
             continue_();
         }
     }
 }
 
-void Gible::attachDebugger(DebuggerFrontend &frontend) {
-    debugger = &frontend;
+void Gible::attachDebugger(DebuggerFrontend *frontend) {
+    debugger = frontend;
     bus.setObserver(this);
 }
 
 void Gible::detachDebugger() {
     debugger = nullptr;
     bus.unsetObserver();
+}
+
+void Gible::attachSerialLink(SerialLink *serial) {
+    serialLink = serial;
 }
 
 
@@ -451,51 +451,54 @@ void Gible::onBusWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) {
 }
 
 DebuggerBackend::ExecResult Gible::tick() {
+    if (debugger)
+        debugger->onTick();
+    if (debuggerInterruptRequest) {
+        debuggerInterruptRequest = false;
+        return {.reason = DebuggerBackend::ExecResult::EndReason::Interrupted};
+    }
+    if (debuggerAbortRequest) {
+        return {.reason = DebuggerBackend::ExecResult::EndReason::Aborted};
+    }
+
     auto now = std::chrono::high_resolution_clock::now();
 
     cpu.tick();
 
-    // DEBUG
-//    if ((cpu.getCurrentInstructionMicroOperation() == 0 &&
-//        !cpu.getCurrentInstructionCB()) || (
-//        cpu.getCurrentInstructionMicroOperation() == 1 &&
-//        cpu.getCurrentInstructionCB())) {
-//        auto AF = cpu.getAF();
-//        auto BC = cpu.getBC();
-//        auto DE = cpu.getDE();
-//        auto HL = cpu.getHL();
-//        auto SP = cpu.getSP();
-//        uint16_t PC = cpu.getPC() - 1;
-//        std::cerr
-//            << "A:" << hex(get_byte<1>(AF)) << " "
-//            << "F:" << hex(get_byte<0>(AF)) << " "
-//            << "B:" << hex(get_byte<1>(BC)) << " "
-//            << "C:" << hex(get_byte<0>(BC)) << " "
-//            << "D:" << hex(get_byte<1>(DE)) << " "
-//            << "E:" << hex(get_byte<0>(DE)) << " "
-//            << "H:" << hex(get_byte<1>(HL)) << " "
-//            << "L:" << hex(get_byte<0>(HL)) << " "
-//            << "SP:" << hex(SP) << " "
-//            << "PC:" << hex(PC) << " "
-//            << "PCMEM:" << hex(bus.read(PC)) << "," << hex(bus.read(PC + 1)) << "," << hex(bus.read(PC + 2)) << "," << hex(bus.read(PC + 3))
-//            << std::endl;
-//    }
+#ifdef GAMEBOY_DOCTOR
+    if ((cpu.getCurrentInstructionMicroOperation() == 0 &&
+        !cpu.getCurrentInstructionCB()) || (
+        cpu.getCurrentInstructionMicroOperation() == 1 &&
+        cpu.getCurrentInstructionCB())) {
+        auto AF = cpu.getAF();
+        auto BC = cpu.getBC();
+        auto DE = cpu.getDE();
+        auto HL = cpu.getHL();
+        auto SP = cpu.getSP();
+        uint16_t PC = cpu.getPC() - 1;
+        std::cerr
+            << "A:" << hex(get_byte<1>(AF)) << " "
+            << "F:" << hex(get_byte<0>(AF)) << " "
+            << "B:" << hex(get_byte<1>(BC)) << " "
+            << "C:" << hex(get_byte<0>(BC)) << " "
+            << "D:" << hex(get_byte<1>(DE)) << " "
+            << "E:" << hex(get_byte<0>(DE)) << " "
+            << "H:" << hex(get_byte<1>(HL)) << " "
+            << "L:" << hex(get_byte<0>(HL)) << " "
+            << "SP:" << hex(SP) << " "
+            << "PC:" << hex(PC) << " "
+            << "PCMEM:" << hex(bus.read(PC)) << "," << hex(bus.read(PC + 1)) << "," << hex(bus.read(PC + 2)) << "," << hex(bus.read(PC + 3))
+            << std::endl;
+    }
+#endif
 
     uint8_t SC = io.readSC();
-    if (get_bit<7>(SC) && get_bit<0>(SC))
-        serialLink.tick();
-
-    if (now > lastSerialConsoleFlush + std::chrono::milliseconds(1000)) {
-        lastSerialConsoleFlush = now;
-        serialConsole.flush();
+    if (serialLink) {
+        if (get_bit<7>(SC) && get_bit<0>(SC))
+            serialLink->tick();
     }
 
     if (debugger) {
-        if (debugger->requiresInterruption()) {
-            return {
-                .reason = DebuggerBackend::ExecResult::EndReason::Interrupted
-            };
-        }
         // TODO: so bad
         uint8_t microp = cpu.getCurrentInstructionMicroOperation();
         bool cb = cpu.getCurrentInstructionCB();
@@ -564,3 +567,10 @@ uint64_t Gible::getCurrentMcycle() {
     return cpu.getCurrentMcycle();
 }
 
+void Gible::abort() {
+    debuggerAbortRequest = true;
+}
+
+void Gible::interrupt() {
+    debuggerInterruptRequest = true;
+}

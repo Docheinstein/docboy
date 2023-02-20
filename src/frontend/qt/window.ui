@@ -65,7 +65,7 @@
   <customwidget>
    <class>OpenGLWidget</class>
    <extends>QOpenGLWidget</extends>
-   <header location="global">platforms/qt/openglwidget.h</header>
+   <header location="global">frontend/qt/openglwidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

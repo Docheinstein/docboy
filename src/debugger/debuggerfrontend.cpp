@@ -3,3 +3,7 @@
 DebuggerFrontend::~DebuggerFrontend() {
 
 }
+
+void DebuggerFrontend::onTick() {
+
+}

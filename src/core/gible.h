@@ -12,10 +12,9 @@
 #include "bus.h"
 #include "debugger/debuggerbackend.h"
 #include "io.h"
-#include "serial.h"
-#include "serialconsole.h"
+#include "serial/serialconsole.h"
 
-class Gible : public DebuggerBackend, ObservableBus::Observer, ISerialEndpoint {
+class Gible : public DebuggerBackend, public ObservableBus::Observer, public SerialEndpoint {
 public:
     Gible();
     ~Gible() override;
@@ -23,8 +22,10 @@ public:
     bool loadROM(const std::string &rom);
     void start();
 
-    void attachDebugger(DebuggerFrontend &frontend) override;
+    void attachDebugger(DebuggerFrontend *frontend) override;
     void detachDebugger() override;
+
+    void attachSerialLink(SerialLink *serialLink);
 
     uint32_t addBreakpoint(uint16_t addr) override;
     [[nodiscard]] std::optional<Breakpoint> getBreakpoint(uint16_t addr) const override;
@@ -79,6 +80,9 @@ public:
     ExecResult next() override;
     ExecResult continue_() override;
 
+    void abort() override;
+    void interrupt() override;
+
     void reset() override;
 
     void onBusRead(uint16_t addr, uint8_t value) override;
@@ -93,14 +97,15 @@ private:
     Memory<4096> wram2;
     Memory<127> hram;
     IO io;
-    SerialLink serialLink;
-    SerialConsoleEndpoint serialConsole;
-    std::chrono::high_resolution_clock::time_point lastSerialConsoleFlush;
+    SerialLink *serialLink;
 
     ObservableBus bus;
     CPU cpu;
 
     DebuggerFrontend *debugger;
+
+    bool debuggerAbortRequest;
+    bool debuggerInterruptRequest;
 
     template<typename T, size_t size>
     struct VectorMap {

@@ -96,7 +96,8 @@ public:
             Breakpoint,
             Watchpoint,
             Cyclepoint,
-            Interrupted
+            Interrupted,
+            Aborted
         };
         EndReason reason;
         union {
@@ -110,7 +111,7 @@ public:
 
     virtual ~DebuggerBackend();
 
-    virtual void attachDebugger(DebuggerFrontend &frontend) = 0;
+    virtual void attachDebugger(DebuggerFrontend *frontend) = 0;
     virtual void detachDebugger() = 0;
 
     virtual uint32_t addBreakpoint(uint16_t addr) = 0;
@@ -160,6 +161,9 @@ public:
     virtual ExecResult step() = 0;
     virtual ExecResult next() = 0;
     virtual ExecResult continue_() = 0;
+
+    virtual void abort() = 0;
+    virtual void interrupt() = 0;
 
     virtual void reset() = 0;
 };

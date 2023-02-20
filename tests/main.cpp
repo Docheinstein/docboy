@@ -6,7 +6,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include "core/cartridge.h"
 #include "utils/binutils.h"
+#include "serial/serialbuffer.h"
 #include "core/definitions.h"
+#include "debugger/debuggerfrontend.h"
+#include "debugger/debuggerbackend.h"
 #include "log/log.h"
 #include <queue>
 #include <iostream>
@@ -162,167 +165,11 @@ TEST_CASE("binutils", "[binutils]") {
         auto [result6, b2] = sum_carry<3>(u1, s1);
         REQUIRE(result6 == 0x0F);
         REQUIRE(b2);
-    }
-}
 
-
-TEST_CASE("CPU", "[cpu]") {
-    class FakeBus : public IBus {
-    public:
-        struct Access {
-            enum Type {
-                Read,
-                Write
-            } type;
-            uint16_t addr;
-        };
-
-        FakeBus() = default;
-        ~FakeBus() override = default;
-
-        uint8_t read(uint16_t addr) override {
-            accesses.push_back({Access::Type::Read, addr});
-            uint8_t b = 0;
-            if (!data.empty()) {
-                b = data.front();
-                data.pop();
-            }
-            return b;
-        }
-
-        void write(uint16_t addr, uint8_t value) override {
-            accesses.push_back({Access::Type::Write, addr});
-        }
-
-        [[nodiscard]] unsigned long long getReadWriteCount() const {
-            return accesses.size();
-        }
-
-        [[nodiscard]] unsigned long long getReadCount() const {
-            return std::count_if(accesses.begin(), accesses.end(), [](const Access &a) {
-                return a.type == Access::Read;
-            });
-        }
-
-        [[nodiscard]] unsigned long long getWriteCount() const {
-            return std::count_if(accesses.begin(), accesses.end(), [](const Access &a) {
-                return a.type == Access::Write;
-            });
-        }
-
-        [[nodiscard]] const std::vector<Access> & getAccesses() const {
-            return accesses;
-        }
-
-        void clear() {
-            while (!data.empty())
-                data.pop();
-        }
-
-        void feed(uint8_t b) {
-            data.push(b);
-        }
-
-    private:
-        std::vector<Access> accesses;
-        std::queue<uint8_t> data;
-    };
-
-    bool cb = GENERATE(false, true);
-    uint8_t instr = GENERATE(range(0, 0xFF));
-
-    InstructionInfo info = cb ? INSTRUCTIONS_CB[instr] : INSTRUCTIONS[instr];
-    if (!info.duration.min)
-        return;
-    // TODO: better handling of special cases
-    if (!cb && instr == 0x76 /* HALT */)
-        return;
-
-    auto instr_name = (cb ? hex((uint8_t) 0xCB) +  " " : "") + hex(instr) + " " + info.mnemonic;
-
-    FakeBus fakeBus;
-    CPU cpu(fakeBus);
-
-    auto setupInstruction = [&fakeBus, &cpu, cb, instr]() {
-        if (cb)
-            fakeBus.feed(0xCB);
-        fakeBus.feed(instr); // feed with instruction
-        for (int i = 0; i < 10; i++)
-            fakeBus.feed((instr + 1)* 3); // feed with something else != instr
-        cpu.tick(); // fetch
-        if (cb)
-            cpu.tick(); // fetch
-    };
-
-    auto getInstructionLength = [&fakeBus]() {
-        auto accesses = fakeBus.getAccesses();
-        unsigned long long length = 0;
-
-        auto lastRead = std::find_if(accesses.rend(), accesses.rbegin(), [](const FakeBus::Access &a) {
-            return a.type == FakeBus::Access::Read;
-        });
-        std::optional<FakeBus::Access> lastReadAddress;
-        // count sequential reads but skip the last one (fetch)
-        for (auto it = accesses.begin(); it != (lastRead.base() - 1); it++) {
-            auto a = *it;
-            if (a.type != FakeBus::Access::Read)
-                continue;
-            if (!lastReadAddress) {
-                ++length;
-                lastReadAddress = a;
-                continue;
-            }
-            if (lastReadAddress->addr + 1 == a.addr) {
-                ++length;
-                lastReadAddress = a;
-            }
-        }
-
-        return length;
-    };
-
-
-    SECTION("instruction implemented", instr_name) {
-        setupInstruction();
-        REQUIRE_NOTHROW(cpu.tick());
-    }
-
-    SECTION("instruction duration", instr_name) {
-        setupInstruction();
-        uint8_t op = cpu.getCurrentInstructionOpcode();
-
-        try {
-            uint8_t duration = cb;
-            do {
-                cpu.tick();
-                duration++;
-            } while (op == cpu.getCurrentInstructionOpcode());
-            REQUIRE(info.duration.min <= duration);
-            REQUIRE(duration <= info.duration.max);
-        } catch (const CPU::InstructionNotImplementedException &e) {}
-    }
-
-    SECTION("instruction length", instr_name) {
-        setupInstruction();
-        try {
-            uint8_t op = cpu.getCurrentInstructionOpcode();
-            do {
-                cpu.tick();
-            } while (op == cpu.getCurrentInstructionOpcode());
-            REQUIRE(info.length == getInstructionLength());
-        } catch (const CPU::InstructionNotImplementedException &e) {}
-    }
-
-    SECTION("no more than one memory read/write per m-cycle", instr_name) {
-        setupInstruction();
-        try {
-            for (int m = 0; m < info.duration.min; m++) {
-                auto ioCountBefore = fakeBus.getReadWriteCount();
-                cpu.tick();
-                auto ioCountAfter = fakeBus.getReadWriteCount();
-                REQUIRE(ioCountAfter - ioCountBefore <= 1);
-            }
-        } catch (const CPU::InstructionNotImplementedException &e) {}
+        uu1 = 0xFFFF;
+        uu2 = 0xFFFF;
+        auto [_, b3] = sum_carry<15>(uu1, uu2);
+        REQUIRE(b3);
     }
 }
 
@@ -331,25 +178,282 @@ TEST_CASE("Cartridge", "[cartridge]") {
         std::string,
         std::string,
         ({
-            { "tests/roms/tetris.gb", "TETRIS" },
-            { "tests/roms/alleyway.gb", "ALLEY WAY" },
-            { "tests/roms/pokemon-red.gb", "POKEMON RED" },
+            { "tests/roms/games/tetris.gb", "TETRIS" },
+            { "tests/roms/games/alleyway.gb", "ALLEY WAY" },
+            { "tests/roms/games/pokemon-red.gb", "POKEMON RED" },
         })
     );
 
     auto c = Cartridge::fromFile(rom);
 
-    SECTION("cartridge loaded") {
+    SECTION("cartridge loaded", rom) {
         REQUIRE(c);
     }
 
-    SECTION("cartridge header valid") {
+    SECTION("cartridge header valid", rom) {
         Cartridge::Header h = c->header();
         REQUIRE(h.title == title);
         REQUIRE(h.isNintendoLogoValid());
         REQUIRE(h.isHeaderChecksumValid());
     }
 }
+
+TEST_CASE("CPU", "[cpu]") {
+    SECTION("instruction basic requirements") {
+        class FakeBus : public IBus {
+        public:
+            struct Access {
+                enum Type {
+                    Read,
+                    Write
+                } type;
+                uint16_t addr;
+            };
+
+            FakeBus() = default;
+
+            ~FakeBus() override = default;
+
+            uint8_t read(uint16_t addr) override {
+                accesses.push_back({Access::Type::Read, addr});
+                uint8_t b = 0;
+                if (!data.empty()) {
+                    b = data.front();
+                    data.pop();
+                }
+                return b;
+            }
+
+            void write(uint16_t addr, uint8_t value) override {
+                accesses.push_back({Access::Type::Write, addr});
+            }
+
+            [[nodiscard]] unsigned long long getReadWriteCount() const {
+                return accesses.size();
+            }
+
+            [[nodiscard]] unsigned long long getReadCount() const {
+                return std::count_if(accesses.begin(), accesses.end(), [](const Access &a) {
+                    return a.type == Access::Read;
+                });
+            }
+
+            [[nodiscard]] unsigned long long getWriteCount() const {
+                return std::count_if(accesses.begin(), accesses.end(), [](const Access &a) {
+                    return a.type == Access::Write;
+                });
+            }
+
+            [[nodiscard]] const std::vector<Access> &getAccesses() const {
+                return accesses;
+            }
+
+            void clear() {
+                while (!data.empty())
+                    data.pop();
+            }
+
+            void feed(uint8_t b) {
+                data.push(b);
+            }
+
+        private:
+            std::vector<Access> accesses;
+            std::queue<uint8_t> data;
+        };
+
+        bool cb = GENERATE(false, true);
+        uint8_t instr = GENERATE(range(0, 0xFF));
+
+        InstructionInfo info = cb ? INSTRUCTIONS_CB[instr] : INSTRUCTIONS[instr];
+        if (!info.duration.min)
+            return;
+        // TODO: better handling of special cases
+        if (!cb && instr == 0x76 /* HALT */)
+            return;
+
+        auto instr_name = (cb ? hex((uint8_t) 0xCB) + " " : "") + hex(instr) + " " + info.mnemonic;
+
+        FakeBus fakeBus;
+        CPU cpu(fakeBus);
+
+        auto setupInstruction = [&fakeBus, &cpu, cb, instr]() {
+            if (cb)
+                fakeBus.feed(0xCB);
+            fakeBus.feed(instr); // feed with instruction
+            for (int i = 0; i < 10; i++)
+                fakeBus.feed((instr + 1) * 3); // feed with something else != instr
+            cpu.tick(); // fetch
+            if (cb)
+                cpu.tick(); // fetch
+        };
+
+        auto getInstructionLength = [&fakeBus]() {
+            auto accesses = fakeBus.getAccesses();
+            unsigned long long length = 0;
+
+            auto lastRead = std::find_if(accesses.rend(), accesses.rbegin(), [](const FakeBus::Access &a) {
+                return a.type == FakeBus::Access::Read;
+            });
+            std::optional<FakeBus::Access> lastReadAddress;
+            // count sequential reads but skip the last one (fetch)
+            for (auto it = accesses.begin(); it != (lastRead.base() - 1); it++) {
+                auto a = *it;
+                if (a.type != FakeBus::Access::Read)
+                    continue;
+                if (!lastReadAddress) {
+                    ++length;
+                    lastReadAddress = a;
+                    continue;
+                }
+                if (lastReadAddress->addr + 1 == a.addr) {
+                    ++length;
+                    lastReadAddress = a;
+                }
+            }
+
+            return length;
+        };
+
+
+        SECTION("instruction implemented", instr_name) {
+            setupInstruction();
+            REQUIRE_NOTHROW(cpu.tick());
+        }
+
+        SECTION("instruction duration", instr_name) {
+            setupInstruction();
+            uint8_t op = cpu.getCurrentInstructionOpcode();
+
+            try {
+                uint8_t duration = cb;
+                do {
+                    cpu.tick();
+                    duration++;
+                } while (op == cpu.getCurrentInstructionOpcode());
+                REQUIRE(info.duration.min <= duration);
+                REQUIRE(duration <= info.duration.max);
+            } catch (const CPU::InstructionNotImplementedException &e) {}
+        }
+
+        SECTION("instruction length", instr_name) {
+            setupInstruction();
+            try {
+                uint8_t op = cpu.getCurrentInstructionOpcode();
+                do {
+                    cpu.tick();
+                } while (op == cpu.getCurrentInstructionOpcode());
+                REQUIRE(info.length == getInstructionLength());
+            } catch (const CPU::InstructionNotImplementedException &e) {}
+        }
+
+        SECTION("no more than one memory read/write per m-cycle", instr_name) {
+            setupInstruction();
+            try {
+                for (int m = 0; m < info.duration.min; m++) {
+                    auto ioCountBefore = fakeBus.getReadWriteCount();
+                    cpu.tick();
+                    auto ioCountAfter = fakeBus.getReadWriteCount();
+                    REQUIRE(ioCountAfter - ioCountBefore <= 1);
+                }
+            } catch (const CPU::InstructionNotImplementedException &e) {}
+        }
+    }
+
+    SECTION("blargg") {
+        auto [rom, expected, maxcycles] = GENERATE_TABLE(
+            std::string,
+            std::string,
+            uint64_t,
+            ({
+                { "tests/roms/tests/blargg/06-ld r,r.gb", "06-ld r,r\n\n\nPassed\n", 500000 },
+                { "tests/roms/tests/blargg/09-op r,r.gb", "09-op r,r\n\n\nPassed\n", 5000000 },
+            })
+        );
+
+        class SerialStringEndpoint : public SerialEndpoint {
+        public:
+            void serialWrite(uint8_t b) override {
+                data += (char) b;
+            }
+            std::string data;
+        };
+
+        class Supervisor : public DebuggerFrontend {
+        public:
+            Supervisor(Gible &gible, SerialStringEndpoint &buffer, const std::string &expected, uint64_t maxcycles) :
+                gible(gible), buffer(buffer), expected(expected), maxcycles(maxcycles) {}
+            void onFrontend() override {
+                gible.continue_();
+            }
+            void onTick() override {
+                if (buffer.data.length() == expected.length() || gible.getCurrentCycle() >= maxcycles)
+                    gible.abort();
+            }
+        private:
+            Gible &gible;
+            SerialStringEndpoint &buffer;
+            std::string expected;
+            uint64_t maxcycles;
+        };
+
+        Gible gible;
+
+        SerialStringEndpoint buffer;
+        SerialLink serial(&gible, &buffer);
+        gible.attachSerialLink(&serial);
+
+        Supervisor supervisor(gible, buffer, expected, maxcycles);
+        gible.attachDebugger(&supervisor);
+
+
+        gible.loadROM(rom);
+        gible.start();
+
+        REQUIRE(buffer.data == expected);
+    }
+}
+
+TEST_CASE("serial", "[serial]") {
+    SECTION("serial link and serial buffer") {
+        class SerialStringSource : public SerialEndpoint {
+        public:
+            explicit SerialStringSource(const std::string &s) : cursor() {
+                for (auto c : s)
+                    data.push_back(c);
+            }
+
+            uint8_t serialRead() override {
+                if (!hasData())
+                    return 0xFF;
+                return data[cursor++];
+            }
+
+            void serialWrite(uint8_t) override {}
+
+            [[nodiscard]] const std::vector<uint8_t> &getData() const {
+                return data;
+            }
+
+            [[nodiscard]] bool hasData() const {
+                return cursor < data.size();
+            }
+
+        private:
+            std::vector<uint8_t> data;
+            size_t cursor;
+        };
+
+        std::string s = "Hello this is a test\nThis is sparta!";
+        SerialBufferEndpoint receiver;
+        SerialStringSource sender(s);
+        SerialLink serialLink(&sender, &receiver);
+        while (sender.hasData())
+            serialLink.tick();
+        REQUIRE(receiver.getData() == sender.getData());
+    }
+}
+
 
 int main(int argc, char* argv[]) {
     Catch::Session session;

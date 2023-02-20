@@ -32,7 +32,7 @@ DebuggerFrontendCli::DebuggerFrontendCli(DebuggerBackend &backend)
 
 }
 
-bool DebuggerFrontendCli::callback() {
+void DebuggerFrontendCli::onFrontend() {
     auto headerString = [](const std::string &label = "") {
         static const size_t WIDTH = 80;
         std::string paddedLabel = label.empty() ? "" : (" " + label + " ");
@@ -392,7 +392,7 @@ bool DebuggerFrontendCli::callback() {
         split(command, std::back_inserter(tokens));
 
         if (tokens.empty())
-            return false;
+            return;
 
         auto cmd = tokens[0];
         if (cmd.starts_with("b")) {
@@ -527,10 +527,11 @@ bool DebuggerFrontendCli::callback() {
 
         lastCommand = command;
     } while (true);
-
-    return false;
 }
 
-bool DebuggerFrontendCli::requiresInterruption() {
-    return sigint_trigger;
+void DebuggerFrontendCli::onTick() {
+    if (sigint_trigger) {
+        sigint_trigger = 0;
+        backend.interrupt();
+    }
 }

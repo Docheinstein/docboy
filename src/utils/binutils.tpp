@@ -26,6 +26,11 @@ uint64_t bitmask() {
     return (((uint64_t) 1) << n) - 1;
 }
 
+template<uint8_t n>
+uint64_t bit() {
+    return (((uint64_t) 1) << n);
+}
+
 template<uint8_t b, typename T1, typename T2>
 bool sum_get_carry_bit(T1 v1, T2 v2) {
     uint64_t mask = bitmask<b + 1>();
@@ -110,14 +115,14 @@ std::string hexdump(const T *data, size_t length, bool addr, bool ascii, int col
 
     size_t i;
     for (i = 0; i < length; i++) {
-        if (addr) {
-            if (i % columns == 0)
-                ss << std::hex << std::setfill('0') << std::setw(8) << i << " | ";
+        if (addr && i % columns == 0) {
+            ss << std::hex << std::setfill('0') << std::setw(8) << i << " | ";
         }
 
         auto c = data[i];
         hex(c, ss);
         if (ascii) {
+//            if (c != '\n')
             asciistr += isprint(c) ? c : '.';
         }
         if ((i + 1) % columns == 0) {

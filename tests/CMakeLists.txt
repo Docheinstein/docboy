@@ -5,4 +5,4 @@ set(SOURCES
 add_executable(gible-tests ${SOURCES})
 target_compile_definitions(gible-tests PUBLIC TESTING=1)
 
-target_link_libraries(gible-tests PRIVATE core log utils Catch2::Catch2)
+target_link_libraries(gible-tests PRIVATE core debugger log utils serial Catch2::Catch2)

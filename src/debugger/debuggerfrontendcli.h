@@ -10,8 +10,8 @@ class DebuggerFrontendCli : public DebuggerFrontend {
 public:
     explicit DebuggerFrontendCli(DebuggerBackend &backend);
     ~DebuggerFrontendCli() override;
-    bool callback() override;
-    bool requiresInterruption() override;
+    void onFrontend() override;
+    void onTick() override;
 
 private:
     DebuggerBackend &backend;

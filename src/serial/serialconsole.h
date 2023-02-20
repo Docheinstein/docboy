@@ -1,21 +1,19 @@
 #ifndef SERIALCONSOLE_H
 #define SERIALCONSOLE_H
 
-#include "serial.h"
+#include "serialbuffer.h"
+#include <iosfwd>
 
 class SerialConsoleEndpoint : public SerialBufferEndpoint {
 public:
-    explicit SerialConsoleEndpoint(int bufsize = -1 /* infinite */);
+    explicit SerialConsoleEndpoint(std::ostream &output, int bufsize = -1 /* infinite */);
     ~SerialConsoleEndpoint() override;
 
     void serialWrite(uint8_t) override;
     void flush();
 
-    void enable();
-    void disable();
-
 private:
-    bool enabled;
+    std::ostream &output;
     int bufsize;
 };
 
