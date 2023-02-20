@@ -404,6 +404,7 @@ TEST_CASE("blargg", "[.][cpu]") {
     SECTION("cpu") {
         std::string testname = GENERATE(
             "03-op sp,hl",
+            "04-op r,imm",
             "06-ld r,r",
             "09-op r,r"
         );

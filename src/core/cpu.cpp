@@ -1360,12 +1360,13 @@ void CPU::ADC_u_m1() {
 }
 
 void CPU::ADC_u_m2() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), u + readFlag<Flag::C>());
+    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sum_carry<3, 7>(tmp, readFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(false);
-    writeFlag<Flag::H>(h);
-    writeFlag<Flag::C>(c);
+    writeFlag<Flag::H>(h | h0);
+    writeFlag<Flag::C>(c | c0);
     fetch();
 }
 
