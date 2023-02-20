@@ -405,8 +405,12 @@ TEST_CASE("blargg", "[.][cpu]") {
         std::string testname = GENERATE(
             "03-op sp,hl",
             "04-op r,imm",
+            "05-op rp",
             "06-ld r,r",
+            "07-jr,jp,call,ret,rst",
+            "08-misc instrs",
             "09-op r,r"
+            "10-bit ops"
         );
 
         std::string rom = "tests/roms/tests/blargg/" + testname + ".gb";

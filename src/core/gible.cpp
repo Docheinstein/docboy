@@ -57,7 +57,8 @@ Gible::Gible() :
         watchpoints(),
         serialLink(),
         debuggerAbortRequest(),
-        debuggerInterruptRequest() {
+        debuggerInterruptRequest(),
+        nextPointId() {
 }
 
 Gible::~Gible() {

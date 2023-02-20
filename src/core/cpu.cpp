@@ -211,8 +211,8 @@ CPU::CPU(IBus &bus) :
 	/* BD */ { &CPU::CP_r_m1<Register8::L> },
 	/* BE */ { &CPU::CP_arr_m1<Register16::HL>, &CPU::CP_arr_m2<Register16::HL> },
 	/* BF */ { &CPU::CP_r_m1<Register8::A> },
-	/* C0 */ { &CPU::RET_c_uu_m1<Flag::C, false>, &CPU::RET_c_uu_m2<Flag::C, false>, &CPU::RET_c_uu_m3<Flag::C, false>,
-	            &CPU::RET_c_uu_m4<Flag::C, false>, &CPU::RET_c_uu_m5<Flag::C, false> },
+	/* C0 */ { &CPU::RET_c_uu_m1<Flag::Z, false>, &CPU::RET_c_uu_m2<Flag::Z, false>, &CPU::RET_c_uu_m3<Flag::Z, false>,
+	            &CPU::RET_c_uu_m4<Flag::Z, false>, &CPU::RET_c_uu_m5<Flag::Z, false> },
 	/* C1 */ { &CPU::POP_rr_m1<Register16::BC>, &CPU::POP_rr_m2<Register16::BC>, &CPU::POP_rr_m3<Register16::BC> },
 	/* C2 */ { &CPU::JP_c_uu_m1<Flag::Z, false>, &CPU::JP_c_uu_m2<Flag::Z, false>, &CPU::JP_c_uu_m3<Flag::Z, false>, &CPU::JP_c_uu_m4<Flag::Z, false> },
 	/* C3 */ { &CPU::JP_uu_m1, &CPU::JP_uu_m2, &CPU::JP_uu_m3, &CPU::JP_uu_m4 },
@@ -232,8 +232,8 @@ CPU::CPU(IBus &bus) :
 	            &CPU::CALL_uu_m4, &CPU::CALL_uu_m5, &CPU::CALL_uu_m6, },
 	/* CE */ { &CPU::ADC_u_m1, &CPU::ADC_u_m2 },
 	/* CF */ { &CPU::RST_m1<0x08>, &CPU::RST_m2<0x08>, &CPU::RST_m3<0x08>, &CPU::RST_m4<0x08> },
-	/* D0 */ { &CPU::RET_c_uu_m1<Flag::Z, false>, &CPU::RET_c_uu_m2<Flag::Z, false>, &CPU::RET_c_uu_m3<Flag::Z, false>,
-	            &CPU::RET_c_uu_m4<Flag::Z, false>, &CPU::RET_c_uu_m5<Flag::Z, false> },
+	/* D0 */ { &CPU::RET_c_uu_m1<Flag::C, false>, &CPU::RET_c_uu_m2<Flag::C, false>, &CPU::RET_c_uu_m3<Flag::C, false>,
+	            &CPU::RET_c_uu_m4<Flag::C, false>, &CPU::RET_c_uu_m5<Flag::C, false> },
 	/* D1 */ { &CPU::POP_rr_m1<Register16::DE>, &CPU::POP_rr_m2<Register16::DE>, &CPU::POP_rr_m3<Register16::DE> },
 	/* D2 */ { &CPU::JP_c_uu_m1<Flag::C, false>, &CPU::JP_c_uu_m2<Flag::C, false>, &CPU::JP_c_uu_m3<Flag::C, false>, &CPU::JP_c_uu_m4<Flag::C, false> },
 	/* D3 */ { &CPU::invalidInstruction },
@@ -635,7 +635,7 @@ uint8_t CPU::readRegister8<CPU::Register8::E>() const {
 
 template<>
 uint8_t CPU::readRegister8<CPU::Register8::F>() const {
-    return get_byte<0>(AF);
+    return get_byte<0>(AF) & 0xF0; // last four bits hardwired to 0
 }
 
 template<>
@@ -695,7 +695,7 @@ void CPU::writeRegister8<CPU::Register8::E>(uint8_t value) {
 
 template<>
 void CPU::writeRegister8<CPU::Register8::F>(uint8_t value) {
-    set_byte<0>(AF, value);
+    set_byte<0>(AF, value & 0xF0);
 }
 
 template<>
@@ -710,7 +710,7 @@ void CPU::writeRegister8<CPU::Register8::L>(uint8_t value) {
 
 template<>
 uint16_t CPU::readRegister16<CPU::Register16::AF>() const {
-    return AF;
+    return AF & 0xFFF0;
 }
 
 template<>
@@ -740,7 +740,7 @@ uint16_t CPU::readRegister16<CPU::Register16::SP>() const {
 
 template<>
 void CPU::writeRegister16<CPU::Register16::AF>(uint16_t value) {
-    AF = value;
+    AF = value & 0xFFF0;
 }
 
 template<>
@@ -2419,7 +2419,7 @@ template<uint8_t n, CPU::Register8 r>
 void CPU::BIT_r_m1() {
     writeFlag<Flag::Z>(get_bit<n>(readRegister8<r>()) == 0);
     writeFlag<Flag::N>(false);
-    writeFlag<Flag::H>(false);
+    writeFlag<Flag::H>(true);
     fetch();
 }
 
@@ -2503,27 +2503,27 @@ void CPU::SET_arr_m3() {
 // ----
 
 uint16_t CPU::getAF() const {
-    return AF;
+    return readRegister16<Register16::AF>();
 }
 
 uint16_t CPU::getBC() const {
-    return BC;
+    return readRegister16<Register16::BC>();
 }
 
 uint16_t CPU::getDE() const {
-    return DE;
+    return readRegister16<Register16::DE>();
 }
 
 uint16_t CPU::getHL() const {
-    return HL;
+    return readRegister16<Register16::HL>();
 }
 
 uint16_t CPU::getPC() const {
-    return PC;
+    return readRegister16<Register16::PC>();
 }
 
 uint16_t CPU::getSP() const {
-    return SP;
+    return readRegister16<Register16::SP>();
 }
 
 bool CPU::getZ() const {
