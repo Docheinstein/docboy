@@ -89,6 +89,20 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(AF == 0x0403);
     }
 
+    SECTION("get and set nibble") {
+        uint16_t X = 0xF2;
+        REQUIRE(get_nibble<0>(X) == 0x2);
+        REQUIRE(get_nibble<1>(X) == 0xF);
+
+        set_nibble<0>(X, 3);
+        REQUIRE(X == 0xF3);
+
+        set_nibble<1>(X, 0);
+        REQUIRE(X == 0x3);
+        REQUIRE(get_nibble<0>(X) == 0x3);
+        REQUIRE(get_nibble<1>(X) == 0x0);
+    }
+
     SECTION("concat bytes") {
         uint8_t A = 0x03;
         uint8_t B = 0x01;
@@ -409,8 +423,9 @@ TEST_CASE("blargg", "[.][cpu]") {
             "06-ld r,r",
             "07-jr,jp,call,ret,rst",
             "08-misc instrs",
-            "09-op r,r"
-            "10-bit ops"
+            "09-op r,r",
+            "10-bit ops",
+            "11-op a,(hl)"
         );
 
         std::string rom = "tests/roms/tests/blargg/" + testname + ".gb";
@@ -450,7 +465,7 @@ TEST_CASE("blargg", "[.][cpu]") {
         SerialLink serial(&gible, &buffer);
         gible.attachSerialLink(&serial);
 
-        Supervisor supervisor(gible, buffer, expected, 10000000);
+        Supervisor supervisor(gible, buffer, expected, 50000000);
         gible.attachDebugger(&supervisor);
 
         gible.loadROM(rom);

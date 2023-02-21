@@ -22,6 +22,13 @@ bool get_bit(T value);
 template<uint8_t n, typename T>
 void set_bit(T &dest, bool value);
 
+template<uint8_t n, typename T>
+uint8_t get_nibble(T value);
+
+template<uint8_t n, typename T>
+void set_nibble(T &dest, uint8_t value);
+
+
 template<uint8_t n>
 constexpr uint64_t bitmask = (((uint64_t) 1) << n) - 1;
 

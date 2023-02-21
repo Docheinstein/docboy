@@ -469,8 +469,8 @@ DebuggerBackend::ExecResult Gible::tick() {
 #ifdef GAMEBOY_DOCTOR
     if ((cpu.getCurrentInstructionMicroOperation() == 0 &&
         !cpu.getCurrentInstructionCB()) || (
-        cpu.getCurrentInstructionMicroOperation() == 1 &&
-        cpu.getCurrentInstructionCB())) {
+        cpu.getCurrentInstructionCB() &&
+        cpu.getCurrentInstructionMicroOperation() == INSTRUCTIONS_CB[cpu.getCurrentInstructionOpcode()].duration.min - 1)) {
         auto AF = cpu.getAF();
         auto BC = cpu.getBC();
         auto DE = cpu.getDE();

@@ -1535,7 +1535,7 @@ void CPU::AND_r_m1() {
 
 template<CPU::Register16 rr>
 void CPU::AND_arr_m1() {
-    u = readRegister16<rr>();
+    u = bus.read(readRegister16<rr>());
 }
 
 template<CPU::Register16 rr>
@@ -1706,26 +1706,28 @@ void CPU::CP_u_m2() {
 // 27 | DAA
 
 void CPU::DAA_m1() {
-    uint8_t a = readRegister8<Register8::A>();
+    u = readRegister8<Register8::A>();
+    auto N = readFlag<Flag::N>();
+    auto H = readFlag<Flag::H>();
+    auto C = readFlag<Flag::C>();
 
-    // TODO: flags are wrong for sure
-    writeFlag<Flag::H>(false);
-    writeFlag<Flag::H>(false);
-
-    if ((a & 0x0F) > 9) {
-        auto [result, h, c] = sum_carry<3, 7>(a, 0x06);
-        writeFlag<Flag::H>(h);
-        writeFlag<Flag::H>(c);
-        a = result;
+    if (!N) {
+        if (C || u > 0x99) {
+            u += 0x60;
+            C = true;
+        }
+        if (H || get_nibble<0>(u) > 0x9)
+            u += 0x06;
+    } else {
+        if (C)
+            u -= 0x60;
+        if (H)
+            u -= 0x06;
     }
-    if ((a & 0xF0) > 9) {
-        auto [result, h, c] = sum_carry<3, 7>(a, 0x60);
-        writeFlag<Flag::H>(h);
-        writeFlag<Flag::H>(c);
-        a = result;
-    }
-    writeRegister8<Register8::A>(a);
-    writeFlag<Flag::N>(false);
+    writeRegister8<Register8::A>(u);
+    writeFlag<Flag::Z>(u == 0);
+    writeFlag<Flag::H>(false);
+    writeFlag<Flag::C>(C);
     fetch();
 }
 
@@ -1759,10 +1761,10 @@ void CPU::CCF_m1() {
 // 07 | RLCA
 
 void CPU::RLCA_m1() {
-    uint8_t x = readRegister8<Register8::A>();
-    bool b7 = get_bit<7>(x);
-    x = (x << 1) | b7;
-    writeRegister8<Register8::A>(x);
+    u = readRegister8<Register8::A>();
+    bool b7 = get_bit<7>(u);
+    u = (u << 1) | b7;
+    writeRegister8<Register8::A>(u);
     writeFlag<Flag::Z>(false);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -1773,10 +1775,10 @@ void CPU::RLCA_m1() {
 // 17 | RLA
 
 void CPU::RLA_m1() {
-    uint8_t x = readRegister8<Register8::A>();
-    bool b7 = get_bit<7>(x);
-    x = (x << 1) | readFlag<Flag::C>();
-    writeRegister8<Register8::A>(x);
+    u = readRegister8<Register8::A>();
+    bool b7 = get_bit<7>(u);
+    u = (u << 1) | readFlag<Flag::C>();
+    writeRegister8<Register8::A>(u);
     writeFlag<Flag::Z>(false);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -1787,10 +1789,10 @@ void CPU::RLA_m1() {
 // 0F | RRCA
 
 void CPU::RRCA_m1() {
-    uint8_t x = readRegister8<Register8::A>();
-    bool b0 = get_bit<0>(x);
-    x = (x >> 1) | (b0 << 7);
-    writeRegister8<Register8::A>(x);
+    u = readRegister8<Register8::A>();
+    bool b0 = get_bit<0>(u);
+    u = (u >> 1) | (b0 << 7);
+    writeRegister8<Register8::A>(u);
     writeFlag<Flag::Z>(false);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -1801,10 +1803,10 @@ void CPU::RRCA_m1() {
 // 1F | RRA
 
 void CPU::RRA_m1() {
-    uint8_t x = readRegister8<Register8::A>();
-    bool b0 = get_bit<0>(x);
-    x = (x >> 1) | (readFlag<Flag::C>() << 7);
-    writeRegister8<Register8::A>(x);
+    u = readRegister8<Register8::A>();
+    bool b0 = get_bit<0>(u);
+    u = (u >> 1) | (readFlag<Flag::C>() << 7);
+    writeRegister8<Register8::A>(u);
     writeFlag<Flag::Z>(false);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -2103,11 +2105,11 @@ void CPU::CB_m1() {
 
 template<CPU::Register8 r>
 void CPU::RLC_r_m1() {
-    uint8_t x = readRegister8<r>();
-    bool b7 = get_bit<7>(x);
-    x = (x << 1) | b7;
-    writeRegister8<r>(x);
-    writeFlag<Flag::Z>(x == 0);
+    u = readRegister8<r>();
+    bool b7 = get_bit<7>(u);
+    u = (u << 1) | b7;
+    writeRegister8<r>(u);
+    writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
     writeFlag<Flag::C>(b7);
@@ -2142,11 +2144,11 @@ void CPU::RLC_arr_m3() {
 
 template<CPU::Register8 r>
 void CPU::RRC_r_m1() {
-    uint8_t x = readRegister8<r>();
-    bool b0 = get_bit<0>(x);
-    x = (x >> 1) | (b0 << 7);
-    writeRegister8<r>(x);
-    writeFlag<Flag::Z>(x == 0);
+    u = readRegister8<r>();
+    bool b0 = get_bit<0>(u);
+    u = (u >> 1) | (b0 << 7);
+    writeRegister8<r>(u);
+    writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
     writeFlag<Flag::C>(b0);
@@ -2182,11 +2184,11 @@ void CPU::RRC_arr_m3() {
 
 template<CPU::Register8 r>
 void CPU::RL_r_m1() {
-    uint8_t x = readRegister8<r>();
-    bool b7 = get_bit<7>(x);
-    x = (x << 1) | readFlag<Flag::C>();
-    writeRegister8<r>(x);
-    writeFlag<Flag::Z>(x == 0);
+    u = readRegister8<r>();
+    bool b7 = get_bit<7>(u);
+    u = (u << 1) | readFlag<Flag::C>();
+    writeRegister8<r>(u);
+    writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
     writeFlag<Flag::C>(b7);
@@ -2206,7 +2208,7 @@ void CPU::RL_arr_m2() {
     bool b7 = get_bit<7>(u);
     u = (u << 1) | readFlag<Flag::C>();
     bus.write(addr, u);
-    writeFlag<Flag::Z>(false);
+    writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
     writeFlag<Flag::C>(b7);
@@ -2221,11 +2223,11 @@ void CPU::RL_arr_m3() {
 
 template<CPU::Register8 r>
 void CPU::RR_r_m1() {
-    uint8_t x = readRegister8<r>();
-    bool b0 = get_bit<0>(x);
-    x = (x >> 1) | (readFlag<Flag::C>() << 7);
-    writeRegister8<r>(x);
-    writeFlag<Flag::Z>(x == 0);
+    u = readRegister8<r>();
+    bool b0 = get_bit<0>(u);
+    u = (u >> 1) | (readFlag<Flag::C>() << 7);
+    writeRegister8<r>(u);
+    writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
     writeFlag<Flag::C>(b0);
@@ -2243,7 +2245,7 @@ void CPU::RR_arr_m1() {
 template<CPU::Register16 rr>
 void CPU::RR_arr_m2() {
     bool b0 = get_bit<0>(u);
-    u = (u >> 1) | (get_bit<0>(u) << 7);
+    u = (u >> 1) | (readFlag<Flag::C>() << 7);
     bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
@@ -2417,7 +2419,8 @@ void CPU::SWAP_arr_m3() {
 
 template<uint8_t n, CPU::Register8 r>
 void CPU::BIT_r_m1() {
-    writeFlag<Flag::Z>(get_bit<n>(readRegister8<r>()) == 0);
+    b = get_bit<n>(readRegister8<r>());
+    writeFlag<Flag::Z>(b == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(true);
     fetch();
@@ -2433,10 +2436,10 @@ void CPU::BIT_arr_m1() {
 
 template<uint8_t n, CPU::Register16 rr>
 void CPU::BIT_arr_m2() {
-    b = get_bit<n>(u) == 0;
+    b = get_bit<n>(u);
     writeFlag<Flag::Z>(b == 0);
     writeFlag<Flag::N>(false);
-    writeFlag<Flag::H>(false);
+    writeFlag<Flag::H>(true);
     fetch();
 }
 

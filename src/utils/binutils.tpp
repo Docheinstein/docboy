@@ -9,6 +9,17 @@ void set_byte(T &dest, uint8_t value) {
     dest |= (value << (8 * n));
 }
 
+template<uint8_t n, typename T>
+uint8_t get_nibble(T value) {
+    return (value >> (4 * n)) & 0xF;
+}
+
+template<uint8_t n, typename T>
+void set_nibble(T &dest, uint8_t value) {
+    dest &= (T) (~(((T) (0xF)) << (4 * n)));
+    dest |= ((value & 0xF) << (4 * n));
+}
+
 
 template<uint8_t n, typename T>
 bool get_bit(T value) {
