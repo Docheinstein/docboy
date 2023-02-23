@@ -414,9 +414,10 @@ TEST_CASE("CPU", "[cpu]") {
     }
 }
 
-TEST_CASE("blargg", "[.][cpu]") {
+TEST_CASE("blargg", "[.][cpu][core][timer][interrupt]") {
     SECTION("cpu") {
         std::string testname = GENERATE(
+            "01-special",
             "02-interrupts",
             "03-op sp,hl",
             "04-op r,imm",
