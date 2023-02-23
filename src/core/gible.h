@@ -11,7 +11,6 @@
 #include "cpu.h"
 #include "bus.h"
 #include "debugger/debuggerbackend.h"
-#include "io.h"
 #include "serial/serialconsole.h"
 
 class Gible : public DebuggerBackend, public ObservableBus::Observer, public SerialEndpoint {
@@ -73,6 +72,7 @@ public:
     Instruction getCurrentInstruction() override;
     RegistersSnapshot getRegisters() override;
     FlagsSnapshot getFlags() override;
+    InterruptsSnapshot getInterrupts() override;
 
     uint8_t readMemory(uint16_t addr) override;
 
@@ -95,8 +95,9 @@ private:
     Cartridge cartridge;
     Memory<4096> wram1;
     Memory<4096> wram2;
+    Memory<256> io;
     Memory<127> hram;
-    IO io;
+    Memory<1> ie;
     SerialLink *serialLink;
 
     ObservableBus bus;
@@ -127,6 +128,9 @@ private:
     std::vector<Cyclepoint> cyclepoints;
     VectorMap<DisassembleEntry, 0xFFFF> code;
     std::optional<WatchpointTrigger> triggeredWatchpoint;
+
+    uint64_t divCounter;
+    uint64_t timaCounter;
 
     uint32_t nextPointId;
 

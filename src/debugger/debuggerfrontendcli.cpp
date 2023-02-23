@@ -53,12 +53,29 @@ void DebuggerFrontendCli::onFrontend() {
         return ss.str();
     };
 
+    auto coloredBool = [](bool b) {
+        std::stringstream ss;
+        if (b)
+            ss << "1";
+        else
+            ss << termcolor::color<240> << "0" << termcolor::reset;
+        return ss.str();
+    };
+
     auto registerString = [](const std::string &name, uint16_t value) {
         std::stringstream ss;
         ss
             << termcolor::bold << termcolor::red << name << termcolor::reset << "  :  "
             << bin((uint8_t) (value >> 8)) << " " << bin((uint8_t) (value & 0xFF)) << "  "
             << "(" << hex((uint8_t) (value >> 8)) << " " << hex((uint8_t) (value & 0xFF)) << ")";
+        return ss.str();
+    };
+
+    auto interruptString = [&coloredBool](const std::string &name, DebuggerBackend::InterruptsSnapshot::InterruptSnapshot interrupt) {
+        std::stringstream ss;
+        ss
+            << termcolor::bold << termcolor::red << name << "  " << termcolor::reset << "IE : " << coloredBool(interrupt.IE) << " | "
+            << "IF : " << coloredBool(interrupt.IF) << termcolor::reset;
         return ss.str();
     };
 
@@ -100,11 +117,11 @@ void DebuggerFrontendCli::onFrontend() {
         return ss.str();
     };
 
-    auto flagString = [](const std::string &name, bool value) {
+    auto flagString = [&coloredBool](const std::string &name, bool value) {
         std::stringstream ss;
         ss
             << termcolor::bold << termcolor::red << name << termcolor::reset
-            << " : " << +value;
+            << " : " << coloredBool(value);
         return ss.str();
     };
 
@@ -175,6 +192,7 @@ void DebuggerFrontendCli::onFrontend() {
     auto printUI = [&](
             DebuggerBackend::RegistersSnapshot registers,
             DebuggerBackend::FlagsSnapshot flags,
+            DebuggerBackend::InterruptsSnapshot interrupts,
             DebuggerBackend::Instruction currentInstruction) {
 
         const auto &breakpoints = backend.getBreakpoints();
@@ -211,6 +229,22 @@ void DebuggerFrontendCli::onFrontend() {
         std::cout << registerString("HL", registers.HL) << std::endl;
         std::cout << registerString("PC", registers.PC) << std::endl;
         std::cout << registerString("SP", registers.SP) << std::endl;
+
+        std::cout << headerString("interrupts") << std::endl;
+        std::cout
+            << termcolor::bold << termcolor::red << "IME" << termcolor::reset
+            << " : " << coloredBool(interrupts.IME) << std::endl;
+        std::cout
+            << termcolor::bold << termcolor::red << "IE" << termcolor::reset
+            << "  : " << bin(interrupts.IE) << std::endl;
+        std::cout
+            << termcolor::bold << termcolor::red << "IF" << termcolor::reset
+            << "  : " << bin(interrupts.IF) << std::endl;
+        std::cout << interruptString("VBLANK", interrupts.vblank()) << std::endl;
+        std::cout << interruptString("STAT  ", interrupts.stat()) << std::endl;
+        std::cout << interruptString("TIMER ", interrupts.timer()) << std::endl;
+        std::cout << interruptString("SERIAL", interrupts.serial()) << std::endl;
+        std::cout << interruptString("JOYPAD", interrupts.joypad()) << std::endl;
 
         std::cout << headerString("state") << std::endl;
         std::cout << termcolor::yellow << "Cycle    :  " << termcolor::reset << backend.getCurrentCycle() << std::endl;
@@ -298,7 +332,7 @@ void DebuggerFrontendCli::onFrontend() {
                 auto trigger = execResult->watchpointTrigger;
                 std::cout << "Triggered watchpoint [" << trigger.watchpoint.id << "] at address " << hex(trigger.address) << std::endl;
                 if (trigger.type == DebuggerBackend::WatchpointTrigger::Type::Read) {
-                    std::cout << "Read at address " << trigger.address << ": " << trigger.newValue << std::endl;
+                    std::cout << "Read at address " << hex(trigger.address) << ": " << hex(trigger.newValue) << std::endl;
                 } else {
                     std::cout << "Write at address " << hex(trigger.address) << std::endl;
                     std::cout << "Old: " << hex(trigger.oldValue) << std::endl;
@@ -377,7 +411,8 @@ void DebuggerFrontendCli::onFrontend() {
         if (updateUI) {
             auto registers = backend.getRegisters();
             auto flags = backend.getFlags();
-            printUI(registers, flags, instruction);
+            auto interrupts = backend.getInterrupts();
+            printUI(registers, flags, interrupts, instruction);
             updateUI = false;
         }
 

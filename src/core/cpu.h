@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include <optional>
 #include "bus.h"
 
 class CPU {
@@ -33,12 +34,14 @@ public:
     [[nodiscard]] bool getN() const;
     [[nodiscard]] bool getH() const;
     [[nodiscard]] bool getC() const;
+    [[nodiscard]] bool getIME() const;
     [[nodiscard]] uint16_t getCurrentInstructionAddress() const;
     [[nodiscard]] uint8_t getCurrentInstructionOpcode() const;
     [[nodiscard]] uint8_t getCurrentInstructionMicroOperation() const;
     [[nodiscard]] bool getCurrentInstructionCB() const;
     [[nodiscard]] uint64_t getCurrentMcycle() const;
     [[nodiscard]] uint64_t getCurrentCycle() const;
+    [[nodiscard]] bool hasPendingInterrupt() const; // TODO: sooo bad
 
 private:
     enum class Register8 {
@@ -82,6 +85,9 @@ private:
     uint16_t SP;
 
     bool IME;
+    bool halted;
+
+    std::optional<uint16_t> pendingInterrupt;
 
     uint64_t mCycles;
     uint64_t cycles;
@@ -607,6 +613,8 @@ private:
     void SET_arr_m2();
     template<uint8_t n, Register16 r>
     void SET_arr_m3();
+
+    void INT(uint16_t address);
 };
 
 #endif // CPU_H

@@ -8,8 +8,8 @@ IBus::~IBus() {
 
 }
 
-Bus::Bus(Cartridge &cartridge, IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram) :
-    cartridge(cartridge), wram1(wram1), wram2(wram2), io(io), hram(hram) {
+Bus::Bus(Cartridge &cartridge, IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram, IMemory &ie) :
+    cartridge(cartridge), wram1(wram1), wram2(wram2), io(io), hram(hram), ie(ie) {
 
 }
 
@@ -41,10 +41,14 @@ uint8_t Bus::read(uint16_t addr) {
         throw std::runtime_error("Read at address " + hex(addr) + " is not allowed");
     } else if (addr < 0xFF80) {
         result = io.read(addr - 0xFF00);
+#ifdef GAMEBOY_DOCTOR
+        if (addr == 0xFF44)
+            result = 0x90;
+#endif
     } else if (addr < 0xFFFF) {
         result = hram.read(addr - 0xFF80);
-    } else /* addr == 0xFFF */ {
-        DEBUG(1) << "WARN: (IE) read at address " + hex(addr) + " not implemented" << std::endl;
+    } else /* addr == 0xFFFF */ {
+        result = ie.read(0);
     }
     DEBUG(2) << "Bus:read(" << hex(addr) << ") -> " << hex(result) << std::endl;
     return result;
@@ -75,7 +79,7 @@ void Bus::write(uint16_t addr, uint8_t value) {
     } else if (addr < 0xFFFF) {
         hram.write(addr - 0xFF80, value);
     } else /* addr == 0xFFF */ {
-        DEBUG(1) << "WARN: (IE) write at address " + hex(addr) + " not implemented" << std::endl;
+        ie.write(0, value);
     }
 }
 
@@ -83,8 +87,8 @@ ObservableBus::Observer::~Observer() {
 
 }
 
-ObservableBus::ObservableBus(Cartridge &cartridge, IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram)
-    : Bus(cartridge, wram1, wram2, io, hram) {
+ObservableBus::ObservableBus(Cartridge &cartridge, IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram, IMemory &ie)
+    : Bus(cartridge, wram1, wram2, io, hram, ie) {
 
 }
 

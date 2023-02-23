@@ -20,10 +20,20 @@ void set_nibble(T &dest, uint8_t value) {
     dest |= ((value & 0xF) << (4 * n));
 }
 
+template<typename T>
+bool get_bit(T value, uint8_t n) {
+    return (value >> n) & 1;
+}
 
 template<uint8_t n, typename T>
 bool get_bit(T value) {
     return (value >> n) & 1;
+}
+
+template<typename T>
+void set_bit(T &dest, uint8_t n, bool value) {
+    dest &= (~((uint8_t) 1 << n));
+    dest |= ((value ? 1 : 0) << n);
 }
 
 template<uint8_t n, typename T>

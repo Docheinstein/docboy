@@ -7,7 +7,7 @@
 #include "core/cartridge.h"
 #include "utils/binutils.h"
 #include "serial/serialbuffer.h"
-#include "core/definitions.h"
+#include "core/instructions.h"
 #include "debugger/debuggerfrontend.h"
 #include "debugger/debuggerbackend.h"
 #include "log/log.h"
@@ -417,6 +417,7 @@ TEST_CASE("CPU", "[cpu]") {
 TEST_CASE("blargg", "[.][cpu]") {
     SECTION("cpu") {
         std::string testname = GENERATE(
+            "02-interrupts",
             "03-op sp,hl",
             "04-op r,imm",
             "05-op rp",

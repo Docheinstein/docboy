@@ -2,10 +2,10 @@
 #include "log/log.h"
 #include "utils/binutils.h"
 #include "debugger/debuggerfrontend.h"
-#include "definitions.h"
+#include "instructions.h"
 #include <vector>
 #include <algorithm>
-
+#include "memorymap.h"
 
 
 template<typename T, size_t size>
@@ -50,7 +50,7 @@ void Gible::VectorMap<T, size>::clear() {
 
 Gible::Gible() :
         io(),
-        bus(cartridge, wram1, wram2, io, hram),
+        bus(cartridge, wram1, wram2, io, hram, ie),
         cpu(bus),
         debugger(),
         breakpoints(),
@@ -58,7 +58,9 @@ Gible::Gible() :
         serialLink(),
         debuggerAbortRequest(),
         debuggerInterruptRequest(),
-        nextPointId() {
+        nextPointId(),
+        divCounter(),
+        timaCounter() {
 }
 
 Gible::~Gible() {
@@ -206,8 +208,8 @@ void Gible::clearPoints() {
 
 std::optional<DebuggerBackend::Watchpoint> Gible::getWatchpoint(uint16_t addr) const {
     auto w = std::find_if(watchpoints.begin(), watchpoints.end(),
-                         [addr](const Watchpoint &w) {
-        return  w.from <= addr && addr <= w.to;
+                         [addr](const Watchpoint &wp) {
+        return wp.from <= addr && addr <= wp.to;
     });
     if (w != watchpoints.end())
         return *w;
@@ -304,6 +306,14 @@ DebuggerBackend::FlagsSnapshot Gible::getFlags() {
         .N = cpu.getN(),
         .H = cpu.getH(),
         .C = cpu.getC(),
+    };
+}
+
+DebuggerBackend::InterruptsSnapshot Gible::getInterrupts() {
+    return {
+        .IME = cpu.getIME(),
+        .IE = readMemory(MemoryMap::IE),
+        .IF = readMemory(MemoryMap::IO::IF),
     };
 }
 
@@ -464,7 +474,48 @@ DebuggerBackend::ExecResult Gible::tick() {
 
     auto now = std::chrono::high_resolution_clock::now();
 
+    // TODO: this is always one but the interrupt breaks this invariant, try to make the +1 invariant
+    auto m = cpu.getCurrentMcycle();
     cpu.tick();
+    auto mIncRaw = cpu.getCurrentMcycle() - m;
+    uint64_t mInc = mIncRaw;
+    if (mInc == 0)
+        mInc = 1; // TODO: baaad: because of halt
+
+    // TODO: bad
+    constexpr int CPU_HZ = 4194304;
+    constexpr int CPU_M_HZ = CPU_HZ / 4;
+    constexpr int DIV_HZ = 16384;
+
+    // DIV
+    divCounter += mInc;
+    if (divCounter >= CPU_M_HZ / DIV_HZ) {
+        divCounter = 0;
+        uint8_t DIV = bus.read(MemoryMap::IO::DIV);
+        bus.write(MemoryMap::IO::DIV, DIV + 1);
+    }
+
+    // TIMA
+    uint8_t TAC = bus.read(MemoryMap::IO::TAC);
+    constexpr int TAC_SELECTOR_HZ[4] = {4096, 262144, 65536, 16384};
+    if (get_bit<Bits::IO::TAC::ENABLE>(TAC))
+        timaCounter += mInc;
+
+    if (timaCounter >= CPU_M_HZ / TAC_SELECTOR_HZ[TAC & bitmask<2>]) {
+        timaCounter = 0;
+        uint8_t TIMA = bus.read(MemoryMap::IO::TIMA);
+        auto [result, overflow] = sum_carry<7>(TIMA, 1);
+        if (overflow) {
+            TIMA = bus.read(MemoryMap::IO::TMA);
+            bus.write(MemoryMap::IO::TIMA, TIMA);
+
+            uint8_t IF = bus.read(MemoryMap::IO::IF);
+            set_bit<Bits::IO::IF::TIMER>(IF, true);
+            bus.write(MemoryMap::IO::IF, IF);
+        } else {
+            bus.write(MemoryMap::IO::TIMA, result);
+        }
+    }
 
 #ifdef GAMEBOY_DOCTOR
     if ((cpu.getCurrentInstructionMicroOperation() == 0 &&
@@ -477,23 +528,41 @@ DebuggerBackend::ExecResult Gible::tick() {
         auto HL = cpu.getHL();
         auto SP = cpu.getSP();
         uint16_t PC = cpu.getPC() - 1;
-        std::cerr
-            << "A:" << hex(get_byte<1>(AF)) << " "
-            << "F:" << hex(get_byte<0>(AF)) << " "
-            << "B:" << hex(get_byte<1>(BC)) << " "
-            << "C:" << hex(get_byte<0>(BC)) << " "
-            << "D:" << hex(get_byte<1>(DE)) << " "
-            << "E:" << hex(get_byte<0>(DE)) << " "
-            << "H:" << hex(get_byte<1>(HL)) << " "
-            << "L:" << hex(get_byte<0>(HL)) << " "
-            << "SP:" << hex(SP) << " "
-            << "PC:" << hex(PC) << " "
-            << "PCMEM:" << hex(bus.read(PC)) << "," << hex(bus.read(PC + 1)) << "," << hex(bus.read(PC + 2)) << "," << hex(bus.read(PC + 3))
-            << std::endl;
+//        std::cerr
+//            << "A:" << hex(get_byte<1>(AF)) << " "
+//            << "F:" << hex(get_byte<0>(AF)) << " "
+//            << "B:" << hex(get_byte<1>(BC)) << " "
+//            << "C:" << hex(get_byte<0>(BC)) << " "
+//            << "D:" << hex(get_byte<1>(DE)) << " "
+//            << "E:" << hex(get_byte<0>(DE)) << " "
+//            << "H:" << hex(get_byte<1>(HL)) << " "
+//            << "L:" << hex(get_byte<0>(HL)) << " "
+//            << "SP:" << hex(SP) << " "
+//            << "PC:" << hex(PC) << " "
+//            << "PCMEM:" << hex(bus.read(PC)) << "," << hex(bus.read(PC + 1)) << "," << hex(bus.read(PC + 2)) << "," << hex(bus.read(PC + 3))
+//            << std::endl;
+        if (cpu.getCurrentCycle() > 1 && !cpu.hasPendingInterrupt())
+            std::cerr
+                << "A: " << hex(get_byte<1>(AF)) << " "
+                << "F: " << hex(get_byte<0>(AF)) << " "
+                << "B: " << hex(get_byte<1>(BC)) << " "
+                << "C: " << hex(get_byte<0>(BC)) << " "
+                << "D: " << hex(get_byte<1>(DE)) << " "
+                << "E: " << hex(get_byte<0>(DE)) << " "
+                << "H: " << hex(get_byte<1>(HL)) << " "
+                << "L: " << hex(get_byte<0>(HL)) << " "
+                << "SP: " << hex(SP) << " "
+                << "PC: " << "00:" << hex(PC) << " ("
+                << hex(bus.read(PC)) << " "
+                << hex(bus.read(PC + 1)) << " "
+                << hex(bus.read(PC + 2)) << " "
+                << hex(bus.read(PC + 3)) << ")"
+                << std::endl;
     }
 #endif
 
-    uint8_t SC = io.readSC();
+    // TODO: is it appropriate to handle serial data here? or maybe in CPU?
+    uint8_t SC = bus.read(MemoryMap::IO::SC);
     if (serialLink) {
         if (get_bit<7>(SC) && get_bit<0>(SC))
             serialLink->tick();
@@ -549,14 +618,14 @@ void Gible::reset() {
 }
 
 uint8_t Gible::serialRead() {
-    return io.readSB();
+    return bus.read(MemoryMap::IO::SB);
 }
 
 void Gible::serialWrite(uint8_t data) {
-    io.writeSB(data);
-    uint8_t SC = io.readSC();
+    bus.write(MemoryMap::IO::SB, data);
+    uint8_t SC = bus.read(SC);
     set_bit<7>(SC, false);
-    io.writeSC(SC);
+    bus.write(MemoryMap::IO::SC, SC);
     // TODO: interrupt
 }
 

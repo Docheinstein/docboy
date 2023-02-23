@@ -1,13 +1,12 @@
 #ifndef BUS_H
 #define BUS_H
 
-
+#include <cstdint>
+#include <type_traits>
 class Cartridge;
 class IMemory;
 class ISerial;
 
-#include <cstdint>
-#include <type_traits>
 
 class IBus {
 public:
@@ -18,7 +17,7 @@ public:
 
 class Bus : public IBus {
 public:
-    Bus(Cartridge &cartridge, IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram);
+    Bus(Cartridge &cartridge, IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram, IMemory &ie);
     ~Bus() override;
 
     uint8_t read(uint16_t addr) override;
@@ -30,6 +29,7 @@ private:
     IMemory &wram2;
     IMemory &io;
     IMemory &hram;
+    IMemory &ie;
 };
 
 class ObservableBus : public Bus {
@@ -40,7 +40,7 @@ public:
         virtual void onBusRead(uint16_t addr, uint8_t value) = 0;
         virtual void onBusWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) = 0;
     };
-    ObservableBus(Cartridge &cartridge, IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram);
+    ObservableBus(Cartridge &cartridge, IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram, IMemory &ie);
     ~ObservableBus() override;
 
     void setObserver(Observer *observer);

@@ -11,13 +11,20 @@
 template<uint8_t n, typename T>
 uint8_t get_byte(T value);
 
+
 template<uint8_t n, typename T>
 void set_byte(T &dest, uint8_t value);
 
 uint16_t concat_bytes(uint8_t msb, uint8_t lsb);
 
+template<typename T>
+bool get_bit(T value, uint8_t n);
+
 template<uint8_t n, typename T>
 bool get_bit(T value);
+
+template<typename T>
+void set_bit(T &dest, uint8_t n, bool value);
 
 template<uint8_t n, typename T>
 void set_bit(T &dest, bool value);

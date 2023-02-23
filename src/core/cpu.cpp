@@ -3,7 +3,8 @@
 #include "utils/binutils.h"
 #include <functional>
 #include <cassert>
-#include "definitions.h"
+#include "instructions.h"
+#include "memorymap.h"
 
 CPU::InstructionNotImplementedException::InstructionNotImplementedException(const std::string &what) : logic_error(what) {
 
@@ -17,6 +18,8 @@ CPU::CPU(IBus &bus) :
         mCycles(),
         AF(), BC(), DE(), HL(), PC(), SP(), IME(),
         currentInstruction(),
+        pendingInterrupt(),
+        halted(),
         instructions {
 	/* 00 */ { &CPU::NOP_m1 },
 	/* 01 */ { &CPU::LD_rr_uu_m1<Register16::BC>, &CPU::LD_rr_uu_m2<Register16::BC>, &CPU::LD_rr_uu_m3<Register16::BC> },
@@ -566,27 +569,48 @@ void CPU::reset() {
 }
 
 void CPU::tick() {
-    DEBUG(2)
-        << "------------------------------ CPU:tick ------------------------------\n"
-        << status() << "\n"
-        << std::endl;
+    if (halted) {
+        uint8_t IE = bus.read(MemoryMap::IE);
+        uint8_t IF = bus.read(MemoryMap::IO::IF);
+        for (uint8_t b = 0; b <= 4; b++) {
+            if (get_bit(IE, b) && get_bit(IF, b)) {
+                halted = false;
+                // TODO: figure out if the IF bit is set to 0
+                //  and if so, whether it depends on the value of IME
+                bus.write(MemoryMap::IO::IF, IF);
+                if (IME) {
+                    set_bit(IF, b, false);
+                    pendingInterrupt = 0x40 + 8 * b;
+                }
+            }
+        }
+        return;
+    }
 
-
-    DEBUG(2)
-        << "\033[32m"
-        << "INSTRUCTION: "
-        << (currentInstruction.CB ? hex((uint8_t) 0xCB) + " " : "")
-            << hex(currentInstruction.opcode) << "[M=" << std::to_string(currentInstruction.microop + 1) << "] "
-            << (currentInstruction.CB ?
-                INSTRUCTIONS_CB[currentInstruction.opcode].mnemonic :
-                INSTRUCTIONS[currentInstruction.opcode].mnemonic)
-        << "\033[0m"
-        << std::endl;
-
+    if (pendingInterrupt) {
+        INT(*pendingInterrupt);
+        pendingInterrupt = std::nullopt;
+        return;
+    }
+    // TODO: else if or just if?
+    else if (IME) {
+        uint8_t IE = bus.read(MemoryMap::IE);
+        uint8_t IF = bus.read(MemoryMap::IO::IF);
+        for (uint8_t b = 0; b <= 4; b++) {
+            if (get_bit(IE, b) && get_bit(IF, b)) {
+                set_bit(IF, b, false);
+                bus.write(MemoryMap::IO::IF, IF);
+                IME = false;
+                pendingInterrupt = 0x40 + 8 * b;
+                break; // TODO: stop after first or handle them all?
+            }
+        }
+    }
 
     InstructionMicroOperation micro_op;
     bool incCycle = currentInstruction.microop == 0 && !currentInstruction.CB; // TODO: bad
 
+    // TODO: this check clashes with interrupt
     if (currentInstruction.CB)
         micro_op = instructionsCB[currentInstruction.opcode][currentInstruction.microop++];
     else
@@ -600,12 +624,6 @@ void CPU::tick() {
 
     mCycles++;
     cycles += incCycle;     // TODO: bad
-
-
-    DEBUG(2)
-        << "\n"
-        << status() << "\n"
-        << "---------------------------------------------------------------------------\n" << std::endl;
 }
 
 template<>
@@ -877,7 +895,8 @@ void CPU::STOP_m1() {
 }
 
 void CPU::HALT_m1() {
-    // TODO: what to do here?
+    fetch();
+    halted = true;
 }
 
 void CPU::DI_m1() {
@@ -2503,6 +2522,41 @@ void CPU::SET_arr_m3() {
 }
 
 
+// INTERRUPT
+
+void CPU::INT(uint16_t addr) {
+    auto PCfix = PC - 1; // TODO: -1 because of prefetch but it's ugly
+    bus.write(--SP, get_byte<1>(PCfix));
+    bus.write(--SP, get_byte<0>(PCfix));
+    PC = addr;
+
+    // TODO: ok?
+    cycles += 1;
+    mCycles += 5;
+
+    // TODO: sooo bad
+//#if GAMEBOY_DOCTOR
+//    std::cerr
+//        << "A: " << hex(get_byte<1>(AF)) << " "
+//        << "F: " << hex(get_byte<0>(AF)) << " "
+//        << "B: " << hex(get_byte<1>(BC)) << " "
+//        << "C: " << hex(get_byte<0>(BC)) << " "
+//        << "D: " << hex(get_byte<1>(DE)) << " "
+//        << "E: " << hex(get_byte<0>(DE)) << " "
+//        << "H: " << hex(get_byte<1>(HL)) << " "
+//        << "L: " << hex(get_byte<0>(HL)) << " "
+//        << "SP: " << hex(SP) << " "
+//        << "PC: " << "00:" << hex(PC) << " ("
+//        << hex(bus.read(PC)) << " "
+//        << hex(bus.read(PC + 1)) << " "
+//        << hex(bus.read(PC + 2)) << " "
+//        << hex(bus.read(PC + 3)) << ")"
+//        << std::endl;
+//#endif
+
+    fetch();
+}
+
 // ----
 
 uint16_t CPU::getAF() const {
@@ -2545,6 +2599,10 @@ bool CPU::getC() const {
     return readFlag<Flag::C>();
 }
 
+bool CPU::getIME() const {
+    return IME;
+}
+
 
 uint16_t CPU::getCurrentInstructionAddress() const {
     return currentInstruction.address;
@@ -2568,5 +2626,9 @@ uint64_t CPU::getCurrentMcycle() const {
 
 uint64_t CPU::getCurrentCycle() const {
     return cycles;
+}
+
+bool CPU::hasPendingInterrupt() const {
+    return pendingInterrupt != std::nullopt;
 }
 

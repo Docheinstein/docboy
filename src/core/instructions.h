@@ -1,8 +1,10 @@
 #ifndef INSTRUCTIONS_H
-#define DEFINITIONS_H
+#define INSTRUCTIONS_H
 
 #include <cstdint>
 #include <string>
+
+// TODO: only one definition file
 
 struct InstructionInfo {
     std::string mnemonic;

@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include "instructions.h"
+#include "utils/binutils.h"
 
 class DebuggerFrontend;
 
@@ -23,6 +24,22 @@ public:
         bool N;
         bool H;
         bool C;
+    };
+
+    struct InterruptsSnapshot {
+        struct InterruptSnapshot {
+            bool IE;
+            bool IF;
+        };
+        bool IME;
+        uint8_t IE;
+        uint8_t IF;
+
+        [[nodiscard]] InterruptSnapshot vblank() const { return { .IE = get_bit<0>(IE), .IF = get_bit<0>(IF) }; }
+        [[nodiscard]] InterruptSnapshot stat() const { return { .IE = get_bit<1>(IE), .IF = get_bit<1>(IF) }; }
+        [[nodiscard]] InterruptSnapshot timer() const { return { .IE = get_bit<2>(IE), .IF = get_bit<2>(IF) }; }
+        [[nodiscard]] InterruptSnapshot serial() const { return { .IE = get_bit<3>(IE), .IF = get_bit<3>(IF) }; }
+        [[nodiscard]] InterruptSnapshot joypad() const { return { .IE = get_bit<4>(IE), .IF = get_bit<4>(IF) }; }
     };
 
     struct DisassembleEntry {
@@ -152,6 +169,7 @@ public:
     virtual Instruction getCurrentInstruction() = 0;
     virtual RegistersSnapshot getRegisters() = 0;
     virtual FlagsSnapshot getFlags() = 0;
+    virtual InterruptsSnapshot getInterrupts() = 0;
     virtual uint64_t getCurrentCycle() = 0;
     virtual uint64_t getCurrentMcycle() = 0;
 
