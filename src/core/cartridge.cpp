@@ -9,6 +9,23 @@ static const uint8_t NINTENDO_LOGO[] = {
     0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E
 };
 
+
+bool Cartridge::Header::isValid() const {
+    return isNintendoLogoValid() && isHeaderChecksumValid();
+}
+
+bool Cartridge::Header::isNintendoLogoValid() const {
+    return memcmp(nintendo_logo.data(), NINTENDO_LOGO, sizeof(NINTENDO_LOGO)) == 0;
+}
+
+bool Cartridge::Header::isHeaderChecksumValid() const {
+    uint8_t expected_header_checksum = 0;
+    for (uint16_t address = 0x134 - 0x100; address <= 0x14C - 0x100; address++)
+        expected_header_checksum = expected_header_checksum - data[address] - 1;
+
+    return expected_header_checksum == header_checksum;
+}
+
 Cartridge::Header Cartridge::header() const {
     auto memcpy_range = [](uint8_t *dest, const uint8_t *src, size_t from, size_t to) {
         memcpy(dest, src + from, to - from + 1);
@@ -26,7 +43,7 @@ Cartridge::Header Cartridge::header() const {
 
     Cartridge::Header h;
 
-    auto raw_data = (uint8_t *) data.data();
+    auto raw_data = (uint8_t *) rom.data();
 
     // Raw data
     memcpy_range_v(h.data, raw_data, 0x100, 0x14F);
@@ -78,57 +95,19 @@ Cartridge::Header Cartridge::header() const {
     return h;
 }
 
-std::optional<Cartridge> Cartridge::fromFile(const std::string &filename) {
-    bool ok;
-    Cartridge c;
-    c.data = readfile(filename, &ok);
-    if (!ok)
-        return std::nullopt;
-    return c;
+
+//Cartridge &Cartridge::operator=(const Cartridge &other) = default;
+//
+//Cartridge &Cartridge::operator=(Cartridge &&other) noexcept {
+//    this->rom = std::move(other.rom);
+//    return *this;
+//}
+
+Cartridge::Cartridge(const std::vector<uint8_t> &data) {
+    this->rom = data;
 }
 
-Cartridge::Cartridge() {
-
+Cartridge::Cartridge(std::vector<uint8_t> &&data) {
+    this->rom = std::move(data);
 }
 
-Cartridge::~Cartridge() {
-
-}
-
-Cartridge::Cartridge(const Cartridge &other) = default;
-
-Cartridge::Cartridge(Cartridge &&other)  noexcept {
-    this->data = std::move(other.data);
-}
-
-Cartridge &Cartridge::operator=(const Cartridge &other) = default;
-
-Cartridge &Cartridge::operator=(Cartridge &&other) noexcept {
-    this->data = std::move(other.data);
-    return *this;
-}
-
-uint8_t Cartridge::operator[](size_t index) const {
-    return data[index];
-}
-
-std::ostream & operator<<(std::ostream &os, const Cartridge &cartridge) {
-    os << hexdump(cartridge.data);
-    return os;
-}
-
-bool Cartridge::Header::isValid() const {
-    return isNintendoLogoValid() && isHeaderChecksumValid();
-}
-
-bool Cartridge::Header::isNintendoLogoValid() const {
-    return memcmp(nintendo_logo.data(), NINTENDO_LOGO, sizeof(NINTENDO_LOGO)) == 0;
-}
-
-bool Cartridge::Header::isHeaderChecksumValid() const {
-    uint8_t expected_header_checksum = 0;
-    for (uint16_t address = 0x134 - 0x100; address <= 0x14C - 0x100; address++)
-        expected_header_checksum = expected_header_checksum - data[address] - 1;
-
-    return expected_header_checksum == header_checksum;
-}

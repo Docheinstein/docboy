@@ -44,7 +44,10 @@ int main(int argc, char **argv) {
         gible.attachSerialLink(&serialLink);
     }
 
-    gible.loadROM(args.rom);
+    if (!gible.loadROM(args.rom)) {
+        std::cerr << "ERROR: failed to load rom: '" << args.rom << "'" << std::endl;
+        return 1;
+    }
     gible.start();
     return 0;
 }

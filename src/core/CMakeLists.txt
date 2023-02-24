@@ -3,13 +3,24 @@ set(SOURCES
     bus.cpp
     cartridge.h
     cartridge.cpp
+    cartridgefactory.h
+    cartridgefactory.cpp
     cpu.h
     cpu.cpp
-        instructions.h
+    instructions.h
+    io.h
+    io.cpp
+    mbc1.h
+    mbc1.cpp
+    mbc1ram.h
+    mbc1ram.cpp
     gible.h
     gible.cpp
     memory.h
     memory.cpp
+    memorymap.h
+    nombc.h
+    nombc.cpp
 )
 
 add_library(core STATIC ${SOURCES})

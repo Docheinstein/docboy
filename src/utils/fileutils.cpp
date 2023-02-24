@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <iostream>
 
-std::vector<uint8_t> readfile(const std::string &filename, bool *ok) {
+std::vector<uint8_t> read_file(const std::string &filename, bool *ok) {
     std::vector<uint8_t> out;
 
     std::ifstream ifs(filename);

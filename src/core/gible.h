@@ -92,7 +92,7 @@ public:
     void serialWrite(uint8_t) override;
 
 private:
-    Cartridge cartridge;
+    std::shared_ptr<Cartridge> cartridge;
     Memory<4096> wram1;
     Memory<4096> wram2;
     Memory<256> io;

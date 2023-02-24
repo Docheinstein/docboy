@@ -32,24 +32,20 @@ public:
         [[nodiscard]] bool isHeaderChecksumValid() const;
     };
 
-    static std::optional<Cartridge> fromFile(const std::string &filename);
+//    Cartridge() = default;
+    explicit Cartridge(const std::vector<uint8_t> &data);
+    explicit Cartridge(std::vector<uint8_t> &&data);
+    virtual ~Cartridge() = default;
 
-    Cartridge();
-    ~Cartridge();
-
-    Cartridge(const Cartridge &other);
-    Cartridge(Cartridge &&other) noexcept;
-
-    Cartridge & operator=(const Cartridge &other);
-    Cartridge & operator=(Cartridge &&other) noexcept;
-
-    friend std::ostream & operator<<(std::ostream &os, const Cartridge &cartridge);
+//    Cartridge & operator=(const Cartridge &other);
+//    Cartridge & operator=(Cartridge &&other) noexcept;
 
     [[nodiscard]] Header header() const;
 
-    uint8_t operator[](size_t index) const;
+    [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
+    virtual void write(uint16_t address, uint8_t value) = 0;
 
-private:
-    std::vector<uint8_t> data;
+protected:
+    std::vector<uint8_t> rom;
 };
 #endif // CARTRIDGE_H

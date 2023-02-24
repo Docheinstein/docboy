@@ -42,6 +42,11 @@ void set_bit(T &dest, bool value) {
     dest |= ((value ? 1 : 0) << n);
 }
 
+template<uint8_t n, typename T>
+T bitmasked(T value) {
+    return value & bitmask<n>;
+}
+
 template<uint8_t b, typename T1, typename T2>
 bool sum_get_carry_bit(T1 v1, T2 v2) {
     uint64_t mask = bitmask<b + 1>;

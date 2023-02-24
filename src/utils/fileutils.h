@@ -4,6 +4,6 @@
 #include <string>
 #include <vector>
 
-std::vector<uint8_t> readfile(const std::string &filename, bool *ok = nullptr);
+std::vector<uint8_t> read_file(const std::string &filename, bool *ok = nullptr);
 
 #endif // FILEUTILS_H

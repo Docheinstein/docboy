@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include "memorymap.h"
+#include "cartridgefactory.h"
 
 
 template<typename T, size_t size>
@@ -50,7 +51,7 @@ void Gible::VectorMap<T, size>::clear() {
 
 Gible::Gible() :
         io(),
-        bus(cartridge, wram1, wram2, io, hram, ie),
+        bus(wram1, wram2, io, hram, ie),
         cpu(bus),
         debugger(),
         breakpoints(),
@@ -70,15 +71,14 @@ Gible::~Gible() {
 bool Gible::loadROM(const std::string &rom) {
     DEBUG(1) << "Loading ROM: " << rom << std::endl;
 
-    auto c = Cartridge::fromFile(rom);
+    auto c = CartridgeFactory::makeCartridge(rom);
     if (!c)
         return false;
-    cartridge = std::move(*c);
-//    if (cartridge.header().cartridge_type != 0x00)
-//	    throw std::runtime_error("Cartridge type" + hex(cartridge.header().cartridge_type) + " not implemented");
+    cartridge = std::move(c);
+    bus.attachCartridge(cartridge);
 
 #if DEBUG_LEVEL >= 1
-    auto h = cartridge.header();
+    auto h = cartridge->header();
     DEBUG(1)
         << "ROM loaded\n"
         << "---------------\n"
@@ -501,7 +501,7 @@ DebuggerBackend::ExecResult Gible::tick() {
     if (get_bit<Bits::IO::TAC::ENABLE>(TAC))
         timaCounter += mInc;
 
-    if (timaCounter >= CPU_M_HZ / TAC_SELECTOR_HZ[TAC & bitmask<2>]) {
+    if (timaCounter >= CPU_M_HZ / TAC_SELECTOR_HZ[bitmasked<2>(TAC)]) {
         timaCounter = 0;
         uint8_t TIMA = bus.read(MemoryMap::IO::TIMA);
         auto [result, overflow] = sum_carry<7>(TIMA, 1);
