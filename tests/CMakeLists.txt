@@ -2,7 +2,8 @@ set(SOURCES
         main.cpp
 )
 
-add_executable(gible-tests ${SOURCES})
-target_compile_definitions(gible-tests PUBLIC TESTING=1)
+add_executable(docboy-tests ${SOURCES})
 
-target_link_libraries(gible-tests PRIVATE core debugger log utils serial Catch2::Catch2)
+set_target_properties(docboy-tests PROPERTIES EXCLUDE_FROM_ALL True)
+
+target_link_libraries(docboy-tests PRIVATE core utils Catch2::Catch2)

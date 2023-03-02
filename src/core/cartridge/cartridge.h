@@ -4,10 +4,9 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include <optional>
-#include <iosfwd>
+#include "core/memory.h"
 
-class Cartridge {
+class Cartridge : public IMemory {
 public:
     struct Header {
         std::vector<uint8_t> entry_point;
@@ -32,18 +31,11 @@ public:
         [[nodiscard]] bool isHeaderChecksumValid() const;
     };
 
-//    Cartridge() = default;
     explicit Cartridge(const std::vector<uint8_t> &data);
     explicit Cartridge(std::vector<uint8_t> &&data);
-    virtual ~Cartridge() = default;
-
-//    Cartridge & operator=(const Cartridge &other);
-//    Cartridge & operator=(Cartridge &&other) noexcept;
+    ~Cartridge() override = default;
 
     [[nodiscard]] Header header() const;
-
-    [[nodiscard]] virtual uint8_t read(uint16_t address) const = 0;
-    virtual void write(uint16_t address, uint8_t value) = 0;
 
 protected:
     std::vector<uint8_t> rom;

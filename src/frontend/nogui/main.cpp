@@ -1,16 +1,16 @@
 #include <iostream>
-#include "log/log.h"
-#include "core/gible.h"
-#include "utils/binutils.h"
 #include "argparser.h"
-#include "debugger/debuggerfrontendcli.h"
-#include <bitset>
+#include "core/core.h"
+#include "core/debugger/debuggablecore.h"
+#include "core/debugger/debuggerbackend.h"
+#include "core/debugger/debuggerfrontendcli.h"
+#include "core/serial/serialconsole.h"
 
 int main(int argc, char **argv) {
     struct {
         std::string rom;
-        bool debugger;
-        bool serialConsole;
+        bool debugger {};
+        bool serialConsole {};
     } args;
 
     auto parser = argumentum::argument_parser();
@@ -18,36 +18,44 @@ int main(int argc, char **argv) {
     params
         .add_parameter(args.rom, "rom")
         .help("ROM");
+#ifdef ENABLE_DEBUGGER
     params
         .add_parameter(args.debugger, "--debugger", "-d")
         .help("Attach CLI debugger");
+#endif
     params
         .add_parameter(args.serialConsole, "--serial", "-s")
         .help("Display serial output");
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    Gible gible;
-
-    std::unique_ptr<DebuggerFrontend> cliDebugger;
+#ifdef ENABLE_DEBUGGER
+    DebuggableCore core;
+    std::unique_ptr<DebuggerBackend> debuggerBackend;
+    std::unique_ptr<IDebuggerFrontend> debuggerFrontend;
 
     if (args.debugger) {
-        cliDebugger = std::make_unique<DebuggerFrontendCli>(gible);
-        gible.attachDebugger(&*cliDebugger);
+        debuggerBackend = std::make_unique<DebuggerBackend>(core);
+        debuggerFrontend = std::make_unique<DebuggerFrontendCli>(*debuggerBackend);
     }
+#else
+    Core core;
+#endif
 
+    std::shared_ptr<SerialLink> serialLink;
     std::unique_ptr<SerialEndpoint> serialConsole;
 
     if (args.serialConsole) {
-        serialConsole = std::make_unique<SerialConsoleEndpoint>(std::cout);
-        SerialLink serialLink(&gible, &*serialConsole);
-        gible.attachSerialLink(&serialLink);
+        serialConsole = std::make_unique<SerialConsole>(std::cerr);
+        serialLink = std::make_shared<SerialLink>(&core, serialConsole.get());
+        core.attachSerialLink(serialLink);
     }
 
-    if (!gible.loadROM(args.rom)) {
+    if (!core.loadROM(args.rom)) {
         std::cerr << "ERROR: failed to load rom: '" << args.rom << "'" << std::endl;
         return 1;
     }
-    gible.start();
+
+    core.start();
     return 0;
 }

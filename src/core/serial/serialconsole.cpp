@@ -3,21 +3,18 @@
 #include "utils/binutils.h"
 #include <algorithm>
 
-SerialConsoleEndpoint::SerialConsoleEndpoint(std::ostream &output, int bufsize)
+SerialConsole::SerialConsole(std::ostream &output, size_t bufsize)
     : output(output), bufsize(bufsize) {
 
 }
-SerialConsoleEndpoint::~SerialConsoleEndpoint() {
 
-}
-
-void SerialConsoleEndpoint::serialWrite(uint8_t value) {
-    SerialBufferEndpoint::serialWrite(value);
-    if (value == '\n' || (bufsize >= 0 && buffer.size() > bufsize))
+void SerialConsole::serialWrite(uint8_t value) {
+    SerialBuffer::serialWrite(value);
+    if (value == '\n' || (buffer.size() > bufsize))
         flush();
 }
 
-void SerialConsoleEndpoint::flush() {
+void SerialConsole::flush() {
     while (!buffer.empty()) {
         std::vector<uint8_t> line;
         auto newline = std::find(buffer.begin(), buffer.end(), '\n');

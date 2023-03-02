@@ -1,13 +1,13 @@
 #include <iostream>
 #include <QApplication>
 #include "window.h"
-#include "log/log.h"
-#include "core/gible.h"
+#include "utils/log.h"
+#include "core/core.h"
 
 int main(int argc, char **argv) {
-    Gible gible;
+    Core core;
     QApplication a(argc, argv);
-    Window w(gible);
+    Window w(core);
     w.show();
     return a.exec();
 }

@@ -2,6 +2,6 @@ set(SOURCES
         main.cpp
 )
 
-add_executable(gible-nogui ${SOURCES})
+add_executable(docboy-nogui ${SOURCES})
 
-target_link_libraries(gible-nogui PRIVATE core debugger log serial utils argumentum)
+target_link_libraries(docboy-nogui PRIVATE core utils argumentum)

@@ -1,17 +1,16 @@
 #include "bus.h"
-#include "log/log.h"
+#include "utils/log.h"
 #include "utils/binutils.h"
 #include "memory.h"
-#include "cartridge.h"
 
 
 Bus::Bus(IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram, IMemory &ie) :
-    wram1(wram1), wram2(wram2), io(io), hram(hram), ie(ie) {
+    wram1(wram1), wram2(wram2), io(io), hram(hram), ie(ie), cartridge() {
 
 }
 
 
-uint8_t Bus::read(uint16_t addr) {
+uint8_t Bus::read(uint16_t addr) const {
     if (addr < 0x8000) {
         return cartridge->read(addr);
     } else if (addr < 0xA000) {
@@ -64,7 +63,7 @@ void Bus::write(uint16_t addr, uint8_t value) {
     }
 }
 
-void Bus::attachCartridge(const std::shared_ptr<Cartridge> &c) {
+void Bus::attachCartridge(IMemory *c) {
     cartridge = c;
 }
 
@@ -72,30 +71,3 @@ void Bus::detachCartridge() {
     cartridge = nullptr;
 }
 
-
-ObservableBus::ObservableBus(IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram, IMemory &ie) :
-    Bus(wram1, wram2, io, hram, ie) {
-
-}
-
-void ObservableBus::setObserver(ObservableBus::Observer *obs) {
-    observer = obs;
-}
-
-void ObservableBus::unsetObserver() {
-    observer = nullptr;
-}
-
-uint8_t ObservableBus::read(uint16_t addr) {
-    uint8_t value = Bus::read(addr);
-    if (observer)
-        observer->onBusRead(addr, value);
-    return value;
-}
-
-void ObservableBus::write(uint16_t addr, uint8_t value) {
-    uint8_t oldValue = Bus::read(addr);
-    Bus::write(addr, value);
-    if (observer)
-        observer->onBusWrite(addr, oldValue, value);
-}

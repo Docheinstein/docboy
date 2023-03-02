@@ -86,10 +86,10 @@ std::string hex(const std::vector<T> &vec) {
 }
 
 template<typename T>
-std::string hexdump(const T *data, size_t length, bool addr = true, bool ascii = false, int columns = 32);
+std::string hexdump(const T *data, size_t length, bool addr = true, bool ascii = false, size_t columns = 32);
 
 template<typename T>
-std::string hexdump(const std::vector<T> &vec, bool addr = true, bool ascii = false, int columns = 32);
+std::string hexdump(const std::vector<T> &vec, bool addr = true, bool ascii = false, size_t columns = 32);
 
 #include "binutils.tpp"
 

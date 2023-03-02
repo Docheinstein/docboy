@@ -91,7 +91,7 @@ template<uint8_t b, typename T1, typename T2>
 bool sub_get_borrow_bit(T1 v1, T2 v2) {
     uint64_t mask = bitmask<b + 1>;
 //    return ((((uint64_t) v1) & mask) - (((uint64_t) v2) & mask)) & bit<b + 1>;
-    v2 = v2 < 0 ? -v2 : v2;
+    v2 = (v2 < 0) ? -v2 : v2;
     uint64_t vm1 = (((uint64_t) v1) & mask);
     uint64_t vm2 = (((uint64_t) v2) & mask);
     return vm2 > vm1;
@@ -155,7 +155,7 @@ std::string hex(const T *data, size_t length) {
 }
 
 template<typename T>
-std::string hexdump(const T *data, size_t length, bool addr, bool ascii, int columns) {
+std::string hexdump(const T *data, size_t length, bool addr, bool ascii, size_t columns) {
     std::stringstream ss;
     std::string asciistr;
 

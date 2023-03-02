@@ -1,11 +1,13 @@
 #include "mbc1.h"
 #include "utils/binutils.h"
 
-MBC1Cartridge::MBC1Cartridge(const std::vector <uint8_t> &data) : Cartridge(data) {
+MBC1Cartridge::MBC1Cartridge(const std::vector <uint8_t> &data) :
+    Cartridge(data), mbc() {
 
 }
 
-MBC1Cartridge::MBC1Cartridge(std::vector<uint8_t> &&data) : Cartridge(data) {
+MBC1Cartridge::MBC1Cartridge(std::vector<uint8_t> &&data) :
+    Cartridge(data), mbc() {
 
 }
 

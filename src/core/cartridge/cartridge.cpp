@@ -95,14 +95,6 @@ Cartridge::Header Cartridge::header() const {
     return h;
 }
 
-
-//Cartridge &Cartridge::operator=(const Cartridge &other) = default;
-//
-//Cartridge &Cartridge::operator=(Cartridge &&other) noexcept {
-//    this->rom = std::move(other.rom);
-//    return *this;
-//}
-
 Cartridge::Cartridge(const std::vector<uint8_t> &data) {
     this->rom = data;
 }

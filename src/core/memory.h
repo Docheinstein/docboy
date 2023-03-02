@@ -3,35 +3,28 @@
 
 #include <cstdint>
 #include <cstddef>
-#include "log/log.h"
+#include "utils/log.h"
 #include <cstring>
 
 class IMemory {
 public:
-    virtual ~IMemory();
+    virtual ~IMemory() = default;
 
-    [[nodiscard]] virtual uint8_t read(size_t index) const = 0;
-    virtual void write(size_t index, uint8_t value) = 0;
-    virtual void reset() = 0;
+    [[nodiscard]] virtual uint8_t read(uint16_t index) const = 0;
+    virtual void write(uint16_t index, uint8_t value) = 0;
 };
 
 template<size_t n>
 class Memory : public IMemory {
 public:
-    Memory() : memory() {
+    Memory() : memory() {}
 
-    }
-
-    [[nodiscard]] uint8_t read(size_t index) const override {
+    [[nodiscard]] uint8_t read(uint16_t index) const override {
         return memory[index];
     }
 
-    void write(size_t index, uint8_t value) override {
+    void write(uint16_t index, uint8_t value) override {
         memory[index] = value;
-    }
-
-    void reset() override {
-        memset(memory, 0, 4096);
     }
 
 private:

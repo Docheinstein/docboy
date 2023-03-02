@@ -4,17 +4,17 @@
 #include "serialbuffer.h"
 #include <iosfwd>
 
-class SerialConsoleEndpoint : public SerialBufferEndpoint {
+class SerialConsole : public SerialBuffer {
 public:
-    explicit SerialConsoleEndpoint(std::ostream &output, int bufsize = -1 /* infinite */);
-    ~SerialConsoleEndpoint() override;
+    explicit SerialConsole(std::ostream &output, size_t bufsize = SIZE_MAX);
+    ~SerialConsole() override = default;
 
     void serialWrite(uint8_t) override;
     void flush();
 
 private:
     std::ostream &output;
-    int bufsize;
+    size_t bufsize;
 };
 
 #endif // SERIALCONSOLE_H

@@ -2,7 +2,7 @@
 #define WINDOW_H
 
 #include <QMainWindow>
-#include "core/gible.h"
+#include "core/core.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Window; }
@@ -13,7 +13,7 @@ class Window : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit Window(Gible &gible, QWidget *parent = nullptr);
+    explicit Window(Core &core, QWidget *parent = nullptr);
     ~Window() override;
 
 
@@ -21,7 +21,7 @@ private slots:
     void onLoadROM();
 
 private:
-    Gible &gible;
+    Core &core;
     Ui::Window *ui;
 };
 #endif // WINDOW_H

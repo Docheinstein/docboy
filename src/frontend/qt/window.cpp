@@ -1,11 +1,11 @@
 #include "window.h"
 #include "ui_window.h"
-#include "log/log.h"
-#include "core/gible.h"
+#include "utils/log.h"
+#include "core/core.h"
 #include <QFileDialog>
 
-Window::Window(Gible &gible, QWidget *parent)
-    : QMainWindow(parent), gible(gible), ui(new Ui::Window) {
+Window::Window(Core &core, QWidget *parent)
+    : QMainWindow(parent), core(core), ui(new Ui::Window) {
     ui->setupUi(this);
     connect(ui->actionLoadROM, &QAction::triggered, this, &Window::onLoadROM);
 }
@@ -17,8 +17,8 @@ void Window::onLoadROM() {
     if (result.isEmpty())
         return;
 
-    gible.loadROM(result.toStdString());
-    gible.start();
+    core.loadROM(result.toStdString());
+    core.start();
 }
 
 

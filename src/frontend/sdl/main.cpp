@@ -1,6 +1,6 @@
 #include <iostream>
-#include "log/log.h"
-#include "core/gible.h"
+#include "utils/log.h"
+#include "core/core.h"
 #include "utils/binutils.h"
 #include "argparser.h"
 #include "window.h"
@@ -19,11 +19,11 @@ int main(int argc, char **argv) {
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    Gible gible;
+    Core core;
 //    Window w;
 //    w.show();
 
-    gible.loadROM(args.rom);
-    gible.start();
+    core.loadROM(args.rom);
+    core.start();
     return 0;
 }

@@ -8,42 +8,20 @@
 #include <optional>
 #include "bus.h"
 
-class CPU {
+class ICpu {
 public:
-    class InstructionNotImplementedException : public std::logic_error {
-    public:
-        explicit InstructionNotImplementedException(const std::string &what);
-    };
-    class IllegalInstructionException : public std::logic_error {
-    public:
-        explicit IllegalInstructionException(const std::string &what);
-    };
+    virtual ~ICpu() = default;
+    virtual void tick() = 0;
+};
 
-    explicit CPU(IBus &bus);
+class Cpu : public ICpu {
+public:
+    explicit Cpu(IBus &bus);
+    ~Cpu() override = default;
 
-    void reset();
-    void tick();
+    void tick() override;
 
-    [[nodiscard]] uint16_t getAF() const;
-    [[nodiscard]] uint16_t getBC() const;
-    [[nodiscard]] uint16_t getDE() const;
-    [[nodiscard]] uint16_t getHL() const;
-    [[nodiscard]] uint16_t getPC() const;
-    [[nodiscard]] uint16_t getSP() const;
-    [[nodiscard]] bool getZ() const;
-    [[nodiscard]] bool getN() const;
-    [[nodiscard]] bool getH() const;
-    [[nodiscard]] bool getC() const;
-    [[nodiscard]] bool getIME() const;
-    [[nodiscard]] uint16_t getCurrentInstructionAddress() const;
-    [[nodiscard]] uint8_t getCurrentInstructionOpcode() const;
-    [[nodiscard]] uint8_t getCurrentInstructionMicroOperation() const;
-    [[nodiscard]] bool getCurrentInstructionCB() const;
-    [[nodiscard]] uint64_t getCurrentMcycle() const;
-    [[nodiscard]] uint64_t getCurrentCycle() const;
-    [[nodiscard]] bool hasPendingInterrupt() const; // TODO: sooo bad
-
-private:
+protected:
     enum class Register8 {
         A,
         B,
@@ -75,6 +53,9 @@ private:
         C,
     };
 
+    typedef void (Cpu::*InstructionMicroOperation)();
+
+
     IBus &bus;
 
     uint16_t AF;
@@ -86,19 +67,9 @@ private:
 
     bool IME;
     bool halted;
-
-    std::optional<uint16_t> pendingInterrupt;
-
     uint64_t mCycles;
-    uint64_t cycles;
 
-    // TODO: better design
-    struct CurrentInstruction {
-        bool CB;
-        uint16_t address;
-        uint8_t opcode;
-        uint8_t microop;
-    } currentInstruction;
+    std::optional<InstructionMicroOperation *> pendingInterrupt;
 
     // scratchpad
     struct {
@@ -111,11 +82,18 @@ private:
         uint16_t addr;
     };
 
-    typedef void (CPU::*InstructionMicroOperation)();
-    InstructionMicroOperation instructions[256][6];
-    InstructionMicroOperation instructionsCB[256][4];
+    struct CurrentInstruction {
+        bool ISR;
+        uint16_t address;
+        uint8_t microop;
+        InstructionMicroOperation *microopHandler;
+    } currentInstruction;
 
-    [[nodiscard]] std::string status() const;
+    InstructionMicroOperation instructions[256][6];
+    InstructionMicroOperation instructions_cb[256][4];
+    InstructionMicroOperation ISR[5][5];
+
+    void reset();
 
     template<Register8 r>
     [[nodiscard]] uint8_t readRegister8() const;
@@ -137,20 +115,35 @@ private:
     template<Flag f>
     void writeFlag(bool value);
 
-    void invalidInstruction();
-    void instructionNotImplemented();
-    void fetch(bool cbInstruction = false);
+    void fetch(bool cb = false);
 
     /*
+     * [INSTRUCTIONS LEGEND]
      * r: 8 bit register
      * rr: 16 bit register
+     * rrs: 16 bit register, signed
      * n: 8 bit immediate number
      * nn: 16 bit immediate number
+     * s: 8 bit immediate number, signed
      * ar: address specified by 8 bit register
      * arr: address specified by 16 bit register
+     * arri: address specified by 16 bit register, then increment 16 bit register
      * an: address specified by 8 bit immediate number
      * ann: address specified by 16 bit immediate number
+     * c: check flag condition
      */
+    void invalidInstruction();
+
+    template<uint16_t nn>
+    void ISR_m1();
+    template<uint16_t nn>
+    void ISR_m2();
+    template<uint16_t nn>
+    void ISR_m3();
+    template<uint16_t nn>
+    void ISR_m4();
+    template<uint16_t nn>
+    void ISR_m5();
 
     void NOP_m1();
     void STOP_m1();
@@ -613,8 +606,6 @@ private:
     void SET_arr_m2();
     template<uint8_t n, Register16 r>
     void SET_arr_m3();
-
-    void INT(uint16_t address);
 };
 
 #endif // CPU_H

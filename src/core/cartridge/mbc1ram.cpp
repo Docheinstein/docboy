@@ -9,7 +9,7 @@ MBC1RamCartridge::MBC1RamCartridge(std::vector<uint8_t> &&data) : MBC1Cartridge(
 }
 
 uint8_t MBC1RamCartridge::read(uint16_t address) const {
-    if (address >= 0xA000 & address < 0xC000){
+    if (address >= 0xA000 && address < 0xC000){
         if (!mbc.ramEnabled)
             return 0xFF;
         size_t base = 0;
@@ -22,7 +22,7 @@ uint8_t MBC1RamCartridge::read(uint16_t address) const {
 }
 
 void MBC1RamCartridge::write(uint16_t address, uint8_t value) {
-    if (address >= 0xA000 & address < 0xC000){
+    if (address >= 0xA000 && address < 0xC000){
         if (!mbc.ramEnabled)
             return;
         size_t base = 0;

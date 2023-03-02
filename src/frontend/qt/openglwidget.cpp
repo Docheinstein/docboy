@@ -1,6 +1,6 @@
 #include "openglwidget.h"
 #include <iostream>
-#include "log/log.h"
+#include "utils/log.h"
 #include <QOpenGLFunctions>
 
 OpenGLWidget::OpenGLWidget(QWidget *parent) {

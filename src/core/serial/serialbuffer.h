@@ -3,10 +3,10 @@
 
 #include "serial.h"
 
-class SerialBufferEndpoint : public SerialEndpoint {
+class SerialBuffer : public SerialEndpoint {
 public:
-    SerialBufferEndpoint();
-    ~SerialBufferEndpoint() override;
+    SerialBuffer();
+    ~SerialBuffer() override;
 
     uint8_t serialRead() override;
     void serialWrite(uint8_t) override;

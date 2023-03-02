@@ -1,9 +1,14 @@
 set(SOURCES
-        fileutils.h
-        fileutils.cpp
-        binutils.h
-        binutils.tpp
-        binutils.cpp
+    binutils.h
+    binutils.tpp
+    binutils.cpp
+    fileutils.h
+    fileutils.cpp
+    log.h
+    log.cpp
+    strutils.h
+    strutils.cpp
+    termcolor.h
 )
 
 add_library(utils STATIC ${SOURCES})

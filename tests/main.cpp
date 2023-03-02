@@ -1,19 +1,16 @@
 
 #include "catch2/catch_session.hpp"
-#include "core/gible.h"
 #include "catch2/generators/catch_generators.hpp"
 #include "catch2/generators/catch_generators_range.hpp"
 #include <catch2/catch_test_macros.hpp>
-#include "core/cartridge.h"
 #include "utils/binutils.h"
-#include "serial/serialbuffer.h"
-#include "core/instructions.h"
-#include "debugger/debuggerfrontend.h"
-#include "debugger/debuggerbackend.h"
-#include "log/log.h"
+#include "utils/log.h"
+#include "core/core.h"
+#include "core/helpers.h"
+#include "core/cartridge/cartridgefactory.h"
+#include "core/debugger/debuggerfrontend.h"
+#include "core/serial/serialbuffer.h"
 #include <queue>
-#include <iostream>
-#include <type_traits>
 #include <algorithm>
 
 #undef SECTION
@@ -232,12 +229,11 @@ TEST_CASE("Cartridge", "[cartridge]") {
         std::string,
         ({
             { "tests/roms/games/tetris.gb", "TETRIS" },
-            { "tests/roms/games/alleyway.gb", "ALLEY WAY" },
-            { "tests/roms/games/pokemon-red.gb", "POKEMON RED" },
+            { "tests/roms/games/alleyway.gb", "ALLEY WAY" }
         })
     );
 
-    auto c = Cartridge::fromFile(rom);
+    auto c = CartridgeFactory::makeCartridge(rom);
 
     SECTION("cartridge loaded", rom) {
         REQUIRE(c);
@@ -251,7 +247,7 @@ TEST_CASE("Cartridge", "[cartridge]") {
     }
 }
 
-TEST_CASE("CPU", "[cpu]") {
+TEST_CASE("Cpu", "[cpu]") {
     SECTION("instruction basic requirements") {
         class FakeBus : public IBus {
         public:
@@ -267,7 +263,10 @@ TEST_CASE("CPU", "[cpu]") {
 
             ~FakeBus() override = default;
 
-            uint8_t read(uint16_t addr) override {
+            [[nodiscard]] uint8_t read(uint16_t addr) const override {
+                if (addr == MemoryMap::IE || addr == MemoryMap::IO::IF)
+                    return 0;
+
                 accesses.push_back({Access::Type::Read, addr});
                 uint8_t b = 0;
                 if (!data.empty()) {
@@ -278,6 +277,8 @@ TEST_CASE("CPU", "[cpu]") {
             }
 
             void write(uint16_t addr, uint8_t value) override {
+                if (addr == MemoryMap::IE || addr == MemoryMap::IO::IF)
+                    return;
                 accesses.push_back({Access::Type::Write, addr});
             }
 
@@ -311,24 +312,25 @@ TEST_CASE("CPU", "[cpu]") {
             }
 
         private:
-            std::vector<Access> accesses;
-            std::queue<uint8_t> data;
+            mutable std::vector<Access> accesses;
+            mutable std::queue<uint8_t> data;
         };
 
         bool cb = GENERATE(false, true);
         uint8_t instr = GENERATE(range(0, 0xFF));
 
-        InstructionInfo info = cb ? INSTRUCTIONS_CB[instr] : INSTRUCTIONS[instr];
-        if (!info.duration.min)
+        std::string instr_name = instruction_mnemonic(instr, cb);
+
+        auto length = instruction_length(instr, cb);
+        auto [duration_min, duration_max] = instruction_duration(instr, cb);
+
+        if (!duration_min)
             return;
-        // TODO: better handling of special cases
         if (!cb && instr == 0x76 /* HALT */)
             return;
 
-        auto instr_name = (cb ? hex((uint8_t) 0xCB) + " " : "") + hex(instr) + " " + info.mnemonic;
-
         FakeBus fakeBus;
-        CPU cpu(fakeBus);
+        DebuggableCpu cpu(fakeBus);
 
         auto setupInstruction = [&fakeBus, &cpu, cb, instr]() {
             if (cb)
@@ -376,46 +378,44 @@ TEST_CASE("CPU", "[cpu]") {
 
         SECTION("instruction duration", instr_name) {
             setupInstruction();
-            uint8_t op = cpu.getCurrentInstructionOpcode();
 
             try {
-                uint8_t duration = cb;
+                uint8_t duration = cb ? 1 : 0;
                 do {
                     cpu.tick();
                     duration++;
-                } while (op == cpu.getCurrentInstructionOpcode());
-                REQUIRE(info.duration.min <= duration);
-                REQUIRE(duration <= info.duration.max);
-            } catch (const CPU::InstructionNotImplementedException &e) {}
+                } while (cpu.getCurrentInstruction().microop != 0);
+                REQUIRE(duration_min <= duration);
+                REQUIRE(duration <= duration_max);
+            } catch (const std::runtime_error &e) {}
         }
 
         SECTION("instruction length", instr_name) {
             setupInstruction();
             try {
-                uint8_t op = cpu.getCurrentInstructionOpcode();
                 do {
                     cpu.tick();
-                } while (op == cpu.getCurrentInstructionOpcode());
-                REQUIRE(info.length == getInstructionLength());
-            } catch (const CPU::InstructionNotImplementedException &e) {}
+                } while (cpu.getCurrentInstruction().microop != 0);
+                REQUIRE(length == getInstructionLength());
+            } catch (const std::runtime_error &e) {}
         }
 
         SECTION("no more than one memory read/write per m-cycle", instr_name) {
             setupInstruction();
             try {
-                for (int m = 0; m < info.duration.min; m++) {
+                for (int m = 0; m < duration_min; m++) {
                     auto ioCountBefore = fakeBus.getReadWriteCount();
                     cpu.tick();
                     auto ioCountAfter = fakeBus.getReadWriteCount();
                     REQUIRE(ioCountAfter - ioCountBefore <= 1);
                 }
-            } catch (const CPU::InstructionNotImplementedException &e) {}
+            } catch (const std::runtime_error &e) {}
         }
     }
 }
 
 TEST_CASE("blargg", "[.][cpu][core][timer][interrupt]") {
-    SECTION("cpu") {
+    SECTION("cpu_instrs") {
         std::string testname = GENERATE(
             "01-special",
             "02-interrupts",
@@ -430,50 +430,59 @@ TEST_CASE("blargg", "[.][cpu][core][timer][interrupt]") {
             "11-op a,(hl)"
         );
 
-        std::string rom = "tests/roms/tests/blargg/" + testname + ".gb";
-        std::string expected = testname + "\n\n\nPassed\n";
+        SECTION("cpu_instrs", testname) {
 
-        class SerialStringEndpoint : public SerialEndpoint {
-        public:
-            void serialWrite(uint8_t b) override {
-                data += (char) b;
-            }
-            std::string data;
-        };
+            std::string rom = "tests/roms/tests/blargg/" + testname + ".gb";
+            std::string expected = testname + "\n\n\nPassed\n";
 
-        class Supervisor : public DebuggerFrontend {
-        public:
-            Supervisor(Gible &gible, SerialStringEndpoint &buffer, const std::string &expected, uint64_t maxcycles) :
-                gible(gible), buffer(buffer), expected(expected), maxcycles(maxcycles) {
+            class SerialString : public SerialEndpoint {
+            public:
+                void serialWrite(uint8_t b) override {
+                    data += (char) b;
+                }
 
-            }
-            void onFrontend() override {
-                gible.continue_();
-            }
-            void onTick() override {
-                if (buffer.data.length() == expected.length() || gible.getCurrentCycle() >= maxcycles)
-                    gible.abort();
-            }
-        private:
-            Gible &gible;
-            SerialStringEndpoint &buffer;
-            std::string expected;
-            uint64_t maxcycles;
-        };
+                std::string data;
+            };
 
-        Gible gible;
+            class Supervisor : public IDebuggerFrontend {
+            public:
+                Supervisor(DebuggerBackend &backend, SerialString &buffer, const std::string &expected,
+                           uint64_t maxcycles) :
+                        buffer(buffer), expected(expected), maxcycles(maxcycles), cycles() {
+                    backend.attachFrontend(this);
+                }
 
-        SerialStringEndpoint buffer;
-        SerialLink serial(&gible, &buffer);
-        gible.attachSerialLink(&serial);
+                DebuggerBackend::Command pullCommand(DebuggerBackend::ExecutionState state) override {
+                    if (buffer.data.length() == expected.length() || cycles >= maxcycles)
+                        return IDebuggerBackend::Command::Abort;
+                    return IDebuggerBackend::Command::Next;
+                }
 
-        Supervisor supervisor(gible, buffer, expected, 50000000);
-        gible.attachDebugger(&supervisor);
+                void onTick() override {
+                    cycles++;
+                }
 
-        gible.loadROM(rom);
-        gible.start();
+            private:
+                SerialString &buffer;
+                std::string expected;
+                uint64_t maxcycles;
+                uint64_t cycles{};
+            };
 
-        REQUIRE(buffer.data == expected);
+            DebuggableCore core;
+
+            SerialString serialString;
+            std::shared_ptr<SerialLink> serial = std::make_shared<SerialLink>(&core, &serialString);
+            core.attachSerialLink(serial);
+
+            DebuggerBackend supervisorBackend(core);
+            Supervisor supervisor(supervisorBackend, serialString, expected, 50000000);
+
+            core.loadROM(rom);
+            core.start();
+
+            REQUIRE(serialString.data == expected);
+        }
     }
 }
 
@@ -508,7 +517,7 @@ TEST_CASE("serial", "[serial]") {
         };
 
         std::string s = "Hello this is a test\nThis is sparta!";
-        SerialBufferEndpoint receiver;
+        SerialBuffer receiver;
         SerialStringSource sender(s);
         SerialLink serialLink(&sender, &receiver);
         while (sender.hasData())

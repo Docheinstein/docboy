@@ -1,2 +1,5 @@
 add_subdirectory(argumentum)
-add_subdirectory(catch2)
+
+if (BUILD_TESTS)
+    add_subdirectory(catch2)
+endif()
