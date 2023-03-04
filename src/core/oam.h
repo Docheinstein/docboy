@@ -1,12 +1,12 @@
-#ifndef IO_H
-#define IO_H
+#ifndef OAM_H
+#define OAM_H
 
 #include "memory.h"
 #include "definitions.h"
 
-class IO : public Memory<MemoryMap::IO::SIZE> {
+class OAM : public Memory<MemoryMap::OAM::SIZE> {
     [[nodiscard]] uint8_t read(uint16_t index) const override;
     void write(uint16_t index, uint8_t value) override;
 };
 
-#endif // IO_H
+#endif // OAM_H

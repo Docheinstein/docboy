@@ -6,18 +6,20 @@
 #include <memory>
 #include <iostream>
 #include <optional>
-#include "bus.h"
+#include "core/bus.h"
+#include "core/boot/bootrom.h"
 
-class ICpu {
+class ICPU {
 public:
-    virtual ~ICpu() = default;
+    virtual ~ICPU() = default;
+
     virtual void tick() = 0;
 };
 
-class Cpu : public ICpu {
+class CPU : public virtual ICPU {
 public:
-    explicit Cpu(IBus &bus);
-    ~Cpu() override = default;
+    explicit CPU(IBus &bus, std::unique_ptr<IBootROM> bootRom = nullptr); // TODO: maybe take IO, ... separately?
+    ~CPU() override = default;
 
     void tick() override;
 
@@ -53,8 +55,10 @@ protected:
         C,
     };
 
-    typedef void (Cpu::*InstructionMicroOperation)();
+    typedef void (CPU::*InstructionMicroOperation)();
 
+
+    std::unique_ptr<IBootROM> bootRom;
 
     IBus &bus;
 
@@ -94,6 +98,9 @@ protected:
     InstructionMicroOperation ISR[5][5];
 
     void reset();
+
+    [[nodiscard]] virtual uint8_t readMemory(uint16_t addr) const;
+    virtual void writeMemory(uint16_t addr, uint8_t value);
 
     template<Register8 r>
     [[nodiscard]] uint8_t readRegister8() const;

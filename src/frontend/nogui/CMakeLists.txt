@@ -1,5 +1,7 @@
 set(SOURCES
         main.cpp
+        noguidisplay.h
+        noguidisplay.cpp
 )
 
 add_executable(docboy-nogui ${SOURCES})

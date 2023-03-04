@@ -3,10 +3,14 @@
 
 #include <memory>
 #include "cartridge/cartridge.h"
+#include "definitions.h"
 #include "bus.h"
-#include "cpu.h"
+#include "cpu/cpu.h"
 #include "memory.h"
+#include "vram.h"
+#include "oam.h"
 #include "io.h"
+#include "gpu/gpu.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "debugger/debuggablecpu.h"
@@ -14,21 +18,31 @@
 #endif
 
 struct GameBoy {
-    GameBoy();
+    // TODO: typedef for all components?
+    typedef Memory<MemoryMap::WRAM1::SIZE> WRAM1;
+    typedef Memory<MemoryMap::WRAM2::SIZE> WRAM2;
+    typedef Memory<MemoryMap::HRAM::SIZE> HRAM;
+    typedef Memory<1> IE;
 
 #ifdef ENABLE_DEBUGGER
-    DebuggableBus bus;
-    DebuggableCpu cpu;
-#else
-    Bus bus;
-    Cpu cpu;
+    typedef IDebuggableCPU ICPU;
+    typedef DebuggableCPU CPU;
 #endif
 
-    Memory<4096> wram1;
-    Memory<4096> wram2;
+    // TODO: std::unique_ptr<IMemory>?
+    VRAM vram;
+    WRAM1 wram1;
+    WRAM2 wram2;
+    OAM oam;
     IO io;
-    Memory<127> hram;
-    Memory<1> ie;
+    HRAM hram;
+    IE ie;
+
+    std::unique_ptr<IBus> bus;
+    std::unique_ptr<ICPU> cpu;
+
+    std::unique_ptr<IDisplay> display;
+    std::unique_ptr<IGPU> gpu;
 
     std::unique_ptr<Cartridge> cartridge;
 };

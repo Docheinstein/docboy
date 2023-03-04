@@ -77,8 +77,8 @@ public:
     typedef std::vector<uint8_t> Disassemble;
 
     struct CpuState {
-        IDebuggableCpu::Registers registers;
-        IDebuggableCpu::Instruction instruction;
+        IDebuggableCPU::Registers registers;
+        IDebuggableCPU::Instruction instruction;
         bool IME;
         bool halted;
         uint64_t cycles;
@@ -123,7 +123,7 @@ public:
     virtual void interrupt() = 0;
 };
 
-class DebuggerBackend : public IDebuggerBackend, public IDebuggableBus::Observer, public IDebuggableCore::Observer {
+class DebuggerBackend : public IDebuggerBackend, public IDebuggableCPU::Observer, public IDebuggableCore::Observer {
 public:
     explicit DebuggerBackend(IDebuggableCore &core);
     ~DebuggerBackend() override = default;
@@ -151,14 +151,13 @@ public:
 
     void interrupt() override;
 
-    void onBusRead(uint16_t addr, uint8_t value) override;
-    void onBusWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
+    void onMemoryRead(uint16_t addr, uint8_t value) override;
+    void onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
 
     bool onTick() override;
 
 private:
-    IDebuggableCpu &cpu;
-    IDebuggableBus &bus;
+    IDebuggableCPU &cpu;
 
     IDebuggerFrontend *frontend;
 

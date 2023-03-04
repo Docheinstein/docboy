@@ -24,7 +24,7 @@ public:
 
 class DebuggableBus : public Bus, public IDebuggableBus {
 public:
-    DebuggableBus(IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram, IMemory &ie);
+    DebuggableBus(IMemory &vram, IMemory &wram1, IMemory &wram2, IMemory &oam, IMemory &io, IMemory &hram, IMemory &ie);
     ~DebuggableBus() override = default;
 
     void setObserver(Observer *observer) override;

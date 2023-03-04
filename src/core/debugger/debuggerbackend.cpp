@@ -8,12 +8,11 @@
 
 DebuggerBackend::DebuggerBackend(IDebuggableCore &core) :
         cpu(core.getCpu()),
-        bus(core.getBus()),
         frontend(),
         nextPointId(),
         interrupted() {
     core.setObserver(this);
-    bus.setObserver(this);
+    cpu.setObserver(this);
 }
 
 void DebuggerBackend::attachFrontend(IDebuggerFrontend *frontend_) {
@@ -93,7 +92,6 @@ void DebuggerBackend::clearPoints() {
 }
 
 void DebuggerBackend::disassemble(uint16_t addr, size_t n) {
-    bus.unsetObserver();
     uint32_t addressCursor = addr;
     for (size_t i = 0; i < n && addressCursor <= 0xFFFF; i++) {
         auto instruction = doDisassemble(addressCursor);
@@ -102,11 +100,9 @@ void DebuggerBackend::disassemble(uint16_t addr, size_t n) {
         disassembled[addressCursor] = instruction;
         addressCursor += instruction->size();
     }
-    bus.setObserver(this);
 }
 
 void DebuggerBackend::disassembleRange(uint16_t from, uint16_t to) {
-    bus.unsetObserver();
     for (uint32_t addressCursor = from; addressCursor <= to && addressCursor <= 0xFFFF;) {
         auto instruction = doDisassemble(addressCursor);
         if (!instruction)
@@ -114,19 +110,18 @@ void DebuggerBackend::disassembleRange(uint16_t from, uint16_t to) {
         disassembled[addressCursor] = instruction;
         addressCursor += instruction->size();
     }
-    bus.setObserver(this);
 }
 
 std::optional<DebuggerBackend::Disassemble> DebuggerBackend::doDisassemble(uint16_t addr) const {
     uint32_t addressCursor = addr;
-    uint8_t opcode = bus.read(addressCursor++, false);
+    uint8_t opcode = cpu.readMemoryRaw(addressCursor++);
     Disassemble instruction { opcode };
 
     // this works for CB and non CB because all CB instructions have length 2
     uint8_t length = instruction_length(opcode);
 
     while (addressCursor < addr + length && addressCursor <= 0xFFFF)
-        instruction.push_back(bus.read(addressCursor++));
+        instruction.push_back(cpu.readMemoryRaw(addressCursor++));
 
     return instruction;
 }
@@ -148,10 +143,10 @@ DebuggerBackend::CpuState DebuggerBackend::getCpuState() const {
 
 
 uint8_t DebuggerBackend::readMemory(uint16_t addr) {
-    return bus.read(addr, false);
+    return cpu.readMemoryRaw(addr);
 }
 
-void DebuggerBackend::onBusRead(uint16_t addr, uint8_t value) {
+void DebuggerBackend::onMemoryRead(uint16_t addr, uint8_t value) {
     auto w = getWatchpoint(addr);
     if (w) {
         if ((w->type == DebuggerBackend::Watchpoint::Type::Read ||
@@ -169,7 +164,7 @@ void DebuggerBackend::onBusRead(uint16_t addr, uint8_t value) {
     }
 }
 
-void DebuggerBackend::onBusWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) {
+void DebuggerBackend::onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) {
     auto w = getWatchpoint(addr);
     if (w) {
         if (((w->type == DebuggerBackend::Watchpoint::Type::ReadWrite ||

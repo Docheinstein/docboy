@@ -6,7 +6,7 @@ uint8_t IO::read(uint16_t index) const {
 }
 
 void IO::write(uint16_t index, uint8_t value) {
-    if (MemoryMap::IO::START + index == MemoryMap::IO::DIV) {
+    if (MemoryMap::IO::START + index == Registers::Timers::DIV) {
         Memory::write(index, 0);
         return;
     }

@@ -1,17 +1,17 @@
 #include "mbc1.h"
 #include "utils/binutils.h"
 
-MBC1Cartridge::MBC1Cartridge(const std::vector <uint8_t> &data) :
+MBC1::MBC1(const std::vector <uint8_t> &data) :
     Cartridge(data), mbc() {
 
 }
 
-MBC1Cartridge::MBC1Cartridge(std::vector<uint8_t> &&data) :
+MBC1::MBC1(std::vector<uint8_t> &&data) :
     Cartridge(data), mbc() {
 
 }
 
-uint8_t MBC1Cartridge::read(uint16_t address) const {
+uint8_t MBC1::read(uint16_t address) const {
     if (address < 0x4000) {
         return rom[address];
     }
@@ -25,7 +25,7 @@ uint8_t MBC1Cartridge::read(uint16_t address) const {
     throw std::runtime_error("Read at address " + hex(address) + " is not allowed");
 }
 
-void MBC1Cartridge::write(uint16_t address, uint8_t value) {
+void MBC1::write(uint16_t address, uint8_t value) {
     if (address < 0x2000) {
         mbc.ramEnabled = value == 0xA;
     } else if (address < 0x4000) {

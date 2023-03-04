@@ -330,7 +330,7 @@ TEST_CASE("Cpu", "[cpu]") {
             return;
 
         FakeBus fakeBus;
-        DebuggableCpu cpu(fakeBus);
+        DebuggableCPU cpu(fakeBus);
 
         auto setupInstruction = [&fakeBus, &cpu, cb, instr]() {
             if (cb)

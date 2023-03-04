@@ -11,9 +11,7 @@ Window::Window(Core &core, QWidget *parent)
 }
 
 void Window::onLoadROM() {
-    DEBUG(1) << "Selecting ROM..." << std::endl;
     QString result = QFileDialog::getOpenFileName(this, tr("Select ROM"), QDir::currentPath(), tr("GameBoy ROMs (*.gb)"));
-    DEBUG(1) << "Selected ROM: " << result.toStdString() << std::endl;
     if (result.isEmpty())
         return;
 

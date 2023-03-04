@@ -6,13 +6,19 @@
 #include "utils/log.h"
 #include <cstring>
 
-class IMemory {
+class IReadable {
 public:
-    virtual ~IMemory() = default;
-
+    virtual ~IReadable() = default;
     [[nodiscard]] virtual uint8_t read(uint16_t index) const = 0;
+};
+
+class IWritable {
+public:
+    virtual ~IWritable() = default;
     virtual void write(uint16_t index, uint8_t value) = 0;
 };
+
+class IMemory : public IReadable, public IWritable {};
 
 template<size_t n>
 class Memory : public IMemory {

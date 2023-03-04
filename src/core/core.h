@@ -6,11 +6,14 @@
 
 class Core : public SerialEndpoint {
 public:
-    Core();
+    Core(GameBoy &gameboy);
     ~Core() override = default;
 
     bool loadROM(const std::string &rom);
+
     virtual void start();
+    virtual void tick(); // TODO: here?
+
     void stop();
 
     void attachSerialLink(std::shared_ptr<SerialLink> serialLink);
@@ -20,16 +23,15 @@ public:
     void serialWrite(uint8_t) override;
 
 protected:
-    GameBoy gameboy;
+    GameBoy &gameboy;
 
+    // TODO: move inside cpu
     uint32_t divCounter;
     uint32_t timaCounter;
 
     std::shared_ptr<SerialLink> serialLink;
 
     bool running;
-
-    virtual void tick();
 };
 
 #endif // CORE_H

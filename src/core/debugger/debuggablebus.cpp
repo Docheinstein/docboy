@@ -1,7 +1,7 @@
 #include "debuggablebus.h"
 
-DebuggableBus::DebuggableBus(IMemory &wram1, IMemory &wram2, IMemory &io, IMemory &hram, IMemory &ie) :
-    Bus(wram1, wram2, io, hram, ie),
+DebuggableBus::DebuggableBus(IMemory &vram, IMemory &wram1, IMemory &wram2, IMemory &oam, IMemory &io, IMemory &hram, IMemory &ie) :
+    Bus(vram, wram1, wram2, oam, io, hram, ie),
     observer() {
 
 }

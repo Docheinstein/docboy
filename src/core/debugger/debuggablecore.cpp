@@ -1,6 +1,7 @@
 #include "debuggablecore.h"
 
-DebuggableCore::DebuggableCore() : observer() {
+DebuggableCore::DebuggableCore(GameBoy &gameboy) :
+    Core(gameboy), observer() {
 
 }
 
@@ -12,12 +13,12 @@ void DebuggableCore::unsetObserver() {
     observer = nullptr;
 }
 
-IDebuggableBus &DebuggableCore::getBus() {
-    return gameboy.bus;
-}
+//IDebuggableBus &DebuggableCore::getBus() {
+//    return *gameboy.bus;
+//}
 
-IDebuggableCpu &DebuggableCore::getCpu() {
-    return gameboy.cpu;
+IDebuggableCPU &DebuggableCore::getCpu() {
+    return *gameboy.cpu;
 }
 
 void DebuggableCore::tick() {

@@ -1,7 +1,7 @@
 #include "serialconsole.h"
 #include <iostream>
-#include "utils/binutils.h"
 #include <algorithm>
+#include "utils/hexdump.h"
 
 SerialConsole::SerialConsole(std::ostream &output, size_t bufsize)
     : output(output), bufsize(bufsize) {
@@ -20,7 +20,12 @@ void SerialConsole::flush() {
         auto newline = std::find(buffer.begin(), buffer.end(), '\n');
         auto last = newline + (newline != buffer.end() ? 1 : 0);
         std::copy(buffer.begin(), last, std::back_inserter(line));
-        output << hexdump(line, false, true, 16) << std::endl;
+        std::string dump = Hexdump()
+                    .showAddresses(false)
+                    .showAscii(true)
+                    .setNumColumns(16)
+                    .hexdump(line);
+        output << dump<< std::endl;
         buffer.erase(buffer.begin(), last);
     }
 }

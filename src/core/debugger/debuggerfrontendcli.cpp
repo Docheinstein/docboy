@@ -3,6 +3,7 @@
 #include <iostream>
 #include "utils/termcolor.h"
 #include "utils/strutils.h"
+#include "utils/hexdump.h"
 #include <sstream>
 #include <vector>
 #include <list>
@@ -203,9 +204,9 @@ static CommandInfo COMMANDS[] = {
         }
     },
     {
-        std::regex(R"(x(?:/(\d+)?([xbi])?)?\s+([0-9a-fA-F]{1,4}))"),
+        std::regex(R"(x(?:/(\d+)?([xhbi])?)?\s+([0-9a-fA-F]{1,4}))"),
         "x[/<length><format>] <addr>",
-        "Display memory content at <addr>",
+        "Display memory content at <addr> (<format>: x, h, b, i)",
         [](const std::vector<std::string> &groups) -> Command {
             CommandExamine cmd {};
             const std::string &length = groups[0];
@@ -218,9 +219,9 @@ static CommandInfo COMMANDS[] = {
         }
     },
     {
-        std::regex(R"(display(?:/(\d+)?([xbi])?)?\s+([0-9a-fA-F]{1,4}))"),
+        std::regex(R"(display(?:/(\d+)?([xhbi])?)?\s+([0-9a-fA-F]{1,4}))"),
         "display[/<length><format>] <addr>",
-        "Automatically display memory content content at <addr>",
+        "Automatically display memory content content at <addr> (<format>: x, h, b, i)",
         [](const std::vector<std::string> &groups) -> Command {
             CommandDisplay cmd {};
             const std::string &length = groups[0];
@@ -332,7 +333,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         DebuggerBackend::Disassemble disassemble;
     };
 
-    auto headerString = [](const std::string &label = "") {
+    auto headerString = [](const std::string &label = "", const std::string &sep = "—") {
         static const size_t WIDTH = 80;
         std::string paddedLabel = label.empty() ? "" : (" " + label + " ");
         size_t w2 = (WIDTH - paddedLabel.size()) / 2;
@@ -340,9 +341,9 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         std::string hr1;
         std::string hr2;
         for (size_t i = 0; i < w1; i++)
-            hr1 += "—";
+            hr1 += sep;
         for (size_t i = 0; i < w2; i++)
-            hr2 += "—";
+            hr2 += sep;
         std::stringstream ss;
         ss
             << termcolor::color<240> << hr1
@@ -352,6 +353,25 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         return ss.str();
     };
 
+    auto subheaderString = [](const std::string &label = "", const std::string &sep = " ") {
+        static const size_t WIDTH = 80;
+        std::string paddedLabel = label.empty() ? "" : (" " + label + " ");
+        size_t w2 = (WIDTH - paddedLabel.size()) / 2;
+        size_t w1 = WIDTH - w2 - paddedLabel.size();
+        std::string hr1;
+        std::string hr2;
+        for (size_t i = 0; i < w1; i++)
+            hr1 += sep;
+        for (size_t i = 0; i < w2; i++)
+            hr2 += sep;
+        std::stringstream ss;
+        ss
+            << termcolor::color<240> << hr1
+            << termcolor::green << paddedLabel
+            << termcolor::color<240> << hr2
+            << termcolor::reset;
+        return ss.str();
+    };
     auto coloredBool = [](bool b) {
         std::stringstream ss;
         if (b)
@@ -364,7 +384,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
     auto registerString = [](const std::string &name, uint16_t value) {
         std::stringstream ss;
         ss
-            << termcolor::bold << termcolor::red << name << termcolor::reset << "  :  "
+            << termcolor::bold << termcolor::red << name << termcolor::reset << " : "
             << bin((uint8_t) (value >> 8)) << " " << bin((uint8_t) (value & 0xFF)) << "  "
             << "(" << hex((uint8_t) (value >> 8)) << " " << hex((uint8_t) (value & 0xFF)) << ")";
         return ss.str();
@@ -380,7 +400,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
 
     auto disassembleEntryCodeString = [&](
             const DisassembleEntry &entry,
-            const IDebuggableCpu::Instruction &currentInstruction
+            const IDebuggableCPU::Instruction &currentInstruction
         ) {
         std::stringstream ss;
         uint16_t instrStart = entry.address;
@@ -399,7 +419,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             ss << termcolor::color<240>;
 
         ss
-                << hex(entry.address) << "  :  " << std::left << std::setw(9) << hex(entry.disassemble) << "   "
+                << hex(entry.address) << " : " << std::left << std::setw(9) << hex(entry.disassemble) << "   "
                 << std::left << std::setw(16) << instruction_mnemonic(entry.disassemble, entry.address);
 
         if (isCurrentInstruction) {
@@ -421,7 +441,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
     auto disassembleEntryString = [&](const DisassembleEntry &entry) {
         std::stringstream ss;
         ss
-                << hex(entry.address) << "  :  " << std::left << std::setw(9) << hex(entry.disassemble) << "   "
+                << hex(entry.address) << " : " << std::left << std::setw(9) << hex(entry.disassemble) << "   "
                 << std::left << std::setw(16) << instruction_mnemonic(entry.disassemble, entry.address);
         return ss.str();
     };
@@ -443,7 +463,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         auto instruction = backend.getDisassembled(b.address);
         if (instruction) {
             ss
-                    << "  :  "
+                    << " : "
                     << std::setw(9) << hex(*instruction) << "   "
                     << std::left << std::setw(16) << instruction_mnemonic(*instruction, b.address);
         }
@@ -475,6 +495,31 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             ss << " (change)";
         ss << termcolor::reset;
         return ss.str();
+    };
+
+    auto ioString = [&](uint16_t addr, uint8_t value, int width = 8) {
+        std::stringstream ss;
+        ss
+            << termcolor::color<244> << hex(addr) << "  "
+            << std::right << termcolor::bold << termcolor::red
+            << std::left << std::setw(width) << address_mnemonic(addr) << termcolor::reset << " : " << bin(value);
+        return ss.str();
+    };
+
+    auto printIo = [&](const uint16_t *addresses, size_t length, size_t columns = 4) {
+        size_t i;
+        for (i = 0; i < length;) {
+            uint16_t addr = addresses[i];
+            uint8_t value = backend.readMemory(addr);
+            std::cout << ioString(addr, value);
+            i++;
+            if (i % columns == 0)
+                std::cout << std::endl;
+            else
+                std::cout << "    ";
+        }
+        if (i % columns != 0)
+            std::cout << std::endl;
     };
 
     auto printHelp = []() {
@@ -517,6 +562,17 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             std::cout << std::endl;
         } else if (format == 'i') {
             printInstructions(from, n);
+        } else if (format == 'h') {
+            std::vector<uint8_t> data;
+            for (size_t i = 0; i < n; i++)
+                data.push_back(backend.readMemory(from + i));
+            std::string dump = Hexdump()
+                    .setBaseAddress(from)
+                    .showAddresses(true)
+                    .showAscii(false)
+                    .setNumColumns(16)
+                    .hexdump(data);
+            std::cout << dump << std::endl;
         }
     };
 
@@ -544,8 +600,8 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         }
 
         auto cpu = backend.getCpuState();
-        auto IE = backend.readMemory(MemoryMap::IE);
-        auto IF = backend.readMemory(MemoryMap::IO::IF);
+        uint8_t IE = backend.readMemory(Registers::Interrupts::IE);
+        uint8_t IF = backend.readMemory(Registers::Interrupts::IF);
 
             std::cout << headerString("state") << std::endl;
         std::cout << termcolor::yellow << "Cycle    :  " << termcolor::reset << cpu.cycles << std::endl;
@@ -579,6 +635,18 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         std::cout << interruptString("TIMER ", get_bit<Bits::Interrupts::TIMER>(IE), get_bit<Bits::Interrupts::TIMER>(IF)) << std::endl;
         std::cout << interruptString("JOYPAD", get_bit<Bits::Interrupts::JOYPAD>(IE), get_bit<Bits::Interrupts::JOYPAD>(IF)) << std::endl;
         std::cout << interruptString("SERIAL", get_bit<Bits::Interrupts::SERIAL>(IE), get_bit<Bits::Interrupts::SERIAL>(IF)) << std::endl;
+
+        std::cout << headerString("IO") << std::endl;
+        std::cout << subheaderString("joypad") << std::endl;
+        printIo(Registers::Joypad::REGISTERS, sizeof(Registers::Joypad::REGISTERS) / sizeof(uint16_t));
+        std::cout << subheaderString("serial") << std::endl;
+        printIo(Registers::Serial::REGISTERS, sizeof(Registers::Serial::REGISTERS) / sizeof(uint16_t));
+        std::cout << subheaderString("timers") << std::endl;
+        printIo(Registers::Timers::REGISTERS, sizeof(Registers::Timers::REGISTERS) / sizeof(uint16_t));
+        std::cout << subheaderString("sound") << std::endl;
+        printIo(Registers::Sound::REGISTERS, sizeof(Registers::Sound::REGISTERS) / sizeof(uint16_t));
+        std::cout << subheaderString("lcd") << std::endl;
+        printIo(Registers::LCD::REGISTERS, sizeof(Registers::LCD::REGISTERS) / sizeof(uint16_t));
 
         if (cpu.instruction.ISR) {
             std::cout << headerString("code") << std::endl;

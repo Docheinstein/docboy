@@ -17,11 +17,11 @@ std::unique_ptr<Cartridge> CartridgeFactory::makeCartridge(const std::string &fi
     uint8_t mbc = data[0x147];
 
     if (mbc == 0x00)
-        return std::make_unique<NoMBCCartridge>(data);
+        return std::make_unique<NoMBC>(data);
     if (mbc == 0x01)
-        return std::make_unique<MBC1Cartridge>(data);
+        return std::make_unique<MBC1>(data);
     if (mbc == 0x02 || mbc == 0x03)
-        return std::make_unique<MBC1RamCartridge>(data);
+        return std::make_unique<MBC1RAM>(data);
 
     return nullptr;
 }

@@ -4,7 +4,7 @@
 #include "core/core.h"
 
 class IDebuggableBus;
-class IDebuggableCpu;
+class IDebuggableCPU;
 
 class IDebuggableCore {
 public:
@@ -18,20 +18,20 @@ public:
     virtual void setObserver(Observer *observer) = 0;
     virtual void unsetObserver() = 0;
 
-    [[nodiscard]] virtual IDebuggableBus &getBus() = 0;
-    [[nodiscard]] virtual IDebuggableCpu &getCpu() = 0;
+//    [[nodiscard]] virtual IDebuggableBus &getBus() = 0;
+    [[nodiscard]] virtual IDebuggableCPU &getCpu() = 0;
 };
 
 class DebuggableCore : public Core, public IDebuggableCore {
 public:
-    DebuggableCore();
+    explicit DebuggableCore(GameBoy &gb);
     ~DebuggableCore() override = default;
 
     void setObserver(Observer *observer) override;
     void unsetObserver() override;
 
-    [[nodiscard]] IDebuggableBus & getBus() override;
-    [[nodiscard]] IDebuggableCpu & getCpu() override;
+//    [[nodiscard]] IDebuggableBus & getBus() override;
+    [[nodiscard]] IDebuggableCPU & getCpu() override;
 
     void tick() override;
 

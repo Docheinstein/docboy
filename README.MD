@@ -10,13 +10,12 @@ Work in Progress.
 * Cartridges: NoMBC, MBC1
 * CLI debugger: supports breakpoints, watchpoints, disassembler, step by step execution (by instruction or micro-instruction), memory viewer, interrupts viewer, IO viewer
 * Serial Link
-
+* Bootroom support
 
 ### TODO
 * LCD
 * Sound
 * Joypad
-* Bootroom (BIOS) support
 * Save/load state
 * Support other platforms: Windows, macOs
 * Compile as libretro core

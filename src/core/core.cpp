@@ -7,20 +7,19 @@
 #include "cartridge/cartridgefactory.h"
 
 
-Core::Core() :
+Core::Core(GameBoy &gameboy):
+    gameboy(gameboy),
     divCounter(),
-    timaCounter() {
+    timaCounter(),
+    running() {
 }
 
-
 bool Core::loadROM(const std::string &rom) {
-    DEBUG(1) << "Loading ROM: " << rom << std::endl;
-
     auto c = CartridgeFactory::makeCartridge(rom);
     if (!c)
         return false;
     gameboy.cartridge = std::move(c);
-    gameboy.bus.attachCartridge(gameboy.cartridge.get());
+    gameboy.bus->attachCartridge(gameboy.cartridge.get());
 
 //#if DEBUG_LEVEL >= 1
 //    auto h = cartridge->header();
@@ -68,57 +67,61 @@ void Core::detachSerialLink() {
 }
 
 void Core::tick() {
-    Cpu &cpu = gameboy.cpu;
-    Bus &bus = gameboy.bus;
+    ICPU &cpu = *gameboy.cpu;
+    IGPU &gpu = *gameboy.gpu;
+    IBus &bus = *gameboy.bus;
+
+    // TODO: when exactly?, how many ticks?
+    gpu.tick();
 
     cpu.tick();
 
     // DIV
     divCounter += 1;
-    if (divCounter >= Frequencies::Cpu / Frequencies::DIV) {
+    if (divCounter >= Specs::CPU::FREQUENCY / Specs::CPU::DIV_FREQUENCY) {
         divCounter = 0;
-        uint8_t DIV = bus.read(MemoryMap::IO::DIV);
-        bus.write(MemoryMap::IO::DIV, DIV + 1);
+        uint8_t DIV = bus.read(Registers::Timers::DIV);
+        bus.write(Registers::Timers::DIV, DIV + 1);
     }
 
     // TIMA
-    uint8_t TAC = bus.read(MemoryMap::IO::TAC);
-    if (get_bit<Bits::IO::TAC::ENABLE>(TAC))
+    uint8_t TAC = bus.read(Registers::Timers::TAC);
+    if (get_bit<Bits::Registers::TAC::ENABLE>(TAC))
         timaCounter += 1;
 
-    if (timaCounter >= Frequencies::Cpu / Frequencies::TAC_SELECTOR[bitmasked<2>(TAC)]) {
+    if (timaCounter >= Specs::CPU::FREQUENCY / Specs::CPU::TAC_FREQUENCY[bitmasked<2>(TAC)]) {
         timaCounter = 0;
-        uint8_t TIMA = bus.read(MemoryMap::IO::TIMA);
+        uint8_t TIMA = bus.read(Registers::Timers::TIMA);
         auto [result, overflow] = sum_carry<7>(TIMA, 1);
         if (overflow) {
-            TIMA = bus.read(MemoryMap::IO::TMA);
-            bus.write(MemoryMap::IO::TIMA, TIMA);
+            TIMA = bus.read(Registers::Timers::TMA);
+            bus.write(Registers::Timers::TIMA, TIMA);
 
-            uint8_t IF = bus.read(MemoryMap::IO::IF);
+            uint8_t IF = bus.read(Registers::Interrupts::IF);
             set_bit<Bits::Interrupts::TIMER>(IF, true);
-            bus.write(MemoryMap::IO::IF, IF);
+            bus.write(Registers::Interrupts::IF, IF);
         } else {
-            bus.write(MemoryMap::IO::TIMA, result);
+            bus.write(Registers::Timers::TIMA, result);
         }
     }
 
     // Serial
     if (serialLink) {
-        uint8_t SC = bus.read(MemoryMap::IO::SC);
+        uint8_t SC = bus.read(Registers::Serial::SC);
         if (get_bit<7>(SC) && get_bit<0>(SC))
             serialLink->tick();
     }
 }
 
 uint8_t Core::serialRead() {
-    return gameboy.bus.read(MemoryMap::IO::SB);
+    return gameboy.bus->read(Registers::Serial::SB);
 }
 
 void Core::serialWrite(uint8_t data) {
-    Bus &bus = gameboy.bus;
-    bus.write(MemoryMap::IO::SB, data);
-    uint8_t SC = bus.read(MemoryMap::IO::SC);
+    IBus &bus = *gameboy.bus;
+    bus.write(Registers::Serial::SB, data);
+    uint8_t SC = bus.read(Registers::Serial::SC);
     set_bit<7>(SC, false);
-    bus.write(MemoryMap::IO::SC, SC);
+    bus.write(Registers::Serial::SC, SC);
     // TODO: interrupt
 }

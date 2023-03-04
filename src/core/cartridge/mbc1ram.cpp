@@ -1,14 +1,14 @@
 #include "mbc1ram.h"
 
-MBC1RamCartridge::MBC1RamCartridge(const std::vector<uint8_t> &data) : MBC1Cartridge(data) {
+MBC1RAM::MBC1RAM(const std::vector<uint8_t> &data) : MBC1(data) {
 
 }
 
-MBC1RamCartridge::MBC1RamCartridge(std::vector<uint8_t> &&data) : MBC1Cartridge(data) {
+MBC1RAM::MBC1RAM(std::vector<uint8_t> &&data) : MBC1(data) {
 
 }
 
-uint8_t MBC1RamCartridge::read(uint16_t address) const {
+uint8_t MBC1RAM::read(uint16_t address) const {
     if (address >= 0xA000 && address < 0xC000){
         if (!mbc.ramEnabled)
             return 0xFF;
@@ -18,10 +18,10 @@ uint8_t MBC1RamCartridge::read(uint16_t address) const {
         size_t ramAddress = base + (address - 0xA000);
         return ram.read(ramAddress);
     }
-    return MBC1Cartridge::read(address);
+    return MBC1::read(address);
 }
 
-void MBC1RamCartridge::write(uint16_t address, uint8_t value) {
+void MBC1RAM::write(uint16_t address, uint8_t value) {
     if (address >= 0xA000 && address < 0xC000){
         if (!mbc.ramEnabled)
             return;
@@ -31,6 +31,6 @@ void MBC1RamCartridge::write(uint16_t address, uint8_t value) {
         size_t ramAddress = base + (address - 0xA000);
         ram.write(ramAddress, value);
     } else {
-        MBC1Cartridge::write(address, value);
+        MBC1::write(address, value);
     }
 }

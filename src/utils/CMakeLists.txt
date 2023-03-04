@@ -4,6 +4,8 @@ set(SOURCES
     binutils.cpp
     fileutils.h
     fileutils.cpp
+    hexdump.h
+    hexdump.cpp
     log.h
     log.cpp
     strutils.h

@@ -16,4 +16,7 @@ std::string instruction_mnemonic(const std::vector<uint8_t> &instruction, uint16
 
 std::string interrupt_service_routine_mnemonic(uint16_t address);
 
+std::string address_mnemonic(uint16_t address);
+bool address_is_well_known(uint16_t address);
+
 #endif // HELPERS_H
