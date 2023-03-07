@@ -34,24 +34,26 @@ make
 
 ### Usage
 
-
 ```
-usage: docboy-nogui [-d] [-s] [-h] rom
+usage:  [--boot-rom BOOT-ROM] [--debugger] [--serial] [--scaling SCALING] 
+        [--help] rom
 
 positional arguments:
-  rom            ROM
+  rom                     ROM
 
 optional arguments:
-  -d, --debugger Attach CLI debugger
-  -s, --serial   Display serial output
-  -h, --help     Display this help message and exit.
+  -b, --boot-rom BOOT-ROM Boot ROM
+  -d, --debugger          Attach CLI debugger
+  -s, --serial            Display serial output
+  -z, --scaling SCALING   Scaling factor
+  -h, --help              Display this help message and exit.
 ```
 
 
 ### Screenshots
 
-[DMG boot](images/dmg_boot.png)
-[Blargg's cpu_instr boot](images/cpu_instrs.png)
+![DMG boot](images/dmg_boot.png)
+![Blargg's cpu_instr boot](images/cpu_instrs.png)
 
 ### Tests
 
