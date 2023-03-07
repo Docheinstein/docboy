@@ -10,15 +10,15 @@ public:
     GameBoyBuilder() = default;
 
     GameBoyBuilder & setBootROM(std::unique_ptr<IBootROM> bootRom);
-    GameBoyBuilder & setDisplay(std::unique_ptr<IDisplay> display);
+    GameBoyBuilder & setLCD(std::unique_ptr<ILCDImpl> lcd);
     GameBoy build();
 
 private:
     std::unique_ptr<IBootROM> bootRom;
     std::unique_ptr<IBus> bus;
-    std::unique_ptr<ICPU> cpu;
-    std::unique_ptr<IDisplay> display;
-    std::unique_ptr<IGPU> gpu;
+    std::unique_ptr<ICPUImpl> cpu;
+    std::unique_ptr<ILCDImpl> lcd;
+    std::unique_ptr<ICPUImpl> ppu;
 };
 
 #endif // GAMEBOYBUILDER_H

@@ -1,6 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#include <vector>
 #include <cstdint>
 #include <cstddef>
 #include "utils/log.h"
@@ -20,21 +21,34 @@ public:
 
 class IMemory : public IReadable, public IWritable {};
 
-template<size_t n>
-class Memory : public IMemory {
+//class IMemory {
+//public:
+//    virtual ~IMemory() = default;
+//    [[nodiscard]] virtual uint8_t read(uint16_t index) const = 0;
+//    virtual void write(uint16_t index, uint8_t value) = 0;
+//};
+
+class Readable : public virtual IReadable {
 public:
-    Memory() : memory() {}
-
-    [[nodiscard]] uint8_t read(uint16_t index) const override {
-        return memory[index];
-    }
-
-    void write(uint16_t index, uint8_t value) override {
-        memory[index] = value;
-    }
-
+    explicit Readable(size_t size);
+    explicit Readable(const std::vector<uint8_t> &data);
+    explicit Readable(std::vector<uint8_t> &&data);
+    [[nodiscard]] uint8_t read(uint16_t index) const override;
 private:
-    uint8_t memory[n];
+    std::vector<uint8_t> memory;
+};
+
+class Memory : public virtual IMemory {
+public:
+    explicit Memory(size_t size);
+    explicit Memory(const std::vector<uint8_t> &data);
+    explicit Memory(std::vector<uint8_t> &&data);
+
+    [[nodiscard]] uint8_t read(uint16_t index) const override;
+    void write(uint16_t index, uint8_t value) override;
+
+protected:
+    std::vector<uint8_t> memory;
 };
 
 

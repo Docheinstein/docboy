@@ -1,6 +1,5 @@
 set(SOURCES
         boot/bootrom.h
-        boot/bootrom.cpp
         boot/bootromfactory.h
         boot/bootromfactory.cpp
         cartridge/cartridge.h
@@ -15,8 +14,10 @@ set(SOURCES
         cartridge/mbc1ram.cpp
         cartridge/nombc.h
         cartridge/nombc.cpp
-        gpu/gpu.h
-        gpu/gpu.cpp
+        ppu/lcd.h
+        ppu/lcd.cpp
+        ppu/ppu.h
+        ppu/ppu.cpp
         serial/serial.h
         serial/serial.cpp
         serial/serialbuffer.h
@@ -25,11 +26,10 @@ set(SOURCES
         serial/serialconsole.cpp
         bus.h
         bus.cpp
+        components.h
         core.h
         core.cpp
         definitions.h
-        display.h
-        display.cpp
         gameboy.h
         gameboy.cpp
         gameboybuilder.h
@@ -50,12 +50,16 @@ add_library(core STATIC ${SOURCES})
 
 if (ENABLE_DEBUGGER)
     target_sources(core PRIVATE
-        debugger/debuggablebus.h
-        debugger/debuggablebus.cpp
         debugger/debuggablecore.h
         debugger/debuggablecore.cpp
         debugger/debuggablecpu.h
         debugger/debuggablecpu.cpp
+        debugger/debuggablelcd.h
+        debugger/debuggablelcd.cpp
+        debugger/debuggablememory.h
+        debugger/debuggablememory.cpp
+        debugger/debuggableppu.h
+        debugger/debuggableppu.cpp
         debugger/debuggerbackend.h
         debugger/debuggerbackend.cpp
         debugger/debuggerfrontend.h

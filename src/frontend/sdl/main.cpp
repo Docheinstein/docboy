@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
         std::string boot_rom;
         bool debugger {};
         bool serial_console {};
+        float scaling {1};
     } args;
 
     auto parser = argumentum::argument_parser();
@@ -25,6 +26,7 @@ int main(int argc, char **argv) {
         .help("ROM");
     params
         .add_parameter(args.boot_rom, "--boot-rom", "-b")
+        .nargs(1)
         .help("Boot ROM");
 #ifdef ENABLE_DEBUGGER
     params
@@ -34,12 +36,17 @@ int main(int argc, char **argv) {
     params
         .add_parameter(args.serial_console, "--serial", "-s")
         .help("Display serial output");
+    params
+        .add_parameter(args.scaling, "--scaling", "-z")
+        .nargs(1)
+        .default_value(1)
+        .help("Scaling factor");
+
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-
-    std::unique_ptr<Window> window = std::make_unique<Window>();
-    window->show();
+    std::unique_ptr<SDLLCD> lcd = std::make_unique<SDLLCD>();
+    Window window(*lcd, args.scaling);
 
     std::unique_ptr<IBootROM> bootRom;
     if (!args.boot_rom.empty())
@@ -47,7 +54,7 @@ int main(int argc, char **argv) {
 
     GameBoy gb = GameBoyBuilder()
             .setBootROM(std::move(bootRom))
-            .setDisplay(std::move(window))
+            .setLCD(std::move(lcd))
             .build();
 
 #ifdef ENABLE_DEBUGGER
@@ -79,14 +86,24 @@ int main(int argc, char **argv) {
 
     SDL_Event e;
 
+    auto now = std::chrono::high_resolution_clock::now();
+    auto nextTick = now + std::chrono::milliseconds(16);
+
     bool quit = false;
     while (!quit) {
-        core.tick();
+        do {
+            if (!core.tick())
+                quit = true;
+            now = std::chrono::high_resolution_clock::now();
+        } while (now < nextTick && !quit);
+        nextTick = now + std::chrono::milliseconds(16);
 
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT)
                 quit = true;
         }
+
+        window.render();
     }
 
 

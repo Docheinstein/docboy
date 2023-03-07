@@ -21,11 +21,11 @@ uint8_t Bus::read(uint16_t addr) const {
     } else if (addr <= MemoryMap::WRAM2::END) {
         return wram2.read(addr - MemoryMap::WRAM2::START);
     } else if (addr <= MemoryMap::ECHO_RAM::END) {
-        throw std::runtime_error("Read at address " + hex(addr) + " is not allowed (ECHO RAM)");
+        WARN() << "Read at address " + hex(addr) + " is not allowed (ECHO RAM)" << std::endl;
     } else if (addr <= MemoryMap::OAM::END) {
         return oam.read(addr - MemoryMap::OAM::START);
     } else if (addr <= MemoryMap::NOT_USABLE::END) {
-        throw std::runtime_error("Read at address " + hex(addr) + " is not allowed (NOT USABLE)");
+        WARN() << "Read at address " + hex(addr) + " is not allowed (NOT USABLE)" << std::endl;
     } else if (addr <= MemoryMap::IO::END) {
         return io.read(addr - MemoryMap::IO::START);
     } else if (addr <= MemoryMap::HRAM::END) {
@@ -48,11 +48,11 @@ void Bus::write(uint16_t addr, uint8_t value) {
     } else if (addr <= MemoryMap::WRAM2::END) {
         wram2.write(addr - MemoryMap::WRAM2::START, value);
     } else if (addr <= MemoryMap::ECHO_RAM::END) {
-        throw std::runtime_error("Write at address " + hex(addr) + " is not allowed (ECHO RAM)");
+        WARN() << "Write at address " + hex(addr) + " is not allowed (ECHO RAM)" << std::endl;
     } else if (addr <= MemoryMap::OAM::END) {
         oam.write(addr - MemoryMap::OAM::START, value);
     } else if (addr <= MemoryMap::NOT_USABLE::END) {
-        throw std::runtime_error("Write at address " + hex(addr) + " is not allowed (NOT USABLE)");
+        WARN() << "Write at address " + hex(addr) + " is not allowed (NOT USABLE)" << std::endl;
     } else if (addr <= MemoryMap::IO::END) {
         io.write(addr - MemoryMap::IO::START, value);
     } else if (addr <= MemoryMap::HRAM::END) {

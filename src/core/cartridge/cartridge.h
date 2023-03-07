@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "core/memory.h"
+#include "core/components.h"
 
-class Cartridge : public IMemory {
+class Cartridge : public MemoryImpl {
 public:
     struct Header {
         std::vector<uint8_t> entry_point;
@@ -33,11 +33,9 @@ public:
 
     explicit Cartridge(const std::vector<uint8_t> &data);
     explicit Cartridge(std::vector<uint8_t> &&data);
+
     ~Cartridge() override = default;
 
     [[nodiscard]] Header header() const;
-
-protected:
-    std::vector<uint8_t> rom;
 };
 #endif // CARTRIDGE_H

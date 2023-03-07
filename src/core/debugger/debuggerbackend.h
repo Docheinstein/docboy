@@ -5,23 +5,37 @@
 #include <vector>
 #include <optional>
 #include <memory>
+#include <variant>
 #include "core/definitions.h"
 #include "utils/binutils.h"
 #include "core/core.h"
-#include "debuggablebus.h"
 #include "debuggablecpu.h"
+#include "debuggableppu.h"
 #include "debuggablecore.h"
 
 class IDebuggerFrontend;
 
 class IDebuggerBackend {
 public:
-    enum class Command {
-        Step,
-        Next,
-        Continue,
-        Abort,
+    struct CommandDot {
+        uint64_t count;
     };
+    struct CommandStep {
+        uint64_t count;
+    };
+    struct CommandNext {
+        uint64_t count;
+    };
+    struct CommandContinue {};
+    struct CommandAbort {};
+
+    typedef std::variant<
+        CommandDot,
+        CommandStep,
+        CommandNext,
+        CommandContinue,
+        CommandAbort
+    > Command;
 
     template<typename Op>
     struct Condition {
@@ -76,12 +90,36 @@ public:
 
     typedef std::vector<uint8_t> Disassemble;
 
-    struct CpuState {
+    struct CPUState {
         IDebuggableCPU::Registers registers;
         IDebuggableCPU::Instruction instruction;
         bool IME;
         bool halted;
         uint64_t cycles;
+    };
+
+    struct PPUState {
+        struct {
+            IDebuggablePPU::PPUState state {};
+            FIFO bgFifo;
+            FIFO objFifo;
+            uint32_t dots{};
+        } ppu;
+        struct {
+            IDebuggablePPU::FetcherState state;
+            uint8_t x8;
+            uint8_t y;
+            uint16_t lastTilemapAddr;
+            uint16_t lastTileAddr;
+            uint16_t lastTileDataAddr;
+            uint32_t dots;
+        } fetcher{};
+        uint64_t cycles{};
+    };
+
+    struct LCDState {
+        uint8_t x;
+        uint8_t y;
     };
 
     struct ExecutionState {
@@ -117,13 +155,15 @@ public:
     virtual void disassembleRange(uint16_t from, uint16_t to) = 0;
     [[nodiscard]] virtual std::optional<Disassemble> getDisassembled(uint16_t addr) const = 0;
 
-    [[nodiscard]] virtual CpuState getCpuState() const = 0;
+    [[nodiscard]] virtual CPUState getCpuState() const = 0;
+    [[nodiscard]] virtual PPUState getPpuState() const = 0;
+    [[nodiscard]] virtual LCDState getLcdState() const = 0;
     [[nodiscard]] virtual uint8_t readMemory(uint16_t addr) = 0;
 
     virtual void interrupt() = 0;
 };
 
-class DebuggerBackend : public IDebuggerBackend, public IDebuggableCPU::Observer, public IDebuggableCore::Observer {
+class DebuggerBackend : public IDebuggerBackend, public IDebuggableCore::Observer {
 public:
     explicit DebuggerBackend(IDebuggableCore &core);
     ~DebuggerBackend() override = default;
@@ -146,18 +186,23 @@ public:
     void disassembleRange(uint16_t from, uint16_t to) override;
     [[nodiscard]] std::optional<Disassemble> getDisassembled(uint16_t addr) const override;
 
-    [[nodiscard]] CpuState getCpuState() const override;
+    [[nodiscard]] CPUState getCpuState() const override;
+    [[nodiscard]] PPUState getPpuState() const override;
+    [[nodiscard]] LCDState getLcdState() const override;
     [[nodiscard]] uint8_t readMemory(uint16_t addr) override;
 
     void interrupt() override;
 
+    bool onTick(uint8_t clk) override;
     void onMemoryRead(uint16_t addr, uint8_t value) override;
     void onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
 
-    bool onTick() override;
 
 private:
+    IDebuggableCore &core;
     IDebuggableCPU &cpu;
+    IDebuggablePPU &ppu;
+    IDebuggableLCD &lcd;
 
     IDebuggerFrontend *frontend;
 
@@ -173,7 +218,11 @@ private:
 
     bool interrupted;
 
-    [[nodiscard]] std::optional<Disassemble> doDisassemble(uint16_t addr) const;
+    uint64_t dotCount;
+    uint64_t stepCount;
+    uint64_t nextCount;
+
+    [[nodiscard]] std::optional<Disassemble> doDisassemble(uint16_t addr);
 };
 
 #endif // DEBUGGERBACKEND_H

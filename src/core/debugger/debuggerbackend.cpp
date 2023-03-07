@@ -2,17 +2,19 @@
 #include "debuggerbackend.h"
 #include "debuggerfrontend.h"
 #include "debuggablecore.h"
-#include "debuggablebus.h"
-#include "debuggablecpu.h"
 #include "core/helpers.h"
 
 DebuggerBackend::DebuggerBackend(IDebuggableCore &core) :
+        core(core),
         cpu(core.getCpu()),
+        ppu(core.getPpu()),
+        lcd(core.getLcd()),
         frontend(),
         nextPointId(),
-        interrupted() {
+        interrupted(),
+        stepCount(),
+        nextCount() {
     core.setObserver(this);
-    cpu.setObserver(this);
 }
 
 void DebuggerBackend::attachFrontend(IDebuggerFrontend *frontend_) {
@@ -112,16 +114,16 @@ void DebuggerBackend::disassembleRange(uint16_t from, uint16_t to) {
     }
 }
 
-std::optional<DebuggerBackend::Disassemble> DebuggerBackend::doDisassemble(uint16_t addr) const {
+std::optional<DebuggerBackend::Disassemble> DebuggerBackend::doDisassemble(uint16_t addr) {
     uint32_t addressCursor = addr;
-    uint8_t opcode = cpu.readMemoryRaw(addressCursor++);
+    uint8_t opcode = readMemory(addressCursor++);
     Disassemble instruction { opcode };
 
     // this works for CB and non CB because all CB instructions have length 2
     uint8_t length = instruction_length(opcode);
 
     while (addressCursor < addr + length && addressCursor <= 0xFFFF)
-        instruction.push_back(cpu.readMemoryRaw(addressCursor++));
+        instruction.push_back(readMemory(addressCursor++));
 
     return instruction;
 }
@@ -131,7 +133,7 @@ std::optional<DebuggerBackend::Disassemble> DebuggerBackend::getDisassembled(uin
     return disassembled[addr];
 }
 
-DebuggerBackend::CpuState DebuggerBackend::getCpuState() const {
+DebuggerBackend::CPUState DebuggerBackend::getCpuState() const {
     return {
         .registers = cpu.getRegisters(),
         .instruction = cpu.getCurrentInstruction(),
@@ -141,9 +143,41 @@ DebuggerBackend::CpuState DebuggerBackend::getCpuState() const {
     };
 }
 
+DebuggerBackend::PPUState DebuggerBackend::getPpuState() const {
+    return {
+        .ppu = {
+            .state = ppu.getPPUState(),
+            .bgFifo = ppu.getBgFifo(),
+            .objFifo = ppu.getObjFifo(),
+            .dots = ppu.getDots()
+        },
+        .fetcher = {
+            .state = ppu.getFetcherState(),
+            .x8 = ppu.getFetcherX(),
+            .y = ppu.getFetcherY(),
+            .lastTilemapAddr = ppu.getFetcherLastTileMapAddr(),
+            .lastTileAddr = ppu.getFetcherLastTileAddr(),
+            .lastTileDataAddr = ppu.getFetcherLastTileDataAddr(),
+            .dots = ppu.getFetcherDots()
+        },
+        .cycles = ppu.getCycles()
+    };
+}
+
+
+IDebuggerBackend::LCDState DebuggerBackend::getLcdState() const {
+    return {
+        .x = lcd.getX(),
+        .y = lcd.getY()
+    };
+}
+
 
 uint8_t DebuggerBackend::readMemory(uint16_t addr) {
-    return cpu.readMemoryRaw(addr);
+    core.setObserver(nullptr);
+    uint8_t value = cpu.readMemoryThroughCPU(addr);
+    core.setObserver(this);
+    return value;
 }
 
 void DebuggerBackend::onMemoryRead(uint16_t addr, uint8_t value) {
@@ -184,14 +218,12 @@ void DebuggerBackend::onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t new
     }
 }
 
-bool DebuggerBackend::onTick() {
+bool DebuggerBackend::onTick(uint8_t clk) {
     if (!frontend)
         return true;
 
     if (!cpu.getCycles())
-        return true; // do not stop on nfirst fetch
-
-    auto instruction = cpu.getCurrentInstruction();
+        return true; // do not stop on first fetch
 
     frontend->onTick();
 
@@ -201,16 +233,21 @@ bool DebuggerBackend::onTick() {
         return true;
     }
 
-    if (!instruction.ISR && instruction.microop == 0) {
-        disassemble(instruction.address, 1);
-        auto b = getBreakpoint(instruction.address);
-        if (b) {
-            ExecutionState outcome = {
-                .state = DebuggerBackend::ExecutionState::State::BreakpointHit,
-                .breakpointHit = {*b}
-            };
-            command = frontend->pullCommand(outcome);
-            return true;
+    const bool isMcycle = (clk % 4) == 0;
+    auto instruction = cpu.getCurrentInstruction();
+
+    if (isMcycle) {
+        if (!instruction.ISR && instruction.microop == 0) {
+            disassemble(instruction.address, 1);
+            auto b = getBreakpoint(instruction.address);
+            if (b) {
+                ExecutionState outcome = {
+                        .state = DebuggerBackend::ExecutionState::State::BreakpointHit,
+                        .breakpointHit = {*b}
+                };
+                command = frontend->pullCommand(outcome);
+                return true;
+            }
         }
     }
 
@@ -229,18 +266,42 @@ bool DebuggerBackend::onTick() {
         return true;
     }
 
-    switch (*command) {
-    case Command::Step:
-        command = frontend->pullCommand({ .state = ExecutionState::State::Completed });
+    const Command &cmd = *command;
+
+    if (std::holds_alternative<CommandDot>(cmd)) {
+        CommandDot cmdDot = std::get<CommandDot>(cmd);
+        dotCount++;
+        if (dotCount >= cmdDot.count) {
+            dotCount = 0;
+            command = frontend->pullCommand({.state = ExecutionState::State::Completed});
+        }
         return true;
-    case Command::Next:
-        if (!instruction.ISR && instruction.microop == 0)
-            command = frontend->pullCommand({ .state = ExecutionState::State::Completed });
-        return true;
-    case Command::Continue:
-        return true;
-    case Command::Abort:
-        return false;
+    }
+
+    if (isMcycle) {
+        if (std::holds_alternative<CommandStep>(cmd)) {
+            CommandStep cmdStep = std::get<CommandStep>(cmd);
+            stepCount++;
+            if (stepCount >= cmdStep.count) {
+                stepCount = 0;
+                command = frontend->pullCommand({.state = ExecutionState::State::Completed});
+            }
+            return true;
+        } else if (std::holds_alternative<CommandNext>(cmd)) {
+            CommandNext cmdNext = std::get<CommandNext>(cmd);
+            if (!instruction.ISR && instruction.microop == 0) {
+                nextCount++;
+                if (nextCount >= cmdNext.count) {
+                    nextCount = 0;
+                    command = frontend->pullCommand({.state = ExecutionState::State::Completed});
+                }
+            }
+            return true;
+        } else if (std::holds_alternative<CommandContinue>(cmd)) {
+            return true;
+        } else if (std::holds_alternative<CommandAbort>(cmd)) {
+            return false;
+        }
     }
 
     return true;

@@ -57,9 +57,19 @@ struct CommandDisplay {
 
 struct CommandUndisplay {};
 
+struct CommandDot {
+    uint64_t count;
+};
+
+struct CommandStep {
+    uint64_t count;
+};
+
+struct CommandNext {
+    uint64_t count;
+};
 struct CommandContinue {};
-struct CommandNext {};
-struct CommandStep {};
+
 
 struct CommandHelp {};
 struct CommandQuit {};
@@ -73,9 +83,10 @@ typedef std::variant<
     CommandExamine,
     CommandDisplay,
     CommandUndisplay,
-    CommandContinue,
-    CommandNext,
+    CommandDot,
     CommandStep,
+    CommandNext,
+    CommandContinue,
     CommandHelp,
     CommandQuit
 > Command;
@@ -99,42 +110,7 @@ static CommandInfo COMMANDS[] = {
         }
     },
     {
-        std::regex(R"(w(?:/([ra]))?\s+([0-9a-fA-F]{1,4})\s*(.*)?)"),
-        "w[/r|a] <addr> [<cond>]",
-        "Set watchpoint at <addr>",
-        [](const std::vector<std::string> &groups) -> Command {
-            CommandWatchpoint cmd {};
-            const std::string &access = groups[0];
-            const std::string &from = groups[1];
-            const std::string &condition = groups[2];
-            
-            if (access == "r")
-                cmd.type = DebuggerBackend::Watchpoint::Type::Read;
-            else if (access == "a")
-                cmd.type = DebuggerBackend::Watchpoint::Type::ReadWrite;
-            else
-                cmd.type = DebuggerBackend::Watchpoint::Type::Change;
-
-            cmd.address.from = cmd.address.to = std::stoi(from, nullptr, 16);
-
-
-            std::vector<std::string> tokens;
-            split(condition, std::back_inserter(tokens));
-            if (tokens.size() >= 2) {
-                const auto &operation = tokens[0];
-                const auto &operand = tokens[1];
-                if (operation == "==") {
-                    cmd.condition.enabled = true;
-                    cmd.condition.condition.operation = DebuggerBackend::Watchpoint::Condition::Operator::Equal;
-                    cmd.condition.condition.operand = std::stoi(operand, nullptr, 16);
-                }
-            }
-
-            return cmd;
-        }
-    },
-    {
-        std::regex(R"(w(?:/([ra]))?\s+([0-9a-fA-F]{1,4}),([0-9a-fA-F]{1,4})\s+(.*)?)"),
+        std::regex(R"(w(?:/([ra]))?\s+([0-9a-fA-F]{1,4}),([0-9a-fA-F]{1,4})\s*(.*)?)"),
         "w[/r|a] <start>,<end> [<cond>]",
         "Set watchpoint from <start> to <end>",
         [](const std::vector<std::string> &groups) -> Command {
@@ -153,6 +129,41 @@ static CommandInfo COMMANDS[] = {
 
             cmd.address.from = std::stoi(from, nullptr, 16);
             cmd.address.to = std::stoi(to, nullptr, 16);
+
+            std::vector<std::string> tokens;
+            split(condition, std::back_inserter(tokens));
+            if (tokens.size() >= 2) {
+                const auto &operation = tokens[0];
+                const auto &operand = tokens[1];
+                if (operation == "==") {
+                    cmd.condition.enabled = true;
+                    cmd.condition.condition.operation = DebuggerBackend::Watchpoint::Condition::Operator::Equal;
+                    cmd.condition.condition.operand = std::stoi(operand, nullptr, 16);
+                }
+            }
+
+            return cmd;
+        }
+    },
+    {
+        std::regex(R"(w(?:/([ra]))?\s+([0-9a-fA-F]{1,4})\s*(.*)?)"),
+        "w[/r|a] <addr> [<cond>]",
+        "Set watchpoint at <addr>",
+        [](const std::vector<std::string> &groups) -> Command {
+            CommandWatchpoint cmd {};
+            const std::string &access = groups[0];
+            const std::string &from = groups[1];
+            const std::string &condition = groups[2];
+
+            if (access == "r")
+                cmd.type = DebuggerBackend::Watchpoint::Type::Read;
+            else if (access == "a")
+                cmd.type = DebuggerBackend::Watchpoint::Type::ReadWrite;
+            else
+                cmd.type = DebuggerBackend::Watchpoint::Type::Change;
+
+            cmd.address.from = cmd.address.to = std::stoi(from, nullptr, 16);
+
 
             std::vector<std::string> tokens;
             split(condition, std::back_inserter(tokens));
@@ -204,9 +215,9 @@ static CommandInfo COMMANDS[] = {
         }
     },
     {
-        std::regex(R"(x(?:/(\d+)?([xhbi])?)?\s+([0-9a-fA-F]{1,4}))"),
+        std::regex(R"(x(?:/(\d+)?([xhbdi])?)?\s+([0-9a-fA-F]{1,4}))"),
         "x[/<length><format>] <addr>",
-        "Display memory content at <addr> (<format>: x, h, b, i)",
+        "Display memory content at <addr> (<format>: x, h, b, d, i)",
         [](const std::vector<std::string> &groups) -> Command {
             CommandExamine cmd {};
             const std::string &length = groups[0];
@@ -219,9 +230,9 @@ static CommandInfo COMMANDS[] = {
         }
     },
     {
-        std::regex(R"(display(?:/(\d+)?([xhbi])?)?\s+([0-9a-fA-F]{1,4}))"),
+        std::regex(R"(display(?:/(\d+)?([xhbdi])?)?\s+([0-9a-fA-F]{1,4}))"),
         "display[/<length><format>] <addr>",
-        "Automatically display memory content content at <addr> (<format>: x, h, b, i)",
+        "Automatically display memory content content at <addr> (<format>: x, h, b, d, i)",
         [](const std::vector<std::string> &groups) -> Command {
             CommandDisplay cmd {};
             const std::string &length = groups[0];
@@ -243,27 +254,47 @@ static CommandInfo COMMANDS[] = {
         }
     },
     {
+        std::regex(R"(\.\s*(\d+)?)"),
+        ". [<count>]",
+        "Step by <count> dots (default = 1)",
+        [](const std::vector<std::string> &groups) -> Command {
+            const std::string &count = groups[0];
+            uint64_t n = count.empty() ? 1 : std::stoi(count);
+            return CommandDot {
+                .count = n
+            };
+        }
+    },
+    {
+        std::regex(R"(s\s*(\d+)?)"),
+        "s [<count>]",
+        "Step by <count> micro-operation (default = 1)",
+        [](const std::vector<std::string> &groups) -> Command {
+            const std::string &count = groups[0];
+            uint64_t n = count.empty() ? 1 : std::stoi(count);
+            return CommandStep {
+                .count = n
+            };
+        }
+    },
+    {
+        std::regex(R"(n\s*(\d+)?)"),
+        "n [<count>]",
+        "Step by <count> instruction (default = 1)",
+        [](const std::vector<std::string> &groups) -> Command {
+            const std::string &count = groups[0];
+            uint64_t n = count.empty() ? 1 : std::stoi(count);
+            return CommandNext {
+                .count = n
+            };
+        }
+    },
+    {
         std::regex(R"(c)"),
         "c",
         "Continue",
         [](const std::vector<std::string> &groups) -> Command {
             return CommandContinue {};
-        }
-    },
-    {
-        std::regex(R"(n)"),
-        "n",
-        "Next instruction",
-        [](const std::vector<std::string> &groups) -> Command {
-            return CommandNext {};
-        }
-    },
-    {
-        std::regex(R"(s)"),
-        "s",
-        "Next micro-operation",
-        [](const std::vector<std::string> &groups) -> Command {
-            return CommandStep {};
         }
     },
     {
@@ -560,6 +591,10 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             for (size_t i = 0; i < n; i++)
                 std::cout << bin(backend.readMemory(from + i)) << " ";
             std::cout << std::endl;
+        } else if (format == 'd') {
+            for (size_t i = 0; i < n; i++)
+                std::cout << +backend.readMemory(from + i) << " ";
+            std::cout << std::endl;
         } else if (format == 'i') {
             printInstructions(from, n);
         } else if (format == 'h') {
@@ -584,6 +619,34 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         }
     };
 
+    auto ppuStateToString = [](IDebuggablePPU::PPUState state) {
+        switch (state) {
+        case IDebuggablePPU::PPUState::HBlank:
+            return "HBlank";
+        case IDebuggablePPU::PPUState::VBlank:
+            return "VBlank";
+        case IDebuggablePPU::PPUState::OAMScan:
+            return "OAMScan";
+        case IDebuggablePPU::PPUState::PixelTransfer:
+            return "PixelTransfer";
+        }
+        return "Unknown";
+    };
+
+    auto ppuFetcherStateToString = [](IDebuggablePPU::FetcherState state) {
+        switch (state) {
+        case IDebuggablePPU::FetcherState::GetTile:
+            return "GetTile";
+        case IDebuggablePPU::FetcherState::GetTileDataLow:
+            return "GetTileDataLow";
+        case IDebuggablePPU::FetcherState::GetTileDataHigh:
+            return "GetTileDataHigh";
+        case IDebuggablePPU::FetcherState::Push:
+            return "Push";
+        }
+        return "Unknown";
+    };
+
     auto printUI = [&]() {
         const auto &breakpoints = backend.getBreakpoints();
         if (!breakpoints.empty()) {
@@ -600,11 +663,39 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         }
 
         auto cpu = backend.getCpuState();
+        auto ppu = backend.getPpuState();
+        auto lcd = backend.getLcdState();
+
         uint8_t IE = backend.readMemory(Registers::Interrupts::IE);
         uint8_t IF = backend.readMemory(Registers::Interrupts::IF);
 
-            std::cout << headerString("state") << std::endl;
-        std::cout << termcolor::yellow << "Cycle    :  " << termcolor::reset << cpu.cycles << std::endl;
+        std::cout << headerString("CPU") << std::endl;
+        std::cout
+            << termcolor::yellow << "Cycle   :  " << termcolor::reset << cpu.cycles << std::endl;
+
+        std::cout << headerString("PPU") << std::endl;
+        std::cout
+            << termcolor::yellow << "Cycle   :  " << termcolor::reset << ppu.cycles << std::endl;
+        std::vector<uint8_t> bg;
+        for (const auto &p : ppu.ppu.bgFifo.pixels)
+            bg.push_back(p.color);
+        std::cout
+            << termcolor::yellow << "PPU     :  " << termcolor::reset
+            << ppuStateToString(ppu.ppu.state) << " (" << ppu.ppu.dots << " dots)"
+            << " [BG=" << hex(bg) << "]"
+            << std::endl;
+        std::cout
+            << termcolor::yellow << "Fetcher :  " << termcolor::reset
+            << ppuFetcherStateToString(ppu.fetcher.state) << " (" << ppu.fetcher.dots << " dots)"
+            << " [8X=" << +ppu.fetcher.x8 << ", Y=" << +ppu.fetcher.y
+            << ", lastTilemapAddr=" << hex(ppu.fetcher.lastTilemapAddr)
+            << ", lastTileAddr=" << hex(ppu.fetcher.lastTileAddr)
+            << ", lastTileDataAddr=" << hex(ppu.fetcher.lastTileDataAddr) << "]"
+            << std::endl;
+        std::cout
+            << termcolor::yellow << "LCD     :  " << termcolor::reset
+            << "(x=" << +lcd.x << ", y=" << +lcd.y << ")"
+            << std::endl;
 
         std::cout << headerString("flags") << std::endl;
         std::cout
@@ -637,14 +728,14 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         std::cout << interruptString("SERIAL", get_bit<Bits::Interrupts::SERIAL>(IE), get_bit<Bits::Interrupts::SERIAL>(IF)) << std::endl;
 
         std::cout << headerString("IO") << std::endl;
-        std::cout << subheaderString("joypad") << std::endl;
-        printIo(Registers::Joypad::REGISTERS, sizeof(Registers::Joypad::REGISTERS) / sizeof(uint16_t));
-        std::cout << subheaderString("serial") << std::endl;
-        printIo(Registers::Serial::REGISTERS, sizeof(Registers::Serial::REGISTERS) / sizeof(uint16_t));
-        std::cout << subheaderString("timers") << std::endl;
-        printIo(Registers::Timers::REGISTERS, sizeof(Registers::Timers::REGISTERS) / sizeof(uint16_t));
-        std::cout << subheaderString("sound") << std::endl;
-        printIo(Registers::Sound::REGISTERS, sizeof(Registers::Sound::REGISTERS) / sizeof(uint16_t));
+//        std::cout << subheaderString("joypad") << std::endl;
+//        printIo(Registers::Joypad::REGISTERS, sizeof(Registers::Joypad::REGISTERS) / sizeof(uint16_t));
+//        std::cout << subheaderString("serial") << std::endl;
+//        printIo(Registers::Serial::REGISTERS, sizeof(Registers::Serial::REGISTERS) / sizeof(uint16_t));
+//        std::cout << subheaderString("timers") << std::endl;
+//        printIo(Registers::Timers::REGISTERS, sizeof(Registers::Timers::REGISTERS) / sizeof(uint16_t));
+//        std::cout << subheaderString("sound") << std::endl;
+//        printIo(Registers::Sound::REGISTERS, sizeof(Registers::Sound::REGISTERS) / sizeof(uint16_t));
         std::cout << subheaderString("lcd") << std::endl;
         printIo(Registers::LCD::REGISTERS, sizeof(Registers::LCD::REGISTERS) / sizeof(uint16_t));
 
@@ -661,7 +752,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         } else {
             std::list<DisassembleEntry> codeView;
             uint8_t n = 0;
-            for (int32_t addr = cpu.instruction.address; addr >= 0 && n < 10; addr--) {
+            for (int32_t addr = cpu.instruction.address; addr >= 0 && n < 6; addr--) {
                 auto entry = backend.getDisassembled(addr);
                 if (entry) {
                     DisassembleEntry d = {
@@ -673,7 +764,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
                 }
             }
             n = 0;
-            for (int32_t addr = cpu.instruction.address + 1; addr <= 0xFFFF && n < 10; addr++) {
+            for (int32_t addr = cpu.instruction.address + 1; addr <= 0xFFFF && n < 8; addr++) {
                 auto entry = backend.getDisassembled(addr);
                 if (entry) {
                     DisassembleEntry d = {
@@ -749,7 +840,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         }
 
         if (std::cin.fail() || std::cin.eof()) // CTRL+D
-            return IDebuggerBackend::Command::Abort;
+            return IDebuggerBackend::CommandAbort();
 
         if (command.empty())
             command = lastCommand;
@@ -808,16 +899,27 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             printDisplayEntry(d);
         } else if (std::holds_alternative<CommandUndisplay>(cmd)) {
             displayEntries.clear();
-        } else if (std::holds_alternative<CommandContinue>(cmd)) {
-            return DebuggerBackend::Command::Continue;
-        } else if (std::holds_alternative<CommandNext>(cmd)) {
-            return DebuggerBackend::Command::Next;
+        } else if (std::holds_alternative<CommandDot>(cmd)) {
+            CommandDot dot = std::get<CommandDot>(cmd);
+            return IDebuggerBackend::CommandDot {
+                .count = dot.count
+            };
         } else if (std::holds_alternative<CommandStep>(cmd)) {
-            return DebuggerBackend::Command::Step;
+            CommandStep step = std::get<CommandStep>(cmd);
+            return IDebuggerBackend::CommandStep {
+                .count = step.count
+            };
+        } else if (std::holds_alternative<CommandNext>(cmd)) {
+            CommandNext next = std::get<CommandNext>(cmd);
+            return IDebuggerBackend::CommandNext {
+                .count = next.count
+            };
+        } else if (std::holds_alternative<CommandContinue>(cmd)) {
+            return DebuggerBackend::CommandContinue();
         } else if (std::holds_alternative<CommandHelp>(cmd)) {
             printHelp();
         } else if (std::holds_alternative<CommandQuit>(cmd)) {
-            return IDebuggerBackend::Command::Abort;
+            return IDebuggerBackend::CommandAbort();
         }
     } while (true);
 }

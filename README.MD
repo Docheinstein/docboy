@@ -7,13 +7,13 @@ Work in Progress.
 ### Features
 
 * CPU: m-cycle accurate emulation
+* PPU/LCD (WIP)
 * Cartridges: NoMBC, MBC1
 * CLI debugger: supports breakpoints, watchpoints, disassembler, step by step execution (by instruction or micro-instruction), memory viewer, interrupts viewer, IO viewer
 * Serial Link
 * Bootroom support
 
 ### TODO
-* LCD
 * Sound
 * Joypad
 * Save/load state
@@ -34,6 +34,7 @@ make
 
 ### Usage
 
+
 ```
 usage: docboy-nogui [-d] [-s] [-h] rom
 
@@ -45,6 +46,12 @@ optional arguments:
   -s, --serial   Display serial output
   -h, --help     Display this help message and exit.
 ```
+
+
+### Screenshots
+
+[DMG boot](images/dmg_boot.png)
+[Blargg's cpu_instr boot](images/cpu_instrs.png)
 
 ### Tests
 

@@ -1,29 +1,30 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include "core/display.h"
+#include "core/ppu/lcd.h"
+#include "core/definitions.h"
 #include <chrono>
+#include "sdllcd.h"
 
 class SDL_Window;
 class SDL_Renderer;
-class SDL_Surface;
 class SDL_Texture;
 
-class Window : public IDisplay {
+class Window {
 public:
-    Window();
-    ~Window() override;
+    explicit Window(SDLLCD &lcd, float scaling = 1.0);
+    ~Window();
 
-    void show();
-
-    void render(Pixel *pixels) override;
+    void render();
 
 private:
+    SDLLCD &lcd;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
 
-    // DEBUG
+    int width, height;
+
     std::chrono::high_resolution_clock::time_point lastRender;
 };
 

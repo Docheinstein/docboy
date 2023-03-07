@@ -1,10 +1,13 @@
 #include "vram.h"
 
+VRAM::VRAM() : MemoryImpl(MemoryMap::VRAM::SIZE) {
+
+}
+
 uint8_t VRAM::read(uint16_t index) const {
-    return Memory::read(index);
-//    return 0xFF;
+    return MemoryImpl::read(index);
 }
 
 void VRAM::write(uint16_t index, uint8_t value) {
-    Memory::write(index, value);
+    MemoryImpl::write(index, value);
 }

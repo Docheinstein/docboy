@@ -7,7 +7,7 @@
 #include "core/debugger/debuggerbackend.h"
 #include "core/debugger/debuggerfrontendcli.h"
 #include "core/serial/serialconsole.h"
-#include "noguidisplay.h"
+#include "noguilcd.h"
 
 int main(int argc, char **argv) {
     struct {
@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 
     GameBoy gb = GameBoyBuilder()
             .setBootROM(std::move(bootRom))
-            .setDisplay(std::make_unique<NoGuiDisplay>())
+            .setLCD(std::make_unique<NoGuiLCD>())
             .build();
 
 #ifdef ENABLE_DEBUGGER

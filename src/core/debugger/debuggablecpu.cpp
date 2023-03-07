@@ -1,17 +1,10 @@
 #include "debuggablecpu.h"
 
 DebuggableCPU::DebuggableCPU(IBus &bus, std::unique_ptr<IBootROM> bootRom) :
-    CPU(bus, std::move(bootRom)), observer() {
+    CPU(bus, std::move(bootRom)) {
 
 }
 
-void DebuggableCPU::setObserver(DebuggableCPU::Observer *obs) {
-    observer = obs;
-}
-
-void DebuggableCPU::unsetObserver() {
-    observer = nullptr;
-}
 
 IDebuggableCPU::Registers DebuggableCPU::getRegisters() const {
     return {
@@ -43,29 +36,38 @@ uint64_t DebuggableCPU::getCycles() const {
     return mCycles;
 }
 
-uint8_t DebuggableCPU::readMemory(uint16_t addr, bool notify) const {
-    uint8_t value = CPU::readMemory(addr);
-    if (notify && observer)
-        observer->onMemoryRead(addr, value);
-    return value;
+uint8_t DebuggableCPU::readMemoryThroughCPU(uint16_t addr) const {
+    return CPU::readMemory(addr);
 }
 
-void DebuggableCPU::writeMemory(uint16_t addr, uint8_t value, bool notify) {
-    uint8_t oldValue = CPU::readMemory(addr);
-    CPU::writeMemory(addr, value);
-    if (notify && observer)
-        observer->onMemoryWrite(addr, oldValue, value);
+IDebuggableReadable *DebuggableCPU::getBootROM() const {
+    return bootRom.get();
 }
 
-uint8_t DebuggableCPU::readMemoryRaw(uint16_t addr) const {
-    return readMemory(addr, true); // from IDebuggableCPU
-}
-
-
-uint8_t DebuggableCPU::readMemory(uint16_t addr) const {
-    return readMemory(addr, true); // from CPU
-}
-
-void DebuggableCPU::writeMemory(uint16_t addr, uint8_t value) {
-    writeMemory(addr, value, true);
-}
+//
+//uint8_t DebuggableCPU::readMemory(uint16_t addr, bool notify) const {
+//    uint8_t value = CPU::readMemory(addr);
+//    if (notify && observer)
+//        observer->onMemoryRead(addr, value);
+//    return value;
+//}
+//
+//void DebuggableCPU::writeMemory(uint16_t addr, uint8_t value, bool notify) {
+//    uint8_t oldValue = CPU::readMemory(addr);
+//    CPU::writeMemory(addr, value);
+//    if (notify && observer)
+//        observer->onMemoryWrite(addr, oldValue, value);
+//}
+//
+//uint8_t DebuggableCPU::readMemoryRaw(uint16_t addr) const {
+//    return readMemory(addr, true); // from IDebuggableCPU
+//}
+//
+//
+//uint8_t DebuggableCPU::readMemory(uint16_t addr) const {
+//    return readMemory(addr, true); // from CPU
+//}
+//
+//void DebuggableCPU::writeMemory(uint16_t addr, uint8_t value) {
+//    writeMemory(addr, value, true);
+//}

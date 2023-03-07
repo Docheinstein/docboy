@@ -43,7 +43,7 @@ Cartridge::Header Cartridge::header() const {
 
     Cartridge::Header h;
 
-    auto raw_data = (uint8_t *) rom.data();
+    auto raw_data = (uint8_t *) memory.data();
 
     // Raw data
     memcpy_range_v(h.data, raw_data, 0x100, 0x14F);
@@ -95,11 +95,11 @@ Cartridge::Header Cartridge::header() const {
     return h;
 }
 
-Cartridge::Cartridge(const std::vector<uint8_t> &data) {
-    this->rom = data;
+Cartridge::Cartridge(const std::vector<uint8_t> &data) : MemoryImpl(data) {
+
 }
 
-Cartridge::Cartridge(std::vector<uint8_t> &&data) {
-    this->rom = std::move(data);
+Cartridge::Cartridge(std::vector<uint8_t> &&data) : MemoryImpl(data) {
+
 }
 

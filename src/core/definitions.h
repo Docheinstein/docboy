@@ -146,15 +146,14 @@ namespace Registers {
         constexpr uint16_t WAVEF = 0xFF3F;
         constexpr uint16_t REGISTERS[] = {
                 NR10, NR11, NR12, NR13,
-                NR21, NR22, NR23, NR23,
+                NR14, NR21, NR22, NR23,
                 NR24, NR30, NR31, NR32,
                 NR33, NR34, NR41, NR42,
                 NR43, NR44, NR50, NR51,
                 NR52, WAVE0, WAVE1, WAVE2,
                 WAVE3, WAVE4, WAVE5, WAVE6,
                 WAVE7, WAVE8, WAVE9, WAVEA,
-                WAVEB, WAVEC, WAVED, WAVEE,
-                WAVEF
+                WAVEB, WAVEC, WAVED, WAVEE, WAVEF
         };
     }
 
@@ -201,8 +200,23 @@ namespace Bits {
     }
 
     namespace Registers {
-        namespace TAC {
-            constexpr uint8_t ENABLE = 2;
+        namespace Timers {
+            namespace TAC {
+                constexpr uint8_t ENABLE = 2;
+            }
+        }
+
+        namespace LCD {
+            namespace LCDC {
+                constexpr uint8_t LCD_ENABLE = 7;
+                constexpr uint8_t WIN_TILE_MAP = 6;
+                constexpr uint8_t WIN_ENABLE = 5;
+                constexpr uint8_t BG_WIN_TILE_DATA = 4;
+                constexpr uint8_t BG_TILE_MAP = 3;
+                constexpr uint8_t OBJ_SIZE = 2;
+                constexpr uint8_t OBJ_ENABLE = 1;
+                constexpr uint8_t BG_WIN_ENABLE = 0;
+            }
         }
     }
 }

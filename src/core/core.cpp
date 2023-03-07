@@ -5,21 +5,22 @@
 #include <vector>
 #include <algorithm>
 #include "cartridge/cartridgefactory.h"
+#include "core/ppu/ppu.h"
 
 
 Core::Core(GameBoy &gameboy):
     gameboy(gameboy),
     divCounter(),
     timaCounter(),
-    running() {
+    running(true), // TODO: bad here
+    clk() {
 }
 
 bool Core::loadROM(const std::string &rom) {
     auto c = CartridgeFactory::makeCartridge(rom);
     if (!c)
         return false;
-    gameboy.cartridge = std::move(c);
-    gameboy.bus->attachCartridge(gameboy.cartridge.get());
+    attachCartridge(std::move(c));
 
 //#if DEBUG_LEVEL >= 1
 //    auto h = cartridge->header();
@@ -47,8 +48,12 @@ bool Core::loadROM(const std::string &rom) {
     return true;
 }
 
+void Core::attachCartridge(std::unique_ptr<Cartridge> cartridge) {
+    gameboy.cartridge = std::move(cartridge);
+    gameboy.bus->attachCartridge(gameboy.cartridge.get());
+}
+
 void Core::start() {
-    running = true;
     while (running) {
         tick();
     }
@@ -66,51 +71,63 @@ void Core::detachSerialLink() {
     serialLink = nullptr;
 }
 
-void Core::tick() {
-    ICPU &cpu = *gameboy.cpu;
-    IGPU &gpu = *gameboy.gpu;
-    IBus &bus = *gameboy.bus;
-
-    // TODO: when exactly?, how many ticks?
-    gpu.tick();
-
-    cpu.tick();
-
-    // DIV
-    divCounter += 1;
-    if (divCounter >= Specs::CPU::FREQUENCY / Specs::CPU::DIV_FREQUENCY) {
-        divCounter = 0;
-        uint8_t DIV = bus.read(Registers::Timers::DIV);
-        bus.write(Registers::Timers::DIV, DIV + 1);
+bool Core::tick() {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto nextTick = lastTick + std::chrono::nanoseconds(1000000000 / Specs::FREQUENCY);
+    while (now < nextTick) {
+        now = std::chrono::high_resolution_clock::now();
     }
 
-    // TIMA
-    uint8_t TAC = bus.read(Registers::Timers::TAC);
-    if (get_bit<Bits::Registers::TAC::ENABLE>(TAC))
-        timaCounter += 1;
+    IPPU &ppu = *gameboy.ppu;
+    ppu.tick();
 
-    if (timaCounter >= Specs::CPU::FREQUENCY / Specs::CPU::TAC_FREQUENCY[bitmasked<2>(TAC)]) {
-        timaCounter = 0;
-        uint8_t TIMA = bus.read(Registers::Timers::TIMA);
-        auto [result, overflow] = sum_carry<7>(TIMA, 1);
-        if (overflow) {
-            TIMA = bus.read(Registers::Timers::TMA);
-            bus.write(Registers::Timers::TIMA, TIMA);
+    if (clk == 0) {
+        ICPU &cpu = *gameboy.cpu;
+        IBus &bus = *gameboy.bus;
 
-            uint8_t IF = bus.read(Registers::Interrupts::IF);
-            set_bit<Bits::Interrupts::TIMER>(IF, true);
-            bus.write(Registers::Interrupts::IF, IF);
-        } else {
-            bus.write(Registers::Timers::TIMA, result);
+        cpu.tick();
+
+        // DIV
+        divCounter += 1;
+        if (divCounter >= Specs::CPU::FREQUENCY / Specs::CPU::DIV_FREQUENCY) {
+            divCounter = 0;
+            uint8_t DIV = bus.read(Registers::Timers::DIV);
+            bus.write(Registers::Timers::DIV, DIV + 1);
+        }
+
+        // TIMA
+        uint8_t TAC = bus.read(Registers::Timers::TAC);
+        if (get_bit<Bits::Registers::Timers::TAC::ENABLE>(TAC))
+            timaCounter += 1;
+
+        if (timaCounter >= Specs::CPU::FREQUENCY / Specs::CPU::TAC_FREQUENCY[bitmasked<2>(TAC)]) {
+            timaCounter = 0;
+            uint8_t TIMA = bus.read(Registers::Timers::TIMA);
+            auto [result, overflow] = sum_carry<7>(TIMA, 1);
+            if (overflow) {
+                TIMA = bus.read(Registers::Timers::TMA);
+                bus.write(Registers::Timers::TIMA, TIMA);
+
+                uint8_t IF = bus.read(Registers::Interrupts::IF);
+                set_bit<Bits::Interrupts::TIMER>(IF, true);
+                bus.write(Registers::Interrupts::IF, IF);
+            } else {
+                bus.write(Registers::Timers::TIMA, result);
+            }
+        }
+
+        // Serial
+        if (serialLink) {
+            uint8_t SC = bus.read(Registers::Serial::SC);
+            if (get_bit<7>(SC) && get_bit<0>(SC))
+                serialLink->tick();
         }
     }
 
-    // Serial
-    if (serialLink) {
-        uint8_t SC = bus.read(Registers::Serial::SC);
-        if (get_bit<7>(SC) && get_bit<0>(SC))
-            serialLink->tick();
-    }
+    clk = (clk + 1) % 4;
+    lastTick = now;
+
+    return running;
 }
 
 uint8_t Core::serialRead() {

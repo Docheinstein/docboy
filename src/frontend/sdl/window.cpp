@@ -1,11 +1,7 @@
 #include "window.h"
 #include <SDL.h>
 #include <stdexcept>
-#include "core/definitions.h"
 
-Window::Window() {
-
-}
 
 Window::~Window() {
     SDL_DestroyTexture(texture);
@@ -14,10 +10,11 @@ Window::~Window() {
     SDL_Quit();
 }
 
-void Window::show() {
-    // TODO: scaling
-    int width = Specs::Display::WIDTH;
-    int height = Specs::Display::HEIGHT;
+Window::Window(SDLLCD &lcd, float scaling)
+    : lcd(lcd),
+    window(), renderer(), texture(),
+    width(static_cast<int>(scaling * Specs::Display::WIDTH)),
+    height(static_cast<int>(scaling * Specs::Display::HEIGHT)) {
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
         throw std::runtime_error(std::string("SDL_Init error: ") + SDL_GetError());
@@ -34,14 +31,18 @@ void Window::show() {
     if (!renderer)
         throw std::runtime_error(std::string("SDL_CreateRenderer error: ") + SDL_GetError());
 
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, height);
+    // TODO: figure out byte order
+    texture = SDL_CreateTexture(renderer,
+                                SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+                                Specs::Display::WIDTH, Specs::Display::HEIGHT);
     if (!texture)
         throw std::runtime_error(std::string("SDL_CreateTexture error: ") + SDL_GetError());
 }
 
-void Window::render(Pixel *pixels) {
+
+void Window::render() {
     auto now = std::chrono::high_resolution_clock::now();
-    if (now - lastRender < std::chrono::milliseconds(16)) {
+    if (now < lastRender + std::chrono::milliseconds(16)) {
         return;
     }
     lastRender = now;
@@ -49,16 +50,18 @@ void Window::render(Pixel *pixels) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    SDL_Rect rect { .x = 0, .y = 0, .w = Specs::Display::WIDTH, .h = Specs::Display::HEIGHT };
-    void *texturePixels;
-    int pitch;
+    if (lcd.isOn()) {
+        SDL_Rect srcrect { .x = 0, .y = 0, .w = Specs::Display::WIDTH, .h = Specs::Display::HEIGHT };
+        SDL_Rect dstrect { .x = 0, .y = 0, .w = width, .h = height };
+        void *texturePixels;
+        int pitch;
 
-    SDL_LockTexture(texture, &rect, (void **) &texturePixels, &pitch);
-    memcpy(texturePixels, pixels, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(Pixel));
-    SDL_UnlockTexture(texture);
+        SDL_LockTexture(texture, &srcrect, (void **) &texturePixels, &pitch);
+        memcpy(texturePixels, lcd.getFrameBuffer(), Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint32_t));
+        SDL_UnlockTexture(texture);
 
-    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+        SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
+    }
+
     SDL_RenderPresent(renderer);
 }
-
-

@@ -2,6 +2,7 @@
 #define GAMEBOY_H
 
 #include <memory>
+#include "components.h"
 #include "cartridge/cartridge.h"
 #include "definitions.h"
 #include "bus.h"
@@ -10,39 +11,25 @@
 #include "vram.h"
 #include "oam.h"
 #include "io.h"
-#include "gpu/gpu.h"
-
-#ifdef ENABLE_DEBUGGER
-#include "debugger/debuggablecpu.h"
-#include "debugger/debuggablebus.h"
-#endif
+#include "ppu/lcd.h"
+#include "ppu/ppu.h"
 
 struct GameBoy {
-    // TODO: typedef for all components?
-    typedef Memory<MemoryMap::WRAM1::SIZE> WRAM1;
-    typedef Memory<MemoryMap::WRAM2::SIZE> WRAM2;
-    typedef Memory<MemoryMap::HRAM::SIZE> HRAM;
-    typedef Memory<1> IE;
+    GameBoy();
 
-#ifdef ENABLE_DEBUGGER
-    typedef IDebuggableCPU ICPU;
-    typedef DebuggableCPU CPU;
-#endif
-
-    // TODO: std::unique_ptr<IMemory>?
     VRAM vram;
-    WRAM1 wram1;
-    WRAM2 wram2;
+    MemoryImpl wram1;
+    MemoryImpl wram2;
     OAM oam;
     IO io;
-    HRAM hram;
-    IE ie;
+    MemoryImpl hram;
+    MemoryImpl ie;
 
     std::unique_ptr<IBus> bus;
-    std::unique_ptr<ICPU> cpu;
+    std::unique_ptr<ICPUImpl> cpu;
 
-    std::unique_ptr<IDisplay> display;
-    std::unique_ptr<IGPU> gpu;
+    std::unique_ptr<ILCDImpl> lcd;
+    std::unique_ptr<IPPUImpl> ppu;
 
     std::unique_ptr<Cartridge> cartridge;
 };

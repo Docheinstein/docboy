@@ -3,16 +3,17 @@
 
 #include "gameboy.h"
 #include "serial/serial.h"
+#include <chrono>
 
 class Core : public SerialEndpoint {
 public:
-    Core(GameBoy &gameboy);
+    explicit Core(GameBoy &gameboy);
     ~Core() override = default;
 
     bool loadROM(const std::string &rom);
 
     virtual void start();
-    virtual void tick(); // TODO: here?
+    virtual bool tick();
 
     void stop();
 
@@ -32,6 +33,11 @@ protected:
     std::shared_ptr<SerialLink> serialLink;
 
     bool running;
+    uint8_t clk;
+
+    std::chrono::high_resolution_clock::time_point lastTick;
+
+    virtual void attachCartridge(std::unique_ptr<Cartridge> cartridge);
 };
 
 #endif // CORE_H

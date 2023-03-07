@@ -2,41 +2,73 @@
 #define DEBUGGABLECORE_H
 
 #include "core/core.h"
+#include "debuggablememory.h"
+#include "debuggablelcd.h"
 
-class IDebuggableBus;
 class IDebuggableCPU;
+class IDebuggablePPU;
 
 class IDebuggableCore {
 public:
     class Observer {
     public:
         virtual ~Observer() = default;
-        virtual bool onTick() = 0;
+        virtual bool onTick(uint8_t clk) = 0;
+        virtual void onMemoryRead(uint16_t addr, uint8_t value) = 0;
+        virtual void onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) = 0;
     };
     virtual ~IDebuggableCore() = default;
 
     virtual void setObserver(Observer *observer) = 0;
-    virtual void unsetObserver() = 0;
 
-//    [[nodiscard]] virtual IDebuggableBus &getBus() = 0;
-    [[nodiscard]] virtual IDebuggableCPU &getCpu() = 0;
+    [[nodiscard]] virtual IDebuggableCPU & getCpu() = 0;
+    [[nodiscard]] virtual IDebuggablePPU & getPpu() = 0;
+    [[nodiscard]] virtual IBus & getBus() = 0;
+    [[nodiscard]] virtual IDebuggableLCD & getLcd() = 0;
 };
 
-class DebuggableCore : public Core, public IDebuggableCore {
+class DebuggableCore : public Core, public IDebuggableCore, public DebuggableMemory::Observer  {
 public:
     explicit DebuggableCore(GameBoy &gb);
     ~DebuggableCore() override = default;
 
-    void setObserver(Observer *observer) override;
-    void unsetObserver() override;
+    void setObserver(IDebuggableCore::Observer *observer) override;
 
-//    [[nodiscard]] IDebuggableBus & getBus() override;
+    void onRead(uint16_t addr, uint8_t value) override;
+    void onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
+
     [[nodiscard]] IDebuggableCPU & getCpu() override;
+    [[nodiscard]] IDebuggablePPU & getPpu() override;
+    [[nodiscard]] IBus & getBus() override;
+    [[nodiscard]] IDebuggableLCD & getLcd() override;
 
-    void tick() override;
+    bool tick() override;
+
+protected:
+    void attachCartridge(std::unique_ptr<Cartridge> cartridge) override;
 
 private:
-    Observer *observer;
+    IDebuggableCore::Observer *observer;
+
+    class MemoryObserver : public DebuggableMemory::Observer {
+    public:
+        MemoryObserver(DebuggableMemory::Observer *observer, uint16_t base);
+        void onRead(uint16_t addr, uint8_t value) override;
+        void onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
+    private:
+        DebuggableMemory::Observer *observer;
+        uint16_t base;
+    };
+
+    MemoryObserver bootromObserver;
+    MemoryObserver cartridgeObserver;
+    MemoryObserver vramObserver;
+    MemoryObserver wram1Observer;
+    MemoryObserver wram2Observer;
+    MemoryObserver oamObserver;
+    MemoryObserver ioObserver;
+    MemoryObserver hramObserver;
+    MemoryObserver ieObserver;
 };
 
 #endif // DEBUGGABLECORE_H

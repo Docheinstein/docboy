@@ -5,17 +5,17 @@ GameBoyBuilder &GameBoyBuilder::setBootROM(std::unique_ptr<IBootROM> b) {
     return *this;
 }
 
-GameBoyBuilder &GameBoyBuilder::setDisplay(std::unique_ptr<IDisplay> d) {
-    display = std::move(d);
+GameBoyBuilder &GameBoyBuilder::setLCD(std::unique_ptr<ILCDImpl> lcd_) {
+    lcd = std::move(lcd_);
     return *this;
 }
 
 GameBoy GameBoyBuilder::build() {
     GameBoy gb;
-    gb.display = std::move(display);
+    gb.lcd = std::move(lcd);
     gb.bus = std::make_unique<Bus>(gb.vram, gb.wram1, gb.wram2, gb.oam, gb.io, gb.hram, gb.ie);
-    gb.cpu = std::make_unique<GameBoy::CPU>(*gb.bus, std::move(bootRom));
-    gb.gpu = std::make_unique<GPU>(*gb.display, gb.vram, gb.io);
+    gb.cpu = std::make_unique<CPUImpl>(*gb.bus, std::move(bootRom));
+    gb.ppu = std::make_unique<PPUImpl>(*gb.lcd, gb.vram, gb.oam, gb.io);
     return gb;
 }
 

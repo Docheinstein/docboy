@@ -1,22 +1,14 @@
 #ifndef BOOTROM_H
 #define BOOTROM_H
 
-#include <vector>
+#if ENABLE_DEBUGGER
+#include "core/debugger/debuggablememory.h"
+#define IBootROM IDebuggableReadable
+#define BootROM DebuggableReadable
+#else
 #include "core/memory.h"
-
-typedef IReadable IBootROM;
-
-class BootROM : public IBootROM {
-public:
-    explicit BootROM(const std::vector<uint8_t> &data);
-    explicit BootROM(std::vector<uint8_t> &&data);
-
-    [[nodiscard]] uint8_t read(uint16_t index) const override;
-
-    ~BootROM() override = default;
-
-protected:
-    std::vector<uint8_t> rom;
-};
+#define IBootROM IReadable
+#define BootROM Readable
+#endif
 
 #endif // BOOTROM_H

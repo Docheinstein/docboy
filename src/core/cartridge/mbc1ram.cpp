@@ -1,10 +1,10 @@
 #include "mbc1ram.h"
 
-MBC1RAM::MBC1RAM(const std::vector<uint8_t> &data) : MBC1(data) {
+MBC1RAM::MBC1RAM(const std::vector<uint8_t> &data) : MBC1(data), ram(0x8000) {
 
 }
 
-MBC1RAM::MBC1RAM(std::vector<uint8_t> &&data) : MBC1(data) {
+MBC1RAM::MBC1RAM(std::vector<uint8_t> &&data) : MBC1(data), ram(0x8000) {
 
 }
 

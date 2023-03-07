@@ -532,14 +532,14 @@ constexpr InstructionInfo INSTRUCTIONS_CB[256] = {
 
 
 constexpr const char* IO_MNEMONICS[256] = {
-    "P1", "SB", "SC", nullptr, "DIV", "TIMA", "TMA", "TAC", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "IF",
-    "NR10", "NR11", "NR12", "NR13", "NR14", nullptr, "NR21", "NR22", "NR23", "NR24", "NR30", "NR31", "NR32", "NR33", "NR34", nullptr,
-    "NR41", "NR42", "NR43", "NR44", "NR50", "NR51", "NR52", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+    "P1", "SB", "SC", "UNKNOWN", "DIV", "TIMA", "TMA", "TAC", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "IF",
+    "NR10", "NR11", "NR12", "NR13", "NR14", "UNKNOWN", "NR21", "NR22", "NR23", "NR24", "NR30", "NR31", "NR32", "NR33", "NR34", "UNKNOWN",
+    "NR41", "NR42", "NR43", "NR44", "NR50", "NR51", "NR52", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN",
     "WAVE 0", "WAVE 1", "WAVE 2", "WAVE 3", "WAVE 4", "WAVE 5", "WAVE 6", "WAVE 7", "WAVE 8", "WAVE 9", "WAVE A", "WAVE B", "WAVE C", "WAVE D", "WAVE E", "WAVE F",
-    "LCDC", "STAT", "SCY", "SCX", "LY", "LYC", "DMA", "BGP", "OBP0", "OBP1", "WY", "WX", nullptr, "KEY1", nullptr, "VBK",
-    "BOOT", "HDMA SRC HI", "HDMA SRC LOW", "HDMA DST HI", "HDMA DST LOW", "HDMA LEN", "RP", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, "BCPS", "BCPD", "OCPS", "OCPD", nullptr, nullptr, nullptr, nullptr,
-    "SVBK", nullptr, nullptr, nullptr, nullptr, nullptr, "PCM12", "PCM34", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+    "LCDC", "STAT", "SCY", "SCX", "LY", "LYC", "DMA", "BGP", "OBP0", "OBP1", "WY", "WX", "UNKNOWN", "KEY1", "UNKNOWN", "VBK",
+    "BOOT", "HDMA SRC HI", "HDMA SRC LOW", "HDMA DST HI", "HDMA DST LOW", "HDMA LEN", "RP", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN",
+    "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "BCPS", "BCPD", "OCPS", "OCPD", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN",
+    "SVBK", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "PCM12", "PCM34", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN",
 };
 
 uint8_t instruction_length(uint8_t opcode, bool cb) {
@@ -712,11 +712,3 @@ std::string address_mnemonic(uint16_t address) {
     return hex(address);
 }
 
-bool address_is_well_known(uint16_t address) {
-    // TODO: other cases
-    if (address >= MemoryMap::IO::START && address <= MemoryMap::IO::END)
-        return IO_MNEMONICS[address - MemoryMap::IO::START] != nullptr;
-    if (address == MemoryMap::IE)
-        return true;
-    return false;
-}
