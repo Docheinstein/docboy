@@ -12,3 +12,4 @@ void LCD::pushPixel(ILCD::Pixel pixel) {
         y = 0;
     }
 }
+

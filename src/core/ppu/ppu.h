@@ -3,20 +3,13 @@
 
 #include <queue>
 #include <cstdint>
-
-//#include "lcd.h"
-//#include "core/vram.h"
-//#include "core/io.h"
+#include "core/clock/clockable.h"
 
 class IMemory;
 class IIO;
 class ILCD;
 
-class IPPU {
-public:
-    virtual ~IPPU() = default;
-    virtual void tick() = 0;
-};
+using IPPU = IClockable;
 
 struct FIFO {
 public:
@@ -32,7 +25,7 @@ public:
 
 class PPU : public virtual IPPU {
 public:
-    PPU(ILCD &display, IMemory &vram, IMemory &oam, IIO &io);
+    PPU(ILCD &lcd, IMemory &vram, IMemory &oam, IIO &io);
 
     void tick() override;
 
@@ -78,5 +71,7 @@ protected:
 
     void fetcherTick();
 };
+
+
 
 #endif // PPU_H

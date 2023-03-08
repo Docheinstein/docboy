@@ -2,36 +2,68 @@
 #define GAMEBOY_H
 
 #include <memory>
-#include "components.h"
-#include "cartridge/cartridge.h"
 #include "definitions.h"
-#include "bus.h"
-#include "cpu/cpu.h"
-#include "memory.h"
-#include "vram.h"
-#include "oam.h"
-#include "io.h"
-#include "ppu/lcd.h"
-#include "ppu/ppu.h"
+#include "impl/bootrom.h"
+#include "impl/cpu.h"
+#include "impl/lcd.h"
+#include "impl/memory.h"
+#include "impl/ppu.h"
+#include "bus/bus.h"
+#include "clock/clock.h"
+#include "memory/io.h"
+#include "cartridge/cartridge.h"
+#include "serial/port.h"
+#include "serial/link.h"
 
-struct GameBoy {
-    GameBoy();
+class GameBoy {
+public:
+    class Builder {
+    public:
+        Builder & setFrequency(uint64_t frequency);
+        Builder & setBootROM(std::unique_ptr<Impl::IBootROM> bootRom);
+        Builder & setLCD(std::unique_ptr<Impl::ILCD> lcd);
+        GameBoy build();
 
-    VRAM vram;
-    MemoryImpl wram1;
-    MemoryImpl wram2;
-    OAM oam;
+    private:
+        uint64_t frequency;
+        std::unique_ptr<Impl::IBootROM> bootRom;
+        std::unique_ptr<Impl::ILCD> lcd;
+    };
+
+    Impl::Memory vram;
+    Impl::Memory wram1;
+    Impl::Memory wram2;
+    Impl::Memory oam;
     IO io;
-    MemoryImpl hram;
-    MemoryImpl ie;
+    Impl::Memory hram;
+    Impl::Memory ie;
 
-    std::unique_ptr<IBus> bus;
-    std::unique_ptr<ICPUImpl> cpu;
+    Bus bus;
 
-    std::unique_ptr<ILCDImpl> lcd;
-    std::unique_ptr<IPPUImpl> ppu;
+    SerialPort serialPort;
+
+    Impl::CPU cpu;
+
+    std::unique_ptr<Impl::ILCD> lcd;
+    Impl::PPU ppu;
+
+    Clock clock;
 
     std::unique_ptr<Cartridge> cartridge;
+
+    void attachCartridge(std::unique_ptr<Cartridge> cartridge);
+    void detachCartridge();
+
+    void attachSerialLink(SerialLink::Plug &plug);
+    void detachSerialLink();
+
+private:
+    explicit GameBoy(
+            std::unique_ptr<Impl::ILCD> lcd = nullptr,
+            std::unique_ptr<Impl::IBootROM> bootRom = nullptr,
+            uint64_t cpuFrequency = Specs::CPU::FREQUENCY,
+            uint64_t ppuFrequency = Specs::PPU::FREQUENCY);
+
 };
 
 #endif // GAMEBOY_H

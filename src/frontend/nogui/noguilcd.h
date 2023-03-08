@@ -1,10 +1,9 @@
 #ifndef NOGUILCD_H
 #define NOGUILCD_H
 
-#include "core/ppu/lcd.h"
-#include "core/components.h"
+#include "core/impl/lcd.h"
 
-class NoGuiLCD : public LCDImpl {
+class NoGuiLCD : public Impl::LCD {
 public:
     NoGuiLCD() = default;
 

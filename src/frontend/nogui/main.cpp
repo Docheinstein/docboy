@@ -2,12 +2,15 @@
 #include "argparser.h"
 #include "core/core.h"
 #include "core/boot/bootromfactory.h"
-#include "core/gameboybuilder.h"
-#include "core/debugger/debuggablecore.h"
-#include "core/debugger/debuggerbackend.h"
-#include "core/debugger/debuggerfrontendcli.h"
-#include "core/serial/serialconsole.h"
+#include "core/gameboy.h"
+#include "core/serial/endpoints/console.h"
 #include "noguilcd.h"
+
+#ifdef ENABLE_DEBUGGER
+#include "core/debugger/core/core.h"
+#include "core/debugger/backend.h"
+#include "core/debugger/frontendcli.h"
+#endif
 
 int main(int argc, char **argv) {
     struct {
@@ -37,11 +40,11 @@ int main(int argc, char **argv) {
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    std::unique_ptr<IBootROM> bootRom;
+    std::unique_ptr<Impl::IBootROM> bootRom;
     if (!args.boot_rom.empty())
         bootRom = BootROMFactory::makeBootROM(args.boot_rom);
 
-    GameBoy gb = GameBoyBuilder()
+    GameBoy gb = GameBoy::Builder()
             .setBootROM(std::move(bootRom))
             .setLCD(std::make_unique<NoGuiLCD>())
             .build();
@@ -64,8 +67,9 @@ int main(int argc, char **argv) {
 
     if (args.serial_console) {
         serialConsole = std::make_unique<SerialConsole>(std::cerr);
-        serialLink = std::make_shared<SerialLink>(&core, serialConsole.get());
-        core.attachSerialLink(serialLink);
+        serialLink = std::make_shared<SerialLink>();
+        serialLink->plug1.attach(serialConsole.get());
+        core.attachSerialLink(serialLink->plug2);
     }
 
     if (!core.loadROM(args.rom)) {
@@ -73,6 +77,9 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    core.start();
+    while (core.isOn()) {
+        core.tick();
+    }
+
     return 0;
 }

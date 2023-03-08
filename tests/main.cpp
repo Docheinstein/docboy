@@ -8,8 +8,11 @@
 #include "core/core.h"
 #include "core/helpers.h"
 #include "core/cartridge/cartridgefactory.h"
-#include "core/debugger/debuggerfrontend.h"
-#include "core/serial/serialbuffer.h"
+#include "core/debugger/frontend.h"
+#include "core/serial/port.h"
+#include "core/serial/endpoints/buffer.h"
+#include "core/bus/bus.h"
+#include "core/gameboy.h"
 #include <queue>
 #include <algorithm>
 
@@ -264,8 +267,8 @@ TEST_CASE("Cpu", "[cpu]") {
             ~FakeBus() override = default;
 
             [[nodiscard]] uint8_t read(uint16_t addr) const override {
-                if (addr == MemoryMap::IE || addr == MemoryMap::IO::IF)
-                    return 0;
+                if (addr >= MemoryMap::IO::START)
+                    return 0; // don't count interrupts, timers, ...
 
                 accesses.push_back({Access::Type::Read, addr});
                 uint8_t b = 0;
@@ -277,10 +280,13 @@ TEST_CASE("Cpu", "[cpu]") {
             }
 
             void write(uint16_t addr, uint8_t value) override {
-                if (addr == MemoryMap::IE || addr == MemoryMap::IO::IF)
+                if (addr == MemoryMap::IE || addr == Registers::Interrupts::IF)
                     return;
                 accesses.push_back({Access::Type::Write, addr});
             }
+
+            void attachCartridge(IMemory *cartridge) override {}
+            void detachCartridge() override {}
 
             [[nodiscard]] unsigned long long getReadWriteCount() const {
                 return accesses.size();
@@ -330,7 +336,8 @@ TEST_CASE("Cpu", "[cpu]") {
             return;
 
         FakeBus fakeBus;
-        DebuggableCPU cpu(fakeBus);
+        SerialPort serialPort(fakeBus);
+        DebuggableCPU cpu(fakeBus, serialPort);
 
         auto setupInstruction = [&fakeBus, &cpu, cb, instr]() {
             if (cb)
@@ -437,6 +444,10 @@ TEST_CASE("blargg", "[.][cpu][core][timer][interrupt]") {
 
             class SerialString : public SerialEndpoint {
             public:
+                uint8_t serialRead() override {
+                    return 0xFF;
+                }
+
                 void serialWrite(uint8_t b) override {
                     data += (char) b;
                 }
@@ -454,8 +465,8 @@ TEST_CASE("blargg", "[.][cpu][core][timer][interrupt]") {
 
                 DebuggerBackend::Command pullCommand(DebuggerBackend::ExecutionState state) override {
                     if (buffer.data.length() == expected.length() || cycles >= maxcycles)
-                        return IDebuggerBackend::Command::Abort;
-                    return IDebuggerBackend::Command::Next;
+                        return IDebuggerBackend::CommandAbort { };
+                    return IDebuggerBackend::CommandNext { .count = 1 };
                 }
 
                 void onTick() override {
@@ -469,17 +480,24 @@ TEST_CASE("blargg", "[.][cpu][core][timer][interrupt]") {
                 uint64_t cycles{};
             };
 
-            DebuggableCore core;
+            GameBoy gb = GameBoy::Builder()
+                    .setFrequency(Clock::MAX_FREQUENCY)
+                    .build();
+
+            DebuggableCore core(gb);
 
             SerialString serialString;
-            std::shared_ptr<SerialLink> serial = std::make_shared<SerialLink>(&core, &serialString);
-            core.attachSerialLink(serial);
+            std::shared_ptr<SerialLink> serial = std::make_shared<SerialLink>();
+            serial->plug1.attach(&serialString);
+            core.attachSerialLink(serial->plug2);
 
             DebuggerBackend supervisorBackend(core);
             Supervisor supervisor(supervisorBackend, serialString, expected, 50000000);
 
             core.loadROM(rom);
-            core.start();
+
+            while (core.isOn())
+                core.tick();
 
             REQUIRE(serialString.data == expected);
         }
@@ -519,7 +537,9 @@ TEST_CASE("serial", "[serial]") {
         std::string s = "Hello this is a test\nThis is sparta!";
         SerialBuffer receiver;
         SerialStringSource sender(s);
-        SerialLink serialLink(&sender, &receiver);
+        SerialLink serialLink;
+        serialLink.plug1.attach(&sender);
+        serialLink.plug2.attach(&receiver);
         while (sender.hasData())
             serialLink.tick();
         REQUIRE(receiver.getData() == sender.getData());

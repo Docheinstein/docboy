@@ -1,14 +1,18 @@
 #include <SDL.h>
 #include <iostream>
 #include "argparser.h"
+#include "core/gameboy.h"
 #include "core/core.h"
 #include "core/boot/bootromfactory.h"
-#include "core/gameboybuilder.h"
-#include "core/debugger/debuggablecore.h"
-#include "core/debugger/debuggerbackend.h"
-#include "core/debugger/debuggerfrontendcli.h"
-#include "core/serial/serialconsole.h"
+#include "core/serial/endpoints/console.h"
 #include "window.h"
+
+#ifdef ENABLE_DEBUGGER
+#include "core/debugger/core/core.h"
+#include "core/debugger/backend.h"
+#include "core/debugger/frontend.h"
+#include "core/debugger/frontendcli.h"
+#endif
 
 int main(int argc, char **argv) {
     struct {
@@ -48,11 +52,11 @@ int main(int argc, char **argv) {
     std::unique_ptr<SDLLCD> lcd = std::make_unique<SDLLCD>();
     Window window(*lcd, args.scaling);
 
-    std::unique_ptr<IBootROM> bootRom;
+    std::unique_ptr<Impl::IBootROM> bootRom;
     if (!args.boot_rom.empty())
         bootRom = BootROMFactory::makeBootROM(args.boot_rom);
 
-    GameBoy gb = GameBoyBuilder()
+    GameBoy gb = GameBoy::Builder()
             .setBootROM(std::move(bootRom))
             .setLCD(std::move(lcd))
             .build();
@@ -60,11 +64,25 @@ int main(int argc, char **argv) {
 #ifdef ENABLE_DEBUGGER
     DebuggableCore core(gb);
     std::unique_ptr<DebuggerBackend> debuggerBackend;
-    std::unique_ptr<IDebuggerFrontend> debuggerFrontend;
+    std::unique_ptr<DebuggerFrontendCli> debuggerFrontend;
+
+    class DebuggerFrontendCliObserver : public DebuggerFrontendCli::Observer {
+    public:
+        explicit DebuggerFrontendCliObserver(Window *w) : window(w) {}
+        void onReadCommand() override {
+            // render the current frame before let the frontend stuck on command input
+            window->render();
+        }
+    private:
+        Window *window;
+    };
+
+    DebuggerFrontendCliObserver frontendObserver(&window);
 
     if (args.debugger) {
         debuggerBackend = std::make_unique<DebuggerBackend>(core);
         debuggerFrontend = std::make_unique<DebuggerFrontendCli>(*debuggerBackend);
+        debuggerFrontend->setObserver(&frontendObserver);
     }
 #else
     Core core(gb);
@@ -75,8 +93,9 @@ int main(int argc, char **argv) {
 
     if (args.serial_console) {
         serialConsole = std::make_unique<SerialConsole>(std::cerr);
-        serialLink = std::make_shared<SerialLink>(&core, serialConsole.get());
-        core.attachSerialLink(serialLink);
+        serialLink = std::make_shared<SerialLink>();
+        serialLink->plug1.attach(serialConsole.get());
+        core.attachSerialLink(serialLink->plug2);
     }
 
     if (!core.loadROM(args.rom)) {
@@ -86,23 +105,20 @@ int main(int argc, char **argv) {
 
     SDL_Event e;
 
-    auto now = std::chrono::high_resolution_clock::now();
-    auto nextTick = now + std::chrono::milliseconds(16);
-
     bool quit = false;
-    while (!quit) {
-        do {
-            if (!core.tick())
-                quit = true;
-            now = std::chrono::high_resolution_clock::now();
-        } while (now < nextTick && !quit);
-        nextTick = now + std::chrono::milliseconds(16);
-
+    while (!quit && core.isOn()) {
+        // Handle events
         while (SDL_PollEvent(&e) != 0) {
-            if (e.type == SDL_QUIT)
+            if (e.type == SDL_QUIT) {
                 quit = true;
+                break;
+            }
         }
 
+        // Update emulator until next frame
+        core.frame();
+
+        // Render frame
         window.render();
     }
 

@@ -1,11 +1,10 @@
 #ifndef SDLLCD_H
 #define SDLLCD_H
 
-#include "core/ppu/lcd.h"
 #include "core/definitions.h"
-#include "core/components.h"
+#include "core/impl/lcd.h"
 
-class SDLLCD : public LCDImpl {
+class SDLLCD : public Impl::LCD {
 public:
     SDLLCD();
     ~SDLLCD() override = default;

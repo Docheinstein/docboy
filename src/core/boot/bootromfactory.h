@@ -2,12 +2,11 @@
 #define BOOTROMFACTORY_H
 
 #include <memory>
-#include "core/components.h"
-
+#include "core/impl/bootrom.h"
 
 class BootROMFactory {
 public:
-    static std::unique_ptr<IReadableImpl> makeBootROM(const std::string &filename);
+    static std::unique_ptr<Impl::IBootROM> makeBootROM(const std::string &filename);
 };
 
 #endif // BOOTROMFACTORY_H

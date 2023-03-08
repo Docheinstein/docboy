@@ -95,11 +95,11 @@ Cartridge::Header Cartridge::header() const {
     return h;
 }
 
-Cartridge::Cartridge(const std::vector<uint8_t> &data) : MemoryImpl(data) {
+Cartridge::Cartridge(const std::vector<uint8_t> &data) : Impl::Memory(data) {
 
 }
 
-Cartridge::Cartridge(std::vector<uint8_t> &&data) : MemoryImpl(data) {
+Cartridge::Cartridge(std::vector<uint8_t> &&data) : Impl::Memory(data) {
 
 }
 

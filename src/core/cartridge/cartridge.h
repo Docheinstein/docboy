@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "core/components.h"
+#include "core/impl/memory.h"
 
-class Cartridge : public MemoryImpl {
+class Cartridge : public Impl::Memory {
 public:
     struct Header {
         std::vector<uint8_t> entry_point;

@@ -1,14 +1,9 @@
 #ifndef BOOTROM_H
 #define BOOTROM_H
 
-#if ENABLE_DEBUGGER
-#include "core/debugger/debuggablememory.h"
-#define IBootROM IDebuggableReadable
-#define BootROM DebuggableReadable
-#else
-#include "core/memory.h"
-#define IBootROM IReadable
-#define BootROM Readable
-#endif
+#include "core/memory/readable.h"
+
+using IBootROM = IReadable;
+using BootROM = Readable;
 
 #endif // BOOTROM_H

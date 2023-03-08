@@ -1,8 +1,9 @@
 #include "ppu.h"
 #include "utils/binutils.h"
 #include "core/definitions.h"
-#include "core/io.h"
+#include "core/memory/io.h"
 #include "lcd.h"
+
 
 using namespace Bits::Registers::LCD::LCDC;
 
@@ -162,3 +163,5 @@ void PPU::fetcherTick() {
         }
     }
 }
+
+

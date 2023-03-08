@@ -11,6 +11,11 @@ namespace Specs {
         constexpr uint32_t HEIGHT = 144;
     }
 
+    namespace PPU {
+        constexpr uint32_t FREQUENCY = Specs::FREQUENCY;
+        constexpr uint32_t FRAME_DURATION = 70224;
+    }
+
     namespace CPU {
         constexpr uint32_t FREQUENCY = Specs::FREQUENCY / 4;
         constexpr uint32_t DIV_FREQUENCY = 16384;

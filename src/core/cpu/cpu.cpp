@@ -1,10 +1,58 @@
 #include "cpu.h"
 #include "utils/binutils.h"
 #include "core/definitions.h"
+#include "core/bus/bus.h"
+#include "core/serial/port.h"
 
-CPU::CPU(IBus &bus, std::unique_ptr<IBootROM> bootRom) :
+CPU::Timers::Timers(IBus &bus)
+    :
+    bus(bus),
+    divTicks(),
+    timaTicks() {
+
+}
+
+void CPU::Timers::tick() {
+    constexpr uint32_t DIV_PERIOD = Specs::CPU::FREQUENCY / Specs::CPU::DIV_FREQUENCY;
+
+    // DIV
+    divTicks += 1;
+    if (divTicks >= DIV_PERIOD) {
+        divTicks = 0;
+        uint8_t DIV = bus.read(Registers::Timers::DIV);
+        bus.write(Registers::Timers::DIV, DIV + 1);
+    }
+
+    // TIMA
+    uint8_t TAC = bus.read(Registers::Timers::TAC);
+    if (get_bit<Bits::Registers::Timers::TAC::ENABLE>(TAC))
+        timaTicks += 1;
+
+    const uint32_t TIMA_PERIOD = Specs::CPU::FREQUENCY / Specs::CPU::TAC_FREQUENCY[bitmasked<2>(TAC)];
+    if (timaTicks >= TIMA_PERIOD) {
+        timaTicks = 0;
+        uint8_t TIMA = bus.read(Registers::Timers::TIMA);
+        auto [result, overflow] = sum_carry<7>(TIMA, 1);
+        if (overflow) {
+            uint8_t TMA = bus.read(Registers::Timers::TMA);
+            bus.write(Registers::Timers::TIMA, TMA);
+
+            // TODO: method for request interrupt
+            uint8_t IF = bus.read(Registers::Interrupts::IF);
+            set_bit<Bits::Interrupts::TIMER>(IF, true);
+            bus.write(Registers::Interrupts::IF, IF);
+        } else {
+            bus.write(Registers::Timers::TIMA, result);
+        }
+    }
+}
+
+
+CPU::CPU(IBus &bus, SerialPort &serialPort, std::unique_ptr<Impl::IBootROM> bootRom) :
         bootRom(std::move(bootRom)),
         bus(bus),
+        serialPort(serialPort),
+        timers(bus),
         AF(), BC(), DE(), HL(), PC(), SP(),
         IME(),
         halted(),
@@ -574,6 +622,10 @@ void CPU::reset() {
 }
 
 void CPU::tick() {
+    // Timers
+    // TODO: now? after? even if halted?
+    timers.tick();
+
     if (halted) {
         uint8_t IE = readMemory(Registers::Interrupts::IE);
         uint8_t IF = readMemory(Registers::Interrupts::IF);
@@ -591,6 +643,8 @@ void CPU::tick() {
         }
         return;
     }
+
+    // Interrupts handling
 
     if (pendingInterrupt) {
         // oneliner for take the right address based on the ISR function pointer
@@ -617,6 +671,8 @@ void CPU::tick() {
         }
     }
 
+    // Microop execution
+
     InstructionMicroOperation micro_op = *currentInstruction.microopHandler;
 
     // Must be increased before execute micro op (so that fetch overwrites eventually)
@@ -624,6 +680,11 @@ void CPU::tick() {
     currentInstruction.microopHandler++;
 
     (this->*micro_op)();
+
+    // Serial
+    uint8_t SC = bus.read(Registers::Serial::SC);
+    if (get_bit<7>(SC) && get_bit<0>(SC))
+        serialPort.tick();
 
     mCycles++;
 }
@@ -2523,3 +2584,4 @@ template<uint8_t n, CPU::Register16 rr>
 void CPU::SET_arr_m3() {
     fetch();
 }
+

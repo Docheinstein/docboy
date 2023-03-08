@@ -15,7 +15,9 @@ if (lv <= DEBUG_LEVEL) \
 #define DEBUG_PICKER(_1, FUNC, ...) FUNC
 #define DEBUG(...) DEBUG_PICKER(__VA_OPT__(,) DEBUG_LV, DEBUG_1)(__VA_ARGS__)
 
+#ifndef WARN
 #define WARN() std::cout << "WARNING: "
+#endif
 
 extern std::ostream &debug;
 

@@ -4,21 +4,18 @@
 #include <cstdint>
 #include <string>
 #include <memory>
-#include <iostream>
 #include <optional>
-#include "core/bus.h"
-#include "core/boot/bootrom.h"
+#include "core/clock/clockable.h"
+#include "core/impl/bootrom.h"
 
-class ICPU {
-public:
-    virtual ~ICPU() = default;
+using ICPU = IClockable;
 
-    virtual void tick() = 0;
-};
+class IBus;
+class SerialPort;
 
 class CPU : public virtual ICPU {
 public:
-    explicit CPU(IBus &bus, std::unique_ptr<IBootROM> bootRom = nullptr); // TODO: maybe take IO, ... separately?
+    explicit CPU(IBus &bus, SerialPort &serialPort, std::unique_ptr<Impl::IBootROM> bootRom = nullptr); // TODO: maybe take IO, ... separately?
     ~CPU() override = default;
 
     void tick() override;
@@ -55,12 +52,27 @@ protected:
         C,
     };
 
+    class Timers {
+    public:
+        explicit Timers(IBus &bus);
+        void tick();
+
+    private:
+        IBus &bus;
+        uint32_t divTicks;
+        uint32_t timaTicks;
+    };
+
+
     typedef void (CPU::*InstructionMicroOperation)();
 
 
-    std::unique_ptr<IBootROM> bootRom;
+    std::unique_ptr<Impl::IBootROM> bootRom;
 
     IBus &bus;
+    SerialPort &serialPort;
+
+    Timers timers;
 
     uint16_t AF;
     uint16_t BC;
@@ -614,5 +626,6 @@ protected:
     template<uint8_t n, Register16 r>
     void SET_arr_m3();
 };
+
 
 #endif // CPU_H
