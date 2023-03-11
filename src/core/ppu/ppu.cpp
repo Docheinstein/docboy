@@ -2,41 +2,93 @@
 #include "utils/binutils.h"
 #include "core/definitions.h"
 #include "core/memory/io.h"
-#include "lcd.h"
-
+#include "core/lcd/lcd.h"
 
 using namespace Bits::Registers::LCD::LCDC;
 
 PPU::PPU(ILCD &lcd, IMemory &vram, IMemory &oam, IIO &io) :
     lcd(lcd), vram(vram), oam(oam), io(io),
     bgFifo(), objFifo(),
-    state(State::OAMScan),
+    state(OAMScan),
     transferredPixels(),
     fetcher(),
     dots(), tCycles() {
 
 }
 
+/*
+ * TODO
+Writing a value of 0 to bit 7 of the LCDC register when its value is 1 stops the LCD controller, and
+the value of register LY immediately becomes 0. (Note: Values should not be written to the
+register during screen display.)
+ */
+
 void PPU::tick() {
+    auto updateState = [&](State s) {
+        // update STAT's Mode Flag
+        state = s;
+        uint8_t STAT = io.readSTAT();
+        io.writeSTAT(reset_bits<2>(STAT) | s);
+
+        // eventually raise STAT interrupt
+        if ((get_bit<Bits::Registers::LCD::STAT::OAM_INTERRUPT>(STAT) && s == OAMScan) ||
+                (get_bit<Bits::Registers::LCD::STAT::VBLANK_INTERRUPT>(STAT) && s == VBlank) ||
+                (get_bit<Bits::Registers::LCD::STAT::HBLANK_INTERRUPT>(STAT) && s == HBlank)) {
+            uint8_t IF = io.readIF();
+            set_bit<Bits::Interrupts::STAT>(IF, true);
+            io.writeIF(IF);
+        }
+
+        // eventually raise
+        if (s == VBlank) {
+            uint8_t IF = io.readIF();
+            set_bit<Bits::Interrupts::STAT>(IF, true);
+            io.writeIF(IF);
+        }
+    };
+
+    auto updateLY = [&](uint8_t LY) {
+        // write LY
+        io.writeLY(LY);
+
+        // update STAT's LYC=LY Flag
+        uint8_t LYC = io.readLYC();
+        uint8_t STAT = io.readSTAT();
+        set_bit<2>(STAT, LY == LYC);
+        io.writeSTAT(STAT);
+
+        if ((get_bit<Bits::Registers::LCD::STAT::LYC_EQ_LY_INTERRUPT>(STAT)) && LY == LYC) {
+            uint8_t IF = io.readIF();
+            set_bit<Bits::Interrupts::STAT>(IF, true);
+            io.writeIF(IF);
+        }
+    };
+
     uint8_t LCDC = io.readLCDC();
     bool enabled = get_bit<LCD_ENABLE>(LCDC);
 
-    if (lcd.isOn() && !enabled)
+    if (lcd.isOn() && !enabled) {
         lcd.turnOff();
-    else if (!lcd.isOn() && enabled)
+        updateLY(0);
+        fetcherClear(); // TODO: bad...
+        bgFifo.pixels.clear(); // TODO: ?
+        dots = 0; // TODO: ?
+        updateState(OAMScan); // TODO: here or on off -> on transition?
+    } else if (!lcd.isOn() && enabled) {
         lcd.turnOn();
+    }
 
     if (!enabled)
         return; // TODO: ok?
 
-    if (state == State::OAMScan) {
+    if (state == OAMScan) {
         dots++;
         if (dots == 80) {
             // end of OAM scan
             transferredPixels = 0;
-            state = State::PixelTransfer;
+            updateState(PixelTransfer);
         }
-    } else if (state == State::PixelTransfer) {
+    } else if (state == PixelTransfer) {
         // shift pixel from fifo to lcd if there are at least 8 pixels
         if (transferredPixels < 160 && bgFifo.pixels.size() > 8) {
             auto p = bgFifo.pixels.front();
@@ -64,9 +116,9 @@ void PPU::tick() {
         dots++;
         if (dots == 80 + 289) {
             // end of pixel transfer
-            state = State::HBlank;
+            updateState(HBlank);
         }
-    } else if (state == State::HBlank) {
+    } else if (state == HBlank) {
         dots++;
 
         if (dots == 456) {
@@ -74,26 +126,25 @@ void PPU::tick() {
             dots = 0;
             uint8_t LY = io.readLY();
             LY++;
-            io.writeLY(LY);
+            updateLY(LY);
             if (LY == 144) {
-                // begin vblank
-                state = State::VBlank;
+                updateState(State::VBlank);
             } else {
-                state = State::OAMScan;
+                updateState(State::OAMScan);
             }
         }
-    } else if (state == State::VBlank) {
+    } else if (state == VBlank) {
         dots++;
         if (dots % 456 == 0) {
-            uint8_t LY = io.readLY();
+			uint8_t LY = io.readLY();
             LY++;
             if (LY < 154) {
-                io.writeLY(LY);
+                updateLY(LY);
             } else {
                 // end of vblank
                 dots = 0;
-                state = State::OAMScan;
-                io.writeLY(0);
+                updateState(State::OAMScan);
+                updateLY(0);
             }
         }
     }
@@ -162,6 +213,12 @@ void PPU::fetcherTick() {
             fetcher.dots++;
         }
     }
+}
+
+void PPU::fetcherClear() {
+    fetcher.dots = 0;
+    fetcher.x8 = 0;
+    fetcher.y = 0;
 }
 
 

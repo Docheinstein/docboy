@@ -76,7 +76,7 @@ bool DebuggableCore::isOn() {
     return on;
 }
 
-uint64_t DebuggableCore::getClock() {
+uint64_t DebuggableCore::getTicks() {
     return gameboy.clock.getTicks();
 }
 

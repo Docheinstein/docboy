@@ -1,7 +1,7 @@
 #include "window.h"
 #include <SDL.h>
 #include <stdexcept>
-
+#include "helpers.h"
 
 Window::~Window() {
     SDL_DestroyTexture(texture);
@@ -10,7 +10,7 @@ Window::~Window() {
     SDL_Quit();
 }
 
-Window::Window(SDLLCD &lcd, float scaling)
+Window::Window(IFrameBufferLCD &lcd, float scaling)
     : lcd(lcd),
     window(), renderer(), texture(),
     width(static_cast<int>(scaling * Specs::Display::WIDTH)),

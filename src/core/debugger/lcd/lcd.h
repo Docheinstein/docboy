@@ -1,8 +1,7 @@
 #ifndef DEBUGGERLCD_H
 #define DEBUGGERLCD_H
 
-#include "core/ppu/lcd.h"
-
+#include "core/lcd/lcd.h"
 
 class IDebuggableLCD : public virtual ILCD {
 public:
@@ -13,11 +12,9 @@ public:
     [[nodiscard]] virtual uint8_t getY() const = 0;
 };
 
-class DebuggableLCD : public IDebuggableLCD, public LCD {
+class DebuggableLCD : public virtual LCD, public virtual IDebuggableLCD {
     [[nodiscard]] uint8_t getX() const override;
     [[nodiscard]] uint8_t getY() const override;
 };
-
-
 
 #endif // DEBUGGERLCD_H

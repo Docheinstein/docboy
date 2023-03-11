@@ -3,7 +3,7 @@
 #include "frontend.h"
 #include "core/core.h"
 #include "core/helpers.h"
-#include "ppu/lcd.h"
+#include "core/debugger/lcd/lcd.h"
 
 DebuggerBackend::DebuggerBackend(IDebuggableCore &core) :
         core(core),
@@ -233,7 +233,7 @@ bool DebuggerBackend::onTick() {
         return true;
     }
 
-    uint64_t clk = core.getClock();
+    uint64_t clk = core.getTicks();
     bool isMcycle = (clk % 4) == 0;
     auto instruction = cpu.getCurrentInstruction();
 
@@ -301,7 +301,9 @@ bool DebuggerBackend::onTick() {
         } else if (std::holds_alternative<CommandFrame>(cmd)) {
             CommandFrame cmdFrame = std::get<CommandFrame>(cmd);
             // TODO: don't like ppu.getDots() == 0
-            if (ppu.getPPUState() == IDebuggablePPU::PPUState::VBlank && ppu.getDots() == 0) {
+            if (ppu.getPPUState() == IDebuggablePPU::PPUState::VBlank &&
+                    ppu.getDots() == 0 &&
+                    get_bit<Bits::Registers::LCD::LCDC::LCD_ENABLE>(cpu.readMemoryThroughCPU(Registers::LCD::LCDC))) {
                 counter++;
                 if (counter >= cmdFrame.count) {
                     counter = 0;

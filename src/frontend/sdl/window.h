@@ -1,10 +1,9 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include "core/ppu/lcd.h"
-#include "core/definitions.h"
 #include <chrono>
-#include "sdllcd.h"
+#include "core/lcd/framebufferlcd.h"
+#include "core/definitions.h"
 
 class SDL_Window;
 class SDL_Renderer;
@@ -12,13 +11,14 @@ class SDL_Texture;
 
 class Window {
 public:
-    explicit Window(SDLLCD &lcd, float scaling = 1.0);
+    explicit Window(IFrameBufferLCD &lcd, float scaling = 1.0);
     ~Window();
 
     void render();
+    bool screenshot(const char *filename);
 
 private:
-    SDLLCD &lcd;
+    IFrameBufferLCD &lcd;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;

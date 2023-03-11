@@ -8,9 +8,18 @@
 #include <iosfwd>
 #include <tuple>
 
+template<uint8_t n>
+constexpr uint64_t bit = (((uint64_t) 1) << n);
+
+template<uint8_t n>
+constexpr uint64_t bitmask_on = (((uint64_t) 1) << n) - 1;
+
+template<uint8_t n>
+constexpr uint64_t bitmask_off = (~((uint64_t) 0) << n);
+
+
 template<uint8_t n, typename T>
 uint8_t get_byte(T value);
-
 
 template<uint8_t n, typename T>
 void set_byte(T &dest, uint8_t value);
@@ -24,10 +33,16 @@ template<uint8_t n, typename T>
 bool get_bit(T value);
 
 template<typename T>
-void set_bit(T &dest, uint8_t n, bool value);
+T set_bit(T &&dest, uint8_t n, bool value = true);
 
 template<uint8_t n, typename T>
-void set_bit(T &dest, bool value);
+T set_bit(T &&dest, bool value = true);
+
+template<typename T>
+T reset_bit(T &&dest, uint8_t n);
+
+template<uint8_t n, typename T>
+T reset_bit(T &&dest);
 
 template<uint8_t n, typename T>
 uint8_t get_nibble(T value);
@@ -36,14 +51,10 @@ template<uint8_t n, typename T>
 void set_nibble(T &dest, uint8_t value);
 
 template<uint8_t n, typename T>
-T bitmasked(T value);
+T keep_bits(T value);
 
-template<uint8_t n>
-constexpr uint64_t bitmask = (((uint64_t) 1) << n) - 1;
-
-template<uint8_t n>
-constexpr uint64_t bit = (((uint64_t) 1) << n);
-
+template<uint8_t n, typename T>
+T reset_bits(T value);
 
 template<uint8_t b, typename T1, typename T2>
 std::tuple<T1, bool> sum_carry(T1 v1, T2 v2);

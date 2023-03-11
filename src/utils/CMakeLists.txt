@@ -1,9 +1,10 @@
 set(SOURCES
     binutils.h
-    binutils.tpp
     binutils.cpp
+    binutils.tpp
     fileutils.h
     fileutils.cpp
+    fileutils.tpp
     hexdump.h
     hexdump.cpp
     log.h

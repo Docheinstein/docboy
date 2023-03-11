@@ -31,25 +31,44 @@ bool get_bit(T value) {
 }
 
 template<typename T>
-void set_bit(T &dest, uint8_t n, bool value) {
+T set_bit(T &&dest, uint8_t n, bool value) {
     dest &= (~((uint8_t) 1 << n));
     dest |= ((value ? 1 : 0) << n);
+    return dest;
 }
 
 template<uint8_t n, typename T>
-void set_bit(T &dest, bool value) {
+T set_bit(T &&dest, bool value) {
     dest &= (~((uint8_t) 1 << n));
     dest |= ((value ? 1 : 0) << n);
+    return dest;
+}
+
+
+template<typename T>
+T reset_bit(T &&dest, uint8_t n) {
+    return set_bit(dest, n, false);
 }
 
 template<uint8_t n, typename T>
-T bitmasked(T value) {
-    return value & bitmask<n>;
+T reset_bit(T &&dest) {
+    return set_bit<n>(dest, false);
+}
+
+
+template<uint8_t n, typename T>
+T keep_bits(T value) {
+    return value & bitmask_on<n>;
+}
+
+template<uint8_t n, typename T>
+T reset_bits(T value) {
+    return value & bitmask_off<n>;
 }
 
 template<uint8_t b, typename T1, typename T2>
 bool sum_get_carry_bit(T1 v1, T2 v2) {
-    uint64_t mask = bitmask<b + 1>;
+    uint64_t mask = bitmask_on<b + 1>;
     return ((((uint64_t) v1) & mask) + (((uint64_t) v2) & mask)) & bit<b + 1>;
 //    T1 result = v1 + v2;
 //    return (v1 ^ v2 ^ result) & bit<b + 1>;
@@ -89,7 +108,7 @@ std::tuple<T1, bool, bool> sum_carry(T1 v1, T2 v2) {
 //
 template<uint8_t b, typename T1, typename T2>
 bool sub_get_borrow_bit(T1 v1, T2 v2) {
-    uint64_t mask = bitmask<b + 1>;
+    uint64_t mask = bitmask_on<b + 1>;
 //    return ((((uint64_t) v1) & mask) - (((uint64_t) v2) & mask)) & bit<b + 1>;
     v2 = (v2 < 0) ? -v2 : v2;
     uint64_t vm1 = (((uint64_t) v1) & mask);

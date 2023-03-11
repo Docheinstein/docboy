@@ -31,11 +31,11 @@ public:
 
 protected:
 
-    enum class State {
-        HBlank,
-        VBlank,
-        OAMScan,
-        PixelTransfer
+    enum State {
+        HBlank = 0,
+        VBlank = 1,
+        OAMScan = 2,
+        PixelTransfer = 3
     };
 
     ILCD &lcd;
@@ -70,6 +70,7 @@ protected:
     uint64_t tCycles;
 
     void fetcherTick();
+    void fetcherClear();
 };
 
 

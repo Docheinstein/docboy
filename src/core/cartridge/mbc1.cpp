@@ -29,11 +29,11 @@ void MBC1::write(uint16_t address, uint8_t value) {
     if (address < 0x2000) {
         mbc.ramEnabled = value == 0xA;
     } else if (address < 0x4000) {
-        mbc.romBankSelector = bitmasked<5>(value > 0 ? value : 0x1);
+        mbc.romBankSelector = keep_bits<5>(value > 0 ? value : 0x1);
     } else if (address < 0x6000) {
-        mbc.upperRomBankSelector_ramBankSelector = bitmasked<2>(value);
+        mbc.upperRomBankSelector_ramBankSelector = keep_bits<2>(value);
     } else if (address < 0x8000) {
-        mbc.bankingMode = bitmasked<1>(value);
+        mbc.bankingMode = keep_bits<1>(value);
     } else {
         throw std::runtime_error("Write at address " + hex(address) + " is not allowed");
     }

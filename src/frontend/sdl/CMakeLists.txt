@@ -1,7 +1,7 @@
 set(SOURCES
+        helpers.h
+        helpers.cpp
         main.cpp
-        sdllcd.h
-        sdllcd.cpp
         window.h
         window.cpp
 )

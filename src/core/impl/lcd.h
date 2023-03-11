@@ -2,16 +2,17 @@
 #define LCDIMPL_H
 
 #if ENABLE_DEBUGGER
-#include "core/debugger/ppu/lcd.h"
+#include "core/debugger/lcd/lcd.h"
 namespace Impl {
 using ILCD = IDebuggableLCD;
 using LCD = DebuggableLCD;
 }
 #else
-#include "core/ppu/lcd.h"
+#include "core/lcd/lcd.h"
 namespace Impl {
 using ILCD = ILCD;
 using LCD = LCD;
+
 }
 #endif
 

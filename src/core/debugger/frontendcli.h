@@ -29,6 +29,7 @@ private:
     struct DisplayEntry {
         uint32_t id;
         char format;
+        uint8_t formatArg;
         size_t length;
 
         struct Examine {

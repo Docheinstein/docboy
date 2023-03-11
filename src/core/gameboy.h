@@ -21,13 +21,13 @@ public:
     public:
         Builder & setFrequency(uint64_t frequency);
         Builder & setBootROM(std::unique_ptr<Impl::IBootROM> bootRom);
-        Builder & setLCD(std::unique_ptr<Impl::ILCD> lcd);
+        Builder & setLCD(std::shared_ptr<Impl::ILCD> lcd);
         GameBoy build();
 
     private:
         uint64_t frequency;
         std::unique_ptr<Impl::IBootROM> bootRom;
-        std::unique_ptr<Impl::ILCD> lcd;
+        std::shared_ptr<Impl::ILCD> lcd;
     };
 
     Impl::Memory vram;
@@ -44,7 +44,7 @@ public:
 
     Impl::CPU cpu;
 
-    std::unique_ptr<Impl::ILCD> lcd;
+    std::shared_ptr<Impl::ILCD> lcd;
     Impl::PPU ppu;
 
     Clock clock;
@@ -59,7 +59,7 @@ public:
 
 private:
     explicit GameBoy(
-            std::unique_ptr<Impl::ILCD> lcd = nullptr,
+            std::shared_ptr<Impl::ILCD> lcd = nullptr,
             std::unique_ptr<Impl::IBootROM> bootRom = nullptr,
             uint64_t cpuFrequency = Specs::CPU::FREQUENCY,
             uint64_t ppuFrequency = Specs::PPU::FREQUENCY);

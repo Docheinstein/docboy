@@ -1,10 +1,14 @@
 #include <SDL.h>
 #include <iostream>
+#include <filesystem>
 #include "argparser.h"
 #include "core/gameboy.h"
 #include "core/core.h"
 #include "core/boot/bootromfactory.h"
 #include "core/serial/endpoints/console.h"
+#include "core/lcd/framebufferlcd.h"
+#include "helpers.h"
+#include "utils/fileutils.h"
 #include "window.h"
 
 #ifdef ENABLE_DEBUGGER
@@ -14,6 +18,40 @@
 #include "core/debugger/frontendcli.h"
 #endif
 
+static void screenshot_bmp(uint32_t *framebuffer) {
+    int i = 0;
+    std::filesystem::path cwd = std::filesystem::current_path();
+    std::filesystem::path p;
+    do {
+        p = cwd / ("screenshot" + std::to_string(i) + ".bmp");
+        i++;
+    } while (std::filesystem::exists(p));
+
+    std::string path = absolute(p).c_str();
+
+    if (screenshot(framebuffer,
+                   Specs::Display::WIDTH, Specs::Display::HEIGHT,
+                   SDL_PIXELFORMAT_RGBA8888, path))
+        std::cout << "Screenshot saved to: " << path << std::endl;
+}
+
+static void screenshot_dat(uint32_t *framebuffer) {
+    int i = 0;
+    std::filesystem::path cwd = std::filesystem::current_path();
+    std::filesystem::path p;
+    do {
+        p = cwd / ("screenshot" + std::to_string(i) + ".dat");
+        i++;
+    } while (std::filesystem::exists(p));
+
+    std::string path = absolute(p).c_str();
+
+    if (write_file(path,
+                   framebuffer,
+                   sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT))
+        std::cout << "Screenshot saved to: " << path << std::endl;
+}
+
 int main(int argc, char **argv) {
     struct {
         std::string rom;
@@ -21,6 +59,7 @@ int main(int argc, char **argv) {
         bool debugger {};
         bool serial_console {};
         float scaling {1};
+        double speed_up {1};
     } args;
 
     auto parser = argumentum::argument_parser();
@@ -45,11 +84,17 @@ int main(int argc, char **argv) {
         .nargs(1)
         .default_value(1)
         .help("Scaling factor");
+    params
+        .add_parameter(args.speed_up, "--speed-up", "-x")
+        .nargs(1)
+        .default_value(1)
+        .help("Speed up factor");
 
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    std::unique_ptr<SDLLCD> lcd = std::make_unique<SDLLCD>();
+    std::shared_ptr<FrameBufferLCD> lcd = std::make_shared<FrameBufferLCD>();
+
     Window window(*lcd, args.scaling);
 
     std::unique_ptr<Impl::IBootROM> bootRom;
@@ -57,8 +102,9 @@ int main(int argc, char **argv) {
         bootRom = BootROMFactory::makeBootROM(args.boot_rom);
 
     GameBoy gb = GameBoy::Builder()
+            .setFrequency(static_cast<uint64_t >(args.speed_up * Specs::FREQUENCY))
             .setBootROM(std::move(bootRom))
-            .setLCD(std::move(lcd))
+            .setLCD(lcd)
             .build();
 
 #ifdef ENABLE_DEBUGGER
@@ -112,6 +158,16 @@ int main(int argc, char **argv) {
             if (e.type == SDL_QUIT) {
                 quit = true;
                 break;
+            }
+            if (e.type == SDL_KEYDOWN) {
+                switch (e.key.keysym.sym) {
+                    case SDLK_F11:
+                        screenshot_dat(lcd->getFrameBuffer());
+                        break;
+                    case SDLK_F12:
+                        screenshot_bmp(lcd->getFrameBuffer());
+                        break;
+                }
             }
         }
 

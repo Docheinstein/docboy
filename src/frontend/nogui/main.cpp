@@ -4,7 +4,6 @@
 #include "core/boot/bootromfactory.h"
 #include "core/gameboy.h"
 #include "core/serial/endpoints/console.h"
-#include "noguilcd.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "core/debugger/core/core.h"
@@ -46,7 +45,6 @@ int main(int argc, char **argv) {
 
     GameBoy gb = GameBoy::Builder()
             .setBootROM(std::move(bootRom))
-            .setLCD(std::make_unique<NoGuiLCD>())
             .build();
 
 #ifdef ENABLE_DEBUGGER

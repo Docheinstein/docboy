@@ -26,7 +26,7 @@ public:
     [[nodiscard]] virtual IDebuggablePPU & getPpu() = 0;
     [[nodiscard]] virtual IDebuggableLCD & getLcd() = 0;
     [[nodiscard]] virtual IBus & getBus() = 0;
-    [[nodiscard]] virtual uint64_t getClock() = 0;
+    [[nodiscard]] virtual uint64_t getTicks() = 0;
 };
 
 class DebuggableCore : public Core, public IDebuggableCore, public IDebuggableMemory::Observer  {
@@ -43,7 +43,7 @@ public:
     [[nodiscard]] IDebuggablePPU & getPpu() override;
     [[nodiscard]] IDebuggableLCD & getLcd() override;
     [[nodiscard]] IBus & getBus() override;
-    uint64_t getClock() override;
+    uint64_t getTicks() override;
 
     bool isOn() override;
     void tick() override;

@@ -1,20 +1,9 @@
-#include "fileutils.h"
-#include <iostream>
+#include <fstream>
+#include <filesystem>
 
-bool write_file(const std::string &filename, void *data, long length) {
-    std::ofstream ofs(filename);
-    if (!ofs) {
-        return false;
-    }
-
-    ofs.write(static_cast<const char *>(data), length);
-    return ofs.good();
-}
-
-
-template<>
-std::vector<uint8_t> read_file<uint8_t>(const std::string &filename, bool *ok) {
-    std::vector<uint8_t> out;
+template<typename T>
+std::vector<T> read_file(const std::string &filename, bool *ok) {
+    std::vector<T> out;
 
     std::ifstream ifs(filename);
     if (!ifs) {
@@ -33,12 +22,16 @@ std::vector<uint8_t> read_file<uint8_t>(const std::string &filename, bool *ok) {
     }
 
     try {
-        out.resize(size);
-        ifs.read((char *) out.data(), size);
+        out.reserve(size / sizeof(T));
     } catch (std::ifstream::failure &err) {
         if (ok)
             *ok = false;
         return out;
+    }
+
+    T value;
+    while (ifs.read(reinterpret_cast<char *>(&value), sizeof(value))) {
+        out.push_back(value);
     }
 
     if (ok)

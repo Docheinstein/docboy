@@ -28,19 +28,17 @@ void CPU::Timers::tick() {
     if (get_bit<Bits::Registers::Timers::TAC::ENABLE>(TAC))
         timaTicks += 1;
 
-    const uint32_t TIMA_PERIOD = Specs::CPU::FREQUENCY / Specs::CPU::TAC_FREQUENCY[bitmasked<2>(TAC)];
+    const uint32_t TIMA_PERIOD = Specs::CPU::FREQUENCY / Specs::CPU::TAC_FREQUENCY[keep_bits<2>(TAC)];
     if (timaTicks >= TIMA_PERIOD) {
         timaTicks = 0;
         uint8_t TIMA = bus.read(Registers::Timers::TIMA);
         auto [result, overflow] = sum_carry<7>(TIMA, 1);
         if (overflow) {
-            uint8_t TMA = bus.read(Registers::Timers::TMA);
-            bus.write(Registers::Timers::TIMA, TMA);
+            bus.write(Registers::Timers::TIMA,
+                      bus.read(Registers::Timers::TMA));
 
-            // TODO: method for request interrupt
-            uint8_t IF = bus.read(Registers::Interrupts::IF);
-            set_bit<Bits::Interrupts::TIMER>(IF, true);
-            bus.write(Registers::Interrupts::IF, IF);
+            bus.write(Registers::Interrupts::IF,
+                      set_bit<Bits::Interrupts::TIMER>(bus.read(Registers::Interrupts::IF)));
         } else {
             bus.write(Registers::Timers::TIMA, result);
         }
@@ -634,9 +632,8 @@ void CPU::tick() {
                 halted = false;
                 // TODO: figure out if the IF bit is set to 0
                 //  and if so, whether it depends on the value of IME
-                writeMemory(Registers::Interrupts::IF, IF);
                 if (IME) {
-                    set_bit(IF, b, false);
+                    writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
                     pendingInterrupt = ISR[b];
                 }
             }
@@ -647,13 +644,13 @@ void CPU::tick() {
     // Interrupts handling
 
     if (pendingInterrupt) {
-        // oneliner for take the right address based on the ISR function pointer
         currentInstruction.ISR = true;
+        // oneliner for take the right address based on the ISR function pointer
         currentInstruction.address = 0x40 + 8 * ((*pendingInterrupt - &ISR[0][0]) / 5);
         currentInstruction.microop = 0;
         currentInstruction.microopHandler = *pendingInterrupt;
         pendingInterrupt = std::nullopt;
-         return; // TODO: return, else if or just if?
+        return; // TODO: return, else if or just if?
     }
 
     // TODO: else if or just if?
@@ -662,8 +659,7 @@ void CPU::tick() {
         uint8_t IF = readMemory(Registers::Interrupts::IF);
         for (uint8_t b = 0; b <= 4; b++) {
             if (get_bit(IE, b) && get_bit(IF, b)) {
-                set_bit(IF, b, false);
-                writeMemory(Registers::Interrupts::IF, IF);
+                writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
                 IME = false;
                 pendingInterrupt = ISR[b];
                 break; // TODO: stop after first or handle them all?
@@ -920,7 +916,7 @@ void CPU::fetch(bool cb) {
 }
 
 void CPU::invalidInstruction() {
-    throw std::runtime_error("Invalid instruction at address "+ hex(currentInstruction.address) + ")");
+    throw std::runtime_error("Invalid instruction at address " + hex(currentInstruction.address) + ": " + hex(readMemory(currentInstruction.address)));
 }
 
 template<uint16_t nn>

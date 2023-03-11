@@ -45,12 +45,14 @@ struct CommandDisassembleRange {
 
 struct CommandExamine {
     char format;
+    std::optional<uint8_t> formatArg;
     size_t length;
     uint16_t address;
 };
 
 struct CommandDisplay {
     char format;
+    uint8_t formatArg;
     size_t length;
     uint16_t address;
 };
@@ -221,31 +223,37 @@ static CommandInfo COMMANDS[] = {
         }
     },
     {
-        std::regex(R"(x(?:/(\d+)?([xhbdi])?)?\s+([0-9a-fA-F]{1,4}))"),
+        std::regex(R"(x(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+([0-9a-fA-F]{1,4}))"),
         "x[/<length><format>] <addr>",
-        "Display memory content at <addr> (<format>: x, h, b, d, i)",
+        "Display memory content at <addr> (<format>: x, h[<cols>], b, d, i)",
         [](const std::vector<std::string> &groups) -> Command {
             CommandExamine cmd {};
             const std::string &length = groups[0];
             const std::string &format = groups[1];
-            const std::string &address = groups[2];
+            const std::string &formatArg = groups[2];
+            const std::string &address = groups[3];
             cmd.length = length.empty() ? 1 : std::stoi(length);
             cmd.format = format.empty() ? 'x' : format[0];
+            if (!formatArg.empty())
+                cmd.formatArg = stoi(formatArg);
             cmd.address = std::stoi(address, nullptr, 16);
             return cmd;
         }
     },
     {
-        std::regex(R"(display(?:/(\d+)?([xhbdi])?)?\s+([0-9a-fA-F]{1,4}))"),
+        std::regex(R"(display(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+([0-9a-fA-F]{1,4}))"),
         "display[/<length><format>] <addr>",
-        "Automatically display memory content content at <addr> (<format>: x, h, b, d, i)",
+        "Automatically display memory content content at <addr> (<format>: x, h[<cols>], b, d, i)",
         [](const std::vector<std::string> &groups) -> Command {
             CommandDisplay cmd {};
             const std::string &length = groups[0];
             const std::string &format = groups[1];
-            const std::string &address = groups[2];
+            const std::string &formatArg = groups[2];
+            const std::string &address = groups[3];
             cmd.length = length.empty() ? 1 : std::stoi(length);
             cmd.format = format.empty() ? 'x' : format[0];
+            if (!formatArg.empty())
+                cmd.formatArg = stoi(formatArg);
             cmd.address = std::stoi(address, nullptr, 16);
             return cmd;
         }
@@ -602,7 +610,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         }
     };
 
-    auto printMemory = [&](uint16_t from, size_t n, char format) {
+    auto printMemory = [&](uint16_t from, size_t n, char format, std::optional<uint8_t> formatArg) {
         if (format == 'x') {
             for (size_t i = 0; i < n; i++)
                 std::cout << hex(backend.readMemory(from + i)) << " ";
@@ -621,11 +629,12 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             std::vector<uint8_t> data;
             for (size_t i = 0; i < n; i++)
                 data.push_back(backend.readMemory(from + i));
+            uint8_t cols = formatArg ? *formatArg : 16;
             std::string dump = Hexdump()
                     .setBaseAddress(from)
                     .showAddresses(true)
                     .showAscii(false)
-                    .setNumColumns(16)
+                    .setNumColumns(cols)
                     .hexdump(data);
             std::cout << dump << std::endl;
         }
@@ -635,7 +644,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         if (std::holds_alternative<DisplayEntry::Examine>(d.expression)) {
             DisplayEntry::Examine dx = std::get<DisplayEntry::Examine>(d.expression);
             std::cout << d.id << ": " << "x/" << d.length << d.format << " " << hex(dx.address) << std::endl;
-            printMemory(dx.address, d.length, d.format);
+            printMemory(dx.address, d.length, d.format, d.formatArg);
         }
     };
 
@@ -909,7 +918,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             invalidateUI = true;
         } else if (std::holds_alternative<CommandExamine>(cmd)) {
             CommandExamine examine = std::get<CommandExamine>(cmd);
-            printMemory(examine.address, examine.length, examine.format);
+            printMemory(examine.address, examine.length, examine.format, examine.formatArg);
         } else if (std::holds_alternative<CommandDisplay>(cmd)) {
             CommandDisplay display = std::get<CommandDisplay>(cmd);
             DisplayEntry d = {

@@ -1,4 +1,4 @@
-#include "sdllcd.h"
+#include "framebufferlcd.h"
 
 constexpr uint32_t DARKEST_GREEN_COLOR = 0x0f380fff;
 constexpr uint32_t DARK_GREEN_COLOR = 0x306230ff;
@@ -19,27 +19,14 @@ static uint32_t LCDPixelToRGBA(ILCD::Pixel pixel) {
     return 0x000000FF;
 }
 
-SDLLCD::SDLLCD() : on(), pixels() {
+FrameBufferLCD::FrameBufferLCD() : Impl::LCD(), pixels() {
 
 }
 
-void SDLLCD::putPixel(ILCD::Pixel pixel, uint8_t x, uint8_t y) {
-    pixels[y * Specs::Display::WIDTH + x] = LCDPixelToRGBA(pixel);
-}
-
-bool SDLLCD::isOn() const {
-    return on;
-}
-
-void SDLLCD::turnOn() {
-    on = true;
-}
-
-void SDLLCD::turnOff() {
-    on = false;
-}
-
-
-uint32_t *SDLLCD::getFrameBuffer() {
+uint32_t *FrameBufferLCD::getFrameBuffer() {
     return pixels;
+}
+
+void FrameBufferLCD::putPixel(ILCD::Pixel pixel, uint8_t x, uint8_t y) {
+    pixels[y * Specs::Display::WIDTH + x] = LCDPixelToRGBA(pixel);
 }

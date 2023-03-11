@@ -6,14 +6,22 @@ IO::IO() : Impl::Memory(MemoryMap::IO::SIZE) {
 }
 
 uint8_t IO::read(uint16_t index) const {
-    return Impl::Memory::read(index);
+    uint16_t reg = MemoryMap::IO::START + index;
+    switch (reg) {
+//    case Registers::Joypad::P1:
+//        return 0xFF;
+    default:
+        return Impl::Memory::read(index);
+    }
 }
 
 void IO::write(uint16_t index, uint8_t value) {
-    uint16_t reg = index + MemoryMap::IO::START;
-    if (reg == Registers::Timers::DIV) {
+    uint16_t reg = MemoryMap::IO::START + index;
+    switch (reg) {
+    case Registers::Timers::DIV:
         Impl::Memory::write(index, 0);
-    } else {
+        break;
+    default:
         Impl::Memory::write(index, value);
     }
 }

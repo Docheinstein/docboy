@@ -31,8 +31,10 @@ set(SOURCES
         cartridge/mbc1ram.cpp
         cartridge/nombc.h
         cartridge/nombc.cpp
-        ppu/lcd.h
-        ppu/lcd.cpp
+        lcd/framebufferlcd.h
+        lcd/framebufferlcd.cpp
+        lcd/lcd.h
+        lcd/lcd.cpp
         ppu/ppu.h
         ppu/ppu.cpp
         serial/endpoints/buffer.h
@@ -68,8 +70,8 @@ if (ENABLE_DEBUGGER)
             debugger/core/core.cpp
             debugger/cpu/cpu.h
             debugger/cpu/cpu.cpp
-            debugger/ppu/lcd.h
-            debugger/ppu/lcd.cpp
+            debugger/lcd/lcd.cpp
+            debugger/lcd/lcd.h
             debugger/memory/memory.h
             debugger/memory/memory.cpp
             debugger/memory/readable.h

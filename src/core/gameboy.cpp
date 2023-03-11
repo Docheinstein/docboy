@@ -1,7 +1,8 @@
 #include "gameboy.h"
 #include "clock/clockable.h"
+#include "impl/lcd.h"
 
-GameBoy::GameBoy(std::unique_ptr<Impl::ILCD> lcd,
+GameBoy::GameBoy(std::shared_ptr<Impl::ILCD> lcd_,
                  std::unique_ptr<Impl::IBootROM> bootRom,
                  uint64_t cpuFreq,
                  uint64_t ppuFreq) :
@@ -15,7 +16,7 @@ GameBoy::GameBoy(std::unique_ptr<Impl::ILCD> lcd,
     bus(vram, wram1, wram2, oam, io, hram, io),
     serialPort(bus),
     cpu(bus, serialPort, std::move(bootRom)),
-    lcd(std::move(lcd)),
+    lcd(std::move(lcd_)),
     ppu(*lcd, vram, oam, io),
     clock(std::initializer_list<std::pair<IClockable *, uint64_t>>{
         std::make_pair(&cpu, cpuFreq),
@@ -34,7 +35,7 @@ GameBoy::Builder &GameBoy::Builder::setBootROM(std::unique_ptr<Impl::IBootROM> b
     return *this;
 }
 
-GameBoy::Builder &GameBoy::Builder::setLCD(std::unique_ptr<Impl::ILCD> lcd_) {
+GameBoy::Builder &GameBoy::Builder::setLCD(std::shared_ptr<Impl::ILCD> lcd_) {
     lcd = std::move(lcd_);
     return *this;
 }
@@ -42,7 +43,12 @@ GameBoy::Builder &GameBoy::Builder::setLCD(std::unique_ptr<Impl::ILCD> lcd_) {
 GameBoy GameBoy::Builder::build() {
     uint64_t ppuFreq = frequency != 0 ? frequency : Specs::PPU::FREQUENCY;
     uint64_t cpuFreq = ppuFreq / (Specs::PPU::FREQUENCY / Specs::CPU::FREQUENCY);
-    return GameBoy(std::move(lcd), std::move(bootRom), cpuFreq, ppuFreq);
+
+    return GameBoy(
+            lcd ? std::move(lcd) : std::make_shared<Impl::LCD>(),
+            std::move(bootRom),
+            cpuFreq,
+            ppuFreq);
 }
 
 void GameBoy::attachCartridge(std::unique_ptr<Cartridge> c) {

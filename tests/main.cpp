@@ -5,6 +5,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "utils/binutils.h"
 #include "utils/log.h"
+#include "utils/fileutils.h"
 #include "core/core.h"
 #include "core/helpers.h"
 #include "core/cartridge/cartridgefactory.h"
@@ -13,8 +14,10 @@
 #include "core/serial/endpoints/buffer.h"
 #include "core/bus/bus.h"
 #include "core/gameboy.h"
+#include "core/lcd/framebufferlcd.h"
 #include <queue>
 #include <algorithm>
+#include <cstring>
 
 #undef SECTION
 #undef DYNAMIC_SECTION
@@ -40,6 +43,102 @@
     GENERATE_TABLE_1 \
 )(__VA_ARGS__)
 
+static std::string run_and_get_serial(const std::string &rom, uint64_t ticks) {
+    class SerialString : public SerialEndpoint {
+    public:
+        uint8_t serialRead() override {
+            return 0xFF;
+        }
+
+        void serialWrite(uint8_t b) override {
+            data += (char) b;
+        }
+
+        std::string data;
+    };
+
+    SerialString serialString;
+
+    GameBoy gb = GameBoy::Builder()
+        .setFrequency(Clock::MAX_FREQUENCY)
+        .build();
+
+    Core core(gb);
+
+    std::shared_ptr<SerialLink> serial = std::make_shared<SerialLink>();
+    serial->plug1.attach(&serialString);
+    core.attachSerialLink(serial->plug2);
+
+    core.loadROM(rom);
+
+    for (uint64_t i = 0; i < ticks; i++)
+        core.tick();
+
+    return serialString.data;
+}
+
+
+static std::string run_and_expect_string_over_serial(
+        const std::string &rom, const std::string &expected, uint64_t maxticks) {
+    class SerialString : public SerialEndpoint {
+    public:
+        uint8_t serialRead() override {
+            return 0xFF;
+        }
+
+        void serialWrite(uint8_t b) override {
+            data += (char) b;
+        }
+
+        std::string data;
+    };
+
+    SerialString serialString;
+
+    GameBoy gb = GameBoy::Builder()
+        .setFrequency(Clock::MAX_FREQUENCY)
+        .build();
+
+    DebuggableCore core(gb);
+
+    std::shared_ptr<SerialLink> serial = std::make_shared<SerialLink>();
+    serial->plug1.attach(&serialString);
+    core.attachSerialLink(serial->plug2);
+
+    core.loadROM(rom);
+
+    while (core.getTicks() < maxticks) {
+        for (uint64_t i = 0; i < 100000; i++)
+            core.tick();
+        if (serialString.data.size() >= expected.size())
+            break;
+    }
+
+    return serialString.data;
+}
+
+static std::vector<uint32_t> run_and_get_framebuffer(const std::string &rom, uint64_t ticks) {
+    std::shared_ptr<IFrameBufferLCD> lcd = std::make_shared<FrameBufferLCD>();
+
+    GameBoy gb = GameBoy::Builder()
+            .setFrequency(Clock::MAX_FREQUENCY)
+            .setLCD(lcd)
+            .build();
+
+    Core core(gb);
+    core.loadROM(rom);
+
+    for (uint64_t i = 0; i < ticks; i++)
+        core.tick();
+
+    uint32_t *framebuffer = lcd->getFrameBuffer();
+    std::vector<uint32_t> out;
+    size_t length = Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint32_t);
+    out.resize(length / sizeof(uint32_t));
+    memcpy(out.data(), framebuffer, length);
+
+    return out;
+}
 
 TEST_CASE("binutils", "[binutils]") {
     SECTION("get and set bit") {
@@ -110,24 +209,27 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(concat_bytes(B, A) == 0x0103);
     }
 
-    SECTION("bitmask") {
-        REQUIRE(bitmask<0> == 0x0);
-        REQUIRE(bitmask<1> == 0x1);
-        REQUIRE(bitmask<2> == 0x3);
-        REQUIRE(bitmask<3> == 0x7);
-        REQUIRE(bitmask<4> == 0xF);
-        REQUIRE(bitmask<5> == 0x1F);
-        REQUIRE(bitmask<6> == 0x3F);
-        REQUIRE(bitmask<7> == 0x7F);
-        REQUIRE(bitmask<8> == 0xFF);
-        REQUIRE(bitmask<9> == 0x1FF);
-        REQUIRE(bitmask<10> == 0x3FF);
-        REQUIRE(bitmask<11> == 0x7FF);
-        REQUIRE(bitmask<12> == 0xFFF);
-        REQUIRE(bitmask<13> == 0x1FFF);
-        REQUIRE(bitmask<14> == 0x3FFF);
-        REQUIRE(bitmask<15> == 0x7FFF);
-        REQUIRE(bitmask<16> == 0xFFFF);
+    SECTION("bitmask_on") {
+        REQUIRE(bitmask_on<0> == 0b00000000);
+        REQUIRE(bitmask_on<1> == 0b00000001);
+        REQUIRE(bitmask_on<2> == 0b00000011);
+        REQUIRE(bitmask_on<3> == 0b00000111);
+        REQUIRE(bitmask_on<4> == 0b00001111);
+        REQUIRE(bitmask_on<5> == 0b00011111);
+        REQUIRE(bitmask_on<6> == 0b00111111);
+        REQUIRE(bitmask_on<7> == 0b01111111);
+        REQUIRE(bitmask_on<8> == 0b11111111);
+    }
+    SECTION("bitmask_off") {
+        REQUIRE((uint8_t) bitmask_off<0> == 0b11111111);
+        REQUIRE((uint8_t) bitmask_off<1> == 0b11111110);
+        REQUIRE((uint8_t) bitmask_off<2> == 0b11111100);
+        REQUIRE((uint8_t) bitmask_off<3> == 0b11111000);
+        REQUIRE((uint8_t) bitmask_off<4> == 0b11110000);
+        REQUIRE((uint8_t) bitmask_off<5> == 0b11100000);
+        REQUIRE((uint8_t) bitmask_off<6> == 0b11000000);
+        REQUIRE((uint8_t) bitmask_off<7> == 0b10000000);
+        REQUIRE((uint8_t) bitmask_off<8> == 0b00000000);
     }
 
     SECTION("bit") {
@@ -226,7 +328,7 @@ TEST_CASE("binutils", "[binutils]") {
     }
 }
 
-TEST_CASE("Cartridge", "[cartridge]") {
+TEST_CASE("cartridge", "[cartridge]") {
     auto [rom, title] = GENERATE_TABLE(
         std::string,
         std::string,
@@ -250,7 +352,7 @@ TEST_CASE("Cartridge", "[cartridge]") {
     }
 }
 
-TEST_CASE("Cpu", "[cpu]") {
+TEST_CASE("cpu", "[cpu]") {
     SECTION("instruction basic requirements") {
         class FakeBus : public IBus {
         public:
@@ -421,89 +523,6 @@ TEST_CASE("Cpu", "[cpu]") {
     }
 }
 
-TEST_CASE("blargg", "[.][cpu][core][timer][interrupt]") {
-    SECTION("cpu_instrs") {
-        std::string testname = GENERATE(
-            "01-special",
-            "02-interrupts",
-            "03-op sp,hl",
-            "04-op r,imm",
-            "05-op rp",
-            "06-ld r,r",
-            "07-jr,jp,call,ret,rst",
-            "08-misc instrs",
-            "09-op r,r",
-            "10-bit ops",
-            "11-op a,(hl)"
-        );
-
-        SECTION("cpu_instrs", testname) {
-
-            std::string rom = "tests/roms/tests/blargg/" + testname + ".gb";
-            std::string expected = testname + "\n\n\nPassed\n";
-
-            class SerialString : public SerialEndpoint {
-            public:
-                uint8_t serialRead() override {
-                    return 0xFF;
-                }
-
-                void serialWrite(uint8_t b) override {
-                    data += (char) b;
-                }
-
-                std::string data;
-            };
-
-            class Supervisor : public IDebuggerFrontend {
-            public:
-                Supervisor(DebuggerBackend &backend, SerialString &buffer, const std::string &expected,
-                           uint64_t maxcycles) :
-                        buffer(buffer), expected(expected), maxcycles(maxcycles), cycles() {
-                    backend.attachFrontend(this);
-                }
-
-                DebuggerBackend::Command pullCommand(DebuggerBackend::ExecutionState state) override {
-                    if (buffer.data.length() == expected.length() || cycles >= maxcycles)
-                        return IDebuggerBackend::CommandAbort { };
-                    return IDebuggerBackend::CommandNext { .count = 1 };
-                }
-
-                void onTick() override {
-                    cycles++;
-                }
-
-            private:
-                SerialString &buffer;
-                std::string expected;
-                uint64_t maxcycles;
-                uint64_t cycles{};
-            };
-
-            GameBoy gb = GameBoy::Builder()
-                    .setFrequency(Clock::MAX_FREQUENCY)
-                    .build();
-
-            DebuggableCore core(gb);
-
-            SerialString serialString;
-            std::shared_ptr<SerialLink> serial = std::make_shared<SerialLink>();
-            serial->plug1.attach(&serialString);
-            core.attachSerialLink(serial->plug2);
-
-            DebuggerBackend supervisorBackend(core);
-            Supervisor supervisor(supervisorBackend, serialString, expected, 50000000);
-
-            core.loadROM(rom);
-
-            while (core.isOn())
-                core.tick();
-
-            REQUIRE(serialString.data == expected);
-        }
-    }
-}
-
 TEST_CASE("serial", "[serial]") {
     SECTION("serial link and serial buffer") {
         class SerialStringSource : public SerialEndpoint {
@@ -546,6 +565,45 @@ TEST_CASE("serial", "[serial]") {
     }
 }
 
+TEST_CASE("blargg_cpu", "[.][cpu][core][timer][interrupt][blargg]") {
+    std::string testname = GENERATE(
+        "01-special",
+        "02-interrupts",
+        "03-op sp,hl",
+        "04-op r,imm",
+        "05-op rp",
+        "06-ld r,r",
+        "07-jr,jp,call,ret,rst",
+        "08-misc instrs",
+        "09-op r,r",
+        "10-bit ops",
+        "11-op a,(hl)"
+    );
+
+    SECTION("cpu_instrs", testname) {
+        std::string rom = "tests/roms/tests/blargg/" + testname + ".gb";
+        std::string expectedSerial = testname + "\n\n\nPassed\n";
+        std::string serial = run_and_expect_string_over_serial(rom, expectedSerial, 150'000'000);
+        REQUIRE(serial == expectedSerial);
+    }
+}
+
+TEST_CASE("blargg_ppu", "[.][ppu][blargg]") {
+    auto [rom, screenshot, ticks] = GENERATE_TABLE(
+        std::string,
+        std::string,
+        uint64_t,
+        ({
+            { "tests/roms/tests/blargg/06-ld r,r.gb", "tests/screenshots/blargg/06-ld r,r.dat", 6358441 },
+        })
+    );
+
+    SECTION("cpu_instrs", rom) {
+        std::vector<uint32_t> expectedFramebuffer = read_file<uint32_t>(screenshot);
+        std::vector<uint32_t> framebuffer = run_and_get_framebuffer(rom, ticks);
+        REQUIRE(framebuffer == expectedFramebuffer);
+    }
+}
 
 int main(int argc, char* argv[]) {
     Catch::Session session;

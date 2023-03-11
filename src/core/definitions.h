@@ -222,6 +222,15 @@ namespace Bits {
                 constexpr uint8_t OBJ_ENABLE = 1;
                 constexpr uint8_t BG_WIN_ENABLE = 0;
             }
+            namespace STAT {
+                constexpr uint8_t LYC_EQ_LY_INTERRUPT = 6;
+                constexpr uint8_t OAM_INTERRUPT = 5;
+                constexpr uint8_t VBLANK_INTERRUPT = 4;
+                constexpr uint8_t HBLANK_INTERRUPT = 3;
+                constexpr uint8_t LYC_EQ_LY = 2;
+                constexpr uint8_t MODE_HIGH = 1;
+                constexpr uint8_t MODE_LOW = 0;
+            }
         }
     }
 }

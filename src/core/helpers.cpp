@@ -1,5 +1,6 @@
 #include "helpers.h"
 #include "utils/binutils.h"
+#include "frontend/sdl/helpers.h"
 
 
 struct InstructionInfo {
@@ -711,4 +712,3 @@ std::string address_mnemonic(uint16_t address) {
         return "IE";
     return hex(address);
 }
-

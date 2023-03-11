@@ -7,4 +7,3 @@ uint8_t DebuggableLCD::getX() const {
 uint8_t DebuggableLCD::getY() const {
     return y;
 }
-
