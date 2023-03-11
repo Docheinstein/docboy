@@ -28,23 +28,19 @@ void PPU::tick() {
         // update STAT's Mode Flag
         state = s;
         uint8_t STAT = io.readSTAT();
-        io.writeSTAT(reset_bits<2>(STAT) | s);
+        STAT = reset_bits<2>(STAT) | s;
+        io.writeSTAT(STAT);
 
         // eventually raise STAT interrupt
         if ((get_bit<Bits::Registers::LCD::STAT::OAM_INTERRUPT>(STAT) && s == OAMScan) ||
                 (get_bit<Bits::Registers::LCD::STAT::VBLANK_INTERRUPT>(STAT) && s == VBlank) ||
                 (get_bit<Bits::Registers::LCD::STAT::HBLANK_INTERRUPT>(STAT) && s == HBlank)) {
-            uint8_t IF = io.readIF();
-            set_bit<Bits::Interrupts::STAT>(IF, true);
-            io.writeIF(IF);
+            io.writeIF(set_bit<Bits::Interrupts::STAT>(io.readIF()));
         }
 
         // eventually raise
-        if (s == VBlank) {
-            uint8_t IF = io.readIF();
-            set_bit<Bits::Interrupts::STAT>(IF, true);
-            io.writeIF(IF);
-        }
+        if (s == VBlank)
+            io.writeIF(set_bit<Bits::Interrupts::VBLANK>(io.readIF()));
     };
 
     auto updateLY = [&](uint8_t LY) {
@@ -54,14 +50,10 @@ void PPU::tick() {
         // update STAT's LYC=LY Flag
         uint8_t LYC = io.readLYC();
         uint8_t STAT = io.readSTAT();
-        set_bit<2>(STAT, LY == LYC);
-        io.writeSTAT(STAT);
+        io.writeSTAT(set_bit<2>(STAT, LY == LYC));
 
-        if ((get_bit<Bits::Registers::LCD::STAT::LYC_EQ_LY_INTERRUPT>(STAT)) && LY == LYC) {
-            uint8_t IF = io.readIF();
-            set_bit<Bits::Interrupts::STAT>(IF, true);
-            io.writeIF(IF);
-        }
+        if ((get_bit<Bits::Registers::LCD::STAT::LYC_EQ_LY_INTERRUPT>(STAT)) && LY == LYC)
+            io.writeIF(set_bit<Bits::Interrupts::STAT>(io.readIF()));
     };
 
     uint8_t LCDC = io.readLCDC();

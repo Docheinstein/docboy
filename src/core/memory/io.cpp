@@ -8,8 +8,8 @@ IO::IO() : Impl::Memory(MemoryMap::IO::SIZE) {
 uint8_t IO::read(uint16_t index) const {
     uint16_t reg = MemoryMap::IO::START + index;
     switch (reg) {
-//    case Registers::Joypad::P1:
-//        return 0xFF;
+    case Registers::Joypad::P1:
+        return 0xFF;
     default:
         return Impl::Memory::read(index);
     }

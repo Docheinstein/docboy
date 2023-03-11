@@ -85,7 +85,13 @@ protected:
     bool halted;
     uint64_t mCycles;
 
-    std::optional<InstructionMicroOperation *> pendingInterrupt;
+    struct PendingInterrupt {
+        enum class State {
+            NotSet,
+            Pending,
+        } state;
+        InstructionMicroOperation *isr;
+    } interrupt;
 
     // scratchpad
     struct {

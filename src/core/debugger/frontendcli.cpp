@@ -52,7 +52,7 @@ struct CommandExamine {
 
 struct CommandDisplay {
     char format;
-    uint8_t formatArg;
+    std::optional<uint8_t> formatArg;
     size_t length;
     uint16_t address;
 };
@@ -449,11 +449,15 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         return ss.str();
     };
 
-    auto interruptString = [&coloredBool](const std::string &name, bool IE, bool IF) {
+    auto interruptString = [&coloredBool](const std::string &name, bool IME, bool IE, bool IF) {
         std::stringstream ss;
-        ss
-            << termcolor::bold << termcolor::red << name << "  " << termcolor::reset
-            << "IE : " << coloredBool(IE) << " | " << "IF : " << coloredBool(IF) << termcolor::reset;
+        ss << termcolor::bold << termcolor::red << name << "  ";
+        if (IME && IE && IF)
+            ss << termcolor::cyan << "ON " << termcolor::reset << "  ";
+        else
+            ss << termcolor::color<240> << "OFF" << termcolor::reset << "  ";
+
+        ss << "IE : " << coloredBool(IE) << " | " << "IF : " << coloredBool(IF) << termcolor::reset;
         return ss.str();
     };
 
@@ -643,7 +647,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
     auto printDisplayEntry = [&printMemory](const DisplayEntry &d) {
         if (std::holds_alternative<DisplayEntry::Examine>(d.expression)) {
             DisplayEntry::Examine dx = std::get<DisplayEntry::Examine>(d.expression);
-            std::cout << d.id << ": " << "x/" << d.length << d.format << " " << hex(dx.address) << std::endl;
+            std::cout << d.id << ": " << "x/" << d.length << d.format << (d.formatArg ? std::to_string(*d.formatArg) : "") << " " << hex(dx.address) << std::endl;
             printMemory(dx.address, d.length, d.format, d.formatArg);
         }
     };
@@ -750,11 +754,16 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         std::cout
             << termcolor::bold << termcolor::red << "IF" << termcolor::reset
             << "  : " << bin(IF) << std::endl;
-        std::cout << interruptString("VBLANK", get_bit<Bits::Interrupts::VBLANK>(IE), get_bit<Bits::Interrupts::VBLANK>(IF)) << std::endl;
-        std::cout << interruptString("STAT  ", get_bit<Bits::Interrupts::STAT>(IE), get_bit<Bits::Interrupts::STAT>(IF)) << std::endl;
-        std::cout << interruptString("TIMER ", get_bit<Bits::Interrupts::TIMER>(IE), get_bit<Bits::Interrupts::TIMER>(IF)) << std::endl;
-        std::cout << interruptString("JOYPAD", get_bit<Bits::Interrupts::JOYPAD>(IE), get_bit<Bits::Interrupts::JOYPAD>(IF)) << std::endl;
-        std::cout << interruptString("SERIAL", get_bit<Bits::Interrupts::SERIAL>(IE), get_bit<Bits::Interrupts::SERIAL>(IF)) << std::endl;
+        std::cout << interruptString("VBLANK", cpu.IME,
+                get_bit<Bits::Interrupts::VBLANK>(IE), get_bit<Bits::Interrupts::VBLANK>(IF)) << std::endl;
+        std::cout << interruptString("STAT  ", cpu.IME,
+                 get_bit<Bits::Interrupts::STAT>(IE), get_bit<Bits::Interrupts::STAT>(IF)) << std::endl;
+        std::cout << interruptString("TIMER ", cpu.IME,
+                 get_bit<Bits::Interrupts::TIMER>(IE), get_bit<Bits::Interrupts::TIMER>(IF)) << std::endl;
+        std::cout << interruptString("JOYPAD", cpu.IME,
+                 get_bit<Bits::Interrupts::JOYPAD>(IE), get_bit<Bits::Interrupts::JOYPAD>(IF)) << std::endl;
+        std::cout << interruptString("SERIAL", cpu.IME,
+                get_bit<Bits::Interrupts::SERIAL>(IE), get_bit<Bits::Interrupts::SERIAL>(IF)) << std::endl;
 
         std::cout << headerString("IO") << std::endl;
 //        std::cout << subheaderString("joypad") << std::endl;
@@ -924,6 +933,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             DisplayEntry d = {
                 .id = static_cast<uint32_t>(displayEntries.size()),
                 .format = display.format,
+                .formatArg = display.formatArg,
                 .length = display.length,
                 .expression = DisplayEntry::Examine { .address = display.address }
             };

@@ -55,7 +55,7 @@ CPU::CPU(IBus &bus, SerialPort &serialPort, std::unique_ptr<Impl::IBootROM> boot
         IME(),
         halted(),
         mCycles(),
-        pendingInterrupt(),
+        interrupt(),
         b(), u(), s(), uu(), lsb(), msb(), addr(),
         currentInstruction(),
         instructions {
@@ -620,10 +620,19 @@ void CPU::reset() {
 }
 
 void CPU::tick() {
+    auto serveInterrupt = [&](InstructionMicroOperation *isr) {
+        currentInstruction.ISR = true;
+        currentInstruction.address = 0x40 + 8 * ((isr - &ISR[0][0]) / 5); // ISR address
+        currentInstruction.microop = 0;
+        currentInstruction.microopHandler = isr;
+        interrupt.state = PendingInterrupt::State::NotSet;
+    };
+
     // Timers
     // TODO: now? after? even if halted?
     timers.tick();
 
+    // Interrupt
     if (halted) {
         uint8_t IE = readMemory(Registers::Interrupts::IE);
         uint8_t IF = readMemory(Registers::Interrupts::IF);
@@ -634,41 +643,60 @@ void CPU::tick() {
                 //  and if so, whether it depends on the value of IME
                 if (IME) {
                     writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
-                    pendingInterrupt = ISR[b];
+                    IME = false; // TODO: ok?
+                    serveInterrupt(ISR[b]);
                 }
+                break;
             }
         }
         return;
     }
 
-    // Interrupts handling
+    // Interrupt
+//    if (halted) {
+//        uint8_t IE = readMemory(Registers::Interrupts::IE);
+//        uint8_t IF = readMemory(Registers::Interrupts::IF);
+//        for (uint8_t b = 0; b <= 4; b++) {
+//            if (get_bit(IE, b) && get_bit(IF, b)) {
+//                halted = false;
+//                // TODO: figure out if the IF bit is set to 0
+//                //  and if so, whether it depends on the value of IME
+//                writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
+//                if (IME) {
+//                    IME = false; // TODO: ok?
+//                    interrupt.state = PendingInterrupt::State::Pending;
+//                    interrupt.isr = ISR[b];
+//                }
+//                break;
+//            }
+//        }
+//    }
+//
+//    // Interrupts handling
+//    if (pendingInterrupt && currentInstruction.microop == 0) {
+//        currentInstruction.ISR = true;
+//        // oneliner for take the right address based on the ISR function pointer
+//        currentInstruction.address = 0x40 + 8 * ((*pendingInterrupt - &ISR[0][0]) / 5);
+//        currentInstruction.microop = 0;
+//        currentInstruction.microopHandler = *pendingInterrupt;
+//        pendingInterrupt = std::nullopt;
+//        // return; // TODO: return, else if or just if?
+//    }
+//
+//    else if (IME) {     // TODO: else if or just if?
+//        uint8_t IE = readMemory(Registers::Interrupts::IE);
+//        uint8_t IF = readMemory(Registers::Interrupts::IF);
+//        for (uint8_t b = 0; b <= 4; b++) {
+//            if (get_bit(IE, b) && get_bit(IF, b)) {
+//                writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
+//                IME = false;
+//                pendingInterrupt = ISR[b];
+//                break; // TODO: stop after first or handle them all?
+//            }
+//        }
+//    }
 
-    if (pendingInterrupt) {
-        currentInstruction.ISR = true;
-        // oneliner for take the right address based on the ISR function pointer
-        currentInstruction.address = 0x40 + 8 * ((*pendingInterrupt - &ISR[0][0]) / 5);
-        currentInstruction.microop = 0;
-        currentInstruction.microopHandler = *pendingInterrupt;
-        pendingInterrupt = std::nullopt;
-        return; // TODO: return, else if or just if?
-    }
-
-    // TODO: else if or just if?
-    else if (IME) {
-        uint8_t IE = readMemory(Registers::Interrupts::IE);
-        uint8_t IF = readMemory(Registers::Interrupts::IF);
-        for (uint8_t b = 0; b <= 4; b++) {
-            if (get_bit(IE, b) && get_bit(IF, b)) {
-                writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
-                IME = false;
-                pendingInterrupt = ISR[b];
-                break; // TODO: stop after first or handle them all?
-            }
-        }
-    }
-
-    // Microop execution
-
+//     Microop execution
     InstructionMicroOperation micro_op = *currentInstruction.microopHandler;
 
     // Must be increased before execute micro op (so that fetch overwrites eventually)
@@ -676,6 +704,25 @@ void CPU::tick() {
     currentInstruction.microopHandler++;
 
     (this->*micro_op)();
+
+
+    if (IME) {
+        uint8_t IE = readMemory(Registers::Interrupts::IE);
+        uint8_t IF = readMemory(Registers::Interrupts::IF);
+        for (uint8_t b = 0; b <= 4; b++) {
+            if (get_bit(IE, b) && get_bit(IF, b)) {
+                writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
+                IME = false;
+                interrupt.state = PendingInterrupt::State::Pending;
+                interrupt.isr = ISR[b];
+                break;
+            }
+        }
+    }
+
+    if (interrupt.state == PendingInterrupt::State::Pending && currentInstruction.microop == 0) {
+        serveInterrupt(interrupt.isr);
+    }
 
     // Serial
     uint8_t SC = bus.read(Registers::Serial::SC);

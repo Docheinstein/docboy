@@ -1,5 +1,5 @@
-#ifndef HEXDUMP_LIBRARY_H
-#define HEXDUMP_LIBRARY_H
+#ifndef BINUTILS_H
+#define BINUTILS_H
 
 #include <string>
 #include <sstream>
@@ -84,6 +84,7 @@ std::string bin(const std::vector<T> &vec) {
 
 void hex(uint8_t value, std::ostream &os);
 void hex(uint16_t value, std::ostream &os);
+void hex(uint32_t value, std::ostream &os);
 
 template<typename T>
 std::string hex(T value);
@@ -98,4 +99,4 @@ std::string hex(const std::vector<T> &vec) {
 
 #include "binutils.tpp"
 
-#endif //HEXDUMP_LIBRARY_H
+#endif //BINUTILS_H

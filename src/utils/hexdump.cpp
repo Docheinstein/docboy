@@ -8,7 +8,7 @@ std::string hexdump(const uint8_t *data, size_t length, size_t baseAddr, bool ad
     size_t i;
     for (i = 0; i < length; i++) {
         if (addresses && i % columns == 0) {
-            ss << std::hex << std::setfill('0') << std::setw(8) << (baseAddr + i) << " | ";
+            ss << hex<uint32_t>(baseAddr + i) << " | ";
         }
 
         auto c = data[i];

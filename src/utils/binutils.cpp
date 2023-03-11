@@ -17,6 +17,10 @@ void hex(uint16_t value, std::ostream &os) {
     os << std::uppercase << std::hex << std::setfill('0') << std::setw(4) << value;
 }
 
+void hex(uint32_t value, std::ostream &os) {
+    os << std::uppercase << std::hex << std::setfill('0') << std::setw(8) << value;
+}
+
 uint16_t concat_bytes(uint8_t msb, uint8_t lsb) {
     return ((uint16_t) msb) << 8 | lsb;
 }

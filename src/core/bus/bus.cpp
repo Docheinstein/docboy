@@ -10,7 +10,7 @@ Bus::Bus(IMemory &vram, IMemory &wram1, IMemory &wram2, IMemory &oam, IMemory &i
 }
 
 uint8_t Bus::read(uint16_t addr) const {
-        if (addr <= MemoryMap::ROM1::END) {
+    if (addr <= MemoryMap::ROM1::END) {
         return cartridge->read(addr);
     } else if (addr <= MemoryMap::VRAM::END) {
         return vram.read(addr - MemoryMap::VRAM::START);
