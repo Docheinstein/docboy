@@ -1,16 +1,13 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include <vector>
-#include <cstdint>
-#include <cstddef>
 #include "readable.h"
 #include "writable.h"
 
+class IMemory : public IReadableMemory, public IWritableMemory {};
 
-class IMemory : public IReadable, public IWritable {};
 
-class Memory : public virtual IMemory {
+class Memory : public IMemory {
 public:
     explicit Memory(size_t size);
     explicit Memory(const std::vector<uint8_t> &data);
@@ -22,7 +19,5 @@ public:
 protected:
     std::vector<uint8_t> memory;
 };
-
-
 
 #endif // MEMORY_H

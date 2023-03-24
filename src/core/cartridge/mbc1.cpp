@@ -1,26 +1,24 @@
 #include "mbc1.h"
 #include "utils/binutils.h"
 
-MBC1::MBC1(const std::vector <uint8_t> &data) :
-    Cartridge(data), mbc() {
+MBC1::MBC1(const std::vector <uint8_t> &data) : Cartridge(data), mbc() {
 
 }
 
-MBC1::MBC1(std::vector<uint8_t> &&data) :
-    Cartridge(data), mbc() {
+MBC1::MBC1(std::vector<uint8_t> &&data) : Cartridge(data), mbc() {
 
 }
 
 uint8_t MBC1::read(uint16_t address) const {
     if (address < 0x4000) {
-        return memory[address];
+        return rom[address];
     }
     if (address < 0x8000) {
         size_t base = 0;
         if (mbc.bankingMode == 0x0)
             base = mbc.upperRomBankSelector_ramBankSelector * 0x80000;
         size_t romAddress = base + mbc.romBankSelector * 0x4000 + address;
-        return memory[romAddress];
+        return rom[romAddress];
     }
     throw std::runtime_error("Read at address " + hex(address) + " is not allowed");
 }

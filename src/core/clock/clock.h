@@ -3,26 +3,42 @@
 
 #include <cstdint>
 #include <vector>
-#include <initializer_list>
 #include <chrono>
 #include "clockable.h"
 
-class Clock {
+class IClock : public IClockable {
 public:
     static constexpr uint64_t MAX_FREQUENCY = 9223372036854775808UL; // 2**63
 
-    Clock(std::initializer_list<std::pair<IClockable *, uint64_t>> devices);
-    void tick();
+    virtual void attach(IClockable *clockable, uint64_t frequency) = 0;
+    virtual void detach(IClockable *device) = 0;
+    virtual void reattach(IClockable *device, uint64_t frequency) = 0;
 
-    [[nodiscard]] uint64_t getTicks() const;
+    [[nodiscard]] virtual uint64_t getTicks() const = 0;
+};
+
+class Clock : public IClock {
+public:
+    Clock();
+
+    void tick() override;
+
+    void attach(IClockable *clockable, uint64_t frequency) override;
+    void detach(IClockable *device) override;
+    void reattach(IClockable *device, uint64_t frequency) override;
+
+    [[nodiscard]] uint64_t getTicks() const override;
 
 private:
-    struct Device {
-        IClockable *device;
+    void updatePeriods();
+
+    struct Clockable {
+        IClockable *clockable;
+        uint64_t frequency;
         uint64_t period;
     };
 
-    std::vector<Device> devices;
+    std::vector<Clockable> clockables;
     std::chrono::high_resolution_clock::duration period;
     std::chrono::high_resolution_clock::time_point nextTickTime;
     uint64_t ticks;

@@ -6,15 +6,14 @@
 #include "core/core.h"
 #include "core/boot/bootromfactory.h"
 #include "core/serial/endpoints/console.h"
-#include "core/lcd/framebufferlcd.h"
 #include "helpers.h"
-#include "utils/fileutils.h"
 #include "window.h"
+#include "utils/fileutils.h"
 
 #ifdef ENABLE_DEBUGGER
+#include "core/debugger/gameboy.h"
 #include "core/debugger/core/core.h"
 #include "core/debugger/backend.h"
-#include "core/debugger/frontend.h"
 #include "core/debugger/frontendcli.h"
 #endif
 
@@ -51,6 +50,7 @@ static void screenshot_dat(uint32_t *framebuffer) {
                    sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT))
         std::cout << "Screenshot saved to: " << path << std::endl;
 }
+
 
 int main(int argc, char **argv) {
     struct {
@@ -93,49 +93,51 @@ int main(int argc, char **argv) {
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    std::shared_ptr<FrameBufferLCD> lcd = std::make_shared<FrameBufferLCD>();
-
-    Window window(*lcd, args.scaling);
-
-    std::unique_ptr<Impl::IBootROM> bootRom;
-    if (!args.boot_rom.empty())
+    std::unique_ptr<IBootROM> bootRom;
+    if (!args.boot_rom.empty()) {
         bootRom = BootROMFactory::makeBootROM(args.boot_rom);
-
-    GameBoy gb = GameBoy::Builder()
-            .setFrequency(static_cast<uint64_t >(args.speed_up * Specs::FREQUENCY))
-            .setBootROM(std::move(bootRom))
-            .setLCD(lcd)
-            .build();
+        if (!bootRom) {
+            std::cerr << "ERROR: failed to load boot rom: '" << args.boot_rom << "'" << std::endl;
+            return 1;
+        }
+    }
 
 #ifdef ENABLE_DEBUGGER
-    DebuggableCore core(gb);
-    std::unique_ptr<DebuggerBackend> debuggerBackend;
-    std::unique_ptr<DebuggerFrontendCli> debuggerFrontend;
-
     class DebuggerFrontendCliObserver : public DebuggerFrontendCli::Observer {
     public:
-        explicit DebuggerFrontendCliObserver(Window *w) : window(w) {}
+        explicit DebuggerFrontendCliObserver() : window() {}
+        void setWindow(Window *w) { window = w; }
         void onReadCommand() override {
             // render the current frame before let the frontend stuck on command input
-            window->render();
+            if (window)
+                window->render();
         }
     private:
         Window *window;
     };
 
-    DebuggerFrontendCliObserver frontendObserver(&window);
+    DebuggableGameBoy gb(std::move(bootRom));
+    DebuggableCore core(gb);
+    std::unique_ptr<DebuggerBackend> debuggerBackend;
+    std::unique_ptr<DebuggerFrontendCli> debuggerFrontend;
+    std::unique_ptr<DebuggerFrontendCliObserver> debuggerFrontendObserver;
 
     if (args.debugger) {
         debuggerBackend = std::make_unique<DebuggerBackend>(core);
         debuggerFrontend = std::make_unique<DebuggerFrontendCli>(*debuggerBackend);
-        debuggerFrontend->setObserver(&frontendObserver);
+        debuggerFrontendObserver = std::make_unique<DebuggerFrontendCliObserver>();
+        debuggerFrontend->setObserver(debuggerFrontendObserver.get());
     }
 #else
+    GameBoy gb(std::move(bootRom));
     Core core(gb);
 #endif
 
+    FrameBufferLCD &lcd = gb.lcd;
+    Window window(gb.lcd.getFrameBuffer(), gb.lcd, args.scaling);
+
     std::shared_ptr<SerialLink> serialLink;
-    std::unique_ptr<SerialEndpoint> serialConsole;
+    std::unique_ptr<ISerialEndpoint> serialConsole;
 
     if (args.serial_console) {
         serialConsole = std::make_unique<SerialConsole>(std::cerr);
@@ -162,10 +164,12 @@ int main(int argc, char **argv) {
             if (e.type == SDL_KEYDOWN) {
                 switch (e.key.keysym.sym) {
                     case SDLK_F11:
-                        screenshot_dat(lcd->getFrameBuffer());
+                        screenshot_dat(lcd.getFrameBuffer());
                         break;
                     case SDLK_F12:
-                        screenshot_bmp(lcd->getFrameBuffer());
+                        screenshot_bmp(lcd.getFrameBuffer());
+                        break;
+                    case SDLK_RETURN:
                         break;
                 }
             }
@@ -177,7 +181,6 @@ int main(int argc, char **argv) {
         // Render frame
         window.render();
     }
-
 
     return 0;
 }

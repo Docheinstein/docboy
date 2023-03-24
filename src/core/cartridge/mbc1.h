@@ -2,7 +2,6 @@
 #define MBC1_H
 
 #include "cartridge.h"
-#include "memory.h"
 
 class MBC1 : public Cartridge {
 public:

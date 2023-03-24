@@ -6,16 +6,20 @@
 #include <memory>
 #include <optional>
 #include "core/clock/clockable.h"
-#include "core/impl/bootrom.h"
+#include "core/boot/bootrom.h"
 
 using ICPU = IClockable;
 
 class IBus;
-class SerialPort;
+class ISerialPort;
 
-class CPU : public virtual ICPU {
+class CPU : public ICPU {
 public:
-    explicit CPU(IBus &bus, SerialPort &serialPort, std::unique_ptr<Impl::IBootROM> bootRom = nullptr); // TODO: maybe take IO, ... separately?
+    explicit CPU(
+            IBus &bus,
+            IClockable &timers,
+            IClockable &serial,
+            bool bootRom = false);
     ~CPU() override = default;
 
     void tick() override;
@@ -52,27 +56,12 @@ protected:
         C,
     };
 
-    class Timers {
-    public:
-        explicit Timers(IBus &bus);
-        void tick();
-
-    private:
-        IBus &bus;
-        uint32_t divTicks;
-        uint32_t timaTicks;
-    };
-
-
     typedef void (CPU::*InstructionMicroOperation)();
 
-
-    std::unique_ptr<Impl::IBootROM> bootRom;
-
     IBus &bus;
-    SerialPort &serialPort;
-
-    Timers timers;
+    IClockable &timers;
+    IClockable &serial;
+    bool bootRom;
 
     uint16_t AF;
     uint16_t BC;
@@ -116,9 +105,6 @@ protected:
     InstructionMicroOperation ISR[5][5];
 
     void reset();
-
-    [[nodiscard]] virtual uint8_t readMemory(uint16_t addr) const;
-    virtual void writeMemory(uint16_t addr, uint8_t value);
 
     template<Register8 r>
     [[nodiscard]] uint8_t readRegister8() const;

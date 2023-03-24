@@ -2,55 +2,13 @@
 #include "utils/binutils.h"
 #include "core/definitions.h"
 #include "core/bus/bus.h"
-#include "core/serial/port.h"
+#include <iostream>
 
-CPU::Timers::Timers(IBus &bus)
-    :
-    bus(bus),
-    divTicks(),
-    timaTicks() {
-
-}
-
-void CPU::Timers::tick() {
-    constexpr uint32_t DIV_PERIOD = Specs::CPU::FREQUENCY / Specs::CPU::DIV_FREQUENCY;
-
-    // DIV
-    divTicks += 1;
-    if (divTicks >= DIV_PERIOD) {
-        divTicks = 0;
-        uint8_t DIV = bus.read(Registers::Timers::DIV);
-        bus.write(Registers::Timers::DIV, DIV + 1);
-    }
-
-    // TIMA
-    uint8_t TAC = bus.read(Registers::Timers::TAC);
-    if (get_bit<Bits::Registers::Timers::TAC::ENABLE>(TAC))
-        timaTicks += 1;
-
-    const uint32_t TIMA_PERIOD = Specs::CPU::FREQUENCY / Specs::CPU::TAC_FREQUENCY[keep_bits<2>(TAC)];
-    if (timaTicks >= TIMA_PERIOD) {
-        timaTicks = 0;
-        uint8_t TIMA = bus.read(Registers::Timers::TIMA);
-        auto [result, overflow] = sum_carry<7>(TIMA, 1);
-        if (overflow) {
-            bus.write(Registers::Timers::TIMA,
-                      bus.read(Registers::Timers::TMA));
-
-            bus.write(Registers::Interrupts::IF,
-                      set_bit<Bits::Interrupts::TIMER>(bus.read(Registers::Interrupts::IF)));
-        } else {
-            bus.write(Registers::Timers::TIMA, result);
-        }
-    }
-}
-
-
-CPU::CPU(IBus &bus, SerialPort &serialPort, std::unique_ptr<Impl::IBootROM> bootRom) :
-        bootRom(std::move(bootRom)),
+CPU::CPU(IBus &bus, IClockable &timers, IClockable &serial, bool bootRom) :
         bus(bus),
-        serialPort(serialPort),
-        timers(bus),
+        timers(timers),
+        serial(serial),
+        bootRom(bootRom),
         AF(), BC(), DE(), HL(), PC(), SP(),
         IME(),
         halted(),
@@ -634,15 +592,15 @@ void CPU::tick() {
 
     // Interrupt
     if (halted) {
-        uint8_t IE = readMemory(Registers::Interrupts::IE);
-        uint8_t IF = readMemory(Registers::Interrupts::IF);
+        uint8_t IE = bus.read(Registers::Interrupts::IE);
+        uint8_t IF = bus.read(Registers::Interrupts::IF);
         for (uint8_t b = 0; b <= 4; b++) {
             if (get_bit(IE, b) && get_bit(IF, b)) {
                 halted = false;
                 // TODO: figure out if the IF bit is set to 0
                 //  and if so, whether it depends on the value of IME
                 if (IME) {
-                    writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
+                    bus.write(Registers::Interrupts::IF, reset_bit(IF, b));
                     IME = false; // TODO: ok?
                     serveInterrupt(ISR[b]);
                 }
@@ -654,14 +612,14 @@ void CPU::tick() {
 
     // Interrupt
 //    if (halted) {
-//        uint8_t IE = readMemory(Registers::Interrupts::IE);
-//        uint8_t IF = readMemory(Registers::Interrupts::IF);
+//        uint8_t IE = bus.read(Registers::Interrupts::IE);
+//        uint8_t IF = bus.read(Registers::Interrupts::IF);
 //        for (uint8_t b = 0; b <= 4; b++) {
 //            if (get_bit(IE, b) && get_bit(IF, b)) {
 //                halted = false;
 //                // TODO: figure out if the IF bit is set to 0
 //                //  and if so, whether it depends on the value of IME
-//                writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
+//                bus.write(Registers::Interrupts::IF, reset_bit(IF, b));
 //                if (IME) {
 //                    IME = false; // TODO: ok?
 //                    interrupt.state = PendingInterrupt::State::Pending;
@@ -684,11 +642,11 @@ void CPU::tick() {
 //    }
 //
 //    else if (IME) {     // TODO: else if or just if?
-//        uint8_t IE = readMemory(Registers::Interrupts::IE);
-//        uint8_t IF = readMemory(Registers::Interrupts::IF);
+//        uint8_t IE = bus.read(Registers::Interrupts::IE);
+//        uint8_t IF = bus.read(Registers::Interrupts::IF);
 //        for (uint8_t b = 0; b <= 4; b++) {
 //            if (get_bit(IE, b) && get_bit(IF, b)) {
-//                writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
+//                bus.write(Registers::Interrupts::IF, reset_bit(IF, b));
 //                IME = false;
 //                pendingInterrupt = ISR[b];
 //                break; // TODO: stop after first or handle them all?
@@ -707,11 +665,11 @@ void CPU::tick() {
 
 
     if (IME) {
-        uint8_t IE = readMemory(Registers::Interrupts::IE);
-        uint8_t IF = readMemory(Registers::Interrupts::IF);
+        uint8_t IE = bus.read(Registers::Interrupts::IE);
+        uint8_t IF = bus.read(Registers::Interrupts::IF);
         for (uint8_t b = 0; b <= 4; b++) {
             if (get_bit(IE, b) && get_bit(IF, b)) {
-                writeMemory(Registers::Interrupts::IF, reset_bit(IF, b));
+                bus.write(Registers::Interrupts::IF, reset_bit(IF, b));
                 IME = false;
                 interrupt.state = PendingInterrupt::State::Pending;
                 interrupt.isr = ISR[b];
@@ -727,21 +685,9 @@ void CPU::tick() {
     // Serial
     uint8_t SC = bus.read(Registers::Serial::SC);
     if (get_bit<7>(SC) && get_bit<0>(SC))
-        serialPort.tick();
+        serial.tick();
 
     mCycles++;
-}
-
-uint8_t CPU::readMemory(uint16_t addr) const {
-    // TODO: don't like addr < 0x100, is it always true? for every possible boot rom?
-    if (bootRom && bus.read(Registers::Boot::BOOTROM) == 0 && addr < 0x100)
-        return bootRom->read(addr);
-    return bus.read(addr);
-}
-
-void CPU::writeMemory(uint16_t addr, uint8_t value) {
-    // TODO: does the boot ROM affect writes?
-    return bus.write(addr, value);
 }
 
 template<>
@@ -956,14 +902,14 @@ void CPU::fetch(bool cb) {
     currentInstruction.address = PC;
     currentInstruction.microop = cb ? 1 : 0;
     if (cb)
-        currentInstruction.microopHandler = instructions_cb[readMemory(PC++)];
+        currentInstruction.microopHandler = instructions_cb[bus.read(PC++)];
     else
-        currentInstruction.microopHandler = instructions[readMemory(PC++)];
+        currentInstruction.microopHandler = instructions[bus.read(PC++)];
 
 }
 
 void CPU::invalidInstruction() {
-    throw std::runtime_error("Invalid instruction at address " + hex(currentInstruction.address) + ": " + hex(readMemory(currentInstruction.address)));
+    throw std::runtime_error("Invalid instruction at address " + hex(currentInstruction.address) + ": " + hex(bus.read(currentInstruction.address)));
 }
 
 template<uint16_t nn>
@@ -977,12 +923,12 @@ void CPU::ISR_m2() {
 template<uint16_t nn>
 void CPU::ISR_m3() {
     uu = PC - 1; // TODO: -1 because of prefetch but it's ugly
-    writeMemory(--SP, get_byte<1>(uu));
+    bus.write(--SP, get_byte<1>(uu));
 }
 
 template<uint16_t nn>
 void CPU::ISR_m4() {
-    writeMemory(--SP, get_byte<0>(uu));
+    bus.write(--SP, get_byte<0>(uu));
 }
 
 template<uint16_t nn>
@@ -1021,12 +967,12 @@ void CPU::EI_m1() {
 
 template<CPU::Register16 rr>
 void CPU::LD_rr_uu_m1() {
-    lsb = readMemory(PC++);
+    lsb = bus.read(PC++);
 }
 
 template<CPU::Register16 rr>
 void CPU::LD_rr_uu_m2() {
-    msb = readMemory(PC++);
+    msb = bus.read(PC++);
 }
 
 template<CPU::Register16 rr>
@@ -1039,12 +985,12 @@ void CPU::LD_rr_uu_m3() {
 
 template<CPU::Register16 rr>
 void CPU::LD_arr_u_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 template<CPU::Register16 rr>
 void CPU::LD_arr_u_m2() {
-    writeMemory(readRegister16<rr>(), u);
+    bus.write(readRegister16<rr>(), u);
 }
 
 template<CPU::Register16 rr>
@@ -1056,7 +1002,7 @@ void CPU::LD_arr_u_m3() {
 
 template<CPU::Register16 rr, CPU::Register8 r>
 void CPU::LD_arr_r_m1() {
-    writeMemory(readRegister16<rr>(), readRegister8<r>());
+    bus.write(readRegister16<rr>(), readRegister8<r>());
 }
 
 template<CPU::Register16 rr, CPU::Register8 r>
@@ -1068,7 +1014,7 @@ void CPU::LD_arr_r_m2() {
 
 template<CPU::Register16 rr, CPU::Register8 r, int8_t inc>
 void CPU::LD_arri_r_m1() {
-    writeMemory(readRegister16<rr>(), readRegister8<r>());
+    bus.write(readRegister16<rr>(), readRegister8<r>());
     writeRegister16<rr>(readRegister16<rr>() + inc);
 }
 
@@ -1081,7 +1027,7 @@ void CPU::LD_arri_r_m2() {
 
 template<CPU::Register8 r>
 void CPU::LD_r_u_m1() {
-    writeRegister8<r>(readMemory(PC++));
+    writeRegister8<r>(bus.read(PC++));
 }
 
 template<CPU::Register8 r>
@@ -1093,25 +1039,25 @@ void CPU::LD_r_u_m2() {
 
 template<CPU::Register16 rr>
 void CPU::LD_ann_rr_m1() {
-    lsb = readMemory(PC++);
+    lsb = bus.read(PC++);
 }
 
 template<CPU::Register16 rr>
 void CPU::LD_ann_rr_m2() {
-    msb = readMemory(PC++);
+    msb = bus.read(PC++);
 }
 
 template<CPU::Register16 rr>
 void CPU::LD_ann_rr_m3() {
     addr = concat_bytes(msb, lsb);
     uu = readRegister16<rr>();
-    writeMemory(addr, get_byte<0>(uu));
+    bus.write(addr, get_byte<0>(uu));
     // TODO: P or S?
 }
 
 template<CPU::Register16 rr>
 void CPU::LD_ann_rr_m4() {
-    writeMemory(addr + 1, get_byte<1>(uu));
+    bus.write(addr + 1, get_byte<1>(uu));
     // TODO: P or S?
 }
 
@@ -1124,7 +1070,7 @@ void CPU::LD_ann_rr_m5() {
 
 template<CPU::Register8 r, CPU::Register16 rr>
 void CPU::LD_r_arr_m1() {
-    writeRegister8<r>(readMemory(readRegister16<rr>()));
+    writeRegister8<r>(bus.read(readRegister16<rr>()));
 }
 
 template<CPU::Register8 r, CPU::Register16 rr>
@@ -1136,7 +1082,7 @@ void CPU::LD_r_arr_m2() {
 
 template<CPU::Register8 r, CPU::Register16 rr, int8_t inc>
 void CPU::LD_r_arri_m1() {
-    writeRegister8<r>(readMemory(readRegister16<rr>()));
+    writeRegister8<r>(bus.read(readRegister16<rr>()));
     writeRegister16<rr>(readRegister16<rr>() + inc);
 }
 
@@ -1157,12 +1103,12 @@ void CPU::LD_r_r_m1() {
 
 template<CPU::Register8 r>
 void CPU::LDH_an_r_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 template<CPU::Register8 r>
 void CPU::LDH_an_r_m2() {
-    writeMemory(concat_bytes(0xFF, u), readRegister8<r>());
+    bus.write(concat_bytes(0xFF, u), readRegister8<r>());
 }
 
 template<CPU::Register8 r>
@@ -1174,12 +1120,12 @@ void CPU::LDH_an_r_m3() {
 
 template<CPU::Register8 r>
 void CPU::LDH_r_an_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 template<CPU::Register8 r>
 void CPU::LDH_r_an_m2() {
-    writeRegister8<r>(readMemory(concat_bytes(0xFF, u)));
+    writeRegister8<r>(bus.read(concat_bytes(0xFF, u)));
 }
 
 template<CPU::Register8 r>
@@ -1191,7 +1137,7 @@ void CPU::LDH_r_an_m3() {
 
 template<CPU::Register8 r1, CPU::Register8 r2>
 void CPU::LDH_ar_r_m1() {
-    writeMemory(concat_bytes(0xFF, readRegister8<r1>()), readRegister8<r2>());
+    bus.write(concat_bytes(0xFF, readRegister8<r1>()), readRegister8<r2>());
 }
 
 template<CPU::Register8 r1, CPU::Register8 r2>
@@ -1203,7 +1149,7 @@ void CPU::LDH_ar_r_m2() {
 
 template<CPU::Register8 r1, CPU::Register8 r2>
 void CPU::LDH_r_ar_m1() {
-    writeRegister8<r1>(readMemory(concat_bytes(0xFF, readRegister8<r2>())));
+    writeRegister8<r1>(bus.read(concat_bytes(0xFF, readRegister8<r2>())));
 }
 
 
@@ -1216,17 +1162,17 @@ void CPU::LDH_r_ar_m2() {
 
 template<CPU::Register8 r>
 void CPU::LD_ann_r_m1() {
-    lsb = readMemory(PC++);
+    lsb = bus.read(PC++);
 }
 
 template<CPU::Register8 r>
 void CPU::LD_ann_r_m2() {
-    msb = readMemory(PC++);
+    msb = bus.read(PC++);
 }
 
 template<CPU::Register8 r>
 void CPU::LD_ann_r_m3() {
-    writeMemory(concat_bytes(msb, lsb), readRegister8<r>());
+    bus.write(concat_bytes(msb, lsb), readRegister8<r>());
 }
 
 template<CPU::Register8 r>
@@ -1238,17 +1184,17 @@ void CPU::LD_ann_r_m4() {
 
 template<CPU::Register8 r>
 void CPU::LD_r_ann_m1() {
-    lsb = readMemory(PC++);
+    lsb = bus.read(PC++);
 }
 
 template<CPU::Register8 r>
 void CPU::LD_r_ann_m2() {
-    msb = readMemory(PC++);
+    msb = bus.read(PC++);
 }
 
 template<CPU::Register8 r>
 void CPU::LD_r_ann_m3() {
-    writeRegister8<r>(readMemory(concat_bytes(msb, lsb)));
+    writeRegister8<r>(bus.read(concat_bytes(msb, lsb)));
 }
 
 template<CPU::Register8 r>
@@ -1274,7 +1220,7 @@ void CPU::LD_rr_rr_m2() {
 
 template<CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rrs_m1() {
-    s = static_cast<int8_t>(readMemory(PC++));
+    s = static_cast<int8_t>(bus.read(PC++));
 }
 
 template<CPU::Register16 rr1, CPU::Register16 rr2>
@@ -1329,13 +1275,13 @@ void CPU::INC_rr_m2() {
 template<CPU::Register16 rr>
 void CPU::INC_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::INC_arr_m2() {
     auto [result, h] = sum_carry<3>(u, 1);
-    writeMemory(addr, result);
+    bus.write(addr, result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(h);
@@ -1380,13 +1326,13 @@ void CPU::DEC_rr_m2() {
 template<CPU::Register16 rr>
 void CPU::DEC_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::DEC_arr_m2() {
     auto [result, h] = sub_borrow<3>(u, 1);
-    writeMemory(addr, result);
+    bus.write(addr, result);
     writeFlag<Flag::Z>(result == 0);
     writeFlag<Flag::N>(true);
     writeFlag<Flag::H>(h);
@@ -1414,7 +1360,7 @@ void CPU::ADD_r_m1() {
 
 template<CPU::Register16 rr>
 void CPU::ADD_arr_m1() {
-    u = readMemory(readRegister16<rr>());
+    u = bus.read(readRegister16<rr>());
 }
 
 template<CPU::Register16 rr>
@@ -1431,7 +1377,7 @@ void CPU::ADD_arr_m2() {
 // C6 | ADD A,d8
 
 void CPU::ADD_u_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 void CPU::ADD_u_m2() {
@@ -1463,7 +1409,7 @@ void CPU::ADC_r_m1() {
 
 template<CPU::Register16 rr>
 void CPU::ADC_arr_m1() {
-    u = readMemory(readRegister16<rr>());
+    u = bus.read(readRegister16<rr>());
 }
 
 template<CPU::Register16 rr>
@@ -1482,7 +1428,7 @@ void CPU::ADC_arr_m2() {
 // CE | ADC A,d8
 
 void CPU::ADC_u_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 void CPU::ADC_u_m2() {
@@ -1516,7 +1462,7 @@ void CPU::ADD_rr_rr_m2() {
 
 template<CPU::Register16 rr>
 void CPU::ADD_rr_s_m1() {
-    s = static_cast<int8_t>(readMemory(PC++));
+    s = static_cast<int8_t>(bus.read(PC++));
 }
 
 template<CPU::Register16 rr>
@@ -1560,7 +1506,7 @@ void CPU::SUB_r_m1() {
 
 template<CPU::Register16 rr>
 void CPU::SUB_arr_m1() {
-    u = readMemory(readRegister16<rr>());
+    u = bus.read(readRegister16<rr>());
 }
 
 template<CPU::Register16 rr>
@@ -1578,7 +1524,7 @@ void CPU::SUB_arr_m2() {
 // D6 | SUB A,d8
 
 void CPU::SUB_u_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 void CPU::SUB_u_m2() {
@@ -1610,7 +1556,7 @@ void CPU::SBC_r_m1() {
 
 template<CPU::Register16 rr>
 void CPU::SBC_arr_m1() {
-    u = readMemory(readRegister16<rr>());
+    u = bus.read(readRegister16<rr>());
 }
 
 template<CPU::Register16 rr>
@@ -1630,7 +1576,7 @@ void CPU::SBC_arr_m2() {
 // D6 | SBC A,d8
 
 void CPU::SBC_u_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 void CPU::SBC_u_m2() {
@@ -1661,7 +1607,7 @@ void CPU::AND_r_m1() {
 
 template<CPU::Register16 rr>
 void CPU::AND_arr_m1() {
-    u = readMemory(readRegister16<rr>());
+    u = bus.read(readRegister16<rr>());
 }
 
 template<CPU::Register16 rr>
@@ -1678,7 +1624,7 @@ void CPU::AND_arr_m2() {
 // E6 | AND d8
 
 void CPU::AND_u_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 void CPU::AND_u_m2() {
@@ -1709,7 +1655,7 @@ void CPU::OR_r_m1() {
 
 template<CPU::Register16 rr>
 void CPU::OR_arr_m1() {
-    u = readMemory(readRegister16<rr>());
+    u = bus.read(readRegister16<rr>());
 }
 
 template<CPU::Register16 rr>
@@ -1727,7 +1673,7 @@ void CPU::OR_arr_m2() {
 // F6 | OR d8
 
 void CPU::OR_u_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 void CPU::OR_u_m2() {
@@ -1756,7 +1702,7 @@ void CPU::XOR_r_m1() {
 
 template<CPU::Register16 rr>
 void CPU::XOR_arr_m1() {
-    u = readMemory(readRegister16<rr>());
+    u = bus.read(readRegister16<rr>());
 }
 
 template<CPU::Register16 rr>
@@ -1773,7 +1719,7 @@ void CPU::XOR_arr_m2() {
 // EE | XOR d8
 
 void CPU::XOR_u_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 void CPU::XOR_u_m2() {
@@ -1799,7 +1745,7 @@ void CPU::CP_r_m1() {
 
 template<CPU::Register16 rr>
 void CPU::CP_arr_m1() {
-    u = readMemory(readRegister16<rr>());
+    u = bus.read(readRegister16<rr>());
 }
 
 template<CPU::Register16 rr>
@@ -1816,7 +1762,7 @@ void CPU::CP_arr_m2() {
 // FE | CP d8
 
 void CPU::CP_u_m1() {
-    u = readMemory(PC++);
+    u = bus.read(PC++);
 }
 
 void CPU::CP_u_m2() {
@@ -1943,7 +1889,7 @@ void CPU::RRA_m1() {
 // e.g. 18 | JR r8
 
 void  CPU::JR_s_m1() {
-    s = static_cast<int8_t>(readMemory(PC++));
+    s = static_cast<int8_t>(bus.read(PC++));
 }
 
 void  CPU::JR_s_m2() {
@@ -1959,7 +1905,7 @@ void  CPU::JR_s_m3() {
 
 template<CPU::Flag f, bool y>
 void CPU::JR_c_s_m1() {
-    s = static_cast<int8_t>(readMemory(PC++));
+    s = static_cast<int8_t>(bus.read(PC++));
 }
 
 template<CPU::Flag f, bool y>
@@ -1981,11 +1927,11 @@ void CPU::JR_c_s_m3() {
 // e.g. C3 | JP a16
 
 void  CPU::JP_uu_m1() {
-    lsb = readMemory(PC++);
+    lsb = bus.read(PC++);
 }
 
 void CPU::JP_uu_m2() {
-    msb = readMemory(PC++);
+    msb = bus.read(PC++);
 }
 
 void CPU::JP_uu_m3() {
@@ -2009,12 +1955,12 @@ void CPU::JP_rr_m1() {
 
 template<CPU::Flag f, bool y>
 void CPU::JP_c_uu_m1() {
-    lsb = readMemory(PC++);
+    lsb = bus.read(PC++);
 }
 
 template<CPU::Flag f, bool y>
 void CPU::JP_c_uu_m2() {
-    msb = readMemory(PC++);
+    msb = bus.read(PC++);
 }
 
 template<CPU::Flag f, bool y>
@@ -2034,19 +1980,19 @@ void CPU::JP_c_uu_m4() {
 // CD | CALL a16
 
 void CPU::CALL_uu_m1() {
-    lsb = readMemory(PC++);
+    lsb = bus.read(PC++);
 }
 
 void CPU::CALL_uu_m2() {
-    msb = readMemory(PC++);
+    msb = bus.read(PC++);
 }
 
 void CPU::CALL_uu_m3() {
-    writeMemory(--SP, readRegister8<Register8::PC_P>());
+    bus.write(--SP, readRegister8<Register8::PC_P>());
 }
 
 void CPU::CALL_uu_m4() {
-    writeMemory(--SP, readRegister8<Register8::PC_C>());
+    bus.write(--SP, readRegister8<Register8::PC_C>());
 }
 
 void CPU::CALL_uu_m5() {
@@ -2061,17 +2007,17 @@ void CPU::CALL_uu_m6() {
 
 template<CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m1() {
-    lsb = readMemory(PC++);
+    lsb = bus.read(PC++);
 }
 
 template<CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m2() {
-    msb = readMemory(PC++);
+    msb = bus.read(PC++);
 }
 template<CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m3() {
     if (checkFlag<f, y>()) {
-        writeMemory(--SP, readRegister8<Register8::PC_P>());
+        bus.write(--SP, readRegister8<Register8::PC_P>());
     } else {
         fetch();
     }
@@ -2079,7 +2025,7 @@ void CPU::CALL_c_uu_m3() {
 
 template<CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m4() {
-    writeMemory(--SP, readRegister8<Register8::PC_C>());
+    bus.write(--SP, readRegister8<Register8::PC_C>());
 }
 
 template<CPU::Flag f, bool y>
@@ -2096,12 +2042,12 @@ void CPU::CALL_c_uu_m6() {
 
 template<uint8_t n>
 void CPU::RST_m1() {
-    writeMemory(--SP, readRegister8<Register8::PC_P>());
+    bus.write(--SP, readRegister8<Register8::PC_P>());
 }
 
 template<uint8_t n>
 void CPU::RST_m2() {
-    writeMemory(--SP, readRegister8<Register8::PC_C>());
+    bus.write(--SP, readRegister8<Register8::PC_C>());
 }
 
 template<uint8_t n>
@@ -2117,11 +2063,11 @@ void CPU::RST_m4() {
 // C9 | RET
 
 void CPU::RET_uu_m1() {
-    lsb = readMemory(SP++);
+    lsb = bus.read(SP++);
 }
 
 void CPU::RET_uu_m2() {
-    msb = readMemory(SP++);
+    msb = bus.read(SP++);
 }
 
 void CPU::RET_uu_m3() {
@@ -2135,11 +2081,11 @@ void CPU::RET_uu_m4() {
 // D9 | RETI
 
 void CPU::RETI_uu_m1() {
-    lsb = readMemory(SP++);
+    lsb = bus.read(SP++);
 }
 
 void CPU::RETI_uu_m2() {
-    msb = readMemory(SP++);
+    msb = bus.read(SP++);
 }
 
 void CPU::RETI_uu_m3() {
@@ -2162,7 +2108,7 @@ template<CPU::Flag f, bool y>
 void CPU::RET_c_uu_m2() {
     // TODO: really bad but don't know why this lasts 2 m cycle if false
     if (checkFlag<f, y>()) {
-        lsb = readMemory(SP++);
+        lsb = bus.read(SP++);
     } else {
         fetch();
     }
@@ -2170,7 +2116,7 @@ void CPU::RET_c_uu_m2() {
 
 template<CPU::Flag f, bool y>
 void CPU::RET_c_uu_m3() {
-    msb = readMemory(SP++);
+    msb = bus.read(SP++);
 }
 
 template<CPU::Flag f, bool y>
@@ -2192,12 +2138,12 @@ void CPU::PUSH_rr_m1() {
 
 template<CPU::Register16 rr>
 void CPU::PUSH_rr_m2() {
-    writeMemory(--SP, get_byte<1>(uu));
+    bus.write(--SP, get_byte<1>(uu));
 }
 
 template<CPU::Register16 rr>
 void CPU::PUSH_rr_m3() {
-    writeMemory(--SP, get_byte<0>(uu));
+    bus.write(--SP, get_byte<0>(uu));
 }
 
 template<CPU::Register16 rr>
@@ -2209,12 +2155,12 @@ void CPU::PUSH_rr_m4() {
 
 template<CPU::Register16 rr>
 void CPU::POP_rr_m1() {
-    lsb = readMemory(SP++);
+    lsb = bus.read(SP++);
 }
 
 template<CPU::Register16 rr>
 void CPU::POP_rr_m2() {
-    msb = readMemory(SP++);
+    msb = bus.read(SP++);
 }
 
 template<CPU::Register16 rr>
@@ -2247,14 +2193,14 @@ void CPU::RLC_r_m1() {
 template<CPU::Register16 rr>
 void CPU::RLC_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::RLC_arr_m2() {
     bool b7 = get_bit<7>(u);
     u = (u << 1) | b7;
-    writeMemory(addr, u);
+    bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -2286,14 +2232,14 @@ void CPU::RRC_r_m1() {
 template<CPU::Register16 rr>
 void CPU::RRC_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::RRC_arr_m2() {
     bool b0 = get_bit<0>(u);
     u = (u >> 1) | (b0 << 7);
-    writeMemory(addr, u);
+    bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -2326,14 +2272,14 @@ void CPU::RL_r_m1() {
 template<CPU::Register16 rr>
 void CPU::RL_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::RL_arr_m2() {
     bool b7 = get_bit<7>(u);
     u = (u << 1) | readFlag<Flag::C>();
-    writeMemory(addr, u);
+    bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -2365,14 +2311,14 @@ void CPU::RR_r_m1() {
 template<CPU::Register16 rr>
 void CPU::RR_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::RR_arr_m2() {
     bool b0 = get_bit<0>(u);
     u = (u >> 1) | (readFlag<Flag::C>() << 7);
-    writeMemory(addr, u);
+    bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -2405,14 +2351,14 @@ void CPU::SRA_r_m1() {
 template<CPU::Register16 rr>
 void CPU::SRA_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::SRA_arr_m2() {
     bool b0 = get_bit<0>(u);
     u = (u >> 1) | (u & bit<7>);
-    writeMemory(addr, u);
+    bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -2445,14 +2391,14 @@ void CPU::SRL_r_m1() {
 template<CPU::Register16 rr>
 void CPU::SRL_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::SRL_arr_m2() {
     bool b0 = get_bit<0>(u);
     u = (u >> 1);
-    writeMemory(addr, u);
+    bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -2485,14 +2431,14 @@ void CPU::SLA_r_m1() {
 template<CPU::Register16 rr>
 void CPU::SLA_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::SLA_arr_m2() {
     bool b7 = get_bit<7>(u);
     u = u << 1;
-    writeMemory(addr, u);
+    bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -2523,13 +2469,13 @@ void CPU::SWAP_r_m1() {
 template<CPU::Register16 rr>
 void CPU::SWAP_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<CPU::Register16 rr>
 void CPU::SWAP_arr_m2() {
     u = ((u & 0x0F) << 4) | ((u & 0xF0) >> 4);
-    writeMemory(addr, u);
+    bus.write(addr, u);
     writeFlag<Flag::Z>(u == 0);
     writeFlag<Flag::N>(false);
     writeFlag<Flag::H>(false);
@@ -2557,7 +2503,7 @@ void CPU::BIT_r_m1() {
 template<uint8_t n, CPU::Register16 rr>
 void CPU::BIT_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<uint8_t n, CPU::Register16 rr>
@@ -2584,13 +2530,13 @@ void CPU::RES_r_m1() {
 template<uint8_t n, CPU::Register16 rr>
 void CPU::RES_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<uint8_t n, CPU::Register16 rr>
 void CPU::RES_arr_m2() {
     set_bit<n>(u, false);
-    writeMemory(addr, u);
+    bus.write(addr, u);
 }
 
 template<uint8_t n, CPU::Register16 rr>
@@ -2614,13 +2560,13 @@ void CPU::SET_r_m1() {
 template<uint8_t n, CPU::Register16 rr>
 void CPU::SET_arr_m1() {
     addr = readRegister16<rr>();
-    u = readMemory(addr);
+    u = bus.read(addr);
 }
 
 template<uint8_t n, CPU::Register16 rr>
 void CPU::SET_arr_m2() {
     set_bit<n>(u, true);
-    writeMemory(addr, u);
+    bus.write(addr, u);
 }
 
 template<uint8_t n, CPU::Register16 rr>

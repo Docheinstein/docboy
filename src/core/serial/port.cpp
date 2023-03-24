@@ -1,23 +1,20 @@
 #include "port.h"
 #include "link.h"
-#include "core/bus/bus.h"
-#include "core/definitions.h"
 #include "utils/binutils.h"
+#include "serial.h"
 
-SerialPort::SerialPort(IBus &bus) : SerialEndpoint(), bus(bus), link() {
+SerialPort::SerialPort(IInterruptsIO &interrupts) : interrupts(interrupts), link(), SB(), SC() {
 
 }
 
 
 uint8_t SerialPort::serialRead() {
-    return bus.read(Registers::Serial::SB);
+    return readSB();
 }
 
 void SerialPort::serialWrite(uint8_t data) {
-    bus.write(Registers::Serial::SB, data);
-    uint8_t SC = bus.read(Registers::Serial::SC);
-    set_bit<7>(SC, false);
-    bus.write(Registers::Serial::SC, SC);
+    writeSB(data);
+    writeSC(reset_bit<7>(readSC()));
     // TODO: interrupt
 }
 
@@ -32,4 +29,21 @@ void SerialPort::attachSerialLink(SerialLink::Plug &plug) {
 
 void SerialPort::detachSerialLink() {
     link = nullptr;
+}
+
+
+uint8_t SerialPort::readSB() const {
+    return SB;
+}
+
+void SerialPort::writeSB(uint8_t value) {
+    SB = value;
+}
+
+uint8_t SerialPort::readSC() const {
+    return SC;
+}
+
+void SerialPort::writeSC(uint8_t value) {
+    SC = value;
 }

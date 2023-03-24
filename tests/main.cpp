@@ -15,6 +15,7 @@
 #include "core/bus/bus.h"
 #include "core/gameboy.h"
 #include "core/lcd/framebufferlcd.h"
+#include "core/debugger/core/core.h"
 #include <queue>
 #include <algorithm>
 #include <cstring>
@@ -44,7 +45,7 @@
 )(__VA_ARGS__)
 
 static std::string run_and_get_serial(const std::string &rom, uint64_t ticks) {
-    class SerialString : public SerialEndpoint {
+    class SerialString : public ISerialEndpoint {
     public:
         uint8_t serialRead() override {
             return 0xFF;
@@ -80,7 +81,7 @@ static std::string run_and_get_serial(const std::string &rom, uint64_t ticks) {
 
 static std::string run_and_expect_string_over_serial(
         const std::string &rom, const std::string &expected, uint64_t maxticks) {
-    class SerialString : public SerialEndpoint {
+    class SerialString : public ISerialEndpoint {
     public:
         uint8_t serialRead() override {
             return 0xFF;
@@ -95,7 +96,7 @@ static std::string run_and_expect_string_over_serial(
 
     SerialString serialString;
 
-    GameBoy gb = GameBoy::Builder()
+    DebuggableGameBoy gb = DebuggableGameBoy::Builder()
         .setFrequency(Clock::MAX_FREQUENCY)
         .build();
 
@@ -107,7 +108,7 @@ static std::string run_and_expect_string_over_serial(
 
     core.loadROM(rom);
 
-    while (core.getTicks() < maxticks) {
+    while (gb.clock.getTicks() < maxticks) {
         for (uint64_t i = 0; i < 100000; i++)
             core.tick();
         if (serialString.data.size() >= expected.size())
@@ -118,11 +119,8 @@ static std::string run_and_expect_string_over_serial(
 }
 
 static std::vector<uint32_t> run_and_get_framebuffer(const std::string &rom, uint64_t ticks) {
-    std::shared_ptr<IFrameBufferLCD> lcd = std::make_shared<FrameBufferLCD>();
-
     GameBoy gb = GameBoy::Builder()
             .setFrequency(Clock::MAX_FREQUENCY)
-            .setLCD(lcd)
             .build();
 
     Core core(gb);
@@ -131,7 +129,7 @@ static std::vector<uint32_t> run_and_get_framebuffer(const std::string &rom, uin
     for (uint64_t i = 0; i < ticks; i++)
         core.tick();
 
-    uint32_t *framebuffer = lcd->getFrameBuffer();
+    uint32_t *framebuffer = gb.lcd.getFrameBuffer();
     std::vector<uint32_t> out;
     size_t length = Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint32_t);
     out.resize(length / sizeof(uint32_t));
@@ -387,9 +385,6 @@ TEST_CASE("cpu", "[cpu]") {
                 accesses.push_back({Access::Type::Write, addr});
             }
 
-            void attachCartridge(IMemory *cartridge) override {}
-            void detachCartridge() override {}
-
             [[nodiscard]] unsigned long long getReadWriteCount() const {
                 return accesses.size();
             }
@@ -424,6 +419,10 @@ TEST_CASE("cpu", "[cpu]") {
             mutable std::queue<uint8_t> data;
         };
 
+        class DummyClockable : public IClockable {
+            void tick() override {}
+        };
+
         bool cb = GENERATE(false, true);
         uint8_t instr = GENERATE(range(0, 0xFF));
 
@@ -438,8 +437,8 @@ TEST_CASE("cpu", "[cpu]") {
             return;
 
         FakeBus fakeBus;
-        SerialPort serialPort(fakeBus);
-        DebuggableCPU cpu(fakeBus, serialPort);
+        DummyClockable dummyClockable;
+        DebuggableCPU cpu(fakeBus, dummyClockable, dummyClockable);
 
         auto setupInstruction = [&fakeBus, &cpu, cb, instr]() {
             if (cb)
@@ -493,7 +492,7 @@ TEST_CASE("cpu", "[cpu]") {
                 do {
                     cpu.tick();
                     duration++;
-                } while (cpu.getCurrentInstruction().microop != 0);
+                } while (cpu.getState().instruction.microop != 0);
                 REQUIRE(duration_min <= duration);
                 REQUIRE(duration <= duration_max);
             } catch (const std::runtime_error &e) {}
@@ -504,7 +503,7 @@ TEST_CASE("cpu", "[cpu]") {
             try {
                 do {
                     cpu.tick();
-                } while (cpu.getCurrentInstruction().microop != 0);
+                } while (cpu.getState().instruction.microop != 0);
                 REQUIRE(length == getInstructionLength());
             } catch (const std::runtime_error &e) {}
         }
@@ -525,7 +524,7 @@ TEST_CASE("cpu", "[cpu]") {
 
 TEST_CASE("serial", "[serial]") {
     SECTION("serial link and serial buffer") {
-        class SerialStringSource : public SerialEndpoint {
+        class SerialStringSource : public ISerialEndpoint {
         public:
             explicit SerialStringSource(const std::string &s) : cursor() {
                 for (auto c : s)

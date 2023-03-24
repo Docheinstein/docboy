@@ -11,14 +11,14 @@ class SDL_Texture;
 
 class Window {
 public:
-    explicit Window(IFrameBufferLCD &lcd, float scaling = 1.0);
+    explicit Window(uint32_t *framebuffer, ILCDIO &lcd, float scaling = 1.0);
     ~Window();
 
     void render();
-    bool screenshot(const char *filename);
 
 private:
-    IFrameBufferLCD &lcd;
+    uint32_t *framebuffer;
+    ILCDIO &lcd;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;

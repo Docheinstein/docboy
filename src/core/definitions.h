@@ -183,8 +183,8 @@ namespace Registers {
     }
 
     namespace Boot {
-        constexpr uint16_t BOOTROM = 0xFF50;
-        constexpr uint16_t REGISTERS[] = { BOOTROM };
+        constexpr uint16_t BOOT = 0xFF50;
+        constexpr uint16_t REGISTERS[] = {BOOT };
     }
 }
 
@@ -204,33 +204,42 @@ namespace Bits {
         constexpr uint8_t VBLANK = 0;
     }
 
-    namespace Registers {
-        namespace Timers {
-            namespace TAC {
-                constexpr uint8_t ENABLE = 2;
-            }
+    namespace Joypad {
+        namespace P1 {
+            constexpr uint8_t P15 = 5;
+            constexpr uint8_t P14 = 4;
+            constexpr uint8_t P13 = 3;
+            constexpr uint8_t P12 = 2;
+            constexpr uint8_t P11 = 1;
+            constexpr uint8_t P10 = 0;
         }
+    }
 
-        namespace LCD {
-            namespace LCDC {
-                constexpr uint8_t LCD_ENABLE = 7;
-                constexpr uint8_t WIN_TILE_MAP = 6;
-                constexpr uint8_t WIN_ENABLE = 5;
-                constexpr uint8_t BG_WIN_TILE_DATA = 4;
-                constexpr uint8_t BG_TILE_MAP = 3;
-                constexpr uint8_t OBJ_SIZE = 2;
-                constexpr uint8_t OBJ_ENABLE = 1;
-                constexpr uint8_t BG_WIN_ENABLE = 0;
-            }
-            namespace STAT {
-                constexpr uint8_t LYC_EQ_LY_INTERRUPT = 6;
-                constexpr uint8_t OAM_INTERRUPT = 5;
-                constexpr uint8_t VBLANK_INTERRUPT = 4;
-                constexpr uint8_t HBLANK_INTERRUPT = 3;
-                constexpr uint8_t LYC_EQ_LY = 2;
-                constexpr uint8_t MODE_HIGH = 1;
-                constexpr uint8_t MODE_LOW = 0;
-            }
+    namespace Timers {
+        namespace TAC {
+            constexpr uint8_t ENABLE = 2;
+        }
+    }
+
+    namespace LCD {
+        namespace LCDC {
+            constexpr uint8_t LCD_ENABLE = 7;
+            constexpr uint8_t WIN_TILE_MAP = 6;
+            constexpr uint8_t WIN_ENABLE = 5;
+            constexpr uint8_t BG_WIN_TILE_DATA = 4;
+            constexpr uint8_t BG_TILE_MAP = 3;
+            constexpr uint8_t OBJ_SIZE = 2;
+            constexpr uint8_t OBJ_ENABLE = 1;
+            constexpr uint8_t BG_WIN_ENABLE = 0;
+        }
+        namespace STAT {
+            constexpr uint8_t LYC_EQ_LY_INTERRUPT = 6;
+            constexpr uint8_t OAM_INTERRUPT = 5;
+            constexpr uint8_t VBLANK_INTERRUPT = 4;
+            constexpr uint8_t HBLANK_INTERRUPT = 3;
+            constexpr uint8_t LYC_EQ_LY = 2;
+            constexpr uint8_t MODE_HIGH = 1;
+            constexpr uint8_t MODE_LOW = 0;
         }
     }
 }

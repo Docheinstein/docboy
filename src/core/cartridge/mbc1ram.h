@@ -2,8 +2,6 @@
 #define MBC1RAM_H
 
 #include "mbc1.h"
-#include "memory.h"
-
 
 class MBC1RAM : public MBC1 {
 public:
@@ -14,8 +12,7 @@ public:
     void write(uint16_t address, uint8_t value) override;
 
 protected:
-    Memory ram;
+    uint8_t ram[0x8000];
 };
-
 
 #endif // MBC1RAM_H

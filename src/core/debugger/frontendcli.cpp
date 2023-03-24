@@ -4,20 +4,20 @@
 #include "utils/termcolor.h"
 #include "utils/strutils.h"
 #include "utils/hexdump.h"
+#include "core/helpers.h"
 #include <sstream>
 #include <vector>
 #include <list>
 #include <csignal>
 #include <regex>
 #include <variant>
-#include "core/helpers.h"
 
 struct CommandBreakpoint {
     uint16_t address;
 };
 
 struct CommandWatchpoint {
-    DebuggerBackend::Watchpoint::Type type;
+    Debugger::Watchpoint::Type type;
     uint16_t length;
     struct {
         uint16_t from;
@@ -25,7 +25,7 @@ struct CommandWatchpoint {
     } address;
     struct {
         bool enabled;
-        DebuggerBackend::Watchpoint::Condition condition;
+        Debugger::Watchpoint::Condition condition;
     } condition;
 };
 
@@ -129,11 +129,11 @@ static CommandInfo COMMANDS[] = {
             const std::string &condition = groups[3];
 
             if (access == "r")
-                cmd.type = DebuggerBackend::Watchpoint::Type::Read;
+                cmd.type = Debugger::Watchpoint::Type::Read;
             else if (access == "a")
-                cmd.type = DebuggerBackend::Watchpoint::Type::ReadWrite;
+                cmd.type = Debugger::Watchpoint::Type::ReadWrite;
             else
-                cmd.type = DebuggerBackend::Watchpoint::Type::Change;
+                cmd.type = Debugger::Watchpoint::Type::Change;
 
             cmd.address.from = std::stoi(from, nullptr, 16);
             cmd.address.to = std::stoi(to, nullptr, 16);
@@ -145,7 +145,7 @@ static CommandInfo COMMANDS[] = {
                 const auto &operand = tokens[1];
                 if (operation == "==") {
                     cmd.condition.enabled = true;
-                    cmd.condition.condition.operation = DebuggerBackend::Watchpoint::Condition::Operator::Equal;
+                    cmd.condition.condition.operation = Debugger::Watchpoint::Condition::Operator::Equal;
                     cmd.condition.condition.operand = std::stoi(operand, nullptr, 16);
                 }
             }
@@ -164,11 +164,11 @@ static CommandInfo COMMANDS[] = {
             const std::string &condition = groups[2];
 
             if (access == "r")
-                cmd.type = DebuggerBackend::Watchpoint::Type::Read;
+                cmd.type = Debugger::Watchpoint::Type::Read;
             else if (access == "a")
-                cmd.type = DebuggerBackend::Watchpoint::Type::ReadWrite;
+                cmd.type = Debugger::Watchpoint::Type::ReadWrite;
             else
-                cmd.type = DebuggerBackend::Watchpoint::Type::Change;
+                cmd.type = Debugger::Watchpoint::Type::Change;
 
             cmd.address.from = cmd.address.to = std::stoi(from, nullptr, 16);
 
@@ -180,7 +180,7 @@ static CommandInfo COMMANDS[] = {
                 const auto &operand = tokens[1];
                 if (operation == "==") {
                     cmd.condition.enabled = true;
-                    cmd.condition.condition.operation = DebuggerBackend::Watchpoint::Condition::Operator::Equal;
+                    cmd.condition.condition.operation = Debugger::Watchpoint::Condition::Operator::Equal;
                     cmd.condition.condition.operand = std::stoi(operand, nullptr, 16);
                 }
             }
@@ -386,10 +386,10 @@ DebuggerFrontendCli::~DebuggerFrontendCli() {
     detach_sigint_handler();
 }
 
-DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::ExecutionState outcome) {
+Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outcome) {
     struct DisassembleEntry {
         uint16_t address;
-        DebuggerBackend::Disassemble disassemble;
+        Debugger::Disassemble disassemble;
     };
 
     auto headerString = [](const std::string &label = "", const std::string &sep = "—") {
@@ -463,7 +463,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
 
     auto disassembleEntryCodeString = [&](
             const DisassembleEntry &entry,
-            const IDebuggableCPU::Instruction &currentInstruction
+            const ICPUDebug::State::Instruction &currentInstruction
         ) {
         std::stringstream ss;
         uint16_t instrStart = entry.address;
@@ -517,7 +517,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         return ss.str();
     };
 
-    auto breakpointString = [&](const DebuggerBackend::Breakpoint &b) {
+    auto breakpointString = [&](const Debugger::Breakpoint &b) {
         std::stringstream ss;
         ss
             << termcolor::color<13>
@@ -534,7 +534,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         return ss.str();
     };
 
-    auto watchpointString = [](const DebuggerBackend::Watchpoint &w) {
+    auto watchpointString = [](const Debugger::Watchpoint &w) {
         std::stringstream ss;
         ss
             << termcolor::yellow
@@ -544,17 +544,17 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         else
             ss << hex(w.address.from);
         if (w.condition.enabled) {
-            if (w.condition.condition.operation == DebuggerBackend::Watchpoint::Condition::Operator::Equal) {
+            if (w.condition.condition.operation == Debugger::Watchpoint::Condition::Operator::Equal) {
                 ss << " == " << hex(w.condition.condition.operand);
             }
         }
-        if (w.type == DebuggerBackend::Watchpoint::Type::Read)
+        if (w.type == Debugger::Watchpoint::Type::Read)
             ss << " (read)";
-        if (w.type == DebuggerBackend::Watchpoint::Type::Write)
+        if (w.type == Debugger::Watchpoint::Type::Write)
             ss << " (write)";
-        if (w.type == DebuggerBackend::Watchpoint::Type::ReadWrite)
+        if (w.type == Debugger::Watchpoint::Type::ReadWrite)
             ss << " (read/write)";
-        if (w.type == DebuggerBackend::Watchpoint::Type::Change)
+        if (w.type == Debugger::Watchpoint::Type::Change)
             ss << " (change)";
         ss << termcolor::reset;
         return ss.str();
@@ -600,7 +600,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         backend.disassemble(from, n);
         size_t i = 0;
         for (uint32_t address = from; address <= 0xFFFF && i < n;) {
-            std::optional<DebuggerBackend::Disassemble> disas = backend.getDisassembled(address);
+            std::optional<Debugger::Disassemble> disas = backend.getDisassembled(address);
             if (!disas)
                 throw std::runtime_error("unexpected");
 
@@ -652,29 +652,29 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         }
     };
 
-    auto ppuStateToString = [](IDebuggablePPU::PPUState state) {
+    auto ppuStateToString = [](IPPUDebug::PPUState state) {
         switch (state) {
-        case IDebuggablePPU::PPUState::HBlank:
+        case IPPUDebug::PPUState::HBlank:
             return "HBlank";
-        case IDebuggablePPU::PPUState::VBlank:
+        case IPPUDebug::PPUState::VBlank:
             return "VBlank";
-        case IDebuggablePPU::PPUState::OAMScan:
+        case IPPUDebug::PPUState::OAMScan:
             return "OAMScan";
-        case IDebuggablePPU::PPUState::PixelTransfer:
+        case IPPUDebug::PPUState::PixelTransfer:
             return "PixelTransfer";
         }
         return "Unknown";
     };
 
-    auto ppuFetcherStateToString = [](IDebuggablePPU::FetcherState state) {
+    auto ppuFetcherStateToString = [](IPPUDebug::FetcherState state) {
         switch (state) {
-        case IDebuggablePPU::FetcherState::GetTile:
+        case IPPUDebug::FetcherState::GetTile:
             return "GetTile";
-        case IDebuggablePPU::FetcherState::GetTileDataLow:
+        case IPPUDebug::FetcherState::GetTileDataLow:
             return "GetTileDataLow";
-        case IDebuggablePPU::FetcherState::GetTileDataHigh:
+        case IPPUDebug::FetcherState::GetTileDataHigh:
             return "GetTileDataHigh";
-        case IDebuggablePPU::FetcherState::Push:
+        case IPPUDebug::FetcherState::Push:
             return "Push";
         }
         return "Unknown";
@@ -695,9 +695,9 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
                 std:: cout << watchpointString(w) << std::endl;
         }
 
-        auto cpu = backend.getCpuState();
-        auto ppu = backend.getPpuState();
-        auto lcd = backend.getLcdState();
+        auto cpu = backend.getCPUState();
+        auto ppu = backend.getPPUState();
+        auto lcd = backend.getLCDState();
 
         uint8_t IE = backend.readMemory(Registers::Interrupts::IE);
         uint8_t IF = backend.readMemory(Registers::Interrupts::IF);
@@ -708,7 +708,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
 
         std::cout << headerString("PPU") << std::endl;
         std::cout
-            << termcolor::yellow << "Cycle   :  " << termcolor::reset << ppu.cycles << std::endl;
+            << termcolor::yellow << "Cycle   :  " << termcolor::reset << ppu.ppu.cycles << std::endl;
         std::vector<uint8_t> bg;
         for (const auto &p : ppu.ppu.bgFifo.pixels)
             bg.push_back(p.color);
@@ -720,8 +720,8 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         std::cout
             << termcolor::yellow << "Fetcher :  " << termcolor::reset
             << ppuFetcherStateToString(ppu.fetcher.state) << " (" << ppu.fetcher.dots << " dots)"
-            << " [8X=" << +ppu.fetcher.x8 << ", Y=" << +ppu.fetcher.y
-            << ", lastTilemapAddr=" << hex(ppu.fetcher.lastTilemapAddr)
+            << " [X=" << +ppu.fetcher.x << ", Y=" << +ppu.fetcher.y
+            << ", lastTilemapAddr=" << hex(ppu.fetcher.lastTimeMapAddr)
             << ", lastTileAddr=" << hex(ppu.fetcher.lastTileAddr)
             << ", lastTileDataAddr=" << hex(ppu.fetcher.lastTileDataAddr) << "]"
             << std::endl;
@@ -835,22 +835,22 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             }
         }
 
-        if (outcome.state == DebuggerBackend::ExecutionState::State::BreakpointHit) {
+        if (outcome.state == Debugger::ExecutionState::State::BreakpointHit) {
             std::cout << headerString("interruption") << std::endl;
             auto hit = outcome.breakpointHit;
             std::cout << "Triggered breakpoint [" << hit.breakpoint.id << "] at address " << hex(hit.breakpoint.address) << std::endl;
-        } else if (outcome.state == DebuggerBackend::ExecutionState::State::WatchpointHit) {
+        } else if (outcome.state == Debugger::ExecutionState::State::WatchpointHit) {
             std::cout << headerString("interruption") << std::endl;
             auto hit = outcome.watchpointHit;
             std::cout << "Triggered watchpoint [" << hit.watchpoint.id << "] at address " << hex(hit.address) << std::endl;
-            if (hit.accessType == DebuggerBackend::WatchpointHit::AccessType::Read) {
+            if (hit.accessType == Debugger::WatchpointHit::AccessType::Read) {
                 std::cout << "Read at address " << hex(hit.address) << ": " << hex(hit.newValue) << std::endl;
             } else {
                 std::cout << "Write at address " << hex(hit.address) << std::endl;
                 std::cout << "Old: " << hex(hit.oldValue) << std::endl;
                 std::cout << "New: " << hex(hit.newValue) << std::endl;
             }
-        } else if (outcome.state == IDebuggerBackend::ExecutionState::State::Interrupted) {
+        } else if (outcome.state == Debugger::ExecutionState::State::Interrupted) {
             std::cout << headerString("interruption") << std::endl;
             std::cout << "User interruption requested" << std::endl;
         }
@@ -881,7 +881,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
         }
 
         if (std::cin.fail() || std::cin.eof()) // CTRL+D
-            return IDebuggerBackend::CommandAbort();
+            return Debugger::CommandAbort();
 
         if (command.empty())
             command = lastCommand;
@@ -902,7 +902,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             std::cout << "Breakpoint [" << id << "] at " << hex(b.address) << std::endl;
         } else if (std::holds_alternative<CommandWatchpoint>(cmd)) {
             CommandWatchpoint w = std::get<CommandWatchpoint>(cmd);
-            std::optional<DebuggerBackend::Watchpoint::Condition> cond;
+            std::optional<Debugger::Watchpoint::Condition> cond;
             if (w.condition.enabled)
                 cond = w.condition.condition;
             uint32_t id = backend.addWatchpoint(w.type, w.address.from, w.address.to, cond);
@@ -919,7 +919,7 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             invalidateUI = true;
         } else if (std::holds_alternative<CommandDisassemble>(cmd)) {
             CommandDisassemble disas = std::get<CommandDisassemble>(cmd);
-            backend.disassemble(backend.getCpuState().instruction.address, disas.n);
+            backend.disassemble(backend.getCPUState().instruction.address, disas.n);
             invalidateUI = true;
         } else if (std::holds_alternative<CommandDisassembleRange>(cmd)) {
             CommandDisassembleRange disasRange = std::get<CommandDisassembleRange>(cmd);
@@ -943,30 +943,30 @@ DebuggerBackend::Command DebuggerFrontendCli::pullCommand(DebuggerBackend::Execu
             displayEntries.clear();
         } else if (std::holds_alternative<CommandDot>(cmd)) {
             CommandDot dot = std::get<CommandDot>(cmd);
-            return IDebuggerBackend::CommandDot {
+            return Debugger::CommandDot {
                 .count = dot.count
             };
         } else if (std::holds_alternative<CommandStep>(cmd)) {
             CommandStep step = std::get<CommandStep>(cmd);
-            return IDebuggerBackend::CommandStep {
+            return Debugger::CommandStep {
                 .count = step.count
             };
         } else if (std::holds_alternative<CommandNext>(cmd)) {
             CommandNext next = std::get<CommandNext>(cmd);
-            return IDebuggerBackend::CommandNext {
+            return Debugger::CommandNext {
                 .count = next.count
             };
         } else if (std::holds_alternative<CommandFrame>(cmd)) {
             CommandFrame next = std::get<CommandFrame>(cmd);
-            return IDebuggerBackend::CommandFrame {
+            return Debugger::CommandFrame {
                 .count = next.count
             };
         } else if (std::holds_alternative<CommandContinue>(cmd)) {
-            return DebuggerBackend::CommandContinue();
+            return Debugger::CommandContinue();
         } else if (std::holds_alternative<CommandHelp>(cmd)) {
             printHelp();
         } else if (std::holds_alternative<CommandQuit>(cmd)) {
-            return IDebuggerBackend::CommandAbort();
+            return Debugger::CommandAbort();
         }
     } while (true);
 }

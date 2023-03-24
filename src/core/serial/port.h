@@ -4,25 +4,45 @@
 #include <memory>
 #include "endpoint.h"
 #include "link.h"
+#include "core/io/serial.h"
 
 class SerialLink;
-class IBus;
+class IInterruptsIO;
 
-class SerialPort : public SerialEndpoint {
+class ISerialPort {
 public:
-    explicit SerialPort(IBus &bus);
+    virtual void attachSerialLink(SerialLink::Plug &plug) = 0;
+    virtual void detachSerialLink() = 0;
+};
 
-    void attachSerialLink(SerialLink::Plug &plug);
-    void detachSerialLink();
+class SerialPort : public ISerialPort, public ISerialEndpoint, public IClockable, public ISerialIO {
+public:
+    explicit SerialPort(IInterruptsIO &interrupts);
 
+    // ISerialPort
+    void attachSerialLink(SerialLink::Plug &plug) override;
+    void detachSerialLink() override;
+
+    // SerialEndpoint
     uint8_t serialRead() override;
     void serialWrite(uint8_t) override;
 
-    void tick();
+    // IClockable
+    void tick() override;
+
+    // ISerialIO
+    [[nodiscard]] uint8_t readSB() const override;
+    void writeSB(uint8_t value) override;
+
+    [[nodiscard]] uint8_t readSC() const override;
+    void writeSC(uint8_t value) override;
 
 private:
-    IBus &bus;
+    IInterruptsIO &interrupts;
     ISerialLink *link;
+
+    uint8_t SB;
+    uint8_t SC;
 };
 
 #endif // PORT_H

@@ -3,9 +3,9 @@
 
 #include <cstdint>
 
-class SerialEndpoint {
+class ISerialEndpoint {
 public:
-    virtual ~SerialEndpoint() = default;
+    virtual ~ISerialEndpoint() = default;
     virtual uint8_t serialRead() = 0;
     virtual void serialWrite(uint8_t) = 0;
 };

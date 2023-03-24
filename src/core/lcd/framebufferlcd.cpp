@@ -19,7 +19,7 @@ static uint32_t LCDPixelToRGBA(ILCD::Pixel pixel) {
     return 0x000000FF;
 }
 
-FrameBufferLCD::FrameBufferLCD() : Impl::LCD(), pixels() {
+FrameBufferLCD::FrameBufferLCD() : LCD(), pixels() {
 
 }
 

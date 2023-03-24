@@ -6,7 +6,8 @@
 #include "core/clock/clockable.h"
 
 class IMemory;
-class IIO;
+class ILCDIO;
+class IInterruptsIO;
 class ILCD;
 
 using IPPU = IClockable;
@@ -23,9 +24,14 @@ public:
 };
 
 
-class PPU : public virtual IPPU {
+class PPU : public IPPU {
 public:
-    PPU(ILCD &lcd, IMemory &vram, IMemory &oam, IIO &io);
+    PPU(
+        ILCD &lcd,
+        ILCDIO &lcdIo,
+        IInterruptsIO &interrupts,
+        IMemory &vram,
+        IMemory &oam);
 
     void tick() override;
 
@@ -39,14 +45,17 @@ protected:
     };
 
     ILCD &lcd;
+    ILCDIO &lcdIo;
+    IInterruptsIO &interrupts;
     IMemory &vram;
     IMemory &oam;
-    IIO &io;
+
+    bool on;
+    State state;
 
     FIFO bgFifo;
     FIFO objFifo;
 
-    State state;
 
     uint8_t transferredPixels;
 

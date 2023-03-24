@@ -3,7 +3,7 @@
 
 #include "core/clock/clockable.h"
 
-class SerialEndpoint;
+class ISerialEndpoint;
 
 using ISerialLink = IClockable;
 
@@ -13,11 +13,11 @@ public:
     public:
         friend class SerialLink;
         explicit Plug(ISerialLink &link);
-        ISerialLink & attach(SerialEndpoint *endpoint);
+        ISerialLink & attach(ISerialEndpoint *endpoint);
         void detach();
     private:
         ISerialLink &link;
-        SerialEndpoint *endpoint;
+        ISerialEndpoint *endpoint;
     };
 
 

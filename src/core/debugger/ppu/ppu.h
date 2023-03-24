@@ -3,7 +3,7 @@
 
 #include "core/ppu/ppu.h"
 
-class IDebuggablePPU : public virtual IPPU {
+class IPPUDebug {
 public:
     enum class PPUState {
         HBlank,
@@ -19,39 +19,42 @@ public:
         Push
     };
 
-    ~IDebuggablePPU() override = default;
+    struct State {
+        struct {
+            PPUState state;
+            uint32_t dots;
+            uint64_t cycles;
+            FIFO bgFifo;
+            FIFO objFifo;
+        } ppu;
+        struct {
+            FetcherState state;
+            uint32_t dots;
+            uint8_t x;
+            uint8_t y;
+            uint16_t lastTimeMapAddr;
+            uint16_t lastTileAddr;
+            uint16_t lastTileDataAddr;
+        } fetcher;
+    };
 
-    [[nodiscard]] virtual PPUState getPPUState() const = 0;
-    [[nodiscard]] virtual FIFO getBgFifo() const = 0;
-    [[nodiscard]] virtual FIFO getObjFifo() const = 0;
-    [[nodiscard]] virtual FetcherState getFetcherState() const = 0;
-    [[nodiscard]] virtual uint32_t getFetcherDots() const = 0;
-    [[nodiscard]] virtual uint8_t getFetcherX() const = 0;
-    [[nodiscard]] virtual uint8_t getFetcherY() const = 0;
-    [[nodiscard]] virtual uint16_t getFetcherLastTileMapAddr() const = 0;
-    [[nodiscard]] virtual uint16_t getFetcherLastTileAddr() const = 0;
-    [[nodiscard]] virtual uint16_t getFetcherLastTileDataAddr() const = 0;
-    [[nodiscard]] virtual uint32_t getDots() const = 0;
-    [[nodiscard]] virtual uint64_t getCycles() const = 0;
+    virtual ~IPPUDebug() = default;
+
+    virtual State getState() = 0;
 };
 
-class DebuggablePPU : public IDebuggablePPU, public PPU {
+class DebuggablePPU : public IPPUDebug, public PPU {
 public:
-    explicit DebuggablePPU(ILCD &lcd, IMemory &vram, IMemory &oam, IIO &io);
+    explicit DebuggablePPU(
+        ILCD &lcd,
+        ILCDIO &lcdIo,
+        IInterruptsIO &interrupts,
+        IMemory &vram,
+        IMemory &oam
+    );
     ~DebuggablePPU() override = default;
 
-    [[nodiscard]] PPUState getPPUState() const override;
-    [[nodiscard]] FIFO getBgFifo() const override;
-    [[nodiscard]] FIFO getObjFifo() const override;
-    [[nodiscard]] FetcherState getFetcherState() const override;
-    [[nodiscard]] uint32_t getFetcherDots() const override;
-    [[nodiscard]] uint8_t getFetcherX() const override;
-    [[nodiscard]] uint8_t getFetcherY() const override;
-    [[nodiscard]] uint16_t getFetcherLastTileMapAddr() const override;
-    [[nodiscard]] uint16_t getFetcherLastTileAddr() const override;
-    [[nodiscard]] uint16_t getFetcherLastTileDataAddr() const override;
-    [[nodiscard]] uint32_t getDots() const override;
-    [[nodiscard]] uint64_t getCycles() const override;
+    IPPUDebug::State getState() override;
 };
 
 #endif // DEBUGGERPPU_H

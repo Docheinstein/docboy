@@ -3,9 +3,9 @@
 
 #include <cstdint>
 
-class IWritable {
+class IWritableMemory {
 public:
-    virtual ~IWritable() = default;
+    virtual ~IWritableMemory() = default;
     virtual void write(uint16_t index, uint8_t value) = 0;
 };
 

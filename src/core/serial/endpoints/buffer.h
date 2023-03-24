@@ -4,7 +4,7 @@
 #include <vector>
 #include "core/serial/endpoint.h"
 
-class SerialBuffer : public SerialEndpoint {
+class SerialBuffer : public ISerialEndpoint {
 public:
     SerialBuffer();
     ~SerialBuffer() override;

@@ -3,7 +3,7 @@
 
 #include "core/memory/readable.h"
 
-using IBootROM = IReadable;
-using BootROM = Readable;
+using IBootROM = IReadableMemory;
+using BootROM = ReadOnlyMemory;
 
 #endif // BOOTROM_H

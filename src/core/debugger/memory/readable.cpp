@@ -1,30 +1,27 @@
 #include "readable.h"
 
-DebuggableReadable::DebuggableReadable(size_t size) : Readable(size), observer() {
+DebuggableReadOnlyMemory::DebuggableReadOnlyMemory(size_t size)
+    : ReadOnlyMemory(size), observer() {
 
 }
 
-DebuggableReadable::DebuggableReadable(const std::vector<uint8_t> &data)
-    : Readable(data), observer() {
+DebuggableReadOnlyMemory::DebuggableReadOnlyMemory(const std::vector<uint8_t> &data)
+    : ReadOnlyMemory(data), observer() {
 
 }
 
-DebuggableReadable::DebuggableReadable(std::vector<uint8_t> &&data)
-    : Readable(data), observer() {
+DebuggableReadOnlyMemory::DebuggableReadOnlyMemory(std::vector<uint8_t> &&data)
+    : ReadOnlyMemory(data), observer() {
 
 }
 
-void DebuggableReadable::setObserver(IDebuggableReadable::Observer *o) {
+void DebuggableReadOnlyMemory::setObserver(IReadableDebug::Observer *o) {
     observer = o;
 }
 
-uint8_t DebuggableReadable::read(uint16_t index) const {
-    uint8_t value = Readable::read(index);
+uint8_t DebuggableReadOnlyMemory::read(uint16_t index) const {
+    uint8_t value = ReadOnlyMemory::read(index);
     if (observer)
         observer->onRead(index, value);
     return value;
-}
-
-uint8_t DebuggableReadable::readRaw(uint16_t index) const {
-    return Readable::read(index);
 }

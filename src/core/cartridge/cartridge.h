@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "core/impl/memory.h"
+#include "core/memory/memory.h"
 
-class Cartridge : public Impl::Memory {
+class ICartridge : public IMemory {
 public:
     struct Header {
         std::vector<uint8_t> entry_point;
@@ -30,12 +30,19 @@ public:
         [[nodiscard]] bool isNintendoLogoValid() const;
         [[nodiscard]] bool isHeaderChecksumValid() const;
     };
+    ~ICartridge() override = default;
+    [[nodiscard]] virtual Header header() const = 0;
+};
 
+class Cartridge : public ICartridge {
+public:
     explicit Cartridge(const std::vector<uint8_t> &data);
     explicit Cartridge(std::vector<uint8_t> &&data);
 
-    ~Cartridge() override = default;
+    [[nodiscard]] Header header() const override;
 
-    [[nodiscard]] Header header() const;
+protected:
+    std::vector<uint8_t> rom;
 };
+
 #endif // CARTRIDGE_H

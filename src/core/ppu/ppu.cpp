@@ -1,15 +1,18 @@
 #include "ppu.h"
 #include "utils/binutils.h"
 #include "core/definitions.h"
-#include "core/memory/io.h"
+#include "core/memory/memory.h"
 #include "core/lcd/lcd.h"
+#include "core/io/interrupts.h"
 
-using namespace Bits::Registers::LCD::LCDC;
+using namespace Bits::LCD::LCDC;
 
-PPU::PPU(ILCD &lcd, IMemory &vram, IMemory &oam, IIO &io) :
-    lcd(lcd), vram(vram), oam(oam), io(io),
-    bgFifo(), objFifo(),
+PPU::PPU(ILCD &lcd, ILCDIO &lcdIo, IInterruptsIO &interrupts, IMemory &vram, IMemory &oam) :
+    lcd(lcd), lcdIo(lcdIo), interrupts(interrupts),
+    vram(vram), oam(oam),
+    on(),
     state(OAMScan),
+    bgFifo(), objFifo(),
     transferredPixels(),
     fetcher(),
     dots(), tCycles() {
@@ -27,47 +30,46 @@ void PPU::tick() {
     auto updateState = [&](State s) {
         // update STAT's Mode Flag
         state = s;
-        uint8_t STAT = io.readSTAT();
+        uint8_t STAT = lcdIo.readSTAT();
         STAT = reset_bits<2>(STAT) | s;
-        io.writeSTAT(STAT);
+        lcdIo.writeSTAT(STAT);
 
         // eventually raise STAT interrupt
-        if ((get_bit<Bits::Registers::LCD::STAT::OAM_INTERRUPT>(STAT) && s == OAMScan) ||
-                (get_bit<Bits::Registers::LCD::STAT::VBLANK_INTERRUPT>(STAT) && s == VBlank) ||
-                (get_bit<Bits::Registers::LCD::STAT::HBLANK_INTERRUPT>(STAT) && s == HBlank)) {
-            io.writeIF(set_bit<Bits::Interrupts::STAT>(io.readIF()));
+        if ((get_bit<Bits::LCD::STAT::OAM_INTERRUPT>(STAT) && s == OAMScan) ||
+                (get_bit<Bits::LCD::STAT::VBLANK_INTERRUPT>(STAT) && s == VBlank) ||
+                (get_bit<Bits::LCD::STAT::HBLANK_INTERRUPT>(STAT) && s == HBlank)) {
+            interrupts.setIF<Bits::Interrupts::STAT>();
         }
 
         // eventually raise
         if (s == VBlank)
-            io.writeIF(set_bit<Bits::Interrupts::VBLANK>(io.readIF()));
+            interrupts.setIF<Bits::Interrupts::VBLANK>();
     };
 
     auto updateLY = [&](uint8_t LY) {
         // write LY
-        io.writeLY(LY);
+        lcdIo.writeLY(LY);
 
         // update STAT's LYC=LY Flag
-        uint8_t LYC = io.readLYC();
-        uint8_t STAT = io.readSTAT();
-        io.writeSTAT(set_bit<2>(STAT, LY == LYC));
+        uint8_t LYC = lcdIo.readLYC();
+        uint8_t STAT = lcdIo.readSTAT();
+        lcdIo.writeSTAT(set_bit<2>(STAT, LY == LYC));
 
-        if ((get_bit<Bits::Registers::LCD::STAT::LYC_EQ_LY_INTERRUPT>(STAT)) && LY == LYC)
-            io.writeIF(set_bit<Bits::Interrupts::STAT>(io.readIF()));
+        if ((get_bit<Bits::LCD::STAT::LYC_EQ_LY_INTERRUPT>(STAT)) && LY == LYC)
+            interrupts.setIF<Bits::Interrupts::STAT>();
     };
 
-    uint8_t LCDC = io.readLCDC();
-    bool enabled = get_bit<LCD_ENABLE>(LCDC);
+    bool enabled = get_bit<LCD_ENABLE>(lcdIo.readLCDC());
 
-    if (lcd.isOn() && !enabled) {
-        lcd.turnOff();
+    if (on && !enabled) {
+        on = false;
         updateLY(0);
         fetcherClear(); // TODO: bad...
         bgFifo.pixels.clear(); // TODO: ?
         dots = 0; // TODO: ?
         updateState(OAMScan); // TODO: here or on off -> on transition?
-    } else if (!lcd.isOn() && enabled) {
-        lcd.turnOn();
+    } else if (!on && enabled) {
+        on = true;
     }
 
     if (!enabled)
@@ -116,7 +118,7 @@ void PPU::tick() {
         if (dots == 456) {
             // end of hblank
             dots = 0;
-            uint8_t LY = io.readLY();
+            uint8_t LY = lcdIo.readLY();
             LY++;
             updateLY(LY);
             if (LY == 144) {
@@ -128,7 +130,7 @@ void PPU::tick() {
     } else if (state == VBlank) {
         dots++;
         if (dots % 456 == 0) {
-			uint8_t LY = io.readLY();
+			uint8_t LY = lcdIo.readLY();
             LY++;
             if (LY < 154) {
                 updateLY(LY);
@@ -148,12 +150,12 @@ void PPU::fetcherTick() {
 
     // GetTile
     if (fetcher.dots == 0) {
-        uint8_t SCX = io.readSCX();
+        uint8_t SCX = lcdIo.readSCX();
         fetcher.scratchpad.tilemapX = (fetcher.x8 + (SCX / 8)) % 32;
         fetcher.dots++;
     }
     else if (fetcher.dots == 1) {
-        uint8_t SCY = io.readSCY();
+        uint8_t SCY = lcdIo.readSCY();
         uint8_t tilemapY = ((fetcher.y + SCY) / 8) % 32;
 
         // fetch tile from tilemap
@@ -165,8 +167,8 @@ void PPU::fetcherTick() {
     }
     // GetTileDataLow
     else if (fetcher.dots == 2) {
-        uint8_t SCX = io.readSCX();
-        uint8_t SCY = io.readSCY();
+        uint8_t SCX = lcdIo.readSCX();
+        uint8_t SCY = lcdIo.readSCY();
         uint16_t tileY = (fetcher.y + SCY) % 8;
         fetcher.scratchpad.tileAddr = 0x8000 + fetcher.scratchpad.tileNumber * 16 /* sizeof tile */;
         fetcher.scratchpad.tileDataAddr = fetcher.scratchpad.tileAddr + tileY * 2;

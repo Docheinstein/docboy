@@ -6,10 +6,12 @@
 #include "core/serial/endpoints/console.h"
 
 #ifdef ENABLE_DEBUGGER
+#include "core/debugger/gameboy.h"
 #include "core/debugger/core/core.h"
 #include "core/debugger/backend.h"
 #include "core/debugger/frontendcli.h"
 #endif
+
 
 int main(int argc, char **argv) {
     struct {
@@ -17,6 +19,7 @@ int main(int argc, char **argv) {
         std::string boot_rom;
         bool debugger {};
         bool serial_console {};
+        double speed_up {1};
     } args;
 
     auto parser = argumentum::argument_parser();
@@ -36,32 +39,44 @@ int main(int argc, char **argv) {
     params
         .add_parameter(args.serial_console, "--serial", "-s")
         .help("Display serial output");
+    params
+        .add_parameter(args.speed_up, "--speed-up", "-x")
+        .nargs(1)
+        .default_value(1)
+        .help("Speed up factor");
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    std::unique_ptr<Impl::IBootROM> bootRom;
-    if (!args.boot_rom.empty())
-        bootRom = BootROMFactory::makeBootROM(args.boot_rom);
 
-    GameBoy gb = GameBoy::Builder()
-            .setBootROM(std::move(bootRom))
-            .build();
+    if (!parser.parse_args(argc, argv, 1))
+        return 1;
+
+    std::unique_ptr<IBootROM> bootRom;
+    if (!args.boot_rom.empty()) {
+        bootRom = BootROMFactory::makeBootROM(args.boot_rom);
+        if (!bootRom) {
+            std::cerr << "ERROR: failed to load boot rom: '" << args.boot_rom << "'" << std::endl;
+            return 1;
+        }
+    }
 
 #ifdef ENABLE_DEBUGGER
+    DebuggableGameBoy gb(std::move(bootRom));
     DebuggableCore core(gb);
     std::unique_ptr<DebuggerBackend> debuggerBackend;
-    std::unique_ptr<IDebuggerFrontend> debuggerFrontend;
+    std::unique_ptr<DebuggerFrontendCli> debuggerFrontend;
 
     if (args.debugger) {
         debuggerBackend = std::make_unique<DebuggerBackend>(core);
         debuggerFrontend = std::make_unique<DebuggerFrontendCli>(*debuggerBackend);
     }
 #else
+    GameBoy gb(std::move(bootRom));
     Core core(gb);
 #endif
 
     std::shared_ptr<SerialLink> serialLink;
-    std::unique_ptr<SerialEndpoint> serialConsole;
+    std::unique_ptr<ISerialEndpoint> serialConsole;
 
     if (args.serial_console) {
         serialConsole = std::make_unique<SerialConsole>(std::cerr);
@@ -78,6 +93,4 @@ int main(int argc, char **argv) {
     while (core.isOn()) {
         core.tick();
     }
-
-    return 0;
 }

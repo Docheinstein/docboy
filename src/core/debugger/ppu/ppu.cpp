@@ -1,73 +1,58 @@
 #include "ppu.h"
 #include <stdexcept>
 
-DebuggablePPU::DebuggablePPU(ILCD &display, IMemory &vram, IMemory &oam, IIO &io)
-    : PPU(display, vram, oam, io) {
+
+DebuggablePPU::DebuggablePPU(ILCD &lcd, ILCDIO &lcdIo, IInterruptsIO &interrupts, IMemory &vram, IMemory &oam) : PPU(
+        lcd, lcdIo, interrupts, vram, oam) {
 
 }
 
-IDebuggablePPU::PPUState DebuggablePPU::getPPUState() const {
+IPPUDebug::State DebuggablePPU::getState() {
+    PPUState ppuState;
     switch (state) {
     case PPU::State::OAMScan:
-        return IDebuggablePPU::PPUState::OAMScan;
+        ppuState = PPUState::OAMScan;
+        break;
     case PPU::State::PixelTransfer:
-        return IDebuggablePPU::PPUState::PixelTransfer;
+        ppuState = PPUState::PixelTransfer;
+        break;
     case PPU::State::HBlank:
-        return IDebuggablePPU::PPUState::HBlank;
+        ppuState = PPUState::HBlank;
+        break;
     case PPU::State::VBlank:
-        return IDebuggablePPU::PPUState::VBlank;
+        ppuState = PPUState::VBlank;
+        break;
+    default:
+        throw std::runtime_error("Unknown PPU State");
     }
-    throw std::runtime_error("Unknown IDebuggablePPU::PPUState");
-}
 
-IDebuggablePPU::FetcherState DebuggablePPU::getFetcherState() const {
+    FetcherState fetcherState;
     if (fetcher.dots < 2)
-        return IDebuggablePPU::FetcherState::GetTile;
+        fetcherState = FetcherState::GetTile;
     else if (fetcher.dots < 4)
-        return IDebuggablePPU::FetcherState::GetTileDataLow;
+        fetcherState = FetcherState::GetTileDataLow;
     else if (fetcher.dots < 6)
-        return IDebuggablePPU::FetcherState::GetTileDataHigh;
+        fetcherState = FetcherState::GetTileDataHigh;
     else
-        return IDebuggablePPU::FetcherState::Push;
-}
+        fetcherState = FetcherState::Push;
 
-uint32_t DebuggablePPU::getFetcherDots() const {
-    return fetcher.dots;
-}
+    uint8_t fetcherX = 8 * fetcher.x8;
 
-uint32_t DebuggablePPU::getDots() const {
-    return dots;
+    return {
+        .ppu = {
+            .state = ppuState,
+            .dots = dots,
+            .cycles = tCycles,
+            .bgFifo = bgFifo,
+            .objFifo = objFifo
+        },
+        .fetcher = {
+            .state = fetcherState,
+            .x = fetcherX,
+            .y = fetcher.y,
+            .lastTimeMapAddr = fetcher.scratchpad.tilemapAddr,
+            .lastTileAddr = fetcher.scratchpad.tileAddr,
+            .lastTileDataAddr = fetcher.scratchpad.tileDataAddr
+        }
+    };
 }
-
-uint64_t DebuggablePPU::getCycles() const {
-    return tCycles;
-}
-
-FIFO DebuggablePPU::getBgFifo() const {
-    return bgFifo;
-}
-
-FIFO DebuggablePPU::getObjFifo() const {
-    return objFifo;
-}
-
-uint8_t DebuggablePPU::getFetcherX() const {
-    return fetcher.x8;
-}
-
-uint8_t DebuggablePPU::getFetcherY() const {
-    return fetcher.y;
-}
-
-uint16_t DebuggablePPU::getFetcherLastTileMapAddr() const {
-    return fetcher.scratchpad.tilemapAddr;
-}
-
-uint16_t DebuggablePPU::getFetcherLastTileAddr() const {
-    return fetcher.scratchpad.tileAddr;
-}
-
-uint16_t DebuggablePPU::getFetcherLastTileDataAddr() const {
-    return fetcher.scratchpad.tileDataAddr;
-}
-

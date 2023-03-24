@@ -1,20 +1,18 @@
 #ifndef DEBUGGERLCD_H
 #define DEBUGGERLCD_H
 
-#include "core/lcd/lcd.h"
+#include <cstdint>
 
-class IDebuggableLCD : public virtual ILCD {
+class ILCDDebug {
 public:
+    virtual ~ILCDDebug() = default;
 
-    ~IDebuggableLCD() override = default;
+    struct State {
+        uint8_t x;
+        uint8_t y;
+    };
 
-    [[nodiscard]] virtual uint8_t getX() const = 0;
-    [[nodiscard]] virtual uint8_t getY() const = 0;
-};
-
-class DebuggableLCD : public virtual LCD, public virtual IDebuggableLCD {
-    [[nodiscard]] uint8_t getX() const override;
-    [[nodiscard]] uint8_t getY() const override;
+    virtual State getState() = 0;
 };
 
 #endif // DEBUGGERLCD_H

@@ -5,6 +5,8 @@
 #include <string>
 #include <variant>
 
+class IDebuggerBackend;
+
 class DebuggerFrontendCli : public IDebuggerFrontend {
 public:
     class Observer {
@@ -18,7 +20,7 @@ public:
 
     void setObserver(Observer *observer);
 
-    DebuggerBackend::Command pullCommand(DebuggerBackend::ExecutionState outcome) override;
+    Debugger::Command pullCommand(Debugger::ExecutionState outcome) override;
     void onTick() override;
 
 private:

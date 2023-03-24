@@ -21,7 +21,7 @@ SerialLink::Plug::Plug(ISerialLink &link) :
 
 }
 
-ISerialLink &SerialLink::Plug::attach(SerialEndpoint *e) {
+ISerialLink &SerialLink::Plug::attach(ISerialEndpoint *e) {
     endpoint = e;
     return link;
 }

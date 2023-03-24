@@ -1,14 +1,15 @@
 #ifndef FRAMEBUFFERLCD_H
 #define FRAMEBUFFERLCD_H
 
-#include "core/impl/lcd.h"
+#include "core/lcd/lcd.h"
+#include "core/definitions.h"
 
-class IFrameBufferLCD : public virtual Impl::ILCD {
+class IFrameBuffer {
 public:
     virtual uint32_t *getFrameBuffer() = 0;
 };
 
-class FrameBufferLCD : public virtual IFrameBufferLCD, public virtual Impl::LCD {
+class FrameBufferLCD : public IFrameBuffer, public LCD {
 public:
     FrameBufferLCD();
     ~FrameBufferLCD() override = default;
@@ -20,4 +21,5 @@ protected:
 
     uint32_t pixels[Specs::Display::WIDTH * Specs::Display::HEIGHT];
 };
+
 #endif // FRAMEBUFFERLCD_H

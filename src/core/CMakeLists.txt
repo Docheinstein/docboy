@@ -1,83 +1,122 @@
 set(SOURCES
-        boot/bootrom.h
-        boot/bootromfactory.h
+        boot/boot.cpp
+        boot/boot.h
         boot/bootromfactory.cpp
-        bus/bus.h
+        boot/bootromfactory.h
+        boot/bootrom.h
         bus/bus.cpp
-        cartridge/cartridge.h
+        bus/bus.h
         cartridge/cartridge.cpp
-        cartridge/cartridgefactory.h
         cartridge/cartridgefactory.cpp
-        clock/clock.h
-        clock/clock.cpp
-        clock/clockable.h
-        impl/bootrom.h
-        impl/cpu.h
-        impl/lcd.h
-        impl/memory.h
-        impl/ppu.h
-        cpu/cpu.h
-        cpu/cpu.cpp
-        memory/io.h
-        memory/io.cpp
-        memory/memory.h
-        memory/memory.cpp
-        memory/readable.h
-        memory/readable.cpp
-        memory/writable.h
-        cartridge/mbc1.h
+        cartridge/cartridgefactory.h
+        cartridge/cartridge.h
         cartridge/mbc1.cpp
-        cartridge/mbc1ram.h
+        cartridge/mbc1.h
         cartridge/mbc1ram.cpp
-        cartridge/nombc.h
+        cartridge/mbc1ram.h
         cartridge/nombc.cpp
-        lcd/framebufferlcd.h
-        lcd/framebufferlcd.cpp
-        lcd/lcd.h
-        lcd/lcd.cpp
-        ppu/ppu.h
-        ppu/ppu.cpp
-        serial/endpoints/buffer.h
-        serial/endpoints/buffer.cpp
-        serial/endpoints/console.h
-        serial/endpoints/console.cpp
-        serial/endpoint.h
-        serial/link.h
-        serial/link.cpp
-        serial/port.h
-        serial/port.cpp
-        core.h
+        cartridge/nombc.h
+        cartridge/slot.cpp
+        cartridge/slot.h
+        clock/clockable.h
+        clock/clock.cpp
+        clock/clock.h
+        CMakeLists.txt
         core.cpp
+        core.h
+        cpu/cpu.cpp
+        cpu/cpu.h
+        cpu/interrupts.cpp
+        cpu/interrupts.h
+        cpu/timers.cpp
+        cpu/timers.h
         definitions.h
-        gameboy.h
         gameboy.cpp
-        helpers.h
+        gameboy.h
         helpers.cpp
+        helpers.h
+        io/boot.h
+        io/interrupts.h
+        io/joypad.h
+        io/lcd.h
+        io/serial.h
+        io/sound.h
+        io/timers.h
+        joypad/joypad.cpp
+        joypad/joypad.h
+        lcd/framebufferlcd.cpp
+        lcd/framebufferlcd.h
+        lcd/lcd.cpp
+        lcd/lcd.h
+        memory/memory.cpp
+        memory/memory.h
+        memory/readable.cpp
+        memory/readable.h
+        memory/writable.h
+        ppu/ppu.cpp
+        ppu/ppu.h
+        serial/endpoint.h
+        serial/endpoints/buffer.cpp
+        serial/endpoints/buffer.h
+        serial/endpoints/console.cpp
+        serial/endpoints/console.h
+        serial/link.cpp
+        serial/link.h
+        serial/port.cpp
+        serial/port.h
+        serial/serial.cpp
+        serial/serial.h
+        sound/sound.cpp
+        sound/sound.h
+
 )
 
 add_library(core STATIC ${SOURCES})
 
 if (ENABLE_DEBUGGER)
     target_sources(core PRIVATE
-            debugger/backend.h
-            debugger/backend.cpp
-            debugger/frontend.h
-            debugger/frontend.cpp
-            debugger/frontendcli.h
-            debugger/frontendcli.cpp
-            debugger/boot/bootrom.h
-            debugger/core/core.h
-            debugger/core/core.cpp
-            debugger/cpu/cpu.h
-            debugger/cpu/cpu.cpp
-            debugger/lcd/lcd.cpp
-            debugger/lcd/lcd.h
-            debugger/memory/memory.h
-            debugger/memory/memory.cpp
-            debugger/memory/readable.h
-            debugger/memory/readable.cpp
-            debugger/ppu/ppu.h
-            debugger/ppu/ppu.cpp
+        debugger/backend.cpp
+        debugger/backend.h
+        debugger/boot/boot.cpp
+        debugger/boot/boot.h
+        debugger/cartridge/slot.cpp
+        debugger/cartridge/slot.h
+        debugger/core/core.cpp
+        debugger/core/core.h
+        debugger/cpu/cpu.cpp
+        debugger/cpu/cpu.h
+        debugger/cpu/interrupts.cpp
+        debugger/cpu/interrupts.h
+        debugger/cpu/timers.cpp
+        debugger/cpu/timers.h
+        debugger/frontendcli.cpp
+        debugger/frontendcli.h
+        debugger/frontend.h
+        debugger/gameboy.cpp
+        debugger/gameboy.h
+        debugger/io/boot.h
+        debugger/io/interrupts.h
+        debugger/io/joypad.h
+        debugger/io/lcd.h
+        debugger/io/serial.h
+        debugger/io/sound.h
+        debugger/io/timers.h
+        debugger/joypad/joypad.cpp
+        debugger/joypad/joypad.h
+        debugger/lcd/framebufferlcd.cpp
+        debugger/lcd/framebufferlcd.h
+        debugger/lcd/lcd.h
+        debugger/memory/memory.cpp
+        debugger/memory/memory.h
+        debugger/memory/readable.cpp
+        debugger/memory/readable.h
+        debugger/ppu/ppu.cpp
+        debugger/ppu/ppu.h
+        debugger/serial/port.cpp
+        debugger/serial/port.h
+        debugger/shared.h
+        debugger/sound/sound.cpp
+        debugger/sound/sound.h
     )
     target_compile_definitions(core PUBLIC ENABLE_DEBUGGER)
 endif()

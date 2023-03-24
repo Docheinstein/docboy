@@ -2,6 +2,7 @@
 #include <SDL.h>
 #include <stdexcept>
 #include "helpers.h"
+#include "utils/binutils.h"
 
 Window::~Window() {
     SDL_DestroyTexture(texture);
@@ -10,8 +11,8 @@ Window::~Window() {
     SDL_Quit();
 }
 
-Window::Window(IFrameBufferLCD &lcd, float scaling)
-    : lcd(lcd),
+Window::Window(uint32_t *framebuffer, ILCDIO &lcd, float scaling)
+    : framebuffer(framebuffer), lcd(lcd),
     window(), renderer(), texture(),
     width(static_cast<int>(scaling * Specs::Display::WIDTH)),
     height(static_cast<int>(scaling * Specs::Display::HEIGHT)) {
@@ -50,14 +51,15 @@ void Window::render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    if (lcd.isOn()) {
+    bool lcdOn = get_bit<Bits::LCD::LCDC::LCD_ENABLE>(lcd.readLCDC());
+    if (lcdOn) {
         SDL_Rect srcrect { .x = 0, .y = 0, .w = Specs::Display::WIDTH, .h = Specs::Display::HEIGHT };
         SDL_Rect dstrect { .x = 0, .y = 0, .w = width, .h = height };
         void *texturePixels;
         int pitch;
 
         SDL_LockTexture(texture, &srcrect, (void **) &texturePixels, &pitch);
-        memcpy(texturePixels, lcd.getFrameBuffer(), Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint32_t));
+        memcpy(texturePixels, framebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint32_t));
         SDL_UnlockTexture(texture);
 
         SDL_RenderCopy(renderer, texture, nullptr, &dstrect);

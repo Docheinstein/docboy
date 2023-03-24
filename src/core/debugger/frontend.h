@@ -1,12 +1,12 @@
 #ifndef FRONTEND_H
 #define FRONTEND_H
 
-#include "backend.h"
+#include "shared.h"
 
 class IDebuggerFrontend {
 public:
     virtual ~IDebuggerFrontend() = default;
-    virtual DebuggerBackend::Command pullCommand(DebuggerBackend::ExecutionState state) = 0;
+    virtual Debugger::Command pullCommand(Debugger::ExecutionState state) = 0;
     virtual void onTick() = 0;
 };
 

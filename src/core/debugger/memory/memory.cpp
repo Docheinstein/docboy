@@ -29,23 +29,15 @@ void DebuggableMemory::write(uint16_t index, uint8_t value) {
         wobserver->onWrite(index, oldValue, value);
 }
 
-uint8_t DebuggableMemory::readRaw(uint16_t index) const {
-    return Memory::read(index);
-}
-
-void DebuggableMemory::writeRaw(uint16_t index, uint8_t value) {
-    Memory::write(index, value);
-}
-
-void DebuggableMemory::setObserver(IDebuggableReadable::Observer  *o) {
+void DebuggableMemory::setObserver(IReadableDebug::Observer  *o) {
     robserver = o;
 }
 
-void DebuggableMemory::setObserver(IDebuggableWritable::Observer  *o) {
+void DebuggableMemory::setObserver(IWritableDebug::Observer  *o) {
     wobserver = o;
 }
 
-void DebuggableMemory::setObserver(IDebuggableMemory::Observer *o) {
+void DebuggableMemory::setObserver(IMemoryDebug::Observer *o) {
     robserver = o;
     wobserver = o;
 }
