@@ -45,3 +45,20 @@ std::vector<uint8_t> read_file<uint8_t>(const std::string &filename, bool *ok) {
         *ok = true;
     return out;
 }
+
+
+std::vector<std::string> read_file_lines(const std::string &filename, bool *ok) {
+    std::vector<std::string> lines;
+    std::ifstream ifs(filename);
+    if (!ifs.is_open() || ifs.fail()) {
+        if (ok)
+            *ok = false;
+        return lines;
+    }
+
+    std::string line;
+    while (getline(ifs, line))
+        lines.push_back(line);
+
+    return lines;
+}

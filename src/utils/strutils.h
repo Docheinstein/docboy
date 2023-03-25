@@ -24,4 +24,8 @@ void split(const std::string &s, It inserter, char ch) {
     split(s, inserter, [ch](int c) { return c == ch; });
 }
 
+bool equals_ignore_case(const std::string &s1, const std::string &s2);
+
+std::string trim(const std::string &s);
+
 #endif // STRUTILS_H

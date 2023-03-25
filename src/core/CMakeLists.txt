@@ -21,6 +21,10 @@ set(SOURCES
         clock/clockable.h
         clock/clock.cpp
         clock/clock.h
+        config/config.h
+        config/config.cpp
+        config/parser.h
+        config/parser.cpp
         CMakeLists.txt
         core.cpp
         core.h
