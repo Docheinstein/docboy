@@ -12,10 +12,11 @@ Work in Progress.
 * CLI debugger: supports breakpoints, watchpoints, disassembler, step by step execution (by instruction or micro-instruction), memory viewer, interrupts viewer, IO viewer
 * Serial Link
 * Bootroom support
+* Joypad
+* DMA
 
 ### TODO
 * Sound
-* Joypad
 * Save/load state
 * Support other platforms: Windows, macOs
 * Compile as libretro core

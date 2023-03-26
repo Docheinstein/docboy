@@ -34,6 +34,8 @@ set(SOURCES
         cpu/interrupts.h
         cpu/timers.cpp
         cpu/timers.h
+        dma/dma.cpp
+        dma/dma.h
         definitions.h
         gameboy.cpp
         gameboy.h
@@ -57,6 +59,8 @@ set(SOURCES
         memory/readable.cpp
         memory/readable.h
         memory/writable.h
+        ppu/lcdcontroller.cpp
+        ppu/lcdcontroller.h
         ppu/ppu.cpp
         ppu/ppu.h
         serial/endpoint.h
@@ -114,6 +118,8 @@ if (ENABLE_DEBUGGER)
         debugger/memory/memory.h
         debugger/memory/readable.cpp
         debugger/memory/readable.h
+        debugger/ppu/lcdcontroller.cpp
+        debugger/ppu/lcdcontroller.h
         debugger/ppu/ppu.cpp
         debugger/ppu/ppu.h
         debugger/serial/port.cpp

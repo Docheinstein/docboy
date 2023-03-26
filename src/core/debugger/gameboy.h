@@ -20,6 +20,7 @@
 #include "core/debugger/serial/port.h"
 #include "core/debugger/ppu/ppu.h"
 #include "core/debugger/cartridge/slot.h"
+#include "core/debugger/ppu/lcdcontroller.h"
 
 class IDebuggableGameBoy : public IGameBoy {
 public:
@@ -124,6 +125,8 @@ public:
     DebuggableCartridgeSlot cartridgeSlot;
     Bus bus;
     DebuggableCPU cpu;
+    DMA dma;
+    DebuggableLCDController lcdController;
     DebuggablePPU ppu;
     Clock clock;
 };

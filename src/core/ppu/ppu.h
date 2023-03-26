@@ -53,9 +53,9 @@ protected:
     bool on;
     State state;
 
+
     FIFO bgFifo;
     FIFO objFifo;
-
 
     uint8_t transferredPixels;
 

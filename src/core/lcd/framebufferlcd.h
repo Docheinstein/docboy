@@ -6,6 +6,7 @@
 
 class IFrameBuffer {
 public:
+    virtual ~IFrameBuffer() = default;
     virtual uint32_t *getFrameBuffer() = 0;
 };
 

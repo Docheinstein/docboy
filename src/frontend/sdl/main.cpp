@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
 #endif
 
     FrameBufferLCD &lcd = gb.lcd;
-    Window window(gb.lcd.getFrameBuffer(), gb.lcd, args.scaling);
+    Window window(gb.lcd.getFrameBuffer(), gb.lcdController, args.scaling);
 
     std::shared_ptr<SerialLink> serialLink;
     std::unique_ptr<ISerialEndpoint> serialConsole;

@@ -31,14 +31,17 @@ GameBoy::GameBoy(std::unique_ptr<IBootROM> bootRom_, uint64_t frequency) :
         sound(),
         boot(std::move(bootRom_)),
         bus(vram, wram1, wram2, oam, hram, cartridgeSlot, boot,
-            joypad, serialPort, timers, interrupts, sound, lcd,
+            joypad, serialPort, timers, interrupts, sound, lcdController,
             boot),
         cpu(bus, timers, serialPort, boot.readBOOT() == 0),
-        ppu(lcd, lcd, interrupts, vram, oam),
+        dma(bus),
+        lcdController(dma),
+        ppu(lcd, lcdController, interrupts, vram, oam),
         clock() {
     uint64_t ppuFreq = frequency != 0 ? frequency : Specs::PPU::FREQUENCY;
     uint64_t cpuFreq = ppuFreq / (Specs::PPU::FREQUENCY / Specs::CPU::FREQUENCY);
     clock.attach(&cpu, cpuFreq);
+    clock.attach(&dma, cpuFreq);
     clock.attach(&ppu, ppuFreq);
 }
 
@@ -75,7 +78,7 @@ IJoypadIO &GameBoy::getJoypadIO() {
 }
 
 ILCDIO &GameBoy::getLCDIO() {
-    return lcd;
+    return lcdController;
 }
 
 ISerialIO &GameBoy::getSerialIO() {

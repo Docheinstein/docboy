@@ -63,6 +63,7 @@ void PPU::tick() {
 
     if (on && !enabled) {
         on = false;
+        lcd.turnOff();
         updateLY(0);
         fetcherClear(); // TODO: bad...
         bgFifo.pixels.clear(); // TODO: ?
@@ -70,9 +71,10 @@ void PPU::tick() {
         updateState(OAMScan); // TODO: here or on off -> on transition?
     } else if (!on && enabled) {
         on = true;
+        lcd.turnOn();
     }
 
-    if (!enabled)
+    if (!on)
         return; // TODO: ok?
 
     if (state == OAMScan) {

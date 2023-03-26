@@ -14,6 +14,8 @@
 #include "core/cpu/cpu.h"
 #include "core/ppu/ppu.h"
 #include "core/clock/clock.h"
+#include "core/dma/dma.h"
+#include "core/ppu/lcdcontroller.h"
 
 class IGameBoy {
 public:
@@ -99,6 +101,8 @@ public:
     CartridgeSlot cartridgeSlot;
     Bus bus;
     CPU cpu;
+    DMA dma;
+    LCDController lcdController;
     PPU ppu;
     Clock clock;
 };

@@ -27,59 +27,59 @@ namespace MemoryMap {
     namespace ROM0 {
         constexpr uint16_t START  = 0x0000;
         constexpr uint16_t END    = 0x3FFF;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
     namespace ROM1 {
         constexpr uint16_t START  = 0x4000;
         constexpr uint16_t END    = 0x7FFF;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
     namespace VRAM {
         constexpr uint16_t START  = 0x8000;
         constexpr uint16_t END    = 0x9FFF;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
     namespace RAM {
         constexpr uint16_t START  = 0xA000;
         constexpr uint16_t END    = 0xBFFF;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
     namespace WRAM1 {
         constexpr uint16_t START  = 0xC000;
         constexpr uint16_t END    = 0xCFFF;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
     namespace WRAM2 {
         constexpr uint16_t START  = 0xD000;
         constexpr uint16_t END    = 0xDFFF;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
     namespace ECHO_RAM {
         constexpr uint16_t START  = 0xE000;
         constexpr uint16_t END    = 0xFDFF;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
     namespace OAM {
         constexpr uint16_t START  = 0xFE00;
         constexpr uint16_t END    = 0xFE9F;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
     namespace NOT_USABLE {
         constexpr uint16_t START  = 0xFEA0;
         constexpr uint16_t END    = 0xFEFF;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
 
     namespace IO {
         constexpr uint16_t START  = 0xFF00;
         constexpr uint16_t END    = 0xFF7F;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
 
     namespace HRAM {
         constexpr uint16_t START  = 0xFF80;
         constexpr uint16_t END    = 0xFFFE;
-        constexpr uint16_t SIZE    = END - START + 1;
+        constexpr uint16_t SIZE   = END - START + 1;
     }
 
     constexpr uint16_t IE = 0xFFFF;
