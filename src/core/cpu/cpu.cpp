@@ -610,50 +610,6 @@ void CPU::tick() {
         return;
     }
 
-    // Interrupt
-//    if (halted) {
-//        uint8_t IE = bus.read(Registers::Interrupts::IE);
-//        uint8_t IF = bus.read(Registers::Interrupts::IF);
-//        for (uint8_t b = 0; b <= 4; b++) {
-//            if (get_bit(IE, b) && get_bit(IF, b)) {
-//                halted = false;
-//                // TODO: figure out if the IF bit is set to 0
-//                //  and if so, whether it depends on the value of IME
-//                bus.write(Registers::Interrupts::IF, reset_bit(IF, b));
-//                if (IME) {
-//                    IME = false; // TODO: ok?
-//                    interrupt.state = PendingInterrupt::State::Pending;
-//                    interrupt.isr = ISR[b];
-//                }
-//                break;
-//            }
-//        }
-//    }
-//
-//    // Interrupts handling
-//    if (pendingInterrupt && currentInstruction.microop == 0) {
-//        currentInstruction.ISR = true;
-//        // oneliner for take the right address based on the ISR function pointer
-//        currentInstruction.address = 0x40 + 8 * ((*pendingInterrupt - &ISR[0][0]) / 5);
-//        currentInstruction.microop = 0;
-//        currentInstruction.microopHandler = *pendingInterrupt;
-//        pendingInterrupt = std::nullopt;
-//        // return; // TODO: return, else if or just if?
-//    }
-//
-//    else if (IME) {     // TODO: else if or just if?
-//        uint8_t IE = bus.read(Registers::Interrupts::IE);
-//        uint8_t IF = bus.read(Registers::Interrupts::IF);
-//        for (uint8_t b = 0; b <= 4; b++) {
-//            if (get_bit(IE, b) && get_bit(IF, b)) {
-//                bus.write(Registers::Interrupts::IF, reset_bit(IF, b));
-//                IME = false;
-//                pendingInterrupt = ISR[b];
-//                break; // TODO: stop after first or handle them all?
-//            }
-//        }
-//    }
-
 //     Microop execution
     InstructionMicroOperation micro_op = *currentInstruction.microopHandler;
 

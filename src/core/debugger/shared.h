@@ -15,7 +15,13 @@ namespace Debugger {
     struct CommandStep {
         uint64_t count;
     };
+    struct CommandMicroStep {
+        uint64_t count;
+    };
     struct CommandNext {
+        uint64_t count;
+    };
+    struct CommandMicroNext {
         uint64_t count;
     };
     struct CommandFrame {
@@ -27,7 +33,9 @@ namespace Debugger {
     typedef std::variant<
         CommandDot,
         CommandStep,
+        CommandMicroStep,
         CommandNext,
+        CommandMicroNext,
         CommandFrame,
         CommandContinue,
         CommandAbort

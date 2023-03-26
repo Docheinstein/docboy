@@ -60,7 +60,7 @@ void DebuggableCore::onRead(uint16_t addr, uint8_t value) {
 
 void DebuggableCore::tick() {
     if (observer) {
-        if (!observer->onTick())
+        if (!observer->onTick(gameboy.getClock().getTicks()))
             on = false;
     }
     return Core::tick();

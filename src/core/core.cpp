@@ -27,10 +27,10 @@ void Core::frame() {
 
     uint8_t LY = lcd.readLY();
     if (LY >= 144) {
-        while (lcd.readLY() != 0)
+        while (isOn() && lcd.readLY() != 0)
             tick();
     }
-    while (lcd.readLY() < 144)
+    while (isOn() && lcd.readLY() < 144)
         tick();
 }
 

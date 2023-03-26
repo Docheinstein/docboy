@@ -18,7 +18,7 @@ public:
     class Observer {
     public:
         virtual ~Observer() = default;
-        virtual bool onTick() = 0;
+        virtual bool onTick(uint64_t tick) = 0;
         virtual void onMemoryRead(uint16_t addr, uint8_t value) = 0;
         virtual void onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) = 0;
     };

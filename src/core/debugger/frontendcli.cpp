@@ -67,7 +67,15 @@ struct CommandStep {
     uint64_t count;
 };
 
+struct CommandMicroStep {
+    uint64_t count;
+};
+
 struct CommandNext {
+    uint64_t count;
+};
+
+struct CommandMicroNext {
     uint64_t count;
 };
 
@@ -76,6 +84,10 @@ struct CommandFrame {
 };
 
 struct CommandContinue {};
+
+struct CommandTrace {
+    std::optional<bool> enabled;
+};
 
 
 struct CommandHelp {};
@@ -92,9 +104,12 @@ typedef std::variant<
     CommandUndisplay,
     CommandDot,
     CommandStep,
+    CommandMicroStep,
     CommandNext,
+    CommandMicroNext,
     CommandFrame,
     CommandContinue,
+    CommandTrace,
     CommandHelp,
     CommandQuit
 > Command;
@@ -270,7 +285,7 @@ static CommandInfo COMMANDS[] = {
     {
         std::regex(R"(\.\s*(\d+)?)"),
         ". [<count>]",
-        "Step by <count> dots (default = 1)",
+        "Continue running for <count> dots (default = 1)",
         [](const std::vector<std::string> &groups) -> Command {
             const std::string &count = groups[0];
             uint64_t n = count.empty() ? 1 : std::stoi(count);
@@ -282,7 +297,7 @@ static CommandInfo COMMANDS[] = {
     {
         std::regex(R"(s\s*(\d+)?)"),
         "s [<count>]",
-        "Step by <count> micro-operations (default = 1)",
+        "Continue running for <count> instructions (default = 1)",
         [](const std::vector<std::string> &groups) -> Command {
             const std::string &count = groups[0];
             uint64_t n = count.empty() ? 1 : std::stoi(count);
@@ -292,13 +307,37 @@ static CommandInfo COMMANDS[] = {
         }
     },
     {
+        std::regex(R"(si\s*(\d+)?)"),
+        "si [<count>]",
+        "Continue running for <count> micro-operations (default = 1)",
+        [](const std::vector<std::string> &groups) -> Command {
+            const std::string &count = groups[0];
+            uint64_t n = count.empty() ? 1 : std::stoi(count);
+            return CommandMicroStep {
+                .count = n
+            };
+        }
+    },
+    {
         std::regex(R"(n\s*(\d+)?)"),
         "n [<count>]",
-        "Step by <count> instructions (default = 1)",
+        "Continue running for <count> instructions at the same stack level (default = 1)",
         [](const std::vector<std::string> &groups) -> Command {
             const std::string &count = groups[0];
             uint64_t n = count.empty() ? 1 : std::stoi(count);
             return CommandNext {
+                .count = n
+            };
+        }
+    },
+    {
+        std::regex(R"(ni\s*(\d+)?)"),
+        "ni [<count>]",
+        "Continue running for <count> micro-operations at the same stack level (default = 1)",
+        [](const std::vector<std::string> &groups) -> Command {
+            const std::string &count = groups[0];
+            uint64_t n = count.empty() ? 1 : std::stoi(count);
+            return CommandMicroNext {
                 .count = n
             };
         }
@@ -321,6 +360,18 @@ static CommandInfo COMMANDS[] = {
         "Continue",
         [](const std::vector<std::string> &groups) -> Command {
             return CommandContinue {};
+        }
+    },
+    {
+        std::regex(R"(trace\s*(on|off)?)"),
+        "trace [on|off]",
+        "Enable/disable state trace",
+        [](const std::vector<std::string> &groups) -> Command {
+            const std::string &onoff = groups[0];
+            CommandTrace cmd;
+            if (!onoff.empty())
+                cmd.enabled = onoff == "on";
+            return cmd;
         }
     },
     {
@@ -377,6 +428,7 @@ static void detach_sigint_handler() {
 DebuggerFrontendCli::DebuggerFrontendCli(IDebuggerBackend &backend) :
         backend(backend),
         lastCommand("n"),
+        trace(),
         observer() {
     backend.attachFrontend(this);
     attach_sigint_handler();
@@ -634,13 +686,13 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
             for (size_t i = 0; i < n; i++)
                 data.push_back(backend.readMemory(from + i));
             uint8_t cols = formatArg ? *formatArg : 16;
-            std::string dump = Hexdump()
+            std::string hexdump = Hexdump()
                     .setBaseAddress(from)
                     .showAddresses(true)
                     .showAscii(false)
                     .setNumColumns(cols)
                     .hexdump(data);
-            std::cout << dump << std::endl;
+            std::cout << hexdump << std::endl;
         }
     };
 
@@ -951,18 +1003,35 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
             return Debugger::CommandStep {
                 .count = step.count
             };
+        }  else if (std::holds_alternative<CommandMicroStep>(cmd)) {
+            CommandMicroStep step = std::get<CommandMicroStep>(cmd);
+            return Debugger::CommandMicroStep {
+                .count = step.count
+            };
         } else if (std::holds_alternative<CommandNext>(cmd)) {
             CommandNext next = std::get<CommandNext>(cmd);
             return Debugger::CommandNext {
                 .count = next.count
             };
-        } else if (std::holds_alternative<CommandFrame>(cmd)) {
-            CommandFrame next = std::get<CommandFrame>(cmd);
-            return Debugger::CommandFrame {
+        } else if (std::holds_alternative<CommandMicroNext>(cmd)) {
+            CommandMicroNext next = std::get<CommandMicroNext>(cmd);
+            return Debugger::CommandMicroNext {
                 .count = next.count
+            };
+        } else if (std::holds_alternative<CommandFrame>(cmd)) {
+            CommandFrame frame = std::get<CommandFrame>(cmd);
+            return Debugger::CommandFrame {
+                .count = frame.count
             };
         } else if (std::holds_alternative<CommandContinue>(cmd)) {
             return Debugger::CommandContinue();
+        } else if (std::holds_alternative<CommandTrace>(cmd)) {
+            CommandTrace cmdTrace = std::get<CommandTrace>(cmd);
+            if (cmdTrace.enabled)
+                trace = *cmdTrace.enabled;
+            else
+                trace = !trace;
+            std::cout << "Trace: " << (trace ? "on" : "off") << std::endl;
         } else if (std::holds_alternative<CommandHelp>(cmd)) {
             printHelp();
         } else if (std::holds_alternative<CommandQuit>(cmd)) {
@@ -972,7 +1041,33 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
 }
 
 
-void DebuggerFrontendCli::onTick() {
+void DebuggerFrontendCli::onTick(uint64_t tick) {
+    if (trace) {
+        bool isMcycle = tick % 4 == 0;
+        if (isMcycle) {
+            Debugger::CPUState cpu = backend.getCPUState();
+            if (cpu.instruction.microop == 0) {
+                std::string instr;
+                if (!cpu.instruction.ISR) {
+                    backend.disassemble(cpu.instruction.address, 1);
+                    auto disas = backend.getDisassembled(cpu.instruction.address);
+                    if (disas)
+                        instr = instruction_mnemonic(*disas, cpu.instruction.address);
+                    else
+                        instr = "unknown";
+                } else {
+                    instr = "ISR " + hex(cpu.instruction.address);
+                }
+                std::cerr
+                        << "AF:" << hex(cpu.registers.AF) << " BC:" << hex(cpu.registers.BC) << " DE:"
+                        << hex(cpu.registers.DE)
+                        << " HL:" << hex(cpu.registers.HL) << " SP:" << hex(cpu.registers.SP) << " PC:"
+                        << hex((uint16_t)(cpu.registers.PC - 1))
+                        << " INSTR: " << instr
+                        << std::endl;
+            }
+        }
+    }
     if (sigint_trigger) {
         sigint_trigger = 0;
         backend.interrupt();

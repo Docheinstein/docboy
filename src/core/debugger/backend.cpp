@@ -9,8 +9,8 @@ DebuggerBackend::DebuggerBackend(ICoreDebug &core) :
         gameboy(core.getGameBoy()),
         frontend(),
         nextPointId(),
-        interrupted(),
-        counter() {
+        commandState(),
+        interrupted() {
     core.setObserver(this);
 }
 
@@ -187,7 +187,18 @@ void DebuggerBackend::onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t new
     }
 }
 
-bool DebuggerBackend::onTick() {
+bool DebuggerBackend::onTick(uint64_t tick) {
+    auto pullCommand = [&](Debugger::ExecutionState state) {
+        command = this->frontend->pullCommand(state);
+        commandState.counter = 0;
+        if (std::holds_alternative<Debugger::CommandNext>(*command)) {
+            commandState.stackLevel = getCPUState().registers.SP;
+        }
+        if (std::holds_alternative<Debugger::CommandMicroNext>(*command)) {
+            commandState.stackLevel = getCPUState().registers.SP;
+        }
+    };
+
     if (!frontend)
         return true;
 
@@ -196,16 +207,15 @@ bool DebuggerBackend::onTick() {
     if (!cpu.cycles)
         return true; // do not stop on first fetch
 
-    this->frontend->onTick();
+    this->frontend->onTick(tick);
 
     if (interrupted) {
         interrupted = false;
-        command = this->frontend->pullCommand({ .state = Debugger::ExecutionState::State::Interrupted });
+        pullCommand({ .state = Debugger::ExecutionState::State::Interrupted });
         return true;
     }
 
-    uint64_t clk = gameboy.getClock().getTicks();
-    bool isMcycle = (clk % 4) == 0;
+    bool isMcycle = (tick % 4) == 0;
 
     if (isMcycle) {
         if (!cpu.instruction.ISR && cpu.instruction.microop == 0) {
@@ -216,7 +226,7 @@ bool DebuggerBackend::onTick() {
                         .state = Debugger::ExecutionState::State::BreakpointHit,
                         .breakpointHit = {*b}
                 };
-                command = this->frontend->pullCommand(outcome);
+                pullCommand(outcome);
                 return true;
             }
         }
@@ -228,12 +238,12 @@ bool DebuggerBackend::onTick() {
             .watchpointHit = *watchpointHit
         };
         watchpointHit = std::nullopt;
-        command = this->frontend->pullCommand(outcome);
+        pullCommand(outcome);
         return true;
     }
 
     if (!command) {
-        command = this->frontend->pullCommand({ .state = Debugger::ExecutionState::State::Completed });
+        pullCommand({ .state = Debugger::ExecutionState::State::Completed });
         return true;
     }
 
@@ -241,32 +251,42 @@ bool DebuggerBackend::onTick() {
 
     if (std::holds_alternative<Debugger::CommandDot>(cmd)) {
         Debugger::CommandDot cmdDot = std::get<Debugger::CommandDot>(cmd);
-        counter++;
-        if (counter >= cmdDot.count) {
-            counter = 0;
-            command = this->frontend->pullCommand({.state = Debugger::ExecutionState::State::Completed});
-        }
+        commandState.counter++;
+        if (commandState.counter >= cmdDot.count)
+            pullCommand({.state = Debugger::ExecutionState::State::Completed});
         return true;
     }
 
     if (isMcycle) {
         if (std::holds_alternative<Debugger::CommandStep>(cmd)) {
             Debugger::CommandStep cmdStep = std::get<Debugger::CommandStep>(cmd);
-            counter++;
-            if (counter >= cmdStep.count) {
-                counter = 0;
-                command = this->frontend->pullCommand({.state = Debugger::ExecutionState::State::Completed});
+            if (!cpu.instruction.ISR && cpu.instruction.microop == 0) {
+                commandState.counter++;
+                if (commandState.counter >= cmdStep.count)
+                    pullCommand({.state = Debugger::ExecutionState::State::Completed});
             }
             return true;
+        } else if (std::holds_alternative<Debugger::CommandMicroStep>(cmd)) {
+            Debugger::CommandMicroStep cmdMicroStep = std::get<Debugger::CommandMicroStep>(cmd);
+            commandState.counter++;
+            if (commandState.counter >= cmdMicroStep.count)
+                pullCommand({.state = Debugger::ExecutionState::State::Completed});
+            return true;
         } else if (std::holds_alternative<Debugger::CommandNext>(cmd)) {
-            Debugger::CommandNext cmdNext = std::get<Debugger::CommandNext>(cmd);
+            Debugger::CommandNext cmdStep = std::get<Debugger::CommandNext>(cmd);
             if (!cpu.instruction.ISR && cpu.instruction.microop == 0) {
-                counter++;
-                if (counter >= cmdNext.count) {
-                    counter = 0;
-                    command = this->frontend->pullCommand({.state = Debugger::ExecutionState::State::Completed});
-                }
+                if (cpu.registers.SP == commandState.stackLevel)
+                    commandState.counter++;
+                if (commandState.counter >= cmdStep.count || cpu.registers.SP > commandState.stackLevel)
+                    pullCommand({.state = Debugger::ExecutionState::State::Completed});
             }
+            return true;
+        } else if (std::holds_alternative<Debugger::CommandMicroNext>(cmd)) {
+            Debugger::CommandMicroNext cmdMicroNext = std::get<Debugger::CommandMicroNext>(cmd);
+            if (cpu.registers.SP == commandState.stackLevel)
+                    commandState.counter++;
+            if (commandState.counter >= cmdMicroNext.count || cpu.registers.SP > commandState.stackLevel)
+                pullCommand({.state = Debugger::ExecutionState::State::Completed});
             return true;
         } else if (std::holds_alternative<Debugger::CommandFrame>(cmd)) {
             Debugger::CommandFrame cmdFrame = std::get<Debugger::CommandFrame>(cmd);
@@ -275,11 +295,9 @@ bool DebuggerBackend::onTick() {
             if (ppu.ppu.state == IPPUDebug::PPUState::VBlank &&
                     ppu.ppu.dots == 0 &&
                     get_bit<Bits::LCD::LCDC::LCD_ENABLE>(readMemory(Registers::LCD::LCDC))) {
-                counter++;
-                if (counter >= cmdFrame.count) {
-                    counter = 0;
-                    command = this->frontend->pullCommand({.state = Debugger::ExecutionState::State::Completed});
-                }
+                commandState.counter++;
+                if (commandState.counter >= cmdFrame.count)
+                    pullCommand({.state = Debugger::ExecutionState::State::Completed});
             }
             return true;
         } else if (std::holds_alternative<Debugger::CommandContinue>(cmd)) {

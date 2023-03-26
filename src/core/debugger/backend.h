@@ -74,7 +74,7 @@ public:
 
     void interrupt() override;
 
-    bool onTick() override;
+    bool onTick(uint64_t tick) override;
     void onMemoryRead(uint16_t addr, uint8_t value) override;
     void onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
 
@@ -94,10 +94,13 @@ private:
     std::optional<Debugger::WatchpointHit> watchpointHit;
 
     std::optional<Debugger::Command> command;
+    struct {
+        uint64_t counter;
+        uint16_t stackLevel;
+    } commandState;
 
     bool interrupted;
 
-    uint64_t counter;
 
     [[nodiscard]] std::optional<Debugger::Disassemble> doDisassemble(uint16_t addr);
 };
