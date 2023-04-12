@@ -2,6 +2,7 @@
 #include "link.h"
 #include "utils/binutils.h"
 #include "serial.h"
+#include "core/definitions.h"
 
 SerialPort::SerialPort(IInterruptsIO &interrupts) : interrupts(interrupts), link(), SB(), SC() {
 
@@ -9,18 +10,23 @@ SerialPort::SerialPort(IInterruptsIO &interrupts) : interrupts(interrupts), link
 
 
 uint8_t SerialPort::serialRead() {
+    // TODO: interrupt ?
     return readSB();
 }
 
 void SerialPort::serialWrite(uint8_t data) {
     writeSB(data);
     writeSC(reset_bit<7>(readSC()));
-    // TODO: interrupt
+    interrupts.setIF<Bits::Interrupts::SERIAL>();
 }
 
 void SerialPort::tick() {
     if (link)
         link->tick();
+    else {
+        // disconnected cable
+        serialWrite(0xFF);
+    }
 }
 
 void SerialPort::attachSerialLink(SerialLink::Plug &plug) {

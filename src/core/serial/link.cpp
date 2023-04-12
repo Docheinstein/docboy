@@ -8,12 +8,12 @@ SerialLink::SerialLink() : plug1(*this), plug2(*this) {
 
 
 void SerialLink::tick() {
-    if (plug1.endpoint && plug2.endpoint) {
-        uint8_t data1 = plug1.endpoint->serialRead();
-        uint8_t data2 = plug2.endpoint->serialRead();
+    uint8_t data1 = plug1.endpoint ? plug1.endpoint->serialRead() : 0xFF;
+    uint8_t data2 = plug2.endpoint ? plug2.endpoint->serialRead() : 0xFF;
+    if (plug1.endpoint)
         plug1.endpoint->serialWrite(data2);
+    if (plug2.endpoint)
         plug2.endpoint->serialWrite(data1);
-    }
 }
 
 SerialLink::Plug::Plug(ISerialLink &link) :

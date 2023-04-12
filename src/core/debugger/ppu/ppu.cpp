@@ -43,8 +43,8 @@ IPPUDebug::State DebuggablePPU::getState() {
             .state = ppuState,
             .dots = dots,
             .cycles = tCycles,
-            .bgFifo = bgFifo,
-            .objFifo = objFifo
+            .bgFifo = commonFifo,
+            .objFifo = commonFifo
         },
         .fetcher = {
             .state = fetcherState,

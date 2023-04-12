@@ -265,8 +265,10 @@ int main(int argc, char **argv) {
         core.attachSerialLink(serialLink->plug2);
     }
 
-    if (!core.loadROM(args.rom)) {
-        std::cerr << "ERROR: failed to load rom: '" << args.rom << "'" << std::endl;
+    try {
+        core.loadROM(args.rom);
+    } catch (const std::exception &e) {
+        std::cerr << "ERROR: failed to load rom: '" << args.rom << "' " << e.what() << std::endl;
         return 1;
     }
 

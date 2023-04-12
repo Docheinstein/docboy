@@ -6,12 +6,8 @@ Core::Core(IGameBoy &gameboy):
     gameboy(gameboy), serialLink() {
 }
 
-bool Core::loadROM(const std::string &rom) {
-    auto c = CartridgeFactory::makeCartridge(rom);
-    if (!c)
-        return false;
-    gameboy.getCartridgeSlot().attachCartridge(std::move(c));
-    return true;
+void Core::loadROM(const std::string &rom) {
+    gameboy.getCartridgeSlot().attachCartridge(CartridgeFactory::makeCartridge(rom));
 }
 
 void Core::attachSerialLink(SerialLink::Plug &plug) {

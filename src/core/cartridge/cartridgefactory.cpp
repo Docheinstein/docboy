@@ -4,6 +4,7 @@
 #include "nombc.h"
 #include "mbc1.h"
 #include "mbc1ram.h"
+#include "utils/binutils.h"
 
 std::unique_ptr<ICartridge>
 CartridgeFactory::makeCartridge(const std::string &filename) {
@@ -11,10 +12,10 @@ CartridgeFactory::makeCartridge(const std::string &filename) {
 
     std::vector<uint8_t> data = read_file(filename, &ok);
     if (!ok)
-        return nullptr;
+        throw std::runtime_error("failed to read file");
 
     if (data.size() < 0x0150)
-        return nullptr;
+        throw std::runtime_error("rom size is too small");
 
     uint8_t mbc = data[0x147];
 
@@ -25,5 +26,5 @@ CartridgeFactory::makeCartridge(const std::string &filename) {
     if (mbc == 0x02 || mbc == 0x03)
         return std::make_unique<MBC1RAM>(data);
 
-    return nullptr;
+    throw std::runtime_error("unknown MBC type: 0x" + hex(mbc));
 }

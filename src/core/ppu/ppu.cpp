@@ -1,3 +1,4 @@
+#include <iostream>
 #include "ppu.h"
 #include "utils/binutils.h"
 #include "core/definitions.h"
@@ -12,7 +13,8 @@ PPU::PPU(ILCD &lcd, ILCDIO &lcdIo, IInterruptsIO &interrupts, IMemory &vram, IMe
     vram(vram), oam(oam),
     on(),
     state(OAMScan),
-    bgFifo(), objFifo(),
+    commonFifo(),
+//    bgFifo(), objFifo(),
     transferredPixels(),
     fetcher(),
     dots(), tCycles() {
@@ -66,7 +68,8 @@ void PPU::tick() {
         lcd.turnOff();
         updateLY(0);
         fetcherClear(); // TODO: bad...
-        bgFifo.pixels.clear(); // TODO: ?
+        commonFifo.pixels.clear();
+//        bgFifo.pixels.clear(); // TODO: ?
         dots = 0; // TODO: ?
         updateState(OAMScan); // TODO: here or on off -> on transition?
     } else if (!on && enabled) {
@@ -78,7 +81,29 @@ void PPU::tick() {
         return; // TODO: ok?
 
     if (state == OAMScan) {
-        dots++;
+        uint8_t LY = lcdIo.readLY();
+        if (LY != fetcher.y) {
+            exit(0);
+        }
+
+        uint8_t oamNum = dots / 2;
+        if (dots % 2 == 0)
+            scratchpad.oam.y = oam.read(4 * oamNum);
+        else {
+            uint8_t x = oam.read(4 * oamNum + 1);
+            uint8_t LY = lcdIo.readLY();
+            int oamY = scratchpad.oam.y - 16;
+            if (oamY <= LY && LY < oamY + 8) {
+                // DEBUG:
+                uint8_t b0 = oam.read(4 * oamNum);
+                uint8_t b1 = oam.read(4 * oamNum + 1);
+                uint8_t b2 = oam.read(4 * oamNum + 2);
+                uint8_t b3 = oam.read(4 * oamNum + 3);
+                std::vector<uint8_t> B = {b0, b1, b2, b3};
+                oamEntries.emplace_back(dots / 2, x, scratchpad.oam.y);
+            }
+        }
+        dots++;;
         if (dots == 80) {
             // end of OAM scan
             transferredPixels = 0;
@@ -86,24 +111,27 @@ void PPU::tick() {
         }
     } else if (state == PixelTransfer) {
         // shift pixel from fifo to lcd if there are at least 8 pixels
-        if (transferredPixels < 160 && bgFifo.pixels.size() > 8) {
-            auto p = bgFifo.pixels.front();
-            bgFifo.pixels.pop_front();
-            // TODO: so bad
-            // TODO: palette
-            ILCD::Pixel lcdPixel;
-            if (p.color == 0)
-                lcdPixel = ILCD::Pixel::Color0;
-            else if (p.color == 1)
-                lcdPixel = ILCD::Pixel::Color1;
-            else if (p.color == 2)
-                lcdPixel = ILCD::Pixel::Color2;
-            else if (p.color == 3)
-                lcdPixel = ILCD::Pixel::Color3;
-            else
-                throw std::runtime_error("unexpected color pixel: " + std::to_string(p.color));
-            lcd.pushPixel(lcdPixel);
-            transferredPixels++;
+        if (transferredPixels < 160) {
+            if (commonFifo.pixels.size() >= 8) {
+                FIFO::Pixel pixel = commonFifo.pixels.front();
+                commonFifo.pixels.pop_front();
+
+                // TODO: so bad
+                // TODO: palette
+                ILCD::Pixel lcdPixel;
+                if (pixel.color == 0)
+                    lcdPixel = ILCD::Pixel::Color0;
+                else if (pixel.color == 1)
+                    lcdPixel = ILCD::Pixel::Color1;
+                else if (pixel.color == 2)
+                    lcdPixel = ILCD::Pixel::Color2;
+                else if (pixel.color == 3)
+                    lcdPixel = ILCD::Pixel::Color3;
+                else
+                    throw std::runtime_error("unexpected color pixel: " + std::to_string(pixel.color));
+                lcd.pushPixel(lcdPixel);
+                transferredPixels++;
+            }
         }
 
         fetcherTick();
@@ -127,6 +155,7 @@ void PPU::tick() {
                 updateState(State::VBlank);
             } else {
                 updateState(State::OAMScan);
+                oamEntries.clear(); // TODO: in updateState?
             }
         }
     } else if (state == VBlank) {
@@ -140,6 +169,7 @@ void PPU::tick() {
                 // end of vblank
                 dots = 0;
                 updateState(State::OAMScan);
+                oamEntries.clear(); // TODO: in updateState?
                 updateLY(0);
             }
         }
@@ -161,9 +191,26 @@ void PPU::fetcherTick() {
         uint8_t tilemapY = ((fetcher.y + SCY) / 8) % 32;
 
         // fetch tile from tilemap
+
         uint16_t base = 0x9800;
         fetcher.scratchpad.tilemapAddr = base + 32 * tilemapY + fetcher.scratchpad.tilemapX;
         fetcher.scratchpad.tileNumber = vram.read(fetcher.scratchpad.tilemapAddr - MemoryMap::VRAM::START); // TODO: bad
+
+        // BAD: OAM
+        for (const auto &oamEntry : oamEntries) {
+            uint8_t fetcherX = fetcher.x8 * 8;
+            uint8_t fetcherY = fetcher.y;
+            int oamX = oamEntry.x - 8;
+            int oamY = oamEntry.y - 16;
+            if (oamX <= fetcherX && fetcherX < oamX + 8 /* 16? */
+                &&
+                oamY <= fetcherY && fetcherY < oamY + 8 /* 16? */) {
+                fetcher.scratchpad.tileNumber = oam.read(4 * oamEntry.number + 2);
+//                std::cout <<
+//                "[fetcherX=" << fetcherX << ",fetcherY" << fetcherY << "] " <<
+//                    "Rendering sprite at" << oamEntry.x << "," << oamEntry.y << ": tileNum=" << fetcher.scratchpad.tileNumber << std::endl;
+            }
+        }
 
         fetcher.dots++;
     }
@@ -191,7 +238,7 @@ void PPU::fetcherTick() {
     }
     // Push
     else {
-        if (bgFifo.pixels.size() <= 8) {
+        if (commonFifo.pixels.size() <= 8) {
             for (int b = 7; b >= 0; b--) {
                 uint8_t color =
                         (get_bit(fetcher.scratchpad.tileDataLow, b) ? 0b10 : 0b00) |
@@ -199,7 +246,7 @@ void PPU::fetcherTick() {
                 FIFO::Pixel p {
                     .color = color
                 };
-                bgFifo.pixels.push_back(p);
+                commonFifo.pixels.push_back(p);
             }
             fetcher.dots = 0;
             fetcher.x8 = (fetcher.x8 + 1) % 20;

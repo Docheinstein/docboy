@@ -14,7 +14,7 @@ public:
     explicit Core(IGameBoy &gameboy);
     ~Core() = default;
 
-    bool loadROM(const std::string &rom);
+    void loadROM(const std::string &rom);
 
     virtual void tick();
     virtual void frame();

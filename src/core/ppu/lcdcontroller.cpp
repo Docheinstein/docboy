@@ -3,7 +3,7 @@
 
 LCDController::LCDController(IDMA &dma) :
     dma(dma),
-    LCDC(), STAT(),
+    LCDC(0b10010001), STAT(),
     SCY(), SCX(),
     LY(), LYC(), DMA(),
     BGP(), OBP0(), OBP1(),

@@ -365,7 +365,7 @@ static CommandInfo COMMANDS[] = {
     {
         std::regex(R"(trace\s*(on|off)?)"),
         "trace [on|off]",
-        "Enable/disable state trace",
+        "Enable/disable state trace (output on standard error)",
         [](const std::vector<std::string> &groups) -> Command {
             const std::string &onoff = groups[0];
             CommandTrace cmd;
@@ -375,7 +375,7 @@ static CommandInfo COMMANDS[] = {
         }
     },
     {
-        std::regex(R"(h)"),
+        std::regex(R"(h(?:elp)?)"),
         "h",
         "Display help",
         [](const std::vector<std::string> &groups) -> Command {

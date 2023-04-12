@@ -53,11 +53,30 @@ protected:
     bool on;
     State state;
 
+    // TODO: refactor for sure
+    struct OAMEntry {
+        uint8_t number;
+        uint8_t x;
+        uint8_t y;
+    };
+    std::vector<OAMEntry> oamEntries;
+    struct {
+        struct {
+            uint8_t y;
+        } oam;
+    } scratchpad;
 
-    FIFO bgFifo;
-    FIFO objFifo;
+//    FIFO bgFifo;
+//    FIFO objFifo;
+    FIFO commonFifo;
 
     uint8_t transferredPixels;
+
+    // TODO: bad
+//    enum class FIFOType {
+//        Bg,
+//        Obj
+//    };
 
     struct {
         uint8_t dots;
@@ -73,6 +92,7 @@ protected:
             uint8_t tileDataLow;
             uint8_t tileDataHigh;
         } scratchpad;
+//        FIFOType targetFifo;
     } fetcher;
 
     uint32_t dots;
