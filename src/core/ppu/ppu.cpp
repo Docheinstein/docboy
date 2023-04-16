@@ -187,6 +187,7 @@ void PPU::fetcherTick() {
         fetcher.dots++;
     }
     else if (fetcher.dots == 1) {
+        // BG
         uint8_t SCY = lcdIo.readSCY();
         uint8_t tilemapY = ((fetcher.y + SCY) / 8) % 32;
 
@@ -195,6 +196,7 @@ void PPU::fetcherTick() {
         uint16_t base = 0x9800;
         fetcher.scratchpad.tilemapAddr = base + 32 * tilemapY + fetcher.scratchpad.tilemapX;
         fetcher.scratchpad.tileNumber = vram.read(fetcher.scratchpad.tilemapAddr - MemoryMap::VRAM::START); // TODO: bad
+        fetcher.targetFifo = FIFOType::Bg;
 
         // BAD: OAM
         for (const auto &oamEntry : oamEntries) {
@@ -206,6 +208,11 @@ void PPU::fetcherTick() {
                 &&
                 oamY <= fetcherY && fetcherY < oamY + 8 /* 16? */) {
                 fetcher.scratchpad.tileNumber = oam.read(4 * oamEntry.number + 2);
+                fetcher.scratchpad.tileObjFlags = oam.read(4 * oamEntry.number + 3); // bad
+                fetcher.targetFifo = FIFOType::Obj;
+                fetcher.scratchpad.tileObjTileAddrOffset = fetcherY - oamY;
+                break;
+
 //                std::cout <<
 //                "[fetcherX=" << fetcherX << ",fetcherY" << fetcherY << "] " <<
 //                    "Rendering sprite at" << oamEntry.x << "," << oamEntry.y << ": tileNum=" << fetcher.scratchpad.tileNumber << std::endl;
@@ -219,8 +226,25 @@ void PPU::fetcherTick() {
         uint8_t SCX = lcdIo.readSCX();
         uint8_t SCY = lcdIo.readSCY();
         uint16_t tileY = (fetcher.y + SCY) % 8;
-        fetcher.scratchpad.tileAddr = 0x8000 + fetcher.scratchpad.tileNumber * 16 /* sizeof tile */;
-        fetcher.scratchpad.tileDataAddr = fetcher.scratchpad.tileAddr + tileY * 2;
+        // TODO: bad
+        if (fetcher.targetFifo == FIFOType::Bg) {
+            if (get_bit<Bits::LCD::LCDC::BG_WIN_TILE_DATA>(lcdIo.readLCDC()))
+                fetcher.scratchpad.tileAddr = 0x8000 + fetcher.scratchpad.tileNumber * 16 /* sizeof tile */;
+            else {
+                if (fetcher.scratchpad.tileNumber < 128U)
+                    fetcher.scratchpad.tileAddr = 0x9000 + fetcher.scratchpad.tileNumber * 16 /* sizeof tile */;
+                else
+                    fetcher.scratchpad.tileAddr = 0x8800 + (fetcher.scratchpad.tileNumber - 128U) * 16 /* sizeof tile */;
+            }
+        } else {
+            fetcher.scratchpad.tileAddr = 0x8000 + fetcher.scratchpad.tileNumber * 16 /* sizeof tile */;
+        }
+
+        if (fetcher.targetFifo == FIFOType::Bg)
+            fetcher.scratchpad.tileDataAddr = fetcher.scratchpad.tileAddr + tileY * 2 /* sizeof tile row */;
+        else
+            fetcher.scratchpad.tileDataAddr = fetcher.scratchpad.tileAddr + (fetcher.scratchpad.tileObjTileAddrOffset) * 2;
+
         fetcher.scratchpad.tileDataLow = vram.read(fetcher.scratchpad.tileDataAddr - MemoryMap::VRAM::START);
         fetcher.dots++;
     } else if (fetcher.dots == 3) {
@@ -239,15 +263,32 @@ void PPU::fetcherTick() {
     // Push
     else {
         if (commonFifo.pixels.size() <= 8) {
-            for (int b = 7; b >= 0; b--) {
+            bool backwardPush = true;
+
+            // Check X flip
+            if (fetcher.targetFifo == FIFOType::Obj) {
+                if (get_bit<Bits::OAM::Attributes::X_FLIP>(fetcher.scratchpad.tileObjFlags))
+                    backwardPush = false;
+            }
+
+            auto pushPixel = [&](uint8_t b) {
                 uint8_t color =
-                        (get_bit(fetcher.scratchpad.tileDataLow, b) ? 0b10 : 0b00) |
-                        (get_bit(fetcher.scratchpad.tileDataHigh, b) ? 0b01 : 0b00);
+                        (get_bit(fetcher.scratchpad.tileDataLow, b) ? 0b01 : 0b00) |
+                        (get_bit(fetcher.scratchpad.tileDataHigh, b) ? 0b10 : 0b00);
                 FIFO::Pixel p {
                     .color = color
                 };
                 commonFifo.pixels.push_back(p);
+            };
+
+            if (backwardPush) {
+                for (int b = 7; b >= 0; b--)
+                    pushPixel(b);
+            } else {
+                for (int b = 0; b < 8; b++)
+                    pushPixel(b);
             }
+
             fetcher.dots = 0;
             fetcher.x8 = (fetcher.x8 + 1) % 20;
             if (fetcher.x8 == 0)

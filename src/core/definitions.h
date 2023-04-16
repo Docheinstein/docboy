@@ -242,6 +242,15 @@ namespace Bits {
             constexpr uint8_t MODE_LOW = 0;
         }
     }
+
+    namespace OAM {
+        namespace Attributes {
+            constexpr uint8_t BG_OVER_OBJ = 7;
+            constexpr uint8_t Y_FLIP = 6;
+            constexpr uint8_t X_FLIP = 5;
+            constexpr uint8_t PALETTE_NUM = 4;
+        }
+    }
 }
 
 #endif // DEFINITIONS_H

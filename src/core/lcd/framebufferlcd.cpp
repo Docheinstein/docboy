@@ -1,9 +1,9 @@
 #include "framebufferlcd.h"
 
-constexpr uint32_t DARKEST_GREEN_COLOR = 0x0f380fff;
-constexpr uint32_t DARK_GREEN_COLOR = 0x306230ff;
-constexpr uint32_t LIGHT_GREEN_COLOR = 0x8bac0fff;
-constexpr uint32_t LIGHTEST_GREEN_COLOR = 0x9bbc0fff;
+constexpr uint32_t DARKEST_GREEN_COLOR = 0x144403FF;
+constexpr uint32_t DARK_GREEN_COLOR = 0x2B5503FF;
+constexpr uint32_t LIGHT_GREEN_COLOR = 0x4D6B03FF;
+constexpr uint32_t LIGHTEST_GREEN_COLOR = 0x879603FF;
 
 static uint32_t LCDPixelToRGBA(ILCD::Pixel pixel) {
     switch (pixel) {

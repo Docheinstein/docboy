@@ -73,10 +73,10 @@ protected:
     uint8_t transferredPixels;
 
     // TODO: bad
-//    enum class FIFOType {
-//        Bg,
-//        Obj
-//    };
+    enum class FIFOType {
+        Bg,
+        Obj
+    };
 
     struct {
         uint8_t dots;
@@ -86,13 +86,15 @@ protected:
             uint8_t tilemapX;
 //            uint8_t y;
             uint8_t tileNumber;
+            uint8_t tileObjTileAddrOffset;
+            uint8_t tileObjFlags;
             uint16_t tilemapAddr;
             uint16_t tileAddr;
             uint16_t tileDataAddr;
             uint8_t tileDataLow;
             uint8_t tileDataHigh;
         } scratchpad;
-//        FIFOType targetFifo;
+        FIFOType targetFifo; // bad
     } fetcher;
 
     uint32_t dots;
