@@ -4,6 +4,7 @@
 #include <queue>
 #include <cstdint>
 #include "core/clock/clockable.h"
+#include <optional>
 
 class IMemory;
 class ILCDIO;
@@ -64,13 +65,12 @@ protected:
         struct {
             uint8_t y;
         } oam;
-    } scratchpad;
+    } scratchpad{};
 
-//    FIFO bgFifo;
-//    FIFO objFifo;
-    FIFO commonFifo;
+    FIFO bgFifo;
+    FIFO objFifo;
 
-    uint8_t transferredPixels;
+    uint8_t LX;
 
     // TODO: bad
     enum class FIFOType {
@@ -78,30 +78,71 @@ protected:
         Obj
     };
 
+    // TODO: bad
+    enum class FetcherState {
+        Prefetcher,
+        PixelSliceFetcher,
+        Pushing
+    };
+
+    struct {
+        FetcherState state;
+//        uint8_t y;
+        std::vector<OAMEntry> oamEntriesHit;
+        FIFOType targetFifo;
+    } fetcher;
+
     struct {
         uint8_t dots;
-        uint8_t x8;
-        uint8_t y;
         struct {
-            uint8_t tilemapX;
-//            uint8_t y;
-            uint8_t tileNumber;
-            uint8_t tileObjTileAddrOffset;
-            uint8_t tileObjFlags;
-            uint16_t tilemapAddr;
-            uint16_t tileAddr;
-            uint16_t tileDataAddr;
             uint8_t tileDataLow;
             uint8_t tileDataHigh;
         } scratchpad;
-        FIFOType targetFifo; // bad
-    } fetcher;
+        struct {
+            uint16_t tileDataAddr;
+        } in;
+    } pixelSliceFetcher{};
+
+    struct {
+        uint8_t dots;
+        uint8_t x8;
+        struct {
+            uint8_t tilemapX;
+            uint16_t tilemapAddr;
+            uint8_t tileNumber;
+            uint16_t tileAddr;
+        } scratchpad;
+        struct {
+            uint16_t tileDataAddr;
+        } out;
+    } bgPrefetcher{};
+
+    struct {
+        uint8_t dots;
+        struct {
+            uint8_t tileNumber;
+            uint8_t oamFlags;
+            uint16_t tileAddr;
+        } scratchpad;
+        struct {
+            OAMEntry entry;
+        } in;
+        struct {
+            uint16_t tileDataAddr;
+        } out;
+    } objPrefetcher{};
 
     uint32_t dots;
     uint64_t tCycles;
 
     void fetcherTick();
+    void bgPrefetcherTick();
+    void objPrefetcherTick();
+    void pixelSliceFetcherTick();
+
     void fetcherClear();
+
+    bool isFifoBlocked() const;
 };
 
 

@@ -9,6 +9,9 @@ set(SOURCES
     hexdump.cpp
     log.h
     log.cpp
+    stdutils.h
+    stdutils.tpp
+    log.cpp
     strutils.h
     strutils.cpp
     termcolor.h
