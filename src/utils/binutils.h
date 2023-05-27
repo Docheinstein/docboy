@@ -7,6 +7,7 @@
 #include <vector>
 #include <iosfwd>
 #include <tuple>
+#include <cstdint>
 
 template<uint8_t n>
 constexpr uint64_t bit = (((uint64_t) 1) << n);

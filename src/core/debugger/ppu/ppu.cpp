@@ -50,12 +50,13 @@ IPPUDebug::State DebuggablePPU::getState() {
             .objFifo = objFifo
         },
         .fetcher = {
-            .state = fetcherState,
-            .x = bgPrefetcher.x8,
-            .y = lcdIo.readLY(),
-            .lastTimeMapAddr = bgPrefetcher.scratchpad.tilemapAddr,
-            .lastTileAddr = bgPrefetcher.scratchpad.tileAddr,
-            .lastTileDataAddr = bgPrefetcher.out.tileDataAddr
+//            .state = fetcherState,
+//            .x = 0,
+////            .x = bgPrefetcher.x8,
+//            .y = lcdIo.readLY(),
+//            .lastTimeMapAddr = bgPrefetcher.scratchpad.tilemapAddr,
+//            .lastTileAddr = bgPrefetcher.scratchpad.tileAddr,
+//            .lastTileDataAddr = bgPrefetcher.out.tileDataAddr
         }
     };
 }

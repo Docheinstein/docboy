@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <cstdint>
 
 std::string hexdump(const uint8_t *data, size_t length, bool addr = true, bool ascii = false, size_t columns = 32);
 

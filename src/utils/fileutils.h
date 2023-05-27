@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 template<typename T = uint8_t>
 std::vector<T> read_file(const std::string &filename, bool *ok = nullptr);

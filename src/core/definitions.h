@@ -2,6 +2,7 @@
 #define DEFINITIONS_H
 
 #include <string>
+#include <cstdint>
 
 namespace Specs {
     constexpr uint32_t FREQUENCY = 4194304;

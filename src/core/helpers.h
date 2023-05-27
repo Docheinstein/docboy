@@ -4,6 +4,7 @@
 #include <optional>
 #include "definitions.h"
 #include <vector>
+#include <cstdint>
 
 uint8_t instruction_length(uint8_t opcode, bool cb = false);
 uint8_t instruction_length(const std::vector<uint8_t> &instruction);

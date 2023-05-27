@@ -2,7 +2,6 @@
 #include "utils/binutils.h"
 #include "frontend/sdl/helpers.h"
 
-
 struct InstructionInfo {
     const char * mnemonic;
     uint8_t length;

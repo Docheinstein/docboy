@@ -1,6 +1,7 @@
 #ifndef PPU_H
 #define PPU_H
 
+
 #include <queue>
 #include <cstdint>
 #include "core/clock/clockable.h"
@@ -37,6 +38,104 @@ public:
     void tick() override;
 
 protected:
+    struct OAMEntry {
+        uint8_t number;
+        uint8_t x;
+        uint8_t y;
+    };
+
+    struct BGPrefetcher {
+    public:
+        explicit BGPrefetcher(ILCDIO &lcdIo, IMemory &vram);
+
+        void tick();
+        void reset();
+        void resetTile();
+
+        [[nodiscard]] bool isTileDataAddressReady() const;
+        [[nodiscard]] uint16_t getTileDataAddress() const;
+
+        void advanceToNextTile();
+
+    private:
+        ILCDIO &lcdIo;
+        IMemory &vram;
+
+        uint8_t dots;
+        uint8_t x8;
+
+        // scratchpad
+        uint8_t tilemapX;
+        uint16_t tilemapAddr;
+        uint8_t tileNumber;
+        uint16_t tileAddr;
+
+        // out
+        uint16_t tileDataAddr;
+    };
+
+
+    class OBJPrefetcher {
+    public:
+         explicit OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam);
+
+        void tick();
+        void reset();
+
+        void setOAMEntry(const OAMEntry &oamEntry);
+
+        [[nodiscard]] bool isTileDataAddressReady() const;
+        [[nodiscard]] uint16_t getTileDataAddress() const;
+
+    private:
+        ILCDIO &lcdIo;
+        IMemory &oam;
+
+        uint8_t dots;
+
+        // scratchpad
+        uint8_t tileNumber;
+
+    public:
+        // TODO: private
+        uint8_t oamFlags;
+
+    private:
+        uint16_t tileAddr;
+
+        // in
+        OAMEntry entry;
+
+        // out
+        uint16_t tileDataAddr;
+    };
+
+    class PixelSliceFetcher {
+    public:
+        explicit PixelSliceFetcher(IMemory &vram);
+
+        void tick();
+        void reset();
+
+        void setTileDataAddress(uint16_t tileDataAddr);
+
+        [[nodiscard]] bool isTileDataReady() const;
+
+        [[nodiscard]] uint8_t getTileDataLow() const;
+        [[nodiscard]] uint8_t getTileDataHigh() const;
+
+    private:
+        IMemory &vram;
+
+        uint8_t dots;
+
+        // in
+        uint16_t tileDataAddr;
+
+        // out
+        uint8_t tileDataLow;
+        uint8_t tileDataHigh;
+    };
 
     enum State {
         HBlank = 0,
@@ -54,13 +153,8 @@ protected:
     bool on;
     State state;
 
-    // TODO: refactor for sure
-    struct OAMEntry {
-        uint8_t number;
-        uint8_t x;
-        uint8_t y;
-    };
-    std::vector<OAMEntry> oamEntries;
+
+    std::vector<OAMEntry> scanlineOamEntries;
     struct {
         struct {
             uint8_t y;
@@ -87,59 +181,19 @@ protected:
 
     struct {
         FetcherState state;
-//        uint8_t y;
         std::vector<OAMEntry> oamEntriesHit;
         FIFOType targetFifo;
     } fetcher;
 
-    struct {
-        uint8_t dots;
-        struct {
-            uint8_t tileDataLow;
-            uint8_t tileDataHigh;
-        } scratchpad;
-        struct {
-            uint16_t tileDataAddr;
-        } in;
-    } pixelSliceFetcher{};
 
-    struct {
-        uint8_t dots;
-        uint8_t x8;
-        struct {
-            uint8_t tilemapX;
-            uint16_t tilemapAddr;
-            uint8_t tileNumber;
-            uint16_t tileAddr;
-        } scratchpad;
-        struct {
-            uint16_t tileDataAddr;
-        } out;
-    } bgPrefetcher{};
-
-    struct {
-        uint8_t dots;
-        struct {
-            uint8_t tileNumber;
-            uint8_t oamFlags;
-            uint16_t tileAddr;
-        } scratchpad;
-        struct {
-            OAMEntry entry;
-        } in;
-        struct {
-            uint16_t tileDataAddr;
-        } out;
-    } objPrefetcher{};
+    BGPrefetcher bgPrefetcher;
+    OBJPrefetcher objPrefetcher;
+    PixelSliceFetcher pixelSliceFetcher;
 
     uint32_t dots;
     uint64_t tCycles;
 
     void fetcherTick();
-    void bgPrefetcherTick();
-    void objPrefetcherTick();
-    void pixelSliceFetcherTick();
-
     void fetcherClear();
 
     bool isFifoBlocked() const;
