@@ -46,6 +46,7 @@ protected:
         uint8_t y;
     };
 
+    // base class for BGPrefetcher, OBJPrefetcher, PixelSliceFetcher
     template<class ProcessorImpl>
     class Processor {
     public:
@@ -176,9 +177,16 @@ protected:
     };
 
     void tick_HBlank();
+    void afterTick_HBlank();
+
     void tick_VBlank();
+    void afterTick_VBlank();
+
     void tick_OAMScan();
+    void afterTick_OAMScan();
+
     void tick_PixelTransfer();
+    void afterTick_PixelTransfer();
 
     void fetcherTick();
     void fetcherClear();
@@ -196,16 +204,19 @@ protected:
     IMemory &oam;
 
     TickHandler tickHandlers[4];
+    TickHandler afterTickHandlers[4];
 
     bool on;
     State state;
-
 
     std::vector<OAMEntry> scanlineOamEntries;
     struct {
         struct {
             uint8_t y;
-        } oam;
+        } oamScan;
+        struct {
+            bool pixelPushed;
+        } pixelTransfer;
     } scratchpad{};
 
     FIFO bgFifo;

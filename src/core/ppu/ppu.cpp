@@ -33,6 +33,12 @@ PPU::PPU(ILCD &lcd, ILCDIO &lcdIo, IInterruptsIO &interrupts, IMemory &vram, IMe
         &PPU::tick_OAMScan,
         &PPU::tick_PixelTransfer,
     },
+    afterTickHandlers {
+        &PPU::afterTick_HBlank,
+        &PPU::afterTick_VBlank,
+        &PPU::afterTick_OAMScan,
+        &PPU::afterTick_PixelTransfer,
+    },
     on(),
     state(OAMScan),
     bgFifo(),
@@ -74,14 +80,19 @@ void PPU::tick() {
     if (!on)
         return; // TODO: ok?
 
-    TickHandler tickHandler = tickHandlers[state];
-    (this->*(tickHandler))();
+    (this->*(tickHandlers[state]))();
+    dots++;
+    (this->*(afterTickHandlers[state]))();
+
     tCycles++;
 }
 
-void PPU::tick_HBlank() {
-    dots++;
 
+void PPU::tick_HBlank() {
+    // nop
+}
+
+void PPU::afterTick_HBlank() {
     if (dots == 456) {
         // end of hblank
         dots = 0;
@@ -90,21 +101,28 @@ void PPU::tick_HBlank() {
         LY++;
         updateLY(LY);
         if (LY == 144) {
+            // end of last hblank before vblank
             updateState(State::VBlank);
         } else {
+            // start oam again
             updateState(State::OAMScan);
             scanlineOamEntries.clear(); // TODO: in updateState?
         }
     }
 }
 
-void PPU::tick_VBlank() {
-    dots++;
 
+
+void PPU::tick_VBlank() {
+    // nop
+}
+
+void PPU::afterTick_VBlank() {
     if (dots % 456 == 0) {
         uint8_t LY = lcdIo.readLY();
         LY++;
         if (LY < 154) {
+            // end of current scanline, begin a new line but remain in vblank
             updateLY(LY);
         } else {
             // end of vblank
@@ -122,15 +140,17 @@ void PPU::tick_OAMScan() {
     uint8_t oamNum = dots / 2;
     if (dots % 2 == 0) {
         // read oam entry y
-        scratchpad.oam.y = oam.read(4 * oamNum);
+        scratchpad.oamScan.y = oam.read(4 * oamNum);
     }
     else {
         uint8_t x = oam.read(4 * oamNum + 1);
-        int oamY = scratchpad.oam.y - 16;
-        if (oamY <= LY && LY < oamY + 8)
-            scanlineOamEntries.emplace_back(dots / 2, x, scratchpad.oam.y);
+        int oamY = scratchpad.oamScan.y - 16;
+        if (oamY <= LY && LY < oamY + 8 )
+            scanlineOamEntries.emplace_back(dots / 2, x, scratchpad.oamScan.y);
     }
-    dots++;;
+}
+
+void PPU::afterTick_OAMScan() {
     if (dots == 80) {
         // end of OAM scan
         LX = 0;
@@ -150,7 +170,7 @@ void PPU::tick_PixelTransfer() {
     // shift pixel from fifo to lcd if bg fifo is not empty
     // and it's not blocked by the pixel fetcher due to sprite fetch
 
-    bool pushedToLcd = false;
+    scratchpad.pixelTransfer.pixelPushed = false;
 
     if (!isFifoBlocked()) {
 
@@ -173,13 +193,15 @@ void PPU::tick_PixelTransfer() {
                 pixel = *objPixel;
 
             lcd.pushPixel(fifo_pixel_to_lcd_pixel(pixel));
-            pushedToLcd = true;
+            scratchpad.pixelTransfer.pixelPushed = true;
         }
     }
 
     fetcherTick();
+}
 
-    if (pushedToLcd) {
+void PPU::afterTick_PixelTransfer() {
+    if (scratchpad.pixelTransfer.pixelPushed) {
         LX++;
 
         if (LX >= 160) {
@@ -199,10 +221,7 @@ void PPU::tick_PixelTransfer() {
                 }
             }
         }
-
     }
-
-    dots++;
 }
 
 void PPU::fetcherClear() {
@@ -340,6 +359,7 @@ void PPU::updateLY(uint8_t LY) {
     if ((get_bit<Bits::LCD::STAT::LYC_EQ_LY_INTERRUPT>(STAT)) && LY == LYC)
         interrupts.setIF<Bits::Interrupts::STAT>();
 }
+
 
 PPU::BGPrefetcher::BGPrefetcher(ILCDIO &lcdIo, IMemory &vram) :
     Processor<BGPrefetcher>(),
