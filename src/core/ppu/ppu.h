@@ -44,12 +44,32 @@ protected:
         uint8_t y;
     };
 
-    struct BGPrefetcher {
+    template<class ProcessorImpl>
+    class Processor {
+    public:
+        typedef void (ProcessorImpl::*TickHandler)();
+
+        void tick() {
+            auto* impl = static_cast<ProcessorImpl*>(this);
+            TickHandler tickHandler = impl->tickHandlers[dots];
+            (impl->*(tickHandler))();
+            dots++;
+        }
+
+        void reset() {
+            dots = 0;
+        }
+
+    protected:
+        uint8_t dots;
+    };
+
+    struct BGPrefetcher : public Processor<BGPrefetcher> {
+    friend class Processor<BGPrefetcher>;
+
     public:
         explicit BGPrefetcher(ILCDIO &lcdIo, IMemory &vram);
 
-        void tick();
-        void reset();
         void resetTile();
 
         [[nodiscard]] bool isTileDataAddressReady() const;
@@ -58,10 +78,15 @@ protected:
         void advanceToNextTile();
 
     private:
+        void tick_GetTile1();
+        void tick_GetTile2();
+
         ILCDIO &lcdIo;
         IMemory &vram;
 
-        uint8_t dots;
+        TickHandler tickHandlers[2];
+
+        // state
         uint8_t x8;
 
         // scratchpad
@@ -75,12 +100,10 @@ protected:
     };
 
 
-    class OBJPrefetcher {
+    class OBJPrefetcher : public Processor<OBJPrefetcher> {
+    friend class Processor<OBJPrefetcher>;
     public:
          explicit OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam);
-
-        void tick();
-        void reset();
 
         void setOAMEntry(const OAMEntry &oamEntry);
 
@@ -88,10 +111,13 @@ protected:
         [[nodiscard]] uint16_t getTileDataAddress() const;
 
     private:
+        void tick_GetTile1();
+        void tick_GetTile2();
+
         ILCDIO &lcdIo;
         IMemory &oam;
 
-        uint8_t dots;
+        TickHandler tickHandlers[2];
 
         // scratchpad
         uint8_t tileNumber;
@@ -110,12 +136,10 @@ protected:
         uint16_t tileDataAddr;
     };
 
-    class PixelSliceFetcher {
+    class PixelSliceFetcher : public Processor<PixelSliceFetcher> {
+    friend class Processor<PixelSliceFetcher>;
     public:
         explicit PixelSliceFetcher(IMemory &vram);
-
-        void tick();
-        void reset();
 
         void setTileDataAddress(uint16_t tileDataAddr);
 
@@ -125,9 +149,14 @@ protected:
         [[nodiscard]] uint8_t getTileDataHigh() const;
 
     private:
+        void tick_GetTileDataLow_1();
+        void tick_GetTileDataLow_2();
+        void tick_GetTileDataHigh_1();
+        void tick_GetTileDataHigh_2();
+
         IMemory &vram;
 
-        uint8_t dots;
+        TickHandler tickHandlers[4];
 
         // in
         uint16_t tileDataAddr;

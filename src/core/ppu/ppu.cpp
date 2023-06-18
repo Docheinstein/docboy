@@ -26,52 +26,48 @@ static ILCD::Pixel fifo_pixel_to_lcd_pixel(const FIFO::Pixel &pixel) {
 
 
 PPU::BGPrefetcher::BGPrefetcher(ILCDIO &lcdIo, IMemory &vram) :
+    Processor<BGPrefetcher>(),
     lcdIo(lcdIo), vram(vram),
-    dots(), x8(),
+    tickHandlers {
+        &PPU::BGPrefetcher::tick_GetTile1,
+        &PPU::BGPrefetcher::tick_GetTile2,
+    },
+    x8(),
     tilemapX(),
     tilemapAddr(),
     tileNumber(),
     tileAddr(),
-    tileDataAddr()
-{
+    tileDataAddr() {
 
 }
 
+void PPU::BGPrefetcher::tick_GetTile1() {
+    uint8_t SCX = lcdIo.readSCX();
+    tilemapX = (x8 + (SCX / 8)) % 32;
+}
 
-void PPU::BGPrefetcher::tick() {
-    assert(dots < 2);
-    assert(x8 < 20);
+void PPU::BGPrefetcher::tick_GetTile2() {
+    uint8_t SCY = lcdIo.readSCY();
+    uint8_t LY = lcdIo.readLY(); // or fetcher.y?
+    uint8_t tilemapY = ((LY + SCY) / 8) % 32;
 
-    if (dots == 0) {
-        uint8_t SCX = lcdIo.readSCX();
-        tilemapX = (x8 + (SCX / 8)) % 32;
-        dots++;
-    } else if (dots == 1) {
-        uint8_t SCY = lcdIo.readSCY();
-        uint8_t LY = lcdIo.readLY(); // or fetcher.y?
-        uint8_t tilemapY = ((LY + SCY) / 8) % 32;
+    // fetch tile from tilemap
+    uint16_t base = 0x9800;
+    tilemapAddr = base + 32 * tilemapY + tilemapX;
+    tileNumber = vram.read(tilemapAddr - MemoryMap::VRAM::START); // TODO: bad
 
-        // fetch tile from tilemap
-        uint16_t base = 0x9800;
-        tilemapAddr = base + 32 * tilemapY + tilemapX;
-        tileNumber = vram.read(tilemapAddr - MemoryMap::VRAM::START); // TODO: bad
-
-        if (get_bit<Bits::LCD::LCDC::BG_WIN_TILE_DATA>(lcdIo.readLCDC()))
-            tileAddr = 0x8000 + tileNumber * 16 /* sizeof tile */;
-        else {
-            if (tileNumber < 128U)
-                tileAddr = 0x9000 + tileNumber * 16 /* sizeof tile */;
-            else
-                tileAddr = 0x8800 + (tileNumber - 128U) * 16 /* sizeof tile */;
-        }
-
-        uint16_t tileY = (LY + SCY) % 8;
-        tileDataAddr = tileAddr + tileY * 2 /* sizeof tile row */;;
-
-        dots++;
+    if (get_bit<Bits::LCD::LCDC::BG_WIN_TILE_DATA>(lcdIo.readLCDC()))
+        tileAddr = 0x8000 + tileNumber * 16 /* sizeof tile */;
+    else {
+        if (tileNumber < 128U)
+            tileAddr = 0x9000 + tileNumber * 16 /* sizeof tile */;
+        else
+            tileAddr = 0x8800 + (tileNumber - 128U) * 16 /* sizeof tile */;
     }
-}
 
+    uint16_t tileY = (LY + SCY) % 8;
+    tileDataAddr = tileAddr + tileY * 2 /* sizeof tile row */;
+}
 
 uint16_t PPU::BGPrefetcher::getTileDataAddress() const {
     return tileDataAddr;
@@ -79,10 +75,6 @@ uint16_t PPU::BGPrefetcher::getTileDataAddress() const {
 
 bool PPU::BGPrefetcher::isTileDataAddressReady() const {
     return dots == 2;
-}
-
-void PPU::BGPrefetcher::reset() {
-    dots = 0;
 }
 
 void PPU::BGPrefetcher::resetTile() {
@@ -94,33 +86,29 @@ void PPU::BGPrefetcher::advanceToNextTile() {
 }
 
 PPU::OBJPrefetcher::OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam) :
+    Processor<OBJPrefetcher>(),
     lcdIo(lcdIo), oam(oam),
-    dots(), tileNumber(),
+    tickHandlers {
+        &PPU::OBJPrefetcher::tick_GetTile1,
+        &PPU::OBJPrefetcher::tick_GetTile2,
+    }, tileNumber(),
     oamFlags(), tileAddr(),
     entry(), tileDataAddr() {
 
 }
 
-void PPU::OBJPrefetcher::tick() {
-   assert(dots < 2);
-
-    if (dots == 0) {
-        tileNumber = oam.read(4 * entry.number + 2);
-        dots++;
-    } else if (dots == 1) {
-        oamFlags  = oam.read(4 * entry.number + 3);
-        tileAddr = 0x8000 + tileNumber * 16 /* sizeof tile */;
-
-        int oamY = entry.y - 16;
-        int yOffset = lcdIo.readLY() - oamY;
-
-        tileDataAddr = tileAddr + yOffset * 2;
-        dots++;
-    }
+void PPU::OBJPrefetcher::tick_GetTile1() {
+    tileNumber = oam.read(4 * entry.number + 2);
 }
 
-void PPU::OBJPrefetcher::reset() {
-    dots = 0;
+void PPU::OBJPrefetcher::tick_GetTile2() {
+    oamFlags  = oam.read(4 * entry.number + 3);
+    tileAddr = 0x8000 + tileNumber * 16 /* sizeof tile */;
+
+    int oamY = entry.y - 16;
+    int yOffset = lcdIo.readLY() - oamY;
+
+    tileDataAddr = tileAddr + yOffset * 2;
 }
 
 bool PPU::OBJPrefetcher::isTileDataAddressReady() const {
@@ -136,30 +124,30 @@ void PPU::OBJPrefetcher::setOAMEntry(const PPU::OAMEntry &oamEntry) {
 //    dots = 0;
 }
 
-PPU::PixelSliceFetcher::PixelSliceFetcher(IMemory &vram) : vram(vram),
-    dots(), tileDataAddr(), tileDataLow(), tileDataHigh() {
-
+PPU::PixelSliceFetcher::PixelSliceFetcher(IMemory &vram) :
+    Processor(),
+    vram(vram),
+    tickHandlers {
+        &PPU::PixelSliceFetcher::tick_GetTileDataLow_1,
+        &PPU::PixelSliceFetcher::tick_GetTileDataLow_2,
+        &PPU::PixelSliceFetcher::tick_GetTileDataHigh_1,
+        &PPU::PixelSliceFetcher::tick_GetTileDataHigh_2,
+    }, tileDataAddr(), tileDataLow(), tileDataHigh() {
 }
 
-void PPU::PixelSliceFetcher::tick() {
-    assert(dots < 4);
-
-    // GetTileDataLow
-    if (dots == 0) {
-        tileDataLow = vram.read(tileDataAddr - MemoryMap::VRAM::START);
-    } else if (dots == 1) {
-        // nop
-    }
-    // GetTileDataHigh
-    else if (dots == 2) {
-        tileDataHigh = vram.read(tileDataAddr - MemoryMap::VRAM::START + 1);
-    }
-    else if (dots == 3) {
-        // nop
-    }
-    dots++;
+void PPU::PixelSliceFetcher::tick_GetTileDataLow_1() {
+    tileDataLow = vram.read(tileDataAddr - MemoryMap::VRAM::START);
 }
 
+void PPU::PixelSliceFetcher::tick_GetTileDataLow_2() {
+}
+
+void PPU::PixelSliceFetcher::tick_GetTileDataHigh_1() {
+    tileDataHigh = vram.read(tileDataAddr - MemoryMap::VRAM::START + 1);
+}
+
+void PPU::PixelSliceFetcher::tick_GetTileDataHigh_2() {
+}
 
 void PPU::PixelSliceFetcher::setTileDataAddress(uint16_t tileDataAddr_) {
     tileDataAddr = tileDataAddr_;
@@ -170,9 +158,6 @@ bool PPU::PixelSliceFetcher::isTileDataReady() const {
     return dots == 4;
 }
 
-void PPU::PixelSliceFetcher::reset() {
-    dots = 0;
-}
 
 uint8_t PPU::PixelSliceFetcher::getTileDataLow() const {
     return tileDataLow;
@@ -181,6 +166,7 @@ uint8_t PPU::PixelSliceFetcher::getTileDataLow() const {
 uint8_t PPU::PixelSliceFetcher::getTileDataHigh() const {
     return tileDataHigh;
 }
+
 
 
 PPU::PPU(ILCD &lcd, ILCDIO &lcdIo, IInterruptsIO &interrupts, IMemory &vram, IMemory &oam) :
