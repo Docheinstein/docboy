@@ -41,16 +41,13 @@ PPU::PPU(ILCD &lcd, ILCDIO &lcdIo, IInterruptsIO &interrupts, IMemory &vram, IMe
     },
     on(),
     state(OAMScan),
+    fetcher(lcdIo, vram, oam, bgFifo, objFifo),
     bgFifo(),
     objFifo(),
     LX(),
-    fetcher(),
-    bgPrefetcher(lcdIo, vram),
-    objPrefetcher(lcdIo, oam),
-    pixelSliceFetcher(vram),
     dots(),
     tCycles() {
-    fetcherClear();
+    fetcher.reset();
 }
 
 /*
@@ -67,7 +64,7 @@ void PPU::tick() {
         on = false;
         lcd.turnOff();
         updateLY(0);
-        fetcherClear(); // TODO: bad...
+        fetcher.reset(); // TODO: bad...
         bgFifo.pixels.clear();
         objFifo.pixels.clear();
         dots = 0; // TODO: ?
@@ -154,14 +151,7 @@ void PPU::afterTick_OAMScan() {
     if (dots == 80) {
         // end of OAM scan
         LX = 0;
-        fetcher.state = FetcherState::Prefetcher; // TODO: bad not here
-        fetcher.oamEntriesHit.clear();
-        pixelSliceFetcher.reset();
-        bgPrefetcher.reset();
-        bgPrefetcher.resetTile();
-        objPrefetcher.reset();
-        bgFifo.pixels.clear();
-        objFifo.pixels.clear();
+        fetcher.reset();
         updateState(PixelTransfer);
     }
 }
@@ -173,7 +163,6 @@ void PPU::tick_PixelTransfer() {
     scratchpad.pixelTransfer.pixelPushed = false;
 
     if (!isFifoBlocked()) {
-
         if (!bgFifo.pixels.empty()) {
             FIFO::Pixel bgPixel = bgFifo.pixels.front();
             bgFifo.pixels.pop_front();
@@ -186,8 +175,6 @@ void PPU::tick_PixelTransfer() {
 
             FIFO::Pixel pixel = bgPixel;
 
-            uint8_t LY = lcdIo.readLY();
-
             // TODO: handle overlap
             if (objPixel)
                 pixel = *objPixel;
@@ -197,7 +184,7 @@ void PPU::tick_PixelTransfer() {
         }
     }
 
-    fetcherTick();
+    fetcher.tick();
 }
 
 void PPU::afterTick_PixelTransfer() {
@@ -209,123 +196,23 @@ void PPU::afterTick_PixelTransfer() {
             updateState(HBlank);
             // assert(dots >= 80 + 172 && dots <= 80 + 289);
         } else {
-            // compute sprite on current LX
-            fetcher.oamEntriesHit.clear();
-
-            assert(fetcher.oamEntriesHit.empty());
+            // compute sprites on current LX
+            std::vector<OAMEntry> entries;
 
             for (const auto &entry : scanlineOamEntries) {
                 uint8_t oamX = entry.x - 8;
-                if (oamX == LX) {
-                    fetcher.oamEntriesHit.push_back(entry);
-                }
+                if (oamX == LX)
+                    entries.push_back(entry);
             }
+
+            fetcher.setOAMEntriesHit(entries);
         }
     }
 }
 
-void PPU::fetcherClear() {
-    fetcher.state = FetcherState::Prefetcher;
-    fetcher.oamEntriesHit.clear();
-    pixelSliceFetcher.reset();
-    bgPrefetcher.reset();
-    bgPrefetcher.resetTile();
-    objPrefetcher.reset();
-    bgFifo.pixels.clear();
-    objFifo.pixels.clear();
-}
-
-void PPU::fetcherTick() {
-    // TODO: bad here
-    auto getPixelSlicerFetcherPixel = [&](uint8_t b) {
-        uint8_t color =
-                (get_bit(pixelSliceFetcher.getTileDataLow(), b) ? 0b01 : 0b00) |
-                (get_bit(pixelSliceFetcher.getTileDataHigh(), b) ? 0b10 : 0b00);
-        FIFO::Pixel p {
-            .color = color
-        };
-        return p;
-    };
-
-    if (fetcher.state == FetcherState::Prefetcher) {
-        if (fetcher.targetFifo == FIFOType::Bg) {
-            bgPrefetcher.tick();
-
-            if (bgPrefetcher.isTileDataAddressReady()) {
-                bgPrefetcher.reset();
-                pixelSliceFetcher.setTileDataAddress(bgPrefetcher.getTileDataAddress());
-                pixelSliceFetcher.reset();
-                fetcher.state = FetcherState::PixelSliceFetcher;
-            }
-        } else if (fetcher.targetFifo == FIFOType::Obj) {
-            objPrefetcher.tick();
-
-            if (objPrefetcher.isTileDataAddressReady()) {
-                objPrefetcher.reset();
-                pixelSliceFetcher.setTileDataAddress(objPrefetcher.getTileDataAddress());
-                pixelSliceFetcher.reset();
-                fetcher.state = FetcherState::PixelSliceFetcher;
-            }
-        }
-    } else if (fetcher.state == FetcherState::PixelSliceFetcher) {
-        pixelSliceFetcher.tick();
-        if (pixelSliceFetcher.isTileDataReady())
-            fetcher.state = FetcherState::Pushing;
-
-        // TODO: oam read should overlap last bg push?
-    } else if (fetcher.state == FetcherState::Pushing) {
-        if (fetcher.targetFifo == FIFOType::Bg) {
-            if (!fetcher.oamEntriesHit.empty()) {
-                // oam entry hit waiting to be served
-                // discard bg push?
-                objPrefetcher.setOAMEntry(pop(fetcher.oamEntriesHit));
-                fetcher.state = FetcherState::Prefetcher;
-                fetcher.targetFifo = FIFOType::Obj;
-            } else {
-                if (bgFifo.pixels.empty()) {
-                    // push pixels
-                    for (int b = 7; b >= 0; b--)
-                        bgFifo.pixels.push_back(getPixelSlicerFetcherPixel(b));
-
-                    bgPrefetcher.advanceToNextTile();
-
-                    fetcher.state = FetcherState::Prefetcher;
-                }
-            }
-        } else if (fetcher.targetFifo == FIFOType::Obj) {
-            objFifo.pixels.clear();
-
-            // TODO: should not access flags so badly from
-            bool backwardPush = true;
-            if (get_bit<Bits::OAM::Attributes::X_FLIP>(objPrefetcher.oamFlags))
-                backwardPush = false;
-
-            // TODO: not clear/push but merge
-            if (backwardPush) {
-                for (int b = 7; b >= 0; b--)
-                    objFifo.pixels.push_back(getPixelSlicerFetcherPixel(b));
-            } else {
-                for (int b = 0; b < 8; b++)
-                    objFifo.pixels.push_back(getPixelSlicerFetcherPixel(b));
-            }
-
-            fetcher.state = FetcherState::Prefetcher;
-
-            if (!fetcher.oamEntriesHit.empty()) {
-                // oam entry hit waiting to be served
-                // discard bg push?
-                objPrefetcher.setOAMEntry(pop(fetcher.oamEntriesHit));
-                fetcher.targetFifo = FIFOType::Obj;
-            } else {
-                fetcher.targetFifo = FIFOType::Bg;
-            }
-
-        }
-    }
-}
 
 bool PPU::isFifoBlocked() const {
-    return !fetcher.oamEntriesHit.empty() || fetcher.targetFifo == FIFOType::Obj;
+    return fetcher.isFetchingSprite();
 }
 
 void PPU::updateState(PPU::State s) {
@@ -361,12 +248,12 @@ void PPU::updateLY(uint8_t LY) {
 }
 
 
-PPU::BGPrefetcher::BGPrefetcher(ILCDIO &lcdIo, IMemory &vram) :
+PPU::Fetcher::BGPrefetcher::BGPrefetcher(ILCDIO &lcdIo, IMemory &vram) :
     Processor<BGPrefetcher>(),
     lcdIo(lcdIo), vram(vram),
     tickHandlers {
-        &PPU::BGPrefetcher::tick_GetTile1,
-        &PPU::BGPrefetcher::tick_GetTile2,
+        &PPU::Fetcher::BGPrefetcher::tick_GetTile1,
+        &PPU::Fetcher::BGPrefetcher::tick_GetTile2,
     },
     x8(),
     tilemapX(),
@@ -377,12 +264,12 @@ PPU::BGPrefetcher::BGPrefetcher(ILCDIO &lcdIo, IMemory &vram) :
 
 }
 
-void PPU::BGPrefetcher::tick_GetTile1() {
+void PPU::Fetcher::BGPrefetcher::tick_GetTile1() {
     uint8_t SCX = lcdIo.readSCX();
     tilemapX = (x8 + (SCX / 8)) % 32;
 }
 
-void PPU::BGPrefetcher::tick_GetTile2() {
+void PPU::Fetcher::BGPrefetcher::tick_GetTile2() {
     uint8_t SCY = lcdIo.readSCY();
     uint8_t LY = lcdIo.readLY(); // or fetcher.y?
     uint8_t tilemapY = ((LY + SCY) / 8) % 32;
@@ -405,39 +292,39 @@ void PPU::BGPrefetcher::tick_GetTile2() {
     tileDataAddr = tileAddr + tileY * 2 /* sizeof tile row */;
 }
 
-uint16_t PPU::BGPrefetcher::getTileDataAddress() const {
+uint16_t PPU::Fetcher::BGPrefetcher::getTileDataAddress() const {
     return tileDataAddr;
 }
 
-bool PPU::BGPrefetcher::isTileDataAddressReady() const {
+bool PPU::Fetcher::BGPrefetcher::isTileDataAddressReady() const {
     return dots == 2;
 }
 
-void PPU::BGPrefetcher::resetTile() {
+void PPU::Fetcher::BGPrefetcher::resetTile() {
     x8 = 0;
 }
 
-void PPU::BGPrefetcher::advanceToNextTile() {
+void PPU::Fetcher::BGPrefetcher::advanceToNextTile() {
     x8 = (x8 + 1) % 20;
 }
 
-PPU::OBJPrefetcher::OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam) :
+PPU::Fetcher::OBJPrefetcher::OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam) :
     Processor<OBJPrefetcher>(),
     lcdIo(lcdIo), oam(oam),
     tickHandlers {
-        &PPU::OBJPrefetcher::tick_GetTile1,
-        &PPU::OBJPrefetcher::tick_GetTile2,
+        &PPU::Fetcher::OBJPrefetcher::tick_GetTile1,
+        &PPU::Fetcher::OBJPrefetcher::tick_GetTile2,
     }, tileNumber(),
     oamFlags(), tileAddr(),
     entry(), tileDataAddr() {
 
 }
 
-void PPU::OBJPrefetcher::tick_GetTile1() {
+void PPU::Fetcher::OBJPrefetcher::tick_GetTile1() {
     tileNumber = oam.read(4 * entry.number + 2);
 }
 
-void PPU::OBJPrefetcher::tick_GetTile2() {
+void PPU::Fetcher::OBJPrefetcher::tick_GetTile2() {
     oamFlags  = oam.read(4 * entry.number + 3);
     tileAddr = 0x8000 + tileNumber * 16 /* sizeof tile */;
 
@@ -447,58 +334,176 @@ void PPU::OBJPrefetcher::tick_GetTile2() {
     tileDataAddr = tileAddr + yOffset * 2;
 }
 
-bool PPU::OBJPrefetcher::isTileDataAddressReady() const {
+bool PPU::Fetcher::OBJPrefetcher::isTileDataAddressReady() const {
     return dots == 2;
 }
 
-uint16_t PPU::OBJPrefetcher::getTileDataAddress() const {
+uint16_t PPU::Fetcher::OBJPrefetcher::getTileDataAddress() const {
     return tileDataAddr;
 }
 
-void PPU::OBJPrefetcher::setOAMEntry(const PPU::OAMEntry &oamEntry) {
+void PPU::Fetcher::OBJPrefetcher::setOAMEntry(const PPU::OAMEntry &oamEntry) {
     entry = oamEntry;
 //    dots = 0;
 }
 
-PPU::PixelSliceFetcher::PixelSliceFetcher(IMemory &vram) :
+PPU::Fetcher::PixelSliceFetcher::PixelSliceFetcher(IMemory &vram) :
     Processor(),
     vram(vram),
     tickHandlers {
-        &PPU::PixelSliceFetcher::tick_GetTileDataLow_1,
-        &PPU::PixelSliceFetcher::tick_GetTileDataLow_2,
-        &PPU::PixelSliceFetcher::tick_GetTileDataHigh_1,
-        &PPU::PixelSliceFetcher::tick_GetTileDataHigh_2,
+        &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataLow_1,
+        &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataLow_2,
+        &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataHigh_1,
+        &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataHigh_2,
     }, tileDataAddr(), tileDataLow(), tileDataHigh() {
 }
 
-void PPU::PixelSliceFetcher::tick_GetTileDataLow_1() {
+void PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataLow_1() {
     tileDataLow = vram.read(tileDataAddr - MemoryMap::VRAM::START);
 }
 
-void PPU::PixelSliceFetcher::tick_GetTileDataLow_2() {
+void PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataLow_2() {
 }
 
-void PPU::PixelSliceFetcher::tick_GetTileDataHigh_1() {
+void PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataHigh_1() {
     tileDataHigh = vram.read(tileDataAddr - MemoryMap::VRAM::START + 1);
 }
 
-void PPU::PixelSliceFetcher::tick_GetTileDataHigh_2() {
+void PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataHigh_2() {
 }
 
-void PPU::PixelSliceFetcher::setTileDataAddress(uint16_t tileDataAddr_) {
+void PPU::Fetcher::PixelSliceFetcher::setTileDataAddress(uint16_t tileDataAddr_) {
     tileDataAddr = tileDataAddr_;
 //    dots = 0;
 }
 
-bool PPU::PixelSliceFetcher::isTileDataReady() const {
+bool PPU::Fetcher::PixelSliceFetcher::isTileDataReady() const {
     return dots == 4;
 }
 
 
-uint8_t PPU::PixelSliceFetcher::getTileDataLow() const {
+uint8_t PPU::Fetcher::PixelSliceFetcher::getTileDataLow() const {
     return tileDataLow;
 }
 
-uint8_t PPU::PixelSliceFetcher::getTileDataHigh() const {
+uint8_t PPU::Fetcher::PixelSliceFetcher::getTileDataHigh() const {
     return tileDataHigh;
+}
+
+PPU::Fetcher::Fetcher(ILCDIO &lcdIo, IMemory &vram, IMemory &oam, FIFO &bgFifo, FIFO &objFifo) :
+    bgFifo(bgFifo), objFifo(objFifo),
+    state(State::Prefetcher),
+    targetFifo(FIFOType::Bg),
+    bgPrefetcher(lcdIo, vram),
+    objPrefetcher(lcdIo, oam),
+    pixelSliceFetcher(vram) {
+
+}
+
+void PPU::Fetcher::reset() {
+    state = State::Prefetcher;
+    oamEntriesHit.clear();
+    pixelSliceFetcher.reset();
+    bgPrefetcher.reset();
+    bgPrefetcher.resetTile();
+    objPrefetcher.reset();
+    bgFifo.pixels.clear();
+    objFifo.pixels.clear();
+}
+
+void PPU::Fetcher::tick() {
+    // TODO: bad here
+    auto getPixelSlicerFetcherPixel = [&](uint8_t b) {
+        uint8_t color =
+                (get_bit(pixelSliceFetcher.getTileDataLow(), b) ? 0b01 : 0b00) |
+                (get_bit(pixelSliceFetcher.getTileDataHigh(), b) ? 0b10 : 0b00);
+        FIFO::Pixel p {
+            .color = color
+        };
+        return p;
+    };
+
+    if (state == State::Prefetcher) {
+        if (targetFifo == FIFOType::Bg) {
+            bgPrefetcher.tick();
+
+            if (bgPrefetcher.isTileDataAddressReady()) {
+                bgPrefetcher.reset();
+                pixelSliceFetcher.setTileDataAddress(bgPrefetcher.getTileDataAddress());
+                pixelSliceFetcher.reset();
+                state = State::PixelSliceFetcher;
+            }
+        } else if (targetFifo == FIFOType::Obj) {
+            objPrefetcher.tick();
+
+            if (objPrefetcher.isTileDataAddressReady()) {
+                objPrefetcher.reset();
+                pixelSliceFetcher.setTileDataAddress(objPrefetcher.getTileDataAddress());
+                pixelSliceFetcher.reset();
+                state = State::PixelSliceFetcher;
+            }
+        }
+    } else if (state == State::PixelSliceFetcher) {
+        pixelSliceFetcher.tick();
+        if (pixelSliceFetcher.isTileDataReady())
+            state = State::Pushing;
+
+        // TODO: oam read should overlap last bg push?
+    } else if (state == State::Pushing) {
+        if (targetFifo == FIFOType::Bg) {
+            if (!oamEntriesHit.empty()) {
+                // oam entry hit waiting to be served
+                // discard bg push?
+                objPrefetcher.setOAMEntry(pop(oamEntriesHit));
+                state = State::Prefetcher;
+                targetFifo = FIFOType::Obj;
+            } else {
+                if (bgFifo.pixels.empty()) {
+                    // push pixels
+                    for (int b = 7; b >= 0; b--)
+                        bgFifo.pixels.push_back(getPixelSlicerFetcherPixel(b));
+
+                    bgPrefetcher.advanceToNextTile();
+
+                    state = State::Prefetcher;
+                }
+            }
+        } else if (targetFifo == FIFOType::Obj) {
+            objFifo.pixels.clear();
+
+            // TODO: should not access flags so badly from
+            bool backwardPush = true;
+            if (get_bit<Bits::OAM::Attributes::X_FLIP>(objPrefetcher.oamFlags))
+                backwardPush = false;
+
+            // TODO: not clear/push but merge
+            if (backwardPush) {
+                for (int b = 7; b >= 0; b--)
+                    objFifo.pixels.push_back(getPixelSlicerFetcherPixel(b));
+            } else {
+                for (int b = 0; b < 8; b++)
+                    objFifo.pixels.push_back(getPixelSlicerFetcherPixel(b));
+            }
+
+            state = State::Prefetcher;
+
+            if (!oamEntriesHit.empty()) {
+                // oam entry hit waiting to be served
+                // discard bg push?
+                objPrefetcher.setOAMEntry(pop(oamEntriesHit));
+                targetFifo = FIFOType::Obj;
+            } else {
+                targetFifo = FIFOType::Bg;
+            }
+
+        }
+    }
+}
+
+void PPU::Fetcher::setOAMEntriesHit(const std::vector<OAMEntry> &entries) {
+    oamEntriesHit = entries;
+}
+
+bool PPU::Fetcher::isFetchingSprite() const {
+    return !oamEntriesHit.empty() || targetFifo == FIFOType::Obj;
 }

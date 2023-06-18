@@ -46,127 +46,162 @@ protected:
         uint8_t y;
     };
 
-    // base class for BGPrefetcher, OBJPrefetcher, PixelSliceFetcher
-    template<class ProcessorImpl>
-    class Processor {
+    class Fetcher {
     public:
-        typedef void (ProcessorImpl::*TickHandler)();
+        Fetcher(ILCDIO &lcdIo, IMemory &vram, IMemory &oam,
+                FIFO &bgFifo, FIFO &objFifo);
 
-        void tick() {
-            auto* impl = static_cast<ProcessorImpl*>(this);
-            TickHandler tickHandler = impl->tickHandlers[dots];
-            (impl->*(tickHandler))();
-            dots++;
-        }
+        void tick();
+        void reset();
 
-        void reset() {
-            dots = 0;
-        }
+        // TODO: don't like
+        bool isFetchingSprite() const;
 
-    protected:
-        uint8_t dots;
-    };
-
-    struct BGPrefetcher : public Processor<BGPrefetcher> {
-    friend class Processor<BGPrefetcher>;
-
-    public:
-        explicit BGPrefetcher(ILCDIO &lcdIo, IMemory &vram);
-
-        void resetTile();
-
-        [[nodiscard]] bool isTileDataAddressReady() const;
-        [[nodiscard]] uint16_t getTileDataAddress() const;
-
-        void advanceToNextTile();
+        void setOAMEntriesHit(const std::vector<OAMEntry> &entries);
 
     private:
-        void tick_GetTile1();
-        void tick_GetTile2();
+        // base class for BGPrefetcher, OBJPrefetcher, PixelSliceFetcher
+        template<class ProcessorImpl>
+        class Processor {
+        public:
+            typedef void (ProcessorImpl::*TickHandler)();
 
-        ILCDIO &lcdIo;
-        IMemory &vram;
+            void tick() {
+                auto* impl = static_cast<ProcessorImpl*>(this);
+                TickHandler tickHandler = impl->tickHandlers[dots];
+                (impl->*(tickHandler))();
+                dots++;
+            }
 
-        TickHandler tickHandlers[2];
+            void reset() {
+                dots = 0;
+            }
 
-        // state
-        uint8_t x8;
+        protected:
+            uint8_t dots;
+        };
 
-        // scratchpad
-        uint8_t tilemapX;
-        uint16_t tilemapAddr;
-        uint8_t tileNumber;
-        uint16_t tileAddr;
+        struct BGPrefetcher : public Processor<BGPrefetcher> {
+        friend class Processor<BGPrefetcher>;
 
-        // out
-        uint16_t tileDataAddr;
-    };
+        public:
+            explicit BGPrefetcher(ILCDIO &lcdIo, IMemory &vram);
 
+            void resetTile();
 
-    class OBJPrefetcher : public Processor<OBJPrefetcher> {
-    friend class Processor<OBJPrefetcher>;
-    public:
-         explicit OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam);
+            [[nodiscard]] bool isTileDataAddressReady() const;
+            [[nodiscard]] uint16_t getTileDataAddress() const;
 
-        void setOAMEntry(const OAMEntry &oamEntry);
+            void advanceToNextTile();
 
-        [[nodiscard]] bool isTileDataAddressReady() const;
-        [[nodiscard]] uint16_t getTileDataAddress() const;
+        private:
+            void tick_GetTile1();
+            void tick_GetTile2();
 
-    private:
-        void tick_GetTile1();
-        void tick_GetTile2();
+            ILCDIO &lcdIo;
+            IMemory &vram;
 
-        ILCDIO &lcdIo;
-        IMemory &oam;
+            TickHandler tickHandlers[2];
 
-        TickHandler tickHandlers[2];
+            // state
+            uint8_t x8;
 
-        // scratchpad
-        uint8_t tileNumber;
+            // scratchpad
+            uint8_t tilemapX;
+            uint16_t tilemapAddr;
+            uint8_t tileNumber;
+            uint16_t tileAddr;
 
-    public:
-        // TODO: private
-        uint8_t oamFlags;
+            // out
+            uint16_t tileDataAddr;
+        };
 
-    private:
-        uint16_t tileAddr;
+        class OBJPrefetcher : public Processor<OBJPrefetcher> {
+        friend class Processor<OBJPrefetcher>;
+        public:
+             explicit OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam);
 
-        // in
-        OAMEntry entry;
+            void setOAMEntry(const OAMEntry &oamEntry);
 
-        // out
-        uint16_t tileDataAddr;
-    };
+            [[nodiscard]] bool isTileDataAddressReady() const;
+            [[nodiscard]] uint16_t getTileDataAddress() const;
 
-    class PixelSliceFetcher : public Processor<PixelSliceFetcher> {
-    friend class Processor<PixelSliceFetcher>;
-    public:
-        explicit PixelSliceFetcher(IMemory &vram);
+        private:
+            void tick_GetTile1();
+            void tick_GetTile2();
 
-        void setTileDataAddress(uint16_t tileDataAddr);
+            ILCDIO &lcdIo;
+            IMemory &oam;
 
-        [[nodiscard]] bool isTileDataReady() const;
+            TickHandler tickHandlers[2];
 
-        [[nodiscard]] uint8_t getTileDataLow() const;
-        [[nodiscard]] uint8_t getTileDataHigh() const;
+            // scratchpad
+            uint8_t tileNumber;
 
-    private:
-        void tick_GetTileDataLow_1();
-        void tick_GetTileDataLow_2();
-        void tick_GetTileDataHigh_1();
-        void tick_GetTileDataHigh_2();
+        public:
+            // TODO: private
+            uint8_t oamFlags;
 
-        IMemory &vram;
+        private:
+            uint16_t tileAddr;
 
-        TickHandler tickHandlers[4];
+            // in
+            OAMEntry entry;
 
-        // in
-        uint16_t tileDataAddr;
+            // out
+            uint16_t tileDataAddr;
+        };
 
-        // out
-        uint8_t tileDataLow;
-        uint8_t tileDataHigh;
+        class PixelSliceFetcher : public Processor<PixelSliceFetcher> {
+        friend class Processor<PixelSliceFetcher>;
+        public:
+            explicit PixelSliceFetcher(IMemory &vram);
+
+            void setTileDataAddress(uint16_t tileDataAddr);
+
+            [[nodiscard]] bool isTileDataReady() const;
+
+            [[nodiscard]] uint8_t getTileDataLow() const;
+            [[nodiscard]] uint8_t getTileDataHigh() const;
+
+        private:
+            void tick_GetTileDataLow_1();
+            void tick_GetTileDataLow_2();
+            void tick_GetTileDataHigh_1();
+            void tick_GetTileDataHigh_2();
+
+            IMemory &vram;
+
+            TickHandler tickHandlers[4];
+
+            // in
+            uint16_t tileDataAddr;
+
+            // out
+            uint8_t tileDataLow;
+            uint8_t tileDataHigh;
+        };
+
+        enum class FIFOType {
+            Bg,
+            Obj
+        };
+        enum class State {
+            Prefetcher,
+            PixelSliceFetcher,
+            Pushing
+        };
+
+        FIFO &bgFifo;
+        FIFO &objFifo;
+
+        State state;
+        std::vector<OAMEntry> oamEntriesHit;
+        FIFOType targetFifo;
+
+        BGPrefetcher bgPrefetcher;
+        OBJPrefetcher objPrefetcher;
+        PixelSliceFetcher pixelSliceFetcher;
     };
 
     enum State {
@@ -188,10 +223,7 @@ protected:
     void tick_PixelTransfer();
     void afterTick_PixelTransfer();
 
-    void fetcherTick();
-    void fetcherClear();
-
-    // TODO: don'tlike
+    // TODO: don't like
     void updateState(PPU::State state);
     void updateLY(uint8_t LY);
 
@@ -219,34 +251,12 @@ protected:
         } pixelTransfer;
     } scratchpad{};
 
+    Fetcher fetcher;
+
     FIFO bgFifo;
     FIFO objFifo;
 
     uint8_t LX;
-
-    // TODO: bad
-    enum class FIFOType {
-        Bg,
-        Obj
-    };
-
-    // TODO: bad
-    enum class FetcherState {
-        Prefetcher,
-        PixelSliceFetcher,
-        Pushing
-    };
-
-    struct {
-        FetcherState state;
-        std::vector<OAMEntry> oamEntriesHit;
-        FIFOType targetFifo;
-    } fetcher;
-
-
-    BGPrefetcher bgPrefetcher;
-    OBJPrefetcher objPrefetcher;
-    PixelSliceFetcher pixelSliceFetcher;
 
     uint32_t dots;
     uint64_t tCycles;
