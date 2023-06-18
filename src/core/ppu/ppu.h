@@ -38,6 +38,8 @@ public:
     void tick() override;
 
 protected:
+    typedef void (PPU::*TickHandler)();
+
     struct OAMEntry {
         uint8_t number;
         uint8_t x;
@@ -173,11 +175,27 @@ protected:
         PixelTransfer = 3
     };
 
+    void tick_HBlank();
+    void tick_VBlank();
+    void tick_OAMScan();
+    void tick_PixelTransfer();
+
+    void fetcherTick();
+    void fetcherClear();
+
+    // TODO: don'tlike
+    void updateState(PPU::State state);
+    void updateLY(uint8_t LY);
+
+    bool isFifoBlocked() const;
+
     ILCD &lcd;
     ILCDIO &lcdIo;
     IInterruptsIO &interrupts;
     IMemory &vram;
     IMemory &oam;
+
+    TickHandler tickHandlers[4];
 
     bool on;
     State state;
@@ -221,11 +239,6 @@ protected:
 
     uint32_t dots;
     uint64_t tCycles;
-
-    void fetcherTick();
-    void fetcherClear();
-
-    bool isFifoBlocked() const;
 };
 
 
