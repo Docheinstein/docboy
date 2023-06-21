@@ -21,8 +21,7 @@ void Core::detachSerialLink() {
 void Core::frame() {
     ILCDIO &lcd = gameboy.getLCDIO();
 
-    uint8_t LY = lcd.readLY();
-    if (LY >= 144) {
+    if (lcd.readLY() >= 144) {
         while (isOn() && lcd.readLY() != 0)
             tick();
     }

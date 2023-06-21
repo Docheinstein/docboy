@@ -8,17 +8,24 @@
 class IGameBoy;
 class ISerialEndpoint;
 
+class ICore {
+public:
+    ~ICore() = default;
+    virtual void tick() = 0;
+    virtual void frame() = 0;
+    virtual bool isOn() = 0;
+};
 
-class Core {
+class Core : public ICore {
 public:
     explicit Core(IGameBoy &gameboy);
     ~Core() = default;
 
     void loadROM(const std::string &rom);
 
-    virtual void tick();
-    virtual void frame();
-    virtual bool isOn();
+    void tick() override;
+    void frame() override;
+    bool isOn() override;
 
     virtual void setKey(IJoypad::Key, IJoypad::KeyState);
 

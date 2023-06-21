@@ -76,7 +76,6 @@ set(SOURCES
         serial/serial.h
         sound/sound.cpp
         sound/sound.h
-
 )
 
 add_library(core STATIC ${SOURCES})
@@ -131,5 +130,16 @@ if (ENABLE_DEBUGGER)
     target_compile_definitions(core PUBLIC ENABLE_DEBUGGER)
 endif()
 
+if (ENABLE_PROFILER)
+    target_sources(core PRIVATE
+        profiler/profiler.cpp
+        profiler/profiler.h
+    )
+    target_compile_definitions(core PUBLIC ENABLE_PROFILER)
+endif ()
+
+if (PROFILER_MAX_TICKS)
+    target_compile_definitions(core PUBLIC PROFILER_MAX_TICKS=${PROFILER_MAX_TICKS})
+endif ()
 
 target_include_directories(core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")

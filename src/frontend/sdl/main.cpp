@@ -19,6 +19,10 @@
 #include "core/debugger/frontendcli.h"
 #endif
 
+#ifdef ENABLE_PROFILER
+#include "core/profiler/profiler.h"
+#endif
+
 static void screenshot_bmp(uint32_t *framebuffer) {
     int i = 0;
     std::filesystem::path cwd = std::filesystem::current_path();
@@ -252,6 +256,20 @@ int main(int argc, char **argv) {
     Core core(gb);
 #endif
 
+
+#ifdef ENABLE_PROFILER
+    auto printProfilerResult = [](const ProfilerResult &result) {
+        std::cout << "====== PROFILING RESULT ======\n";
+        std::cout << "Ticks: " << result.ticks << "\n";
+        std::cout << "Time : " << (double) duration_cast<std::chrono::milliseconds>(result.executionTime).count() / 1000 << "\n";
+    };
+
+    Profiler profiler(core, gb);
+#ifdef PROFILER_MAX_TICKS
+    profiler.setMaxTicks(PROFILER_MAX_TICKS);
+#endif
+#endif
+
     FrameBufferLCD &lcd = gb.lcd;
     Window window(gb.lcd.getFrameBuffer(), gb.lcdController, args.scaling);
 
@@ -313,8 +331,18 @@ int main(int argc, char **argv) {
             }
         }
 
+#ifdef ENABLE_PROFILER
+        // Update emulator until next frame through the profiler
+        profiler.frame();
+        if (profiler.isProfilingFinished()) {
+            printProfilerResult(profiler.getProfilerResult());
+            quit = true;
+        }
+#else
         // Update emulator until next frame
         core.frame();
+#endif
+
 
         // Render frame
         window.render();

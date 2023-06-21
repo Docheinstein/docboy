@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 option(ENABLE_DEBUGGER "Add debugger support" ON)
+option(ENABLE_PROFILER "Enable the profiler" OFF)
+option(PROFILER_MAX_TICKS "Max number of clock ticks before stop the profiler")
 
 # TODO: Set everything off but default target (BUILD_QT_FRONTEND probably)
 option(BUILD_NOGUI_FRONTEND "Build with NoGUI frontend" ON)
