@@ -24,8 +24,8 @@ public:
             PPUState state;
             uint32_t dots;
             uint64_t cycles;
-            FIFO bgFifo;
-            FIFO objFifo;
+            PPU::PixelFIFO bgFifo;
+            PPU::PixelFIFO objFifo;
         } ppu;
         struct {
             FetcherState state;

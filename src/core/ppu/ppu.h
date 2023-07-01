@@ -14,7 +14,8 @@ class ILCD;
 
 using IPPU = IClockable;
 
-struct FIFO {
+
+class PPU : public IPPU {
 public:
     struct Pixel {
         uint8_t color;
@@ -22,12 +23,8 @@ public:
         uint8_t priority;
     };
 
-    std::deque<Pixel> pixels;
-};
+    using PixelFIFO = std::deque<Pixel>;
 
-
-class PPU : public IPPU {
-public:
     PPU(
         ILCD &lcd,
         ILCDIO &lcdIo,
@@ -49,7 +46,7 @@ protected:
     class Fetcher {
     public:
         Fetcher(ILCDIO &lcdIo, IMemory &vram, IMemory &oam,
-                FIFO &bgFifo, FIFO &objFifo);
+                PixelFIFO &bgFifo, PixelFIFO &objFifo);
 
         void tick();
         void reset();
@@ -192,8 +189,8 @@ protected:
             Pushing
         };
 
-        FIFO &bgFifo;
-        FIFO &objFifo;
+        PixelFIFO &bgFifo;
+        PixelFIFO &objFifo;
 
         State state;
         std::vector<OAMEntry> oamEntriesHit;
@@ -224,10 +221,20 @@ protected:
     void afterTick_PixelTransfer();
 
     // TODO: don't like
-    void updateState(PPU::State state);
-    void updateLY(uint8_t LY);
+    void enterHBlank();
+    void enterVBlank();
+    void enterOAMScan();
+    void enterPixelTransfer();
+
+    void setState(PPU::State s);
+    void setLY(uint8_t LY);
+
+    uint8_t LY() const;
 
     bool isFifoBlocked() const;
+
+    void turnOn();
+    void turnOff();
 
     ILCD &lcd;
     ILCDIO &lcdIo;
@@ -253,8 +260,8 @@ protected:
 
     Fetcher fetcher;
 
-    FIFO bgFifo;
-    FIFO objFifo;
+    PixelFIFO bgFifo;
+    PixelFIFO objFifo;
 
     uint8_t LX;
 

@@ -762,7 +762,7 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
         std::cout
             << termcolor::yellow << "Cycle   :  " << termcolor::reset << ppu.ppu.cycles << std::endl;
         std::vector<uint8_t> bg;
-        for (const auto &p : ppu.ppu.bgFifo.pixels)
+        for (const auto &p : ppu.ppu.bgFifo)
             bg.push_back(p.color);
         std::cout
             << termcolor::yellow << "PPU     :  " << termcolor::reset
