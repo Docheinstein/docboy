@@ -300,12 +300,15 @@ void PPU::Fetcher::BGPrefetcher::tick_GetTile2() {
     uint8_t LY = lcdIo.readLY(); // or fetcher.y?
     uint8_t tilemapY = ((LY + SCY) / 8) % 32;
 
-    // fetch tile from tilemap
-    uint16_t base = 0x9800;
-    tilemapAddr = base + 32 * tilemapY + tilemapX;
+    uint8_t LCDC = lcdIo.readLCDC();
+
+    // fetch tile number from tilemap
+    uint16_t tilemapBase = get_bit<Bits::LCD::LCDC::BG_TILE_MAP>(LCDC) ? 0x9C00 : 0x9800;
+
+    tilemapAddr = tilemapBase + 32 * tilemapY + tilemapX;
     tileNumber = vram.read(tilemapAddr - MemoryMap::VRAM::START); // TODO: bad
 
-    if (get_bit<Bits::LCD::LCDC::BG_WIN_TILE_DATA>(lcdIo.readLCDC()))
+    if (get_bit<Bits::LCD::LCDC::BG_WIN_TILE_DATA>(LCDC))
         tileAddr = 0x8000 + tileNumber * 16 /* sizeof tile */;
     else {
         if (tileNumber < 128U)
