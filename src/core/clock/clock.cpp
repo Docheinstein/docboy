@@ -13,7 +13,13 @@ void Clock::tick() {
     do {
         now = std::chrono::high_resolution_clock::now();
     } while (now < nextTickTime);
-    nextTickTime = now + period;
+
+    if (!ticks)
+        // First tick
+        nextTickTime = now + period;
+    else
+        // Already running
+        nextTickTime += period;
 
     // Update devices needing tick
     for (const auto &clk : clockables) {
