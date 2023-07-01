@@ -44,7 +44,7 @@ IPPUDebug::State DebuggablePPU::getState() {
         break;
     }
 
-    std::vector<PPU::Pixel> pixelSliceFetcherData;
+    std::vector<PPU::Pixel> pixelSliceFetcherTileData;
 
     if (fetcher.state == PPU::Fetcher::State::Pushing &&
             fetcher.pixelSliceFetcher.isTileDataReady()) {
@@ -52,7 +52,7 @@ IPPUDebug::State DebuggablePPU::getState() {
         uint8_t high = fetcher.pixelSliceFetcher.getTileDataHigh();
 
         for (int b = 7; b >= 0; b--)
-            pixelSliceFetcherData.emplace_back((get_bit(low, b) ? 0b01 : 0b00) | (get_bit(high, b) ? 0b10 : 0b00));
+            pixelSliceFetcherTileData.emplace_back((get_bit(low, b) ? 0b01 : 0b00) | (get_bit(high, b) ? 0b10 : 0b00));
     }
 
     return {
@@ -68,7 +68,11 @@ IPPUDebug::State DebuggablePPU::getState() {
             .state = fetcherState,
             .dots = fetcher.dots,
             .oamEntriesHit = fetcher.oamEntriesHit,
-            .pixelSliceFetcherData = pixelSliceFetcherData
+            .pixelSliceFetcherTile = {
+                .address = fetcher.pixelSliceFetcher.tileDataAddr,
+                .data = pixelSliceFetcherTileData
+            },
+            .targetFifo = fetcher.targetFifo == PPU::Fetcher::FIFOType::Bg ? IPPUDebug::FIFOType::Bg : IPPUDebug::FIFOType::Obj
         }
     };
 }

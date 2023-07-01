@@ -132,6 +132,22 @@ void PPU::tick_PixelTransfer() {
     // shift pixel from fifo to lcd if bg fifo is not empty
     // and it's not blocked by the pixel fetcher due to sprite fetch
 
+    auto checkOamEntriesHit = [&]() {
+        // compute sprites on current LX
+        std::vector<OAMEntry> entries;
+
+        for (const auto &entry : scanlineOamEntries) {
+            uint8_t oamX = entry.x - 8;
+            if (oamX == LX)
+                entries.push_back(entry);
+        }
+
+        fetcher.setOAMEntriesHit(entries);
+    };
+
+    if (LY() == 0 || scratchpad.pixelTransfer.pixelPushed)
+        checkOamEntriesHit();
+
     scratchpad.pixelTransfer.pixelPushed = false;
 
     if (!isFifoBlocked()) {
@@ -163,21 +179,8 @@ void PPU::afterTick_PixelTransfer() {
     if (scratchpad.pixelTransfer.pixelPushed) {
         LX++;
         assert(LX <= 160);
-
-        if (LX < 160) {
-            // compute sprites on current LX
-            std::vector<OAMEntry> entries;
-
-            for (const auto &entry : scanlineOamEntries) {
-                uint8_t oamX = entry.x - 8;
-                if (oamX == LX)
-                    entries.push_back(entry);
-            }
-
-            fetcher.setOAMEntriesHit(entries);
-        } else {
+        if (LX == 160)
             enterHBlank();
-        }
     }
 }
 

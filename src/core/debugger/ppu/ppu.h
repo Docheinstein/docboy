@@ -18,6 +18,11 @@ public:
         Pushing
     };
 
+    enum class FIFOType {
+        Bg,
+        Obj
+    };
+
     struct State {
         struct {
             PPUState state;
@@ -31,7 +36,11 @@ public:
             FetcherState state;
             uint32_t dots;
             std::vector<PPU::OAMEntry> oamEntriesHit;
-            std::vector<PPU::Pixel> pixelSliceFetcherData;
+            struct {
+                uint16_t address;
+                std::vector<PPU::Pixel> data;
+            } pixelSliceFetcherTile;
+            FIFOType targetFifo;
         } fetcher{};
     };
 

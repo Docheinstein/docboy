@@ -842,15 +842,21 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
                 << ppuFetcherStateToString(ppu.fetcher.state) << " (" << ppu.fetcher.dots << " dots)"
                 << std::endl;
 
-
+            std::cout
+                << termcolor::yellow << "Target Fifo     :  " << termcolor::reset
+                << (ppu.fetcher.targetFifo == IPPUDebug::FIFOType::Bg ? "Bg" : "Obj")
+                << std::endl;
             std::vector<uint8_t> fetchedTile;
 
-            for (const auto &p : ppu.fetcher.pixelSliceFetcherData)
+            for (const auto &p : ppu.fetcher.pixelSliceFetcherTile.data)
                 fetchedTile.push_back(p.color);
 
             std::cout
                 << termcolor::yellow << "Tile Fetched    :  " << termcolor::reset
-                << hex(fetchedTile) << std::endl;
+                << hex(fetchedTile);
+            if (!fetchedTile.empty())
+                std::cout << " (" << hex(ppu.fetcher.pixelSliceFetcherTile.address) << ")";
+            std::cout << std::endl;
 
             std::cout
                 << termcolor::yellow << "Hit OAM entries :" << termcolor::reset << std::endl;
