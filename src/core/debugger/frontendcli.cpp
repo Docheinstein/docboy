@@ -743,14 +743,12 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
 
     auto ppuFetcherStateToString = [](IPPUDebug::FetcherState state) {
         switch (state) {
-        case IPPUDebug::FetcherState::GetTile:
-            return "GetTile";
-        case IPPUDebug::FetcherState::GetTileDataLow:
-            return "GetTileDataLow";
-        case IPPUDebug::FetcherState::GetTileDataHigh:
-            return "GetTileDataHigh";
-        case IPPUDebug::FetcherState::Push:
-            return "Push";
+        case IPPUDebug::FetcherState::Prefetcher:
+            return "Prefetcher";
+        case IPPUDebug::FetcherState::PixelSliceFetcher:
+            return "PixelSliceFetcher";
+        case IPPUDebug::FetcherState::Pushing:
+            return "Pushing";
         }
         return "Unknown";
     };
@@ -785,33 +783,86 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
         if (config.sections.cpu) {
             std::cout << headerString("CPU") << std::endl;
             std::cout
-                << termcolor::yellow << "Cycle   :  " << termcolor::reset << cpu.cycles << std::endl;
+                << termcolor::yellow << "Cycle           :  " << termcolor::reset << cpu.cycles << std::endl;
         }
 
         if (config.sections.ppu) {
+
+            auto oamEntryToString = [](const PPU::OAMEntry &entry) {
+                std::stringstream ss;
+                ss << "[" << std::setw(2) << +entry.number << ", ("
+                    << std::setw(3) << std::right << +(entry.x - 8) << ","
+                    << std::setw(3) << std::right << +(entry.y - 16) << ")]";
+                return ss.str();
+            };
             std::cout << headerString("PPU") << std::endl;
+
+            std::cout << subheaderString("lcd") << std::endl;
             std::cout
-                << termcolor::yellow << "Cycle   :  " << termcolor::reset << ppu.ppu.cycles << std::endl;
-            std::vector<uint8_t> bg;
-            for (const auto &p : ppu.ppu.bgFifo)
-                bg.push_back(p.color);
-            std::cout
-                << termcolor::yellow << "PPU     :  " << termcolor::reset
-                << ppuStateToString(ppu.ppu.state) << " (" << ppu.ppu.dots << " dots)"
-                << " [BG=" << hex(bg) << "]"
-                << std::endl;
-            std::cout
-                << termcolor::yellow << "Fetcher :  " << termcolor::reset
-                << ppuFetcherStateToString(ppu.fetcher.state) << " (" << ppu.fetcher.dots << " dots)"
-                << " [X=" << +ppu.fetcher.x << ", Y=" << +ppu.fetcher.y
-                << ", lastTilemapAddr=" << hex(ppu.fetcher.lastTimeMapAddr)
-                << ", lastTileAddr=" << hex(ppu.fetcher.lastTileAddr)
-                << ", lastTileDataAddr=" << hex(ppu.fetcher.lastTileDataAddr) << "]"
-                << std::endl;
-            std::cout
-                << termcolor::yellow << "LCD     :  " << termcolor::reset
+                << termcolor::yellow << "Position        :  " << termcolor::reset
                 << "(x=" << +lcd.x << ", y=" << +lcd.y << ")"
                 << std::endl;
+
+            std::cout << subheaderString("ppu") << std::endl;
+            std::cout
+                << termcolor::yellow << "Cycle           :  " << termcolor::reset << ppu.ppu.cycles << std::endl;
+
+            std::vector<uint8_t> bgFifo;
+            for (const auto &p : ppu.ppu.bgFifo)
+                bgFifo.push_back(p.color);
+
+            std::vector<uint8_t> objFifo;
+            for (const auto &p : ppu.ppu.objFifo)
+                objFifo.push_back(p.color);
+
+            std::cout
+                << termcolor::yellow << "State           :  " << termcolor::reset
+                << ppuStateToString(ppu.ppu.state) << " (" << ppu.ppu.dots << " dots)"
+                << std::endl;
+
+            std::cout
+                << termcolor::yellow << "Bg Fifo         :  " << termcolor::reset << hex(bgFifo) << std::endl;
+            std::cout
+                << termcolor::yellow << "Obj Fifo        :  " << termcolor::reset << hex(objFifo) << termcolor::reset << std::endl;
+
+            std::cout
+                << termcolor::yellow << "LY OAM entries  :" << termcolor::reset << std::endl;
+            if (!ppu.ppu.scanlineOamEntries.empty()) {
+                int i = 1;
+                for (const auto &entry : ppu.ppu.scanlineOamEntries) {
+                    std::cout << std::setw(2) << i << ". " << oamEntryToString(entry) << std::endl;
+                    i++;
+                }
+                std::cout << std::endl;
+            }
+
+            std::cout << subheaderString("fetcher") << std::endl;
+            std::cout
+                << termcolor::yellow << "State           :  " << termcolor::reset
+                << ppuFetcherStateToString(ppu.fetcher.state) << " (" << ppu.fetcher.dots << " dots)"
+                << std::endl;
+
+
+            std::vector<uint8_t> fetchedTile;
+
+            for (const auto &p : ppu.fetcher.pixelSliceFetcherData)
+                fetchedTile.push_back(p.color);
+
+            std::cout
+                << termcolor::yellow << "Tile Fetched    :  " << termcolor::reset
+                << hex(fetchedTile) << std::endl;
+
+            std::cout
+                << termcolor::yellow << "Hit OAM entries :" << termcolor::reset << std::endl;
+
+            if (!ppu.fetcher.oamEntriesHit.empty()) {
+                int i = 1;
+                for (const auto &entry : ppu.fetcher.oamEntriesHit) {
+                    std::cout << std::setw(2) << i << ". " << oamEntryToString(entry) << std::endl;
+                    i++;
+                }
+                std::cout << std::endl;
+            }
         }
 
         if (config.sections.flags) {

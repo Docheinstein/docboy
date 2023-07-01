@@ -1,6 +1,7 @@
 #include "ppu.h"
 #include <stdexcept>
 #include "core/io/lcd.h"
+#include "utils/binutils.h"
 
 DebuggablePPU::DebuggablePPU(ILCD &lcd, ILCDIO &lcdIo, IInterruptsIO &interrupts, IMemory &vram, IMemory &oam) : PPU(
         lcd, lcdIo, interrupts, vram, oam) {
@@ -29,34 +30,45 @@ IPPUDebug::State DebuggablePPU::getState() {
     IPPUDebug::FetcherState fetcherState;
 
     // TODO
-    fetcherState = IPPUDebug::FetcherState::GetTile;
-//    if (fetcher.dots < 2)
-//        fetcherState = FetcherState::GetTile;
-//    else if (fetcher.dots < 4)
-//        fetcherState = FetcherState::GetTileDataLow;
-//    else if (fetcher.dots < 6)
-//        fetcherState = FetcherState::GetTileDataHigh;
-//    else
-//        fetcherState = FetcherState::Push;
-//
-//    uint8_t fetcherX = 8 * fetcher.x8;
-//
+    fetcherState = IPPUDebug::FetcherState::Prefetcher;
+
+    switch (fetcher.state) {
+    case Fetcher::State::Prefetcher:
+        fetcherState = IPPUDebug::FetcherState::Prefetcher;
+        break;
+    case Fetcher::State::PixelSliceFetcher:
+        fetcherState = IPPUDebug::FetcherState::PixelSliceFetcher;
+        break;
+    case Fetcher::State::Pushing:
+        fetcherState = IPPUDebug::FetcherState::Pushing;
+        break;
+    }
+
+    std::vector<PPU::Pixel> pixelSliceFetcherData;
+
+    if (fetcher.state == PPU::Fetcher::State::Pushing &&
+            fetcher.pixelSliceFetcher.isTileDataReady()) {
+        uint8_t low = fetcher.pixelSliceFetcher.getTileDataLow();
+        uint8_t high = fetcher.pixelSliceFetcher.getTileDataHigh();
+
+        for (int b = 7; b >= 0; b--)
+            pixelSliceFetcherData.emplace_back((get_bit(low, b) ? 0b01 : 0b00) | (get_bit(high, b) ? 0b10 : 0b00));
+    }
+
     return {
         .ppu = {
             .state = ppuState,
             .dots = dots,
             .cycles = tCycles,
             .bgFifo = bgFifo,
-            .objFifo = objFifo
+            .objFifo = objFifo,
+            .scanlineOamEntries = scanlineOamEntries
         },
         .fetcher = {
-//            .state = fetcherState,
-//            .x = 0,
-////            .x = bgPrefetcher.x8,
-//            .y = lcdIo.readLY(),
-//            .lastTimeMapAddr = bgPrefetcher.scratchpad.tilemapAddr,
-//            .lastTileAddr = bgPrefetcher.scratchpad.tileAddr,
-//            .lastTileDataAddr = bgPrefetcher.out.tileDataAddr
+            .state = fetcherState,
+            .dots = fetcher.dots,
+            .oamEntriesHit = fetcher.oamEntriesHit,
+            .pixelSliceFetcherData = pixelSliceFetcherData
         }
     };
 }

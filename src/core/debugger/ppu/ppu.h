@@ -13,10 +13,9 @@ public:
     };
 
     enum class FetcherState {
-        GetTile,
-        GetTileDataLow,
-        GetTileDataHigh,
-        Push
+        Prefetcher,
+        PixelSliceFetcher,
+        Pushing
     };
 
     struct State {
@@ -26,16 +25,14 @@ public:
             uint64_t cycles;
             PPU::PixelFIFO bgFifo;
             PPU::PixelFIFO objFifo;
-        } ppu;
+            std::vector<PPU::OAMEntry> scanlineOamEntries;
+        } ppu{};
         struct {
             FetcherState state;
             uint32_t dots;
-            uint8_t x;
-            uint8_t y;
-            uint16_t lastTimeMapAddr;
-            uint16_t lastTileAddr;
-            uint16_t lastTileDataAddr;
-        } fetcher;
+            std::vector<PPU::OAMEntry> oamEntriesHit;
+            std::vector<PPU::Pixel> pixelSliceFetcherData;
+        } fetcher{};
     };
 
     virtual ~IPPUDebug() = default;

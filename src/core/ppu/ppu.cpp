@@ -419,7 +419,8 @@ PPU::Fetcher::Fetcher(ILCDIO &lcdIo, IMemory &vram, IMemory &oam, PixelFIFO &bgF
     targetFifo(FIFOType::Bg),
     bgPrefetcher(lcdIo, vram),
     objPrefetcher(lcdIo, oam),
-    pixelSliceFetcher(vram) {
+    pixelSliceFetcher(vram),
+    dots() {
 
 }
 
@@ -432,19 +433,31 @@ void PPU::Fetcher::reset() {
     objPrefetcher.reset();
     bgFifo.clear();
     objFifo.clear();
+    dots = 0;
 }
 
 void PPU::Fetcher::tick() {
     // TODO: bad here
-    auto getPixelSlicerFetcherPixel = [&](uint8_t b) {
-        uint8_t color =
-                (get_bit(pixelSliceFetcher.getTileDataLow(), b) ? 0b01 : 0b00) |
-                (get_bit(pixelSliceFetcher.getTileDataHigh(), b) ? 0b10 : 0b00);
-        Pixel p {
-            .color = color
-        };
-        return p;
+
+    auto emplacePixelSliceFetcherData = [&](auto &pixels, bool flip = false) {
+        uint8_t low = pixelSliceFetcher.getTileDataLow();
+        uint8_t high = pixelSliceFetcher.getTileDataHigh();
+
+        if (flip) {
+            for (int b = 0; b < 8; b++)
+                pixels.emplace_back((get_bit(low, b) ? 0b01 : 0b00) | (get_bit(high, b) ? 0b10 : 0b00));
+        } else {
+            for (int b = 7; b >= 0; b--)
+                pixels.emplace_back((get_bit(low, b) ? 0b01 : 0b00) | (get_bit(high, b) ? 0b10 : 0b00));
+        }
     };
+
+    auto restartFetcher = [&]{
+        state = State::Prefetcher;
+        dots = 0;
+    };
+
+    dots++;
 
     if (state == State::Prefetcher) {
         if (targetFifo == FIFOType::Bg) {
@@ -478,37 +491,23 @@ void PPU::Fetcher::tick() {
                 // oam entry hit waiting to be served
                 // discard bg push?
                 objPrefetcher.setOAMEntry(pop(oamEntriesHit));
-                state = State::Prefetcher;
                 targetFifo = FIFOType::Obj;
+                restartFetcher();
             } else {
                 if (bgFifo.empty()) {
                     // push pixels
-                    for (int b = 7; b >= 0; b--)
-                        bgFifo.push_back(getPixelSlicerFetcherPixel(b));
-
+                    emplacePixelSliceFetcherData(bgFifo);
                     bgPrefetcher.advanceToNextTile();
-
-                    state = State::Prefetcher;
+                    restartFetcher();
                 }
             }
         } else if (targetFifo == FIFOType::Obj) {
-            objFifo.clear();
-
-            // TODO: should not access flags so badly from
-            bool backwardPush = true;
-            if (get_bit<Bits::OAM::Attributes::X_FLIP>(objPrefetcher.oamFlags))
-                backwardPush = false;
+            // TODO: should not access flags so badly from here
+            bool flip = get_bit<Bits::OAM::Attributes::X_FLIP>(objPrefetcher.oamFlags);
 
             // TODO: not clear/push but merge
-            if (backwardPush) {
-                for (int b = 7; b >= 0; b--)
-                    objFifo.push_back(getPixelSlicerFetcherPixel(b));
-            } else {
-                for (int b = 0; b < 8; b++)
-                    objFifo.push_back(getPixelSlicerFetcherPixel(b));
-            }
-
-            state = State::Prefetcher;
+            objFifo.clear();
+            emplacePixelSliceFetcherData(objFifo, flip);
 
             if (!oamEntriesHit.empty()) {
                 // oam entry hit waiting to be served
@@ -519,6 +518,7 @@ void PPU::Fetcher::tick() {
                 targetFifo = FIFOType::Bg;
             }
 
+            restartFetcher();
         }
     }
 }

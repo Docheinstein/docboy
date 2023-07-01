@@ -1,11 +1,16 @@
 #ifndef PPU_H
 #define PPU_H
 
-
 #include <queue>
 #include <cstdint>
 #include "core/clock/clockable.h"
 #include <optional>
+
+// TODO: find a nicer approach to debug PPU internal classes
+#ifdef ENABLE_DEBUGGER
+#define private public
+#define protected public
+#endif
 
 class IMemory;
 class ILCDIO;
@@ -52,7 +57,7 @@ protected:
         void reset();
 
         // TODO: don't like
-        bool isFetchingSprite() const;
+        [[nodiscard]] bool isFetchingSprite() const;
 
         void setOAMEntriesHit(const std::vector<OAMEntry> &entries);
 
@@ -199,6 +204,8 @@ protected:
         BGPrefetcher bgPrefetcher;
         OBJPrefetcher objPrefetcher;
         PixelSliceFetcher pixelSliceFetcher;
+
+        uint8_t dots;
     };
 
     enum State {
@@ -269,6 +276,12 @@ protected:
     uint64_t tCycles;
 };
 
-
+// TODO: find a nicer approach to debug PPU internal classes
+#ifdef ENABLE_DEBUGGER
+#undef private
+#define private private
+#undef protected
+#define protected protected
+#endif
 
 #endif // PPU_H
