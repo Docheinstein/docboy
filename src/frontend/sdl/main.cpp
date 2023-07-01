@@ -218,10 +218,9 @@ int main(int argc, char **argv) {
     if (!args.config.empty()) {
         bool ok;
         std::string err;
-        cfg = ConfigParser::parse(args.config, &ok, &err);
+        cfg = ConfigParser().parse(args.config, &ok, &err);
         if (!ok) {
-            std::cerr << "ERROR: failed to parse config: '" << args.config << "'" << std::endl;
-            std::cerr << "ERROR: " + err << std::endl;
+            std::cerr << "ERROR: failed to parse config: '" << args.config << "': " << err << std::endl;
             return 1;
         }
     } else {
@@ -265,6 +264,23 @@ int main(int argc, char **argv) {
     if (args.debugger) {
         debuggerBackend = std::make_unique<DebuggerBackend>(core);
         debuggerFrontend = std::make_unique<DebuggerFrontendCli>(*debuggerBackend);
+
+        DebuggerFrontendCli::Config debuggerCfg = DebuggerFrontendCli::Config::makeDefault();
+        debuggerCfg.sections.breakpoints = cfg.debug.sections.breakpoints;
+        debuggerCfg.sections.watchpoints = cfg.debug.sections.watchpoints;
+        debuggerCfg.sections.cpu = cfg.debug.sections.cpu;
+        debuggerCfg.sections.ppu = cfg.debug.sections.ppu;
+        debuggerCfg.sections.flags = cfg.debug.sections.flags;
+        debuggerCfg.sections.registers = cfg.debug.sections.registers;
+        debuggerCfg.sections.interrupts = cfg.debug.sections.interrupts;
+        debuggerCfg.sections.io.joypad = cfg.debug.sections.io.joypad;
+        debuggerCfg.sections.io.serial = cfg.debug.sections.io.serial;
+        debuggerCfg.sections.io.timers = cfg.debug.sections.io.timers;
+        debuggerCfg.sections.io.sound = cfg.debug.sections.io.sound;
+        debuggerCfg.sections.io.lcd = cfg.debug.sections.io.lcd;
+        debuggerCfg.sections.code = cfg.debug.sections.code;
+        debuggerFrontend->setConfig(debuggerCfg);
+
         debuggerFrontendObserver = std::make_unique<DebuggerFrontendCliObserver>();
         debuggerFrontend->setObserver(debuggerFrontendObserver.get());
     }

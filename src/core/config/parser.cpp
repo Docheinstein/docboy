@@ -2,32 +2,55 @@
 #include "utils/fileutils.h"
 #include "utils/strutils.h"
 
-Config ConfigParser::parse(const std::string &filename, bool *ok, std::string *error) {
-    Config cfg = Config::makeDefault();
 
-    std::vector<std::string> lines = read_file_lines(filename, ok);
-    if (ok && !(*ok))
-        return cfg;
+class ISectionParser {
+public:
+    virtual ~ISectionParser() = default;
 
-    enum class ParserState {
-        None,
-        Input
-    };
+    virtual bool parse(const std::string &line, bool *ok, std::string *error) = 0;
+};
 
-    ParserState state;
+class SectionParser : public ISectionParser {
+public:
+    explicit SectionParser(Config &config) : config(config) {}
 
-    static std::map<std::string, IJoypad::Key> JOYPAD_KEYS_MAP = {
-        { "down", IJoypad::Key::Down },
-        { "up", IJoypad::Key::Up },
-        { "left", IJoypad::Key::Left },
-        { "right", IJoypad::Key::Right },
-        { "start", IJoypad::Key::Start },
-        { "select", IJoypad::Key::Select },
-        { "b", IJoypad::Key::B },
-        { "a", IJoypad::Key::A },
-    };
+    static std::pair<std::string, std::string> getKeyValue(const std::string &line) {
+        std::vector<std::string> tokens;
+        split(line, std::back_inserter(tokens), '=');
 
-    static std::map<std::string, Config::Input::KeyboardKey> KEYBOARD_KEYS_MAP = {
+        std::vector<std::string> trimmedTokens;
+        std::transform(tokens.begin(), tokens.end(), std::back_inserter(trimmedTokens),
+                       [](const std::string &token) {
+            return trim(token);
+        });
+        return std::make_pair(trimmedTokens[0], trimmedTokens[1]);
+    }
+
+    static bool stringToBool(const std::string &token) {
+        if (token == "1" || token == "true" || token == "yes")
+            return true;
+        return false;
+    }
+
+protected:
+    Config &config;
+};
+
+
+class InputSectionParser : public SectionParser {
+public:
+    explicit InputSectionParser(Config &config) : SectionParser(config),
+        JOYPAD_KEYS_MAP {
+            { "down", IJoypad::Key::Down },
+            { "up", IJoypad::Key::Up },
+            { "left", IJoypad::Key::Left },
+            { "right", IJoypad::Key::Right },
+            { "start", IJoypad::Key::Start },
+            { "select", IJoypad::Key::Select },
+            { "b", IJoypad::Key::B },
+            { "a", IJoypad::Key::A },
+        },
+        KEYBOARD_KEYS_MAP {
         { "return", Config::Input::KeyboardKey::Return },
         { "escape", Config::Input::KeyboardKey::Escape },
         { "backspace", Config::Input::KeyboardKey::Backspace },
@@ -123,48 +146,108 @@ Config ConfigParser::parse(const std::string &filename, bool *ok, std::string *e
         { "left", Config::Input::KeyboardKey::Left },
         { "down", Config::Input::KeyboardKey::Down },
         { "up", Config::Input::KeyboardKey::Up },
-    };
-    auto get_key_value = [](const std::string &line) {
-        std::vector<std::string> tokens;
-        split(line, std::back_inserter(tokens), '=');
+    } {
 
-        std::vector<std::string> trimmedTokens;
-        std::transform(tokens.begin(), tokens.end(), std::back_inserter(trimmedTokens),
-                       [](const std::string &token) {
-            return trim(token);
-        });
-        return trimmedTokens;
-    };
+    }
+
+    bool parse(const std::string &line, bool *ok, std::string *error) override {
+        const auto [key, value] = getKeyValue(line);
+
+        auto joypadKey = JOYPAD_KEYS_MAP.find(key);
+        auto keyboardKey = KEYBOARD_KEYS_MAP.find(value);
+        if (joypadKey == JOYPAD_KEYS_MAP.end()) {
+            if (ok)
+                *ok = false;
+            if (error)
+                *error = "unknown joypad key: '" + key + " ' ";
+            return false;
+        }
+        if (keyboardKey == KEYBOARD_KEYS_MAP.end()) {
+            if (ok)
+                *ok = false;
+            if (error)
+                *error = "unknown keyboard key: '" + key + " ' ";
+            return false;
+        }
+
+        config.input.keyboardMapping[joypadKey->second] = keyboardKey->second;
+
+        return true;
+    }
+
+private:
+    std::map<std::string, IJoypad::Key> JOYPAD_KEYS_MAP;
+    std::map<std::string, Config::Input::KeyboardKey> KEYBOARD_KEYS_MAP;
+};
+
+
+class DebugSectionParser : public SectionParser {
+public:
+    explicit DebugSectionParser(Config &config) : SectionParser(config) {}
+    bool parse(const std::string &line, bool *ok, std::string *error) override {
+        const auto [key, value] = getKeyValue(line);
+
+        if (key == "cpu")
+            config.debug.sections.cpu = stringToBool(value);
+        else if (key == "ppu")
+            config.debug.sections.ppu = stringToBool(value);
+        else if (key == "flags")
+            config.debug.sections.flags = stringToBool(value);
+        else if (key == "registers")
+            config.debug.sections.registers = stringToBool(value);
+        else if (key == "interrupts")
+            config.debug.sections.interrupts = stringToBool(value);
+        else if (key == "joypad")
+            config.debug.sections.io.joypad = stringToBool(value);
+        else if (key == "serial")
+            config.debug.sections.io.serial = stringToBool(value);
+        else if (key == "timers")
+            config.debug.sections.io.timers = stringToBool(value);
+        else if (key == "sound")
+            config.debug.sections.io.sound = stringToBool(value);
+        else if (key == "lcd")
+            config.debug.sections.io.lcd = stringToBool(value);
+        else if (key == "code")
+            config.debug.sections.code = stringToBool(value);
+        else {
+            if (ok)
+                *ok = false;
+            if (error)
+                *error = "unknown section: '" + key + " ' ";
+            return false;
+        }
+
+        return true;
+    }
+};
+
+ConfigParser::ConfigParser() : sectionParser() {
+
+}
+
+// must be defined because a member of the class is a std::unique_ptr<T>
+// where T is forward declared
+ConfigParser::~ConfigParser() = default;
+
+Config ConfigParser::parse(const std::string &filename, bool *ok, std::string *error) {
+    Config config = Config::makeDefault();
+
+    std::vector<std::string> lines = read_file_lines(filename, ok);
+    if (ok && !(*ok)) {
+        if (error)
+            *error = "failed to read file";
+        return config;
+    }
+
     for (const auto &line : lines) {
         if (equals_ignore_case(line, "[input]")) {
-            state = ParserState::Input;
-        }
-        if (state == ParserState::Input) {
-            std::vector<std::string> tokens = get_key_value(line);
-            if (tokens.size() >= 2) {
-                const std::string &key = tokens[0];
-                const std::string &value = tokens[1];
-
-                auto joypadKey = JOYPAD_KEYS_MAP.find(key);
-                auto keyboardKey = KEYBOARD_KEYS_MAP.find(value);
-                if (joypadKey == JOYPAD_KEYS_MAP.end()) {
-                    if (ok)
-                        *ok = false;
-                    if (error)
-                        *error = "unknown joypad key: '" + key + " ' ";
-                    return cfg;
-                }
-                if (keyboardKey == KEYBOARD_KEYS_MAP.end()) {
-                    if (ok)
-                        *ok = false;
-                    if (error)
-                        *error = "unknown keyboard key: '" + key + " ' ";
-                    return cfg;
-                }
-
-                cfg.input.keyboardMapping[joypadKey->second] = keyboardKey->second;
-            }
+            sectionParser = std::make_unique<InputSectionParser>(config);
+        } else if (equals_ignore_case(line, "[debug]")) {
+            sectionParser = std::make_unique<DebugSectionParser>(config);
+        } else if (sectionParser) {
+            if (!sectionParser->parse(line, ok, error))
+                break;
         }
     }
-    return cfg;
+    return config;
 }

@@ -425,8 +425,31 @@ static void detach_sigint_handler() {
 }
 
 
+DebuggerFrontendCli::Config DebuggerFrontendCli::Config::makeDefault() {
+    return {
+        .sections = {
+            .breakpoints = true,
+            .watchpoints = true,
+            .cpu = true,
+            .ppu = true,
+            .flags = true,
+            .registers = true,
+            .interrupts = true,
+            .io {
+                .joypad = true,
+                .serial = true,
+                .timers = true,
+                .sound = true,
+                .lcd = true,
+            },
+            .code = true
+        }
+    };
+}
+
 DebuggerFrontendCli::DebuggerFrontendCli(IDebuggerBackend &backend) :
         backend(backend),
+        config(Config::makeDefault()),
         lastCommand("n"),
         trace(),
         observer() {
@@ -733,19 +756,24 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
     };
 
     auto printUI = [&]() {
-        const auto &breakpoints = backend.getBreakpoints();
-        if (!breakpoints.empty()) {
-            std::cout << headerString("breakpoints") << std::endl;
-            for (const auto &b : breakpoints)
-                std:: cout << breakpointString(b) << std::endl;
+        if (config.sections.breakpoints) {
+            const auto &breakpoints = backend.getBreakpoints();
+            if (!breakpoints.empty()) {
+                std::cout << headerString("breakpoints") << std::endl;
+                for (const auto &b : breakpoints)
+                    std:: cout << breakpointString(b) << std::endl;
+            }
         }
 
-        const auto &watchpoints = backend.getWatchpoints();
-        if (!watchpoints.empty()) {
-            std::cout << headerString("watchpoints") << std::endl;
-            for (const auto &w : watchpoints)
-                std:: cout << watchpointString(w) << std::endl;
+        if (config.sections.watchpoints) {
+            const auto &watchpoints = backend.getWatchpoints();
+            if (!watchpoints.empty()) {
+                std::cout << headerString("watchpoints") << std::endl;
+                for (const auto &w : watchpoints)
+                    std:: cout << watchpointString(w) << std::endl;
+            }
         }
+
 
         auto cpu = backend.getCPUState();
         auto ppu = backend.getPPUState();
@@ -754,131 +782,159 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
         uint8_t IE = backend.readMemory(Registers::Interrupts::IE);
         uint8_t IF = backend.readMemory(Registers::Interrupts::IF);
 
-        std::cout << headerString("CPU") << std::endl;
-        std::cout
-            << termcolor::yellow << "Cycle   :  " << termcolor::reset << cpu.cycles << std::endl;
-
-        std::cout << headerString("PPU") << std::endl;
-        std::cout
-            << termcolor::yellow << "Cycle   :  " << termcolor::reset << ppu.ppu.cycles << std::endl;
-        std::vector<uint8_t> bg;
-        for (const auto &p : ppu.ppu.bgFifo)
-            bg.push_back(p.color);
-        std::cout
-            << termcolor::yellow << "PPU     :  " << termcolor::reset
-            << ppuStateToString(ppu.ppu.state) << " (" << ppu.ppu.dots << " dots)"
-            << " [BG=" << hex(bg) << "]"
-            << std::endl;
-        std::cout
-            << termcolor::yellow << "Fetcher :  " << termcolor::reset
-            << ppuFetcherStateToString(ppu.fetcher.state) << " (" << ppu.fetcher.dots << " dots)"
-            << " [X=" << +ppu.fetcher.x << ", Y=" << +ppu.fetcher.y
-            << ", lastTilemapAddr=" << hex(ppu.fetcher.lastTimeMapAddr)
-            << ", lastTileAddr=" << hex(ppu.fetcher.lastTileAddr)
-            << ", lastTileDataAddr=" << hex(ppu.fetcher.lastTileDataAddr) << "]"
-            << std::endl;
-        std::cout
-            << termcolor::yellow << "LCD     :  " << termcolor::reset
-            << "(x=" << +lcd.x << ", y=" << +lcd.y << ")"
-            << std::endl;
-
-        std::cout << headerString("flags") << std::endl;
-        std::cout
-            << flagString("Z", get_bit<Bits::Flags::Z>(cpu.registers.AF)) << "  |  "
-            << flagString("N", get_bit<Bits::Flags::N>(cpu.registers.AF)) << "  |  "
-            << flagString("H", get_bit<Bits::Flags::H>(cpu.registers.AF)) << "  |  "
-            << flagString("C", get_bit<Bits::Flags::C>(cpu.registers.AF)) << std::endl;
-        std::cout << headerString("registers") << std::endl;
-        std::cout << registerString("AF", cpu.registers.AF) << std::endl;
-        std::cout << registerString("BC", cpu.registers.BC) << std::endl;
-        std::cout << registerString("DE", cpu.registers.DE) << std::endl;
-        std::cout << registerString("HL", cpu.registers.HL) << std::endl;
-        std::cout << registerString("PC", cpu.registers.PC) << std::endl;
-        std::cout << registerString("SP", cpu.registers.SP) << std::endl;
-
-        std::cout << headerString("interrupts") << std::endl;
-        std::cout
-            << termcolor::bold << termcolor::red << "IME" << termcolor::reset
-            << " : " << coloredBool(cpu.IME) << std::endl;
-        std::cout
-            << termcolor::bold << termcolor::red << "IE" << termcolor::reset
-            << "  : " << bin(IE) << std::endl;
-        std::cout
-            << termcolor::bold << termcolor::red << "IF" << termcolor::reset
-            << "  : " << bin(IF) << std::endl;
-        std::cout << interruptString("VBLANK", cpu.IME,
-                get_bit<Bits::Interrupts::VBLANK>(IE), get_bit<Bits::Interrupts::VBLANK>(IF)) << std::endl;
-        std::cout << interruptString("STAT  ", cpu.IME,
-                 get_bit<Bits::Interrupts::STAT>(IE), get_bit<Bits::Interrupts::STAT>(IF)) << std::endl;
-        std::cout << interruptString("TIMER ", cpu.IME,
-                 get_bit<Bits::Interrupts::TIMER>(IE), get_bit<Bits::Interrupts::TIMER>(IF)) << std::endl;
-        std::cout << interruptString("JOYPAD", cpu.IME,
-                 get_bit<Bits::Interrupts::JOYPAD>(IE), get_bit<Bits::Interrupts::JOYPAD>(IF)) << std::endl;
-        std::cout << interruptString("SERIAL", cpu.IME,
-                get_bit<Bits::Interrupts::SERIAL>(IE), get_bit<Bits::Interrupts::SERIAL>(IF)) << std::endl;
-
-        std::cout << headerString("IO") << std::endl;
-//        std::cout << subheaderString("joypad") << std::endl;
-//        printIo(Registers::Joypad::REGISTERS, sizeof(Registers::Joypad::REGISTERS) / sizeof(uint16_t));
-//        std::cout << subheaderString("serial") << std::endl;
-//        printIo(Registers::Serial::REGISTERS, sizeof(Registers::Serial::REGISTERS) / sizeof(uint16_t));
-//        std::cout << subheaderString("timers") << std::endl;
-//        printIo(Registers::Timers::REGISTERS, sizeof(Registers::Timers::REGISTERS) / sizeof(uint16_t));
-//        std::cout << subheaderString("sound") << std::endl;
-//        printIo(Registers::Sound::REGISTERS, sizeof(Registers::Sound::REGISTERS) / sizeof(uint16_t));
-        std::cout << subheaderString("lcd") << std::endl;
-        printIo(Registers::LCD::REGISTERS, sizeof(Registers::LCD::REGISTERS) / sizeof(uint16_t));
-
-        if (cpu.instruction.ISR) {
-            std::cout << headerString("code") << std::endl;
-            std::cout << termcolor::yellow << "ISR " << interrupt_service_routine_mnemonic(cpu.instruction.address) << "   ";
+        if (config.sections.cpu) {
+            std::cout << headerString("CPU") << std::endl;
             std::cout
-                    << termcolor::reset
-                    << termcolor::color<245>
-                    << "   M"
-                    << (cpu.instruction.microop + 1) << "/" << 5
-                    << termcolor::reset
-                    << std::endl;
-        } else {
-            std::list<DisassembleEntry> codeView;
-            uint8_t n = 0;
-            for (int32_t addr = cpu.instruction.address; addr >= 0 && n < 6; addr--) {
-                auto entry = backend.getDisassembled(addr);
-                if (entry) {
-                    DisassembleEntry d = {
-                        .address = static_cast<uint16_t>(addr),
-                        .disassemble = *entry
-                    };
-                    codeView.push_front(d);
-                    n++;
-                }
-            }
-            n = 0;
-            for (int32_t addr = cpu.instruction.address + 1; addr <= 0xFFFF && n < 8; addr++) {
-                auto entry = backend.getDisassembled(addr);
-                if (entry) {
-                    DisassembleEntry d = {
-                        .address = static_cast<uint16_t>(addr),
-                        .disassemble = *entry
-                    };
-                    codeView.push_back(d);
-                    n++;
-                }
-            }
+                << termcolor::yellow << "Cycle   :  " << termcolor::reset << cpu.cycles << std::endl;
+        }
 
-            if (!codeView.empty()) {
+        if (config.sections.ppu) {
+            std::cout << headerString("PPU") << std::endl;
+            std::cout
+                << termcolor::yellow << "Cycle   :  " << termcolor::reset << ppu.ppu.cycles << std::endl;
+            std::vector<uint8_t> bg;
+            for (const auto &p : ppu.ppu.bgFifo)
+                bg.push_back(p.color);
+            std::cout
+                << termcolor::yellow << "PPU     :  " << termcolor::reset
+                << ppuStateToString(ppu.ppu.state) << " (" << ppu.ppu.dots << " dots)"
+                << " [BG=" << hex(bg) << "]"
+                << std::endl;
+            std::cout
+                << termcolor::yellow << "Fetcher :  " << termcolor::reset
+                << ppuFetcherStateToString(ppu.fetcher.state) << " (" << ppu.fetcher.dots << " dots)"
+                << " [X=" << +ppu.fetcher.x << ", Y=" << +ppu.fetcher.y
+                << ", lastTilemapAddr=" << hex(ppu.fetcher.lastTimeMapAddr)
+                << ", lastTileAddr=" << hex(ppu.fetcher.lastTileAddr)
+                << ", lastTileDataAddr=" << hex(ppu.fetcher.lastTileDataAddr) << "]"
+                << std::endl;
+            std::cout
+                << termcolor::yellow << "LCD     :  " << termcolor::reset
+                << "(x=" << +lcd.x << ", y=" << +lcd.y << ")"
+                << std::endl;
+        }
+
+        if (config.sections.flags) {
+            std::cout << headerString("flags") << std::endl;
+            std::cout
+                << flagString("Z", get_bit<Bits::Flags::Z>(cpu.registers.AF)) << "  |  "
+                << flagString("N", get_bit<Bits::Flags::N>(cpu.registers.AF)) << "  |  "
+                << flagString("H", get_bit<Bits::Flags::H>(cpu.registers.AF)) << "  |  "
+                << flagString("C", get_bit<Bits::Flags::C>(cpu.registers.AF)) << std::endl;
+        }
+
+        if (config.sections.registers) {
+            std::cout << headerString("registers") << std::endl;
+            std::cout << registerString("AF", cpu.registers.AF) << std::endl;
+            std::cout << registerString("BC", cpu.registers.BC) << std::endl;
+            std::cout << registerString("DE", cpu.registers.DE) << std::endl;
+            std::cout << registerString("HL", cpu.registers.HL) << std::endl;
+            std::cout << registerString("PC", cpu.registers.PC) << std::endl;
+            std::cout << registerString("SP", cpu.registers.SP) << std::endl;
+        }
+
+        if (config.sections.interrupts) {
+            std::cout << headerString("interrupts") << std::endl;
+            std::cout
+                << termcolor::bold << termcolor::red << "IME" << termcolor::reset
+                << " : " << coloredBool(cpu.IME) << std::endl;
+            std::cout
+                << termcolor::bold << termcolor::red << "IE" << termcolor::reset
+                << "  : " << bin(IE) << std::endl;
+            std::cout
+                << termcolor::bold << termcolor::red << "IF" << termcolor::reset
+                << "  : " << bin(IF) << std::endl;
+            std::cout << interruptString("VBLANK", cpu.IME,
+                    get_bit<Bits::Interrupts::VBLANK>(IE), get_bit<Bits::Interrupts::VBLANK>(IF)) << std::endl;
+            std::cout << interruptString("STAT  ", cpu.IME,
+                     get_bit<Bits::Interrupts::STAT>(IE), get_bit<Bits::Interrupts::STAT>(IF)) << std::endl;
+            std::cout << interruptString("TIMER ", cpu.IME,
+                     get_bit<Bits::Interrupts::TIMER>(IE), get_bit<Bits::Interrupts::TIMER>(IF)) << std::endl;
+            std::cout << interruptString("JOYPAD", cpu.IME,
+                     get_bit<Bits::Interrupts::JOYPAD>(IE), get_bit<Bits::Interrupts::JOYPAD>(IF)) << std::endl;
+            std::cout << interruptString("SERIAL", cpu.IME,
+                    get_bit<Bits::Interrupts::SERIAL>(IE), get_bit<Bits::Interrupts::SERIAL>(IF)) << std::endl;
+
+        }
+
+        if (config.sections.io.joypad || config.sections.io.serial || config.sections.io.timers ||
+                config.sections.io.sound || config.sections.io.lcd) {
+            std::cout << headerString("IO") << std::endl;
+            if (config.sections.io.joypad) {
+                std::cout << subheaderString("joypad") << std::endl;
+                printIo(Registers::Joypad::REGISTERS, sizeof(Registers::Joypad::REGISTERS) / sizeof(uint16_t));
+            }
+            if (config.sections.io.serial) {
+                std::cout << subheaderString("serial") << std::endl;
+                printIo(Registers::Serial::REGISTERS, sizeof(Registers::Serial::REGISTERS) / sizeof(uint16_t));
+            }
+            if (config.sections.io.timers) {
+                std::cout << subheaderString("timers") << std::endl;
+                printIo(Registers::Timers::REGISTERS, sizeof(Registers::Timers::REGISTERS) / sizeof(uint16_t));
+            }
+            if (config.sections.io.sound) {
+                std::cout << subheaderString("sound") << std::endl;
+                printIo(Registers::Sound::REGISTERS, sizeof(Registers::Sound::REGISTERS) / sizeof(uint16_t));
+            }
+            if (config.sections.io.lcd) {
+                std::cout << subheaderString("lcd") << std::endl;
+                printIo(Registers::LCD::REGISTERS, sizeof(Registers::LCD::REGISTERS) / sizeof(uint16_t));
+            }
+        }
+
+        if (config.sections.code) {
+            if (cpu.instruction.ISR) {
                 std::cout << headerString("code") << std::endl;
-                std::list<DisassembleEntry>::const_iterator lastEntry;
-                for (auto entry = codeView.begin(); entry != codeView.end(); entry++) {
-                    if (entry != codeView.begin()) {
-                        if (lastEntry->address + lastEntry->disassemble.size() < entry->address)
-                            std::cout << termcolor::color<240> << "  ...." << termcolor::reset << std::endl;
+                std::cout << termcolor::yellow << "ISR " << interrupt_service_routine_mnemonic(cpu.instruction.address) << "   ";
+                std::cout
+                        << termcolor::reset
+                        << termcolor::color<245>
+                        << "   M"
+                        << (cpu.instruction.microop + 1) << "/" << 5
+                        << termcolor::reset
+                        << std::endl;
+            } else {
+                std::list<DisassembleEntry> codeView;
+                uint8_t n = 0;
+                for (int32_t addr = cpu.instruction.address; addr >= 0 && n < 6; addr--) {
+                    auto entry = backend.getDisassembled(addr);
+                    if (entry) {
+                        DisassembleEntry d = {
+                            .address = static_cast<uint16_t>(addr),
+                            .disassemble = *entry
+                        };
+                        codeView.push_front(d);
+                        n++;
                     }
-                    std::cout << disassembleEntryCodeString(*entry, cpu.instruction) << std::endl;
-                    lastEntry = entry;
+                }
+                n = 0;
+                for (int32_t addr = cpu.instruction.address + 1; addr <= 0xFFFF && n < 8; addr++) {
+                    auto entry = backend.getDisassembled(addr);
+                    if (entry) {
+                        DisassembleEntry d = {
+                            .address = static_cast<uint16_t>(addr),
+                            .disassemble = *entry
+                        };
+                        codeView.push_back(d);
+                        n++;
+                    }
+                }
+
+                if (!codeView.empty()) {
+                    std::cout << headerString("code") << std::endl;
+                    std::list<DisassembleEntry>::const_iterator lastEntry;
+                    for (auto entry = codeView.begin(); entry != codeView.end(); entry++) {
+                        if (entry != codeView.begin()) {
+                            if (lastEntry->address + lastEntry->disassemble.size() < entry->address)
+                                std::cout << termcolor::color<240> << "  ...." << termcolor::reset << std::endl;
+                        }
+                        std::cout << disassembleEntryCodeString(*entry, cpu.instruction) << std::endl;
+                        lastEntry = entry;
+                    }
                 }
             }
         }
+
 
         if (!displayEntries.empty()) {
             std::cout << headerString("display") << std::endl;
@@ -1072,6 +1128,10 @@ void DebuggerFrontendCli::onTick(uint64_t tick) {
         sigint_trigger = 0;
         backend.interrupt();
     }
+}
+
+void DebuggerFrontendCli::setConfig(const DebuggerFrontendCli::Config &cfg) {
+    config = cfg;
 }
 
 void DebuggerFrontendCli::setObserver(DebuggerFrontendCli::Observer *o) {

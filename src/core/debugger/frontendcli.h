@@ -9,6 +9,28 @@ class IDebuggerBackend;
 
 class DebuggerFrontendCli : public IDebuggerFrontend {
 public:
+    struct Config {
+        struct {
+            bool breakpoints;
+            bool watchpoints;
+            bool cpu;
+            bool ppu;
+            bool flags;
+            bool registers;
+            bool interrupts;
+            struct {
+                bool joypad;
+                bool serial;
+                bool timers;
+                bool sound;
+                bool lcd;
+            } io;
+            bool code;
+        } sections;
+
+        static Config makeDefault();
+    };
+
     class Observer {
     public:
         virtual ~Observer() = default;
@@ -18,6 +40,8 @@ public:
     explicit DebuggerFrontendCli(IDebuggerBackend &backend);
     ~DebuggerFrontendCli() override;
 
+    void setConfig(const Config &config);
+
     void setObserver(Observer *observer);
 
     Debugger::Command pullCommand(Debugger::ExecutionState outcome) override;
@@ -25,6 +49,8 @@ public:
 
 private:
     IDebuggerBackend &backend;
+
+    Config config;
 
     std::string lastCommand;
 

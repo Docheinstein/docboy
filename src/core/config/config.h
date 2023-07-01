@@ -107,6 +107,26 @@ public:
         std::map<IJoypad::Key, KeyboardKey> keyboardMapping;
     } input;
 
+    struct Debug {
+        struct {
+            bool breakpoints;
+            bool watchpoints;
+            bool cpu;
+            bool ppu;
+            bool flags;
+            bool registers;
+            bool interrupts;
+            struct {
+                bool joypad;
+                bool serial;
+                bool timers;
+                bool sound;
+                bool lcd;
+            } io;
+            bool code;
+        } sections;
+    } debug;
+
     static Config makeDefault();
 };
 #endif // CONFIG_H

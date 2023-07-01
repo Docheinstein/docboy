@@ -60,5 +60,7 @@ std::vector<std::string> read_file_lines(const std::string &filename, bool *ok) 
     while (getline(ifs, line))
         lines.push_back(line);
 
+    if (ok)
+        *ok = true;
     return lines;
 }
