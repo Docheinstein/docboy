@@ -161,7 +161,12 @@ int main(int argc, char **argv) {
         std::string rom;
         std::string boot_rom;
         std::string config;
+#ifdef ENABLE_DEBUGGER
         bool debugger {};
+#endif
+#ifdef ENABLE_PROFILER
+        std::optional<uint64_t> profiler_ticks {};
+#endif
         bool serial_console {};
         float scaling {1};
         double speed_up {1};
@@ -184,6 +189,13 @@ int main(int argc, char **argv) {
     params
         .add_parameter(args.debugger, "--debugger", "-d")
         .help("Attach CLI debugger");
+#endif
+#ifdef ENABLE_PROFILER
+    params
+        .add_parameter(args.profiler_ticks, "--profiler", "-p")
+        .nargs(1)
+        .default_value(1)
+        .help("Run the profiler for the given ticks");
 #endif
     params
         .add_parameter(args.serial_console, "--serial", "-s")
@@ -225,6 +237,8 @@ int main(int argc, char **argv) {
         }
     }
 
+    auto frequency = (uint64_t)(args.speed_up * Specs::FREQUENCY);
+
 #ifdef ENABLE_DEBUGGER
     class DebuggerFrontendCliObserver : public DebuggerFrontendCli::Observer {
     public:
@@ -239,7 +253,10 @@ int main(int argc, char **argv) {
         Window *window;
     };
 
-    DebuggableGameBoy gb(std::move(bootRom));
+    DebuggableGameBoy gb = DebuggableGameBoy::Builder()
+        .setBootROM(std::move(bootRom))
+        .setFrequency(frequency)
+        .build();
     DebuggableCore core(gb);
     std::unique_ptr<DebuggerBackend> debuggerBackend;
     std::unique_ptr<DebuggerFrontendCli> debuggerFrontend;
@@ -252,22 +269,31 @@ int main(int argc, char **argv) {
         debuggerFrontend->setObserver(debuggerFrontendObserver.get());
     }
 #else
-    GameBoy gb(std::move(bootRom));
+    GameBoy gb = GameBoy::Builder()
+        .setBootROM(std::move(bootRom))
+        .setFrequency(frequency)
+        .build();
     Core core(gb);
 #endif
 
 
 #ifdef ENABLE_PROFILER
     auto printProfilerResult = [](const ProfilerResult &result) {
+        auto millis = duration_cast<std::chrono::milliseconds>(result.executionTime).count();
+        auto seconds = (double) millis / 1000;
+        auto effectiveFrequency = (uint64_t)((double) result.ticks / seconds);
+        auto effectiveSpeedUp = (double) effectiveFrequency / Specs::FREQUENCY;
         std::cout << "====== PROFILING RESULT ======\n";
-        std::cout << "Ticks: " << result.ticks << "\n";
-        std::cout << "Time : " << (double) duration_cast<std::chrono::milliseconds>(result.executionTime).count() / 1000 << "\n";
+        std::cout << "Ticks                : " << result.ticks << "\n";
+        std::cout << "Time (s)             : " << seconds << "\n";
+        std::cout << "EffectiveFrequency   : " << effectiveFrequency << "\n";
+        std::cout << "EffectiveSpeedUp     : " << effectiveSpeedUp << "\n";
     };
 
     Profiler profiler(core, gb);
-#ifdef PROFILER_MAX_TICKS
-    profiler.setMaxTicks(PROFILER_MAX_TICKS);
-#endif
+    if (args.profiler_ticks) {
+        profiler.setMaxTicks(*args.profiler_ticks);
+    }
 #endif
 
     FrameBufferLCD &lcd = gb.lcd;
