@@ -163,8 +163,7 @@ void PPU::tick_PixelTransfer() {
 
             Pixel pixel = bgPixel;
 
-            // TODO: handle overlap
-            if (objPixel)
+            if (objPixel && objPixel->color)
                 pixel = *objPixel;
 
             lcd.pushPixel(fifo_pixel_to_lcd_pixel(pixel));
