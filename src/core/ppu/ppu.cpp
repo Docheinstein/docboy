@@ -281,6 +281,7 @@ PPU::Fetcher::BGPrefetcher::BGPrefetcher(ILCDIO &lcdIo, IMemory &vram) :
         &PPU::Fetcher::BGPrefetcher::tick_GetTile2,
     },
     x8(),
+    fetchType(),
     tilemapX(),
     tilemapAddr(),
     tileNumber(),
@@ -290,19 +291,50 @@ PPU::Fetcher::BGPrefetcher::BGPrefetcher(ILCDIO &lcdIo, IMemory &vram) :
 }
 
 void PPU::Fetcher::BGPrefetcher::tick_GetTile1() {
-    uint8_t SCX = lcdIo.readSCX();
-    tilemapX = (x8 + (SCX / 8)) % 32;
+    uint8_t WX = lcdIo.readWX();
+    uint8_t WY = lcdIo.readWY();
+    uint8_t LY = lcdIo.readLY();
+
+    fetchType = FetchType::Background;
+
+    if (get_bit<Bits::LCD::LCDC::WIN_ENABLE>(lcdIo.readLCDC())) {
+        assert((WX - 7) % 8 == 0); // TODO: check if this is guaranteed
+        if ((8 * x8 >= WX - 7 && LY >= WY))
+            fetchType = FetchType::Window;
+    }
+
+    if (fetchType == FetchType::Background) {
+        uint8_t SCX = lcdIo.readSCX();
+        tilemapX = (x8 + (SCX / 8)) % 32;
+    } else /* Window */ {
+        assert((8 * x8 - (WX - 7)) % 8 == 0);
+        tilemapX = (8 * x8 - (WX - 7)) / 8;
+    }
 }
 
 void PPU::Fetcher::BGPrefetcher::tick_GetTile2() {
     uint8_t SCY = lcdIo.readSCY();
     uint8_t LY = lcdIo.readLY(); // or fetcher.y?
-    uint8_t tilemapY = ((LY + SCY) / 8) % 32;
+
+    uint8_t tilemapY;
+    if (fetchType == FetchType::Background) {
+        tilemapY = ((LY + SCY) / 8) % 32;
+    } else /* Window */ {
+        uint8_t WY = lcdIo.readWY();
+        assert(((LY - WY) / 8) < 32);
+        tilemapY = (LY - WY) / 8;
+    }
 
     uint8_t LCDC = lcdIo.readLCDC();
 
     // fetch tile number from tilemap
-    uint16_t tilemapBase = get_bit<Bits::LCD::LCDC::BG_TILE_MAP>(LCDC) ? 0x9C00 : 0x9800;
+    uint16_t tilemapBase;
+    if (fetchType == FetchType::Background) {
+        tilemapBase = get_bit<Bits::LCD::LCDC::BG_TILE_MAP>(LCDC) ? 0x9C00 : 0x9800;
+    }  else /* Window */{
+        tilemapBase = get_bit<Bits::LCD::LCDC::WIN_TILE_MAP>(LCDC) ? 0x9C00 : 0x9800;
+    }
+
     tilemapAddr = tilemapBase + 32 * tilemapY + tilemapX;
     tileNumber = vram.read(tilemapAddr - MemoryMap::VRAM::START); // TODO: bad
 

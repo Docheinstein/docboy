@@ -98,6 +98,11 @@ protected:
             void advanceToNextTile();
 
         private:
+            enum class FetchType {
+                Background,
+                Window
+            };
+
             void tick_GetTile1();
             void tick_GetTile2();
 
@@ -110,6 +115,7 @@ protected:
             uint8_t x8;
 
             // scratchpad
+            FetchType fetchType;
             uint8_t tilemapX;
             uint16_t tilemapAddr;
             uint8_t tileNumber;
