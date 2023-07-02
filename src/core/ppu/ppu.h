@@ -25,7 +25,8 @@ public:
     struct Pixel {
         uint8_t color;
         uint8_t palette;
-        uint8_t priority;
+        uint8_t priority; // oam number
+        uint8_t x; // needed to solve sprite clashes on DMG
     };
 
     using PixelFIFO = std::deque<Pixel>;
@@ -124,9 +125,12 @@ protected:
              explicit OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam);
 
             void setOAMEntry(const OAMEntry &oamEntry);
+            [[nodiscard]] OAMEntry getOAMEntry() const;
 
-            [[nodiscard]] bool isTileDataAddressReady() const;
+            [[nodiscard]] bool areTileDataAddressAndFlagsReady() const;
+
             [[nodiscard]] uint16_t getTileDataAddress() const;
+            [[nodiscard]] uint8_t getOAMFlags() const;
 
         private:
             void tick_GetTile1();
@@ -140,18 +144,12 @@ protected:
             // scratchpad
             uint8_t tileNumber;
 
-        public:
-            // TODO: private
-            uint8_t oamFlags;
-
-        private:
-            uint16_t tileAddr;
-
             // in
             OAMEntry entry;
 
             // out
             uint16_t tileDataAddr;
+            uint8_t oamFlags;
         };
 
         class PixelSliceFetcher : public Processor<PixelSliceFetcher> {

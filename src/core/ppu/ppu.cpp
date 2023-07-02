@@ -304,7 +304,6 @@ void PPU::Fetcher::BGPrefetcher::tick_GetTile2() {
 
     // fetch tile number from tilemap
     uint16_t tilemapBase = get_bit<Bits::LCD::LCDC::BG_TILE_MAP>(LCDC) ? 0x9C00 : 0x9800;
-
     tilemapAddr = tilemapBase + 32 * tilemapY + tilemapX;
     tileNumber = vram.read(tilemapAddr - MemoryMap::VRAM::START); // TODO: bad
 
@@ -343,9 +342,11 @@ PPU::Fetcher::OBJPrefetcher::OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam) :
     tickHandlers {
         &PPU::Fetcher::OBJPrefetcher::tick_GetTile1,
         &PPU::Fetcher::OBJPrefetcher::tick_GetTile2,
-    }, tileNumber(),
-    oamFlags(), tileAddr(),
-    entry(), tileDataAddr() {
+    },
+    tileNumber(),
+    entry(),
+    tileDataAddr(),
+    oamFlags() {
 
 }
 
@@ -355,7 +356,7 @@ void PPU::Fetcher::OBJPrefetcher::tick_GetTile1() {
 
 void PPU::Fetcher::OBJPrefetcher::tick_GetTile2() {
     oamFlags  = oam.read(4 * entry.number + 3);
-    tileAddr = 0x8000 + tileNumber * 16 /* sizeof tile */;
+    uint16_t tileAddr = 0x8000 + tileNumber * 16 /* sizeof tile */;
 
     int oamY = entry.y - 16;
     int yOffset = lcdIo.readLY() - oamY;
@@ -363,7 +364,7 @@ void PPU::Fetcher::OBJPrefetcher::tick_GetTile2() {
     tileDataAddr = tileAddr + yOffset * 2;
 }
 
-bool PPU::Fetcher::OBJPrefetcher::isTileDataAddressReady() const {
+bool PPU::Fetcher::OBJPrefetcher::areTileDataAddressAndFlagsReady() const {
     return dots == 2;
 }
 
@@ -373,7 +374,14 @@ uint16_t PPU::Fetcher::OBJPrefetcher::getTileDataAddress() const {
 
 void PPU::Fetcher::OBJPrefetcher::setOAMEntry(const PPU::OAMEntry &oamEntry) {
     entry = oamEntry;
-//    dots = 0;
+}
+
+PPU::OAMEntry PPU::Fetcher::OBJPrefetcher::getOAMEntry() const {
+    return entry;
+}
+
+uint8_t PPU::Fetcher::OBJPrefetcher::getOAMFlags() const {
+    return oamFlags;
 }
 
 PPU::Fetcher::PixelSliceFetcher::PixelSliceFetcher(IMemory &vram) :
@@ -458,6 +466,16 @@ void PPU::Fetcher::tick() {
         }
     };
 
+    auto emplacePixelSliceFetcherDataForOAMEntry = [&](auto &pixels, const OAMEntry &entry, bool flip = false) {
+        assert(pixels.empty());
+        emplacePixelSliceFetcherData(pixels, flip);
+        for (auto &pixel : pixels) {
+            pixel.priority = entry.number;
+            pixel.x = entry.x;
+        }
+    };
+
+
     auto restartFetcher = [&]{
         state = State::Prefetcher;
         dots = 0;
@@ -478,7 +496,7 @@ void PPU::Fetcher::tick() {
         } else if (targetFifo == FIFOType::Obj) {
             objPrefetcher.tick();
 
-            if (objPrefetcher.isTileDataAddressReady()) {
+            if (objPrefetcher.areTileDataAddressAndFlagsReady()) {
                 objPrefetcher.reset();
                 pixelSliceFetcher.setTileDataAddress(objPrefetcher.getTileDataAddress());
                 pixelSliceFetcher.reset();
@@ -508,13 +526,47 @@ void PPU::Fetcher::tick() {
                 }
             }
         } else if (targetFifo == FIFOType::Obj) {
-            // TODO: should not access flags so badly from here
-            bool flip = get_bit<Bits::OAM::Attributes::X_FLIP>(objPrefetcher.oamFlags);
+            std::vector<Pixel> sprite;
 
-            // TODO: not clear/push but merge
+            // TODO: should not access flags so badly from here
+            bool flip = get_bit<Bits::OAM::Attributes::X_FLIP>(objPrefetcher.getOAMFlags());
+
+            // retrieve sprite's pixels
+#if 1
+            emplacePixelSliceFetcherDataForOAMEntry(sprite, objPrefetcher.getOAMEntry(), flip);
+            // handle sprite-to-sprite conflicts by merging sprite with objFifo
+            // "The smaller the X coordinate, the higher the priority."
+            // "When X coordinates are identical, the object located first in OAM has higher priority."
+
+            uint8_t i = 0;
+            uint8_t objFifoSize = objFifo.size();
+            while (i < objFifoSize) {
+                // handle conflict
+                const Pixel &spritePixel = sprite[i];
+                const Pixel &fifoPixel = objFifo[i];
+                // Overwrite pixel in fifo with pixel in sprite if:
+                // 1. Pixel in sprite is opaque and pixel in fifo is transparent
+                // 2. Both pixels in sprite and fifo are opaque but pixel in sprite
+                //    has either lower x or, if x is equal, lowest oam number.
+                if (
+                    (spritePixel.color && !fifoPixel.color)
+                        ||
+                    ((spritePixel.color && fifoPixel.color) &&
+                        ((spritePixel.x < fifoPixel.x) ||
+                        ((spritePixel.x == fifoPixel.x) && (spritePixel.priority < fifoPixel.priority))))
+
+                    ) {
+                    objFifo[i] = spritePixel;
+                }
+                i++;
+            }
+
+            while (i < sprite.size())
+                objFifo.push_back(sprite[i++]);
+#else
             objFifo.clear();
             emplacePixelSliceFetcherData(objFifo, flip);
-
+#endif
             if (!oamEntriesHit.empty()) {
                 // oam entry hit waiting to be served
                 // discard bg push?
