@@ -16,11 +16,11 @@ uint8_t MBC1::read(uint16_t address) const {
     if (address < 0x8000) {
         uint16_t bankAddress = address - 0x4000;
         size_t base = 0;
-        if (mbc.bankingMode == 0x1)
+        if (mbc.bankingMode == 0x0)
             base = mbc.upperRomBankSelector_ramBankSelector * 0x8000;
         size_t romAddress = base + mbc.romBankSelector * 0x4000 + bankAddress;
 
-        return rom[romAddress];
+         return rom[romAddress];
     }
     throw std::runtime_error("Read at address " + hex(address) + " is not allowed");
 }
