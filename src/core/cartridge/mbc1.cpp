@@ -10,15 +10,22 @@ MBC1::MBC1(std::vector<uint8_t> &&data) : Cartridge(data), mbc() {
 }
 
 uint8_t MBC1::read(uint16_t address) const {
+    /*
+     *  Bits: 20 19 18 17 16 15 14 13 12 .. 01 00
+     *        \___/ \____________/ \____________/
+     *          |          |            \----------- From Game Boy address
+     *          |          \------------------------ As 2000–3FFF bank register
+     *          \----------------------------------- As 4000–5FFF bank register
+     */
     if (address < 0x4000) {
         return rom[address];
     }
     if (address < 0x8000) {
         uint16_t bankAddress = address - 0x4000;
-        size_t base = 0;
+        uint8_t bankSelector = mbc.romBankSelector > 0 ? mbc.romBankSelector : 0x1;
         if (mbc.bankingMode == 0x0)
-            base = mbc.upperRomBankSelector_ramBankSelector * 0x8000;
-        size_t romAddress = base + mbc.romBankSelector * 0x4000 + bankAddress;
+            bankSelector = bankSelector | (mbc.upperRomBankSelector_ramBankSelector << 5);
+        size_t romAddress = (bankSelector << 14)  + bankAddress;
 
          return rom[romAddress];
     }
