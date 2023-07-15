@@ -145,7 +145,7 @@ void PPU::tick_PixelTransfer() {
         fetcher.setOAMEntriesHit(entries);
     };
 
-    if (LY() == 0 || scratchpad.pixelTransfer.pixelPushed)
+    if (LX == 0 || scratchpad.pixelTransfer.pixelPushed)
         checkOamEntriesHit();
 
     scratchpad.pixelTransfer.pixelPushed = false;
