@@ -197,6 +197,10 @@ bool DebuggerBackend::onTick(uint64_t tick) {
         if (std::holds_alternative<Debugger::CommandMicroNext>(*command)) {
             commandState.stackLevel = getCPUState().registers.SP;
         }
+        if (std::holds_alternative<Debugger::CommandDot>(*command)) {
+            Debugger::CommandDot cmdDot = std::get<Debugger::CommandDot>(*command);
+            commandState.target = getPPUState().ppu.cycles + cmdDot.count;
+        }
     };
 
     if (!frontend)
@@ -250,9 +254,7 @@ bool DebuggerBackend::onTick(uint64_t tick) {
     const Debugger::Command &cmd = *command;
 
     if (std::holds_alternative<Debugger::CommandDot>(cmd)) {
-        Debugger::CommandDot cmdDot = std::get<Debugger::CommandDot>(cmd);
-        commandState.counter++;
-        if (commandState.counter >= cmdDot.count)
+        if (gameboy.getPPUDebug().getState().ppu.cycles >= commandState.target)
             pullCommand({.state = Debugger::ExecutionState::State::Completed});
         return true;
     }

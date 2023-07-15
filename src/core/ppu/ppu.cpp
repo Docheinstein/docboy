@@ -108,6 +108,10 @@ void PPU::afterTick_VBlank() {
 }
 
 void PPU::tick_OAMScan() {
+    if (scanlineOamEntries.size() >= 10)
+        // the maximum number of oam entries per scanline is 10
+        return;
+
     uint8_t oamNum = dots / 2;
     if (dots % 2 == 0) {
         // read oam entry y
@@ -121,6 +125,8 @@ void PPU::tick_OAMScan() {
         if (oamY <= LY() && LY() < oamY + 8)
             scanlineOamEntries.emplace_back(dots / 2, x, scratchpad.oamScan.y);
     }
+
+    assert(scanlineOamEntries.size() <= 10);
 }
 
 void PPU::afterTick_OAMScan() {
@@ -137,11 +143,18 @@ void PPU::tick_PixelTransfer() {
         std::vector<OAMEntry> entries;
 
         for (const auto &entry : scanlineOamEntries) {
+            if (entry.x < 8) {
+                // TODO: handle this case
+                continue;
+            }
+            if (entry.x == 8) {
+                // TODO: handle this case
+                continue;
+            }
             uint8_t oamX = entry.x - 8;
             if (oamX == LX)
                 entries.push_back(entry);
         }
-
         fetcher.setOAMEntriesHit(entries);
     };
 
@@ -149,6 +162,10 @@ void PPU::tick_PixelTransfer() {
         checkOamEntriesHit();
 
     scratchpad.pixelTransfer.pixelPushed = false;
+
+    // TODO: figure out which is the right timing:
+    //  does the fetcher tick happen before pushing the pixel to the LCD?
+    fetcher.tick();
 
     if (!isFifoBlocked()) {
         if (!bgFifo.empty()) {
@@ -170,8 +187,6 @@ void PPU::tick_PixelTransfer() {
             scratchpad.pixelTransfer.pixelPushed = true;
         }
     }
-
-    fetcher.tick();
 }
 
 void PPU::afterTick_PixelTransfer() {
@@ -201,7 +216,8 @@ void PPU::enterHBlank() {
     assert(state == PixelTransfer);
     assert(LY() < 144);
     // TODO: does not pass right now: timing of PixelTransfer is slightly wrong?
-    // assert(dots >= 80 + 172 && dots <= 80 + 289);
+    static constexpr uint8_t DOTS_ERROR_THRESHOLD_TO_FIX = 4;
+    assert(dots >= 80 + 172 && dots <= 80 + 289 + DOTS_ERROR_THRESHOLD_TO_FIX);
     setState(HBlank);
 }
 
@@ -298,9 +314,12 @@ void PPU::Fetcher::BGPrefetcher::tick_GetTile1() {
     fetchType = FetchType::Background;
 
     if (get_bit<Bits::LCD::LCDC::WIN_ENABLE>(lcdIo.readLCDC())) {
-        assert((WX - 7) % 8 == 0); // TODO: check if this is guaranteed
-        if ((8 * x8 >= WX - 7 && LY >= WY))
-            fetchType = FetchType::Window;
+        // assert((WX - 7) % 8 == 0);
+        // TODO: figure out how to handle WX - 7 not dividing 8
+        if ((WX - 7) % 8 == 0) { // TODO: remove this check
+            if ((8 * x8 >= WX - 7 && LY >= WY))
+                fetchType = FetchType::Window;
+        }
     }
 
     if (fetchType == FetchType::Background) {
@@ -462,6 +481,7 @@ PPU::Fetcher::Fetcher(ILCDIO &lcdIo, IMemory &vram, IMemory &oam, PixelFIFO &bgF
     bgFifo(bgFifo), objFifo(objFifo),
     state(State::Prefetcher),
     targetFifo(FIFOType::Bg),
+    firstFetch(true),
     bgPrefetcher(lcdIo, vram),
     objPrefetcher(lcdIo, oam),
     pixelSliceFetcher(vram),
@@ -471,6 +491,7 @@ PPU::Fetcher::Fetcher(ILCDIO &lcdIo, IMemory &vram, IMemory &oam, PixelFIFO &bgF
 
 void PPU::Fetcher::reset() {
     state = State::Prefetcher;
+    firstFetch = true;
     oamEntriesHit.clear();
     pixelSliceFetcher.reset();
     bgPrefetcher.reset();
@@ -512,6 +533,18 @@ void PPU::Fetcher::tick() {
         dots = 0;
     };
 
+    // TODO: quite bad looking
+    auto restartFetcherWithOAMEntryAndTick = [this, restartFetcher](const OAMEntry &entry) {
+        // oam entry hit waiting to be served
+        // discard bg push?
+        objPrefetcher.setOAMEntry(entry);
+        targetFifo = FIFOType::Obj;
+        restartFetcher();
+
+        objPrefetcher.tick();
+        assert(!objPrefetcher.areTileDataAddressAndFlagsReady());
+    };
+
     dots++;
 
     if (state == State::Prefetcher) {
@@ -536,23 +569,30 @@ void PPU::Fetcher::tick() {
         }
     } else if (state == State::PixelSliceFetcher) {
         pixelSliceFetcher.tick();
-        if (pixelSliceFetcher.isTileDataReady())
+        if (pixelSliceFetcher.isTileDataReady()) {
             state = State::Pushing;
 
-        // TODO: oam read should overlap last bg push?
+            // first oam read should overlap last bg push
+            // TODO: check if this is right
+            if (targetFifo == FIFOType::Bg) {
+                if (!oamEntriesHit.empty()) {
+                    restartFetcherWithOAMEntryAndTick(pop(oamEntriesHit));
+                }
+            }
+        }
     } else if (state == State::Pushing) {
         if (targetFifo == FIFOType::Bg) {
             if (!oamEntriesHit.empty()) {
-                // oam entry hit waiting to be served
-                // discard bg push?
-                objPrefetcher.setOAMEntry(pop(oamEntriesHit));
-                targetFifo = FIFOType::Obj;
-                restartFetcher();
+                restartFetcherWithOAMEntryAndTick(pop(oamEntriesHit));
             } else {
                 if (bgFifo.empty()) {
                     // push pixels
-                    emplacePixelSliceFetcherData(bgFifo);
-                    bgPrefetcher.advanceToNextTile();
+                    // TODO: first fetch is a dummy fetch, figure out how to handle this properly
+                    if (!firstFetch) {
+                        emplacePixelSliceFetcherData(bgFifo);
+                        bgPrefetcher.advanceToNextTile();
+                    }
+                    firstFetch = false;
                     restartFetcher();
                 }
             }
@@ -613,6 +653,7 @@ void PPU::Fetcher::tick() {
 }
 
 void PPU::Fetcher::setOAMEntriesHit(const std::vector<OAMEntry> &entries) {
+    assert(entries.size() <= 10);
     oamEntriesHit = entries;
 }
 

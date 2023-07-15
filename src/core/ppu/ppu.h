@@ -205,6 +205,8 @@ protected:
         std::vector<OAMEntry> oamEntriesHit;
         FIFOType targetFifo;
 
+        bool firstFetch;
+
         BGPrefetcher bgPrefetcher;
         OBJPrefetcher objPrefetcher;
         PixelSliceFetcher pixelSliceFetcher;

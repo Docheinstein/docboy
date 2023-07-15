@@ -96,6 +96,8 @@ private:
     std::optional<Debugger::Command> command;
     struct {
         uint64_t counter;
+
+        uint64_t target;
         uint16_t stackLevel;
     } commandState;
 

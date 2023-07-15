@@ -4,7 +4,7 @@
 #include <vector>
 
 template<typename T>
-T& pop(std::vector<T> &vector);
+const T& pop(std::vector<T> &vector);
 
 #include "stdutils.tpp"
 

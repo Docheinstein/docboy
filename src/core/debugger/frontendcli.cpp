@@ -285,7 +285,7 @@ static CommandInfo COMMANDS[] = {
     {
         std::regex(R"(\.\s*(\d+)?)"),
         ". [<count>]",
-        "Continue running for <count> dots (default = 1)",
+        "Continue running for <count> PPU dots (default = 1)",
         [](const std::vector<std::string> &groups) -> Command {
             const std::string &count = groups[0];
             uint64_t n = count.empty() ? 1 : std::stoi(count);
