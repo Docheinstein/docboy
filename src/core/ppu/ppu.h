@@ -22,8 +22,8 @@ using IPPU = IClockable;
 class PPU : public IPPU {
 public:
     struct Pixel {
-        uint8_t color;
-        uint8_t palette;
+        uint8_t color;    // color value between 0 and 3
+        uint8_t palette;  // palette, for obj only: 0 for OBP0, 1 for OBP1
         uint8_t priority; // oam number
         uint8_t x;        // needed to solve sprite clashes on DMG
     };
@@ -249,7 +249,7 @@ protected:
         struct {
             bool pixelPushed;
         } pixelTransfer;
-    } scratchpad{};
+    } scratchpad {};
 
     Fetcher fetcher;
 

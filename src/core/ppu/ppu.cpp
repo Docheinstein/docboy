@@ -6,22 +6,23 @@
 #include "utils/binutils.h"
 #include "utils/log.h"
 #include "utils/stdutils.h"
+#include <array>
 #include <cassert>
 #include <iostream>
 #include <optional>
 
 using namespace Bits::LCD::LCDC;
 
-static ILCD::Pixel fifo_pixel_to_lcd_pixel(const PPU::Pixel& pixel) {
-    if (pixel.color == 0)
-        return ILCD::Pixel::Color0;
-    else if (pixel.color == 1)
-        return ILCD::Pixel::Color1;
-    else if (pixel.color == 2)
-        return ILCD::Pixel::Color2;
-    else if (pixel.color == 3)
-        return ILCD::Pixel::Color3;
-    throw std::runtime_error("unexpected color pixel: " + std::to_string(pixel.color));
+static std::array<ILCD::Pixel, 4> COLOR_TO_LCD_PIXEL = {
+    ILCD::Pixel::Color0,
+    ILCD::Pixel::Color1,
+    ILCD::Pixel::Color2,
+    ILCD::Pixel::Color3,
+};
+
+static ILCD::Pixel color_to_lcd_pixel(uint8_t color) {
+    assert(color < 4);
+    return COLOR_TO_LCD_PIXEL[color];
 }
 
 PPU::PPU(ILCD& lcd, ILCDIO& lcdIo, IInterruptsIO& interrupts, IMemory& vram, IMemory& oam) :
@@ -172,21 +173,37 @@ void PPU::tick_PixelTransfer() {
 
     if (!isFifoBlocked()) {
         if (!bgFifo.empty()) {
+            // pop out a pixel from BG fifo
             Pixel bgPixel = bgFifo.front();
             bgFifo.pop_front();
 
+            // eventually pop out a pixel from OBJ fifo
             std::optional<Pixel> objPixel;
             if (!objFifo.empty()) {
                 objPixel = objFifo.front();
                 objFifo.pop_front();
             }
 
-            Pixel pixel = bgPixel;
+            uint8_t colorIndex;
+            uint8_t palette;
 
-            if (objPixel && objPixel->color)
-                pixel = *objPixel;
+            // handle overlap between BG and OBJ pixel
+            // TODO: handle BG_OVER_OBJ
+            if (objPixel && objPixel->color != 0 /* take pixel from obj only if not transparent */) {
+                colorIndex = objPixel->color;
+                palette = objPixel->palette == 0 ? lcdIo.readOBP0() : lcdIo.readOBP1();
+            } else {
+                colorIndex = bgPixel.color;
+                palette = lcdIo.readBGP();
+            }
 
-            lcd.pushPixel(fifo_pixel_to_lcd_pixel(pixel));
+            // resolve real color using palette and the index of the color
+            // ColorIndex |  3  |  2  |  1  |  0  |
+            // PaletteBit | 7 6 | 5 4 | 3 2 | 1 0 |
+            // Color      | ? ? | ? ? | ? ? | ? ? |
+            uint8_t color = keep_bits<2>(palette >> (2 * colorIndex));
+
+            lcd.pushPixel(color_to_lcd_pixel(color));
             scratchpad.pixelTransfer.pixelPushed = true;
         }
     }
@@ -604,7 +621,7 @@ void PPU::Fetcher::tick() {
             bool flip = get_bit<Bits::OAM::Attributes::X_FLIP>(objPrefetcher.getOAMFlags());
 
             // retrieve sprite's pixels
-#if 1
+
             emplacePixelSliceFetcherDataForOAMEntry(sprite, objPrefetcher.getOAMEntry(), flip);
             // handle sprite-to-sprite conflicts by merging sprite with objFifo
             // "The smaller the X coordinate, the higher the priority."
@@ -633,10 +650,7 @@ void PPU::Fetcher::tick() {
 
             while (i < sprite.size())
                 objFifo.push_back(sprite[i++]);
-#else
-            objFifo.clear();
-            emplacePixelSliceFetcherData(objFifo, flip);
-#endif
+
             if (!oamEntriesHit.empty()) {
                 // oam entry hit waiting to be served
                 // discard bg push?
