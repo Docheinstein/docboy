@@ -6,9 +6,11 @@ AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: None
 AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
 BreakConstructorInitializers: AfterColon
 ColumnLimit: 120
 IndentWidth: 4
 IndentAccessModifiers: false
+PackConstructorInitializers: Never
 PointerAlignment: Left
 ...
