@@ -30,13 +30,13 @@ PPU::PPU(ILCD& lcd, ILCDIO& lcdIo, IInterruptsIO& interrupts, IMemory& vram, IMe
     interrupts(interrupts),
     vram(vram),
     oam(oam),
-    tickHandlers{
+    tickHandlers {
         &PPU::tick_HBlank,
         &PPU::tick_VBlank,
         &PPU::tick_OAMScan,
         &PPU::tick_PixelTransfer,
     },
-    afterTickHandlers{
+    afterTickHandlers {
         &PPU::afterTick_HBlank,
         &PPU::afterTick_VBlank,
         &PPU::afterTick_OAMScan,
@@ -117,11 +117,15 @@ void PPU::tick_OAMScan() {
         // read oam entry y
         scratchpad.oamScan.y = oam.read(4 * oamNum);
     } else {
+        // read oam entry height
+        uint8_t objHeight = get_bit<Bits::LCD::LCDC::OBJ_SIZE>(lcdIo.readLCDC()) ? 16 : 8;
+
         // read oam entry x
         uint8_t x = oam.read(4 * oamNum + 1);
+
         // check if the sprite is upon this scanline
         int oamY = scratchpad.oamScan.y - 16;
-        if (oamY <= LY() && LY() < oamY + 8)
+        if (oamY <= LY() && LY() < oamY + objHeight)
             scanlineOamEntries.emplace_back(dots / 2, x, scratchpad.oamScan.y);
     }
 
@@ -289,7 +293,7 @@ PPU::Fetcher::BGPrefetcher::BGPrefetcher(ILCDIO& lcdIo, IMemory& vram) :
     Processor<BGPrefetcher>(),
     lcdIo(lcdIo),
     vram(vram),
-    tickHandlers{
+    tickHandlers {
         &PPU::Fetcher::BGPrefetcher::tick_GetTile1,
         &PPU::Fetcher::BGPrefetcher::tick_GetTile2,
     },
@@ -386,7 +390,7 @@ PPU::Fetcher::OBJPrefetcher::OBJPrefetcher(ILCDIO& lcdIo, IMemory& oam) :
     Processor<OBJPrefetcher>(),
     lcdIo(lcdIo),
     oam(oam),
-    tickHandlers{
+    tickHandlers {
         &PPU::Fetcher::OBJPrefetcher::tick_GetTile1,
         &PPU::Fetcher::OBJPrefetcher::tick_GetTile2,
     },
@@ -407,7 +411,7 @@ void PPU::Fetcher::OBJPrefetcher::tick_GetTile2() {
     int oamY = entry.y - 16;
     int yOffset = lcdIo.readLY() - oamY;
 
-    tileDataAddr = tileAddr + yOffset * 2;
+    tileDataAddr = tileAddr + yOffset * 2; // works both for 8x8 and 8x16 OBJ
 }
 
 bool PPU::Fetcher::OBJPrefetcher::areTileDataAddressAndFlagsReady() const {
@@ -433,7 +437,7 @@ uint8_t PPU::Fetcher::OBJPrefetcher::getOAMFlags() const {
 PPU::Fetcher::PixelSliceFetcher::PixelSliceFetcher(IMemory& vram) :
     Processor(),
     vram(vram),
-    tickHandlers{
+    tickHandlers {
         &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataLow_1,
         &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataLow_2,
         &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataHigh_1,
