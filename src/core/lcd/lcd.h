@@ -1,17 +1,12 @@
 #ifndef LCD_H
 #define LCD_H
 
-#include <cstdint>
 #include "core/io/lcd.h"
+#include <cstdint>
 
 class ILCD {
 public:
-    enum class Pixel {
-        Color0,
-        Color1,
-        Color2,
-        Color3
-    };
+    enum class Pixel { Color0, Color1, Color2, Color3 };
 
     virtual void pushPixel(Pixel pixel) = 0;
     virtual void turnOn() = 0;

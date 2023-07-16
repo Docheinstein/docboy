@@ -1,6 +1,6 @@
 #include "core.h"
-#include "core/definitions.h"
 #include "core/debugger/gameboy.h"
+#include "core/definitions.h"
 
 void DebuggableCore::MemoryObserver::onRead(uint16_t addr, uint8_t value) {
     observer.onRead(base + addr, value);
@@ -10,23 +10,23 @@ void DebuggableCore::MemoryObserver::onWrite(uint16_t addr, uint8_t oldValue, ui
     observer.onWrite(base + addr, oldValue, newValue);
 }
 
-DebuggableCore::MemoryObserver::MemoryObserver(IMemoryDebug::Observer &observer, uint16_t base) :
-    observer(observer), base(base) {
-
+DebuggableCore::MemoryObserver::MemoryObserver(IMemoryDebug::Observer& observer, uint16_t base) :
+    observer(observer),
+    base(base) {
 }
 
-DebuggableCore::DebuggableCore(IDebuggableGameBoy &gameboy) :
-        Core(gameboy),
-        observer(),
-        bootRomObserver(*this, MemoryMap::ROM0::START),
-        cartridgeObserver(*this, MemoryMap::ROM0::START),
-        vramObserver(*this, MemoryMap::VRAM::START),
-        wram1Observer(*this, MemoryMap::WRAM1::START),
-        wram2Observer(*this, MemoryMap::WRAM2::START),
-        oamObserver(*this, MemoryMap::OAM::START),
-        hramObserver(*this, MemoryMap::HRAM::START),
-        ioObserver(*this),
-        on(true) {
+DebuggableCore::DebuggableCore(IDebuggableGameBoy& gameboy) :
+    Core(gameboy),
+    observer(),
+    bootRomObserver(*this, MemoryMap::ROM0::START),
+    cartridgeObserver(*this, MemoryMap::ROM0::START),
+    vramObserver(*this, MemoryMap::VRAM::START),
+    wram1Observer(*this, MemoryMap::WRAM1::START),
+    wram2Observer(*this, MemoryMap::WRAM2::START),
+    oamObserver(*this, MemoryMap::OAM::START),
+    hramObserver(*this, MemoryMap::HRAM::START),
+    ioObserver(*this),
+    on(true) {
     gameboy.getCartridgeSlotDebug().setObserver(&cartridgeObserver);
     gameboy.getBootROMDebug().setObserver(&bootRomObserver);
 
@@ -43,9 +43,7 @@ DebuggableCore::DebuggableCore(IDebuggableGameBoy &gameboy) :
     gameboy.getSoundIODebug().setObserver(&ioObserver);
     gameboy.getTimersIODebug().setObserver(&ioObserver);
     gameboy.getBootIODebug().setObserver(&ioObserver);
-
 }
-
 
 void DebuggableCore::onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) {
     if (observer)
@@ -57,7 +55,6 @@ void DebuggableCore::onRead(uint16_t addr, uint8_t value) {
         observer->onMemoryRead(addr, value);
 }
 
-
 void DebuggableCore::tick() {
     if (observer) {
         if (!observer->onTick(gameboy.getClock().getTicks()))
@@ -66,11 +63,11 @@ void DebuggableCore::tick() {
     return Core::tick();
 }
 
-void DebuggableCore::setObserver(ICoreDebug::Observer *o) {
+void DebuggableCore::setObserver(ICoreDebug::Observer* o) {
     observer = o;
 }
 
-ICoreDebug::Observer *DebuggableCore::getObserver() {
+ICoreDebug::Observer* DebuggableCore::getObserver() {
     return observer;
 }
 
@@ -78,13 +75,12 @@ bool DebuggableCore::isOn() {
     return on;
 }
 
-IDebuggableGameBoy &DebuggableCore::getGameBoy() {
-    return dynamic_cast<IDebuggableGameBoy &>(gameboy);
+IDebuggableGameBoy& DebuggableCore::getGameBoy() {
+    return dynamic_cast<IDebuggableGameBoy&>(gameboy);
 }
 
-DebuggableCore::IOObserver::IOObserver(IMemoryDebug::Observer &observer)
-    : observer(observer) {
-
+DebuggableCore::IOObserver::IOObserver(IMemoryDebug::Observer& observer) :
+    observer(observer) {
 }
 
 void DebuggableCore::IOObserver::onReadP1(uint8_t value) {

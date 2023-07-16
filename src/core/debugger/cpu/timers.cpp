@@ -1,9 +1,9 @@
 #include "timers.h"
 #include "core/definitions.h"
 
-
-DebuggableTimers::DebuggableTimers(IInterruptsIO &interrupts) : Timers(interrupts), observer() {
-
+DebuggableTimers::DebuggableTimers(IInterruptsIO& interrupts) :
+    Timers(interrupts),
+    observer() {
 }
 
 uint8_t DebuggableTimers::readDIV() const {
@@ -62,6 +62,6 @@ void DebuggableTimers::writeTAC(uint8_t value) {
         observer->onWriteTAC(oldValue, value);
 }
 
-void DebuggableTimers::setObserver(Observer *o) {
+void DebuggableTimers::setObserver(Observer* o) {
     observer = o;
 }

@@ -1,15 +1,15 @@
 #ifndef TIMERS_H
 #define TIMERS_H
 
+#include "core/clock/clockable.h"
+#include "core/io/interrupts.h"
+#include "core/io/timers.h"
 #include <cstddef>
 #include <cstdint>
-#include "core/io/timers.h"
-#include "core/io/interrupts.h"
-#include "core/clock/clockable.h"
 
 class Timers : public ITimersIO, public IClockable {
 public:
-    explicit Timers(IInterruptsIO &interrupts);
+    explicit Timers(IInterruptsIO& interrupts);
 
     void tick() override;
 
@@ -26,7 +26,7 @@ public:
     void writeTAC(uint8_t value) override;
 
 private:
-    IInterruptsIO &interrupts;
+    IInterruptsIO& interrupts;
 
     uint8_t DIV;
     uint8_t TIMA;

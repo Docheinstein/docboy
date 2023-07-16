@@ -1,8 +1,9 @@
 #include "serial.h"
 
-SerialIO::SerialIO(IInterruptsIO &interrupts) :
-    interrupts(interrupts), SB(), SC() {
-
+SerialIO::SerialIO(IInterruptsIO& interrupts) :
+    interrupts(interrupts),
+    SB(),
+    SC() {
 }
 
 uint8_t SerialIO::readSB() const {
@@ -20,4 +21,3 @@ uint8_t SerialIO::readSC() const {
 void SerialIO::writeSC(uint8_t value) {
     SC = value;
 }
-

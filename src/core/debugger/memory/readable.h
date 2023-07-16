@@ -12,22 +12,21 @@ public:
     };
     virtual ~IReadableDebug() = default;
 
-    virtual void setObserver(Observer *observer) = 0;
+    virtual void setObserver(Observer* observer) = 0;
 };
 
 class DebuggableReadOnlyMemory : public IReadableDebug, public ReadOnlyMemory {
 public:
     explicit DebuggableReadOnlyMemory(size_t size);
-    explicit DebuggableReadOnlyMemory(const std::vector<uint8_t> &data);
-    explicit DebuggableReadOnlyMemory(std::vector<uint8_t> &&data);
+    explicit DebuggableReadOnlyMemory(const std::vector<uint8_t>& data);
+    explicit DebuggableReadOnlyMemory(std::vector<uint8_t>&& data);
 
-    void setObserver(Observer *o) override;
+    void setObserver(Observer* o) override;
 
     [[nodiscard]] uint8_t read(uint16_t index) const override;
 
 private:
-    Observer *observer;
+    Observer* observer;
 };
-
 
 #endif // DEBUGGERREADABLE_H

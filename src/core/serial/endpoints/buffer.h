@@ -1,8 +1,8 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
-#include <vector>
 #include "core/serial/endpoint.h"
+#include <vector>
 
 class SerialBuffer : public ISerialEndpoint {
 public:
@@ -12,7 +12,7 @@ public:
     uint8_t serialRead() override;
     void serialWrite(uint8_t) override;
 
-    [[nodiscard]] const std::vector<uint8_t> &getData() const;
+    [[nodiscard]] const std::vector<uint8_t>& getData() const;
     void clearData();
 
 protected:

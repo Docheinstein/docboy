@@ -1,9 +1,9 @@
 #ifndef CARTRIDGESLOT_H
 #define CARTRIDGESLOT_H
 
+#include "cartridge.h"
 #include <cstdint>
 #include <memory>
-#include "cartridge.h"
 
 class ICartridgeSlot {
 public:
@@ -26,6 +26,5 @@ public:
 private:
     std::unique_ptr<ICartridge> cartridge;
 };
-
 
 #endif // CARTRIDGESLOT_H

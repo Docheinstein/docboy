@@ -1,22 +1,34 @@
 #include "cpu.h"
-#include "utils/binutils.h"
-#include "core/definitions.h"
 #include "core/bus/bus.h"
+#include "core/definitions.h"
+#include "utils/binutils.h"
 #include <iostream>
 
-CPU::CPU(IBus &bus, IClockable &timers, IClockable &serial, bool bootRom) :
-        bus(bus),
-        timers(timers),
-        serial(serial),
-        bootRom(bootRom),
-        AF(), BC(), DE(), HL(), PC(), SP(),
-        IME(),
-        halted(),
-        mCycles(),
-        interrupt(),
-        b(), u(), s(), uu(), lsb(), msb(), addr(),
-        currentInstruction(),
-        instructions {
+CPU::CPU(IBus& bus, IClockable& timers, IClockable& serial, bool bootRom) :
+    bus(bus),
+    timers(timers),
+    serial(serial),
+    bootRom(bootRom),
+    AF(),
+    BC(),
+    DE(),
+    HL(),
+    PC(),
+    SP(),
+    IME(),
+    halted(),
+    mCycles(),
+    interrupt(),
+    b(),
+    u(),
+    s(),
+    uu(),
+    lsb(),
+    msb(),
+    addr(),
+    currentInstruction(),
+    // clang-format off
+    instructions {
         /* 00 */ { &CPU::NOP_m1 },
         /* 01 */ { &CPU::LD_rr_uu_m1<Register16::BC>, &CPU::LD_rr_uu_m2<Register16::BC>, &CPU::LD_rr_uu_m3<Register16::BC> },
         /* 02 */ { &CPU::LD_arr_r_m1<Register16::BC, Register8::A>, &CPU::LD_arr_r_m2<Register16::BC, Register8::A> },
@@ -83,7 +95,6 @@ CPU::CPU(IBus &bus, IClockable &timers, IClockable &serial, bool bootRom) :
         /* 3F */ { &CPU::CCF_m1 },
         /* 40 */ { &CPU::LD_r_r_m1<Register8::B, Register8::B> },
         /* 41 */ { &CPU::LD_r_r_m1<Register8::B, Register8::C> },
-    //	/* 41 */ { &CPU::NOP_m1 },
         /* 42 */ { &CPU::LD_r_r_m1<Register8::B, Register8::D> },
         /* 43 */ { &CPU::LD_r_r_m1<Register8::B, Register8::E> },
         /* 44 */ { &CPU::LD_r_r_m1<Register8::B, Register8::H> },
@@ -283,7 +294,8 @@ CPU::CPU(IBus &bus, IClockable &timers, IClockable &serial, bool bootRom) :
         /* FD */ { &CPU::invalidInstruction },
         /* FE */ { &CPU::CP_u_m1, &CPU::CP_u_m2 },
         /* FF */ { &CPU::RST_m1<0x38>, &CPU::RST_m2<0x38>, &CPU::RST_m3<0x38>, &CPU::RST_m4<0x38> },
-    }, instructions_cb {
+    },
+    instructions_cb {
         /* 00 */ { &CPU::RLC_r_m1<Register8::B> },
         /* 01 */ { &CPU::RLC_r_m1<Register8::C> },
         /* 02 */ { &CPU::RLC_r_m1<Register8::D> },
@@ -540,14 +552,15 @@ CPU::CPU(IBus &bus, IClockable &timers, IClockable &serial, bool bootRom) :
         /* FD */ { &CPU::SET_r_m1<7, Register8::L> },
         /* FE */ { &CPU::SET_arr_m1<7, Register16::HL>, &CPU::SET_arr_m2<7, Register16::HL>, &CPU::SET_arr_m3<7, Register16::HL> },
         /* FF */ { &CPU::SET_r_m1<7, Register8::A> },
-    }, ISR {
+    },
+    ISR {
         /* VBLANK */ { &CPU::ISR_m1<0x40>, &CPU::ISR_m2<0x40>, &CPU::ISR_m3<0x40>, &CPU::ISR_m4<0x40>, &CPU::ISR_m5<0x40> },
         /* STAT   */ { &CPU::ISR_m1<0x48>, &CPU::ISR_m2<0x48>, &CPU::ISR_m3<0x48>, &CPU::ISR_m4<0x48>, &CPU::ISR_m5<0x48> },
         /* TIMER  */ { &CPU::ISR_m1<0x50>, &CPU::ISR_m2<0x50>, &CPU::ISR_m3<0x50>, &CPU::ISR_m4<0x50>, &CPU::ISR_m5<0x50> },
         /* SERIAL */ { &CPU::ISR_m1<0x58>, &CPU::ISR_m2<0x58>, &CPU::ISR_m3<0x58>, &CPU::ISR_m4<0x58>, &CPU::ISR_m5<0x58> },
         /* JOYPAD */ { &CPU::ISR_m1<0x60>, &CPU::ISR_m2<0x60>, &CPU::ISR_m3<0x60>, &CPU::ISR_m4<0x60>, &CPU::ISR_m5<0x60> },
-
     } {
+    // clang-format on
     reset();
 }
 
@@ -578,7 +591,7 @@ void CPU::reset() {
 }
 
 void CPU::tick() {
-    auto serveInterrupt = [&](InstructionMicroOperation *isr) {
+    auto serveInterrupt = [&](InstructionMicroOperation* isr) {
         currentInstruction.ISR = true;
         currentInstruction.address = 0x40 + 8 * ((isr - &ISR[0][0]) / 5); // ISR address
         currentInstruction.microop = 0;
@@ -610,7 +623,7 @@ void CPU::tick() {
         return;
     }
 
-//     Microop execution
+    //     Microop execution
     InstructionMicroOperation micro_op = *currentInstruction.microopHandler;
 
     // Must be increased before execute micro op (so that fetch overwrites eventually)
@@ -618,7 +631,6 @@ void CPU::tick() {
     currentInstruction.microopHandler++;
 
     (this->*micro_op)();
-
 
     if (IME) {
         uint8_t IE = bus.read(Registers::Interrupts::IE);
@@ -646,207 +658,207 @@ void CPU::tick() {
     mCycles++;
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::A>() const {
     return get_byte<1>(AF);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::B>() const {
     return get_byte<1>(BC);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::C>() const {
     return get_byte<0>(BC);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::D>() const {
     return get_byte<1>(DE);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::E>() const {
     return get_byte<0>(DE);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::F>() const {
     return get_byte<0>(AF) & 0xF0; // last four bits hardwired to 0
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::H>() const {
     return get_byte<1>(HL);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::L>() const {
     return get_byte<0>(HL);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::SP_S>() const {
     return get_byte<1>(SP);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::SP_P>() const {
     return get_byte<0>(SP);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::PC_P>() const {
     return get_byte<1>(PC);
 }
 
-template<>
+template <>
 uint8_t CPU::readRegister8<CPU::Register8::PC_C>() const {
     return get_byte<0>(PC);
 }
 
-template<>
+template <>
 void CPU::writeRegister8<CPU::Register8::A>(uint8_t value) {
     set_byte<1>(AF, value);
 }
 
-template<>
+template <>
 void CPU::writeRegister8<CPU::Register8::B>(uint8_t value) {
     set_byte<1>(BC, value);
 }
 
-template<>
+template <>
 void CPU::writeRegister8<CPU::Register8::C>(uint8_t value) {
     set_byte<0>(BC, value);
 }
 
-template<>
+template <>
 void CPU::writeRegister8<CPU::Register8::D>(uint8_t value) {
     set_byte<1>(DE, value);
 }
 
-template<>
+template <>
 void CPU::writeRegister8<CPU::Register8::E>(uint8_t value) {
     set_byte<0>(DE, value);
 }
 
-template<>
+template <>
 void CPU::writeRegister8<CPU::Register8::F>(uint8_t value) {
     set_byte<0>(AF, value & 0xF0);
 }
 
-template<>
+template <>
 void CPU::writeRegister8<CPU::Register8::H>(uint8_t value) {
     set_byte<1>(HL, value);
 }
 
-template<>
+template <>
 void CPU::writeRegister8<CPU::Register8::L>(uint8_t value) {
     set_byte<0>(HL, value);
 }
 
-template<>
+template <>
 uint16_t CPU::readRegister16<CPU::Register16::AF>() const {
     return AF & 0xFFF0;
 }
 
-template<>
+template <>
 uint16_t CPU::readRegister16<CPU::Register16::BC>() const {
     return BC;
 }
 
-template<>
+template <>
 uint16_t CPU::readRegister16<CPU::Register16::DE>() const {
     return DE;
 }
 
-template<>
+template <>
 uint16_t CPU::readRegister16<CPU::Register16::HL>() const {
     return HL;
 }
 
-template<>
+template <>
 uint16_t CPU::readRegister16<CPU::Register16::PC>() const {
     return PC;
 }
 
-template<>
+template <>
 uint16_t CPU::readRegister16<CPU::Register16::SP>() const {
     return SP;
 }
 
-template<>
+template <>
 void CPU::writeRegister16<CPU::Register16::AF>(uint16_t value) {
     AF = value & 0xFFF0;
 }
 
-template<>
+template <>
 void CPU::writeRegister16<CPU::Register16::BC>(uint16_t value) {
     BC = value;
 }
 
-template<>
+template <>
 void CPU::writeRegister16<CPU::Register16::DE>(uint16_t value) {
     DE = value;
 }
 
-template<>
+template <>
 void CPU::writeRegister16<CPU::Register16::HL>(uint16_t value) {
     HL = value;
 }
 
-template<>
+template <>
 void CPU::writeRegister16<CPU::Register16::PC>(uint16_t value) {
     PC = value;
 }
 
-template<>
+template <>
 void CPU::writeRegister16<CPU::Register16::SP>(uint16_t value) {
     SP = value;
 }
 
-template<>
+template <>
 [[nodiscard]] bool CPU::readFlag<CPU::Flag::Z>() const {
     return get_bit<Bits::Flags::Z>(AF);
 }
 
-template<>
+template <>
 [[nodiscard]] bool CPU::readFlag<CPU::Flag::N>() const {
     return get_bit<Bits::Flags::N>(AF);
 }
 
-template<>
+template <>
 [[nodiscard]] bool CPU::readFlag<CPU::Flag::H>() const {
     return get_bit<Bits::Flags::H>(AF);
 }
 
-template<>
+template <>
 [[nodiscard]] bool CPU::readFlag<CPU::Flag::C>() const {
     return get_bit<Bits::Flags::C>(AF);
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 [[nodiscard]] bool CPU::checkFlag() const {
     return readFlag<f>() == y;
 }
 
-template<>
+template <>
 void CPU::writeFlag<CPU::Flag::Z>(bool value) {
     set_bit<Bits::Flags::Z>(AF, value);
 }
 
-template<>
+template <>
 void CPU::writeFlag<CPU::Flag::N>(bool value) {
     set_bit<Bits::Flags::N>(AF, value);
 }
 
-template<>
+template <>
 void CPU::writeFlag<CPU::Flag::H>(bool value) {
     set_bit<Bits::Flags::H>(AF, value);
 }
 
-template<>
+template <>
 void CPU::writeFlag<CPU::Flag::C>(bool value) {
     set_bit<Bits::Flags::C>(AF, value);
 }
@@ -861,38 +873,37 @@ void CPU::fetch(bool cb) {
         currentInstruction.microopHandler = instructions_cb[bus.read(PC++)];
     else
         currentInstruction.microopHandler = instructions[bus.read(PC++)];
-
 }
 
 void CPU::invalidInstruction() {
-    throw std::runtime_error("Invalid instruction at address " + hex(currentInstruction.address) + ": " + hex(bus.read(currentInstruction.address)));
+    throw std::runtime_error("Invalid instruction at address " + hex(currentInstruction.address) + ": " +
+                             hex(bus.read(currentInstruction.address)));
 }
 
-template<uint16_t nn>
+template <uint16_t nn>
 void CPU::ISR_m1() {
 }
 
-template<uint16_t nn>
+template <uint16_t nn>
 void CPU::ISR_m2() {
 }
 
-template<uint16_t nn>
+template <uint16_t nn>
 void CPU::ISR_m3() {
     uu = PC - 1; // TODO: -1 because of prefetch but it's ugly
     bus.write(--SP, get_byte<1>(uu));
 }
 
-template<uint16_t nn>
+template <uint16_t nn>
 void CPU::ISR_m4() {
     bus.write(--SP, get_byte<0>(uu));
 }
 
-template<uint16_t nn>
+template <uint16_t nn>
 void CPU::ISR_m5() {
     PC = nn;
     fetch();
 }
-
 
 void CPU::NOP_m1() {
     fetch();
@@ -918,20 +929,19 @@ void CPU::EI_m1() {
     fetch();
 }
 
-
 // e.g. 01 | LD BC,d16
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_rr_uu_m1() {
     lsb = bus.read(PC++);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_rr_uu_m2() {
     msb = bus.read(PC++);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_rr_uu_m3() {
     writeRegister16<rr>(concat_bytes(msb, lsb));
     fetch();
@@ -939,71 +949,71 @@ void CPU::LD_rr_uu_m3() {
 
 // e.g. 36 | LD (HL),d8
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_arr_u_m1() {
     u = bus.read(PC++);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_arr_u_m2() {
     bus.write(readRegister16<rr>(), u);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_arr_u_m3() {
     fetch();
 }
 
 // e.g. 02 | LD (BC),A
 
-template<CPU::Register16 rr, CPU::Register8 r>
+template <CPU::Register16 rr, CPU::Register8 r>
 void CPU::LD_arr_r_m1() {
     bus.write(readRegister16<rr>(), readRegister8<r>());
 }
 
-template<CPU::Register16 rr, CPU::Register8 r>
+template <CPU::Register16 rr, CPU::Register8 r>
 void CPU::LD_arr_r_m2() {
     fetch();
 }
 
 // e.g. 22 | LD (HL+),A
 
-template<CPU::Register16 rr, CPU::Register8 r, int8_t inc>
+template <CPU::Register16 rr, CPU::Register8 r, int8_t inc>
 void CPU::LD_arri_r_m1() {
     bus.write(readRegister16<rr>(), readRegister8<r>());
     writeRegister16<rr>(readRegister16<rr>() + inc);
 }
 
-template<CPU::Register16 rr, CPU::Register8 r, int8_t inc>
+template <CPU::Register16 rr, CPU::Register8 r, int8_t inc>
 void CPU::LD_arri_r_m2() {
     fetch();
 }
 
 // e.g. 06 | LD B,d8
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_r_u_m1() {
     writeRegister8<r>(bus.read(PC++));
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_r_u_m2() {
     fetch();
 }
 
 // e.g. 08 | LD (a16),SP
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_ann_rr_m1() {
     lsb = bus.read(PC++);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_ann_rr_m2() {
     msb = bus.read(PC++);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_ann_rr_m3() {
     addr = concat_bytes(msb, lsb);
     uu = readRegister16<rr>();
@@ -1011,45 +1021,45 @@ void CPU::LD_ann_rr_m3() {
     // TODO: P or S?
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_ann_rr_m4() {
     bus.write(addr + 1, get_byte<1>(uu));
     // TODO: P or S?
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::LD_ann_rr_m5() {
     fetch();
 }
 
 // e.g. 0A |  LD A,(BC)
 
-template<CPU::Register8 r, CPU::Register16 rr>
+template <CPU::Register8 r, CPU::Register16 rr>
 void CPU::LD_r_arr_m1() {
     writeRegister8<r>(bus.read(readRegister16<rr>()));
 }
 
-template<CPU::Register8 r, CPU::Register16 rr>
+template <CPU::Register8 r, CPU::Register16 rr>
 void CPU::LD_r_arr_m2() {
     fetch();
 }
 
 // e.g. 2A |  LD A,(HL+)
 
-template<CPU::Register8 r, CPU::Register16 rr, int8_t inc>
+template <CPU::Register8 r, CPU::Register16 rr, int8_t inc>
 void CPU::LD_r_arri_m1() {
     writeRegister8<r>(bus.read(readRegister16<rr>()));
     writeRegister16<rr>(readRegister16<rr>() + inc);
 }
 
-template<CPU::Register8 r, CPU::Register16 rr, int8_t inc>
+template <CPU::Register8 r, CPU::Register16 rr, int8_t inc>
 void CPU::LD_r_arri_m2() {
     fetch();
 }
 
 // e.g. 41 |  LD B,C
 
-template<CPU::Register8 r1, CPU::Register8 r2>
+template <CPU::Register8 r1, CPU::Register8 r2>
 void CPU::LD_r_r_m1() {
     writeRegister8<r1>(readRegister8<r2>());
     fetch();
@@ -1057,129 +1067,127 @@ void CPU::LD_r_r_m1() {
 
 // e.g. E0 | LDH (a8),A
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LDH_an_r_m1() {
     u = bus.read(PC++);
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LDH_an_r_m2() {
     bus.write(concat_bytes(0xFF, u), readRegister8<r>());
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LDH_an_r_m3() {
     fetch();
 }
 
 // e.g. F0 | LDH A,(a8)
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LDH_r_an_m1() {
     u = bus.read(PC++);
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LDH_r_an_m2() {
     writeRegister8<r>(bus.read(concat_bytes(0xFF, u)));
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LDH_r_an_m3() {
     fetch();
 }
 
 // e.g. E2 | LD (C),A
 
-template<CPU::Register8 r1, CPU::Register8 r2>
+template <CPU::Register8 r1, CPU::Register8 r2>
 void CPU::LDH_ar_r_m1() {
     bus.write(concat_bytes(0xFF, readRegister8<r1>()), readRegister8<r2>());
 }
 
-template<CPU::Register8 r1, CPU::Register8 r2>
+template <CPU::Register8 r1, CPU::Register8 r2>
 void CPU::LDH_ar_r_m2() {
     fetch();
 }
 
 // e.g. F2 | LD A,(C)
 
-template<CPU::Register8 r1, CPU::Register8 r2>
+template <CPU::Register8 r1, CPU::Register8 r2>
 void CPU::LDH_r_ar_m1() {
     writeRegister8<r1>(bus.read(concat_bytes(0xFF, readRegister8<r2>())));
 }
 
-
-template<CPU::Register8 r1, CPU::Register8 r2>
+template <CPU::Register8 r1, CPU::Register8 r2>
 void CPU::LDH_r_ar_m2() {
     fetch();
 }
 
 // e.g. EA | LD (a16),A
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_ann_r_m1() {
     lsb = bus.read(PC++);
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_ann_r_m2() {
     msb = bus.read(PC++);
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_ann_r_m3() {
     bus.write(concat_bytes(msb, lsb), readRegister8<r>());
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_ann_r_m4() {
     fetch();
 }
 
 // e.g. FA | LD A,(a16)
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_r_ann_m1() {
     lsb = bus.read(PC++);
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_r_ann_m2() {
     msb = bus.read(PC++);
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_r_ann_m3() {
     writeRegister8<r>(bus.read(concat_bytes(msb, lsb)));
 }
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::LD_r_ann_m4() {
     fetch();
 }
 
 // e.g. F9 | LD SP,HL
 
-template<CPU::Register16 rr1, CPU::Register16 rr2>
+template <CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rr_m1() {
     writeRegister16<rr1>(readRegister16<rr2>());
     // TODO: i guess this should be split in the two 8bit registers between m1 and m2
 }
 
-template<CPU::Register16 rr1, CPU::Register16 rr2>
+template <CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rr_m2() {
     fetch();
 }
 
 // e.g. F8 | LD HL,SP+r8
 
-
-template<CPU::Register16 rr1, CPU::Register16 rr2>
+template <CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rrs_m1() {
     s = static_cast<int8_t>(bus.read(PC++));
 }
 
-template<CPU::Register16 rr1, CPU::Register16 rr2>
+template <CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rrs_m2() {
     uu = readRegister16<rr2>();
     auto [result, h, c] = sum_carry<3, 7>(uu, s);
@@ -1192,14 +1200,14 @@ void CPU::LD_rr_rrs_m2() {
     // TODO: does it work?
 }
 
-template<CPU::Register16 rr1, CPU::Register16 rr2>
+template <CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::LD_rr_rrs_m3() {
     fetch();
 }
 
 // e.g. 04 | INC B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::INC_r_m1() {
     uint8_t tmp = readRegister8<r>();
     auto [result, h] = sum_carry<3>(tmp, 1);
@@ -1210,10 +1218,9 @@ void CPU::INC_r_m1() {
     fetch();
 }
 
-
 // e.g. 03 | INC BC
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::INC_rr_m1() {
     uint16_t tmp = readRegister16<rr>();
     uint32_t result = tmp + 1;
@@ -1221,20 +1228,20 @@ void CPU::INC_rr_m1() {
     // TODO: no flags?
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::INC_rr_m2() {
     fetch();
 }
 
 // e.g. 34 | INC (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::INC_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::INC_arr_m2() {
     auto [result, h] = sum_carry<3>(u, 1);
     bus.write(addr, result);
@@ -1243,14 +1250,14 @@ void CPU::INC_arr_m2() {
     writeFlag<Flag::H>(h);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::INC_arr_m3() {
     fetch();
 }
 
 // e.g. 05 | DEC B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::DEC_r_m1() {
     uint8_t tmp = readRegister8<r>();
     auto [result, h] = sub_borrow<3>(tmp, 1);
@@ -1261,10 +1268,9 @@ void CPU::DEC_r_m1() {
     fetch();
 }
 
-
 // e.g. 0B | DEC BC
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::DEC_rr_m1() {
     uint16_t tmp = readRegister16<rr>();
     uint32_t result = tmp - 1;
@@ -1272,20 +1278,20 @@ void CPU::DEC_rr_m1() {
     // TODO: no flags?
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::DEC_rr_m2() {
     fetch();
 }
 
 // e.g. 35 | DEC (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::DEC_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::DEC_arr_m2() {
     auto [result, h] = sub_borrow<3>(u, 1);
     bus.write(addr, result);
@@ -1294,14 +1300,14 @@ void CPU::DEC_arr_m2() {
     writeFlag<Flag::H>(h);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::DEC_arr_m3() {
     fetch();
 }
 
 // e.g. 80 | ADD B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::ADD_r_m1() {
     auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), readRegister8<r>());
     writeRegister8<Register8::A>(result);
@@ -1314,12 +1320,12 @@ void CPU::ADD_r_m1() {
 
 // e.g. 86 | ADD (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::ADD_arr_m1() {
     u = bus.read(readRegister16<rr>());
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::ADD_arr_m2() {
     auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), u);
     writeRegister8<Register8::A>(result);
@@ -1348,7 +1354,7 @@ void CPU::ADD_u_m2() {
 
 // e.g. 88 | ADC B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::ADC_r_m1() {
     // TODO: dont like this + C very much...
     auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), readRegister8<r>());
@@ -1363,12 +1369,12 @@ void CPU::ADC_r_m1() {
 
 // e.g. 8E | ADC (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::ADC_arr_m1() {
     u = bus.read(readRegister16<rr>());
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::ADC_arr_m2() {
     // TODO: is this ok?
     auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), u);
@@ -1400,7 +1406,7 @@ void CPU::ADC_u_m2() {
 
 // e.g. 09 | ADD HL,BC
 
-template<CPU::Register16 rr1, CPU::Register16 rr2>
+template <CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::ADD_rr_rr_m1() {
     auto [result, h, c] = sum_carry<11, 15>(readRegister16<rr1>(), readRegister16<rr2>());
     writeRegister16<rr1>(result);
@@ -1409,19 +1415,19 @@ void CPU::ADD_rr_rr_m1() {
     writeFlag<Flag::C>(c);
 }
 
-template<CPU::Register16 rr1, CPU::Register16 rr2>
+template <CPU::Register16 rr1, CPU::Register16 rr2>
 void CPU::ADD_rr_rr_m2() {
     fetch();
 }
 
 // e.g. E8 | ADD SP,r8
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::ADD_rr_s_m1() {
     s = static_cast<int8_t>(bus.read(PC++));
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::ADD_rr_s_m2() {
     // TODO: is it ok to carry bit 3 and 7?
     auto [result, h, c] = sum_carry<3, 7>(readRegister16<rr>(), s);
@@ -1432,22 +1438,19 @@ void CPU::ADD_rr_s_m2() {
     writeFlag<Flag::C>(c);
 }
 
-
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::ADD_rr_s_m3() {
     // TODO: why? i guess something about the instruction timing is wrong
 }
 
-
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::ADD_rr_s_m4() {
     fetch();
 }
 
-
 // e.g. 90 | SUB B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::SUB_r_m1() {
     auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), readRegister8<r>());
     writeRegister8<Register8::A>(result);
@@ -1460,12 +1463,12 @@ void CPU::SUB_r_m1() {
 
 // e.g. 96 | SUB (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SUB_arr_m1() {
     u = bus.read(readRegister16<rr>());
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SUB_arr_m2() {
     auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
     writeRegister8<Register8::A>(result);
@@ -1475,7 +1478,6 @@ void CPU::SUB_arr_m2() {
     writeFlag<Flag::C>(c);
     fetch();
 }
-
 
 // D6 | SUB A,d8
 
@@ -1495,7 +1497,7 @@ void CPU::SUB_u_m2() {
 
 // e.g. 98 | SBC B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::SBC_r_m1() {
     // TODO: is this ok?
     auto [tmp, h0, c0] = sub_borrow<3, 7>(readRegister8<Register8::A>(), readRegister8<r>());
@@ -1510,12 +1512,12 @@ void CPU::SBC_r_m1() {
 
 // e.g. 9E | SBC A,(HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SBC_arr_m1() {
     u = bus.read(readRegister16<rr>());
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SBC_arr_m2() {
     // TODO: dont like this - C very much...
     auto [tmp, h0, c0] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
@@ -1527,7 +1529,6 @@ void CPU::SBC_arr_m2() {
     writeFlag<Flag::C>(c | c0);
     fetch();
 }
-
 
 // D6 | SBC A,d8
 
@@ -1548,7 +1549,7 @@ void CPU::SBC_u_m2() {
 
 // e.g. A0 | AND B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::AND_r_m1() {
     uint8_t result = readRegister8<Register8::A>() & readRegister8<r>();
     writeRegister8<Register8::A>(result);
@@ -1561,12 +1562,12 @@ void CPU::AND_r_m1() {
 
 // e.g. A6 | AND (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::AND_arr_m1() {
     u = bus.read(readRegister16<rr>());
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::AND_arr_m2() {
     uint8_t result = readRegister8<Register8::A>() & u;
     writeRegister8<Register8::A>(result);
@@ -1593,10 +1594,9 @@ void CPU::AND_u_m2() {
     fetch();
 }
 
-
 // B0 | OR B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::OR_r_m1() {
     uint8_t result = readRegister8<Register8::A>() | readRegister8<r>();
     writeRegister8<Register8::A>(result);
@@ -1609,12 +1609,12 @@ void CPU::OR_r_m1() {
 
 // e.g. B6 | OR (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::OR_arr_m1() {
     u = bus.read(readRegister16<rr>());
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::OR_arr_m2() {
     uint8_t result = readRegister8<Register8::A>() | u;
     writeRegister8<Register8::A>(result);
@@ -1624,7 +1624,6 @@ void CPU::OR_arr_m2() {
     writeFlag<Flag::C>(false);
     fetch();
 }
-
 
 // F6 | OR d8
 
@@ -1642,10 +1641,9 @@ void CPU::OR_u_m2() {
     fetch();
 }
 
-
 // e.g. A8 | XOR B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::XOR_r_m1() {
     uint8_t result = readRegister8<Register8::A>() ^ readRegister8<r>();
     writeRegister8<Register8::A>(result);
@@ -1656,12 +1654,12 @@ void CPU::XOR_r_m1() {
     fetch();
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::XOR_arr_m1() {
     u = bus.read(readRegister16<rr>());
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::XOR_arr_m2() {
     uint8_t result = readRegister8<Register8::A>() ^ u;
     writeRegister8<Register8::A>(result);
@@ -1688,8 +1686,7 @@ void CPU::XOR_u_m2() {
     fetch();
 }
 
-
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::CP_r_m1() {
     auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), readRegister8<r>());
     writeFlag<Flag::Z>(result == 0);
@@ -1699,12 +1696,12 @@ void CPU::CP_r_m1() {
     fetch();
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::CP_arr_m1() {
     u = bus.read(readRegister16<rr>());
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::CP_arr_m2() {
     auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
     writeFlag<Flag::Z>(result == 0);
@@ -1713,7 +1710,6 @@ void CPU::CP_arr_m2() {
     writeFlag<Flag::C>(c);
     fetch();
 }
-
 
 // FE | CP d8
 
@@ -1729,7 +1725,6 @@ void CPU::CP_u_m2() {
     writeFlag<Flag::C>(c);
     fetch();
 }
-
 
 // 27 | DAA
 
@@ -1844,27 +1839,27 @@ void CPU::RRA_m1() {
 
 // e.g. 18 | JR r8
 
-void  CPU::JR_s_m1() {
+void CPU::JR_s_m1() {
     s = static_cast<int8_t>(bus.read(PC++));
 }
 
-void  CPU::JR_s_m2() {
-    PC = (int16_t) PC + s;
+void CPU::JR_s_m2() {
+    PC = (int16_t)PC + s;
 }
 
-void  CPU::JR_s_m3() {
+void CPU::JR_s_m3() {
     fetch();
 }
 
 // e.g. 28 | JR Z,r8
 // e.g. 20 | JR NZ,r8
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::JR_c_s_m1() {
     s = static_cast<int8_t>(bus.read(PC++));
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::JR_c_s_m2() {
     if (checkFlag<f, y>()) {
         PC = PC + s;
@@ -1873,16 +1868,14 @@ void CPU::JR_c_s_m2() {
     }
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::JR_c_s_m3() {
     fetch();
 }
 
-
-
 // e.g. C3 | JP a16
 
-void  CPU::JP_uu_m1() {
+void CPU::JP_uu_m1() {
     lsb = bus.read(PC++);
 }
 
@@ -1900,7 +1893,7 @@ void CPU::JP_uu_m4() {
 
 // e.g. E9 | JP (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::JP_rr_m1() {
     PC = readRegister16<rr>();
     fetch();
@@ -1909,17 +1902,17 @@ void CPU::JP_rr_m1() {
 // e.g. CA | JP Z,a16
 // e.g. C2 | JP NZ,a16
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::JP_c_uu_m1() {
     lsb = bus.read(PC++);
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::JP_c_uu_m2() {
     msb = bus.read(PC++);
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::JP_c_uu_m3() {
     if (checkFlag<f, y>()) {
         PC = concat_bytes(msb, lsb);
@@ -1928,7 +1921,7 @@ void CPU::JP_c_uu_m3() {
     }
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::JP_c_uu_m4() {
     fetch();
 }
@@ -1961,16 +1954,16 @@ void CPU::CALL_uu_m6() {
 
 // e.g. C4 | CALL NZ,a16
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m1() {
     lsb = bus.read(PC++);
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m2() {
     msb = bus.read(PC++);
 }
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m3() {
     if (checkFlag<f, y>()) {
         bus.write(--SP, readRegister8<Register8::PC_P>());
@@ -1979,39 +1972,39 @@ void CPU::CALL_c_uu_m3() {
     }
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m4() {
     bus.write(--SP, readRegister8<Register8::PC_C>());
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m5() {
     PC = concat_bytes(msb, lsb);
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::CALL_c_uu_m6() {
     fetch();
 }
 
 // C7 | RST 00H
 
-template<uint8_t n>
+template <uint8_t n>
 void CPU::RST_m1() {
     bus.write(--SP, readRegister8<Register8::PC_P>());
 }
 
-template<uint8_t n>
+template <uint8_t n>
 void CPU::RST_m2() {
     bus.write(--SP, readRegister8<Register8::PC_C>());
 }
 
-template<uint8_t n>
+template <uint8_t n>
 void CPU::RST_m3() {
     PC = concat_bytes(0x00, n);
 }
 
-template<uint8_t n>
+template <uint8_t n>
 void CPU::RST_m4() {
     fetch();
 }
@@ -2055,12 +2048,12 @@ void CPU::RETI_uu_m4() {
 
 // e.g. C0 | RET NZ
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::RET_c_uu_m1() {
     // TODO: really bad but don't know why this lasts 2 m cycle if false
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::RET_c_uu_m2() {
     // TODO: really bad but don't know why this lasts 2 m cycle if false
     if (checkFlag<f, y>()) {
@@ -2070,56 +2063,56 @@ void CPU::RET_c_uu_m2() {
     }
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::RET_c_uu_m3() {
     msb = bus.read(SP++);
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::RET_c_uu_m4() {
     PC = concat_bytes(msb, lsb);
 }
 
-template<CPU::Flag f, bool y>
+template <CPU::Flag f, bool y>
 void CPU::RET_c_uu_m5() {
     fetch();
 }
 
 // e.g. C5 | PUSH BC
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::PUSH_rr_m1() {
     uu = readRegister16<rr>();
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::PUSH_rr_m2() {
     bus.write(--SP, get_byte<1>(uu));
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::PUSH_rr_m3() {
     bus.write(--SP, get_byte<0>(uu));
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::PUSH_rr_m4() {
     fetch();
 }
 
 // e.g. C1 | POP BC
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::POP_rr_m1() {
     lsb = bus.read(SP++);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::POP_rr_m2() {
     msb = bus.read(SP++);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::POP_rr_m3() {
     writeRegister16<rr>(concat_bytes(msb, lsb));
     fetch();
@@ -2131,7 +2124,7 @@ void CPU::CB_m1() {
 
 // e.g. e.g. CB 00 | RLC B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::RLC_r_m1() {
     u = readRegister8<r>();
     bool b7 = get_bit<7>(u);
@@ -2146,13 +2139,13 @@ void CPU::RLC_r_m1() {
 
 // e.g. e.g. CB 06 | RLC (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RLC_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RLC_arr_m2() {
     bool b7 = get_bit<7>(u);
     u = (u << 1) | b7;
@@ -2163,14 +2156,14 @@ void CPU::RLC_arr_m2() {
     writeFlag<Flag::C>(b7);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RLC_arr_m3() {
     fetch();
 }
 
 // e.g. e.g. CB 08 | RRC B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::RRC_r_m1() {
     u = readRegister8<r>();
     bool b0 = get_bit<0>(u);
@@ -2185,13 +2178,13 @@ void CPU::RRC_r_m1() {
 
 // e.g. e.g. CB 0E | RRC (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RRC_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RRC_arr_m2() {
     bool b0 = get_bit<0>(u);
     u = (u >> 1) | (b0 << 7);
@@ -2202,15 +2195,14 @@ void CPU::RRC_arr_m2() {
     writeFlag<Flag::C>(b0);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RRC_arr_m3() {
     fetch();
 }
 
-
 // e.g. e.g. CB 10 | RL B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::RL_r_m1() {
     u = readRegister8<r>();
     bool b7 = get_bit<7>(u);
@@ -2225,13 +2217,13 @@ void CPU::RL_r_m1() {
 
 // e.g. e.g. CB 16 | RL (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RL_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RL_arr_m2() {
     bool b7 = get_bit<7>(u);
     u = (u << 1) | readFlag<Flag::C>();
@@ -2242,14 +2234,14 @@ void CPU::RL_arr_m2() {
     writeFlag<Flag::C>(b7);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RL_arr_m3() {
     fetch();
 }
 
 // e.g. e.g. CB 18 | RR B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::RR_r_m1() {
     u = readRegister8<r>();
     bool b0 = get_bit<0>(u);
@@ -2264,13 +2256,13 @@ void CPU::RR_r_m1() {
 
 // e.g. e.g. CB 1E | RR (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RR_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RR_arr_m2() {
     bool b0 = get_bit<0>(u);
     u = (u >> 1) | (readFlag<Flag::C>() << 7);
@@ -2281,15 +2273,14 @@ void CPU::RR_arr_m2() {
     writeFlag<Flag::C>(b0);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::RR_arr_m3() {
     fetch();
 }
 
-
 // e.g. CB 28 | SRA B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::SRA_r_m1() {
     u = readRegister8<r>();
     bool b0 = get_bit<0>(u);
@@ -2304,13 +2295,13 @@ void CPU::SRA_r_m1() {
 
 // e.g. CB 2E | SRA (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SRA_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SRA_arr_m2() {
     bool b0 = get_bit<0>(u);
     u = (u >> 1) | (u & bit<7>);
@@ -2321,15 +2312,14 @@ void CPU::SRA_arr_m2() {
     writeFlag<Flag::C>(b0);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SRA_arr_m3() {
     fetch();
 }
 
-
 // e.g. CB 38 | SRL B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::SRL_r_m1() {
     u = readRegister8<r>();
     bool b0 = get_bit<0>(u);
@@ -2344,13 +2334,13 @@ void CPU::SRL_r_m1() {
 
 // e.g. CB 3E | SRL (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SRL_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SRL_arr_m2() {
     bool b0 = get_bit<0>(u);
     u = (u >> 1);
@@ -2361,15 +2351,14 @@ void CPU::SRL_arr_m2() {
     writeFlag<Flag::C>(b0);
 }
 
-
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SRL_arr_m3() {
     fetch();
 }
 
 // e.g. CB 20 | SLA B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::SLA_r_m1() {
     u = readRegister8<r>();
     bool b7 = get_bit<7>(u);
@@ -2384,13 +2373,13 @@ void CPU::SLA_r_m1() {
 
 // e.g. CB 26 | SLA (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SLA_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SLA_arr_m2() {
     bool b7 = get_bit<7>(u);
     u = u << 1;
@@ -2401,14 +2390,14 @@ void CPU::SLA_arr_m2() {
     writeFlag<Flag::C>(b7);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SLA_arr_m3() {
     fetch();
 }
 
 // e.g. CB 30 | SWAP B
 
-template<CPU::Register8 r>
+template <CPU::Register8 r>
 void CPU::SWAP_r_m1() {
     u = readRegister8<r>();
     u = ((u & 0x0F) << 4) | ((u & 0xF0) >> 4);
@@ -2422,13 +2411,13 @@ void CPU::SWAP_r_m1() {
 
 // e.g. CB 36 | SWAP (HL)
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SWAP_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SWAP_arr_m2() {
     u = ((u & 0x0F) << 4) | ((u & 0xF0) >> 4);
     bus.write(addr, u);
@@ -2438,14 +2427,14 @@ void CPU::SWAP_arr_m2() {
     writeFlag<Flag::C>(false);
 }
 
-template<CPU::Register16 rr>
+template <CPU::Register16 rr>
 void CPU::SWAP_arr_m3() {
     fetch();
 }
 
 // e.g. CB 40 | BIT 0,B
 
-template<uint8_t n, CPU::Register8 r>
+template <uint8_t n, CPU::Register8 r>
 void CPU::BIT_r_m1() {
     b = get_bit<n>(readRegister8<r>());
     writeFlag<Flag::Z>(b == 0);
@@ -2456,13 +2445,13 @@ void CPU::BIT_r_m1() {
 
 // e.g. CB 46 | BIT 0,(HL)
 
-template<uint8_t n, CPU::Register16 rr>
+template <uint8_t n, CPU::Register16 rr>
 void CPU::BIT_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<uint8_t n, CPU::Register16 rr>
+template <uint8_t n, CPU::Register16 rr>
 void CPU::BIT_arr_m2() {
     b = get_bit<n>(u);
     writeFlag<Flag::Z>(b == 0);
@@ -2473,7 +2462,7 @@ void CPU::BIT_arr_m2() {
 
 // e.g. CB 80 | RES 0,B
 
-template<uint8_t n, CPU::Register8 r>
+template <uint8_t n, CPU::Register8 r>
 void CPU::RES_r_m1() {
     u = readRegister8<r>();
     set_bit<n>(u, false);
@@ -2483,27 +2472,26 @@ void CPU::RES_r_m1() {
 
 // e.g. CB 86 | RES 0,(HL)
 
-template<uint8_t n, CPU::Register16 rr>
+template <uint8_t n, CPU::Register16 rr>
 void CPU::RES_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<uint8_t n, CPU::Register16 rr>
+template <uint8_t n, CPU::Register16 rr>
 void CPU::RES_arr_m2() {
     set_bit<n>(u, false);
     bus.write(addr, u);
 }
 
-template<uint8_t n, CPU::Register16 rr>
+template <uint8_t n, CPU::Register16 rr>
 void CPU::RES_arr_m3() {
     fetch();
 }
 
-
 // e.g. CB C0 | SET 0,B
 
-template<uint8_t n, CPU::Register8 r>
+template <uint8_t n, CPU::Register8 r>
 void CPU::SET_r_m1() {
     u = readRegister8<r>();
     set_bit<n>(u, true);
@@ -2513,20 +2501,19 @@ void CPU::SET_r_m1() {
 
 // e.g. CB C6 | SET 0,(HL)
 
-template<uint8_t n, CPU::Register16 rr>
+template <uint8_t n, CPU::Register16 rr>
 void CPU::SET_arr_m1() {
     addr = readRegister16<rr>();
     u = bus.read(addr);
 }
 
-template<uint8_t n, CPU::Register16 rr>
+template <uint8_t n, CPU::Register16 rr>
 void CPU::SET_arr_m2() {
     set_bit<n>(u, true);
     bus.write(addr, u);
 }
 
-template<uint8_t n, CPU::Register16 rr>
+template <uint8_t n, CPU::Register16 rr>
 void CPU::SET_arr_m3() {
     fetch();
 }
-

@@ -1,12 +1,12 @@
 #ifndef DEBUGGERLCDCONTROLLER_H
 #define DEBUGGERLCDCONTROLLER_H
 
-#include "core/ppu/lcdcontroller.h"
 #include "core/debugger/io/lcd.h"
+#include "core/ppu/lcdcontroller.h"
 
 class DebuggableLCDController : public LCDController, public ILCDIODebug {
 public:
-    explicit DebuggableLCDController(IDMA &dma);
+    explicit DebuggableLCDController(IDMA& dma);
 
     [[nodiscard]] uint8_t readLCDC() const override;
     void writeLCDC(uint8_t value) override;
@@ -44,9 +44,9 @@ public:
     [[nodiscard]] uint8_t readWX() const override;
     void writeWX(uint8_t value) override;
 
-    void setObserver(Observer *o) override;
+    void setObserver(Observer* o) override;
 
 private:
-    Observer *observer;
+    Observer* observer;
 };
 #endif // DEBUGGERLCDCONTROLLER_H

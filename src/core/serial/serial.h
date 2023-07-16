@@ -1,12 +1,12 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
-#include "core/io/serial.h"
 #include "core/io/interrupts.h"
+#include "core/io/serial.h"
 
 class SerialIO : public ISerialIO {
 public:
-    explicit SerialIO(IInterruptsIO &interrupts);
+    explicit SerialIO(IInterruptsIO& interrupts);
 
     [[nodiscard]] uint8_t readSB() const override;
     void writeSB(uint8_t value) override;
@@ -15,7 +15,7 @@ public:
     void writeSC(uint8_t value) override;
 
 private:
-    IInterruptsIO &interrupts;
+    IInterruptsIO& interrupts;
 
     uint8_t SB;
     uint8_t SC;

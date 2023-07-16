@@ -1,9 +1,9 @@
 #include "boot.h"
 
-
 DebuggableBoot::DebuggableBoot(std::unique_ptr<IBootROM> bootRom) :
-    Boot(std::move(bootRom)), romObserver(), ioObserver() {
-
+    Boot(std::move(bootRom)),
+    romObserver(),
+    ioObserver() {
 }
 
 uint8_t DebuggableBoot::read(uint16_t index) const {
@@ -27,10 +27,10 @@ void DebuggableBoot::writeBOOT(uint8_t value) {
         ioObserver->onWriteBOOT(oldValue, value);
 }
 
-void DebuggableBoot::setObserver(IReadableDebug::Observer *o) {
+void DebuggableBoot::setObserver(IReadableDebug::Observer* o) {
     romObserver = o;
 }
 
-void DebuggableBoot::setObserver(IBootIODebug::Observer *o) {
+void DebuggableBoot::setObserver(IBootIODebug::Observer* o) {
     ioObserver = o;
 }

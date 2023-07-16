@@ -1,8 +1,8 @@
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 
-template<typename T>
-std::vector<T> read_file(const std::string &filename, bool *ok) {
+template <typename T>
+std::vector<T> read_file(const std::string& filename, bool* ok) {
     std::vector<T> out;
 
     std::ifstream ifs(filename);
@@ -15,7 +15,7 @@ std::vector<T> read_file(const std::string &filename, bool *ok) {
     std::streamsize size;
     try {
         size = static_cast<std::streamsize>(std::filesystem::file_size(filename));
-    } catch (std::filesystem::filesystem_error &err) {
+    } catch (std::filesystem::filesystem_error& err) {
         if (ok)
             *ok = false;
         return out;
@@ -23,14 +23,14 @@ std::vector<T> read_file(const std::string &filename, bool *ok) {
 
     try {
         out.reserve(size / sizeof(T));
-    } catch (std::ifstream::failure &err) {
+    } catch (std::ifstream::failure& err) {
         if (ok)
             *ok = false;
         return out;
     }
 
     T value;
-    while (ifs.read(reinterpret_cast<char *>(&value), sizeof(value))) {
+    while (ifs.read(reinterpret_cast<char*>(&value), sizeof(value))) {
         out.push_back(value);
     }
 

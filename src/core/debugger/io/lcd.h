@@ -48,7 +48,7 @@ public:
 
     virtual ~ILCDIODebug() = default;
 
-    virtual void setObserver(Observer *observer) = 0;
+    virtual void setObserver(Observer* observer) = 0;
 };
 
 #endif // DEBUGGERLCDIO_H

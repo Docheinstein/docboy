@@ -1,33 +1,34 @@
 #ifndef BACKEND_H
 #define BACKEND_H
 
-#include <cstdint>
-#include <vector>
-#include <optional>
-#include <memory>
-#include <variant>
-#include "core/definitions.h"
-#include "utils/binutils.h"
 #include "core/core.h"
+#include "core/definitions.h"
 #include "cpu/cpu.h"
-#include "ppu/ppu.h"
 #include "frontend.h"
+#include "ppu/ppu.h"
 #include "shared.h"
+#include "utils/binutils.h"
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <variant>
+#include <vector>
 
 class IDebuggerBackend {
 public:
     virtual ~IDebuggerBackend() = default;
 
-    virtual void attachFrontend(IDebuggerFrontend *frontend) = 0;
+    virtual void attachFrontend(IDebuggerFrontend* frontend) = 0;
     virtual void detachFrontend() = 0;
 
     virtual uint32_t addBreakpoint(uint16_t addr) = 0;
     [[nodiscard]] virtual std::optional<Debugger::Breakpoint> getBreakpoint(uint16_t addr) const = 0;
-    [[nodiscard]] virtual const std::vector<Debugger::Breakpoint> & getBreakpoints() const = 0;
+    [[nodiscard]] virtual const std::vector<Debugger::Breakpoint>& getBreakpoints() const = 0;
 
-    virtual uint32_t addWatchpoint(Debugger::Watchpoint::Type, uint16_t from, uint16_t to, std::optional<Debugger::Watchpoint::Condition>) = 0;
+    virtual uint32_t addWatchpoint(Debugger::Watchpoint::Type, uint16_t from, uint16_t to,
+                                   std::optional<Debugger::Watchpoint::Condition>) = 0;
     [[nodiscard]] virtual std::optional<Debugger::Watchpoint> getWatchpoint(uint16_t addr) const = 0;
-    [[nodiscard]] virtual const std::vector<Debugger::Watchpoint> & getWatchpoints() const = 0;
+    [[nodiscard]] virtual const std::vector<Debugger::Watchpoint>& getWatchpoints() const = 0;
 
     virtual void removePoint(uint32_t id) = 0;
     virtual void clearPoints() = 0;
@@ -37,7 +38,7 @@ public:
     [[nodiscard]] virtual std::optional<Debugger::Disassemble> getDisassembled(uint16_t addr) const = 0;
 
     [[nodiscard]] virtual Debugger::CPUState getCPUState() const = 0;
-    [[nodiscard]] virtual Debugger::PPUState  getPPUState() const = 0;
+    [[nodiscard]] virtual Debugger::PPUState getPPUState() const = 0;
     [[nodiscard]] virtual Debugger::LCDState getLCDState() const = 0;
     [[nodiscard]] virtual uint8_t readMemory(uint16_t addr) = 0;
 
@@ -46,19 +47,20 @@ public:
 
 class DebuggerBackend : public IDebuggerBackend, public ICoreDebug::Observer {
 public:
-    explicit DebuggerBackend(ICoreDebug &core);
+    explicit DebuggerBackend(ICoreDebug& core);
     ~DebuggerBackend() override = default;
 
-    void attachFrontend(IDebuggerFrontend *frontend) override;
+    void attachFrontend(IDebuggerFrontend* frontend) override;
     void detachFrontend() override;
 
     uint32_t addBreakpoint(uint16_t addr) override;
     [[nodiscard]] std::optional<Debugger::Breakpoint> getBreakpoint(uint16_t addr) const override;
-    [[nodiscard]] const std::vector<Debugger::Breakpoint> & getBreakpoints() const override;
+    [[nodiscard]] const std::vector<Debugger::Breakpoint>& getBreakpoints() const override;
 
-    uint32_t addWatchpoint(Debugger::Watchpoint::Type, uint16_t from, uint16_t to, std::optional<Debugger::Watchpoint::Condition>) override;
+    uint32_t addWatchpoint(Debugger::Watchpoint::Type, uint16_t from, uint16_t to,
+                           std::optional<Debugger::Watchpoint::Condition>) override;
     [[nodiscard]] std::optional<Debugger::Watchpoint> getWatchpoint(uint16_t addr) const override;
-    [[nodiscard]] const std::vector<Debugger::Watchpoint> & getWatchpoints() const override;
+    [[nodiscard]] const std::vector<Debugger::Watchpoint>& getWatchpoints() const override;
 
     void removePoint(uint32_t id) override;
     void clearPoints() override;
@@ -78,12 +80,11 @@ public:
     void onMemoryRead(uint16_t addr, uint8_t value) override;
     void onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
 
-
 private:
-    ICoreDebug &core;
-    IDebuggableGameBoy &gameboy;
+    ICoreDebug& core;
+    IDebuggableGameBoy& gameboy;
 
-    IDebuggerFrontend *frontend;
+    IDebuggerFrontend* frontend;
 
     std::vector<Debugger::Breakpoint> breakpoints;
     std::vector<Debugger::Watchpoint> watchpoints;
@@ -102,7 +103,6 @@ private:
     } commandState;
 
     bool interrupted;
-
 
     [[nodiscard]] std::optional<Debugger::Disassemble> doDisassemble(uint16_t addr);
 };

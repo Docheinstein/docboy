@@ -1,16 +1,17 @@
 #include "core.h"
-#include "gameboy.h"
 #include "cartridge/cartridgefactory.h"
+#include "gameboy.h"
 
-Core::Core(IGameBoy &gameboy):
-    gameboy(gameboy), serialLink() {
+Core::Core(IGameBoy& gameboy) :
+    gameboy(gameboy),
+    serialLink() {
 }
 
-void Core::loadROM(const std::string &rom) {
+void Core::loadROM(const std::string& rom) {
     gameboy.getCartridgeSlot().attachCartridge(CartridgeFactory::makeCartridge(rom));
 }
 
-void Core::attachSerialLink(SerialLink::Plug &plug) {
+void Core::attachSerialLink(SerialLink::Plug& plug) {
     gameboy.getSerialPort().attachSerialLink(plug);
 }
 
@@ -19,7 +20,7 @@ void Core::detachSerialLink() {
 }
 
 void Core::frame() {
-    ILCDIO &lcd = gameboy.getLCDIO();
+    ILCDIO& lcd = gameboy.getLCDIO();
 
     if (lcd.readLY() >= 144) {
         while (isOn() && lcd.readLY() != 0)
@@ -40,4 +41,3 @@ bool Core::isOn() {
 void Core::setKey(IJoypad::Key key, IJoypad::KeyState state) {
     gameboy.getJoypad().setKeyState(key, state);
 }
-

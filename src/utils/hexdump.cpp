@@ -1,7 +1,7 @@
 #include "hexdump.h"
 #include "binutils.h"
 
-std::string hexdump(const uint8_t *data, size_t length, size_t baseAddr, bool addresses, bool ascii, size_t columns) {
+std::string hexdump(const uint8_t* data, size_t length, size_t baseAddr, bool addresses, bool ascii, size_t columns) {
     std::stringstream ss;
     std::string asciistr;
 
@@ -14,7 +14,7 @@ std::string hexdump(const uint8_t *data, size_t length, size_t baseAddr, bool ad
         auto c = data[i];
         hex(c, ss);
         if (ascii) {
-//            if (c != '\n')
+            //            if (c != '\n')
             asciistr += isprint(c) ? c : '.';
         }
         if ((i + 1) % columns == 0) {
@@ -47,36 +47,37 @@ std::string hexdump(const uint8_t *data, size_t length, size_t baseAddr, bool ad
     return ss.str();
 }
 
-
-Hexdump::Hexdump()  : baseAddress(), addresses(), ascii(), columns(32) {
-
+Hexdump::Hexdump() :
+    baseAddress(),
+    addresses(),
+    ascii(),
+    columns(32) {
 }
 
-std::string Hexdump::hexdump(const uint8_t *data, size_t length) {
+std::string Hexdump::hexdump(const uint8_t* data, size_t length) {
     return ::hexdump(data, length, baseAddress, addresses, ascii, columns);
 }
 
-std::string Hexdump::hexdump(const std::vector<uint8_t> &vector) {
+std::string Hexdump::hexdump(const std::vector<uint8_t>& vector) {
     return hexdump(vector.data(), vector.size());
 }
 
-
-Hexdump &Hexdump::setBaseAddress(size_t addr) {
+Hexdump& Hexdump::setBaseAddress(size_t addr) {
     baseAddress = addr;
     return *this;
 }
 
-Hexdump & Hexdump::showAddresses(bool yes) {
+Hexdump& Hexdump::showAddresses(bool yes) {
     addresses = yes;
     return *this;
 }
 
-Hexdump & Hexdump::showAscii(bool yes) {
+Hexdump& Hexdump::showAscii(bool yes) {
     ascii = yes;
     return *this;
 }
 
-Hexdump & Hexdump::setNumColumns(size_t cols) {
+Hexdump& Hexdump::setNumColumns(size_t cols) {
     columns = cols;
     return *this;
 }

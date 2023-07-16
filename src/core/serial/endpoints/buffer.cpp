@@ -11,11 +11,10 @@ uint8_t SerialBuffer::serialRead() {
     return 0xFF;
 }
 
-const std::vector<uint8_t> & SerialBuffer::getData() const {
+const std::vector<uint8_t>& SerialBuffer::getData() const {
     return buffer;
 }
 
 void SerialBuffer::clearData() {
     buffer.clear();
 }
-

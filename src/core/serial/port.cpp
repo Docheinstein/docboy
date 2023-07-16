@@ -1,13 +1,15 @@
 #include "port.h"
-#include "link.h"
-#include "utils/binutils.h"
-#include "serial.h"
 #include "core/definitions.h"
+#include "link.h"
+#include "serial.h"
+#include "utils/binutils.h"
 
-SerialPort::SerialPort(IInterruptsIO &interrupts) : interrupts(interrupts), link(), SB(), SC() {
-
+SerialPort::SerialPort(IInterruptsIO& interrupts) :
+    interrupts(interrupts),
+    link(),
+    SB(),
+    SC() {
 }
-
 
 uint8_t SerialPort::serialRead() {
     // TODO: interrupt ?
@@ -29,14 +31,13 @@ void SerialPort::tick() {
     }
 }
 
-void SerialPort::attachSerialLink(SerialLink::Plug &plug) {
+void SerialPort::attachSerialLink(SerialLink::Plug& plug) {
     link = &plug.attach(this);
 }
 
 void SerialPort::detachSerialLink() {
     link = nullptr;
 }
-
 
 uint8_t SerialPort::readSB() const {
     return SB;

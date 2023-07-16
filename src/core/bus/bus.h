@@ -1,9 +1,9 @@
 #ifndef BUS_H
 #define BUS_H
 
-#include <cstdint>
-#include "core/definitions.h"
 #include "core/boot/bootrom.h"
+#include "core/definitions.h"
+#include <cstdint>
 
 class IMemory;
 class IJoypadIO;
@@ -24,20 +24,9 @@ public:
 
 class Bus : public IBus {
 public:
-    Bus(IMemory &vram,
-        IMemory &wram1,
-        IMemory &wram2,
-        IMemory &oam,
-        IMemory &hram,
-        ICartridge &cartridge,
-        IBootROM &bootrom,
-        IJoypadIO &joypad,
-        ISerialIO &serial,
-        ITimersIO &timers,
-        IInterruptsIO &interrupts,
-        ISoundIO &sound,
-        ILCDIO &lcd,
-        IBootIO &boot);
+    Bus(IMemory& vram, IMemory& wram1, IMemory& wram2, IMemory& oam, IMemory& hram, ICartridge& cartridge,
+        IBootROM& bootrom, IJoypadIO& joypad, ISerialIO& serial, ITimersIO& timers, IInterruptsIO& interrupts,
+        ISoundIO& sound, ILCDIO& lcd, IBootIO& boot);
 
     ~Bus() override = default;
 
@@ -45,22 +34,22 @@ public:
     void write(uint16_t addr, uint8_t value) override;
 
 private:
-    IMemory &vram;
-    IMemory &wram1;
-    IMemory &wram2;
-    IMemory &oam;
-    IMemory &hram;
+    IMemory& vram;
+    IMemory& wram1;
+    IMemory& wram2;
+    IMemory& oam;
+    IMemory& hram;
 
-    ICartridge &cartridge;
-    IBootROM &bootRom;
+    ICartridge& cartridge;
+    IBootROM& bootRom;
 
-    IJoypadIO &joypad;
-    ISerialIO &serial;
-    ITimersIO &timers;
-    IInterruptsIO &interrupts;
-    ISoundIO &sound;
-    ILCDIO &lcd;
-    IBootIO &boot;
+    IJoypadIO& joypad;
+    ISerialIO& serial;
+    ITimersIO& timers;
+    IInterruptsIO& interrupts;
+    ISoundIO& sound;
+    ILCDIO& lcd;
+    IBootIO& boot;
 
     typedef uint8_t (Bus::*Reader)() const;
     typedef void (Bus::*Writer)(uint8_t);

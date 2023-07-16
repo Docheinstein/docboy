@@ -1,14 +1,14 @@
 #include "readable.h"
 
-ReadOnlyMemory::ReadOnlyMemory(size_t size) : memory(size) {
-
+ReadOnlyMemory::ReadOnlyMemory(size_t size) :
+    memory(size) {
 }
 
-ReadOnlyMemory::ReadOnlyMemory(const std::vector<uint8_t> &data) {
+ReadOnlyMemory::ReadOnlyMemory(const std::vector<uint8_t>& data) {
     memory = data;
 }
 
-ReadOnlyMemory::ReadOnlyMemory(std::vector<uint8_t> &&data) {
+ReadOnlyMemory::ReadOnlyMemory(std::vector<uint8_t>&& data) {
     memory = std::move(data);
 }
 

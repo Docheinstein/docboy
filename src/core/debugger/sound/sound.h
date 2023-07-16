@@ -1,8 +1,8 @@
 #ifndef DEBUGGERSOUND_H
 #define DEBUGGERSOUND_H
 
-#include "core/sound/sound.h"
 #include "core/debugger/io/sound.h"
+#include "core/sound/sound.h"
 
 class DebuggableSound : public Sound, public ISoundIODebug {
 public:
@@ -119,10 +119,10 @@ public:
     [[nodiscard]] uint8_t readWAVEF() const override;
     void writeWAVEF(uint8_t value) override;
 
-    void setObserver(Observer *o) override;
+    void setObserver(Observer* o) override;
 
 private:
-    Observer *observer;
+    Observer* observer;
 };
 
 #endif // DEBUGGERSOUND_H

@@ -12,5 +12,4 @@ public:
     virtual void writeP1(uint8_t value) = 0;
 };
 
-
 #endif // JOYPADIO_H

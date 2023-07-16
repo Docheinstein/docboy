@@ -1,18 +1,21 @@
 #include "memory.h"
 
-DebuggableMemory::DebuggableMemory(size_t size)
-    : Memory(size), robserver(), wobserver() {
-
+DebuggableMemory::DebuggableMemory(size_t size) :
+    Memory(size),
+    robserver(),
+    wobserver() {
 }
 
-DebuggableMemory::DebuggableMemory(const std::vector<uint8_t> &data)
-    : Memory(data), robserver(), wobserver() {
-
+DebuggableMemory::DebuggableMemory(const std::vector<uint8_t>& data) :
+    Memory(data),
+    robserver(),
+    wobserver() {
 }
 
-DebuggableMemory::DebuggableMemory(std::vector<uint8_t> &&data)
-    : Memory(data), robserver(), wobserver() {
-
+DebuggableMemory::DebuggableMemory(std::vector<uint8_t>&& data) :
+    Memory(data),
+    robserver(),
+    wobserver() {
 }
 
 uint8_t DebuggableMemory::read(uint16_t index) const {
@@ -29,16 +32,15 @@ void DebuggableMemory::write(uint16_t index, uint8_t value) {
         wobserver->onWrite(index, oldValue, value);
 }
 
-void DebuggableMemory::setObserver(IReadableDebug::Observer  *o) {
+void DebuggableMemory::setObserver(IReadableDebug::Observer* o) {
     robserver = o;
 }
 
-void DebuggableMemory::setObserver(IWritableDebug::Observer  *o) {
+void DebuggableMemory::setObserver(IWritableDebug::Observer* o) {
     wobserver = o;
 }
 
-void DebuggableMemory::setObserver(IMemoryDebug::Observer *o) {
+void DebuggableMemory::setObserver(IMemoryDebug::Observer* o) {
     robserver = o;
     wobserver = o;
 }
-

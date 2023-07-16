@@ -1,10 +1,10 @@
 #ifndef CARTRIDGE_H
 #define CARTRIDGE_H
 
+#include "core/memory/memory.h"
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "core/memory/memory.h"
 
 class ICartridge : public IMemory {
 public:
@@ -36,8 +36,8 @@ public:
 
 class Cartridge : public ICartridge {
 public:
-    explicit Cartridge(const std::vector<uint8_t> &data);
-    explicit Cartridge(std::vector<uint8_t> &&data);
+    explicit Cartridge(const std::vector<uint8_t>& data);
+    explicit Cartridge(std::vector<uint8_t>&& data);
 
     [[nodiscard]] Header header() const override;
 

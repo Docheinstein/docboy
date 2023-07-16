@@ -37,18 +37,18 @@ public:
         virtual void onReadCommand() = 0;
     };
 
-    explicit DebuggerFrontendCli(IDebuggerBackend &backend);
+    explicit DebuggerFrontendCli(IDebuggerBackend& backend);
     ~DebuggerFrontendCli() override;
 
-    void setConfig(const Config &config);
+    void setConfig(const Config& config);
 
-    void setObserver(Observer *observer);
+    void setObserver(Observer* observer);
 
     Debugger::Command pullCommand(Debugger::ExecutionState outcome) override;
     void onTick(uint64_t tick) override;
 
 private:
-    IDebuggerBackend &backend;
+    IDebuggerBackend& backend;
 
     Config config;
 
@@ -70,7 +70,7 @@ private:
 
     bool trace;
 
-    Observer *observer;
+    Observer* observer;
 };
 
 #endif // FRONTENDCLI_H

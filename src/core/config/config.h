@@ -1,8 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <map>
 #include "core/joypad/joypad.h"
+#include <map>
 
 struct Config {
 public:

@@ -1,16 +1,15 @@
-#include <cstring>
 #include "cartridge.h"
+#include <cstring>
 
 bool Cartridge::Header::isValid() const {
     return isNintendoLogoValid() && isHeaderChecksumValid();
 }
 
 bool Cartridge::Header::isNintendoLogoValid() const {
-    static const uint8_t NINTENDO_LOGO[] = {
-        0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0C, 0x00, 0x0D,
-        0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E, 0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99,
-        0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E
-    };
+    static const uint8_t NINTENDO_LOGO[] = {0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83,
+                                            0x00, 0x0C, 0x00, 0x0D, 0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E,
+                                            0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99, 0xBB, 0xBB, 0x67, 0x63,
+                                            0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E};
 
     return memcmp(nintendo_logo.data(), NINTENDO_LOGO, sizeof(NINTENDO_LOGO)) == 0;
 }
@@ -24,23 +23,23 @@ bool Cartridge::Header::isHeaderChecksumValid() const {
 }
 
 Cartridge::Header Cartridge::header() const {
-    auto memcpy_range = [](uint8_t *dest, const uint8_t *src, size_t from, size_t to) {
+    auto memcpy_range = [](uint8_t* dest, const uint8_t* src, size_t from, size_t to) {
         memcpy(dest, src + from, to - from + 1);
     };
 
-    auto memcpy_range_s = [&memcpy_range](char *dest, const uint8_t * src, size_t from, size_t to) {
+    auto memcpy_range_s = [&memcpy_range](char* dest, const uint8_t* src, size_t from, size_t to) {
         dest[to - from + 1] = '\0';
-        memcpy_range((uint8_t *) dest, src, from, to);
+        memcpy_range((uint8_t*)dest, src, from, to);
     };
 
-    auto memcpy_range_v = [&memcpy_range](std::vector<uint8_t > &dest, const uint8_t * src, size_t from, size_t to) {
+    auto memcpy_range_v = [&memcpy_range](std::vector<uint8_t>& dest, const uint8_t* src, size_t from, size_t to) {
         dest.resize(to - from + 1);
         memcpy_range(dest.data(), src, from, to);
     };
 
     Cartridge::Header h;
 
-    auto raw_data = (uint8_t *) rom.data();
+    auto raw_data = (uint8_t*)rom.data();
 
     // Raw data
     memcpy_range_v(h.data, raw_data, 0x100, 0x14F);
@@ -92,12 +91,10 @@ Cartridge::Header Cartridge::header() const {
     return h;
 }
 
-
-Cartridge::Cartridge(const std::vector<uint8_t> &data) : rom(data) {
-
+Cartridge::Cartridge(const std::vector<uint8_t>& data) :
+    rom(data) {
 }
 
-Cartridge::Cartridge(std::vector<uint8_t> &&data) : rom(data) {
-
+Cartridge::Cartridge(std::vector<uint8_t>&& data) :
+    rom(data) {
 }
-

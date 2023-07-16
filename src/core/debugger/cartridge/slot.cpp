@@ -15,15 +15,15 @@ void DebuggableCartridgeSlot::write(uint16_t index, uint8_t value) {
         wobserver->onWrite(index, oldValue, value);
 }
 
-void DebuggableCartridgeSlot::setObserver(IMemoryDebug::Observer *o) {
+void DebuggableCartridgeSlot::setObserver(IMemoryDebug::Observer* o) {
     robserver = o;
     wobserver = o;
 }
 
-void DebuggableCartridgeSlot::setObserver(IReadableDebug::Observer *o) {
+void DebuggableCartridgeSlot::setObserver(IReadableDebug::Observer* o) {
     robserver = o;
 }
 
-void DebuggableCartridgeSlot::setObserver(IWritableDebug::Observer *o) {
+void DebuggableCartridgeSlot::setObserver(IWritableDebug::Observer* o) {
     wobserver = o;
 }

@@ -1,10 +1,10 @@
 #include "clock.h"
-#include <algorithm>
 #include "utils/log.h"
+#include <algorithm>
 
-
-Clock::Clock() : period(), ticks() {
-
+Clock::Clock() :
+    period(),
+    ticks() {
 }
 
 void Clock::tick() {
@@ -22,7 +22,7 @@ void Clock::tick() {
         nextTickTime += period;
 
     // Update devices needing tick
-    for (const auto &clk : clockables) {
+    for (const auto& clk : clockables) {
         if (ticks % clk.period == 0)
             clk.clockable->tick();
     }
@@ -36,41 +36,39 @@ uint64_t Clock::getTicks() const {
 
 void Clock::updatePeriods() {
     // Update periods based on the frequency of the device with the highest frequency
-    auto it = std::max_element(clockables.begin(), clockables.end(), [](const Clockable &d1, const Clockable &d2) {
-       return d1.frequency < d2.frequency;
+    auto it = std::max_element(clockables.begin(), clockables.end(), [](const Clockable& d1, const Clockable& d2) {
+        return d1.frequency < d2.frequency;
     });
     uint64_t max_freq = it->frequency;
     period = std::chrono::nanoseconds(1000000000 / max_freq);
-    for (auto &clk : clockables) {
+    for (auto& clk : clockables) {
         uint64_t clk_period = max_freq / clk.frequency;
         if (max_freq % clk.frequency != 0) {
-            WARN() <<   "Device frequency (" << clk.frequency << ") does not divide "
-                        "clock frequency (" << max_freq << "); expecting bad accuracy";
+            WARN() << "Device frequency (" << clk.frequency
+                   << ") does not divide "
+                      "clock frequency ("
+                   << max_freq << "); expecting bad accuracy";
         }
         clk.period = clk_period;
     }
 }
 
-void Clock::attach(IClockable *clockable, uint64_t frequency) {
-    Clockable d = {
-        .clockable = clockable,
-        .frequency = frequency,
-        .period = 1
-    };
+void Clock::attach(IClockable* clockable, uint64_t frequency) {
+    Clockable d = {.clockable = clockable, .frequency = frequency, .period = 1};
     clockables.push_back(d);
     updatePeriods();
 }
 
-void Clock::detach(IClockable *clockable) {
-    auto it = std::remove_if(clockables.begin(), clockables.end(), [clockable](const Clockable &clk) {
+void Clock::detach(IClockable* clockable) {
+    auto it = std::remove_if(clockables.begin(), clockables.end(), [clockable](const Clockable& clk) {
         return clk.clockable == clockable;
     });
     clockables.erase(it, clockables.end());
     updatePeriods();
 }
 
-void Clock::reattach(IClockable *clockable, uint64_t frequency) {
-    for (auto &clk : clockables) {
+void Clock::reattach(IClockable* clockable, uint64_t frequency) {
+    for (auto& clk : clockables) {
         if (clk.clockable == clockable) {
             clk.frequency = frequency;
             break;
@@ -78,4 +76,3 @@ void Clock::reattach(IClockable *clockable, uint64_t frequency) {
     }
     updatePeriods();
 }
-

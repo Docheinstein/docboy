@@ -1,6 +1,9 @@
 #include "profiler.h"
 
-Profiler::Profiler(ICore &core, IGameBoy &gb) : core(core), gameboy(gb), result() {
+Profiler::Profiler(ICore& core, IGameBoy& gb) :
+    core(core),
+    gameboy(gb),
+    result() {
     startTime = std::chrono::high_resolution_clock::now();
 }
 
@@ -9,7 +12,7 @@ void Profiler::setMaxTicks(uint64_t ticks) {
 }
 
 void Profiler::frame() {
-    ILCDIO &lcd = gameboy.getLCDIO();
+    ILCDIO& lcd = gameboy.getLCDIO();
 
     if (lcd.readLY() >= 144) {
         while (core.isOn() && lcd.readLY() != 0) {

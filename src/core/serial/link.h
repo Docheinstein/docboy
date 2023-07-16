@@ -12,14 +12,14 @@ public:
     class Plug {
     public:
         friend class SerialLink;
-        explicit Plug(ISerialLink &link);
-        ISerialLink & attach(ISerialEndpoint *endpoint);
+        explicit Plug(ISerialLink& link);
+        ISerialLink& attach(ISerialEndpoint* endpoint);
         void detach();
-    private:
-        ISerialLink &link;
-        ISerialEndpoint *endpoint;
-    };
 
+    private:
+        ISerialLink& link;
+        ISerialEndpoint* endpoint;
+    };
 
     SerialLink();
     ~SerialLink() override = default;

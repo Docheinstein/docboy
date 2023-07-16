@@ -18,7 +18,7 @@ public:
 
     virtual ~ISerialIODebug() = default;
 
-    virtual void setObserver(Observer *observer) = 0;
+    virtual void setObserver(Observer* observer) = 0;
 };
 
 #endif // DEBUGGERSERIALIO_H

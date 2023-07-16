@@ -1,6 +1,6 @@
 #include "joypad.h"
-#include "utils/binutils.h"
 #include "core/definitions.h"
+#include "utils/binutils.h"
 
 /*
  * Bit 7 - Not used
@@ -13,8 +13,11 @@
  * Bit 0 - P10 Input: Right or A        (0=Pressed) (Read Only)
  */
 
-Joypad::Joypad(IInterruptsIO &interrupts) :
-    interrupts(interrupts), P15(), P14(), keys() {
+Joypad::Joypad(IInterruptsIO& interrupts) :
+    interrupts(interrupts),
+    P15(),
+    P14(),
+    keys() {
     std::fill(std::begin(keys), std::end(keys), Released);
 }
 

@@ -2,14 +2,14 @@
 #define DEBUGGERCORE_H
 
 #include "core/core.h"
-#include "core/debugger/memory/memory.h"
+#include "core/debugger/io/boot.h"
 #include "core/debugger/io/interrupts.h"
 #include "core/debugger/io/joypad.h"
 #include "core/debugger/io/lcd.h"
 #include "core/debugger/io/serial.h"
 #include "core/debugger/io/sound.h"
 #include "core/debugger/io/timers.h"
-#include "core/debugger/io/boot.h"
+#include "core/debugger/memory/memory.h"
 
 class IDebuggableGameBoy;
 
@@ -24,19 +24,19 @@ public:
     };
     virtual ~ICoreDebug() = default;
 
-    virtual IDebuggableGameBoy &getGameBoy() = 0;
-    virtual void setObserver(Observer *observer) = 0;
-    virtual Observer *getObserver() = 0;
+    virtual IDebuggableGameBoy& getGameBoy() = 0;
+    virtual void setObserver(Observer* observer) = 0;
+    virtual Observer* getObserver() = 0;
 };
 
 class DebuggableCore : public ICoreDebug, public Core, private IMemoryDebug::Observer {
 public:
-    explicit DebuggableCore(IDebuggableGameBoy &gameboy);
+    explicit DebuggableCore(IDebuggableGameBoy& gameboy);
     ~DebuggableCore() override = default;
 
-    IDebuggableGameBoy &getGameBoy() override;
-    void setObserver(ICoreDebug::Observer *observer) override;
-    ICoreDebug::Observer * getObserver() override;
+    IDebuggableGameBoy& getGameBoy() override;
+    void setObserver(ICoreDebug::Observer* observer) override;
+    ICoreDebug::Observer* getObserver() override;
 
     void tick() override;
     bool isOn() override;
@@ -44,37 +44,36 @@ public:
 private:
     class MemoryObserver : public IMemoryDebug::Observer {
     public:
-        explicit MemoryObserver(IMemoryDebug::Observer &observer, uint16_t base = 0);
+        explicit MemoryObserver(IMemoryDebug::Observer& observer, uint16_t base = 0);
         void onRead(uint16_t addr, uint8_t value) override;
         void onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
+
     private:
-        IMemoryDebug::Observer &observer;
+        IMemoryDebug::Observer& observer;
         uint16_t base;
     };
 
-    class IOObserver : 
-            public IInterruptsIODebug::Observer,
-            public IJoypadIODebug::Observer,
-            public ILCDIODebug::Observer,
-            public ISerialIODebug::Observer,
-            public ISoundIODebug::Observer,
-            public ITimersIODebug::Observer,
-            public IBootIODebug::Observer {
+    class IOObserver : public IInterruptsIODebug::Observer,
+                       public IJoypadIODebug::Observer,
+                       public ILCDIODebug::Observer,
+                       public ISerialIODebug::Observer,
+                       public ISoundIODebug::Observer,
+                       public ITimersIODebug::Observer,
+                       public IBootIODebug::Observer {
     public:
-        explicit IOObserver(IMemoryDebug::Observer &delegate);
-        
+        explicit IOObserver(IMemoryDebug::Observer& delegate);
+
         // interrupts
         void onReadIF(uint8_t value) override;
         void onWriteIF(uint8_t oldValue, uint8_t newValue) override;
 
         void onReadIE(uint8_t value) override;
         void onWriteIE(uint8_t oldValue, uint8_t newValue) override;
-        
-        
+
         // joypad
         void onReadP1(uint8_t value) override;
         void onWriteP1(uint8_t oldValue, uint8_t newValue) override;
-        
+
         // lcd
         void onReadLCDC(uint8_t value) override;
         void onWriteLCDC(uint8_t oldValue, uint8_t newValue) override;
@@ -111,14 +110,14 @@ private:
 
         void onReadWX(uint8_t value) override;
         void onWriteWX(uint8_t oldValue, uint8_t newValue) override;
-        
+
         // serial
         void onReadSB(uint8_t value) override;
         void onWriteSB(uint8_t oldValue, uint8_t newValue) override;
 
         void onReadSC(uint8_t value) override;
         void onWriteSC(uint8_t oldValue, uint8_t newValue) override;
-        
+
         // sound
         void onReadNR10(uint8_t value) override;
         void onWriteNR10(uint8_t oldValue, uint8_t newValue) override;
@@ -230,33 +229,32 @@ private:
 
         void onReadWAVEF(uint8_t value) override;
         void onWriteWAVEF(uint8_t oldValue, uint8_t newValue) override;
-        
+
         // timers
         void onReadDIV(uint8_t value) override;
-        void onWriteDIV(uint8_t oldValue, uint8_t newValue) override; 
+        void onWriteDIV(uint8_t oldValue, uint8_t newValue) override;
 
         void onReadTIMA(uint8_t value) override;
-        void onWriteTIMA(uint8_t oldValue, uint8_t newValue) override; 
+        void onWriteTIMA(uint8_t oldValue, uint8_t newValue) override;
 
         void onReadTMA(uint8_t value) override;
-        void onWriteTMA(uint8_t oldValue, uint8_t newValue) override; 
+        void onWriteTMA(uint8_t oldValue, uint8_t newValue) override;
 
         void onReadTAC(uint8_t value) override;
         void onWriteTAC(uint8_t oldValue, uint8_t newValue) override;
-        
+
         // boot
         void onReadBOOT(uint8_t value) override;
         void onWriteBOOT(uint8_t oldValue, uint8_t newValue) override;
-        
+
     private:
-        IMemoryDebug::Observer &observer;
+        IMemoryDebug::Observer& observer;
     };
 
     void onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
     void onRead(uint16_t addr, uint8_t value) override;
 
-
-    ICoreDebug::Observer *observer;
+    ICoreDebug::Observer* observer;
 
     MemoryObserver bootRomObserver;
     MemoryObserver cartridgeObserver;

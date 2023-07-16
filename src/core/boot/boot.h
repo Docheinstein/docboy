@@ -1,9 +1,9 @@
 #ifndef BOOT_H
 #define BOOT_H
 
-#include <memory>
-#include "core/io/boot.h"
 #include "bootrom.h"
+#include "core/io/boot.h"
+#include <memory>
 
 class Boot : public IBootROM, public IBootIO {
 public:
@@ -18,6 +18,5 @@ private:
     std::unique_ptr<IBootROM> bootRom;
     uint8_t BOOT;
 };
-
 
 #endif // BOOT_H

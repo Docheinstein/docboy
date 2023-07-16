@@ -1,7 +1,7 @@
 #include "boot.h"
 
 Boot::Boot(std::unique_ptr<IBootROM> bootRom_) :
-        BOOT(bootRom_ != nullptr ? 0 : 1) {
+    BOOT(bootRom_ != nullptr ? 0 : 1) {
     bootRom = std::move(bootRom_);
 }
 

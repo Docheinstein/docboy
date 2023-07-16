@@ -1,18 +1,18 @@
-#include <iostream>
 #include "ppu.h"
-#include "utils/binutils.h"
 #include "core/definitions.h"
-#include "core/memory/memory.h"
-#include "core/lcd/lcd.h"
 #include "core/io/interrupts.h"
-#include <cassert>
-#include <optional>
+#include "core/lcd/lcd.h"
+#include "core/memory/memory.h"
+#include "utils/binutils.h"
 #include "utils/log.h"
 #include "utils/stdutils.h"
+#include <cassert>
+#include <iostream>
+#include <optional>
 
 using namespace Bits::LCD::LCDC;
 
-static ILCD::Pixel fifo_pixel_to_lcd_pixel(const PPU::Pixel &pixel) {
+static ILCD::Pixel fifo_pixel_to_lcd_pixel(const PPU::Pixel& pixel) {
     if (pixel.color == 0)
         return ILCD::Pixel::Color0;
     else if (pixel.color == 1)
@@ -24,16 +24,19 @@ static ILCD::Pixel fifo_pixel_to_lcd_pixel(const PPU::Pixel &pixel) {
     throw std::runtime_error("unexpected color pixel: " + std::to_string(pixel.color));
 }
 
-PPU::PPU(ILCD &lcd, ILCDIO &lcdIo, IInterruptsIO &interrupts, IMemory &vram, IMemory &oam) :
-    lcd(lcd), lcdIo(lcdIo), interrupts(interrupts),
-    vram(vram), oam(oam),
-    tickHandlers {
+PPU::PPU(ILCD& lcd, ILCDIO& lcdIo, IInterruptsIO& interrupts, IMemory& vram, IMemory& oam) :
+    lcd(lcd),
+    lcdIo(lcdIo),
+    interrupts(interrupts),
+    vram(vram),
+    oam(oam),
+    tickHandlers{
         &PPU::tick_HBlank,
         &PPU::tick_VBlank,
         &PPU::tick_OAMScan,
         &PPU::tick_PixelTransfer,
     },
-    afterTickHandlers {
+    afterTickHandlers{
         &PPU::afterTick_HBlank,
         &PPU::afterTick_VBlank,
         &PPU::afterTick_OAMScan,
@@ -77,7 +80,6 @@ void PPU::tick() {
     tCycles++;
 }
 
-
 void PPU::tick_HBlank() {
     // nop
 }
@@ -91,8 +93,6 @@ void PPU::afterTick_HBlank() {
             enterOAMScan();
     }
 }
-
-
 
 void PPU::tick_VBlank() {
     // nop
@@ -116,8 +116,7 @@ void PPU::tick_OAMScan() {
     if (dots % 2 == 0) {
         // read oam entry y
         scratchpad.oamScan.y = oam.read(4 * oamNum);
-    }
-    else {
+    } else {
         // read oam entry x
         uint8_t x = oam.read(4 * oamNum + 1);
         // check if the sprite is upon this scanline
@@ -142,7 +141,7 @@ void PPU::tick_PixelTransfer() {
         // compute sprites on current LX
         std::vector<OAMEntry> entries;
 
-        for (const auto &entry : scanlineOamEntries) {
+        for (const auto& entry : scanlineOamEntries) {
             if (entry.x < 8) {
                 // TODO: handle this case
                 continue;
@@ -198,11 +197,9 @@ void PPU::afterTick_PixelTransfer() {
     }
 }
 
-
 bool PPU::isFifoBlocked() const {
     return fetcher.isFetchingSprite();
 }
-
 
 void PPU::enterOAMScan() {
     assert(state == HBlank || state == VBlank);
@@ -246,8 +243,8 @@ void PPU::setState(PPU::State s) {
 
     // eventually raise STAT interrupt
     if ((get_bit<Bits::LCD::STAT::OAM_INTERRUPT>(STAT) && state == OAMScan) ||
-            (get_bit<Bits::LCD::STAT::VBLANK_INTERRUPT>(STAT) && state == VBlank) ||
-            (get_bit<Bits::LCD::STAT::HBLANK_INTERRUPT>(STAT) && state == HBlank)) {
+        (get_bit<Bits::LCD::STAT::VBLANK_INTERRUPT>(STAT) && state == VBlank) ||
+        (get_bit<Bits::LCD::STAT::HBLANK_INTERRUPT>(STAT) && state == HBlank)) {
         interrupts.setIF<Bits::Interrupts::STAT>();
     }
 
@@ -288,11 +285,11 @@ void PPU::turnOff() {
     enterOAMScan();
 }
 
-
-PPU::Fetcher::BGPrefetcher::BGPrefetcher(ILCDIO &lcdIo, IMemory &vram) :
+PPU::Fetcher::BGPrefetcher::BGPrefetcher(ILCDIO& lcdIo, IMemory& vram) :
     Processor<BGPrefetcher>(),
-    lcdIo(lcdIo), vram(vram),
-    tickHandlers {
+    lcdIo(lcdIo),
+    vram(vram),
+    tickHandlers{
         &PPU::Fetcher::BGPrefetcher::tick_GetTile1,
         &PPU::Fetcher::BGPrefetcher::tick_GetTile2,
     },
@@ -303,7 +300,6 @@ PPU::Fetcher::BGPrefetcher::BGPrefetcher(ILCDIO &lcdIo, IMemory &vram) :
     tileNumber(),
     tileAddr(),
     tileDataAddr() {
-
 }
 
 void PPU::Fetcher::BGPrefetcher::tick_GetTile1() {
@@ -350,7 +346,7 @@ void PPU::Fetcher::BGPrefetcher::tick_GetTile2() {
     uint16_t tilemapBase;
     if (fetchType == FetchType::Background) {
         tilemapBase = get_bit<Bits::LCD::LCDC::BG_TILE_MAP>(LCDC) ? 0x9C00 : 0x9800;
-    }  else /* Window */{
+    } else /* Window */ {
         tilemapBase = get_bit<Bits::LCD::LCDC::WIN_TILE_MAP>(LCDC) ? 0x9C00 : 0x9800;
     }
 
@@ -386,10 +382,11 @@ void PPU::Fetcher::BGPrefetcher::advanceToNextTile() {
     x8 = (x8 + 1) % 20;
 }
 
-PPU::Fetcher::OBJPrefetcher::OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam) :
+PPU::Fetcher::OBJPrefetcher::OBJPrefetcher(ILCDIO& lcdIo, IMemory& oam) :
     Processor<OBJPrefetcher>(),
-    lcdIo(lcdIo), oam(oam),
-    tickHandlers {
+    lcdIo(lcdIo),
+    oam(oam),
+    tickHandlers{
         &PPU::Fetcher::OBJPrefetcher::tick_GetTile1,
         &PPU::Fetcher::OBJPrefetcher::tick_GetTile2,
     },
@@ -397,7 +394,6 @@ PPU::Fetcher::OBJPrefetcher::OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam) :
     entry(),
     tileDataAddr(),
     oamFlags() {
-
 }
 
 void PPU::Fetcher::OBJPrefetcher::tick_GetTile1() {
@@ -405,7 +401,7 @@ void PPU::Fetcher::OBJPrefetcher::tick_GetTile1() {
 }
 
 void PPU::Fetcher::OBJPrefetcher::tick_GetTile2() {
-    oamFlags  = oam.read(4 * entry.number + 3);
+    oamFlags = oam.read(4 * entry.number + 3);
     uint16_t tileAddr = 0x8000 + tileNumber * 16 /* sizeof tile */;
 
     int oamY = entry.y - 16;
@@ -422,7 +418,7 @@ uint16_t PPU::Fetcher::OBJPrefetcher::getTileDataAddress() const {
     return tileDataAddr;
 }
 
-void PPU::Fetcher::OBJPrefetcher::setOAMEntry(const PPU::OAMEntry &oamEntry) {
+void PPU::Fetcher::OBJPrefetcher::setOAMEntry(const PPU::OAMEntry& oamEntry) {
     entry = oamEntry;
 }
 
@@ -434,15 +430,18 @@ uint8_t PPU::Fetcher::OBJPrefetcher::getOAMFlags() const {
     return oamFlags;
 }
 
-PPU::Fetcher::PixelSliceFetcher::PixelSliceFetcher(IMemory &vram) :
+PPU::Fetcher::PixelSliceFetcher::PixelSliceFetcher(IMemory& vram) :
     Processor(),
     vram(vram),
-    tickHandlers {
+    tickHandlers{
         &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataLow_1,
         &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataLow_2,
         &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataHigh_1,
         &PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataHigh_2,
-    }, tileDataAddr(), tileDataLow(), tileDataHigh() {
+    },
+    tileDataAddr(),
+    tileDataLow(),
+    tileDataHigh() {
 }
 
 void PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataLow_1() {
@@ -461,13 +460,12 @@ void PPU::Fetcher::PixelSliceFetcher::tick_GetTileDataHigh_2() {
 
 void PPU::Fetcher::PixelSliceFetcher::setTileDataAddress(uint16_t tileDataAddr_) {
     tileDataAddr = tileDataAddr_;
-//    dots = 0;
+    //    dots = 0;
 }
 
 bool PPU::Fetcher::PixelSliceFetcher::isTileDataReady() const {
     return dots == 4;
 }
-
 
 uint8_t PPU::Fetcher::PixelSliceFetcher::getTileDataLow() const {
     return tileDataLow;
@@ -477,8 +475,9 @@ uint8_t PPU::Fetcher::PixelSliceFetcher::getTileDataHigh() const {
     return tileDataHigh;
 }
 
-PPU::Fetcher::Fetcher(ILCDIO &lcdIo, IMemory &vram, IMemory &oam, PixelFIFO &bgFifo, PixelFIFO &objFifo) :
-    bgFifo(bgFifo), objFifo(objFifo),
+PPU::Fetcher::Fetcher(ILCDIO& lcdIo, IMemory& vram, IMemory& oam, PixelFIFO& bgFifo, PixelFIFO& objFifo) :
+    bgFifo(bgFifo),
+    objFifo(objFifo),
     state(State::Prefetcher),
     targetFifo(FIFOType::Bg),
     firstFetch(true),
@@ -486,7 +485,6 @@ PPU::Fetcher::Fetcher(ILCDIO &lcdIo, IMemory &vram, IMemory &oam, PixelFIFO &bgF
     objPrefetcher(lcdIo, oam),
     pixelSliceFetcher(vram),
     dots() {
-
 }
 
 void PPU::Fetcher::reset() {
@@ -505,7 +503,7 @@ void PPU::Fetcher::reset() {
 void PPU::Fetcher::tick() {
     // TODO: bad here
 
-    auto emplacePixelSliceFetcherData = [&](auto &pixels, bool flip = false) {
+    auto emplacePixelSliceFetcherData = [&](auto& pixels, bool flip = false) {
         uint8_t low = pixelSliceFetcher.getTileDataLow();
         uint8_t high = pixelSliceFetcher.getTileDataHigh();
 
@@ -518,23 +516,22 @@ void PPU::Fetcher::tick() {
         }
     };
 
-    auto emplacePixelSliceFetcherDataForOAMEntry = [&](auto &pixels, const OAMEntry &entry, bool flip = false) {
+    auto emplacePixelSliceFetcherDataForOAMEntry = [&](auto& pixels, const OAMEntry& entry, bool flip = false) {
         assert(pixels.empty());
         emplacePixelSliceFetcherData(pixels, flip);
-        for (auto &pixel : pixels) {
+        for (auto& pixel : pixels) {
             pixel.priority = entry.number;
             pixel.x = entry.x;
         }
     };
 
-
-    auto restartFetcher = [&]{
+    auto restartFetcher = [&] {
         state = State::Prefetcher;
         dots = 0;
     };
 
     // TODO: quite bad looking
-    auto restartFetcherWithOAMEntryAndTick = [this, restartFetcher](const OAMEntry &entry) {
+    auto restartFetcherWithOAMEntryAndTick = [this, restartFetcher](const OAMEntry& entry) {
         // oam entry hit waiting to be served
         // discard bg push?
         objPrefetcher.setOAMEntry(entry);
@@ -613,20 +610,18 @@ void PPU::Fetcher::tick() {
             uint8_t objFifoSize = objFifo.size();
             while (i < objFifoSize) {
                 // handle conflict
-                const Pixel &spritePixel = sprite[i];
-                const Pixel &fifoPixel = objFifo[i];
+                const Pixel& spritePixel = sprite[i];
+                const Pixel& fifoPixel = objFifo[i];
                 // Overwrite pixel in fifo with pixel in sprite if:
                 // 1. Pixel in sprite is opaque and pixel in fifo is transparent
                 // 2. Both pixels in sprite and fifo are opaque but pixel in sprite
                 //    has either lower x or, if x is equal, lowest oam number.
-                if (
-                    (spritePixel.color && !fifoPixel.color)
-                        ||
+                if ((spritePixel.color && !fifoPixel.color) ||
                     ((spritePixel.color && fifoPixel.color) &&
-                        ((spritePixel.x < fifoPixel.x) ||
-                        ((spritePixel.x == fifoPixel.x) && (spritePixel.priority < fifoPixel.priority))))
+                     ((spritePixel.x < fifoPixel.x) ||
+                      ((spritePixel.x == fifoPixel.x) && (spritePixel.priority < fifoPixel.priority))))
 
-                    ) {
+                ) {
                     objFifo[i] = spritePixel;
                 }
                 i++;
@@ -652,7 +647,7 @@ void PPU::Fetcher::tick() {
     }
 }
 
-void PPU::Fetcher::setOAMEntriesHit(const std::vector<OAMEntry> &entries) {
+void PPU::Fetcher::setOAMEntriesHit(const std::vector<OAMEntry>& entries) {
     assert(entries.size() <= 10);
     oamEntriesHit = entries;
 }

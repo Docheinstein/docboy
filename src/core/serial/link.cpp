@@ -2,10 +2,10 @@
 #include "endpoint.h"
 #include <cstdint>
 
-SerialLink::SerialLink() : plug1(*this), plug2(*this) {
-
+SerialLink::SerialLink() :
+    plug1(*this),
+    plug2(*this) {
 }
-
 
 void SerialLink::tick() {
     uint8_t data1 = plug1.endpoint ? plug1.endpoint->serialRead() : 0xFF;
@@ -16,12 +16,12 @@ void SerialLink::tick() {
         plug2.endpoint->serialWrite(data1);
 }
 
-SerialLink::Plug::Plug(ISerialLink &link) :
-    link(link), endpoint() {
-
+SerialLink::Plug::Plug(ISerialLink& link) :
+    link(link),
+    endpoint() {
 }
 
-ISerialLink &SerialLink::Plug::attach(ISerialEndpoint *e) {
+ISerialLink& SerialLink::Plug::attach(ISerialEndpoint* e) {
     endpoint = e;
     return link;
 }

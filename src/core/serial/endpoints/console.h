@@ -6,14 +6,14 @@
 
 class SerialConsole : public SerialBuffer {
 public:
-    explicit SerialConsole(std::ostream &output, size_t bufsize = SIZE_MAX);
+    explicit SerialConsole(std::ostream& output, size_t bufsize = SIZE_MAX);
     ~SerialConsole() override = default;
 
     void serialWrite(uint8_t) override;
     void flush();
 
 private:
-    std::ostream &output;
+    std::ostream& output;
     size_t bufsize;
 };
 

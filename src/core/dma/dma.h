@@ -1,8 +1,8 @@
 #ifndef DMA_H
 #define DMA_H
 
-#include <cstdint>
 #include "core/clock/clockable.h"
+#include <cstdint>
 
 class IBus;
 
@@ -14,12 +14,12 @@ public:
 
 class DMA : public IDMA, public IClockable {
 public:
-    explicit DMA(IBus &bus);
+    explicit DMA(IBus& bus);
     void transfer(uint16_t source) override;
     void tick() override;
 
 protected:
-    IBus &bus;
+    IBus& bus;
 
     struct {
         bool active;

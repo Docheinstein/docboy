@@ -15,7 +15,7 @@ public:
 
     virtual ~IBootIODebug() = default;
 
-    virtual void setObserver(Observer *observer) = 0;
+    virtual void setObserver(Observer* observer) = 0;
 };
 
 #endif // DEBUGGERBOOTIO_H

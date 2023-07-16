@@ -1,9 +1,9 @@
 #ifndef CORE_H
 #define CORE_H
 
-#include <memory>
-#include "serial/link.h"
 #include "joypad/joypad.h"
+#include "serial/link.h"
+#include <memory>
 
 class IGameBoy;
 class ISerialEndpoint;
@@ -18,10 +18,10 @@ public:
 
 class Core : public ICore {
 public:
-    explicit Core(IGameBoy &gameboy);
+    explicit Core(IGameBoy& gameboy);
     ~Core() = default;
 
-    void loadROM(const std::string &rom);
+    void loadROM(const std::string& rom);
 
     void tick() override;
     void frame() override;
@@ -29,11 +29,11 @@ public:
 
     virtual void setKey(IJoypad::Key, IJoypad::KeyState);
 
-    void attachSerialLink(SerialLink::Plug &plug);
+    void attachSerialLink(SerialLink::Plug& plug);
     void detachSerialLink();
 
 protected:
-    IGameBoy &gameboy;
+    IGameBoy& gameboy;
 
     std::shared_ptr<SerialLink> serialLink;
 };

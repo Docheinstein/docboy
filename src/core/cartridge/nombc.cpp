@@ -1,13 +1,13 @@
 #include "nombc.h"
-#include "utils/log.h"
 #include "utils/binutils.h"
+#include "utils/log.h"
 
-NoMBC::NoMBC(const std::vector<uint8_t> &data) : Cartridge(data) {
-
+NoMBC::NoMBC(const std::vector<uint8_t>& data) :
+    Cartridge(data) {
 }
 
-NoMBC::NoMBC(std::vector<uint8_t> &&data) : Cartridge(data) {
-
+NoMBC::NoMBC(std::vector<uint8_t>&& data) :
+    Cartridge(data) {
 }
 
 uint8_t NoMBC::read(uint16_t address) const {

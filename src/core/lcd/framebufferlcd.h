@@ -1,13 +1,13 @@
 #ifndef FRAMEBUFFERLCD_H
 #define FRAMEBUFFERLCD_H
 
-#include "core/lcd/lcd.h"
 #include "core/definitions.h"
+#include "core/lcd/lcd.h"
 
 class IFrameBuffer {
 public:
     virtual ~IFrameBuffer() = default;
-    virtual uint32_t *getFrameBuffer() = 0;
+    virtual uint32_t* getFrameBuffer() = 0;
 };
 
 class FrameBufferLCD : public IFrameBuffer, public LCD {
@@ -15,7 +15,7 @@ public:
     FrameBufferLCD();
     ~FrameBufferLCD() override = default;
 
-    uint32_t *getFrameBuffer() override;
+    uint32_t* getFrameBuffer() override;
 
 protected:
     void putPixel(Pixel pixel, uint8_t x, uint8_t y) override;

@@ -1,11 +1,11 @@
 #ifndef STRUTILS_H
 #define STRUTILS_H
 
-#include <string>
 #include <algorithm>
+#include <string>
 
-template<typename It, typename Pred = decltype(isspace)>
-void split(const std::string &s, It inserter, Pred predicate = isspace) {
+template <typename It, typename Pred = decltype(isspace)>
+void split(const std::string& s, It inserter, Pred predicate = isspace) {
     auto begin = s.begin();
     std::string::const_iterator token_begin;
     std::string::const_iterator token_end;
@@ -19,13 +19,15 @@ void split(const std::string &s, It inserter, Pred predicate = isspace) {
     } while (token_end != s.end());
 }
 
-template<typename It>
-void split(const std::string &s, It inserter, char ch) {
-    split(s, inserter, [ch](int c) { return c == ch; });
+template <typename It>
+void split(const std::string& s, It inserter, char ch) {
+    split(s, inserter, [ch](int c) {
+        return c == ch;
+    });
 }
 
-bool equals_ignore_case(const std::string &s1, const std::string &s2);
+bool equals_ignore_case(const std::string& s1, const std::string& s2);
 
-std::string trim(const std::string &s);
+std::string trim(const std::string& s);
 
 #endif // STRUTILS_H

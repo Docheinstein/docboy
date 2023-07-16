@@ -1,8 +1,8 @@
 #ifndef DEBUGGERINTERRUPTSIO_H
 #define DEBUGGERINTERRUPTSIO_H
 
-#include <cstdint>
 #include "utils/binutils.h"
+#include <cstdint>
 
 class IInterruptsIODebug {
 public:
@@ -19,7 +19,7 @@ public:
 
     virtual ~IInterruptsIODebug() = default;
 
-    virtual void setObserver(Observer *observer) = 0;
+    virtual void setObserver(Observer* observer) = 0;
 };
 
 #endif // DEBUGGERINTERRUPTSIO_H

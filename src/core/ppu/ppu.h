@@ -1,10 +1,10 @@
 #ifndef PPU_H
 #define PPU_H
 
-#include <queue>
-#include <cstdint>
 #include "core/clock/clockable.h"
+#include <cstdint>
 #include <optional>
+#include <queue>
 
 // TODO: find a nicer approach to debug PPU internal classes
 #ifdef ENABLE_DEBUGGER
@@ -19,24 +19,18 @@ class ILCD;
 
 using IPPU = IClockable;
 
-
 class PPU : public IPPU {
 public:
     struct Pixel {
         uint8_t color;
         uint8_t palette;
         uint8_t priority; // oam number
-        uint8_t x; // needed to solve sprite clashes on DMG
+        uint8_t x;        // needed to solve sprite clashes on DMG
     };
 
     using PixelFIFO = std::deque<Pixel>;
 
-    PPU(
-        ILCD &lcd,
-        ILCDIO &lcdIo,
-        IInterruptsIO &interrupts,
-        IMemory &vram,
-        IMemory &oam);
+    PPU(ILCD& lcd, ILCDIO& lcdIo, IInterruptsIO& interrupts, IMemory& vram, IMemory& oam);
 
     void tick() override;
 
@@ -51,8 +45,7 @@ protected:
 
     class Fetcher {
     public:
-        Fetcher(ILCDIO &lcdIo, IMemory &vram, IMemory &oam,
-                PixelFIFO &bgFifo, PixelFIFO &objFifo);
+        Fetcher(ILCDIO& lcdIo, IMemory& vram, IMemory& oam, PixelFIFO& bgFifo, PixelFIFO& objFifo);
 
         void tick();
         void reset();
@@ -60,11 +53,11 @@ protected:
         // TODO: don't like
         [[nodiscard]] bool isFetchingSprite() const;
 
-        void setOAMEntriesHit(const std::vector<OAMEntry> &entries);
+        void setOAMEntriesHit(const std::vector<OAMEntry>& entries);
 
     private:
         // base class for BGPrefetcher, OBJPrefetcher, PixelSliceFetcher
-        template<class ProcessorImpl>
+        template <class ProcessorImpl>
         class Processor {
         public:
             typedef void (ProcessorImpl::*TickHandler)();
@@ -85,10 +78,10 @@ protected:
         };
 
         struct BGPrefetcher : public Processor<BGPrefetcher> {
-        friend class Processor<BGPrefetcher>;
+            friend class Processor<BGPrefetcher>;
 
         public:
-            explicit BGPrefetcher(ILCDIO &lcdIo, IMemory &vram);
+            explicit BGPrefetcher(ILCDIO& lcdIo, IMemory& vram);
 
             void resetTile();
 
@@ -98,16 +91,13 @@ protected:
             void advanceToNextTile();
 
         private:
-            enum class FetchType {
-                Background,
-                Window
-            };
+            enum class FetchType { Background, Window };
 
             void tick_GetTile1();
             void tick_GetTile2();
 
-            ILCDIO &lcdIo;
-            IMemory &vram;
+            ILCDIO& lcdIo;
+            IMemory& vram;
 
             TickHandler tickHandlers[2];
 
@@ -126,11 +116,12 @@ protected:
         };
 
         class OBJPrefetcher : public Processor<OBJPrefetcher> {
-        friend class Processor<OBJPrefetcher>;
-        public:
-             explicit OBJPrefetcher(ILCDIO &lcdIo, IMemory &oam);
+            friend class Processor<OBJPrefetcher>;
 
-            void setOAMEntry(const OAMEntry &oamEntry);
+        public:
+            explicit OBJPrefetcher(ILCDIO& lcdIo, IMemory& oam);
+
+            void setOAMEntry(const OAMEntry& oamEntry);
             [[nodiscard]] OAMEntry getOAMEntry() const;
 
             [[nodiscard]] bool areTileDataAddressAndFlagsReady() const;
@@ -142,8 +133,8 @@ protected:
             void tick_GetTile1();
             void tick_GetTile2();
 
-            ILCDIO &lcdIo;
-            IMemory &oam;
+            ILCDIO& lcdIo;
+            IMemory& oam;
 
             TickHandler tickHandlers[2];
 
@@ -159,9 +150,10 @@ protected:
         };
 
         class PixelSliceFetcher : public Processor<PixelSliceFetcher> {
-        friend class Processor<PixelSliceFetcher>;
+            friend class Processor<PixelSliceFetcher>;
+
         public:
-            explicit PixelSliceFetcher(IMemory &vram);
+            explicit PixelSliceFetcher(IMemory& vram);
 
             void setTileDataAddress(uint16_t tileDataAddr);
 
@@ -176,7 +168,7 @@ protected:
             void tick_GetTileDataHigh_1();
             void tick_GetTileDataHigh_2();
 
-            IMemory &vram;
+            IMemory& vram;
 
             TickHandler tickHandlers[4];
 
@@ -188,18 +180,11 @@ protected:
             uint8_t tileDataHigh;
         };
 
-        enum class FIFOType {
-            Bg,
-            Obj
-        };
-        enum class State {
-            Prefetcher,
-            PixelSliceFetcher,
-            Pushing
-        };
+        enum class FIFOType { Bg, Obj };
+        enum class State { Prefetcher, PixelSliceFetcher, Pushing };
 
-        PixelFIFO &bgFifo;
-        PixelFIFO &objFifo;
+        PixelFIFO& bgFifo;
+        PixelFIFO& objFifo;
 
         State state;
         std::vector<OAMEntry> oamEntriesHit;
@@ -214,12 +199,7 @@ protected:
         uint8_t dots;
     };
 
-    enum State {
-        HBlank = 0,
-        VBlank = 1,
-        OAMScan = 2,
-        PixelTransfer = 3
-    };
+    enum State { HBlank = 0, VBlank = 1, OAMScan = 2, PixelTransfer = 3 };
 
     void tick_HBlank();
     void afterTick_HBlank();
@@ -249,11 +229,11 @@ protected:
     void turnOn();
     void turnOff();
 
-    ILCD &lcd;
-    ILCDIO &lcdIo;
-    IInterruptsIO &interrupts;
-    IMemory &vram;
-    IMemory &oam;
+    ILCD& lcd;
+    ILCDIO& lcdIo;
+    IInterruptsIO& interrupts;
+    IMemory& vram;
+    IMemory& oam;
 
     TickHandler tickHandlers[4];
     TickHandler afterTickHandlers[4];

@@ -6,7 +6,7 @@
 
 class DebuggableTimers : public Timers, public ITimersIODebug {
 public:
-    explicit DebuggableTimers(IInterruptsIO &interrupts);
+    explicit DebuggableTimers(IInterruptsIO& interrupts);
 
     [[nodiscard]] uint8_t readDIV() const override;
     void writeDIV(uint8_t value) override;
@@ -20,10 +20,10 @@ public:
     [[nodiscard]] uint8_t readTAC() const override;
     void writeTAC(uint8_t value) override;
 
-    void setObserver(Observer *o) override;
+    void setObserver(Observer* o) override;
 
 private:
-    Observer *observer;
+    Observer* observer;
 };
 
 #endif // DEBUGGERTIMERS_H

@@ -1,20 +1,20 @@
 #include "backend.h"
-#include <algorithm>
 #include "core/core.h"
 #include "core/helpers.h"
 #include "gameboy.h"
+#include <algorithm>
 
-DebuggerBackend::DebuggerBackend(ICoreDebug &core) :
-        core(core),
-        gameboy(core.getGameBoy()),
-        frontend(),
-        nextPointId(),
-        commandState(),
-        interrupted() {
+DebuggerBackend::DebuggerBackend(ICoreDebug& core) :
+    core(core),
+    gameboy(core.getGameBoy()),
+    frontend(),
+    nextPointId(),
+    commandState(),
+    interrupted() {
     core.setObserver(this);
 }
 
-void DebuggerBackend::attachFrontend(IDebuggerFrontend *frontend_) {
+void DebuggerBackend::attachFrontend(IDebuggerFrontend* frontend_) {
     frontend = frontend_;
 }
 
@@ -24,17 +24,13 @@ void DebuggerBackend::detachFrontend() {
 
 uint32_t DebuggerBackend::addBreakpoint(uint16_t addr) {
     uint32_t id = nextPointId++;
-    Debugger::Breakpoint b = {
-        .id = id,
-        .address = addr
-    };
+    Debugger::Breakpoint b = {.id = id, .address = addr};
     breakpoints.push_back(b);
     return id;
 }
 
 std::optional<Debugger::Breakpoint> DebuggerBackend::getBreakpoint(uint16_t addr) const {
-    auto b = std::find_if(breakpoints.begin(), breakpoints.end(),
-                         [addr](const Debugger::Breakpoint &b) {
+    auto b = std::find_if(breakpoints.begin(), breakpoints.end(), [addr](const Debugger::Breakpoint& b) {
         return b.address == addr;
     });
     if (b != breakpoints.end())
@@ -42,32 +38,24 @@ std::optional<Debugger::Breakpoint> DebuggerBackend::getBreakpoint(uint16_t addr
     return std::nullopt;
 }
 
-const std::vector<Debugger::Breakpoint> & DebuggerBackend::getBreakpoints() const {
+const std::vector<Debugger::Breakpoint>& DebuggerBackend::getBreakpoints() const {
     return breakpoints;
 }
 
 uint32_t DebuggerBackend::addWatchpoint(Debugger::Watchpoint::Type type, uint16_t from, uint16_t to,
                                         std::optional<Debugger::Watchpoint::Condition> cond) {
     uint32_t id = nextPointId++;
-    Debugger::Watchpoint w {
+    Debugger::Watchpoint w{
         .id = id,
         .type = type,
-        .address = {
-            .from = from,
-            .to = to
-        },
-        .condition = {
-            .enabled = (bool) cond,
-            .condition = cond ? *cond : Debugger::Watchpoint::Condition()
-        }
-    };
+        .address = {.from = from, .to = to},
+        .condition = {.enabled = (bool)cond, .condition = cond ? *cond : Debugger::Watchpoint::Condition()}};
     watchpoints.push_back(w);
     return id;
 }
 
 std::optional<Debugger::Watchpoint> DebuggerBackend::getWatchpoint(uint16_t addr) const {
-    auto w = std::find_if(watchpoints.begin(), watchpoints.end(),
-                         [addr](const Debugger::Watchpoint &wp) {
+    auto w = std::find_if(watchpoints.begin(), watchpoints.end(), [addr](const Debugger::Watchpoint& wp) {
         return wp.address.from <= addr && addr <= wp.address.to;
     });
     if (w != watchpoints.end())
@@ -75,14 +63,17 @@ std::optional<Debugger::Watchpoint> DebuggerBackend::getWatchpoint(uint16_t addr
     return std::nullopt;
 }
 
-const std::vector<Debugger::Watchpoint> & DebuggerBackend::getWatchpoints() const {
+const std::vector<Debugger::Watchpoint>& DebuggerBackend::getWatchpoints() const {
     return watchpoints;
 }
 
-
 void DebuggerBackend::removePoint(uint32_t id) {
-    std::erase_if(breakpoints, [id](const Debugger::Breakpoint &b) { return b.id == id; });
-    std::erase_if(watchpoints, [id](const Debugger::Watchpoint &w) { return w.id == id; });
+    std::erase_if(breakpoints, [id](const Debugger::Breakpoint& b) {
+        return b.id == id;
+    });
+    std::erase_if(watchpoints, [id](const Debugger::Watchpoint& w) {
+        return w.id == id;
+    });
 }
 
 void DebuggerBackend::clearPoints() {
@@ -114,7 +105,7 @@ void DebuggerBackend::disassembleRange(uint16_t from, uint16_t to) {
 std::optional<Debugger::Disassemble> DebuggerBackend::doDisassemble(uint16_t addr) {
     uint32_t addressCursor = addr;
     uint8_t opcode = readMemory(addressCursor++);
-    Debugger::Disassemble instruction { opcode };
+    Debugger::Disassemble instruction{opcode};
 
     // this works for CB and non CB because all CB instructions have length 2
     uint8_t length = instruction_length(opcode);
@@ -142,7 +133,7 @@ Debugger::LCDState DebuggerBackend::getLCDState() const {
 }
 
 uint8_t DebuggerBackend::readMemory(uint16_t addr) {
-    Observer * o = core.getObserver();
+    Observer* o = core.getObserver();
     core.setObserver(nullptr);
     uint8_t value = gameboy.getBus().read(addr);
     core.setObserver(o);
@@ -152,11 +143,10 @@ uint8_t DebuggerBackend::readMemory(uint16_t addr) {
 void DebuggerBackend::onMemoryRead(uint16_t addr, uint8_t value) {
     auto w = getWatchpoint(addr);
     if (w) {
-        if ((w->type == Debugger::Watchpoint::Type::Read ||
-                w->type == Debugger::Watchpoint::Type::ReadWrite) &&
+        if ((w->type == Debugger::Watchpoint::Type::Read || w->type == Debugger::Watchpoint::Type::ReadWrite) &&
             (!w->condition.enabled ||
-                (w->condition.condition.operation == Debugger::Watchpoint::Condition::Operator::Equal &&
-                value == w->condition.condition.operand))) {
+             (w->condition.condition.operation == Debugger::Watchpoint::Condition::Operator::Equal &&
+              value == w->condition.condition.operand))) {
             watchpointHit = Debugger::WatchpointHit();
             watchpointHit->watchpoint = *w;
             watchpointHit->address = addr;
@@ -170,13 +160,11 @@ void DebuggerBackend::onMemoryRead(uint16_t addr, uint8_t value) {
 void DebuggerBackend::onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) {
     auto w = getWatchpoint(addr);
     if (w) {
-        if (((w->type == Debugger::Watchpoint::Type::ReadWrite ||
-                    w->type == Debugger::Watchpoint::Type::Write) ||
-                (w->type == Debugger::Watchpoint::Type::Change && oldValue != newValue))
-            &&
+        if (((w->type == Debugger::Watchpoint::Type::ReadWrite || w->type == Debugger::Watchpoint::Type::Write) ||
+             (w->type == Debugger::Watchpoint::Type::Change && oldValue != newValue)) &&
             (!w->condition.enabled ||
-                (w->condition.condition.operation == Debugger::Watchpoint::Condition::Operator::Equal &&
-                newValue == w->condition.condition.operand))) {
+             (w->condition.condition.operation == Debugger::Watchpoint::Condition::Operator::Equal &&
+              newValue == w->condition.condition.operand))) {
             watchpointHit = Debugger::WatchpointHit();
             watchpointHit->watchpoint = *w;
             watchpointHit->address = addr;
@@ -215,7 +203,7 @@ bool DebuggerBackend::onTick(uint64_t tick) {
 
     if (interrupted) {
         interrupted = false;
-        pullCommand({ .state = Debugger::ExecutionState::State::Interrupted });
+        pullCommand({.state = Debugger::ExecutionState::State::Interrupted});
         return true;
     }
 
@@ -226,10 +214,8 @@ bool DebuggerBackend::onTick(uint64_t tick) {
             disassemble(cpu.instruction.address, 1);
             auto b = getBreakpoint(cpu.instruction.address);
             if (b) {
-                Debugger::ExecutionState outcome = {
-                        .state = Debugger::ExecutionState::State::BreakpointHit,
-                        .breakpointHit = {*b}
-                };
+                Debugger::ExecutionState outcome = {.state = Debugger::ExecutionState::State::BreakpointHit,
+                                                    .breakpointHit = {*b}};
                 pullCommand(outcome);
                 return true;
             }
@@ -237,21 +223,19 @@ bool DebuggerBackend::onTick(uint64_t tick) {
     }
 
     if (watchpointHit) {
-        Debugger::ExecutionState outcome = {
-            .state = Debugger::ExecutionState::State::WatchpointHit,
-            .watchpointHit = *watchpointHit
-        };
+        Debugger::ExecutionState outcome = {.state = Debugger::ExecutionState::State::WatchpointHit,
+                                            .watchpointHit = *watchpointHit};
         watchpointHit = std::nullopt;
         pullCommand(outcome);
         return true;
     }
 
     if (!command) {
-        pullCommand({ .state = Debugger::ExecutionState::State::Completed });
+        pullCommand({.state = Debugger::ExecutionState::State::Completed});
         return true;
     }
 
-    const Debugger::Command &cmd = *command;
+    const Debugger::Command& cmd = *command;
 
     if (std::holds_alternative<Debugger::CommandDot>(cmd)) {
         if (gameboy.getPPUDebug().getState().ppu.cycles >= commandState.target)
@@ -286,7 +270,7 @@ bool DebuggerBackend::onTick(uint64_t tick) {
         } else if (std::holds_alternative<Debugger::CommandMicroNext>(cmd)) {
             Debugger::CommandMicroNext cmdMicroNext = std::get<Debugger::CommandMicroNext>(cmd);
             if (cpu.registers.SP == commandState.stackLevel)
-                    commandState.counter++;
+                commandState.counter++;
             if (commandState.counter >= cmdMicroNext.count || cpu.registers.SP > commandState.stackLevel)
                 pullCommand({.state = Debugger::ExecutionState::State::Completed});
             return true;
@@ -294,9 +278,8 @@ bool DebuggerBackend::onTick(uint64_t tick) {
             Debugger::CommandFrame cmdFrame = std::get<Debugger::CommandFrame>(cmd);
             // TODO: don't like ppu.getDots() == 0
             Debugger::PPUState ppu = gameboy.getPPUDebug().getState();
-            if (ppu.ppu.state == IPPUDebug::PPUState::VBlank &&
-                    ppu.ppu.dots == 0 &&
-                    get_bit<Bits::LCD::LCDC::LCD_ENABLE>(readMemory(Registers::LCD::LCDC))) {
+            if (ppu.ppu.state == IPPUDebug::PPUState::VBlank && ppu.ppu.dots == 0 &&
+                get_bit<Bits::LCD::LCDC::LCD_ENABLE>(readMemory(Registers::LCD::LCDC))) {
                 commandState.counter++;
                 if (commandState.counter >= cmdFrame.count)
                     pullCommand({.state = Debugger::ExecutionState::State::Completed});

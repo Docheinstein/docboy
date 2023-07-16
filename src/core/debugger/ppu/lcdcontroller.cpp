@@ -1,7 +1,8 @@
 #include "lcdcontroller.h"
 
-DebuggableLCDController::DebuggableLCDController(IDMA &dma) : LCDController(dma), observer() {
-
+DebuggableLCDController::DebuggableLCDController(IDMA& dma) :
+    LCDController(dma),
+    observer() {
 }
 
 uint8_t DebuggableLCDController::readLCDC() const {
@@ -172,7 +173,6 @@ void DebuggableLCDController::writeWX(uint8_t value) {
         observer->onWriteWX(oldValue, value);
 }
 
-    
-void DebuggableLCDController::setObserver(ILCDIODebug::Observer *o) {
+void DebuggableLCDController::setObserver(ILCDIODebug::Observer* o) {
     observer = o;
 }

@@ -12,10 +12,10 @@ public:
     [[nodiscard]] uint8_t readIE() const override;
     void writeIE(uint8_t value) override;
 
-    void setObserver(Observer *observer) override;
+    void setObserver(Observer* observer) override;
 
 private:
-    Observer *observer;
+    Observer* observer;
 };
 
 #endif // DEBUGGERINTERRUPTS_H

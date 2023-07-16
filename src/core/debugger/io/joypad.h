@@ -16,8 +16,7 @@ public:
 
     virtual ~IJoypadIODebug() = default;
 
-    virtual void setObserver(Observer *observer) = 0;
+    virtual void setObserver(Observer* observer) = 0;
 };
-
 
 #endif // DEBUGGERJOYPADIO_H

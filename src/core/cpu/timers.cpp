@@ -1,11 +1,14 @@
 #include "timers.h"
 #include "core/definitions.h"
 
-Timers::Timers(IInterruptsIO &interrupts) :
+Timers::Timers(IInterruptsIO& interrupts) :
     interrupts(interrupts),
-    DIV(), TIMA(), TMA(), TAC(),
-    divTicks(), timaTicks() {
-
+    DIV(),
+    TIMA(),
+    TMA(),
+    TAC(),
+    divTicks(),
+    timaTicks() {
 }
 
 void Timers::tick() {
@@ -34,7 +37,6 @@ void Timers::tick() {
         }
     }
 }
-
 
 uint8_t Timers::readDIV() const {
     return DIV;

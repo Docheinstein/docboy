@@ -1,8 +1,8 @@
 #ifndef INTERRUPTSIO_H
 #define INTERRUPTSIO_H
 
-#include <cstdint>
 #include "utils/binutils.h"
+#include <cstdint>
 
 class IInterruptsIO {
 public:
@@ -15,7 +15,7 @@ public:
     virtual void writeIE(uint8_t value) = 0;
 
     // helper
-    template<uint8_t b>
+    template <uint8_t b>
     void setIF() {
         writeIF(set_bit<b>(readIF()));
     }

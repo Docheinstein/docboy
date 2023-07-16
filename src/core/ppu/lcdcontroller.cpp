@@ -1,14 +1,20 @@
 #include "lcdcontroller.h"
 #include "core/dma/dma.h"
 
-LCDController::LCDController(IDMA &dma) :
+LCDController::LCDController(IDMA& dma) :
     dma(dma),
-    LCDC(0b10010001), STAT(),
-    SCY(), SCX(),
-    LY(), LYC(), DMA(),
-    BGP(), OBP0(), OBP1(),
-    WY(), WX() {
-
+    LCDC(0b10010001),
+    STAT(),
+    SCY(),
+    SCX(),
+    LY(),
+    LYC(),
+    DMA(),
+    BGP(),
+    OBP0(),
+    OBP1(),
+    WY(),
+    WX() {
 }
 
 uint8_t LCDController::readLCDC() const {
@@ -65,7 +71,7 @@ uint8_t LCDController::readDMA() const {
 
 void LCDController::writeDMA(uint8_t value) {
     DMA = value;
-    dma.transfer((uint16_t) DMA << 8);
+    dma.transfer((uint16_t)DMA << 8);
 }
 
 uint8_t LCDController::readBGP() const {
@@ -107,4 +113,3 @@ uint8_t LCDController::readWX() const {
 void LCDController::writeWX(uint8_t value) {
     WX = value;
 }
-

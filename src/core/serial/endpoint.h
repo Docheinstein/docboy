@@ -10,5 +10,4 @@ public:
     virtual void serialWrite(uint8_t) = 0;
 };
 
-
 #endif // ENDPOINT_H

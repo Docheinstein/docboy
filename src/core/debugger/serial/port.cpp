@@ -1,11 +1,10 @@
 #include "port.h"
 #include "core/definitions.h"
 
-DebuggableSerialPort::DebuggableSerialPort(IInterruptsIO &interrupts) :
-    SerialPort(interrupts), observer() {
-
+DebuggableSerialPort::DebuggableSerialPort(IInterruptsIO& interrupts) :
+    SerialPort(interrupts),
+    observer() {
 }
-
 
 uint8_t DebuggableSerialPort::readSB() const {
     uint8_t value = SerialPort::readSB();
@@ -35,6 +34,6 @@ void DebuggableSerialPort::writeSC(uint8_t value) {
         observer->onWriteSC(oldValue, value);
 }
 
-void DebuggableSerialPort::setObserver(Observer *o) {
+void DebuggableSerialPort::setObserver(Observer* o) {
     observer = o;
 }

@@ -13,8 +13,9 @@ void LCD::pushPixel(ILCD::Pixel pixel) {
     }
 }
 
-LCD::LCD() : x(), y() {
-
+LCD::LCD() :
+    x(),
+    y() {
 }
 
 void LCD::putPixel(Pixel pixel, uint8_t x_, uint8_t y_) {
@@ -22,7 +23,6 @@ void LCD::putPixel(Pixel pixel, uint8_t x_, uint8_t y_) {
 }
 
 void LCD::turnOn() {
-
 }
 
 void LCD::turnOff() {
@@ -34,8 +34,6 @@ void LCD::reset() {
     y = 0;
 }
 
-//bool LCD::isOn() const {
-//    return get_bit<Bits::LCD::LCDC::LCD_ENABLE>(LCDC);
-//}
-
-
+// bool LCD::isOn() const {
+//     return get_bit<Bits::LCD::LCDC::LCD_ENABLE>(LCDC);
+// }

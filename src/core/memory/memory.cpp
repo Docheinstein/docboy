@@ -1,14 +1,14 @@
 #include "memory.h"
 
-Memory::Memory(size_t size) : memory(size) {
-
+Memory::Memory(size_t size) :
+    memory(size) {
 }
 
-Memory::Memory(const std::vector<uint8_t> &data) {
+Memory::Memory(const std::vector<uint8_t>& data) {
     memory = data;
 }
 
-Memory::Memory(std::vector<uint8_t> &&data) {
+Memory::Memory(std::vector<uint8_t>&& data) {
     memory = std::move(data);
 }
 

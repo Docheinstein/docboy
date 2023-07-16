@@ -29,6 +29,6 @@ void DebuggableInterrupts::writeIE(uint8_t value) {
         observer->onWriteIE(oldValue, value);
 }
 
-void DebuggableInterrupts::setObserver(Observer *o) {
+void DebuggableInterrupts::setObserver(Observer* o) {
     observer = o;
 }

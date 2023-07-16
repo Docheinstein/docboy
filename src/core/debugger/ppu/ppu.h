@@ -5,23 +5,11 @@
 
 class IPPUDebug {
 public:
-    enum class PPUState {
-        HBlank,
-        VBlank,
-        OAMScan,
-        PixelTransfer
-    };
+    enum class PPUState { HBlank, VBlank, OAMScan, PixelTransfer };
 
-    enum class FetcherState {
-        Prefetcher,
-        PixelSliceFetcher,
-        Pushing
-    };
+    enum class FetcherState { Prefetcher, PixelSliceFetcher, Pushing };
 
-    enum class FIFOType {
-        Bg,
-        Obj
-    };
+    enum class FIFOType { Bg, Obj };
 
     struct State {
         struct {
@@ -51,13 +39,7 @@ public:
 
 class DebuggablePPU : public IPPUDebug, public PPU {
 public:
-    explicit DebuggablePPU(
-        ILCD &lcd,
-        ILCDIO &lcdIo,
-        IInterruptsIO &interrupts,
-        IMemory &vram,
-        IMemory &oam
-    );
+    explicit DebuggablePPU(ILCD& lcd, ILCDIO& lcdIo, IInterruptsIO& interrupts, IMemory& vram, IMemory& oam);
     ~DebuggablePPU() override = default;
 
     IPPUDebug::State getState() override;

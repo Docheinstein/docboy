@@ -1,8 +1,8 @@
 #include "window.h"
-#include <SDL.h>
-#include <stdexcept>
 #include "helpers.h"
 #include "utils/binutils.h"
+#include <SDL.h>
+#include <stdexcept>
 
 Window::~Window() {
     SDL_DestroyTexture(texture);
@@ -11,20 +11,20 @@ Window::~Window() {
     SDL_Quit();
 }
 
-Window::Window(uint32_t *framebuffer, ILCDIO &lcd, float scaling)
-    : framebuffer(framebuffer), lcd(lcd),
-    window(), renderer(), texture(),
+Window::Window(uint32_t* framebuffer, ILCDIO& lcd, float scaling) :
+    framebuffer(framebuffer),
+    lcd(lcd),
+    window(),
+    renderer(),
+    texture(),
     width(static_cast<int>(scaling * Specs::Display::WIDTH)),
     height(static_cast<int>(scaling * Specs::Display::HEIGHT)) {
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
         throw std::runtime_error(std::string("SDL_Init error: ") + SDL_GetError());
 
-    window = SDL_CreateWindow(
-            "DocBoy",
-            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            width, height,
-            SDL_WINDOW_SHOWN);
+    window =
+        SDL_CreateWindow("DocBoy", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN);
     if (!window)
         throw std::runtime_error(std::string("SDL_CreateWindow error: ") + SDL_GetError());
 
@@ -33,13 +33,11 @@ Window::Window(uint32_t *framebuffer, ILCDIO &lcd, float scaling)
         throw std::runtime_error(std::string("SDL_CreateRenderer error: ") + SDL_GetError());
 
     // TODO: figure out byte order
-    texture = SDL_CreateTexture(renderer,
-                                SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
-                                Specs::Display::WIDTH, Specs::Display::HEIGHT);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, Specs::Display::WIDTH,
+                                Specs::Display::HEIGHT);
     if (!texture)
         throw std::runtime_error(std::string("SDL_CreateTexture error: ") + SDL_GetError());
 }
-
 
 void Window::render() {
     auto now = std::chrono::high_resolution_clock::now();
@@ -53,12 +51,12 @@ void Window::render() {
 
     bool lcdOn = get_bit<Bits::LCD::LCDC::LCD_ENABLE>(lcd.readLCDC());
     if (lcdOn) {
-        SDL_Rect srcrect { .x = 0, .y = 0, .w = Specs::Display::WIDTH, .h = Specs::Display::HEIGHT };
-        SDL_Rect dstrect { .x = 0, .y = 0, .w = width, .h = height };
-        void *texturePixels;
+        SDL_Rect srcrect{.x = 0, .y = 0, .w = Specs::Display::WIDTH, .h = Specs::Display::HEIGHT};
+        SDL_Rect dstrect{.x = 0, .y = 0, .w = width, .h = height};
+        void* texturePixels;
         int pitch;
 
-        SDL_LockTexture(texture, &srcrect, (void **) &texturePixels, &pitch);
+        SDL_LockTexture(texture, &srcrect, (void**)&texturePixels, &pitch);
         memcpy(texturePixels, framebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint32_t));
         SDL_UnlockTexture(texture);
 

@@ -1,7 +1,7 @@
 #include "sound.h"
 
-DebuggableSound::DebuggableSound() : observer() {
-
+DebuggableSound::DebuggableSound() :
+    observer() {
 }
 
 uint8_t DebuggableSound::readNR10() const {
@@ -522,7 +522,6 @@ void DebuggableSound::writeWAVEF(uint8_t value) {
         observer->onWriteWAVEF(oldValue, value);
 }
 
-
-void DebuggableSound::setObserver(Observer *o) {
+void DebuggableSound::setObserver(Observer* o) {
     observer = o;
 }

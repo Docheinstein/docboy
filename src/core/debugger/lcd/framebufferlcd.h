@@ -1,9 +1,9 @@
 #ifndef DEBUGGERFRAMEBUFFERLCD_H
 #define DEBUGGERFRAMEBUFFERLCD_H
 
-#include "lcd.h"
-#include "core/lcd/framebufferlcd.h"
 #include "core/debugger/io/lcd.h"
+#include "core/lcd/framebufferlcd.h"
+#include "lcd.h"
 
 class DebuggableFrameBufferLCD : public FrameBufferLCD, public ILCDDebug {
 public:

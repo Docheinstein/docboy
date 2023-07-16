@@ -1,13 +1,12 @@
 #include "cartridgefactory.h"
 #include "cartridge.h"
-#include "utils/fileutils.h"
-#include "nombc.h"
 #include "mbc1.h"
 #include "mbc1ram.h"
+#include "nombc.h"
 #include "utils/binutils.h"
+#include "utils/fileutils.h"
 
-std::unique_ptr<ICartridge>
-CartridgeFactory::makeCartridge(const std::string &filename) {
+std::unique_ptr<ICartridge> CartridgeFactory::makeCartridge(const std::string& filename) {
     bool ok;
 
     std::vector<uint8_t> data = read_file(filename, &ok);

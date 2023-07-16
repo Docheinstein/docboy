@@ -32,15 +32,10 @@ public:
 
 class DebuggableCPU : public ICPUDebug, public CPU {
 public:
-    DebuggableCPU(
-            IBus &bus,
-            IClockable &timers,
-            IClockable &serial,
-            bool bootRom = false);
+    DebuggableCPU(IBus& bus, IClockable& timers, IClockable& serial, bool bootRom = false);
     ~DebuggableCPU() override = default;
 
     State getState() override;
 };
-
 
 #endif // DEBUGGERCPU_H

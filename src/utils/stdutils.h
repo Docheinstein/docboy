@@ -3,8 +3,8 @@
 
 #include <vector>
 
-template<typename T>
-const T& pop(std::vector<T> &vector);
+template <typename T>
+const T& pop(std::vector<T>& vector);
 
 #include "stdutils.tpp"
 

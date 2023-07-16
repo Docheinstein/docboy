@@ -7,7 +7,7 @@ class IDMA;
 
 class LCDController : public ILCDIO {
 public:
-    explicit LCDController(IDMA &dma);
+    explicit LCDController(IDMA& dma);
 
     [[nodiscard]] uint8_t readLCDC() const override;
     void writeLCDC(uint8_t value) override;
@@ -46,7 +46,7 @@ public:
     void writeWX(uint8_t value) override;
 
 protected:
-    IDMA &dma;
+    IDMA& dma;
 
     uint8_t LCDC;
     uint8_t STAT;

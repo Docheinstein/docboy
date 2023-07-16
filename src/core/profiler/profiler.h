@@ -1,8 +1,8 @@
 #ifndef PROFILER_H
 #define PROFILER_H
 
-#include "core/gameboy.h"
 #include "core/core.h"
+#include "core/gameboy.h"
 #include <chrono>
 
 struct ProfilerResult {
@@ -12,7 +12,7 @@ struct ProfilerResult {
 
 class Profiler {
 public:
-    explicit Profiler(ICore &core, IGameBoy &gb);
+    explicit Profiler(ICore& core, IGameBoy& gb);
     void setMaxTicks(uint64_t maxTicks);
 
     void frame();
@@ -24,8 +24,8 @@ public:
 private:
     void computeProfilerResult();
 
-    ICore &core;
-    IGameBoy &gameboy;
+    ICore& core;
+    IGameBoy& gameboy;
     std::chrono::high_resolution_clock::time_point startTime;
     std::optional<uint64_t> maxTicks;
 

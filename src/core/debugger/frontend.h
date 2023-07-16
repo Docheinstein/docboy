@@ -1,8 +1,8 @@
 #ifndef FRONTEND_H
 #define FRONTEND_H
 
-#include <cstdint>
 #include "shared.h"
+#include <cstdint>
 
 class IDebuggerFrontend {
 public:

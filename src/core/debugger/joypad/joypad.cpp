@@ -1,10 +1,9 @@
 #include "joypad.h"
 #include "core/definitions.h"
 
-
-DebuggableJoypad::DebuggableJoypad(IInterruptsIO &interrupts) :
-    Joypad(interrupts), observer() {
-
+DebuggableJoypad::DebuggableJoypad(IInterruptsIO& interrupts) :
+    Joypad(interrupts),
+    observer() {
 }
 
 uint8_t DebuggableJoypad::readP1() const {
@@ -21,7 +20,6 @@ void DebuggableJoypad::writeP1(uint8_t value) {
         observer->onWriteP1(oldValue, value);
 }
 
-void DebuggableJoypad::setObserver(Observer *o) {
+void DebuggableJoypad::setObserver(Observer* o) {
     observer = o;
 }
-
