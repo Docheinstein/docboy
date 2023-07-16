@@ -1,0 +1,14 @@
+﻿---
+AccessModifierOffset: -4
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: None
+AllowShortLoopsOnASingleLine: false
+BreakConstructorInitializers: AfterColon
+ColumnLimit: 120
+IndentWidth: 4
+IndentAccessModifiers: false
+PointerAlignment: Left
+...
