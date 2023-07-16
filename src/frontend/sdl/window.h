@@ -11,10 +11,14 @@ class SDL_Texture;
 
 class Window {
 public:
-    explicit Window(uint32_t* framebuffer, ILCDIO& lcd, float scaling = 1.0);
+    static constexpr int POSITION_UNDEFINED = -1;
+
+    explicit Window(uint32_t* framebuffer, ILCDIO& lcd, int x = POSITION_UNDEFINED, int y = POSITION_UNDEFINED,
+                    float scaling = 1.0);
     ~Window();
 
     void render();
+    std::pair<int, int> getPosition() const;
 
 private:
     uint32_t* framebuffer;

@@ -11,7 +11,7 @@ Window::~Window() {
     SDL_Quit();
 }
 
-Window::Window(uint32_t* framebuffer, ILCDIO& lcd, float scaling) :
+Window::Window(uint32_t* framebuffer, ILCDIO& lcd, int x, int y, float scaling) :
     framebuffer(framebuffer),
     lcd(lcd),
     window(),
@@ -37,6 +37,11 @@ Window::Window(uint32_t* framebuffer, ILCDIO& lcd, float scaling) :
                                 Specs::Display::HEIGHT);
     if (!texture)
         throw std::runtime_error(std::string("SDL_CreateTexture error: ") + SDL_GetError());
+
+    // TODO: don't know but setting these in SDL_CreateWindow does not work
+    const auto winX = static_cast<int>(x == POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : x);
+    const auto winY = static_cast<int>(y == POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : y);
+    SDL_SetWindowPosition(window, winX, winY);
 }
 
 void Window::render() {
@@ -51,8 +56,8 @@ void Window::render() {
 
     bool lcdOn = get_bit<Bits::LCD::LCDC::LCD_ENABLE>(lcd.readLCDC());
     if (lcdOn) {
-        SDL_Rect srcrect{.x = 0, .y = 0, .w = Specs::Display::WIDTH, .h = Specs::Display::HEIGHT};
-        SDL_Rect dstrect{.x = 0, .y = 0, .w = width, .h = height};
+        SDL_Rect srcrect {.x = 0, .y = 0, .w = Specs::Display::WIDTH, .h = Specs::Display::HEIGHT};
+        SDL_Rect dstrect {.x = 0, .y = 0, .w = width, .h = height};
         void* texturePixels;
         int pitch;
 
@@ -64,4 +69,10 @@ void Window::render() {
     }
 
     SDL_RenderPresent(renderer);
+}
+
+std::pair<int, int> Window::getPosition() const {
+    int x, y;
+    SDL_GetWindowPosition(window, &x, &y);
+    return {x, y};
 }

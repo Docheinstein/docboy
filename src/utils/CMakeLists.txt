@@ -15,6 +15,8 @@ set(SOURCES
     strutils.h
     strutils.cpp
     termcolor.h
+        iniutils.h
+        iniutils.cpp
 )
 
 add_library(utils STATIC ${SOURCES})

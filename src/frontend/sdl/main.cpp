@@ -7,6 +7,7 @@
 #include "core/serial/endpoints/console.h"
 #include "helpers.h"
 #include "utils/fileutils.h"
+#include "utils/iniutils.h"
 #include "window.h"
 #include <SDL.h>
 #include <filesystem>
@@ -49,7 +50,9 @@ static void screenshot_dat(uint32_t* framebuffer) {
 
     std::string path = absolute(p).c_str();
 
-    if (write_file(path, framebuffer, sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT))
+    bool ok;
+    write_file(path, framebuffer, sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT, &ok);
+    if (ok)
         std::cout << "Screenshot saved to: " << path << std::endl;
 }
 
@@ -151,20 +154,36 @@ static std::map<Config::Input::KeyboardKey, SDL_Keycode> KEYBOARD_KEYS_TO_SDL_KE
     {Config::Input::KeyboardKey::Up, SDLK_UP},
 };
 
+static std::filesystem::path PREFERENCES_FILE = std::filesystem::temp_directory_path() / "docboy.prefs";
+
+static void savePreferencesToCache(const Window& window) {
+    const auto [x, y] = window.getPosition();
+    INI ini;
+    ini["window"] = {
+        {"x", std::to_string(x)},
+        {"y", std::to_string(y)},
+    };
+    ini_write(PREFERENCES_FILE, ini);
+};
+
+static INI loadPreferencesFromCache() {
+    return ini_read(PREFERENCES_FILE);
+};
+
 int main(int argc, char** argv) {
     struct {
         std::string rom;
         std::string boot_rom;
         std::string config;
 #ifdef ENABLE_DEBUGGER
-        bool debugger{};
+        bool debugger {};
 #endif
 #ifdef ENABLE_PROFILER
-        std::optional<uint64_t> profiler_ticks{};
+        std::optional<uint64_t> profiler_ticks {};
 #endif
-        bool serial_console{};
-        float scaling{1};
-        double speed_up{1};
+        bool serial_console {};
+        float scaling {1};
+        double speed_up {1};
     } args;
 
     auto parser = argumentum::argument_parser();
@@ -284,8 +303,20 @@ int main(int argc, char** argv) {
     }
 #endif
 
+    int winX = Window::POSITION_UNDEFINED;
+    int winY = Window::POSITION_UNDEFINED;
+
+    INI prefs = loadPreferencesFromCache();
+    if (const auto windowSectionIt = prefs.find("window"); windowSectionIt != prefs.end()) {
+        const auto& windowSection = windowSectionIt->second;
+        if (const auto& xIt = windowSection.find("x"); xIt != windowSection.end())
+            winX = std::stoi(xIt->second);
+        if (const auto& yIt = windowSection.find("y"); yIt != windowSection.end())
+            winY = std::stoi(yIt->second);
+    }
+
     FrameBufferLCD& lcd = gb.lcd;
-    Window window(gb.lcd.getFrameBuffer(), gb.lcdController, args.scaling);
+    Window window(gb.lcd.getFrameBuffer(), gb.lcdController, winX, winY, args.scaling);
 
     std::shared_ptr<SerialLink> serialLink;
     std::unique_ptr<ISerialEndpoint> serialConsole;
@@ -319,11 +350,11 @@ int main(int argc, char** argv) {
     while (!quit && core.isOn()) {
         // Handle events
         while (SDL_PollEvent(&e) != 0) {
-            if (e.type == SDL_QUIT) {
+            switch (e.type) {
+            case SDL_QUIT:
                 quit = true;
                 break;
-            }
-            if (e.type == SDL_KEYDOWN) {
+            case SDL_KEYDOWN:
                 switch (e.key.keysym.sym) {
                 case SDLK_F11:
                     screenshot_dat(lcd.getFrameBuffer());
@@ -337,9 +368,15 @@ int main(int argc, char** argv) {
                         core.setKey(mapping->second, IJoypad::Pressed);
                     }
                 }
-            } else if (e.type == SDL_KEYUP) {
+                break;
+            case SDL_KEYUP:
                 if (auto mapping = keyboardInputMapping.find(e.key.keysym.sym); mapping != keyboardInputMapping.end()) {
                     core.setKey(mapping->second, IJoypad::Released);
+                }
+                break;
+            case SDL_WINDOWEVENT:
+                if (e.window.event == SDL_WINDOWEVENT_CLOSE) {
+                    savePreferencesToCache(window);
                 }
             }
         }

@@ -1,4 +1,5 @@
 #include <vector>
+#include <cassert>
 
 template <typename T>
 const T& pop(std::vector<T>& vector) {

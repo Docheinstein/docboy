@@ -1,14 +1,33 @@
 #include "fileutils.h"
 #include <iostream>
 
-bool write_file(const std::string& filename, void* data, long length) {
+void write_file(const std::string& filename, void* data, long length, bool* ok) {
     std::ofstream ofs(filename);
     if (!ofs) {
-        return false;
+        if (ok)
+            *ok = false;
+        return;
     }
 
     ofs.write(static_cast<const char*>(data), length);
-    return ofs.good();
+
+    if (ok)
+        *ok = ofs.good();
+}
+
+void write_file_lines(const std::string& filename, const std::vector<std::string>& lines, bool* ok) {
+    std::ofstream ofs(filename);
+    if (!ofs) {
+        if (ok)
+            *ok = false;
+        return;
+    }
+
+    for (const auto& line : lines)
+        ofs << line << "\n";
+
+    if (ok)
+        *ok = ofs.good();
 }
 
 template <>

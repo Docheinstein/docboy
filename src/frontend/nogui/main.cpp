@@ -16,9 +16,9 @@ int main(int argc, char** argv) {
     struct {
         std::string rom;
         std::string boot_rom;
-        bool debugger{};
-        bool serial_console{};
-        double speed_up{1};
+        bool debugger {};
+        bool serial_console {};
+        double speed_up {1};
     } args;
 
     auto parser = argumentum::argument_parser();
@@ -70,8 +70,10 @@ int main(int argc, char** argv) {
         core.attachSerialLink(serialLink->plug2);
     }
 
-    if (!core.loadROM(args.rom)) {
-        std::cerr << "ERROR: failed to load rom: '" << args.rom << "'" << std::endl;
+    try {
+        core.loadROM(args.rom);
+    } catch (const std::exception& e) {
+        std::cerr << "ERROR: failed to load rom: '" << args.rom << "' " << e.what() << std::endl;
         return 1;
     }
 

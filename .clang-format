@@ -13,4 +13,6 @@ IndentWidth: 4
 IndentAccessModifiers: false
 PackConstructorInitializers: Never
 PointerAlignment: Left
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeParens: ControlStatements
 ...
