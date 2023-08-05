@@ -155,3 +155,13 @@ std::string hex(const T* data, size_t length) {
     }
     return ss.str();
 }
+
+template <typename T>
+std::string hex(const std::vector<T>& vec) {
+    return hex(vec.data(), vec.size() * sizeof(T));
+}
+
+template <typename T, std::size_t N>
+std::string hex(const std::array<T, N>& arr) {
+    return hex(arr.data(), arr.size() * sizeof(T));
+}

@@ -5,6 +5,7 @@
 #include "serial/link.h"
 #include <memory>
 
+class ICartridge;
 class IGameBoy;
 class ISerialEndpoint;
 
@@ -22,6 +23,7 @@ public:
     ~Core() = default;
 
     void loadROM(const std::string& rom);
+    void loadROM(std::unique_ptr<ICartridge>);
 
     void tick() override;
     void frame() override;

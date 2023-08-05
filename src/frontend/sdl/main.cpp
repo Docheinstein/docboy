@@ -1,5 +1,6 @@
 #include "argparser.h"
 #include "core/boot/bootromfactory.h"
+#include "core/cartridge/cartridgefactory.h"
 #include "core/config/config.h"
 #include "core/config/parser.h"
 #include "core/core.h"
@@ -54,6 +55,24 @@ static void screenshot_dat(uint32_t* framebuffer) {
     write_file(path, framebuffer, sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT, &ok);
     if (ok)
         std::cout << "Screenshot saved to: " << path << std::endl;
+}
+
+static void dump_cartridge_info(const ICartridge& cartridge) {
+    const auto header = cartridge.header();
+    std::cout << "Title             :  " << header.titleAsString() << "\n";
+    std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     (" << header.cartridgeTypeDescription()
+              << ")\n";
+    std::cout << "Licensee (new)    :  " << hex(header.new_licensee_code) << "  ("
+              << header.newLicenseeCodeDescription() << ")\n";
+    std::cout << "Licensee (old)    :  " << hex(header.old_licensee_code) << "     ("
+              << header.oldLicenseeCodeDescription() << ")\n";
+    std::cout << "ROM Size          :  " << hex(header.rom_size) << "     (" << header.romSizeDescription() << ")\n";
+    std::cout << "RAM Size          :  " << hex(header.ram_size) << "     (" << header.ramSizeDescription() << ")\n";
+    std::cout << "CGB flag          :  " << hex(header.cgb_flag) << "     (" << header.cgbFlagDescription() << ")\n";
+    std::cout << "SGB flag          :  " << hex(header.sgb_flag) << "\n";
+    std::cout << "Destination Code  :  " << hex(header.destination_code) << "\n";
+    std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";
+    std::cout << "Header checksum   :  " << hex(header.header_checksum) << "\n";
 }
 
 static std::map<Config::Input::KeyboardKey, SDL_Keycode> KEYBOARD_KEYS_TO_SDL_KEYS = {
@@ -184,6 +203,7 @@ int main(int argc, char** argv) {
         bool serial_console {};
         float scaling {1};
         double speed_up {1};
+        bool dump_cartridge_info {};
     } args;
 
     auto parser = argumentum::argument_parser();
@@ -203,6 +223,7 @@ int main(int argc, char** argv) {
     params.add_parameter(args.serial_console, "--serial", "-s").help("Display serial output");
     params.add_parameter(args.scaling, "--scaling", "-z").nargs(1).default_value(1).help("Scaling factor");
     params.add_parameter(args.speed_up, "--speed-up", "-x").nargs(1).default_value(1).help("Speed up factor");
+    params.add_parameter(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
 
     if (!parser.parse_args(argc, argv, 1))
         return 1;
@@ -218,6 +239,19 @@ int main(int argc, char** argv) {
         }
     } else {
         cfg = Config::makeDefault();
+    }
+
+    std::unique_ptr<ICartridge> cartridge;
+    try {
+        cartridge = CartridgeFactory::makeCartridge(args.rom);
+    } catch (const std::exception& e) {
+        std::cerr << "ERROR: failed to load rom: '" << args.rom << "' " << e.what() << std::endl;
+        return 1;
+    }
+
+    if (args.dump_cartridge_info) {
+        dump_cartridge_info(*cartridge);
+        return 0;
     }
 
     std::unique_ptr<IBootROM> bootRom;
@@ -328,12 +362,7 @@ int main(int argc, char** argv) {
         core.attachSerialLink(serialLink->plug2);
     }
 
-    try {
-        core.loadROM(args.rom);
-    } catch (const std::exception& e) {
-        std::cerr << "ERROR: failed to load rom: '" << args.rom << "' " << e.what() << std::endl;
-        return 1;
-    }
+    core.loadROM(std::move(cartridge));
 
     static const std::set<SDL_Keycode> RESERVED_SDL_KEYS = {SDLK_F11, SDLK_F12};
 

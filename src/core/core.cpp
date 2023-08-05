@@ -8,7 +8,11 @@ Core::Core(IGameBoy& gameboy) :
 }
 
 void Core::loadROM(const std::string& rom) {
-    gameboy.getCartridgeSlot().attachCartridge(CartridgeFactory::makeCartridge(rom));
+    loadROM(CartridgeFactory::makeCartridge(rom));
+}
+
+void Core::loadROM(std::unique_ptr<ICartridge> cartridge) {
+    gameboy.getCartridgeSlot().attachCartridge(std::move(cartridge));
 }
 
 void Core::attachSerialLink(SerialLink::Plug& plug) {

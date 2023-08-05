@@ -93,9 +93,10 @@ template <typename T>
 std::string hex(const T* data, size_t length);
 
 template <typename T>
-std::string hex(const std::vector<T>& vec) {
-    return hex(vec.data(), vec.size() * sizeof(T));
-}
+std::string hex(const std::vector<T>& vec);
+
+template <typename T, std::size_t N>
+std::string hex(const std::array<T, N>& arr);
 
 #include "binutils.tpp"
 
