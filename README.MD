@@ -6,8 +6,8 @@ Work in Progress.
 
 ### Features
 
-* CPU: m-cycle accurate emulation
-* PPU/LCD (WIP)
+* CPU: m-cycle accurate, passes cpu_instrs.gb from blargg's tests
+* PPU: dot accurate, implements pixel FIFO
 * Cartridges: NoMBC, MBC1
 * CLI debugger: supports breakpoints, watchpoints, disassembler, step by step execution (by instruction or micro-instruction), memory viewer, interrupts viewer, IO viewer
 * Serial Link
@@ -16,8 +16,10 @@ Work in Progress.
 * DMA
 
 ### TODO
-* Sound
-* Save/load state
+* Improve accuracy of PPU
+* Support other cartridges types
+* Implement sound
+* Implement save/load state
 * Support other platforms: Windows, macOs
 * Compile as libretro core
 
@@ -36,23 +38,28 @@ make
 ### Usage
 
 ```
-usage:  [--boot-rom BOOT-ROM] [--debugger] [--serial] [--scaling SCALING] 
-        [--help] rom
+usage: [--boot-rom BOOT-ROM] [--config CONFIG] [--serial] [--scaling SCALING]
+       [--speed-up SPEED-UP] [--cartridge-info] [--help] rom
 
 positional arguments:
   rom                     ROM
 
 optional arguments:
   -b, --boot-rom BOOT-ROM Boot ROM
-  -d, --debugger          Attach CLI debugger
+  -c, --config CONFIG     Config
   -s, --serial            Display serial output
   -z, --scaling SCALING   Scaling factor
+  -x, --speed-up SPEED-UP Speed up factor
+  -i, --cartridge-info    Dump cartridge info and quit
   -h, --help              Display this help message and exit.
 ```
 
 
 ### Screenshots
 
+![Tetris](images/tetris.png)
+![Alleyway](images/alleyway.png)
+![Donkey Kong](images/donkey-kong.png)
 ![DMG boot](images/dmg_boot.png)
 ![Blargg's cpu_instr boot](images/cpu_instrs.png)
 
