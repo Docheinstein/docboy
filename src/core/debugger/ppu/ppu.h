@@ -16,20 +16,20 @@ public:
             PPUState state;
             uint32_t dots;
             uint64_t cycles;
-            PPU::PixelFIFO bgFifo;
-            PPU::PixelFIFO objFifo;
-            std::vector<PPU::OAMEntry> scanlineOamEntries;
-        } ppu{};
+            PPU::BGPixelFIFO bgFifo;
+            PPU::OBJPixelFIFO objFifo;
+            std::vector<PPU::OAMEntryFetchInfo> scanlineOamEntries;
+        } ppu {};
         struct {
             FetcherState state;
             uint32_t dots;
-            std::vector<PPU::OAMEntry> oamEntriesHit;
+            std::vector<PPU::OAMEntryFetchInfo> oamEntriesHit;
             struct {
                 uint16_t address;
                 std::vector<PPU::Pixel> data;
             } pixelSliceFetcherTile;
             FIFOType targetFifo;
-        } fetcher{};
+        } fetcher {};
     };
 
     virtual ~IPPUDebug() = default;

@@ -21,15 +21,6 @@ using IPPU = IClockable;
 
 class PPU : public IPPU {
 public:
-    struct Pixel {
-        uint8_t color;    // color value between 0 and 3
-        uint8_t palette;  // palette, for obj only: 0 for OBP0, 1 for OBP1
-        uint8_t priority; // oam number
-        uint8_t x;        // needed to solve sprite clashes on DMG
-    };
-
-    using PixelFIFO = std::deque<Pixel>;
-
     PPU(ILCD& lcd, ILCDIO& lcdIo, IInterruptsIO& interrupts, IMemory& vram, IMemory& oam);
 
     void tick() override;
@@ -37,15 +28,50 @@ public:
 protected:
     typedef void (PPU::*TickHandler)();
 
-    struct OAMEntry {
-        uint8_t number;
-        uint8_t x;
-        uint8_t y;
+    struct OAMEntryFetchInfo {
+        uint8_t number {}; // oam entry number, between 0 and 39
+        uint8_t x {};      // byte 1
+        uint8_t y {};      // byte 0
     };
+
+    struct OAMEntry : OAMEntryFetchInfo {
+        OAMEntry() :
+            OAMEntryFetchInfo() {
+        }
+        explicit OAMEntry(const OAMEntryFetchInfo& other);
+        OAMEntry& operator=(const OAMEntryFetchInfo& other) {
+            number = other.number;
+            x = other.x;
+            y = other.y;
+            return *this;
+        }
+
+        uint8_t flags {}; // byte 3
+    };
+
+    struct Pixel {
+        explicit Pixel(uint8_t colorIndex);
+
+        uint8_t colorIndex {}; // color value between 0 and 3
+    };
+
+    using BGPixel = Pixel;
+
+    struct OBJPixel : Pixel {
+        explicit OBJPixel(uint8_t colorIndex, const OAMEntry& entry);
+
+        uint8_t palette {};   // palette
+        uint8_t priority {};  // oam number
+        uint8_t x {};         // oam x
+        uint8_t bgOverObj {}; // render bg over obj
+    };
+
+    using BGPixelFIFO = std::deque<BGPixel>;
+    using OBJPixelFIFO = std::deque<OBJPixel>;
 
     class Fetcher {
     public:
-        Fetcher(ILCDIO& lcdIo, IMemory& vram, IMemory& oam, PixelFIFO& bgFifo, PixelFIFO& objFifo);
+        Fetcher(ILCDIO& lcdIo, IMemory& vram, IMemory& oam, BGPixelFIFO& bgFifo, OBJPixelFIFO& objFifo);
 
         void tick();
         void reset();
@@ -53,7 +79,7 @@ protected:
         // TODO: don't like
         [[nodiscard]] bool isFetchingSprite() const;
 
-        void setOAMEntriesHit(const std::vector<OAMEntry>& entries);
+        void setOAMEntriesHit(const std::vector<OAMEntryFetchInfo>& entries);
 
     private:
         // base class for BGPrefetcher, OBJPrefetcher, PixelSliceFetcher
@@ -121,13 +147,12 @@ protected:
         public:
             explicit OBJPrefetcher(ILCDIO& lcdIo, IMemory& oam);
 
-            void setOAMEntry(const OAMEntry& oamEntry);
+            void setOAMEntryFetchInfo(const OAMEntryFetchInfo& oamEntry);
             [[nodiscard]] OAMEntry getOAMEntry() const;
 
             [[nodiscard]] bool areTileDataAddressAndFlagsReady() const;
 
             [[nodiscard]] uint16_t getTileDataAddress() const;
-            [[nodiscard]] uint8_t getOAMFlags() const;
 
         private:
             void tick_GetTile1();
@@ -141,12 +166,9 @@ protected:
             // scratchpad
             uint8_t tileNumber;
 
-            // in
-            OAMEntry entry;
-
             // out
             uint16_t tileDataAddr;
-            uint8_t oamFlags;
+            OAMEntry entry;
         };
 
         class PixelSliceFetcher : public Processor<PixelSliceFetcher> {
@@ -183,11 +205,11 @@ protected:
         enum class FIFOType { Bg, Obj };
         enum class State { Prefetcher, PixelSliceFetcher, Pushing };
 
-        PixelFIFO& bgFifo;
-        PixelFIFO& objFifo;
+        BGPixelFIFO& bgFifo;
+        OBJPixelFIFO& objFifo;
 
         State state;
-        std::vector<OAMEntry> oamEntriesHit;
+        std::vector<OAMEntryFetchInfo> oamEntriesHit;
         FIFOType targetFifo;
 
         bool firstFetch;
@@ -222,9 +244,9 @@ protected:
     void setState(PPU::State s);
     void setLY(uint8_t LY);
 
-    uint8_t LY() const;
+    [[nodiscard]] uint8_t LY() const;
 
-    bool isFifoBlocked() const;
+    [[nodiscard]] bool isFifoBlocked() const;
 
     void turnOn();
     void turnOff();
@@ -241,7 +263,7 @@ protected:
     bool on;
     State state;
 
-    std::vector<OAMEntry> scanlineOamEntries;
+    std::vector<OAMEntryFetchInfo> scanlineOamEntries;
     struct {
         struct {
             uint8_t y;
@@ -253,8 +275,8 @@ protected:
 
     Fetcher fetcher;
 
-    PixelFIFO bgFifo;
-    PixelFIFO objFifo;
+    BGPixelFIFO bgFifo;
+    OBJPixelFIFO objFifo;
 
     uint8_t LX;
 

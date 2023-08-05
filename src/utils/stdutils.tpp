@@ -1,10 +1,17 @@
-#include <vector>
 #include <cassert>
 
-template <typename T>
-const T& pop(std::vector<T>& vector) {
-    assert(!vector.empty());
-    const auto& value = vector.back();
-    vector.pop_back();
+template <template <typename> class CONTAINER, typename T>
+const T& pop(CONTAINER<T>& container) {
+    assert(!container.empty());
+    const auto& value = container.back();
+    container.pop_back();
+    return value;
+}
+
+template <template <typename> class CONTAINER, typename T>
+const T& pop_front(CONTAINER<T>& container) {
+    assert(!container.empty());
+    const auto& value = container.front();
+    container.pop_front();
     return value;
 }

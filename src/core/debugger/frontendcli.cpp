@@ -107,14 +107,14 @@ struct CommandInfo {
 static CommandInfo COMMANDS[] = {
     {std::regex(R"(b\s+([0-9a-fA-F]{1,4}))"), "b <addr>", "Set breakpoint at <addr>",
      [](const std::vector<std::string>& groups) -> Command {
-         CommandBreakpoint cmd{};
+         CommandBreakpoint cmd {};
          cmd.address = std::stoi(groups[0], nullptr, 16);
          return cmd;
      }},
     {std::regex(R"(w(?:/([ra]))?\s+([0-9a-fA-F]{1,4}),([0-9a-fA-F]{1,4})\s*(.*)?)"), "w[/r|a] <start>,<end> [<cond>]",
      "Set watchpoint from <start> to <end>",
      [](const std::vector<std::string>& groups) -> Command {
-         CommandWatchpoint cmd{};
+         CommandWatchpoint cmd {};
          const std::string& access = groups[0];
          const std::string& from = groups[1];
          const std::string& to = groups[2];
@@ -146,7 +146,7 @@ static CommandInfo COMMANDS[] = {
      }},
     {std::regex(R"(w(?:/([ra]))?\s+([0-9a-fA-F]{1,4})\s*(.*)?)"), "w[/r|a] <addr> [<cond>]", "Set watchpoint at <addr>",
      [](const std::vector<std::string>& groups) -> Command {
-         CommandWatchpoint cmd{};
+         CommandWatchpoint cmd {};
          const std::string& access = groups[0];
          const std::string& from = groups[1];
          const std::string& condition = groups[2];
@@ -176,7 +176,7 @@ static CommandInfo COMMANDS[] = {
      }},
     {std::regex(R"(del\s*(\d+)?)"), "del <num>", "Delete breakpoint or watchpoint <num>",
      [](const std::vector<std::string>& groups) -> Command {
-         CommandDelete cmd{};
+         CommandDelete cmd {};
          const std::string& num = groups[0];
          if (!num.empty())
              cmd.num = std::stoi(num);
@@ -184,7 +184,7 @@ static CommandInfo COMMANDS[] = {
      }},
     {std::regex(R"(d\s*(\d+)?)"), "d [<n>]", "Disassemble next <n> instructions (default = 10)",
      [](const std::vector<std::string>& groups) -> Command {
-         CommandDisassemble cmd{};
+         CommandDisassemble cmd {};
          const std::string& n = groups[0];
          cmd.n = !n.empty() ? std::stoi(n) : 10;
          return cmd;
@@ -192,7 +192,7 @@ static CommandInfo COMMANDS[] = {
     {std::regex(R"(d\s+(\[0-9a-fA-F]{1,4}),([0-9a-fA-F]{1,4}))"), "d <start>,<end>",
      "Disassemble instructions from address <start> to <end>",
      [](const std::vector<std::string>& groups) -> Command {
-         CommandDisassembleRange cmd{};
+         CommandDisassembleRange cmd {};
          cmd.from = std::stoi(groups[0], nullptr, 16);
          cmd.to = std::stoi(groups[1], nullptr, 16);
          return cmd;
@@ -200,7 +200,7 @@ static CommandInfo COMMANDS[] = {
     {std::regex(R"(x(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+([0-9a-fA-F]{1,4}))"), "x[/<length><format>] <addr>",
      "Display memory content at <addr> (<format>: x, h[<cols>], b, d, i)",
      [](const std::vector<std::string>& groups) -> Command {
-         CommandExamine cmd{};
+         CommandExamine cmd {};
          const std::string& length = groups[0];
          const std::string& format = groups[1];
          const std::string& formatArg = groups[2];
@@ -215,7 +215,7 @@ static CommandInfo COMMANDS[] = {
     {std::regex(R"(display(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+([0-9a-fA-F]{1,4}))"), "display[/<length><format>] <addr>",
      "Automatically display memory content content at <addr> (<format>: x, h[<cols>], b, d, i)",
      [](const std::vector<std::string>& groups) -> Command {
-         CommandDisplay cmd{};
+         CommandDisplay cmd {};
          const std::string& length = groups[0];
          const std::string& format = groups[1];
          const std::string& formatArg = groups[2];
@@ -229,50 +229,50 @@ static CommandInfo COMMANDS[] = {
      }},
     {std::regex(R"(undisplay)"), "undisplay", "Undisplay expressions set with display",
      [](const std::vector<std::string>& groups) -> Command {
-         CommandUndisplay cmd{};
+         CommandUndisplay cmd {};
          return cmd;
      }},
     {std::regex(R"(\.\s*(\d+)?)"), ". [<count>]", "Continue running for <count> PPU dots (default = 1)",
      [](const std::vector<std::string>& groups) -> Command {
          const std::string& count = groups[0];
          uint64_t n = count.empty() ? 1 : std::stoi(count);
-         return CommandDot{.count = n};
+         return CommandDot {.count = n};
      }},
     {std::regex(R"(s\s*(\d+)?)"), "s [<count>]", "Continue running for <count> instructions (default = 1)",
      [](const std::vector<std::string>& groups) -> Command {
          const std::string& count = groups[0];
          uint64_t n = count.empty() ? 1 : std::stoi(count);
-         return CommandStep{.count = n};
+         return CommandStep {.count = n};
      }},
     {std::regex(R"(si\s*(\d+)?)"), "si [<count>]", "Continue running for <count> micro-operations (default = 1)",
      [](const std::vector<std::string>& groups) -> Command {
          const std::string& count = groups[0];
          uint64_t n = count.empty() ? 1 : std::stoi(count);
-         return CommandMicroStep{.count = n};
+         return CommandMicroStep {.count = n};
      }},
     {std::regex(R"(n\s*(\d+)?)"), "n [<count>]",
      "Continue running for <count> instructions at the same stack level (default = 1)",
      [](const std::vector<std::string>& groups) -> Command {
          const std::string& count = groups[0];
          uint64_t n = count.empty() ? 1 : std::stoi(count);
-         return CommandNext{.count = n};
+         return CommandNext {.count = n};
      }},
     {std::regex(R"(ni\s*(\d+)?)"), "ni [<count>]",
      "Continue running for <count> micro-operations at the same stack level (default = 1)",
      [](const std::vector<std::string>& groups) -> Command {
          const std::string& count = groups[0];
          uint64_t n = count.empty() ? 1 : std::stoi(count);
-         return CommandMicroNext{.count = n};
+         return CommandMicroNext {.count = n};
      }},
     {std::regex(R"(f\s*(\d+)?)"), "f [<count>]", "Step by <count> frames (default = 1)",
      [](const std::vector<std::string>& groups) -> Command {
          const std::string& count = groups[0];
          uint64_t n = count.empty() ? 1 : std::stoi(count);
-         return CommandFrame{.count = n};
+         return CommandFrame {.count = n};
      }},
     {std::regex(R"(c)"), "c", "Continue",
      [](const std::vector<std::string>& groups) -> Command {
-         return CommandContinue{};
+         return CommandContinue {};
      }},
     {std::regex(R"(trace\s*(on|off)?)"), "trace [on|off]", "Enable/disable state trace (output on standard error)",
      [](const std::vector<std::string>& groups) -> Command {
@@ -284,11 +284,11 @@ static CommandInfo COMMANDS[] = {
      }},
     {std::regex(R"(h(?:elp)?)"), "h", "Display help",
      [](const std::vector<std::string>& groups) -> Command {
-         return CommandHelp{};
+         return CommandHelp {};
      }},
     {std::regex(R"(q)"), "q", "Quit",
      [](const std::vector<std::string>& groups) -> Command {
-         return CommandQuit{};
+         return CommandQuit {};
      }},
 };
 
@@ -332,7 +332,7 @@ DebuggerFrontendCli::Config DebuggerFrontendCli::Config::makeDefault() {
                          .flags = true,
                          .registers = true,
                          .interrupts = true,
-                         .io{
+                         .io {
                              .joypad = true,
                              .serial = true,
                              .timers = true,
@@ -649,7 +649,7 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
 
         if (config.sections.ppu) {
 
-            auto oamEntryToString = [](const PPU::OAMEntry& entry) {
+            auto oamEntryToString = [](const PPU::OAMEntryFetchInfo& entry) {
                 std::stringstream ss;
                 ss << "[" << std::setw(2) << +entry.number << ", (" << std::setw(3) << std::right << +(entry.x - 8)
                    << "," << std::setw(3) << std::right << +(entry.y - 16) << ")]";
@@ -666,11 +666,11 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
 
             std::vector<uint8_t> bgFifo;
             for (const auto& p : ppu.ppu.bgFifo)
-                bgFifo.push_back(p.color);
+                bgFifo.push_back(p.colorIndex);
 
             std::vector<uint8_t> objFifo;
             for (const auto& p : ppu.ppu.objFifo)
-                objFifo.push_back(p.color);
+                objFifo.push_back(p.colorIndex);
 
             std::cout << termcolor::yellow << "State           :  " << termcolor::reset
                       << ppuStateToString(ppu.ppu.state) << " (" << ppu.ppu.dots << " dots)" << std::endl;
@@ -699,7 +699,7 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
             std::vector<uint8_t> fetchedTile;
 
             for (const auto& p : ppu.fetcher.pixelSliceFetcherTile.data)
-                fetchedTile.push_back(p.color);
+                fetchedTile.push_back(p.colorIndex);
 
             std::cout << termcolor::yellow << "Tile Fetched    :  " << termcolor::reset << hex(fetchedTile);
             if (!fetchedTile.empty())
@@ -938,29 +938,29 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
                               .format = display.format,
                               .formatArg = display.formatArg,
                               .length = display.length,
-                              .expression = DisplayEntry::Examine{.address = display.address}};
+                              .expression = DisplayEntry::Examine {.address = display.address}};
             displayEntries.push_back(d);
             printDisplayEntry(d);
         } else if (std::holds_alternative<CommandUndisplay>(cmd)) {
             displayEntries.clear();
         } else if (std::holds_alternative<CommandDot>(cmd)) {
             CommandDot dot = std::get<CommandDot>(cmd);
-            return Debugger::CommandDot{.count = dot.count};
+            return Debugger::CommandDot {.count = dot.count};
         } else if (std::holds_alternative<CommandStep>(cmd)) {
             CommandStep step = std::get<CommandStep>(cmd);
-            return Debugger::CommandStep{.count = step.count};
+            return Debugger::CommandStep {.count = step.count};
         } else if (std::holds_alternative<CommandMicroStep>(cmd)) {
             CommandMicroStep step = std::get<CommandMicroStep>(cmd);
-            return Debugger::CommandMicroStep{.count = step.count};
+            return Debugger::CommandMicroStep {.count = step.count};
         } else if (std::holds_alternative<CommandNext>(cmd)) {
             CommandNext next = std::get<CommandNext>(cmd);
-            return Debugger::CommandNext{.count = next.count};
+            return Debugger::CommandNext {.count = next.count};
         } else if (std::holds_alternative<CommandMicroNext>(cmd)) {
             CommandMicroNext next = std::get<CommandMicroNext>(cmd);
-            return Debugger::CommandMicroNext{.count = next.count};
+            return Debugger::CommandMicroNext {.count = next.count};
         } else if (std::holds_alternative<CommandFrame>(cmd)) {
             CommandFrame frame = std::get<CommandFrame>(cmd);
-            return Debugger::CommandFrame{.count = frame.count};
+            return Debugger::CommandFrame {.count = frame.count};
         } else if (std::holds_alternative<CommandContinue>(cmd)) {
             return Debugger::CommandContinue();
         } else if (std::holds_alternative<CommandTrace>(cmd)) {

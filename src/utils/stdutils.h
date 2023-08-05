@@ -1,10 +1,11 @@
 #ifndef STDUTILS_H
 #define STDUTILS_H
 
-#include <vector>
+template <template <typename> class CONTAINER, typename T>
+const T& pop(CONTAINER<T>& container);
 
-template <typename T>
-const T& pop(std::vector<T>& vector);
+template <template <typename> class CONTAINER, typename T>
+const T& pop_front(CONTAINER<T>& container);
 
 #include "stdutils.tpp"
 
