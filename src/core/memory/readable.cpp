@@ -15,3 +15,11 @@ ReadOnlyMemory::ReadOnlyMemory(std::vector<uint8_t>&& data) {
 uint8_t ReadOnlyMemory::read(uint16_t index) const {
     return memory[index];
 }
+
+ReadMemoryException::ReadMemoryException(const std::string& what) {
+    error = what;
+}
+
+const char* ReadMemoryException::what() const noexcept {
+    return error.c_str();
+}

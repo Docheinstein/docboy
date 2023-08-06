@@ -3,7 +3,17 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
+
+class ReadMemoryException : public std::exception {
+public:
+    explicit ReadMemoryException(const std::string& what);
+    [[nodiscard]] const char* what() const noexcept override;
+
+private:
+    std::string error;
+};
 
 class IReadableMemory {
 public:

@@ -2,6 +2,7 @@
 #define DEBUGGERREADABLE_H
 
 #include "core/memory/readable.h"
+#include <string>
 
 class IReadableDebug {
 public:
@@ -9,6 +10,7 @@ public:
     public:
         virtual ~Observer() = default;
         virtual void onRead(uint16_t addr, uint8_t value) = 0;
+        virtual void onReadError(uint16_t addr, const std::string& error) = 0;
     };
     virtual ~IReadableDebug() = default;
 

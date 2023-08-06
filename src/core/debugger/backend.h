@@ -78,7 +78,9 @@ public:
 
     bool onTick(uint64_t tick) override;
     void onMemoryRead(uint16_t addr, uint8_t value) override;
+    void onMemoryReadError(uint16_t addr, const std::string& error) override;
     void onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
+    void onMemoryWriteError(uint16_t addr, const std::string& error) override;
 
 private:
     ICoreDebug& core;
@@ -93,6 +95,8 @@ private:
     uint32_t nextPointId;
 
     std::optional<Debugger::WatchpointHit> watchpointHit;
+    std::optional<Debugger::MemoryReadError> memoryReadError;
+    std::optional<Debugger::MemoryWriteError> memoryWriteError;
 
     std::optional<Debugger::Command> command;
     struct {

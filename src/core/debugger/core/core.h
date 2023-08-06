@@ -20,7 +20,9 @@ public:
         virtual ~Observer() = default;
         virtual bool onTick(uint64_t tick) = 0;
         virtual void onMemoryRead(uint16_t addr, uint8_t value) = 0;
+        virtual void onMemoryReadError(uint16_t addr, const std::string& error) = 0;
         virtual void onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) = 0;
+        virtual void onMemoryWriteError(uint16_t addr, const std::string& error) = 0;
     };
     virtual ~ICoreDebug() = default;
 
@@ -46,7 +48,9 @@ private:
     public:
         explicit MemoryObserver(IMemoryDebug::Observer& observer, uint16_t base = 0);
         void onRead(uint16_t addr, uint8_t value) override;
+        void onReadError(uint16_t addr, const std::string& error) override;
         void onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
+        void onWriteError(uint16_t addr, const std::string& error) override;
 
     private:
         IMemoryDebug::Observer& observer;
@@ -251,8 +255,10 @@ private:
         IMemoryDebug::Observer& observer;
     };
 
-    void onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
     void onRead(uint16_t addr, uint8_t value) override;
+    void onReadError(uint16_t addr, const std::string& error) override;
+    void onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) override;
+    void onWriteError(uint16_t addr, const std::string& error) override;
 
     ICoreDebug::Observer* observer;
 

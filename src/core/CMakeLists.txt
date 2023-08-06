@@ -58,6 +58,7 @@ set(SOURCES
         memory/memory.h
         memory/readable.cpp
         memory/readable.h
+        memory/writable.cpp
         memory/writable.h
         ppu/lcdcontroller.cpp
         ppu/lcdcontroller.h

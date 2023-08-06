@@ -10,6 +10,7 @@ public:
     public:
         virtual ~Observer() = default;
         virtual void onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) = 0;
+        virtual void onWriteError(uint16_t addr, const std::string& error) = 0;
     };
 
     virtual ~IWritableDebug() = default;

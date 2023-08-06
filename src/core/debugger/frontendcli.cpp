@@ -356,7 +356,7 @@ DebuggerFrontendCli::~DebuggerFrontendCli() {
     detach_sigint_handler();
 }
 
-Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outcome) {
+Debugger::Command DebuggerFrontendCli::pullCommand(const Debugger::ExecutionState& outcome) {
     struct DisassembleEntry {
         uint16_t address;
         Debugger::Disassemble disassemble;
@@ -836,14 +836,14 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
             }
         }
 
-        if (outcome.state == Debugger::ExecutionState::State::BreakpointHit) {
+        if (std::holds_alternative<Debugger::ExecutionStates::BreakpointHit>(outcome)) {
             std::cout << headerString("interruption") << std::endl;
-            auto hit = outcome.breakpointHit;
+            auto hit = std::get<Debugger::ExecutionStates::BreakpointHit>(outcome).breakpointHit;
             std::cout << "Triggered breakpoint [" << hit.breakpoint.id << "] at address " << hex(hit.breakpoint.address)
                       << std::endl;
-        } else if (outcome.state == Debugger::ExecutionState::State::WatchpointHit) {
+        } else if (std::holds_alternative<Debugger::ExecutionStates::WatchpointHit>(outcome)) {
             std::cout << headerString("interruption") << std::endl;
-            auto hit = outcome.watchpointHit;
+            auto hit = std::get<Debugger::ExecutionStates::WatchpointHit>(outcome).watchpointHit;
             std::cout << "Triggered watchpoint [" << hit.watchpoint.id << "] at address " << hex(hit.address)
                       << std::endl;
             if (hit.accessType == Debugger::WatchpointHit::AccessType::Read) {
@@ -853,9 +853,17 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
                 std::cout << "Old: " << hex(hit.oldValue) << std::endl;
                 std::cout << "New: " << hex(hit.newValue) << std::endl;
             }
-        } else if (outcome.state == Debugger::ExecutionState::State::Interrupted) {
+        } else if (std::holds_alternative<Debugger::ExecutionStates::Interrupted>(outcome)) {
             std::cout << headerString("interruption") << std::endl;
             std::cout << "User interruption requested" << std::endl;
+        } else if (std::holds_alternative<Debugger::ExecutionStates::MemoryReadError>(outcome)) {
+            std::cout << headerString("memory read error") << std::endl;
+            auto readError = std::get<Debugger::ExecutionStates::MemoryReadError>(outcome).readError;
+            std::cout << "Failed to read from " << hex(readError.address) << ": " << readError.error << std::endl;
+        } else if (std::holds_alternative<Debugger::ExecutionStates::MemoryWriteError>(outcome)) {
+            std::cout << headerString("memory write error") << std::endl;
+            auto writeError = std::get<Debugger::ExecutionStates::MemoryWriteError>(outcome).writeError;
+            std::cout << "Failed to write to " << hex(writeError.address) << ": " << writeError.error << std::endl;
         }
     };
 
@@ -884,7 +892,7 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
         }
 
         if (std::cin.fail() || std::cin.eof()) // CTRL+D
-            return Debugger::CommandAbort();
+            return Debugger::Commands::Abort();
 
         if (command.empty())
             command = lastCommand;
@@ -945,24 +953,24 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
             displayEntries.clear();
         } else if (std::holds_alternative<CommandDot>(cmd)) {
             CommandDot dot = std::get<CommandDot>(cmd);
-            return Debugger::CommandDot {.count = dot.count};
+            return Debugger::Commands::Dot {.count = dot.count};
         } else if (std::holds_alternative<CommandStep>(cmd)) {
             CommandStep step = std::get<CommandStep>(cmd);
-            return Debugger::CommandStep {.count = step.count};
+            return Debugger::Commands::Step {.count = step.count};
         } else if (std::holds_alternative<CommandMicroStep>(cmd)) {
             CommandMicroStep step = std::get<CommandMicroStep>(cmd);
-            return Debugger::CommandMicroStep {.count = step.count};
+            return Debugger::Commands::MicroStep {.count = step.count};
         } else if (std::holds_alternative<CommandNext>(cmd)) {
             CommandNext next = std::get<CommandNext>(cmd);
-            return Debugger::CommandNext {.count = next.count};
+            return Debugger::Commands::Next {.count = next.count};
         } else if (std::holds_alternative<CommandMicroNext>(cmd)) {
             CommandMicroNext next = std::get<CommandMicroNext>(cmd);
-            return Debugger::CommandMicroNext {.count = next.count};
+            return Debugger::Commands::MicroNext {.count = next.count};
         } else if (std::holds_alternative<CommandFrame>(cmd)) {
             CommandFrame frame = std::get<CommandFrame>(cmd);
-            return Debugger::CommandFrame {.count = frame.count};
+            return Debugger::Commands::Frame {.count = frame.count};
         } else if (std::holds_alternative<CommandContinue>(cmd)) {
-            return Debugger::CommandContinue();
+            return Debugger::Commands::Continue();
         } else if (std::holds_alternative<CommandTrace>(cmd)) {
             CommandTrace cmdTrace = std::get<CommandTrace>(cmd);
             if (cmdTrace.enabled)
@@ -973,7 +981,7 @@ Debugger::Command DebuggerFrontendCli::pullCommand(Debugger::ExecutionState outc
         } else if (std::holds_alternative<CommandHelp>(cmd)) {
             printHelp();
         } else if (std::holds_alternative<CommandQuit>(cmd)) {
-            return Debugger::CommandAbort();
+            return Debugger::Commands::Abort();
         }
     } while (true);
 }

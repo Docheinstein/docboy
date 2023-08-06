@@ -45,7 +45,7 @@ const std::vector<Debugger::Breakpoint>& DebuggerBackend::getBreakpoints() const
 uint32_t DebuggerBackend::addWatchpoint(Debugger::Watchpoint::Type type, uint16_t from, uint16_t to,
                                         std::optional<Debugger::Watchpoint::Condition> cond) {
     uint32_t id = nextPointId++;
-    Debugger::Watchpoint w{
+    Debugger::Watchpoint w {
         .id = id,
         .type = type,
         .address = {.from = from, .to = to},
@@ -105,7 +105,7 @@ void DebuggerBackend::disassembleRange(uint16_t from, uint16_t to) {
 std::optional<Debugger::Disassemble> DebuggerBackend::doDisassemble(uint16_t addr) {
     uint32_t addressCursor = addr;
     uint8_t opcode = readMemory(addressCursor++);
-    Debugger::Disassemble instruction{opcode};
+    Debugger::Disassemble instruction {opcode};
 
     // this works for CB and non CB because all CB instructions have length 2
     uint8_t length = instruction_length(opcode);
@@ -157,6 +157,10 @@ void DebuggerBackend::onMemoryRead(uint16_t addr, uint8_t value) {
     }
 }
 
+void DebuggerBackend::onMemoryReadError(uint16_t addr, const std::string& error) {
+    memoryReadError = {addr, error};
+}
+
 void DebuggerBackend::onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) {
     auto w = getWatchpoint(addr);
     if (w) {
@@ -174,19 +178,22 @@ void DebuggerBackend::onMemoryWrite(uint16_t addr, uint8_t oldValue, uint8_t new
         }
     }
 }
+void DebuggerBackend::onMemoryWriteError(uint16_t addr, const std::string& error) {
+    memoryWriteError = {addr, error};
+}
 
 bool DebuggerBackend::onTick(uint64_t tick) {
-    auto pullCommand = [&](Debugger::ExecutionState state) {
+    auto pullCommand = [&](const Debugger::ExecutionState& state) {
         command = this->frontend->pullCommand(state);
         commandState.counter = 0;
-        if (std::holds_alternative<Debugger::CommandNext>(*command)) {
+        if (std::holds_alternative<Debugger::Commands::Next>(*command)) {
             commandState.stackLevel = getCPUState().registers.SP;
         }
-        if (std::holds_alternative<Debugger::CommandMicroNext>(*command)) {
+        if (std::holds_alternative<Debugger::Commands::MicroNext>(*command)) {
             commandState.stackLevel = getCPUState().registers.SP;
         }
-        if (std::holds_alternative<Debugger::CommandDot>(*command)) {
-            Debugger::CommandDot cmdDot = std::get<Debugger::CommandDot>(*command);
+        if (std::holds_alternative<Debugger::Commands::Dot>(*command)) {
+            Debugger::Commands::Dot cmdDot = std::get<Debugger::Commands::Dot>(*command);
             commandState.target = getPPUState().ppu.cycles + cmdDot.count;
         }
     };
@@ -203,7 +210,21 @@ bool DebuggerBackend::onTick(uint64_t tick) {
 
     if (interrupted) {
         interrupted = false;
-        pullCommand({.state = Debugger::ExecutionState::State::Interrupted});
+        pullCommand(Debugger::ExecutionStates::Interrupted());
+        return true;
+    }
+
+    if (memoryReadError) {
+        Debugger::ExecutionState outcome = Debugger::ExecutionStates::MemoryReadError {*memoryReadError};
+        memoryReadError = std::nullopt;
+        pullCommand(outcome);
+        return true;
+    }
+
+    if (memoryWriteError) {
+        Debugger::ExecutionState outcome = Debugger::ExecutionStates::MemoryWriteError {*memoryWriteError};
+        memoryWriteError = std::nullopt;
+        pullCommand(outcome);
         return true;
     }
 
@@ -214,8 +235,7 @@ bool DebuggerBackend::onTick(uint64_t tick) {
             disassemble(cpu.instruction.address, 1);
             auto b = getBreakpoint(cpu.instruction.address);
             if (b) {
-                Debugger::ExecutionState outcome = {.state = Debugger::ExecutionState::State::BreakpointHit,
-                                                    .breakpointHit = {*b}};
+                Debugger::ExecutionState outcome = Debugger::ExecutionStates::BreakpointHit {*b};
                 pullCommand(outcome);
                 return true;
             }
@@ -223,71 +243,70 @@ bool DebuggerBackend::onTick(uint64_t tick) {
     }
 
     if (watchpointHit) {
-        Debugger::ExecutionState outcome = {.state = Debugger::ExecutionState::State::WatchpointHit,
-                                            .watchpointHit = *watchpointHit};
+        Debugger::ExecutionState outcome = Debugger::ExecutionStates::WatchpointHit {*watchpointHit};
         watchpointHit = std::nullopt;
         pullCommand(outcome);
         return true;
     }
 
     if (!command) {
-        pullCommand({.state = Debugger::ExecutionState::State::Completed});
+        pullCommand(Debugger::ExecutionStates::Completed());
         return true;
     }
 
     const Debugger::Command& cmd = *command;
 
-    if (std::holds_alternative<Debugger::CommandDot>(cmd)) {
+    if (std::holds_alternative<Debugger::Commands::Dot>(cmd)) {
         if (gameboy.getPPUDebug().getState().ppu.cycles >= commandState.target)
-            pullCommand({.state = Debugger::ExecutionState::State::Completed});
+            pullCommand(Debugger::ExecutionStates::Completed());
         return true;
     }
 
     if (isMcycle) {
-        if (std::holds_alternative<Debugger::CommandStep>(cmd)) {
-            Debugger::CommandStep cmdStep = std::get<Debugger::CommandStep>(cmd);
+        if (std::holds_alternative<Debugger::Commands::Step>(cmd)) {
+            Debugger::Commands::Step cmdStep = std::get<Debugger::Commands::Step>(cmd);
             if (!cpu.instruction.ISR && cpu.instruction.microop == 0) {
                 commandState.counter++;
                 if (commandState.counter >= cmdStep.count)
-                    pullCommand({.state = Debugger::ExecutionState::State::Completed});
+                    pullCommand(Debugger::ExecutionStates::Completed());
             }
             return true;
-        } else if (std::holds_alternative<Debugger::CommandMicroStep>(cmd)) {
-            Debugger::CommandMicroStep cmdMicroStep = std::get<Debugger::CommandMicroStep>(cmd);
+        } else if (std::holds_alternative<Debugger::Commands::MicroStep>(cmd)) {
+            Debugger::Commands::MicroStep cmdMicroStep = std::get<Debugger::Commands::MicroStep>(cmd);
             commandState.counter++;
             if (commandState.counter >= cmdMicroStep.count)
-                pullCommand({.state = Debugger::ExecutionState::State::Completed});
+                pullCommand(Debugger::ExecutionStates::Completed());
             return true;
-        } else if (std::holds_alternative<Debugger::CommandNext>(cmd)) {
-            Debugger::CommandNext cmdStep = std::get<Debugger::CommandNext>(cmd);
+        } else if (std::holds_alternative<Debugger::Commands::Next>(cmd)) {
+            Debugger::Commands::Next cmdStep = std::get<Debugger::Commands::Next>(cmd);
             if (!cpu.instruction.ISR && cpu.instruction.microop == 0) {
                 if (cpu.registers.SP == commandState.stackLevel)
                     commandState.counter++;
                 if (commandState.counter >= cmdStep.count || cpu.registers.SP > commandState.stackLevel)
-                    pullCommand({.state = Debugger::ExecutionState::State::Completed});
+                    pullCommand(Debugger::ExecutionStates::Completed());
             }
             return true;
-        } else if (std::holds_alternative<Debugger::CommandMicroNext>(cmd)) {
-            Debugger::CommandMicroNext cmdMicroNext = std::get<Debugger::CommandMicroNext>(cmd);
+        } else if (std::holds_alternative<Debugger::Commands::MicroNext>(cmd)) {
+            Debugger::Commands::MicroNext cmdMicroNext = std::get<Debugger::Commands::MicroNext>(cmd);
             if (cpu.registers.SP == commandState.stackLevel)
                 commandState.counter++;
             if (commandState.counter >= cmdMicroNext.count || cpu.registers.SP > commandState.stackLevel)
-                pullCommand({.state = Debugger::ExecutionState::State::Completed});
+                pullCommand(Debugger::ExecutionStates::Completed());
             return true;
-        } else if (std::holds_alternative<Debugger::CommandFrame>(cmd)) {
-            Debugger::CommandFrame cmdFrame = std::get<Debugger::CommandFrame>(cmd);
+        } else if (std::holds_alternative<Debugger::Commands::Frame>(cmd)) {
+            Debugger::Commands::Frame cmdFrame = std::get<Debugger::Commands::Frame>(cmd);
             // TODO: don't like ppu.getDots() == 0
             Debugger::PPUState ppu = gameboy.getPPUDebug().getState();
             if (ppu.ppu.state == IPPUDebug::PPUState::VBlank && ppu.ppu.dots == 0 &&
                 get_bit<Bits::LCD::LCDC::LCD_ENABLE>(readMemory(Registers::LCD::LCDC))) {
                 commandState.counter++;
                 if (commandState.counter >= cmdFrame.count)
-                    pullCommand({.state = Debugger::ExecutionState::State::Completed});
+                    pullCommand(Debugger::ExecutionStates::Completed());
             }
             return true;
-        } else if (std::holds_alternative<Debugger::CommandContinue>(cmd)) {
+        } else if (std::holds_alternative<Debugger::Commands::Continue>(cmd)) {
             return true;
-        } else if (std::holds_alternative<Debugger::CommandAbort>(cmd)) {
+        } else if (std::holds_alternative<Debugger::Commands::Abort>(cmd)) {
             return false;
         }
     }

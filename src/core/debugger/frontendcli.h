@@ -44,7 +44,7 @@ public:
 
     void setObserver(Observer* observer);
 
-    Debugger::Command pullCommand(Debugger::ExecutionState outcome) override;
+    Debugger::Command pullCommand(const Debugger::ExecutionState& outcome) override;
     void onTick(uint64_t tick) override;
 
 private:

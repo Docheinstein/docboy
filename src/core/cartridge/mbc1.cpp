@@ -31,7 +31,7 @@ uint8_t MBC1::read(uint16_t address) const {
 
         return rom[romAddress];
     }
-    throw std::runtime_error("Read at address " + hex(address) + " is not allowed");
+    throw ReadMemoryException("Read at address " + hex(address) + " is not allowed");
 }
 
 void MBC1::write(uint16_t address, uint8_t value) {
@@ -44,6 +44,6 @@ void MBC1::write(uint16_t address, uint8_t value) {
     } else if (address < 0x8000) {
         mbc.bankingMode = keep_bits<1>(value);
     } else {
-        throw std::runtime_error("Write at address " + hex(address) + " is not allowed");
+        throw WriteMemoryException("Write at address " + hex(address) + " is not allowed");
     }
 }

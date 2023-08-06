@@ -6,8 +6,16 @@ void DebuggableCore::MemoryObserver::onRead(uint16_t addr, uint8_t value) {
     observer.onRead(base + addr, value);
 }
 
+void DebuggableCore::MemoryObserver::onReadError(uint16_t addr, const std::string& error) {
+    observer.onReadError(base + addr, error);
+}
+
 void DebuggableCore::MemoryObserver::onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) {
     observer.onWrite(base + addr, oldValue, newValue);
+}
+
+void DebuggableCore::MemoryObserver::onWriteError(uint16_t addr, const std::string& error) {
+    observer.onWriteError(base + addr, error);
 }
 
 DebuggableCore::MemoryObserver::MemoryObserver(IMemoryDebug::Observer& observer, uint16_t base) :
@@ -45,14 +53,24 @@ DebuggableCore::DebuggableCore(IDebuggableGameBoy& gameboy) :
     gameboy.getBootIODebug().setObserver(&ioObserver);
 }
 
+void DebuggableCore::onRead(uint16_t addr, uint8_t value) {
+    if (observer)
+        observer->onMemoryRead(addr, value);
+}
+
+void DebuggableCore::onReadError(uint16_t addr, const std::string& error) {
+    if (observer)
+        observer->onMemoryReadError(addr, error);
+}
+
 void DebuggableCore::onWrite(uint16_t addr, uint8_t oldValue, uint8_t newValue) {
     if (observer)
         observer->onMemoryWrite(addr, oldValue, newValue);
 }
 
-void DebuggableCore::onRead(uint16_t addr, uint8_t value) {
+void DebuggableCore::onWriteError(uint16_t addr, const std::string& error) {
     if (observer)
-        observer->onMemoryRead(addr, value);
+        observer->onMemoryWriteError(addr, error);
 }
 
 void DebuggableCore::tick() {

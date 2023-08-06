@@ -5,33 +5,36 @@
 #include "lcd/lcd.h"
 #include "ppu/ppu.h"
 #include <cstdint>
+#include <string>
 #include <variant>
 #include <vector>
 
 namespace Debugger {
-struct CommandDot {
+namespace Commands {
+struct Dot {
     uint64_t count;
 };
-struct CommandStep {
+struct Step {
     uint64_t count;
 };
-struct CommandMicroStep {
+struct MicroStep {
     uint64_t count;
 };
-struct CommandNext {
+struct Next {
     uint64_t count;
 };
-struct CommandMicroNext {
+struct MicroNext {
     uint64_t count;
 };
-struct CommandFrame {
+struct Frame {
     uint64_t count;
 };
-struct CommandContinue {};
-struct CommandAbort {};
+struct Continue {};
+struct Abort {};
+} // namespace Commands
 
-typedef std::variant<CommandDot, CommandStep, CommandMicroStep, CommandNext, CommandMicroNext, CommandFrame,
-                     CommandContinue, CommandAbort>
+typedef std::variant<Commands::Dot, Commands::Step, Commands::MicroStep, Commands::Next, Commands::MicroNext,
+                     Commands::Frame, Commands::Continue, Commands::Abort>
     Command;
 
 template <typename Op>
@@ -75,19 +78,50 @@ struct WatchpointHit {
     uint8_t newValue;
 };
 
+struct MemoryReadError {
+    //    ~MemoryReadError() = default;
+    //    MemoryReadError(const MemoryReadError& other) = default;
+    //    MemoryReadError& operator=(const MemoryReadError& other) = default;
+    uint16_t address;
+    std::string error;
+};
+
+struct MemoryWriteError {
+    //    ~MemoryWriteError() = default;
+    //    MemoryWriteError(const MemoryWriteError& other) = default;
+    //    MemoryWriteError& operator=(const MemoryWriteError& other) = default;
+    uint16_t address;
+    std::string error;
+};
+
 typedef std::vector<uint8_t> Disassemble;
 
 using CPUState = ICPUDebug::State;
 using PPUState = IPPUDebug::State;
 using LCDState = ILCDDebug::State;
 
-struct ExecutionState {
-    enum class State { Completed, BreakpointHit, WatchpointHit, Interrupted } state;
-    union {
-        WatchpointHit watchpointHit;
-        BreakpointHit breakpointHit;
-    };
+namespace ExecutionStates {
+struct Completed {};
+struct Interrupted {};
+struct BreakpointHit {
+    Debugger::BreakpointHit breakpointHit;
 };
+struct WatchpointHit {
+    Debugger::WatchpointHit watchpointHit;
+};
+struct MemoryReadError {
+    Debugger::MemoryReadError readError;
+};
+struct MemoryWriteError {
+    Debugger::MemoryWriteError writeError;
+};
+} // namespace ExecutionStates
+
+typedef std::variant<ExecutionStates::Completed, ExecutionStates::Interrupted, ExecutionStates::BreakpointHit,
+                     ExecutionStates::WatchpointHit, ExecutionStates::MemoryReadError,
+                     ExecutionStates::MemoryWriteError>
+    ExecutionState;
+
 } // namespace Debugger
 
 #endif // SHARED_H
