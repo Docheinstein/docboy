@@ -5,6 +5,14 @@ Boot::Boot(std::unique_ptr<IBootROM> bootRom_) :
     bootRom = std::move(bootRom_);
 }
 
+void Boot::loadState(IReadableState& state) {
+    // no need to save/load BOOT flag
+}
+
+void Boot::saveState(IWritableState& state) {
+    // no need to save/load BOOT flag
+}
+
 uint8_t Boot::readBOOT() const {
     return BOOT;
 }

@@ -93,6 +93,10 @@ ITimersIO& DebuggableGameBoy::getTimersIO() {
     return timers;
 }
 
+IDMA& DebuggableGameBoy::getDMA() {
+    return dma;
+}
+
 ICPU& DebuggableGameBoy::getCPU() {
     return cpu;
 }
@@ -185,6 +189,17 @@ IMemoryDebug& DebuggableGameBoy::getCartridgeSlotDebug() {
     return cartridgeSlot;
 }
 
+ICartridge& DebuggableGameBoy::getCartridge() {
+    return cartridgeSlot;
+}
+
 IReadableDebug& DebuggableGameBoy::getBootROMDebug() {
     return boot;
+}
+
+std::vector<IStateProcessor*> DebuggableGameBoy::getStateProcessors() {
+    return {
+        &cpu,  &ppu,        &cartridgeSlot, &vram,       &wram1, &wram2,  &oam, &hram,
+        &boot, &interrupts, &joypad,        &serialPort, &sound, &timers, &dma, &clock,
+    };
 }

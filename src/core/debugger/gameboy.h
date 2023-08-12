@@ -76,15 +76,21 @@ public:
     ISoundIO& getSoundIO() override;
     ITimersIO& getTimersIO() override;
 
+    IDMA& getDMA() override;
+
     ICPU& getCPU() override;
     IPPU& getPPU() override;
     IClock& getClock() override;
 
     IJoypad& getJoypad() override;
     ISerialPort& getSerialPort() override;
+
     ICartridgeSlot& getCartridgeSlot() override;
+    ICartridge& getCartridge() override;
 
     IBus& getBus() override;
+
+    std::vector<IStateProcessor*> getStateProcessors() override;
 
     IMemoryDebug& getVRAMDebug() override;
     IMemoryDebug& getWRAM1Debug() override;

@@ -1,4 +1,5 @@
 #include "mbc1ram.h"
+#include "utils/arrayutils.h"
 
 MBC1RAM::MBC1RAM(const std::vector<uint8_t>& data) :
     MBC1(data),
@@ -8,6 +9,16 @@ MBC1RAM::MBC1RAM(const std::vector<uint8_t>& data) :
 MBC1RAM::MBC1RAM(std::vector<uint8_t>&& data) :
     MBC1(data),
     ram() {
+}
+
+void MBC1RAM::loadState(IReadableState& state) {
+    MBC1::loadState(state);
+    state.readBytes(ram);
+}
+
+void MBC1RAM::saveState(IWritableState& state) {
+    MBC1::saveState(state);
+    state.writeBytes(ram, array_size(ram));
 }
 
 uint8_t MBC1RAM::read(uint16_t address) const {

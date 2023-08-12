@@ -12,6 +12,14 @@ Memory::Memory(std::vector<uint8_t>&& data) {
     memory = std::move(data);
 }
 
+void Memory::loadState(IReadableState& state) {
+    memory = state.readBytes();
+}
+
+void Memory::saveState(IWritableState& state) {
+    state.writeBytes(memory);
+}
+
 uint8_t Memory::read(uint16_t index) const {
     return memory[index];
 }

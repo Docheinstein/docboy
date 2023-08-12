@@ -2,9 +2,13 @@
 #define INTERRUPTS_H
 
 #include "core/io/interrupts.h"
+#include "core/state/processor.h"
 
-class Interrupts : public IInterruptsIO {
+class Interrupts : public IInterruptsIO, public IStateProcessor {
 public:
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
+
     [[nodiscard]] uint8_t readIF() const override;
     void writeIF(uint8_t value) override;
 

@@ -3,6 +3,7 @@
 
 #include "core/io/interrupts.h"
 #include "core/io/joypad.h"
+#include "core/state/processor.h"
 
 class IJoypad {
 public:
@@ -12,7 +13,7 @@ public:
     virtual void setKeyState(Key, KeyState) = 0;
 };
 
-class Joypad : public IJoypad, public IJoypadIO {
+class Joypad : public IJoypad, public IJoypadIO, public IStateProcessor {
 public:
     explicit Joypad(IInterruptsIO& interrupts);
 
@@ -20,6 +21,9 @@ public:
 
     [[nodiscard]] uint8_t readP1() const override;
     void writeP1(uint8_t value) override;
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
 private:
     IInterruptsIO& interrupts;

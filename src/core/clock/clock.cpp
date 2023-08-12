@@ -7,6 +7,14 @@ Clock::Clock() :
     ticks() {
 }
 
+void Clock::loadState(IReadableState& state) {
+    ticks = state.readUInt64();
+}
+
+void Clock::saveState(IWritableState& state) {
+    state.writeUInt64(ticks);
+}
+
 void Clock::tick() {
     // Wait until next tick
     std::chrono::high_resolution_clock::time_point now;

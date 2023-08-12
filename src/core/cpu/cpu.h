@@ -3,20 +3,24 @@
 
 #include "core/boot/bootrom.h"
 #include "core/clock/clockable.h"
+#include "core/state/processor.h"
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
 
-using ICPU = IClockable;
+class ICPU : public IClockable {};
 
 class IBus;
 class ISerialPort;
 
-class CPU : public ICPU {
+class CPU : public ICPU, public IStateProcessor {
 public:
     explicit CPU(IBus& bus, IClockable& timers, IClockable& serial, bool bootRom = false);
     ~CPU() override = default;
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
     void tick() override;
 
@@ -80,6 +84,8 @@ protected:
         bool ISR;
         uint16_t address;
         uint8_t microop;
+        bool cb; // TODO: find another way to save/load from the correct instruction set the current instruction pointer
+                 // instead of using this flag
         InstructionMicroOperation* microopHandler;
     } currentInstruction;
 

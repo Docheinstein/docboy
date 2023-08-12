@@ -3,6 +3,7 @@
 
 #include "joypad/joypad.h"
 #include "serial/link.h"
+#include "state/processor.h"
 #include <memory>
 
 class ICartridge;
@@ -17,10 +18,12 @@ public:
     virtual bool isOn() = 0;
 };
 
-class Core : public ICore {
+class Core : public ICore, public IStateProcessor {
 public:
     explicit Core(IGameBoy& gameboy);
-    ~Core() = default;
+
+    void saveState(IWritableState& state) override;
+    void loadState(IReadableState& state) override;
 
     void loadROM(const std::string& rom);
     void loadROM(std::unique_ptr<ICartridge>);

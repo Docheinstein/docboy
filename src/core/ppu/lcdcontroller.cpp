@@ -17,6 +17,36 @@ LCDController::LCDController(IDMA& dma) :
     WX() {
 }
 
+void LCDController::loadState(IReadableState& state) {
+    LCDC = state.readUInt8();
+    STAT = state.readUInt8();
+    SCY = state.readUInt8();
+    SCX = state.readUInt8();
+    LY = state.readUInt8();
+    LYC = state.readUInt8();
+    DMA = state.readUInt8();
+    BGP = state.readUInt8();
+    OBP0 = state.readUInt8();
+    OBP1 = state.readUInt8();
+    WY = state.readUInt8();
+    WX = state.readUInt8();
+}
+
+void LCDController::saveState(IWritableState& state) {
+    state.writeUInt8(LCDC);
+    state.writeUInt8(STAT);
+    state.writeUInt8(SCY);
+    state.writeUInt8(SCX);
+    state.writeUInt8(LY);
+    state.writeUInt8(LYC);
+    state.writeUInt8(DMA);
+    state.writeUInt8(BGP);
+    state.writeUInt8(OBP0);
+    state.writeUInt8(OBP1);
+    state.writeUInt8(WY);
+    state.writeUInt8(WX);
+}
+
 uint8_t LCDController::readLCDC() const {
     return LCDC;
 }

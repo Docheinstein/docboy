@@ -1,12 +1,18 @@
 set(SOURCES
+    arrayutils.h
+    arrayutils.tpp
     binutils.h
     binutils.cpp
     binutils.tpp
+    enumutils.h
+    enumutils.tpp
     fileutils.h
     fileutils.cpp
     fileutils.tpp
     hexdump.h
     hexdump.cpp
+    iniutils.h
+    iniutils.cpp
     log.h
     log.cpp
     stdutils.h
@@ -15,8 +21,6 @@ set(SOURCES
     strutils.h
     strutils.cpp
     termcolor.h
-        iniutils.h
-        iniutils.cpp
 )
 
 add_library(utils STATIC ${SOURCES})

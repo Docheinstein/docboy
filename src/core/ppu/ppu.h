@@ -2,6 +2,7 @@
 #define PPU_H
 
 #include "core/clock/clockable.h"
+#include "core/state/processor.h"
 #include <cstdint>
 #include <optional>
 #include <queue>
@@ -17,13 +18,16 @@ class ILCDIO;
 class IInterruptsIO;
 class ILCD;
 
-using IPPU = IClockable;
+class IPPU : public IClockable, public IStateProcessor {};
 
 class PPU : public IPPU {
 public:
     PPU(ILCD& lcd, ILCDIO& lcdIo, IInterruptsIO& interrupts, IMemory& vram, IMemory& oam);
 
     void tick() override;
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
 protected:
     typedef void (PPU::*TickHandler)();

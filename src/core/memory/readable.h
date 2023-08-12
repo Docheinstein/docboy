@@ -1,5 +1,5 @@
-#ifndef READABLE_H
-#define READABLE_H
+#ifndef READABLEMEMORY_H
+#define READABLEMEMORY_H
 
 #include <cstddef>
 #include <cstdint>
@@ -32,4 +32,4 @@ private:
     std::vector<uint8_t> memory;
 };
 
-#endif // READABLE_H
+#endif // READABLEMEMORY_H

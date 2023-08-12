@@ -11,6 +11,16 @@ SerialPort::SerialPort(IInterruptsIO& interrupts) :
     SC() {
 }
 
+void SerialPort::loadState(IReadableState& state) {
+    SB = state.readUInt8();
+    SC = state.readUInt8();
+}
+
+void SerialPort::saveState(IWritableState& state) {
+    state.writeUInt8(SB);
+    state.writeUInt8(SC);
+}
+
 uint8_t SerialPort::serialRead() {
     // TODO: interrupt ?
     return readSB();

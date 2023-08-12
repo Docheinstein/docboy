@@ -3,11 +3,15 @@
 
 #include "bootrom.h"
 #include "core/io/boot.h"
+#include "core/state/processor.h"
 #include <memory>
 
-class Boot : public IBootROM, public IBootIO {
+class Boot : public IBootROM, public IBootIO, public IStateProcessor {
 public:
     explicit Boot(std::unique_ptr<IBootROM> bootRom = nullptr);
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
     [[nodiscard]] uint8_t read(uint16_t index) const override;
 

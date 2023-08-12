@@ -2,12 +2,16 @@
 #define LCDCONTROLLER_H
 
 #include "core/io/lcd.h"
+#include "core/state/processor.h"
 
 class IDMA;
 
-class LCDController : public ILCDIO {
+class LCDController : public ILCDIO, public IStateProcessor {
 public:
     explicit LCDController(IDMA& dma);
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
     [[nodiscard]] uint8_t readLCDC() const override;
     void writeLCDC(uint8_t value) override;

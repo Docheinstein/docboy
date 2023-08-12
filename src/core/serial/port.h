@@ -2,6 +2,7 @@
 #define PORT_H
 
 #include "core/io/serial.h"
+#include "core/state/processor.h"
 #include "endpoint.h"
 #include "link.h"
 #include <memory>
@@ -15,9 +16,17 @@ public:
     virtual void detachSerialLink() = 0;
 };
 
-class SerialPort : public ISerialPort, public ISerialEndpoint, public IClockable, public ISerialIO {
+class SerialPort : public ISerialPort,
+                   public ISerialEndpoint,
+                   public IClockable,
+                   public ISerialIO,
+                   public IStateProcessor {
 public:
     explicit SerialPort(IInterruptsIO& interrupts);
+
+    // IStateProcessor
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
     // ISerialPort
     void attachSerialLink(SerialLink::Plug& plug) override;

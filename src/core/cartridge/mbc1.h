@@ -11,10 +11,13 @@
  * fixed 8 KiB of cartridge RAM. All MBC1 cartridges with 1 MiB of ROM or
  * more use this alternate wiring.
  */
-class MBC1 : public Cartridge {
+class MBC1 : public Cartridge, public IStateProcessor {
 public:
     explicit MBC1(const std::vector<uint8_t>& data);
     explicit MBC1(std::vector<uint8_t>&& data);
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
     [[nodiscard]] uint8_t read(uint16_t address) const override;
     void write(uint16_t address, uint8_t value) override;

@@ -21,6 +21,14 @@ Joypad::Joypad(IInterruptsIO& interrupts) :
     std::fill(std::begin(keys), std::end(keys), Released);
 }
 
+void Joypad::loadState(IReadableState& state) {
+    // no need to save/load input state
+}
+
+void Joypad::saveState(IWritableState& state) {
+    // no need to save/load input state
+}
+
 void Joypad::setKeyState(IJoypad::Key key, IJoypad::KeyState state) {
     keys[key] = state;
 

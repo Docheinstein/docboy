@@ -2,6 +2,7 @@
 #define DMA_H
 
 #include "core/clock/clockable.h"
+#include "core/state/processor.h"
 #include <cstdint>
 
 class IBus;
@@ -12,9 +13,13 @@ public:
     virtual void transfer(uint16_t source) = 0;
 };
 
-class DMA : public IDMA, public IClockable {
+class DMA : public IDMA, public IClockable, public IStateProcessor {
 public:
     explicit DMA(IBus& bus);
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
+
     void transfer(uint16_t source) override;
     void tick() override;
 

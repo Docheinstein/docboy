@@ -21,11 +21,11 @@ set(SOURCES
         clock/clockable.h
         clock/clock.cpp
         clock/clock.h
-        config/config.h
-        config/config.cpp
-        config/parser.h
-        config/parser.cpp
         CMakeLists.txt
+        config/config.cpp
+        config/config.h
+        config/parser.cpp
+        config/parser.h
         core.cpp
         core.h
         cpu/cpu.cpp
@@ -34,11 +34,62 @@ set(SOURCES
         cpu/interrupts.h
         cpu/timers.cpp
         cpu/timers.h
+        debugger/backend.cpp
+        debugger/backend.h
+        debugger/boot/boot.cpp
+        debugger/boot/boot.h
+        debugger/cartridge/slot.cpp
+        debugger/cartridge/slot.h
+        debugger/core/core.cpp
+        debugger/core/core.h
+        debugger/cpu/cpu.cpp
+        debugger/cpu/cpu.h
+        debugger/cpu/interrupts.cpp
+        debugger/cpu/interrupts.h
+        debugger/cpu/timers.cpp
+        debugger/cpu/timers.h
+        debugger/frontendcli.cpp
+        debugger/frontendcli.h
+        debugger/frontend.h
+        debugger/gameboy.cpp
+        debugger/gameboy.h
+        debugger/io/boot.h
+        debugger/io/interrupts.h
+        debugger/io/joypad.h
+        debugger/io/lcd.h
+        debugger/io/serial.h
+        debugger/io/sound.h
+        debugger/io/timers.h
+        debugger/joypad/joypad.cpp
+        debugger/joypad/joypad.h
+        debugger/lcd/framebufferlcd.cpp
+        debugger/lcd/framebufferlcd.h
+        debugger/lcd/lcd.h
+        debugger/memory/memory.cpp
+        debugger/memory/memory.h
+        debugger/memory/readable.cpp
+        debugger/memory/readable.h
+        debugger/ppu/lcdcontroller.cpp
+        debugger/ppu/lcdcontroller.h
+        debugger/ppu/ppu.cpp
+        debugger/ppu/ppu.h
+        debugger/serial/port.cpp
+        debugger/serial/port.h
+        debugger/shared.h
+        debugger/sound/sound.cpp
+        debugger/sound/sound.h
+        definitions.h
         dma/dma.cpp
         dma/dma.h
-        definitions.h
         gameboy.cpp
         gameboy.h
+        state/processor.h
+        state/readable.h
+        state/loader.h
+        state/state.cpp
+        state/state.h
+        state/writable.h
+        state/saver.h
         helpers.cpp
         helpers.h
         io/boot.h
@@ -64,6 +115,8 @@ set(SOURCES
         ppu/lcdcontroller.h
         ppu/ppu.cpp
         ppu/ppu.h
+        profiler/profiler.cpp
+        profiler/profiler.h
         serial/endpoint.h
         serial/endpoints/buffer.cpp
         serial/endpoints/buffer.h

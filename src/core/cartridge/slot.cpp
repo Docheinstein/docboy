@@ -25,3 +25,19 @@ ICartridge::Header CartridgeSlot::header() const {
         return cartridge->header();
     return {};
 }
+
+void CartridgeSlot::loadState(IReadableState& state) {
+    if (cartridge) {
+        if (const auto cartridgeStateProcessor = dynamic_cast<IStateProcessor*>(&*cartridge)) {
+            cartridgeStateProcessor->loadState(state);
+        }
+    }
+}
+
+void CartridgeSlot::saveState(IWritableState& state) {
+    if (cartridge) {
+        if (const auto cartridgeStateProcessor = dynamic_cast<IStateProcessor*>(&*cartridge)) {
+            cartridgeStateProcessor->saveState(state);
+        }
+    }
+}

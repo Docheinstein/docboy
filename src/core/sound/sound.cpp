@@ -1,5 +1,13 @@
 #include "sound.h"
 
+void Sound::loadState(IReadableState& state) {
+    // TODO
+}
+
+void Sound::saveState(IWritableState& state) {
+    // TODO
+}
+
 uint8_t Sound::readNR10() const {
     return NR10;
 }

@@ -1,5 +1,5 @@
-#ifndef WRITABLE_H
-#define WRITABLE_H
+#ifndef WRITABLEMEMORY_H
+#define WRITABLEMEMORY_H
 
 #include <cstdint>
 #include <string>
@@ -19,4 +19,4 @@ public:
     virtual void write(uint16_t index, uint8_t value) = 0;
 };
 
-#endif // WRITABLE_H
+#endif // WRITABLEMEMORY_H

@@ -33,15 +33,21 @@ public:
     virtual ISoundIO& getSoundIO() = 0;
     virtual ITimersIO& getTimersIO() = 0;
 
+    virtual IDMA& getDMA() = 0;
+
     virtual ICPU& getCPU() = 0;
     virtual IPPU& getPPU() = 0;
     virtual IClock& getClock() = 0;
 
     virtual IJoypad& getJoypad() = 0;
     virtual ISerialPort& getSerialPort() = 0;
+
     virtual ICartridgeSlot& getCartridgeSlot() = 0;
+    virtual ICartridge& getCartridge() = 0;
 
     virtual IBus& getBus() = 0;
+
+    virtual std::vector<IStateProcessor*> getStateProcessors() = 0;
 };
 
 class GameBoy : public IGameBoy {
@@ -74,15 +80,21 @@ public:
     ISoundIO& getSoundIO() override;
     ITimersIO& getTimersIO() override;
 
+    IDMA& getDMA() override;
+
     ICPU& getCPU() override;
     IPPU& getPPU() override;
     IClock& getClock() override;
 
     IJoypad& getJoypad() override;
     ISerialPort& getSerialPort() override;
+
     ICartridgeSlot& getCartridgeSlot() override;
+    ICartridge& getCartridge() override;
 
     IBus& getBus() override;
+
+    std::vector<IStateProcessor*> getStateProcessors() override;
 
     Memory vram;
     Memory wram1;

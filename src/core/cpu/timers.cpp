@@ -11,6 +11,24 @@ Timers::Timers(IInterruptsIO& interrupts) :
     timaTicks() {
 }
 
+void Timers::loadState(IReadableState& state) {
+    DIV = state.readUInt8();
+    TIMA = state.readUInt8();
+    TMA = state.readUInt8();
+    TAC = state.readUInt8();
+    divTicks = state.readUInt32();
+    timaTicks = state.readUInt32();
+}
+
+void Timers::saveState(IWritableState& state) {
+    state.writeUInt8(DIV);
+    state.writeUInt8(TIMA);
+    state.writeUInt8(TMA);
+    state.writeUInt8(TAC);
+    state.writeUInt32(divTicks);
+    state.writeUInt32(timaTicks);
+}
+
 void Timers::tick() {
     constexpr uint32_t DIV_PERIOD = Specs::CPU::FREQUENCY / Specs::CPU::DIV_FREQUENCY;
 

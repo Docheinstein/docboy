@@ -11,6 +11,20 @@ MBC1::MBC1(std::vector<uint8_t>&& data) :
     mbc() {
 }
 
+void MBC1::loadState(IReadableState& state) {
+    mbc.ramEnabled = state.readBool();
+    mbc.romBankSelector = state.readUInt8();
+    mbc.upperRomBankSelector_ramBankSelector = state.readUInt8();
+    mbc.bankingMode = state.readUInt8();
+}
+
+void MBC1::saveState(IWritableState& state) {
+    state.writeBool(mbc.ramEnabled);
+    state.writeUInt8(mbc.romBankSelector);
+    state.writeUInt8(mbc.upperRomBankSelector_ramBankSelector);
+    state.writeUInt8(mbc.bankingMode);
+}
+
 uint8_t MBC1::read(uint16_t address) const {
     /*
      *  Bits: 20 19 18 17 16 15 14 13 12 .. 01 00

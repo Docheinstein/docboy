@@ -2,6 +2,8 @@
 #include "core/bus/bus.h"
 #include "core/definitions.h"
 #include "utils/binutils.h"
+#include "utils/enumutils.h"
+#include <cassert>
 #include <iostream>
 
 CPU::CPU(IBus& bus, IClockable& timers, IClockable& serial, bool bootRom) :
@@ -564,6 +566,61 @@ CPU::CPU(IBus& bus, IClockable& timers, IClockable& serial, bool bootRom) :
     reset();
 }
 
+void CPU::loadState(IReadableState& state) {
+    AF = state.readUInt16();
+    BC = state.readUInt16();
+    DE = state.readUInt16();
+    HL = state.readUInt16();
+    PC = state.readUInt16();
+    SP = state.readUInt16();
+    IME = state.readBool();
+    halted = state.readBool();
+    interrupt.state = to_enum<PendingInterrupt::State>(state.readUInt8());
+    const uint8_t isrOffset = state.readUInt8();
+    interrupt.isr = &ISR[isrOffset / 5][isrOffset % 5];
+    b = state.readBool();
+    u = state.readUInt8();
+    s = state.readInt8();
+    uu = state.readUInt16();
+    lsb = state.readUInt8();
+    msb = state.readUInt8();
+    addr = state.readUInt16();
+    currentInstruction.ISR = state.readBool();
+    currentInstruction.address = state.readUInt16();
+    currentInstruction.microop = state.readUInt8();
+    currentInstruction.cb = state.readBool();
+    const uint16_t microopHandlerOffset = state.readUInt16();
+    currentInstruction.microopHandler = currentInstruction.cb
+                                            ? &instructions_cb[microopHandlerOffset / 4][microopHandlerOffset % 4]
+                                            : &instructions[microopHandlerOffset / 6][microopHandlerOffset % 6];
+}
+
+void CPU::saveState(IWritableState& state) {
+    state.writeUInt16(AF);
+    state.writeUInt16(BC);
+    state.writeUInt16(DE);
+    state.writeUInt16(HL);
+    state.writeUInt16(PC);
+    state.writeUInt16(SP);
+    state.writeBool(IME);
+    state.writeBool(halted);
+    state.writeUInt8(from_enum<uint8_t>(interrupt.state));
+    state.writeUInt8(static_cast<uint8_t>(interrupt.isr - &ISR[0][0]));
+    state.writeBool(b);
+    state.writeUInt8(u);
+    state.writeInt8(s);
+    state.writeUInt16(uu);
+    state.writeUInt8(lsb);
+    state.writeUInt8(msb);
+    state.writeUInt16(addr);
+    state.writeBool(currentInstruction.ISR);
+    state.writeUInt16(currentInstruction.address);
+    state.writeUInt8(currentInstruction.microop);
+    state.writeBool(currentInstruction.cb);
+    state.writeUInt16(static_cast<uint16_t>(currentInstruction.microopHandler -
+                                            (currentInstruction.cb ? &instructions_cb[0][0] : &instructions[0][0])));
+}
+
 void CPU::reset() {
     mCycles = 0;
     currentInstruction = CurrentInstruction();
@@ -869,6 +926,7 @@ void CPU::fetch(bool cb) {
     currentInstruction.ISR = false;
     currentInstruction.address = PC;
     currentInstruction.microop = cb ? 1 : 0;
+    currentInstruction.cb = cb;
     if (cb)
         currentInstruction.microopHandler = instructions_cb[bus.read(PC++)];
     else

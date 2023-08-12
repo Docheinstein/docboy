@@ -2,6 +2,7 @@
 #define CLOCK_H
 
 #include "clockable.h"
+#include "core/state/processor.h"
 #include <chrono>
 #include <cstdint>
 #include <vector>
@@ -17,9 +18,12 @@ public:
     [[nodiscard]] virtual uint64_t getTicks() const = 0;
 };
 
-class Clock : public IClock {
+class Clock : public IClock, public IStateProcessor {
 public:
     Clock();
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
     void tick() override;
 

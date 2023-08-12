@@ -97,6 +97,14 @@ void PPU::tick() {
     tCycles++;
 }
 
+void PPU::loadState(IReadableState& gameState) {
+    // TODO
+}
+
+void PPU::saveState(IWritableState& gameState) {
+    // TODO
+}
+
 void PPU::tick_HBlank() {
     // nop
 }

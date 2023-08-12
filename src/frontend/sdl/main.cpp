@@ -6,6 +6,7 @@
 #include "core/core.h"
 #include "core/gameboy.h"
 #include "core/serial/endpoints/console.h"
+#include "core/state/state.h"
 #include "helpers.h"
 #include "utils/fileutils.h"
 #include "utils/iniutils.h"
@@ -25,36 +26,33 @@
 #include "core/profiler/profiler.h"
 #endif
 
-static void screenshot_bmp(uint32_t* framebuffer) {
-    int i = 0;
-    std::filesystem::path cwd = std::filesystem::current_path();
-    std::filesystem::path p;
-    do {
-        p = cwd / ("screenshot" + std::to_string(i) + ".bmp");
-        i++;
-    } while (std::filesystem::exists(p));
-
-    std::string path = absolute(p).c_str();
-
+static void screenshot_bmp(uint32_t* framebuffer, const std::filesystem::path& path) {
     if (screenshot(framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_PIXELFORMAT_RGBA8888, path))
         std::cout << "Screenshot saved to: " << path << std::endl;
 }
 
-static void screenshot_dat(uint32_t* framebuffer) {
-    int i = 0;
-    std::filesystem::path cwd = std::filesystem::current_path();
-    std::filesystem::path p;
-    do {
-        p = cwd / ("screenshot" + std::to_string(i) + ".dat");
-        i++;
-    } while (std::filesystem::exists(p));
-
-    std::string path = absolute(p).c_str();
-
+static void screenshot_dat(uint32_t* framebuffer, const std::filesystem::path& path) {
     bool ok;
     write_file(path, framebuffer, sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT, &ok);
     if (ok)
         std::cout << "Screenshot saved to: " << path << std::endl;
+}
+
+static void save_state(const IStataData& state, const std::filesystem::path& path) {
+    const std::vector<uint8_t>& stateDate = state.getData();
+    bool ok;
+    write_file(path, (void*)stateDate.data(), stateDate.size(), &ok);
+    if (ok)
+        std::cout << "State saved to: " << path << std::endl;
+}
+
+static std::optional<State> load_state(const std::filesystem::path& path) {
+    bool ok;
+    const std::vector<uint8_t> data = read_file(path, &ok);
+    if (!ok)
+        return std::nullopt;
+    std::cout << "State loaded from: " << path << std::endl;
+    return State(data);
 }
 
 static void dump_cartridge_info(const ICartridge& cartridge) {
@@ -228,6 +226,8 @@ int main(int argc, char** argv) {
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
+    std::filesystem::path romPath = std::filesystem::path(args.rom);
+
     Config cfg;
     if (!args.config.empty()) {
         bool ok;
@@ -364,7 +364,7 @@ int main(int argc, char** argv) {
 
     core.loadROM(std::move(cartridge));
 
-    static const std::set<SDL_Keycode> RESERVED_SDL_KEYS = {SDLK_F11, SDLK_F12};
+    static const std::set<SDL_Keycode> RESERVED_SDL_KEYS = {SDLK_F1, SDLK_F2, SDLK_F11, SDLK_F12};
 
     std::map<SDL_Keycode, IJoypad::Key> keyboardInputMapping;
     for (const auto& [joypadKey, keyboardKey] : cfg.input.keyboardMapping) {
@@ -385,11 +385,23 @@ int main(int argc, char** argv) {
                 break;
             case SDL_KEYDOWN:
                 switch (e.key.keysym.sym) {
+                case SDLK_F1: {
+                    State state;
+                    core.saveState(state);
+                    save_state(state, romPath.replace_extension("sav"));
+                    break;
+                }
+                case SDLK_F2: {
+                    if (std::optional<State> optionalState = load_state(romPath.replace_extension("sav"))) {
+                        core.loadState(*optionalState);
+                    }
+                    break;
+                }
                 case SDLK_F11:
-                    screenshot_dat(lcd.getFrameBuffer());
+                    screenshot_dat(lcd.getFrameBuffer(), romPath.replace_extension("dat"));
                     break;
                 case SDLK_F12:
-                    screenshot_bmp(lcd.getFrameBuffer());
+                    screenshot_bmp(lcd.getFrameBuffer(), romPath.replace_extension("bmp"));
                     break;
                 default:
                     if (auto mapping = keyboardInputMapping.find(e.key.keysym.sym);

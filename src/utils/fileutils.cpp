@@ -1,7 +1,7 @@
 #include "fileutils.h"
 #include <iostream>
 
-void write_file(const std::string& filename, void* data, long length, bool* ok) {
+void write_file(const std::string& filename, void* data, size_t length, bool* ok) {
     std::ofstream ofs(filename);
     if (!ofs) {
         if (ok)
@@ -9,7 +9,7 @@ void write_file(const std::string& filename, void* data, long length, bool* ok) 
         return;
     }
 
-    ofs.write(static_cast<const char*>(data), length);
+    ofs.write(static_cast<const char*>(data), static_cast<std::streamsize>(length));
 
     if (ok)
         *ok = ofs.good();

@@ -13,8 +13,11 @@ public:
     virtual void detachCartridge() = 0;
 };
 
-class CartridgeSlot : public ICartridge, public ICartridgeSlot {
+class CartridgeSlot : public ICartridge, public ICartridgeSlot, public IStateProcessor {
 public:
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
+
     void attachCartridge(std::unique_ptr<ICartridge> cartridge) override;
     void detachCartridge() override;
 

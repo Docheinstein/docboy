@@ -1,6 +1,8 @@
 #include "core.h"
 #include "core/debugger/gameboy.h"
 #include "core/definitions.h"
+#include "core/state/state.h"
+#include <iostream>
 
 void DebuggableCore::MemoryObserver::onRead(uint16_t addr, uint8_t value) {
     observer.onRead(base + addr, value);

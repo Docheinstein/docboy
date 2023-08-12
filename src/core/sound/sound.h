@@ -2,8 +2,9 @@
 #define SOUND_H
 
 #include "core/io/sound.h"
+#include "core/state/processor.h"
 
-class Sound : public ISoundIO {
+class Sound : public ISoundIO, public IStateProcessor {
 public:
     [[nodiscard]] uint8_t readNR10() const override;
     void writeNR10(uint8_t value) override;
@@ -115,6 +116,9 @@ public:
 
     [[nodiscard]] uint8_t readWAVEF() const override;
     void writeWAVEF(uint8_t value) override;
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
 private:
     uint8_t NR10;

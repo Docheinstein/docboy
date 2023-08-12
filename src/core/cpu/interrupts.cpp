@@ -1,5 +1,15 @@
 #include "interrupts.h"
 
+void Interrupts::loadState(IReadableState& state) {
+    IF = state.readBool();
+    IE = state.readBool();
+}
+
+void Interrupts::saveState(IWritableState& state) {
+    state.writeBool(IF);
+    state.writeBool(IE);
+}
+
 uint8_t Interrupts::readIF() const {
     return IF;
 }

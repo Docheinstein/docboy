@@ -7,6 +7,16 @@ Core::Core(IGameBoy& gameboy) :
     serialLink() {
 }
 
+void Core::saveState(IWritableState& state) {
+    for (const auto& processor : gameboy.getStateProcessors())
+        processor->saveState(state);
+}
+
+void Core::loadState(IReadableState& state) {
+    for (const auto& processor : gameboy.getStateProcessors())
+        processor->loadState(state);
+}
+
 void Core::loadROM(const std::string& rom) {
     loadROM(CartridgeFactory::makeCartridge(rom));
 }

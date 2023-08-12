@@ -4,12 +4,16 @@
 #include "core/clock/clockable.h"
 #include "core/io/interrupts.h"
 #include "core/io/timers.h"
+#include "core/state/processor.h"
 #include <cstddef>
 #include <cstdint>
 
-class Timers : public ITimersIO, public IClockable {
+class Timers : public ITimersIO, public IClockable, public IStateProcessor {
 public:
     explicit Timers(IInterruptsIO& interrupts);
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
     void tick() override;
 
