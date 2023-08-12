@@ -2,6 +2,7 @@
 #include "core/core.h"
 #include "core/helpers.h"
 #include "gameboy.h"
+#include "utils/arrayutils.h"
 #include <algorithm>
 
 DebuggerBackend::DebuggerBackend(ICoreDebug& core) :
@@ -201,10 +202,21 @@ bool DebuggerBackend::onTick(uint64_t tick) {
     if (!frontend)
         return true;
 
-    Debugger::CPUState cpu = gameboy.getCPUDebug().getState();
+    Debugger::CPUState cpu = getCPUState();
 
     if (!cpu.cycles)
         return true; // do not stop on first fetch
+
+    bool isNewFrame =
+        gameboy.getPPUDebug().isNewFrame() && get_bit<Bits::LCD::LCDC::LCD_ENABLE>(readMemory(Registers::LCD::LCDC));
+
+    if (isNewFrame) {
+        State& stateToSave = lastFramesStates.states[lastFramesStates.cursor];
+        stateToSave.clear();
+        core.saveState(stateToSave);
+        lastFramesStates.cursor = (lastFramesStates.cursor + 1) % array_size(lastFramesStates.states);
+        lastFramesStates.effectiveLastFramesNumber++;
+    }
 
     this->frontend->onTick(tick);
 
@@ -262,6 +274,33 @@ bool DebuggerBackend::onTick(uint64_t tick) {
         return true;
     }
 
+    if (std::holds_alternative<Debugger::Commands::FrameBack>(cmd)) {
+        Debugger::Commands::FrameBack cmdFrameBack = std::get<Debugger::Commands::FrameBack>(cmd);
+        uint64_t safeFrameBackCount = std::min(cmdFrameBack.count, lastFramesStates.effectiveLastFramesNumber);
+        if (safeFrameBackCount > 0) {
+            uint64_t stateToRestoreIndex =
+                (static_cast<int>(lastFramesStates.cursor) - safeFrameBackCount + array_size(lastFramesStates.states)) %
+                array_size(lastFramesStates.states);
+            State& stateToLoad = lastFramesStates.states[stateToRestoreIndex];
+            stateToLoad.rewind();
+            core.loadState(stateToLoad);
+            lastFramesStates.cursor = (stateToRestoreIndex + 1) % array_size(lastFramesStates.states);
+            lastFramesStates.effectiveLastFramesNumber -= safeFrameBackCount;
+            pullCommand(Debugger::ExecutionStates::Completed());
+        }
+        return true;
+    }
+
+    if (std::holds_alternative<Debugger::Commands::Frame>(cmd)) {
+        if (isNewFrame) {
+            Debugger::Commands::Frame cmdFrame = std::get<Debugger::Commands::Frame>(cmd);
+            commandState.counter++;
+            if (commandState.counter >= cmdFrame.count)
+                pullCommand(Debugger::ExecutionStates::Completed());
+        }
+        return true;
+    }
+
     if (isMcycle) {
         if (std::holds_alternative<Debugger::Commands::Step>(cmd)) {
             Debugger::Commands::Step cmdStep = std::get<Debugger::Commands::Step>(cmd);
@@ -271,13 +310,15 @@ bool DebuggerBackend::onTick(uint64_t tick) {
                     pullCommand(Debugger::ExecutionStates::Completed());
             }
             return true;
-        } else if (std::holds_alternative<Debugger::Commands::MicroStep>(cmd)) {
+        }
+        if (std::holds_alternative<Debugger::Commands::MicroStep>(cmd)) {
             Debugger::Commands::MicroStep cmdMicroStep = std::get<Debugger::Commands::MicroStep>(cmd);
             commandState.counter++;
             if (commandState.counter >= cmdMicroStep.count)
                 pullCommand(Debugger::ExecutionStates::Completed());
             return true;
-        } else if (std::holds_alternative<Debugger::Commands::Next>(cmd)) {
+        }
+        if (std::holds_alternative<Debugger::Commands::Next>(cmd)) {
             Debugger::Commands::Next cmdStep = std::get<Debugger::Commands::Next>(cmd);
             if (!cpu.instruction.ISR && cpu.instruction.microop == 0) {
                 if (cpu.registers.SP == commandState.stackLevel)
@@ -286,29 +327,19 @@ bool DebuggerBackend::onTick(uint64_t tick) {
                     pullCommand(Debugger::ExecutionStates::Completed());
             }
             return true;
-        } else if (std::holds_alternative<Debugger::Commands::MicroNext>(cmd)) {
+        }
+        if (std::holds_alternative<Debugger::Commands::MicroNext>(cmd)) {
             Debugger::Commands::MicroNext cmdMicroNext = std::get<Debugger::Commands::MicroNext>(cmd);
             if (cpu.registers.SP == commandState.stackLevel)
                 commandState.counter++;
             if (commandState.counter >= cmdMicroNext.count || cpu.registers.SP > commandState.stackLevel)
                 pullCommand(Debugger::ExecutionStates::Completed());
             return true;
-        } else if (std::holds_alternative<Debugger::Commands::Frame>(cmd)) {
-            Debugger::Commands::Frame cmdFrame = std::get<Debugger::Commands::Frame>(cmd);
-            // TODO: don't like ppu.getDots() == 0
-            Debugger::PPUState ppu = gameboy.getPPUDebug().getState();
-            if (ppu.ppu.state == IPPUDebug::PPUState::VBlank && ppu.ppu.dots == 0 &&
-                get_bit<Bits::LCD::LCDC::LCD_ENABLE>(readMemory(Registers::LCD::LCDC))) {
-                commandState.counter++;
-                if (commandState.counter >= cmdFrame.count)
-                    pullCommand(Debugger::ExecutionStates::Completed());
-            }
-            return true;
-        } else if (std::holds_alternative<Debugger::Commands::Continue>(cmd)) {
-            return true;
-        } else if (std::holds_alternative<Debugger::Commands::Abort>(cmd)) {
-            return false;
         }
+        if (std::holds_alternative<Debugger::Commands::Continue>(cmd))
+            return true;
+        if (std::holds_alternative<Debugger::Commands::Abort>(cmd))
+            return false;
     }
 
     return true;

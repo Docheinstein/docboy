@@ -99,6 +99,14 @@ IDebuggableGameBoy& DebuggableCore::getGameBoy() {
     return dynamic_cast<IDebuggableGameBoy&>(gameboy);
 }
 
+void DebuggableCore::loadState(IReadableState& state) {
+    Core::loadState(state);
+}
+
+void DebuggableCore::saveState(IWritableState& state) {
+    Core::saveState(state);
+}
+
 DebuggableCore::IOObserver::IOObserver(IMemoryDebug::Observer& observer) :
     observer(observer) {
 }

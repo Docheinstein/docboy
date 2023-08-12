@@ -29,12 +29,15 @@ struct MicroNext {
 struct Frame {
     uint64_t count;
 };
+struct FrameBack {
+    uint64_t count;
+};
 struct Continue {};
 struct Abort {};
 } // namespace Commands
 
 typedef std::variant<Commands::Dot, Commands::Step, Commands::MicroStep, Commands::Next, Commands::MicroNext,
-                     Commands::Frame, Commands::Continue, Commands::Abort>
+                     Commands::Frame, Commands::FrameBack, Commands::Continue, Commands::Abort>
     Command;
 
 template <typename Op>

@@ -3,6 +3,7 @@
 
 #include "core/core.h"
 #include "core/definitions.h"
+#include "core/state/state.h"
 #include "cpu/cpu.h"
 #include "frontend.h"
 #include "ppu/ppu.h"
@@ -47,6 +48,8 @@ public:
 
 class DebuggerBackend : public IDebuggerBackend, public ICoreDebug::Observer {
 public:
+    static constexpr size_t LAST_FRAMES_STATES_BUFFER_SIZE = 600; // ~10 seconds
+
     explicit DebuggerBackend(ICoreDebug& core);
     ~DebuggerBackend() override = default;
 
@@ -91,6 +94,12 @@ private:
     std::vector<Debugger::Breakpoint> breakpoints;
     std::vector<Debugger::Watchpoint> watchpoints;
     std::optional<Debugger::Disassemble> disassembled[0x10000];
+
+    struct {
+        State states[LAST_FRAMES_STATES_BUFFER_SIZE];
+        size_t cursor {};
+        size_t effectiveLastFramesNumber {};
+    } lastFramesStates;
 
     uint32_t nextPointId;
 

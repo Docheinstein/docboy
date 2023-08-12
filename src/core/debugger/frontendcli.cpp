@@ -82,6 +82,10 @@ struct CommandFrame {
     uint64_t count;
 };
 
+struct CommandFrameBack {
+    uint64_t count;
+};
+
 struct CommandContinue {};
 
 struct CommandTrace {
@@ -93,8 +97,8 @@ struct CommandQuit {};
 
 typedef std::variant<CommandBreakpoint, CommandWatchpoint, CommandDelete, CommandDisassemble, CommandDisassembleRange,
                      CommandExamine, CommandDisplay, CommandUndisplay, CommandDot, CommandStep, CommandMicroStep,
-                     CommandNext, CommandMicroNext, CommandFrame, CommandContinue, CommandTrace, CommandHelp,
-                     CommandQuit>
+                     CommandNext, CommandMicroNext, CommandFrame, CommandFrameBack, CommandContinue, CommandTrace,
+                     CommandHelp, CommandQuit>
     Command;
 
 struct CommandInfo {
@@ -264,11 +268,19 @@ static CommandInfo COMMANDS[] = {
          uint64_t n = count.empty() ? 1 : std::stoi(count);
          return CommandMicroNext {.count = n};
      }},
-    {std::regex(R"(f\s*(\d+)?)"), "f [<count>]", "Step by <count> frames (default = 1)",
+    {std::regex(R"(f\s*(\d+)?)"), "f [<count>]", "Continue running for <count> frames (default = 1)",
      [](const std::vector<std::string>& groups) -> Command {
          const std::string& count = groups[0];
          uint64_t n = count.empty() ? 1 : std::stoi(count);
          return CommandFrame {.count = n};
+     }},
+    {std::regex(R"(fb\s*(\d+)?)"), "fb [<count>]",
+     "Step back by <count> frames (default = 1, max = " +
+         std::to_string(DebuggerBackend::LAST_FRAMES_STATES_BUFFER_SIZE) + ")",
+     [](const std::vector<std::string>& groups) -> Command {
+         const std::string& count = groups[0];
+         uint64_t n = count.empty() ? 1 : std::stoi(count);
+         return CommandFrameBack {.count = n};
      }},
     {std::regex(R"(c)"), "c", "Continue",
      [](const std::vector<std::string>& groups) -> Command {
@@ -969,6 +981,9 @@ Debugger::Command DebuggerFrontendCli::pullCommand(const Debugger::ExecutionStat
         } else if (std::holds_alternative<CommandFrame>(cmd)) {
             CommandFrame frame = std::get<CommandFrame>(cmd);
             return Debugger::Commands::Frame {.count = frame.count};
+        } else if (std::holds_alternative<CommandFrameBack>(cmd)) {
+            CommandFrameBack frameBack = std::get<CommandFrameBack>(cmd);
+            return Debugger::Commands::FrameBack {.count = frameBack.count};
         } else if (std::holds_alternative<CommandContinue>(cmd)) {
             return Debugger::Commands::Continue();
         } else if (std::holds_alternative<CommandTrace>(cmd)) {

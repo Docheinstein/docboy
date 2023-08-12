@@ -13,6 +13,7 @@ public:
 
     struct State {
         struct {
+            bool isOn;
             PPUState state;
             uint32_t dots;
             uint64_t cycles;
@@ -35,6 +36,8 @@ public:
     virtual ~IPPUDebug() = default;
 
     virtual State getState() = 0;
+
+    virtual bool isNewFrame() = 0; // fast way to check whether the PPU is on the first dot of a new frame
 };
 
 class DebuggablePPU : public IPPUDebug, public PPU {
@@ -43,6 +46,8 @@ public:
     ~DebuggablePPU() override = default;
 
     IPPUDebug::State getState() override;
+
+    bool isNewFrame() override;
 };
 
 #endif // DEBUGGERPPU_H

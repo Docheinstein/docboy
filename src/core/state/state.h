@@ -41,6 +41,9 @@ public:
     void writeBytes(const std::vector<uint8_t>& bytes) override;
     void writeBytes(void* bytes, uint32_t count) override;
 
+    void clear();
+    void rewind();
+
     bool operator==(const State& other);
     [[nodiscard]] uint64_t hash() const;
 

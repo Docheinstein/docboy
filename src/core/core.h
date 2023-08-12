@@ -18,12 +18,12 @@ public:
     virtual bool isOn() = 0;
 };
 
-class Core : public ICore, public IStateProcessor {
+class Core : public ICore {
 public:
     explicit Core(IGameBoy& gameboy);
 
-    void saveState(IWritableState& state) override;
-    void loadState(IReadableState& state) override;
+    void loadState(IReadableState& state);
+    void saveState(IWritableState& state);
 
     void loadROM(const std::string& rom);
     void loadROM(std::unique_ptr<ICartridge>);

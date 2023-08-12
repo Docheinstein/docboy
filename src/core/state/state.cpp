@@ -101,6 +101,19 @@ void State::writeBytes(void* bytes, uint32_t count) {
     writeData(bytes, count);
 }
 
+const std::vector<uint8_t>& State::getData() const {
+    return data;
+}
+
+void State::clear() {
+    data.clear();
+    rewind();
+}
+
+void State::rewind() {
+    cursor = 0;
+}
+
 bool State::operator==(const State& other) {
     return data.size() == other.data.size() && memcmp(data.data(), other.data.data(), data.size()) == 0;
 }
@@ -112,10 +125,6 @@ uint64_t State::hash() const {
         h = h * 31 + value;
     }
     return h;
-}
-
-const std::vector<uint8_t>& State::getData() const {
-    return data;
 }
 
 template <typename T, typename std::enable_if_t<std::is_integral_v<T>>*>

@@ -29,12 +29,18 @@ public:
     virtual IDebuggableGameBoy& getGameBoy() = 0;
     virtual void setObserver(Observer* observer) = 0;
     virtual Observer* getObserver() = 0;
+
+    virtual void loadState(IReadableState& state) = 0;
+    virtual void saveState(IWritableState& state) = 0;
 };
 
 class DebuggableCore : public ICoreDebug, public Core, private IMemoryDebug::Observer {
 public:
     explicit DebuggableCore(IDebuggableGameBoy& gameboy);
     ~DebuggableCore() override = default;
+
+    void loadState(IReadableState& state) override;
+    void saveState(IWritableState& state) override;
 
     IDebuggableGameBoy& getGameBoy() override;
     void setObserver(ICoreDebug::Observer* observer) override;
