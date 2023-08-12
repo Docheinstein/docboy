@@ -9,17 +9,17 @@ Work in Progress.
 * CPU: m-cycle accurate, passes cpu_instrs.gb from blargg's tests
 * PPU: dot accurate, implements pixel FIFO
 * Cartridges: NoMBC, MBC1
-* CLI debugger: supports breakpoints, watchpoints, disassembler, step by step execution (by instruction or micro-instruction), memory viewer, interrupts viewer, IO viewer
+* CLI debugger: supports breakpoints, watchpoints, disassembler, step by step execution (by instruction or micro-instruction), rewind, memory viewer, interrupts viewer, IO viewer
 * Serial Link
 * Bootroom support
 * Joypad
 * DMA
+* Save/Load state
 
 ### TODO
 * Improve accuracy of PPU
 * Support other cartridges types
 * Implement sound
-* Implement save/load state
 * Support other platforms: Windows, macOs
 * Compile as libretro core
 
