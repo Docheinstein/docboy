@@ -5,11 +5,24 @@ DebuggableCPU::DebuggableCPU(IBus& bus, IClockable& timers, IClockable& serial, 
 }
 
 ICPUDebug::State DebuggableCPU::getState() {
-    return {.registers = {.AF = AF, .BC = BC, .HL = HL, .PC = PC, .SP = SP},
-            .instruction = {.ISR = currentInstruction.ISR,
-                            .address = currentInstruction.address,
-                            .microop = currentInstruction.microop},
-            .IME = IME,
-            .halted = halted,
-            .cycles = mCycles};
+    return {
+        .registers =
+            {
+                .AF = AF,
+                .BC = BC,
+                .DE = DE,
+                .HL = HL,
+                .PC = PC,
+                .SP = SP,
+            },
+        .instruction =
+            {
+                .ISR = currentInstruction.ISR,
+                .address = currentInstruction.address,
+                .microop = currentInstruction.microop,
+            },
+        .IME = IME,
+        .halted = halted,
+        .cycles = mCycles,
+    };
 }
