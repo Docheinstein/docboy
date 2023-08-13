@@ -357,6 +357,7 @@ void PPU::Fetcher::BGPrefetcher::tick_GetTile1() {
     uint8_t WX = lcdIo.readWX();
     uint8_t WY = lcdIo.readWY();
     uint8_t LY = lcdIo.readLY();
+    uint8_t LX_ = 8 * x8;
 
     fetchType = FetchType::Background;
 
@@ -364,21 +365,23 @@ void PPU::Fetcher::BGPrefetcher::tick_GetTile1() {
         // assert((WX - 7) % 8 == 0);
         // TODO: figure out how to handle WX - 7 not dividing 8
         if ((WX - 7) % 8 == 0) { // TODO: remove this check
-            if ((8 * x8 >= WX - 7 && LY >= WY))
+            if ((LX_ >= WX - 7 && LY >= WY))
                 fetchType = FetchType::Window;
         }
     }
 
     if (fetchType == FetchType::Background) {
         uint8_t SCX = lcdIo.readSCX();
-        tilemapX = (x8 + (SCX / 8)) % 32;
+        tilemapX = ((LX_ + SCX) / 8) % 32;
     } else /* Window */ {
-        assert((8 * x8 - (WX - 7)) % 8 == 0);
-        tilemapX = (8 * x8 - (WX - 7)) / 8;
+        assert((LX_ - (WX - 7)) % 8 == 0);
+        tilemapX = (LX_ - (WX - 7)) / 8;
     }
 }
 
 void PPU::Fetcher::BGPrefetcher::tick_GetTile2() {
+    // TODO: refactor this: split BG and window
+
     uint8_t SCY = lcdIo.readSCY();
     uint8_t LY = lcdIo.readLY(); // or fetcher.y?
 
@@ -413,7 +416,15 @@ void PPU::Fetcher::BGPrefetcher::tick_GetTile2() {
             tileAddr = 0x8800 + (tileNumber - 128U) * 16 /* sizeof tile */;
     }
 
-    uint16_t tileY = (LY + SCY) % 8;
+    uint16_t tileY;
+
+    if (fetchType == FetchType::Background) {
+        tileY = (LY + SCY) % 8;
+    } else /* Window */ {
+        uint8_t WY = lcdIo.readWY();
+        tileY = (LY - WY) % 8;
+    }
+
     tileDataAddr = tileAddr + tileY * 2 /* sizeof tile row */;
 }
 
