@@ -457,7 +457,14 @@ void PPU::Fetcher::OBJPrefetcher::tick_GetTile2() {
     int oamY = entry.y - 16;
     int yOffset = lcdIo.readLY() - oamY;
 
-    tileDataAddr = tileAddr + yOffset * 2; // works both for 8x8 and 8x16 OBJ
+    assert(yOffset >= 0 && yOffset < (get_bit<Bits::LCD::LCDC::OBJ_SIZE>(lcdIo.readLCDC()) ? 16 : 8));
+
+    if (get_bit<Bits::OAM::Attributes::Y_FLIP>(entry.flags)) {
+        uint8_t objHeight = get_bit<Bits::LCD::LCDC::OBJ_SIZE>(lcdIo.readLCDC()) ? 16 : 8;
+        yOffset = objHeight - yOffset;
+    }
+
+    tileDataAddr = tileAddr + yOffset * 2 /* sizeof tile row */; // works both for 8x8 and 8x16 OBJ
 }
 
 bool PPU::Fetcher::OBJPrefetcher::areTileDataAddressAndFlagsReady() const {
