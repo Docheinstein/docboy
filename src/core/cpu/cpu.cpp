@@ -575,6 +575,7 @@ void CPU::loadState(IReadableState& state) {
     SP = state.readUInt16();
     IME = state.readBool();
     halted = state.readBool();
+    mCycles = state.readUInt64();
     interrupt.state = to_enum<PendingInterrupt::State>(state.readUInt8());
     const uint8_t isrOffset = state.readUInt8();
     interrupt.isr = &ISR[isrOffset / 5][isrOffset % 5];
@@ -604,6 +605,7 @@ void CPU::saveState(IWritableState& state) {
     state.writeUInt16(SP);
     state.writeBool(IME);
     state.writeBool(halted);
+    state.writeUInt64(mCycles);
     state.writeUInt8(from_enum<uint8_t>(interrupt.state));
     state.writeUInt8(static_cast<uint8_t>(interrupt.isr - &ISR[0][0]));
     state.writeBool(b);
