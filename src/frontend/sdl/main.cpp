@@ -26,24 +26,29 @@
 #include "core/profiler/profiler.h"
 #endif
 
-static void screenshot_bmp(uint32_t* framebuffer, const std::filesystem::path& path) {
-    if (screenshot(framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_PIXELFORMAT_RGBA8888, path))
+static bool screenshot_bmp(uint32_t* framebuffer, const std::filesystem::path& path) {
+    if (screenshot(framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_PIXELFORMAT_RGBA8888, path)) {
         std::cout << "Screenshot saved to: " << path << std::endl;
+        return true;
+    }
+    return false;
 }
 
-static void screenshot_dat(uint32_t* framebuffer, const std::filesystem::path& path) {
+static bool screenshot_dat(uint32_t* framebuffer, const std::filesystem::path& path) {
     bool ok;
     write_file(path, framebuffer, sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT, &ok);
     if (ok)
         std::cout << "Screenshot saved to: " << path << std::endl;
+    return ok;
 }
 
-static void save_state(const IStataData& state, const std::filesystem::path& path) {
+static bool save_state(const IStataData& state, const std::filesystem::path& path) {
     const std::vector<uint8_t>& stateDate = state.getData();
     bool ok;
     write_file(path, (void*)stateDate.data(), stateDate.size(), &ok);
     if (ok)
         std::cout << "State saved to: " << path << std::endl;
+    return ok;
 }
 
 static std::optional<State> load_state(const std::filesystem::path& path) {
@@ -337,8 +342,8 @@ int main(int argc, char** argv) {
     }
 #endif
 
-    int winX = Window::POSITION_UNDEFINED;
-    int winY = Window::POSITION_UNDEFINED;
+    int winX = Window::WINDOW_POSITION_UNDEFINED;
+    int winY = Window::WINDOW_POSITION_UNDEFINED;
 
     INI prefs = loadPreferencesFromCache();
     if (const auto windowSectionIt = prefs.find("window"); windowSectionIt != prefs.end()) {
@@ -364,7 +369,7 @@ int main(int argc, char** argv) {
 
     core.loadROM(std::move(cartridge));
 
-    static const std::set<SDL_Keycode> RESERVED_SDL_KEYS = {SDLK_F1, SDLK_F2, SDLK_F11, SDLK_F12};
+    static const std::set<SDL_Keycode> RESERVED_SDL_KEYS = {SDLK_F1, SDLK_F2, SDLK_F11, SDLK_F12, SDLK_f};
 
     std::map<SDL_Keycode, IJoypad::Key> keyboardInputMapping;
     for (const auto& [joypadKey, keyboardKey] : cfg.input.keyboardMapping) {
@@ -375,7 +380,30 @@ int main(int argc, char** argv) {
 
     SDL_Event e;
 
+    static constexpr uint64_t OVERLAY_TEXT_GUID = 1;
+    static constexpr uint64_t FPS_TEXT_GUID = 2;
+
+    auto drawOverlayText = [&window](const std::string& str) {
+        window.addText(str, 4, 4, 0xFFFFFFFF, 120, OVERLAY_TEXT_GUID);
+    };
+
+    auto drawFPS = [&window](uint32_t fps) {
+        std::string fpsString = std::to_string(fps);
+        window.addText(fpsString,
+                       static_cast<int>(Window::WINDOW_WIDTH - 4 - fpsString.size() * Window::TEXT_LETTER_WIDTH), 4,
+                       0xFFFFFFFF, Window::TEXT_DURATION_PERSISTENT, FPS_TEXT_GUID);
+    };
+
+    auto undrawFPS = [&window] {
+        window.removeText(FPS_TEXT_GUID);
+    };
+
     bool quit = false;
+
+    bool showFps = false;
+    uint32_t fps = 0;
+    std::chrono::high_resolution_clock::time_point lastFpsSampling = std::chrono::high_resolution_clock::now();
+
     while (!quit && core.isOn()) {
         // Handle events
         while (SDL_PollEvent(&e) != 0) {
@@ -388,21 +416,33 @@ int main(int argc, char** argv) {
                 case SDLK_F1: {
                     State state;
                     core.saveState(state);
-                    save_state(state, romPath.replace_extension("sav"));
+                    if (save_state(state, romPath.replace_extension("sav")))
+                        drawOverlayText("State saved");
                     break;
                 }
                 case SDLK_F2: {
                     if (std::optional<State> optionalState = load_state(romPath.replace_extension("sav"))) {
+                        drawOverlayText("State loaded");
                         core.loadState(*optionalState);
                     }
                     break;
                 }
                 case SDLK_F11:
-                    screenshot_dat(lcd.getFrameBuffer(), romPath.replace_extension("dat"));
+                    if (screenshot_dat(lcd.getFrameBuffer(), romPath.replace_extension("dat")))
+                        drawOverlayText("Screenshot saved");
                     break;
                 case SDLK_F12:
-                    screenshot_bmp(lcd.getFrameBuffer(), romPath.replace_extension("bmp"));
+                    if (screenshot_bmp(lcd.getFrameBuffer(), romPath.replace_extension("bmp")))
+                        drawOverlayText("Screenshot saved");
                     break;
+                case SDLK_f:
+                    showFps = !showFps;
+                    if (showFps) {
+                        lastFpsSampling = std::chrono::high_resolution_clock::now();
+                        fps = 0;
+                    } else {
+                        undrawFPS();
+                    }
                 default:
                     if (auto mapping = keyboardInputMapping.find(e.key.keysym.sym);
                         mapping != keyboardInputMapping.end()) {
@@ -433,6 +473,17 @@ int main(int argc, char** argv) {
         // Update emulator until next frame
         core.frame();
 #endif
+
+        // Eventually update FPS estimation
+        fps++;
+        if (showFps) {
+            const auto now = std::chrono::high_resolution_clock::now();
+            if (now - lastFpsSampling > std::chrono::milliseconds(1000)) {
+                drawFPS(fps);
+                lastFpsSampling = now;
+                fps = 0;
+            }
+        }
 
         // Render frame
         window.render();
