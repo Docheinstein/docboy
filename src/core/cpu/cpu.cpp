@@ -18,9 +18,9 @@ CPU::CPU(IBus& bus, IClockable& timers, IClockable& serial, bool bootRom) :
     PC(),
     SP(),
     IME(),
+    pendingEnableIME(),
     halted(),
     mCycles(),
-    interrupt(),
     b(),
     u(),
     s(),
@@ -555,13 +555,8 @@ CPU::CPU(IBus& bus, IClockable& timers, IClockable& serial, bool bootRom) :
         /* FE */ { &CPU::SET_arr_m1<7, Register16::HL>, &CPU::SET_arr_m2<7, Register16::HL>, &CPU::SET_arr_m3<7, Register16::HL> },
         /* FF */ { &CPU::SET_r_m1<7, Register8::A> },
     },
-    ISR {
-        /* VBLANK */ { &CPU::ISR_m1<0x40>, &CPU::ISR_m2<0x40>, &CPU::ISR_m3<0x40>, &CPU::ISR_m4<0x40>, &CPU::ISR_m5<0x40> },
-        /* STAT   */ { &CPU::ISR_m1<0x48>, &CPU::ISR_m2<0x48>, &CPU::ISR_m3<0x48>, &CPU::ISR_m4<0x48>, &CPU::ISR_m5<0x48> },
-        /* TIMER  */ { &CPU::ISR_m1<0x50>, &CPU::ISR_m2<0x50>, &CPU::ISR_m3<0x50>, &CPU::ISR_m4<0x50>, &CPU::ISR_m5<0x50> },
-        /* SERIAL */ { &CPU::ISR_m1<0x58>, &CPU::ISR_m2<0x58>, &CPU::ISR_m3<0x58>, &CPU::ISR_m4<0x58>, &CPU::ISR_m5<0x58> },
-        /* JOYPAD */ { &CPU::ISR_m1<0x60>, &CPU::ISR_m2<0x60>, &CPU::ISR_m3<0x60>, &CPU::ISR_m4<0x60>, &CPU::ISR_m5<0x60> },
-    } {
+    ISR { &CPU::ISR_m1, &CPU::ISR_m2, &CPU::ISR_m3, &CPU::ISR_m4, &CPU::ISR_m5 }
+    {
     // clang-format on
     reset();
 }
@@ -574,26 +569,24 @@ void CPU::loadState(IReadableState& state) {
     PC = state.readUInt16();
     SP = state.readUInt16();
     IME = state.readBool();
+    pendingEnableIME = state.readBool();
     halted = state.readBool();
     mCycles = state.readUInt64();
-    interrupt.state = to_enum<PendingInterrupt::State>(state.readUInt8());
-    const uint8_t isrOffset = state.readUInt8();
-    interrupt.isr = &ISR[isrOffset / 5][isrOffset % 5];
     b = state.readBool();
     u = state.readUInt8();
+    u2 = state.readUInt8();
     s = state.readInt8();
     uu = state.readUInt16();
     lsb = state.readUInt8();
     msb = state.readUInt8();
     addr = state.readUInt16();
-    currentInstruction.ISR = state.readBool();
     currentInstruction.address = state.readUInt16();
     currentInstruction.microop = state.readUInt8();
     currentInstruction.cb = state.readBool();
     const uint16_t microopHandlerOffset = state.readUInt16();
-    currentInstruction.microopHandler = currentInstruction.cb
-                                            ? &instructions_cb[microopHandlerOffset / 4][microopHandlerOffset % 4]
-                                            : &instructions[microopHandlerOffset / 6][microopHandlerOffset % 6];
+    currentInstruction.microopSelector = currentInstruction.cb
+                                             ? &instructions_cb[microopHandlerOffset / 4][microopHandlerOffset % 4]
+                                             : &instructions[microopHandlerOffset / 6][microopHandlerOffset % 6];
 }
 
 void CPU::saveState(IWritableState& state) {
@@ -604,33 +597,34 @@ void CPU::saveState(IWritableState& state) {
     state.writeUInt16(PC);
     state.writeUInt16(SP);
     state.writeBool(IME);
+    state.writeBool(pendingEnableIME);
     state.writeBool(halted);
     state.writeUInt64(mCycles);
-    state.writeUInt8(from_enum<uint8_t>(interrupt.state));
-    state.writeUInt8(static_cast<uint8_t>(interrupt.isr - &ISR[0][0]));
     state.writeBool(b);
     state.writeUInt8(u);
+    state.writeUInt8(u2);
     state.writeInt8(s);
     state.writeUInt16(uu);
     state.writeUInt8(lsb);
     state.writeUInt8(msb);
     state.writeUInt16(addr);
-    state.writeBool(currentInstruction.ISR);
     state.writeUInt16(currentInstruction.address);
     state.writeUInt8(currentInstruction.microop);
     state.writeBool(currentInstruction.cb);
-    state.writeUInt16(static_cast<uint16_t>(currentInstruction.microopHandler -
+    state.writeUInt16(static_cast<uint16_t>(currentInstruction.microopSelector -
                                             (currentInstruction.cb ? &instructions_cb[0][0] : &instructions[0][0])));
 }
 
 void CPU::reset() {
     mCycles = 0;
     currentInstruction = CurrentInstruction();
-    currentInstruction.microopHandler = instructions[0]; // NOP -> fetch
+    currentInstruction.microopSelector = instructions[0]; // NOP -> fetch
 
     IME = false;
+    pendingEnableIME = false;
     b = false;
     u = 0;
+    u2 = 0;
     s = 0;
     uu = 0;
     lsb = 0;
@@ -650,66 +644,45 @@ void CPU::reset() {
 }
 
 void CPU::tick() {
-    auto serveInterrupt = [&](InstructionMicroOperation* isr) {
-        currentInstruction.ISR = true;
-        currentInstruction.address = 0x40 + 8 * ((isr - &ISR[0][0]) / 5); // ISR address
-        currentInstruction.microop = 0;
-        currentInstruction.microopHandler = isr;
-        interrupt.state = PendingInterrupt::State::NotSet;
-    };
-
-    // Timers
-    // TODO: now? after? even if halted?
+    // Tick timers
     timers.tick();
 
-    // Interrupt
+    // Eventually enable IME if it has been requested by EI the cycle before
+    if (pendingEnableIME) {
+        pendingEnableIME = false;
+        IME = true;
+    }
+
+    bool pendingInterrupts = (bus.read(Registers::Interrupts::IE) & bus.read(Registers::Interrupts::IF) & 0b11111);
+    bool serveInterrupts = IME && pendingInterrupts;
+
     if (halted) {
-        uint8_t IE = bus.read(Registers::Interrupts::IE);
-        uint8_t IF = bus.read(Registers::Interrupts::IF);
-        for (uint8_t b = 0; b <= 4; b++) {
-            if (get_bit(IE, b) && get_bit(IF, b)) {
-                halted = false;
-                // TODO: figure out if the IF bit is set to 0
-                //  and if so, whether it depends on the value of IME
-                if (IME) {
-                    bus.write(Registers::Interrupts::IF, reset_bit(IF, b));
-                    IME = false; // TODO: ok?
-                    serveInterrupt(ISR[b]);
-                }
-                break;
-            }
-        }
-        return;
+        // Exit HALT state if there is at least a pending interrupt
+        // (HALT state is exited even if IME is unset)
+        if (pendingInterrupts)
+            halted = false;
+    } else {
+        // Get the current micro op to execute
+        const InstructionMicroOperation microop = *currentInstruction.microopSelector;
+
+        // Increase the micro op selector to the next micro op
+        // (must be increased before execute the micro op, so that fetch can overwrite eventually)
+        currentInstruction.microop++;
+        currentInstruction.microopSelector++;
+
+        // Execute the current micro op
+        (this->*microop)();
     }
 
-    //     Microop execution
-    InstructionMicroOperation micro_op = *currentInstruction.microopHandler;
-
-    // Must be increased before execute micro op (so that fetch overwrites eventually)
-    currentInstruction.microop++;
-    currentInstruction.microopHandler++;
-
-    (this->*micro_op)();
-
-    if (IME) {
-        uint8_t IE = bus.read(Registers::Interrupts::IE);
-        uint8_t IF = bus.read(Registers::Interrupts::IF);
-        for (uint8_t b = 0; b <= 4; b++) {
-            if (get_bit(IE, b) && get_bit(IF, b)) {
-                bus.write(Registers::Interrupts::IF, reset_bit(IF, b));
-                IME = false;
-                interrupt.state = PendingInterrupt::State::Pending;
-                interrupt.isr = ISR[b];
-                break;
-            }
-        }
+    // Eventually serve pending interrupts
+    if (serveInterrupts) {
+        // (this check is needed to ensure the interrupt service routine
+        // is triggered only at the beginning of an instruction)
+        if (currentInstruction.microop == 0)
+            serveInterrupt();
     }
 
-    if (interrupt.state == PendingInterrupt::State::Pending && currentInstruction.microop == 0) {
-        serveInterrupt(interrupt.isr);
-    }
-
-    // Serial
+    // Eventually tick serial
     uint8_t SC = bus.read(Registers::Serial::SC);
     if (get_bit<7>(SC) && get_bit<0>(SC))
         serial.tick();
@@ -925,14 +898,18 @@ void CPU::writeFlag<CPU::Flag::C>(bool value) {
 // ============================= INSTRUCTIONS ==================================
 
 void CPU::fetch(bool cb) {
-    currentInstruction.ISR = false;
     currentInstruction.address = PC;
     currentInstruction.microop = cb ? 1 : 0;
     currentInstruction.cb = cb;
     if (cb)
-        currentInstruction.microopHandler = instructions_cb[bus.read(PC++)];
+        currentInstruction.microopSelector = instructions_cb[bus.read(PC++)];
     else
-        currentInstruction.microopHandler = instructions[bus.read(PC++)];
+        currentInstruction.microopSelector = instructions[bus.read(PC++)];
+}
+
+void CPU::serveInterrupt() {
+    currentInstruction.microop = 0;
+    currentInstruction.microopSelector = &ISR[0];
 }
 
 void CPU::invalidInstruction() {
@@ -940,28 +917,49 @@ void CPU::invalidInstruction() {
                              hex(bus.read(currentInstruction.address)));
 }
 
-template <uint16_t nn>
+// The precise behavior of ISR is not well known or explained anywhere.
+// What's there is a combination of good sense and reverse engineering.
+// I'm not sure this is exact, but it's just enough to pass the interrupts tests.
+
 void CPU::ISR_m1() {
-}
-
-template <uint16_t nn>
-void CPU::ISR_m2() {
-}
-
-template <uint16_t nn>
-void CPU::ISR_m3() {
-    uu = PC - 1; // TODO: -1 because of prefetch but it's ugly
+    uu = PC - 1 /* -1 because of prefetch */;
     bus.write(--SP, get_byte<1>(uu));
 }
 
-template <uint16_t nn>
-void CPU::ISR_m4() {
-    bus.write(--SP, get_byte<0>(uu));
+void CPU::ISR_m2() {
+    // The reads of IE must happen after the high byte of PC has been pushed
+    u = bus.read(Registers::Interrupts::IE);
 }
 
-template <uint16_t nn>
+void CPU::ISR_m3() {
+    // The reads of IE must happen after the high byte of PC has been pushed
+    u2 = bus.read(Registers::Interrupts::IF);
+}
+
+void CPU::ISR_m4() {
+    uint8_t IE = u;
+    uint8_t IF = u2;
+
+    // There is an opportunity to cancel the interrupt and jump to address 0x0000
+    // if the flag in IF/IE has been reset between the trigger of the interrupt
+    // and this moment (reference not found, reversed engineered from other emu)
+    uint16_t nextPC = 0x0000;
+
+    for (uint8_t b = 0; b <= 4; b++) {
+        if (get_bit(IE, b) && get_bit(IF, b)) {
+            bus.write(Registers::Interrupts::IF, reset_bit(IF, b));
+            nextPC = 0x40 + 8 * b;
+            break;
+        }
+    }
+
+    PC = nextPC;
+}
+
 void CPU::ISR_m5() {
-    PC = nn;
+    // The push of the low byte of PC must happen after the IE/IF flags have been read
+    bus.write(--SP, get_byte<0>(uu));
+    IME = false;
     fetch();
 }
 
@@ -975,8 +973,8 @@ void CPU::STOP_m1() {
 }
 
 void CPU::HALT_m1() {
-    fetch();
     halted = true;
+    fetch();
 }
 
 void CPU::DI_m1() {
@@ -985,7 +983,7 @@ void CPU::DI_m1() {
 }
 
 void CPU::EI_m1() {
-    IME = true;
+    pendingEnableIME = true;
     fetch();
 }
 
@@ -2099,6 +2097,7 @@ void CPU::RETI_uu_m2() {
 
 void CPU::RETI_uu_m3() {
     PC = concat_bytes(msb, lsb);
+    // TODO: is this delayed or not?
     IME = true;
 }
 

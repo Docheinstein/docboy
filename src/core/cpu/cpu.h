@@ -58,21 +58,17 @@ protected:
     uint16_t SP;
 
     bool IME;
-    bool halted;
-    uint64_t mCycles;
+    bool pendingEnableIME;
 
-    struct PendingInterrupt {
-        enum class State {
-            NotSet,
-            Pending,
-        } state;
-        InstructionMicroOperation* isr;
-    } interrupt;
+    bool halted;
+
+    uint64_t mCycles;
 
     // scratchpad
     struct {
         bool b;
         uint8_t u;
+        uint8_t u2;
         int8_t s;
         uint16_t uu;
         uint8_t lsb;
@@ -86,12 +82,12 @@ protected:
         uint8_t microop;
         bool cb; // TODO: find another way to save/load from the correct instruction set the current instruction pointer
                  // instead of using this flag
-        InstructionMicroOperation* microopHandler;
+        InstructionMicroOperation* microopSelector;
     } currentInstruction;
 
     InstructionMicroOperation instructions[256][6];
     InstructionMicroOperation instructions_cb[256][4];
-    InstructionMicroOperation ISR[5][5];
+    InstructionMicroOperation ISR[5];
 
     void reset();
 
@@ -117,6 +113,8 @@ protected:
 
     void fetch(bool cb = false);
 
+    void serveInterrupt();
+
     /*
      * [INSTRUCTIONS LEGEND]
      * r: 8 bit register
@@ -134,15 +132,10 @@ protected:
      */
     void invalidInstruction();
 
-    template <uint16_t nn>
     void ISR_m1();
-    template <uint16_t nn>
     void ISR_m2();
-    template <uint16_t nn>
     void ISR_m3();
-    template <uint16_t nn>
     void ISR_m4();
-    template <uint16_t nn>
     void ISR_m5();
 
     void NOP_m1();

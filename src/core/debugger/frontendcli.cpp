@@ -657,6 +657,7 @@ Debugger::Command DebuggerFrontendCli::pullCommand(const Debugger::ExecutionStat
         if (config.sections.cpu) {
             std::cout << headerString("CPU") << std::endl;
             std::cout << termcolor::yellow << "Cycle           :  " << termcolor::reset << cpu.cycles << std::endl;
+            std::cout << termcolor::yellow << "Halted          :  " << termcolor::reset << cpu.halted << std::endl;
         }
 
         if (config.sections.ppu) {
@@ -801,8 +802,7 @@ Debugger::Command DebuggerFrontendCli::pullCommand(const Debugger::ExecutionStat
         if (config.sections.code) {
             if (cpu.instruction.ISR) {
                 std::cout << headerString("code") << std::endl;
-                std::cout << termcolor::yellow << "ISR " << interrupt_service_routine_mnemonic(cpu.instruction.address)
-                          << "   ";
+                std::cout << termcolor::yellow << "ISR";
                 std::cout << termcolor::reset << termcolor::color<245> << "   M" << (cpu.instruction.microop + 1) << "/"
                           << 5 << termcolor::reset << std::endl;
             } else {

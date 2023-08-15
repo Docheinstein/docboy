@@ -17,7 +17,11 @@ ICPUDebug::State DebuggableCPU::getState() {
             },
         .instruction =
             {
-                .ISR = currentInstruction.ISR,
+                .ISR = currentInstruction.microopSelector == &CPU::ISR[0] ||
+                       currentInstruction.microopSelector == &CPU::ISR[1] ||
+                       currentInstruction.microopSelector == &CPU::ISR[2] ||
+                       currentInstruction.microopSelector == &CPU::ISR[3] ||
+                       currentInstruction.microopSelector == &CPU::ISR[4],
                 .address = currentInstruction.address,
                 .microop = currentInstruction.microop,
             },
