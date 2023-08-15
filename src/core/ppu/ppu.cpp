@@ -168,7 +168,8 @@ void PPU::tick_PixelTransfer() {
 
     auto checkOamEntriesHit = [&]() {
         // compute sprites on current LX
-        std::vector<OAMEntryFetchInfo> entries;
+
+        fetcher.clearOAMEntriesHit();
 
         for (const auto& entry : scanlineOamEntries) {
             if (entry.x < 8) {
@@ -181,9 +182,8 @@ void PPU::tick_PixelTransfer() {
             }
             uint8_t oamX = entry.x - 8;
             if (oamX == LX)
-                entries.push_back(entry);
+                fetcher.addOAMEntryHit(entry);
         }
-        fetcher.setOAMEntriesHit(entries);
     };
 
     if (LX == 0 || scratchpad.pixelTransfer.pixelPushed)
@@ -710,11 +710,15 @@ void PPU::Fetcher::tick() {
     }
 }
 
-void PPU::Fetcher::setOAMEntriesHit(const std::vector<OAMEntryFetchInfo>& entries) {
-    assert(entries.size() <= 10);
-    oamEntriesHit = entries;
-}
-
 bool PPU::Fetcher::isFetchingSprite() const {
     return !oamEntriesHit.empty() || targetFifo == FIFOType::Obj;
+}
+
+void PPU::Fetcher::addOAMEntryHit(const PPU::OAMEntryFetchInfo& entry) {
+    oamEntriesHit.push_back(entry);
+    assert(oamEntriesHit.size() <= 10);
+}
+
+void PPU::Fetcher::clearOAMEntriesHit() {
+    oamEntriesHit.clear();
 }

@@ -83,7 +83,8 @@ protected:
         // TODO: don't like
         [[nodiscard]] bool isFetchingSprite() const;
 
-        void setOAMEntriesHit(const std::vector<OAMEntryFetchInfo>& entries);
+        void clearOAMEntriesHit();
+        void addOAMEntryHit(const OAMEntryFetchInfo& entry);
 
     private:
         // base class for BGPrefetcher, OBJPrefetcher, PixelSliceFetcher
