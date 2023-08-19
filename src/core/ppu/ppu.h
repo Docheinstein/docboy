@@ -119,6 +119,9 @@ protected:
             [[nodiscard]] bool isTileDataAddressReady() const;
             [[nodiscard]] uint16_t getTileDataAddress() const;
 
+            // TODO: bad design
+            [[nodiscard]] uint8_t getPixelsToDiscardCount() const;
+
             void advanceToNextTile();
 
         private:
@@ -141,6 +144,8 @@ protected:
             uint16_t tilemapAddr;
             uint8_t tileNumber;
             uint16_t tileAddr;
+
+            uint8_t pixelsToDiscard; // TODO: refactor this
 
             // out
             uint16_t tileDataAddr;
@@ -217,7 +222,7 @@ protected:
         std::vector<OAMEntryFetchInfo> oamEntriesHit;
         FIFOType targetFifo;
 
-        bool firstFetch;
+        int fetchNumber;
 
         BGPrefetcher bgPrefetcher;
         OBJPrefetcher objPrefetcher;

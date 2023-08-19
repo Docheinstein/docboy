@@ -350,6 +350,7 @@ PPU::Fetcher::BGPrefetcher::BGPrefetcher(ILCDIO& lcdIo, IMemory& vram) :
     tilemapAddr(),
     tileNumber(),
     tileAddr(),
+    pixelsToDiscard(), // TODO: refactor this
     tileDataAddr() {
 }
 
@@ -373,9 +374,11 @@ void PPU::Fetcher::BGPrefetcher::tick_GetTile1() {
     if (fetchType == FetchType::Background) {
         uint8_t SCX = lcdIo.readSCX();
         tilemapX = ((LX_ + SCX) / 8) % 32;
+        pixelsToDiscard = x8 == 0 ? SCX % 8 : 0;
     } else /* Window */ {
         assert((LX_ - (WX - 7)) % 8 == 0);
         tilemapX = (LX_ - (WX - 7)) / 8;
+        pixelsToDiscard = 0;
     }
 }
 
@@ -441,7 +444,11 @@ void PPU::Fetcher::BGPrefetcher::resetTile() {
 }
 
 void PPU::Fetcher::BGPrefetcher::advanceToNextTile() {
-    x8 = (x8 + 1) % 20;
+    x8 = (x8 + 1) % 32;
+}
+
+uint8_t PPU::Fetcher::BGPrefetcher::getPixelsToDiscardCount() const {
+    return pixelsToDiscard;
 }
 
 PPU::Fetcher::OBJPrefetcher::OBJPrefetcher(ILCDIO& lcdIo, IMemory& oam) :
@@ -544,7 +551,7 @@ PPU::Fetcher::Fetcher(ILCDIO& lcdIo, IMemory& vram, IMemory& oam, BGPixelFIFO& b
     objFifo(objFifo),
     state(State::Prefetcher),
     targetFifo(FIFOType::Bg),
-    firstFetch(true),
+    fetchNumber(0),
     bgPrefetcher(lcdIo, vram),
     objPrefetcher(lcdIo, oam),
     pixelSliceFetcher(vram),
@@ -553,7 +560,7 @@ PPU::Fetcher::Fetcher(ILCDIO& lcdIo, IMemory& vram, IMemory& oam, BGPixelFIFO& b
 
 void PPU::Fetcher::reset() {
     state = State::Prefetcher;
-    firstFetch = true;
+    fetchNumber = 0;
     oamEntriesHit.clear();
     pixelSliceFetcher.reset();
     bgPrefetcher.reset();
@@ -653,11 +660,16 @@ void PPU::Fetcher::tick() {
                 if (bgFifo.empty()) {
                     // push pixels
                     // TODO: first fetch is a dummy fetch, figure out how to handle this properly
-                    if (!firstFetch) {
+                    if (fetchNumber > 0) {
                         emplacePixelSliceFetcherDataFromBG(bgFifo);
                         bgPrefetcher.advanceToNextTile();
+
+                        // TODO: bad design
+                        for (int i = 0; i < bgPrefetcher.getPixelsToDiscardCount(); i++) {
+                            pop_front(bgFifo);
+                        }
                     }
-                    firstFetch = false;
+                    fetchNumber++;
                     restartFetcher();
                 }
             }
