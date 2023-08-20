@@ -279,6 +279,7 @@ protected:
             uint8_t y;
         } oamScan;
         struct {
+            bool firstOamEntriesCheck {true};
             bool pixelPushed;
         } pixelTransfer;
     } scratchpad {};
@@ -288,7 +289,7 @@ protected:
     BGPixelFIFO bgFifo;
     OBJPixelFIFO objFifo;
 
-    uint8_t LX;
+    uint8_t LX; // LX=X+8, therefore goes from 0 to 168
 
     uint32_t dots;
     uint64_t tCycles;

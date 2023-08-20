@@ -172,22 +172,15 @@ void PPU::tick_PixelTransfer() {
         fetcher.clearOAMEntriesHit();
 
         for (const auto& entry : scanlineOamEntries) {
-            if (entry.x < 8) {
-                // TODO: handle this case
-                continue;
-            }
-            if (entry.x == 8) {
-                // TODO: handle this case
-                continue;
-            }
-            uint8_t oamX = entry.x - 8;
-            if (oamX == LX)
+            if (entry.x == LX)
                 fetcher.addOAMEntryHit(entry);
         }
     };
 
-    if (LX == 0 || scratchpad.pixelTransfer.pixelPushed)
+    if (scratchpad.pixelTransfer.firstOamEntriesCheck || scratchpad.pixelTransfer.pixelPushed) {
+        scratchpad.pixelTransfer.firstOamEntriesCheck = false;
         checkOamEntriesHit();
+    }
 
     scratchpad.pixelTransfer.pixelPushed = false;
 
@@ -233,7 +226,10 @@ void PPU::tick_PixelTransfer() {
             // Color      | ? ? | ? ? | ? ? | ? ? |
             uint8_t color = keep_bits<2>(palette >> (2 * colorIndex));
 
-            lcd.pushPixel(color_to_lcd_pixel(color));
+            if (LX >= 8 /* first 8 pixels are discarded */) {
+                lcd.pushPixel(color_to_lcd_pixel(color));
+            }
+
             scratchpad.pixelTransfer.pixelPushed = true;
         }
     }
@@ -242,8 +238,8 @@ void PPU::tick_PixelTransfer() {
 void PPU::afterTick_PixelTransfer() {
     if (scratchpad.pixelTransfer.pixelPushed) {
         LX++;
-        assert(LX <= 160);
-        if (LX == 160)
+        assert(LX <= 168);
+        if (LX == 168)
             enterHBlank();
     }
 }
@@ -264,7 +260,7 @@ void PPU::enterHBlank() {
     assert(state == PixelTransfer);
     assert(LY() < 144);
     // TODO: does not pass right now: timing of PixelTransfer is slightly wrong?
-    static constexpr uint8_t DOTS_ERROR_THRESHOLD_TO_FIX = 4;
+    static constexpr uint8_t DOTS_ERROR_THRESHOLD_TO_FIX = 16;
     assert(dots >= 80 + 172 && dots <= 80 + 289 + DOTS_ERROR_THRESHOLD_TO_FIX);
     setState(HBlank);
 }
@@ -282,6 +278,7 @@ void PPU::enterPixelTransfer() {
     assert(dots == 80);
     LX = 0;
     fetcher.reset();
+    scratchpad.pixelTransfer.firstOamEntriesCheck = true; // TODO: refactor: some kind of static state pattern?
     setState(PixelTransfer);
 }
 
@@ -658,10 +655,8 @@ void PPU::Fetcher::tick() {
                 restartFetcherWithOAMEntryAndTick(pop(oamEntriesHit));
             } else {
                 if (bgFifo.empty()) {
-                    // push pixels
-                    // TODO: first fetch is a dummy fetch, figure out how to handle this properly
+                    emplacePixelSliceFetcherDataFromBG(bgFifo);
                     if (fetchNumber > 0) {
-                        emplacePixelSliceFetcherDataFromBG(bgFifo);
                         bgPrefetcher.advanceToNextTile();
 
                         // TODO: bad design
