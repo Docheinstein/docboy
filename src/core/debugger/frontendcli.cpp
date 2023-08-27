@@ -517,10 +517,11 @@ Debugger::Command DebuggerFrontendCli::pullCommand(const Debugger::ExecutionStat
         return ss.str();
     };
 
-    auto ioString = [&](uint16_t addr, uint8_t value, int width = 8) {
+    auto ioString = [&](uint16_t addr, uint8_t value, int width = 6) {
         std::stringstream ss;
-        ss << termcolor::color<244> << hex(addr) << "  " << std::right << termcolor::bold << termcolor::red << std::left
-           << std::setw(width) << address_mnemonic(addr) << termcolor::reset << " : " << bin(value);
+        ss << termcolor::color<244> << hex(addr) << "   " << std::right << termcolor::bold << termcolor::red
+           << std::left << std::setw(width) << address_mnemonic(addr) << termcolor::reset << " : " << bin(value) << " ("
+           << hex(value) << ")";
         return ss.str();
     };
 
