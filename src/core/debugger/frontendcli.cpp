@@ -657,8 +657,8 @@ Debugger::Command DebuggerFrontendCli::pullCommand(const Debugger::ExecutionStat
 
         if (config.sections.cpu) {
             std::cout << headerString("CPU") << std::endl;
-            std::cout << termcolor::yellow << "Cycle           :  " << termcolor::reset << cpu.cycles << std::endl;
             std::cout << termcolor::yellow << "Halted          :  " << termcolor::reset << cpu.halted << std::endl;
+            std::cout << termcolor::yellow << "Cycle           :  " << termcolor::reset << cpu.cycles << std::endl;
         }
 
         if (config.sections.ppu) {
@@ -676,6 +676,7 @@ Debugger::Command DebuggerFrontendCli::pullCommand(const Debugger::ExecutionStat
                       << ", y=" << +lcd.y << ")" << std::endl;
 
             std::cout << subheaderString("ppu") << std::endl;
+            std::cout << termcolor::yellow << "On              :  " << termcolor::reset << ppu.ppu.isOn << std::endl;
             std::cout << termcolor::yellow << "Cycle           :  " << termcolor::reset << ppu.ppu.cycles << std::endl;
 
             std::vector<uint8_t> bgFifo;
