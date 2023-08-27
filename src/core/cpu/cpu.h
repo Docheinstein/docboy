@@ -111,9 +111,10 @@ protected:
     template <Flag f>
     void writeFlag(bool value);
 
-    void fetch(bool cb = false);
-
+    [[nodiscard]] bool hasPendingInterrupts() const;
     void serveInterrupt();
+
+    void fetch(bool cb = false);
 
     /*
      * [INSTRUCTIONS LEGEND]

@@ -653,13 +653,10 @@ void CPU::tick() {
         IME = true;
     }
 
-    bool pendingInterrupts = (bus.read(Registers::Interrupts::IE) & bus.read(Registers::Interrupts::IF) & 0b11111);
-    bool serveInterrupts = IME && pendingInterrupts;
-
     if (halted) {
         // Exit HALT state if there is at least a pending interrupt
         // (HALT state is exited even if IME is unset)
-        if (pendingInterrupts)
+        if (hasPendingInterrupts())
             halted = false;
     } else {
         // Get the current micro op to execute
@@ -675,7 +672,7 @@ void CPU::tick() {
     }
 
     // Eventually serve pending interrupts
-    if (serveInterrupts) {
+    if (IME && hasPendingInterrupts()) {
         // (this check is needed to ensure the interrupt service routine
         // is triggered only at the beginning of an instruction)
         if (currentInstruction.microop == 0)
@@ -895,6 +892,15 @@ void CPU::writeFlag<CPU::Flag::C>(bool value) {
     set_bit<Bits::Flags::C>(AF, value);
 }
 
+bool CPU::hasPendingInterrupts() const {
+    return (bus.read(Registers::Interrupts::IE) & bus.read(Registers::Interrupts::IF) & 0b11111);
+}
+
+void CPU::serveInterrupt() {
+    currentInstruction.microop = 0;
+    currentInstruction.microopSelector = &ISR[0];
+}
+
 // ============================= INSTRUCTIONS ==================================
 
 void CPU::fetch(bool cb) {
@@ -905,11 +911,6 @@ void CPU::fetch(bool cb) {
         currentInstruction.microopSelector = instructions_cb[bus.read(PC++)];
     else
         currentInstruction.microopSelector = instructions[bus.read(PC++)];
-}
-
-void CPU::serveInterrupt() {
-    currentInstruction.microop = 0;
-    currentInstruction.microopSelector = &ISR[0];
 }
 
 void CPU::invalidInstruction() {
@@ -932,7 +933,7 @@ void CPU::ISR_m2() {
 }
 
 void CPU::ISR_m3() {
-    // The reads of IE must happen after the high byte of PC has been pushed
+    // The reads of IF must happen after the high byte of PC has been pushed
     u2 = bus.read(Registers::Interrupts::IF);
 }
 
@@ -2180,7 +2181,6 @@ void CPU::POP_rr_m3() {
 void CPU::CB_m1() {
     fetch(true);
 }
-
 // e.g. e.g. CB 00 | RLC B
 
 template <CPU::Register8 r>
