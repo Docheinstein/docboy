@@ -322,6 +322,9 @@ void PPU::turnOn() {
     assert(on == false);
     on = true;
     lcd.turnOn();
+
+    // TODO: makes STAT and state consistent, but is probably wrong: figure out the internals
+    lcdIo.writeSTAT(reset_bits<2>(lcdIo.readSTAT()) | state);
 }
 
 void PPU::turnOff() {
@@ -331,6 +334,10 @@ void PPU::turnOff() {
     fetcher.reset();
     setLY(0);
     enterOAMScan();
+
+    // Apparently lasts two bits of STAT should be 0 when PPU is turned off
+    // TODO: figure out what is actually reset here
+    lcdIo.writeSTAT(reset_bits<2>(lcdIo.readSTAT()));
 }
 
 PPU::Fetcher::BGPrefetcher::BGPrefetcher(ILCDIO& lcdIo, IMemory& vram) :
