@@ -1,12 +1,21 @@
 #include "cartridgefactory.h"
 #include "cartridge.h"
+#include "headeronlycartridge.h"
 #include "mbc1.h"
 #include "mbc1ram.h"
 #include "nombc.h"
 #include "utils/binutils.h"
 #include "utils/fileutils.h"
 
-std::unique_ptr<ICartridge> CartridgeFactory::makeCartridge(const std::string& filename) {
+CartridgeFactory::CartridgeFactory() :
+    makeHeaderOnlyCartridgeForUnknownType() {
+}
+
+void CartridgeFactory::setMakeHeaderOnlyCartridgeForUnknownType(bool yes) {
+    makeHeaderOnlyCartridgeForUnknownType = yes;
+}
+
+std::unique_ptr<ICartridge> CartridgeFactory::makeCartridge(const std::string& filename) const {
     bool ok;
 
     std::vector<uint8_t> data = read_file(filename, &ok);
@@ -24,6 +33,9 @@ std::unique_ptr<ICartridge> CartridgeFactory::makeCartridge(const std::string& f
         return std::make_unique<MBC1>(data);
     if (mbc == 0x02 || mbc == 0x03)
         return std::make_unique<MBC1RAM>(data);
+
+    if (makeHeaderOnlyCartridgeForUnknownType)
+        return std::make_unique<HeaderOnlyCartridge>(data);
 
     throw std::runtime_error("unknown MBC type: 0x" + hex(mbc));
 }

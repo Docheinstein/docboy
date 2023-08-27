@@ -18,7 +18,7 @@ void Core::saveState(IWritableState& state) {
 }
 
 void Core::loadROM(const std::string& rom) {
-    loadROM(CartridgeFactory::makeCartridge(rom));
+    loadROM(CartridgeFactory().makeCartridge(rom));
 }
 
 void Core::loadROM(std::unique_ptr<ICartridge> cartridge) {

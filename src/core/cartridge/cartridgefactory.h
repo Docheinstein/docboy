@@ -7,7 +7,14 @@ class ICartridge;
 
 class CartridgeFactory {
 public:
-    static std::unique_ptr<ICartridge> makeCartridge(const std::string& filename);
+    CartridgeFactory();
+
+    void setMakeHeaderOnlyCartridgeForUnknownType(bool yes);
+
+    [[nodiscard]] std::unique_ptr<ICartridge> makeCartridge(const std::string& filename) const;
+
+private:
+    bool makeHeaderOnlyCartridgeForUnknownType;
 };
 
 #endif // CARTRIDGEFACTORY_H

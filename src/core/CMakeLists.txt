@@ -9,6 +9,8 @@ set(SOURCES
         cartridge/cartridge.cpp
         cartridge/cartridgefactory.cpp
         cartridge/cartridgefactory.h
+        cartridge/headeronlycartridge.h
+        cartridge/headeronlycartridge.cpp
         cartridge/cartridge.h
         cartridge/mbc1.cpp
         cartridge/mbc1.h

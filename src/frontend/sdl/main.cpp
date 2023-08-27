@@ -248,7 +248,9 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<ICartridge> cartridge;
     try {
-        cartridge = CartridgeFactory::makeCartridge(args.rom);
+        CartridgeFactory factory;
+        factory.setMakeHeaderOnlyCartridgeForUnknownType(args.dump_cartridge_info);
+        cartridge = factory.makeCartridge(args.rom);
     } catch (const std::exception& e) {
         std::cerr << "ERROR: failed to load rom: '" << args.rom << "' " << e.what() << std::endl;
         return 1;

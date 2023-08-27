@@ -2,49 +2,40 @@
 #include "catch2/catch_session.hpp"
 #include "catch2/generators/catch_generators.hpp"
 #include "catch2/generators/catch_generators_range.hpp"
-#include <catch2/catch_test_macros.hpp>
-#include "utils/binutils.h"
-#include "utils/log.h"
-#include "utils/fileutils.h"
-#include "core/core.h"
-#include "core/helpers.h"
-#include "core/cartridge/cartridgefactory.h"
-#include "core/debugger/frontend.h"
-#include "core/serial/port.h"
-#include "core/serial/endpoints/buffer.h"
 #include "core/bus/bus.h"
-#include "core/gameboy.h"
-#include "core/lcd/framebufferlcd.h"
+#include "core/cartridge/cartridgefactory.h"
+#include "core/core.h"
 #include "core/debugger/core/core.h"
-#include <queue>
+#include "core/debugger/frontend.h"
+#include "core/gameboy.h"
+#include "core/helpers.h"
+#include "core/lcd/framebufferlcd.h"
+#include "core/serial/endpoints/buffer.h"
+#include "core/serial/port.h"
+#include "utils/binutils.h"
+#include "utils/fileutils.h"
+#include "utils/log.h"
 #include <algorithm>
+#include <catch2/catch_test_macros.hpp>
 #include <cstring>
+#include <queue>
 
 #undef SECTION
 #undef DYNAMIC_SECTION
 #define STATIC_SECTION(name) INTERNAL_CATCH_SECTION(name)
 #define DYNAMIC_SECTION(name, param) INTERNAL_CATCH_DYNAMIC_SECTION(name << " (" << param << ")")
 #define SECTION_PICKER(_1, _2, FUNC, ...) FUNC
-#define SECTION(...) SECTION_PICKER( \
-    __VA_ARGS__, \
-    DYNAMIC_SECTION, \
-    STATIC_SECTION \
-)(__VA_ARGS__)
-
+#define SECTION(...) SECTION_PICKER(__VA_ARGS__, DYNAMIC_SECTION, STATIC_SECTION)(__VA_ARGS__)
 
 #define GENERATE_TABLE_1(t1, data) GENERATE(table<t1> data)
 #define GENERATE_TABLE_2(t1, t2, data) GENERATE(table<t1, t2> data)
 #define GENERATE_TABLE_3(t1, t2, t3, data) GENERATE(table<t1, t2, t3> data)
 
 #define GENERATE_TABLE_PICKER(_1, _2, _3, _4, FUNC, ...) FUNC
-#define GENERATE_TABLE(...) GENERATE_TABLE_PICKER( \
-    __VA_ARGS__, \
-    GENERATE_TABLE_3, \
-    GENERATE_TABLE_2, \
-    GENERATE_TABLE_1 \
-)(__VA_ARGS__)
+#define GENERATE_TABLE(...)                                                                                            \
+    GENERATE_TABLE_PICKER(__VA_ARGS__, GENERATE_TABLE_3, GENERATE_TABLE_2, GENERATE_TABLE_1)(__VA_ARGS__)
 
-static std::string run_and_get_serial(const std::string &rom, uint64_t ticks) {
+static std::string run_and_get_serial(const std::string& rom, uint64_t ticks) {
     class SerialString : public ISerialEndpoint {
     public:
         uint8_t serialRead() override {
@@ -52,7 +43,7 @@ static std::string run_and_get_serial(const std::string &rom, uint64_t ticks) {
         }
 
         void serialWrite(uint8_t b) override {
-            data += (char) b;
+            data += (char)b;
         }
 
         std::string data;
@@ -60,9 +51,7 @@ static std::string run_and_get_serial(const std::string &rom, uint64_t ticks) {
 
     SerialString serialString;
 
-    GameBoy gb = GameBoy::Builder()
-        .setFrequency(Clock::MAX_FREQUENCY)
-        .build();
+    GameBoy gb = GameBoy::Builder().setFrequency(Clock::MAX_FREQUENCY).build();
 
     Core core(gb);
 
@@ -78,9 +67,8 @@ static std::string run_and_get_serial(const std::string &rom, uint64_t ticks) {
     return serialString.data;
 }
 
-
-static std::string run_and_expect_string_over_serial(
-        const std::string &rom, const std::string &expected, uint64_t maxticks) {
+static std::string run_and_expect_string_over_serial(const std::string& rom, const std::string& expected,
+                                                     uint64_t maxticks) {
     class SerialString : public ISerialEndpoint {
     public:
         uint8_t serialRead() override {
@@ -88,7 +76,7 @@ static std::string run_and_expect_string_over_serial(
         }
 
         void serialWrite(uint8_t b) override {
-            data += (char) b;
+            data += (char)b;
         }
 
         std::string data;
@@ -96,9 +84,7 @@ static std::string run_and_expect_string_over_serial(
 
     SerialString serialString;
 
-    DebuggableGameBoy gb = DebuggableGameBoy::Builder()
-        .setFrequency(Clock::MAX_FREQUENCY)
-        .build();
+    DebuggableGameBoy gb = DebuggableGameBoy::Builder().setFrequency(Clock::MAX_FREQUENCY).build();
 
     DebuggableCore core(gb);
 
@@ -118,10 +104,8 @@ static std::string run_and_expect_string_over_serial(
     return serialString.data;
 }
 
-static std::vector<uint32_t> run_and_get_framebuffer(const std::string &rom, uint64_t ticks) {
-    GameBoy gb = GameBoy::Builder()
-            .setFrequency(Clock::MAX_FREQUENCY)
-            .build();
+static std::vector<uint32_t> run_and_get_framebuffer(const std::string& rom, uint64_t ticks) {
+    GameBoy gb = GameBoy::Builder().setFrequency(Clock::MAX_FREQUENCY).build();
 
     Core core(gb);
     core.loadROM(rom);
@@ -129,7 +113,7 @@ static std::vector<uint32_t> run_and_get_framebuffer(const std::string &rom, uin
     for (uint64_t i = 0; i < ticks; i++)
         core.tick();
 
-    uint32_t *framebuffer = gb.lcd.getFrameBuffer();
+    uint32_t* framebuffer = gb.lcd.getFrameBuffer();
     std::vector<uint32_t> out;
     size_t length = Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint32_t);
     out.resize(length / sizeof(uint32_t));
@@ -219,15 +203,15 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(bitmask_on<8> == 0b11111111);
     }
     SECTION("bitmask_off") {
-        REQUIRE((uint8_t) bitmask_off<0> == 0b11111111);
-        REQUIRE((uint8_t) bitmask_off<1> == 0b11111110);
-        REQUIRE((uint8_t) bitmask_off<2> == 0b11111100);
-        REQUIRE((uint8_t) bitmask_off<3> == 0b11111000);
-        REQUIRE((uint8_t) bitmask_off<4> == 0b11110000);
-        REQUIRE((uint8_t) bitmask_off<5> == 0b11100000);
-        REQUIRE((uint8_t) bitmask_off<6> == 0b11000000);
-        REQUIRE((uint8_t) bitmask_off<7> == 0b10000000);
-        REQUIRE((uint8_t) bitmask_off<8> == 0b00000000);
+        REQUIRE((uint8_t)bitmask_off<0> == 0b11111111);
+        REQUIRE((uint8_t)bitmask_off<1> == 0b11111110);
+        REQUIRE((uint8_t)bitmask_off<2> == 0b11111100);
+        REQUIRE((uint8_t)bitmask_off<3> == 0b11111000);
+        REQUIRE((uint8_t)bitmask_off<4> == 0b11110000);
+        REQUIRE((uint8_t)bitmask_off<5> == 0b11100000);
+        REQUIRE((uint8_t)bitmask_off<6> == 0b11000000);
+        REQUIRE((uint8_t)bitmask_off<7> == 0b10000000);
+        REQUIRE((uint8_t)bitmask_off<8> == 0b00000000);
     }
 
     SECTION("bit") {
@@ -275,12 +259,12 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(sum_get_carry_bit<7>(uu1, uu2));
 
         u1 = 0xFF;
-        auto [result2, _1] = sum_carry<3>(u1, (uint8_t) 1);
+        auto [result2, _1] = sum_carry<3>(u1, (uint8_t)1);
         REQUIRE(result2 == 0);
 
-//        u1 = 4;
-//        auto [result3, _2] = sum_carry<3>(u1, -1);
-//        REQUIRE(result3 == 3);
+        //        u1 = 4;
+        //        auto [result3, _2] = sum_carry<3>(u1, -1);
+        //        REQUIRE(result3 == 3);
 
         u1 = 0x10;
         s1 = 1;
@@ -327,16 +311,11 @@ TEST_CASE("binutils", "[binutils]") {
 }
 
 TEST_CASE("cartridge", "[cartridge]") {
-    auto [rom, title] = GENERATE_TABLE(
-        std::string,
-        std::string,
-        ({
-            { "tests/roms/games/tetris.gb", "TETRIS" },
-            { "tests/roms/games/alleyway.gb", "ALLEY WAY" }
-        })
-    );
+    auto [rom, title] =
+        GENERATE_TABLE(std::string, std::string,
+                       ({{"tests/roms/games/tetris.gb", "TETRIS"}, {"tests/roms/games/alleyway.gb", "ALLEY WAY"}}));
 
-    auto c = CartridgeFactory::makeCartridge(rom);
+    auto c = CartridgeFactory().makeCartridge(rom);
 
     SECTION("cartridge loaded", rom) {
         REQUIRE(c);
@@ -355,10 +334,7 @@ TEST_CASE("cpu", "[cpu]") {
         class FakeBus : public IBus {
         public:
             struct Access {
-                enum Type {
-                    Read,
-                    Write
-                } type;
+                enum Type { Read, Write } type;
                 uint16_t addr;
             };
 
@@ -390,18 +366,18 @@ TEST_CASE("cpu", "[cpu]") {
             }
 
             [[nodiscard]] unsigned long long getReadCount() const {
-                return std::count_if(accesses.begin(), accesses.end(), [](const Access &a) {
+                return std::count_if(accesses.begin(), accesses.end(), [](const Access& a) {
                     return a.type == Access::Read;
                 });
             }
 
             [[nodiscard]] unsigned long long getWriteCount() const {
-                return std::count_if(accesses.begin(), accesses.end(), [](const Access &a) {
+                return std::count_if(accesses.begin(), accesses.end(), [](const Access& a) {
                     return a.type == Access::Write;
                 });
             }
 
-            [[nodiscard]] const std::vector<Access> &getAccesses() const {
+            [[nodiscard]] const std::vector<Access>& getAccesses() const {
                 return accesses;
             }
 
@@ -420,7 +396,8 @@ TEST_CASE("cpu", "[cpu]") {
         };
 
         class DummyClockable : public IClockable {
-            void tick() override {}
+            void tick() override {
+            }
         };
 
         bool cb = GENERATE(false, true);
@@ -446,7 +423,7 @@ TEST_CASE("cpu", "[cpu]") {
             fakeBus.feed(instr); // feed with instruction
             for (int i = 0; i < 10; i++)
                 fakeBus.feed((instr + 1) * 3); // feed with something else != instr
-            cpu.tick(); // fetch
+            cpu.tick();                        // fetch
             if (cb)
                 cpu.tick(); // fetch
         };
@@ -455,7 +432,7 @@ TEST_CASE("cpu", "[cpu]") {
             auto accesses = fakeBus.getAccesses();
             unsigned long long length = 0;
 
-            auto lastRead = std::find_if(accesses.rend(), accesses.rbegin(), [](const FakeBus::Access &a) {
+            auto lastRead = std::find_if(accesses.rend(), accesses.rbegin(), [](const FakeBus::Access& a) {
                 return a.type == FakeBus::Access::Read;
             });
             std::optional<FakeBus::Access> lastReadAddress;
@@ -478,7 +455,6 @@ TEST_CASE("cpu", "[cpu]") {
             return length;
         };
 
-
         SECTION("instruction implemented", instr_name) {
             setupInstruction();
             REQUIRE_NOTHROW(cpu.tick());
@@ -495,7 +471,8 @@ TEST_CASE("cpu", "[cpu]") {
                 } while (cpu.getState().instruction.microop != 0);
                 REQUIRE(duration_min <= duration);
                 REQUIRE(duration <= duration_max);
-            } catch (const std::runtime_error &e) {}
+            } catch (const std::runtime_error& e) {
+            }
         }
 
         SECTION("instruction length", instr_name) {
@@ -505,7 +482,8 @@ TEST_CASE("cpu", "[cpu]") {
                     cpu.tick();
                 } while (cpu.getState().instruction.microop != 0);
                 REQUIRE(length == getInstructionLength());
-            } catch (const std::runtime_error &e) {}
+            } catch (const std::runtime_error& e) {
+            }
         }
 
         SECTION("no more than one memory read/write per m-cycle", instr_name) {
@@ -517,7 +495,8 @@ TEST_CASE("cpu", "[cpu]") {
                     auto ioCountAfter = fakeBus.getReadWriteCount();
                     REQUIRE(ioCountAfter - ioCountBefore <= 1);
                 }
-            } catch (const std::runtime_error &e) {}
+            } catch (const std::runtime_error& e) {
+            }
         }
     }
 }
@@ -526,7 +505,8 @@ TEST_CASE("serial", "[serial]") {
     SECTION("serial link and serial buffer") {
         class SerialStringSource : public ISerialEndpoint {
         public:
-            explicit SerialStringSource(const std::string &s) : cursor() {
+            explicit SerialStringSource(const std::string& s) :
+                cursor() {
                 for (auto c : s)
                     data.push_back(c);
             }
@@ -537,9 +517,10 @@ TEST_CASE("serial", "[serial]") {
                 return data[cursor++];
             }
 
-            void serialWrite(uint8_t) override {}
+            void serialWrite(uint8_t) override {
+            }
 
-            [[nodiscard]] const std::vector<uint8_t> &getData() const {
+            [[nodiscard]] const std::vector<uint8_t>& getData() const {
                 return data;
             }
 
@@ -565,19 +546,9 @@ TEST_CASE("serial", "[serial]") {
 }
 
 TEST_CASE("blargg_cpu", "[.][cpu][core][timer][interrupt][blargg]") {
-    std::string testname = GENERATE(
-        "01-special",
-        "02-interrupts",
-        "03-op sp,hl",
-        "04-op r,imm",
-        "05-op rp",
-        "06-ld r,r",
-        "07-jr,jp,call,ret,rst",
-        "08-misc instrs",
-        "09-op r,r",
-        "10-bit ops",
-        "11-op a,(hl)"
-    );
+    std::string testname =
+        GENERATE("01-special", "02-interrupts", "03-op sp,hl", "04-op r,imm", "05-op rp", "06-ld r,r",
+                 "07-jr,jp,call,ret,rst", "08-misc instrs", "09-op r,r", "10-bit ops", "11-op a,(hl)");
 
     SECTION("cpu_instrs", testname) {
         std::string rom = "tests/roms/tests/blargg/" + testname + ".gb";
@@ -588,14 +559,11 @@ TEST_CASE("blargg_cpu", "[.][cpu][core][timer][interrupt][blargg]") {
 }
 
 TEST_CASE("blargg_ppu", "[.][ppu][blargg]") {
-    auto [rom, screenshot, ticks] = GENERATE_TABLE(
-        std::string,
-        std::string,
-        uint64_t,
-        ({
-            { "tests/roms/tests/blargg/06-ld r,r.gb", "tests/screenshots/blargg/06-ld r,r.dat", 6358441 },
-        })
-    );
+    auto [rom, screenshot, ticks] =
+        GENERATE_TABLE(std::string, std::string, uint64_t,
+                       ({
+                           {"tests/roms/tests/blargg/06-ld r,r.gb", "tests/screenshots/blargg/06-ld r,r.dat", 6358441},
+                       }));
 
     SECTION("cpu_instrs", rom) {
         std::vector<uint32_t> expectedFramebuffer = read_file<uint32_t>(screenshot);
