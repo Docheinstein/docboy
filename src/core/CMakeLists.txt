@@ -18,6 +18,8 @@ set(SOURCES
         cartridge/mbc1ram.h
         cartridge/nombc.cpp
         cartridge/nombc.h
+        cartridge/mbc3.h
+        cartridge/mbc3.cpp
         cartridge/slot.cpp
         cartridge/slot.h
         clock/clockable.h

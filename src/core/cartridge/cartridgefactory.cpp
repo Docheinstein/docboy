@@ -3,6 +3,7 @@
 #include "headeronlycartridge.h"
 #include "mbc1.h"
 #include "mbc1ram.h"
+#include "mbc3.h"
 #include "nombc.h"
 #include "utils/binutils.h"
 #include "utils/fileutils.h"
@@ -33,6 +34,8 @@ std::unique_ptr<ICartridge> CartridgeFactory::makeCartridge(const std::string& f
         return std::make_unique<MBC1>(data);
     if (mbc == 0x02 || mbc == 0x03)
         return std::make_unique<MBC1RAM>(data);
+    if (mbc == 0x11 || mbc == 0x0F || mbc == 0x13)
+        return std::make_unique<MBC3>(data);
 
     if (makeHeaderOnlyCartridgeForUnknownType)
         return std::make_unique<HeaderOnlyCartridge>(data);

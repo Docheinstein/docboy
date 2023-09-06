@@ -21,6 +21,8 @@ set(SOURCES
     strutils.h
     strutils.cpp
     termcolor.h
+    timeutils.h
+    timeutils.cpp
 )
 
 add_library(utils STATIC ${SOURCES})
