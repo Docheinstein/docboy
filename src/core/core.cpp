@@ -1,10 +1,25 @@
 #include "core.h"
 #include "cartridge/cartridgefactory.h"
+#include "core/cartridge/batteriedram.h"
 #include "gameboy.h"
 
 Core::Core(IGameBoy& gameboy) :
     gameboy(gameboy),
     serialLink() {
+}
+
+void Core::loadSave(IReadableSave& save) {
+    if (const auto cartridgeWithBatteriedRAM =
+            dynamic_cast<IBatteriedRAM*>(gameboy.getCartridgeSlot().getAttachedCartridge())) {
+        cartridgeWithBatteriedRAM->loadRAM(save);
+    }
+}
+
+void Core::saveSave(IWritableSave& save) {
+    if (const auto cartridgeWithBatteriedRAM =
+            dynamic_cast<IBatteriedRAM*>(gameboy.getCartridgeSlot().getAttachedCartridge())) {
+        cartridgeWithBatteriedRAM->saveRAM(save);
+    }
 }
 
 void Core::loadState(IReadableState& state) {

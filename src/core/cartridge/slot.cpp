@@ -20,24 +20,6 @@ void CartridgeSlot::write(uint16_t index, uint8_t value) {
         cartridge->write(index, value);
 }
 
-ICartridge::Header CartridgeSlot::header() const {
-    if (cartridge)
-        return cartridge->header();
-    return {};
-}
-
-void CartridgeSlot::loadState(IReadableState& state) {
-    if (cartridge) {
-        if (const auto cartridgeStateProcessor = dynamic_cast<IStateProcessor*>(&*cartridge)) {
-            cartridgeStateProcessor->loadState(state);
-        }
-    }
-}
-
-void CartridgeSlot::saveState(IWritableState& state) {
-    if (cartridge) {
-        if (const auto cartridgeStateProcessor = dynamic_cast<IStateProcessor*>(&*cartridge)) {
-            cartridgeStateProcessor->saveState(state);
-        }
-    }
+ICartridge* CartridgeSlot::getAttachedCartridge() const {
+    return cartridge.get();
 }

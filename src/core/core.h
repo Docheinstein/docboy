@@ -1,6 +1,8 @@
 #ifndef CORE_H
 #define CORE_H
 
+#include "core/save/readable.h"
+#include "core/save/writable.h"
 #include "joypad/joypad.h"
 #include "serial/link.h"
 #include "state/processor.h"
@@ -21,6 +23,9 @@ public:
 class Core : public ICore {
 public:
     explicit Core(IGameBoy& gameboy);
+
+    void loadSave(IReadableSave& save);
+    void saveSave(IWritableSave& save);
 
     void loadState(IReadableState& state);
     void saveState(IWritableState& state);

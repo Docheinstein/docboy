@@ -189,17 +189,19 @@ IMemoryDebug& DebuggableGameBoy::getCartridgeSlotDebug() {
     return cartridgeSlot;
 }
 
-ICartridge& DebuggableGameBoy::getCartridge() {
-    return cartridgeSlot;
-}
-
 IReadableDebug& DebuggableGameBoy::getBootROMDebug() {
     return boot;
 }
 
 std::vector<IStateProcessor*> DebuggableGameBoy::getStateProcessors() {
-    return {
-        &cpu,  &ppu,        &cartridgeSlot, &vram,       &wram1, &wram2,  &oam, &hram,
-        &boot, &interrupts, &joypad,        &serialPort, &sound, &timers, &dma, &clock,
+    std::vector<IStateProcessor*> stateProcessors {
+        &cpu,        &ppu,    &vram,       &wram1, &wram2,  &oam, &hram,  &boot,
+        &interrupts, &joypad, &serialPort, &sound, &timers, &dma, &clock,
     };
+
+    if (auto stateProcessorCartridge = dynamic_cast<IStateProcessor*>(cartridgeSlot.getAttachedCartridge())) {
+        stateProcessors.push_back(stateProcessorCartridge);
+    }
+
+    return stateProcessors;
 }

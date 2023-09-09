@@ -121,17 +121,19 @@ ICartridgeSlot& GameBoy::getCartridgeSlot() {
     return cartridgeSlot;
 }
 
-ICartridge& GameBoy::getCartridge() {
-    return cartridgeSlot;
-}
-
 IBus& GameBoy::getBus() {
     return bus;
 }
 
 std::vector<IStateProcessor*> GameBoy::getStateProcessors() {
-    return {
-        &cpu,  &ppu,        &cartridgeSlot, &vram,       &wram1, &wram2,  &oam, &hram,
-        &boot, &interrupts, &joypad,        &serialPort, &sound, &timers, &dma, &clock,
+    std::vector<IStateProcessor*> stateProcessors {
+        &cpu,        &ppu,    &vram,       &wram1, &wram2,  &oam, &hram,  &boot,
+        &interrupts, &joypad, &serialPort, &sound, &timers, &dma, &clock,
     };
+
+    if (auto stateProcessorCartridge = dynamic_cast<IStateProcessor*>(cartridgeSlot.getAttachedCartridge())) {
+        stateProcessors.push_back(stateProcessorCartridge);
+    }
+
+    return stateProcessors;
 }

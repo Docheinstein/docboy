@@ -1,6 +1,8 @@
 #include "argparser.h"
 #include "core/boot/bootromfactory.h"
+#include "core/cartridge/cartridge.h"
 #include "core/cartridge/cartridgefactory.h"
+#include "core/cartridge/cartridgeheader.h"
 #include "core/config/config.h"
 #include "core/config/parser.h"
 #include "core/core.h"
@@ -20,6 +22,8 @@
 #include "core/debugger/core/core.h"
 #include "core/debugger/frontendcli.h"
 #include "core/debugger/gameboy.h"
+#include "core/save/save.h"
+
 #endif
 
 #ifdef ENABLE_PROFILER
@@ -42,7 +46,25 @@ static bool screenshot_dat(uint32_t* framebuffer, const std::filesystem::path& p
     return ok;
 }
 
-static bool save_state(const IStataData& state, const std::filesystem::path& path) {
+static bool write_save(const IReadableSave& state, const std::filesystem::path& path) {
+    const std::vector<uint8_t>& stateDate = state.readData();
+    bool ok;
+    write_file(path, (void*)stateDate.data(), stateDate.size(), &ok);
+    if (ok)
+        std::cout << "Saved to: " << path << std::endl;
+    return ok;
+}
+
+static std::optional<Save> read_save(const std::filesystem::path& path) {
+    bool ok;
+    const std::vector<uint8_t> data = read_file(path, &ok);
+    if (!ok)
+        return std::nullopt;
+    std::cout << "Loaded from: " << path << std::endl;
+    return Save(data);
+}
+
+static bool write_state(const IStataData& state, const std::filesystem::path& path) {
     const std::vector<uint8_t>& stateDate = state.getData();
     bool ok;
     write_file(path, (void*)stateDate.data(), stateDate.size(), &ok);
@@ -51,7 +73,7 @@ static bool save_state(const IStataData& state, const std::filesystem::path& pat
     return ok;
 }
 
-static std::optional<State> load_state(const std::filesystem::path& path) {
+static std::optional<State> read_state(const std::filesystem::path& path) {
     bool ok;
     const std::vector<uint8_t> data = read_file(path, &ok);
     if (!ok)
@@ -61,7 +83,7 @@ static std::optional<State> load_state(const std::filesystem::path& path) {
 }
 
 static void dump_cartridge_info(const ICartridge& cartridge) {
-    const auto header = cartridge.header();
+    const auto header = CartridgeHeader::parseHeader(cartridge);
     std::cout << "Title             :  " << header.titleAsString() << "\n";
     std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     (" << header.cartridgeTypeDescription()
               << ")\n";
@@ -371,6 +393,10 @@ int main(int argc, char** argv) {
 
     core.loadROM(std::move(cartridge));
 
+    if (std::optional<Save> optionalSave = read_save(romPath.replace_extension("sav"))) {
+        core.loadSave(*optionalSave);
+    }
+
     static const std::set<SDL_Keycode> RESERVED_SDL_KEYS = {SDLK_F1, SDLK_F2, SDLK_F11, SDLK_F12, SDLK_f};
 
     std::map<SDL_Keycode, IJoypad::Key> keyboardInputMapping;
@@ -418,12 +444,12 @@ int main(int argc, char** argv) {
                 case SDLK_F1: {
                     State state;
                     core.saveState(state);
-                    if (save_state(state, romPath.replace_extension("sav")))
+                    if (write_state(state, romPath.replace_extension("state")))
                         drawOverlayText("State saved");
                     break;
                 }
                 case SDLK_F2: {
-                    if (std::optional<State> optionalState = load_state(romPath.replace_extension("sav"))) {
+                    if (std::optional<State> optionalState = read_state(romPath.replace_extension("state"))) {
                         drawOverlayText("State loaded");
                         core.loadState(*optionalState);
                     }
@@ -459,6 +485,10 @@ int main(int argc, char** argv) {
                 break;
             case SDL_WINDOWEVENT:
                 if (e.window.event == SDL_WINDOWEVENT_CLOSE) {
+                    Save save;
+                    core.saveSave(save);
+                    write_save(save, romPath.replace_extension("sav"));
+
                     savePreferencesToCache(window);
                 }
             }

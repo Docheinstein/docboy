@@ -6,22 +6,29 @@ set(SOURCES
         boot/bootrom.h
         bus/bus.cpp
         bus/bus.h
+        cartridge/batteriedram.h
         cartridge/cartridge.cpp
         cartridge/cartridgefactory.cpp
         cartridge/cartridgefactory.h
-        cartridge/headeronlycartridge.h
-        cartridge/headeronlycartridge.cpp
         cartridge/cartridge.h
+        cartridge/cartridgeheader.cpp
+        cartridge/cartridgeheader.h
+        cartridge/headeronlycartridge.cpp
+        cartridge/headeronlycartridge.h
         cartridge/mbc1/mbc1.cpp
         cartridge/mbc1/mbc1.h
         cartridge/mbc1/mbc1ram.cpp
         cartridge/mbc1/mbc1ram.h
-        cartridge/nombc.cpp
-        cartridge/nombc.h
-        cartridge/mbc3/mbc3.h
+        cartridge/mbc1/mbc1rambattery.cpp
+        cartridge/mbc1/mbc1rambattery.h
         cartridge/mbc3/mbc3.cpp
-        cartridge/mbc3/mbc3ram.h
+        cartridge/mbc3/mbc3.h
+        cartridge/mbc3/mbc3rambattery.cpp
+        cartridge/mbc3/mbc3rambattery.h
         cartridge/mbc3/mbc3ram.cpp
+        cartridge/mbc3/mbc3ram.h
+        cartridge/nombc/nombc.cpp
+        cartridge/nombc/nombc.h
         cartridge/slot.cpp
         cartridge/slot.h
         clock/clockable.h
@@ -40,62 +47,11 @@ set(SOURCES
         cpu/interrupts.h
         cpu/timers.cpp
         cpu/timers.h
-        debugger/backend.cpp
-        debugger/backend.h
-        debugger/boot/boot.cpp
-        debugger/boot/boot.h
-        debugger/cartridge/slot.cpp
-        debugger/cartridge/slot.h
-        debugger/core/core.cpp
-        debugger/core/core.h
-        debugger/cpu/cpu.cpp
-        debugger/cpu/cpu.h
-        debugger/cpu/interrupts.cpp
-        debugger/cpu/interrupts.h
-        debugger/cpu/timers.cpp
-        debugger/cpu/timers.h
-        debugger/frontendcli.cpp
-        debugger/frontendcli.h
-        debugger/frontend.h
-        debugger/gameboy.cpp
-        debugger/gameboy.h
-        debugger/io/boot.h
-        debugger/io/interrupts.h
-        debugger/io/joypad.h
-        debugger/io/lcd.h
-        debugger/io/serial.h
-        debugger/io/sound.h
-        debugger/io/timers.h
-        debugger/joypad/joypad.cpp
-        debugger/joypad/joypad.h
-        debugger/lcd/framebufferlcd.cpp
-        debugger/lcd/framebufferlcd.h
-        debugger/lcd/lcd.h
-        debugger/memory/memory.cpp
-        debugger/memory/memory.h
-        debugger/memory/readable.cpp
-        debugger/memory/readable.h
-        debugger/ppu/lcdcontroller.cpp
-        debugger/ppu/lcdcontroller.h
-        debugger/ppu/ppu.cpp
-        debugger/ppu/ppu.h
-        debugger/serial/port.cpp
-        debugger/serial/port.h
-        debugger/shared.h
-        debugger/sound/sound.cpp
-        debugger/sound/sound.h
         definitions.h
         dma/dma.cpp
         dma/dma.h
         gameboy.cpp
         gameboy.h
-        state/processor.h
-        state/readable.h
-        state/loader.h
-        state/state.cpp
-        state/state.h
-        state/writable.h
-        state/saver.h
         helpers.cpp
         helpers.h
         io/boot.h
@@ -123,6 +79,10 @@ set(SOURCES
         ppu/ppu.h
         profiler/profiler.cpp
         profiler/profiler.h
+        save/readable.h
+        save/save.cpp
+        save/save.h
+        save/writable.h
         serial/endpoint.h
         serial/endpoints/buffer.cpp
         serial/endpoints/buffer.h
@@ -136,6 +96,13 @@ set(SOURCES
         serial/serial.h
         sound/sound.cpp
         sound/sound.h
+        state/loader.h
+        state/processor.h
+        state/readable.h
+        state/saver.h
+        state/state.cpp
+        state/state.h
+        state/writable.h
 )
 
 add_library(core STATIC ${SOURCES})

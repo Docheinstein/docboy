@@ -86,7 +86,6 @@ public:
     ISerialPort& getSerialPort() override;
 
     ICartridgeSlot& getCartridgeSlot() override;
-    ICartridge& getCartridge() override;
 
     IBus& getBus() override;
 

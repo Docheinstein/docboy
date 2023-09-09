@@ -3,6 +3,7 @@
 
 #include "core/boot/boot.h"
 #include "core/bus/bus.h"
+#include "core/cartridge/cartridge.h"
 #include "core/cartridge/slot.h"
 #include "core/clock/clock.h"
 #include "core/cpu/cpu.h"
@@ -43,7 +44,6 @@ public:
     virtual ISerialPort& getSerialPort() = 0;
 
     virtual ICartridgeSlot& getCartridgeSlot() = 0;
-    virtual ICartridge& getCartridge() = 0;
 
     virtual IBus& getBus() = 0;
 
@@ -90,7 +90,6 @@ public:
     ISerialPort& getSerialPort() override;
 
     ICartridgeSlot& getCartridgeSlot() override;
-    ICartridge& getCartridge() override;
 
     IBus& getBus() override;
 

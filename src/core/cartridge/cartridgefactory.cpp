@@ -1,11 +1,13 @@
 #include "cartridgefactory.h"
 #include "cartridge.h"
+#include "core/cartridge/mbc1/mbc1rambattery.h"
+#include "core/cartridge/mbc3/mbc3rambattery.h"
 #include "headeronlycartridge.h"
 #include "mbc1/mbc1.h"
 #include "mbc1/mbc1ram.h"
 #include "mbc3/mbc3.h"
 #include "mbc3/mbc3ram.h"
-#include "nombc.h"
+#include "nombc/nombc.h"
 #include "utils/binutils.h"
 #include "utils/fileutils.h"
 
@@ -33,12 +35,16 @@ std::unique_ptr<ICartridge> CartridgeFactory::makeCartridge(const std::string& f
         return std::make_unique<NoMBC>(data);
     if (mbc == 0x01)
         return std::make_unique<MBC1>(data);
-    if (mbc == 0x02 || mbc == 0x03)
+    if (mbc == 0x02)
         return std::make_unique<MBC1RAM>(data);
+    if (mbc == 0x03)
+        return std::make_unique<MBC1RAMBattery>(data);
     if (mbc == 0x11 || mbc == 0x0F)
         return std::make_unique<MBC3>(data);
-    if (mbc == 0x12 || mbc == 0x13 || mbc == 0x10)
+    if (mbc == 0x12)
         return std::make_unique<MBC3RAM>(data);
+    if (mbc == 0x10 || mbc == 0x13)
+        return std::make_unique<MBC3RAMBattery>(data);
 
     if (makeHeaderOnlyCartridgeForUnknownType)
         return std::make_unique<HeaderOnlyCartridge>(data);

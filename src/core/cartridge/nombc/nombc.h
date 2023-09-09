@@ -1,7 +1,7 @@
 #ifndef NOMBC_H
 #define NOMBC_H
 
-#include "cartridge.h"
+#include "core/cartridge/cartridge.h"
 
 class NoMBC : public Cartridge {
 public:

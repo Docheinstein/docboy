@@ -7,7 +7,7 @@
 
 class IStataData {
 public:
-    ~IStataData() = default;
+    virtual ~IStataData() = default;
     [[nodiscard]] virtual const std::vector<uint8_t>& getData() const = 0;
 };
 

@@ -6,7 +6,7 @@
 
 class IWritableState {
 public:
-    IWritableState() = default;
+    virtual ~IWritableState() = default;
 
     virtual void writeBool(bool value) = 0;
 

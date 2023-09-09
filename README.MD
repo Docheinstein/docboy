@@ -8,13 +8,14 @@ Work in Progress.
 
 * CPU: m-cycle accurate, passes cpu_instrs.gb from blargg's tests
 * PPU: dot accurate, implements pixel FIFO
-* Cartridges: NoMBC, MBC1
+* Cartridges: NoMBC, MBC1, MBC3
 * CLI debugger: supports breakpoints, watchpoints, disassembler, step by step execution (by instruction or micro-instruction), rewind, memory viewer, interrupts viewer, IO viewer
 * Serial Link
 * Bootroom support
 * Joypad
 * DMA
-* Save/Load state
+* Save / Load
+* Save state / Load state
 
 ### TODO
 * Improve accuracy of PPU
@@ -60,6 +61,8 @@ optional arguments:
 ![Tetris](images/tetris.png)
 ![Alleyway](images/alleyway.png)
 ![Donkey Kong](images/donkey-kong.png)
+![Pokemon Red](images/pokemon-red.png)
+![Zelda Link's Awekening](images/zelda-links-awekening.png)
 ![DMG boot](images/dmg_boot.png)
 ![Blargg's cpu_instr boot](images/cpu_instrs.png)
 
