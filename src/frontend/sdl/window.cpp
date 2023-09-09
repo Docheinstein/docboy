@@ -12,7 +12,7 @@ Window::~Window() {
     SDL_Quit();
 }
 
-Window::Window(uint32_t* framebuffer, ILCDIO& lcd, int x, int y, float scaling) :
+Window::Window(uint16_t* framebuffer, ILCDIO& lcd, int x, int y, float scaling) :
     framebuffer(framebuffer),
     lcd(lcd),
     window(),
@@ -36,7 +36,7 @@ Window::Window(uint32_t* framebuffer, ILCDIO& lcd, int x, int y, float scaling) 
 
     // TODO: figure out byte order
     texture =
-        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
     if (!texture)
         throw std::runtime_error(std::string("SDL_CreateTexture error: ") + SDL_GetError());
 
@@ -96,7 +96,7 @@ void Window::drawFramebuffer() {
         int pitch;
 
         SDL_LockTexture(texture, &srcrect, (void**)&texturePixels, &pitch);
-        memcpy(texturePixels, framebuffer, WINDOW_WIDTH * WINDOW_HEIGHT * sizeof(uint32_t));
+        memcpy(texturePixels, framebuffer, WINDOW_WIDTH * WINDOW_HEIGHT * sizeof(uint16_t));
         SDL_UnlockTexture(texture);
 
         SDL_RenderCopy(renderer, texture, nullptr, &dstrect);

@@ -2,7 +2,7 @@
 #include "utils/log.h"
 #include <SDL.h>
 
-bool screenshot(uint32_t* pixels, int width, int height, int format, const std::string& filename) {
+bool screenshot(void* pixels, int width, int height, int format, const std::string& filename) {
     SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(pixels, width, height, SDL_BITSPERPIXEL(format),
                                                               width * SDL_BYTESPERPIXEL(format), format);
     if (!surface) {

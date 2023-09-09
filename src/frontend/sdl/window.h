@@ -19,7 +19,7 @@ public:
     static constexpr uint64_t TEXT_LETTER_HEIGHT = 8;
     static constexpr uint64_t TEXT_DURATION_PERSISTENT = UINT64_MAX;
 
-    explicit Window(uint32_t* framebuffer, ILCDIO& lcd, int x = WINDOW_POSITION_UNDEFINED,
+    explicit Window(uint16_t* framebuffer, ILCDIO& lcd, int x = WINDOW_POSITION_UNDEFINED,
                     int y = WINDOW_POSITION_UNDEFINED, float scaling = 1.0);
     ~Window();
 
@@ -41,7 +41,7 @@ private:
         uint64_t remainingFrames;
     };
 
-    uint32_t* framebuffer;
+    uint16_t* framebuffer;
     ILCDIO& lcd;
     SDL_Window* window;
     SDL_Renderer* renderer;

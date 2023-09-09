@@ -2,7 +2,7 @@
 
 GameBoy emulator written in C++20.
 
-Work in Progress.
+Can be used either with the standalone SDL frontend or as a libretro core (e.g. with RetroArch).
 
 ### Features
 
@@ -22,7 +22,6 @@ Work in Progress.
 * Support other cartridges types
 * Implement sound
 * Support other platforms: Windows, macOs
-* Compile as libretro core
 
 ### Building
 
@@ -32,11 +31,14 @@ Work in Progress.
 mkdir build
 cd build
 cmake ..
-make
+make -j8
 ```
 
-
 ### Usage
+
+#### SDL frontend
+
+```build/docboy-sdl <rom>```
 
 ```
 usage: [--boot-rom BOOT-ROM] [--config CONFIG] [--serial] [--scaling SCALING]
@@ -54,6 +56,11 @@ optional arguments:
   -i, --cartridge-info    Dump cartridge info and quit
   -h, --help              Display this help message and exit.
 ```
+
+#### libretro frontend
+
+```retroarch --libretro build/docboy-libretro.so <rom>```
+
 
 
 ### Screenshots

@@ -5,6 +5,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 option(ENABLE_DEBUGGER "Add debugger support" ON)
 option(ENABLE_PROFILER "Enable the profiler" OFF)
@@ -13,9 +14,10 @@ option(ENABLE_PROFILER "Enable the profiler" OFF)
 option(BUILD_NOGUI_FRONTEND "Build with NoGUI frontend" ON)
 option(BUILD_SDL_FRONTEND "Build with SDL frontend" ON)
 option(BUILD_QT_FRONTEND "Build with Qt frontend" ON)
+option(BUILD_LIBRETRO_CORE "Build libretro core" ON)
 option(BUILD_TESTS "Build tests" ON)
 
-add_compile_options("-Wall")
+add_compile_options(-fPIC -Wall)
 
 add_subdirectory(external)
 add_subdirectory(src)

@@ -7,6 +7,7 @@
 #include "core/config/parser.h"
 #include "core/core.h"
 #include "core/gameboy.h"
+#include "core/save/save.h"
 #include "core/serial/endpoints/console.h"
 #include "core/state/state.h"
 #include "helpers.h"
@@ -30,7 +31,7 @@
 #include "core/profiler/profiler.h"
 #endif
 
-static bool screenshot_bmp(uint32_t* framebuffer, const std::filesystem::path& path) {
+static bool screenshot_bmp(uint16_t* framebuffer, const std::filesystem::path& path) {
     if (screenshot(framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_PIXELFORMAT_RGBA8888, path)) {
         std::cout << "Screenshot saved to: " << path << std::endl;
         return true;
@@ -38,7 +39,7 @@ static bool screenshot_bmp(uint32_t* framebuffer, const std::filesystem::path& p
     return false;
 }
 
-static bool screenshot_dat(uint32_t* framebuffer, const std::filesystem::path& path) {
+static bool screenshot_dat(uint16_t* framebuffer, const std::filesystem::path& path) {
     bool ok;
     write_file(path, framebuffer, sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT, &ok);
     if (ok)

@@ -13,16 +13,8 @@
 
 using namespace Bits::LCD::LCDC;
 
-static std::array<ILCD::Pixel, 4> COLOR_TO_LCD_PIXEL = {
-    ILCD::Pixel::Color0,
-    ILCD::Pixel::Color1,
-    ILCD::Pixel::Color2,
-    ILCD::Pixel::Color3,
-};
-
 static ILCD::Pixel color_to_lcd_pixel(uint8_t color) {
-    assert(color < 4);
-    return COLOR_TO_LCD_PIXEL[color];
+    return ILCD::Pixel(color);
 }
 
 PPU::OAMEntry::OAMEntry(const PPU::OAMEntryFetchInfo& other) :

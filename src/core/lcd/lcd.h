@@ -6,7 +6,12 @@
 
 class ILCD {
 public:
-    enum class Pixel { Color0, Color1, Color2, Color3 };
+    enum class Pixel : uint8_t {
+        Color0 = 0,
+        Color1 = 1,
+        Color2 = 2,
+        Color3 = 3,
+    };
 
     virtual void pushPixel(Pixel pixel) = 0;
     virtual void turnOn() = 0;

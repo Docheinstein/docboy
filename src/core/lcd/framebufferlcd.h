@@ -7,7 +7,7 @@
 class IFrameBuffer {
 public:
     virtual ~IFrameBuffer() = default;
-    virtual uint32_t* getFrameBuffer() = 0;
+    virtual uint16_t* getFrameBuffer() = 0;
 };
 
 class FrameBufferLCD : public IFrameBuffer, public LCD {
@@ -15,12 +15,12 @@ public:
     FrameBufferLCD();
     ~FrameBufferLCD() override = default;
 
-    uint32_t* getFrameBuffer() override;
+    uint16_t* getFrameBuffer() override;
 
 protected:
     void putPixel(Pixel pixel, uint8_t x, uint8_t y) override;
 
-    uint32_t pixels[Specs::Display::WIDTH * Specs::Display::HEIGHT];
+    uint16_t pixels[Specs::Display::WIDTH * Specs::Display::HEIGHT];
 };
 
 #endif // FRAMEBUFFERLCD_H
