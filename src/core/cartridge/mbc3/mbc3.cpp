@@ -97,7 +97,7 @@ void MBC3::write(uint16_t address, uint8_t value) {
                 *rtcRegistersMap[ramBankSelector_rtcRegisterSelector - 0x08] = value;
             // TODO: error? must be implemented by subclass
         }
+    } else {
+        throw WriteMemoryException("Write at address " + hex(address) + " is not allowed");
     }
-
-    throw WriteMemoryException("Write at address " + hex(address) + " is not allowed");
 }
