@@ -1,7 +1,7 @@
 #ifndef MBC3_H
 #define MBC3_H
 
-#include "cartridge.h"
+#include "core/cartridge/cartridge.h"
 
 /*
  * Beside for the ability to access up to 2MB ROM (128 banks), and 32KB RAM (4 banks),

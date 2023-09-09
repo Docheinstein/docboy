@@ -2,27 +2,25 @@
 #include "utils/binutils.h"
 
 MBC1::MBC1(const std::vector<uint8_t>& data) :
-    Cartridge(data),
-    mbc() {
+    Cartridge(data) {
 }
 
 MBC1::MBC1(std::vector<uint8_t>&& data) :
-    Cartridge(data),
-    mbc() {
+    Cartridge(data) {
 }
 
 void MBC1::loadState(IReadableState& state) {
-    mbc.ramEnabled = state.readBool();
-    mbc.romBankSelector = state.readUInt8();
-    mbc.upperRomBankSelector_ramBankSelector = state.readUInt8();
-    mbc.bankingMode = state.readUInt8();
+    ramEnabled = state.readBool();
+    romBankSelector = state.readUInt8();
+    upperRomBankSelector_ramBankSelector = state.readUInt8();
+    bankingMode = state.readUInt8();
 }
 
 void MBC1::saveState(IWritableState& state) {
-    state.writeBool(mbc.ramEnabled);
-    state.writeUInt8(mbc.romBankSelector);
-    state.writeUInt8(mbc.upperRomBankSelector_ramBankSelector);
-    state.writeUInt8(mbc.bankingMode);
+    state.writeBool(ramEnabled);
+    state.writeUInt8(romBankSelector);
+    state.writeUInt8(upperRomBankSelector_ramBankSelector);
+    state.writeUInt8(bankingMode);
 }
 
 uint8_t MBC1::read(uint16_t address) const {
@@ -38,9 +36,9 @@ uint8_t MBC1::read(uint16_t address) const {
     }
     if (address < 0x8000) {
         uint16_t bankAddress = address - 0x4000;
-        uint8_t bankSelector = mbc.romBankSelector > 0 ? mbc.romBankSelector : 0x1;
-        if (mbc.bankingMode == 0x0)
-            bankSelector = bankSelector | (mbc.upperRomBankSelector_ramBankSelector << 5);
+        uint8_t bankSelector = romBankSelector > 0 ? romBankSelector : 0x1;
+        if (bankingMode == 0x0)
+            bankSelector = bankSelector | (upperRomBankSelector_ramBankSelector << 5);
         size_t romAddress = (bankSelector << 14) + bankAddress;
 
         return rom[romAddress];
@@ -50,13 +48,13 @@ uint8_t MBC1::read(uint16_t address) const {
 
 void MBC1::write(uint16_t address, uint8_t value) {
     if (address < 0x2000) {
-        mbc.ramEnabled = value == 0xA;
+        ramEnabled = value == 0xA;
     } else if (address < 0x4000) {
-        mbc.romBankSelector = keep_bits<5>(value > 0 ? value : 0x1);
+        romBankSelector = keep_bits<5>(value > 0 ? value : 0x1);
     } else if (address < 0x6000) {
-        mbc.upperRomBankSelector_ramBankSelector = keep_bits<2>(value);
+        upperRomBankSelector_ramBankSelector = keep_bits<2>(value);
     } else if (address < 0x8000) {
-        mbc.bankingMode = keep_bits<1>(value);
+        bankingMode = keep_bits<1>(value);
     } else {
         throw WriteMemoryException("Write at address " + hex(address) + " is not allowed");
     }

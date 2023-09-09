@@ -59,7 +59,7 @@ uint8_t MBC3::read(uint16_t address) const {
 
         return rom[romAddress];
     }
-    if (address >= 0xA000 && address < 0xBFFF) {
+    if (address >= 0xA000 && address < 0xC000) {
         if (ramBankSelector_rtcRegisterSelector < 0x4) {
             // TODO: error? must be implemented by subclass
         } else {
@@ -89,7 +89,7 @@ void MBC3::write(uint16_t address, uint8_t value) {
             rtcRegisters.day.low = datetime.tm_yday;
         }
         latchClockData = value;
-    } else if (address >= 0xA000 && address < 0xBFFF) {
+    } else if (address >= 0xA000 && address < 0xC000) {
         if (ramBankSelector_rtcRegisterSelector < 0x4) {
             // TODO: error? must be implemented by subclass
         } else {

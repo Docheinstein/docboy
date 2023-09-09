@@ -12,14 +12,16 @@ set(SOURCES
         cartridge/headeronlycartridge.h
         cartridge/headeronlycartridge.cpp
         cartridge/cartridge.h
-        cartridge/mbc1.cpp
-        cartridge/mbc1.h
-        cartridge/mbc1ram.cpp
-        cartridge/mbc1ram.h
+        cartridge/mbc1/mbc1.cpp
+        cartridge/mbc1/mbc1.h
+        cartridge/mbc1/mbc1ram.cpp
+        cartridge/mbc1/mbc1ram.h
         cartridge/nombc.cpp
         cartridge/nombc.h
-        cartridge/mbc3.h
-        cartridge/mbc3.cpp
+        cartridge/mbc3/mbc3.h
+        cartridge/mbc3/mbc3.cpp
+        cartridge/mbc3/mbc3ram.h
+        cartridge/mbc3/mbc3ram.cpp
         cartridge/slot.cpp
         cartridge/slot.h
         clock/clockable.h
