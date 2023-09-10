@@ -3,7 +3,7 @@ set(SOURCES
         libretro.cpp
 )
 
-add_library(docboy-libretro SHARED ${SOURCES})
+add_library(docboy_libretro SHARED ${SOURCES})
 
-set_target_properties(docboy-libretro PROPERTIES PREFIX "")
-target_link_libraries(docboy-libretro PRIVATE core utils)
+set_target_properties(docboy_libretro PROPERTIES PREFIX "")
+target_link_libraries(docboy_libretro PRIVATE core utils)

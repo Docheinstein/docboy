@@ -14,7 +14,9 @@ public:
 class State : public IReadableState, public IWritableState, public IStataData {
 public:
     explicit State() = default;
+    explicit State(const uint8_t* data, uint32_t size);
     explicit State(const std::vector<uint8_t>& data);
+
     [[nodiscard]] const std::vector<uint8_t>& getData() const override;
 
     [[nodiscard]] bool readBool() override;

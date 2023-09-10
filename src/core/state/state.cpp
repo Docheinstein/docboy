@@ -2,6 +2,10 @@
 #include <cassert>
 #include <cstring>
 
+State::State(const uint8_t* dataIn, uint32_t size) {
+    writeData(dataIn, size);
+}
+
 State::State(const std::vector<uint8_t>& dataIn) {
     data = dataIn;
 }

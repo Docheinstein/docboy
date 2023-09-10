@@ -2,6 +2,7 @@
 #include "core/core.h"
 #include "core/definitions.h"
 #include "core/gameboy.h"
+#include "core/state/state.h"
 #include "utils/arrayutils.h"
 #include <cstdarg>
 #include <cstring>
@@ -17,6 +18,9 @@ static retro_input_state_t input_state_cb;
 // Use MAX_FREQUENCY since libretro frontend handles the emulation speed by itself
 static GameBoy gameboy {GameBoy::Builder().setFrequency(IClock::MAX_FREQUENCY).build()};
 static Core core(gameboy);
+
+static constexpr uint32_t STATE_SIZE_UNKNOWN = 0;
+static uint32_t stateSize = STATE_SIZE_UNKNOWN;
 
 static void retro_fallback_log(enum retro_log_level level, const char* fmt, ...) {
     va_list va;
@@ -40,10 +44,10 @@ void retro_set_controller_port_device(unsigned port, unsigned device) {
 
 void retro_get_system_info(struct retro_system_info* info) {
     memset(info, 0, sizeof(*info));
-    info->library_name = "docboy";
+    info->library_name = "DocBoy";
     info->library_version = "0.1";
     info->need_fullpath = true;
-    info->valid_extensions = "gb|gbc";
+    info->valid_extensions = "gb|dmg|gbc|cgb|sgb";
 }
 
 void retro_get_system_av_info(struct retro_system_av_info* info) {
@@ -63,7 +67,7 @@ void retro_set_environment(retro_environment_t cb) {
         retro_log = retro_fallback_log;
 
     static const struct retro_controller_description controllers[] = {
-        {"Nintendo DS", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)},
+        {"Nintendo Gameboy", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)},
     };
 
     static const struct retro_controller_info ports[] = {
@@ -145,12 +149,13 @@ bool retro_load_game(const struct retro_game_info* info) {
         return false;
     }
 
-    retro_log(RETRO_LOG_INFO, "Loading: %s", info->path);
+    retro_log(RETRO_LOG_INFO, "Loading game: %s", info->path);
     core.loadROM(info->path);
     return true;
 }
 
 void retro_unload_game(void) {
+    stateSize = STATE_SIZE_UNKNOWN;
 }
 
 unsigned retro_get_region(void) {
@@ -161,16 +166,29 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info* info, 
     return false;
 }
 
+#include <iostream>
 size_t retro_serialize_size(void) {
-    return 0;
+    if (stateSize == STATE_SIZE_UNKNOWN) {
+        // Deduce state size only once since it will
+        // remain constant for a certain game
+        State state;
+        core.saveState(state);
+        stateSize = state.getData().size();
+    }
+    return stateSize;
 }
 
 bool retro_serialize(void* data_, size_t size) {
-    return false;
+    State state;
+    core.saveState(state);
+    memcpy(data_, state.getData().data(), state.getData().size());
+    return true;
 }
 
 bool retro_unserialize(const void* data_, size_t size) {
-    return false;
+    State state((uint8_t*)data_, size);
+    core.loadState(state);
+    return true;
 }
 
 void* retro_get_memory_data(unsigned id) {
