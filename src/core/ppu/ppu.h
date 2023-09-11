@@ -33,6 +33,13 @@ protected:
     typedef void (PPU::*TickHandler)();
 
     struct OAMEntryFetchInfo {
+        OAMEntryFetchInfo() = default;
+        OAMEntryFetchInfo(uint8_t number, uint8_t x, uint8_t y) :
+            number(number),
+            x(x),
+            y(y) {
+        }
+
         uint8_t number {}; // oam entry number, between 0 and 39
         uint8_t x {};      // byte 1
         uint8_t y {};      // byte 0

@@ -3,12 +3,8 @@
 #include "core/io/interrupts.h"
 #include "core/lcd/lcd.h"
 #include "core/memory/memory.h"
-#include "utils/binutils.h"
-#include "utils/log.h"
 #include "utils/stdutils.h"
-#include <array>
 #include <cassert>
-#include <iostream>
 #include <optional>
 
 using namespace Bits::LCD::LCDC;
