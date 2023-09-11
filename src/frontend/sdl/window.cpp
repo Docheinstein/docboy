@@ -2,6 +2,7 @@
 #include "glyphs.h"
 #include "helpers.h"
 #include "utils/binutils.h"
+#include "utils/exceptionutils.h"
 #include <SDL.h>
 #include <stdexcept>
 
@@ -23,22 +24,22 @@ Window::Window(uint16_t* framebuffer, ILCDIO& lcd, int x, int y, float scaling) 
     scaling(scaling) {
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
-        throw std::runtime_error(std::string("SDL_Init error: ") + SDL_GetError());
+        THROW(std::runtime_error(std::string("SDL_Init error: ") + SDL_GetError()));
 
     window =
         SDL_CreateWindow("DocBoy", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN);
     if (!window)
-        throw std::runtime_error(std::string("SDL_CreateWindow error: ") + SDL_GetError());
+        THROW(std::runtime_error(std::string("SDL_CreateWindow error: ") + SDL_GetError()));
 
     renderer = SDL_CreateRenderer(window, -1, 0);
     if (!renderer)
-        throw std::runtime_error(std::string("SDL_CreateRenderer error: ") + SDL_GetError());
+        THROW(std::runtime_error(std::string("SDL_CreateRenderer error: ") + SDL_GetError()));
 
     // TODO: figure out byte order
     texture =
         SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
     if (!texture)
-        throw std::runtime_error(std::string("SDL_CreateTexture error: ") + SDL_GetError());
+        THROW(std::runtime_error(std::string("SDL_CreateTexture error: ") + SDL_GetError()));
 
     // TODO: don't know but setting these in SDL_CreateWindow does not work
     const auto winX = static_cast<int>(x == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : x);

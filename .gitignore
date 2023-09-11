@@ -4,3 +4,5 @@
 /roms/
 /configs/
 /scripts/
+/src/frontend/libretro/libs
+/src/frontend/libretro/obj

@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
         core.attachSerialLink(serialLink->plug2);
     }
 
-    try {
+    __try {
         core.loadROM(args.rom);
     } catch (const std::exception& e) {
         std::cerr << "ERROR: failed to load rom: '" << args.rom << "' " << e.what() << std::endl;

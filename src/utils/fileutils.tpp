@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <fstream>
+#include "exceptionutils.h"
 
 template <typename T>
 std::vector<T> read_file(const std::string& filename, bool* ok) {
@@ -13,17 +14,17 @@ std::vector<T> read_file(const std::string& filename, bool* ok) {
     }
 
     std::streamsize size;
-    try {
+    __try {
         size = static_cast<std::streamsize>(std::filesystem::file_size(filename));
-    } catch (std::filesystem::filesystem_error& err) {
+    } __catch (std::filesystem::filesystem_error& err) {
         if (ok)
             *ok = false;
         return out;
     }
 
-    try {
+    __try {
         out.reserve(size / sizeof(T));
-    } catch (std::ifstream::failure& err) {
+    } __catch (std::ifstream::failure& err) {
         if (ok)
             *ok = false;
         return out;

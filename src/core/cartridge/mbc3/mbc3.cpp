@@ -1,5 +1,6 @@
 #include "mbc3.h"
 #include "utils/binutils.h"
+#include "utils/exceptionutils.h"
 #include "utils/timeutils.h"
 #include <chrono>
 
@@ -69,7 +70,7 @@ uint8_t MBC3::read(uint16_t address) const {
         }
     }
 
-    throw ReadMemoryException("Read at address " + hex(address) + " is not allowed");
+    THROW(ReadMemoryException("Read at address " + hex(address) + " is not allowed"));
 }
 
 void MBC3::write(uint16_t address, uint8_t value) {
@@ -98,6 +99,6 @@ void MBC3::write(uint16_t address, uint8_t value) {
             // TODO: error? must be implemented by subclass
         }
     } else {
-        throw WriteMemoryException("Write at address " + hex(address) + " is not allowed");
+        THROW(WriteMemoryException("Write at address " + hex(address) + " is not allowed"));
     }
 }

@@ -9,6 +9,7 @@
 #include "mbc3/mbc3ram.h"
 #include "nombc/nombc.h"
 #include "utils/binutils.h"
+#include "utils/exceptionutils.h"
 #include "utils/fileutils.h"
 
 CartridgeFactory::CartridgeFactory() :
@@ -24,10 +25,10 @@ std::unique_ptr<ICartridge> CartridgeFactory::makeCartridge(const std::string& f
 
     std::vector<uint8_t> data = read_file(filename, &ok);
     if (!ok)
-        throw std::runtime_error("failed to read file");
+        THROW(std::runtime_error("failed to read file"));
 
     if (data.size() < 0x0150)
-        throw std::runtime_error("rom size is too small");
+        THROW(std::runtime_error("rom size is too small"));
 
     uint8_t mbc = data[0x147];
 
@@ -49,5 +50,5 @@ std::unique_ptr<ICartridge> CartridgeFactory::makeCartridge(const std::string& f
     if (makeHeaderOnlyCartridgeForUnknownType)
         return std::make_unique<HeaderOnlyCartridge>(data);
 
-    throw std::runtime_error("unknown MBC type: 0x" + hex(mbc));
+    THROW(std::runtime_error("unknown MBC type: 0x" + hex(mbc)));
 }

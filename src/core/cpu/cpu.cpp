@@ -1,9 +1,7 @@
 #include "cpu.h"
 #include "core/bus/bus.h"
-#include "core/definitions.h"
 #include "utils/binutils.h"
-#include "utils/enumutils.h"
-#include <cassert>
+#include "utils/exceptionutils.h"
 #include <iostream>
 
 CPU::CPU(IBus& bus, IClockable& timers, IClockable& serial, bool bootRom) :
@@ -23,6 +21,7 @@ CPU::CPU(IBus& bus, IClockable& timers, IClockable& serial, bool bootRom) :
     mCycles(),
     b(),
     u(),
+    u2(),
     s(),
     uu(),
     lsb(),
@@ -914,8 +913,8 @@ void CPU::fetch(bool cb) {
 }
 
 void CPU::invalidInstruction() {
-    throw std::runtime_error("Invalid instruction at address " + hex(currentInstruction.address) + ": " +
-                             hex(bus.read(currentInstruction.address)));
+    THROW(std::runtime_error("Invalid instruction at address " + hex(currentInstruction.address) + ": " +
+                             hex(bus.read(currentInstruction.address))));
 }
 
 // The precise behavior of ISR is not well known or explained anywhere.

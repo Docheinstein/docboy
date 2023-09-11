@@ -42,18 +42,20 @@ std::vector<uint8_t> read_file<uint8_t>(const std::string& filename, bool* ok) {
     }
 
     std::streamsize size;
-    try {
+    __try {
         size = static_cast<std::streamsize>(std::filesystem::file_size(filename));
-    } catch (std::filesystem::filesystem_error& err) {
+    }
+    __catch(std::filesystem::filesystem_error & err) {
         if (ok)
             *ok = false;
         return out;
     }
 
-    try {
+    __try {
         out.resize(size);
         ifs.read((char*)out.data(), size);
-    } catch (std::ifstream::failure& err) {
+    }
+    __catch(std::ifstream::failure & err) {
         if (ok)
             *ok = false;
         return out;

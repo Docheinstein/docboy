@@ -1,5 +1,6 @@
 #include "mbc1.h"
 #include "utils/binutils.h"
+#include "utils/exceptionutils.h"
 
 MBC1::MBC1(const std::vector<uint8_t>& data) :
     Cartridge(data) {
@@ -43,7 +44,7 @@ uint8_t MBC1::read(uint16_t address) const {
 
         return rom[romAddress];
     }
-    throw ReadMemoryException("Read at address " + hex(address) + " is not allowed");
+    THROW(ReadMemoryException("Read at address " + hex(address) + " is not allowed"));
 }
 
 void MBC1::write(uint16_t address, uint8_t value) {
@@ -56,6 +57,6 @@ void MBC1::write(uint16_t address, uint8_t value) {
     } else if (address < 0x8000) {
         bankingMode = keep_bits<1>(value);
     } else {
-        throw WriteMemoryException("Write at address " + hex(address) + " is not allowed");
+        THROW(WriteMemoryException("Write at address " + hex(address) + " is not allowed"));
     }
 }

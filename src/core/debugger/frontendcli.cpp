@@ -1,6 +1,7 @@
 #include "frontendcli.h"
 #include "backend.h"
 #include "core/helpers.h"
+#include "utils/exceptionutils.h"
 #include "utils/hexdump.h"
 #include "utils/strutils.h"
 #include "utils/termcolor.h"
@@ -558,7 +559,7 @@ Debugger::Command DebuggerFrontendCli::pullCommand(const Debugger::ExecutionStat
         for (uint32_t address = from; address <= 0xFFFF && i < n;) {
             std::optional<Debugger::Disassemble> disas = backend.getDisassembled(address);
             if (!disas)
-                throw std::runtime_error("unexpected");
+                THROW(std::runtime_error("Failed to disassemble at address" + std::to_string(address)));
 
             DisassembleEntry d = {.address = static_cast<uint16_t>(address), .disassemble = *disas};
             std::cout << disassembleEntryString(d) << std::endl;

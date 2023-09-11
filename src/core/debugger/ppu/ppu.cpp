@@ -1,7 +1,7 @@
 #include "ppu.h"
 #include "core/io/lcd.h"
 #include "utils/binutils.h"
-#include <stdexcept>
+#include "utils/exceptionutils.h"
 
 DebuggablePPU::DebuggablePPU(ILCD& lcd, ILCDIO& lcdIo, IInterruptsIO& interrupts, IMemory& vram, IMemory& oam) :
     PPU(lcd, lcdIo, interrupts, vram, oam) {
@@ -23,7 +23,7 @@ IPPUDebug::State DebuggablePPU::getState() {
         ppuState = PPUState::VBlank;
         break;
     default:
-        throw std::runtime_error("Unknown PPU State");
+        THROW(std::runtime_error("Unknown PPU State"));
     }
 
     IPPUDebug::FetcherState fetcherState;

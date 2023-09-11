@@ -1,4 +1,5 @@
 #include "boot.h"
+#include "utils/exceptionutils.h"
 
 Boot::Boot(std::unique_ptr<IBootROM> bootRom_) :
     BOOT(bootRom_ != nullptr ? 0 : 1) {
@@ -24,5 +25,5 @@ void Boot::writeBOOT(uint8_t value) {
 uint8_t Boot::read(uint16_t index) const {
     if (bootRom)
         return bootRom->read(index);
-    throw std::runtime_error("Cannot read from boot ROM: not initialized");
+    THROW(std::runtime_error("Cannot read from boot ROM: not initialized"));
 }
