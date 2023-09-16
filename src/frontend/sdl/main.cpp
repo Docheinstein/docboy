@@ -2,7 +2,6 @@
 #include "core/boot/bootromfactory.h"
 #include "core/cartridge/cartridge.h"
 #include "core/cartridge/cartridgefactory.h"
-#include "core/cartridge/cartridgeheader.h"
 #include "core/config/config.h"
 #include "core/config/parser.h"
 #include "core/core.h"
@@ -30,6 +29,7 @@
 
 #ifdef ENABLE_PROFILER
 #include "core/profiler/profiler.h"
+#include <chrono>
 #endif
 
 static bool screenshot_bmp(uint16_t* framebuffer, const path& path) {
@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    path romPath = args.rom;
+    path romPath(args.rom);
 
     Config cfg;
     if (!args.config.empty()) {
@@ -352,7 +352,7 @@ int main(int argc, char** argv) {
 
 #ifdef ENABLE_PROFILER
     auto printProfilerResult = [](const ProfilerResult& result) {
-        auto millis = duration_cast<std::chrono::milliseconds>(result.executionTime).count();
+        auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(result.executionTime).count();
         auto seconds = (double)millis / 1000;
         auto effectiveFrequency = (uint64_t)((double)result.ticks / seconds);
         auto effectiveSpeedUp = (double)effectiveFrequency / Specs::FREQUENCY;
