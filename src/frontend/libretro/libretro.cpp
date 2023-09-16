@@ -151,6 +151,7 @@ bool retro_load_game(const struct retro_game_info* info) {
 
     retro_log(RETRO_LOG_INFO, "Loading game: %s", info->path);
     core.loadROM(info->path);
+    retro_log(RETRO_LOG_INFO, "Game loaded");
     return true;
 }
 

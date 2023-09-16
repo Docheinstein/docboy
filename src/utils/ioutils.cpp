@@ -1,5 +1,4 @@
-#include "fileutils.h"
-#include <iostream>
+#include "ioutils.h"
 
 void write_file(const std::string& filename, void* data, size_t length, bool* ok) {
     std::ofstream ofs(filename);
@@ -30,6 +29,8 @@ void write_file_lines(const std::string& filename, const std::vector<std::string
         *ok = ofs.good();
 }
 
+#include <iostream>
+
 template <>
 std::vector<uint8_t> read_file<uint8_t>(const std::string& filename, bool* ok) {
     std::vector<uint8_t> out;
@@ -41,21 +42,21 @@ std::vector<uint8_t> read_file<uint8_t>(const std::string& filename, bool* ok) {
         return out;
     }
 
-    std::streamsize size;
-    __try {
-        size = static_cast<std::streamsize>(std::filesystem::file_size(filename));
-    }
-    __catch(std::filesystem::filesystem_error & err) {
+    file_size_t size = file_size(filename);
+    if (!size) {
         if (ok)
             *ok = false;
         return out;
     }
 
+    out.resize(size);
+
     __try {
-        out.resize(size);
-        ifs.read((char*)out.data(), size);
+        ifs.read((char*)out.data(), static_cast<std::streamsize>(size));
     }
     __catch(std::ifstream::failure & err) {
+        std::cout << "4err" << std::endl;
+
         if (ok)
             *ok = false;
         return out;
@@ -63,6 +64,7 @@ std::vector<uint8_t> read_file<uint8_t>(const std::string& filename, bool* ok) {
 
     if (ok)
         *ok = true;
+
     return out;
 }
 

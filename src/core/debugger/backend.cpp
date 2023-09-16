@@ -3,6 +3,7 @@
 #include "core/helpers.h"
 #include "gameboy.h"
 #include "utils/arrayutils.h"
+#include "utils/stdutils.h"
 #include <algorithm>
 
 DebuggerBackend::DebuggerBackend(ICoreDebug& core) :
@@ -69,10 +70,10 @@ const std::vector<Debugger::Watchpoint>& DebuggerBackend::getWatchpoints() const
 }
 
 void DebuggerBackend::removePoint(uint32_t id) {
-    std::erase_if(breakpoints, [id](const Debugger::Breakpoint& b) {
+    erase_if(breakpoints, [id](const Debugger::Breakpoint& b) {
         return b.id == id;
     });
-    std::erase_if(watchpoints, [id](const Debugger::Watchpoint& w) {
+    erase_if(watchpoints, [id](const Debugger::Watchpoint& w) {
         return w.id == id;
     });
 }

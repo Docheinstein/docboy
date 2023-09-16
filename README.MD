@@ -31,8 +31,10 @@ Can be used either with the standalone SDL frontend or as a libretro core (e.g. 
 mkdir build
 cd build
 cmake ..
-make -j8
+make
 ```
+
+THe libretro core for Android (`docboy_libretro.so`) is automatically built if `ndk-build` is in your path when you call `cmake`.
 
 ### Usage
 

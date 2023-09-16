@@ -5,6 +5,7 @@
 #include "core/lcd/framebufferlcd.h"
 #include <chrono>
 #include <list>
+#include <optional>
 
 class SDL_Window;
 class SDL_Renderer;

@@ -10,7 +10,7 @@
 #include "nombc/nombc.h"
 #include "utils/binutils.h"
 #include "utils/exceptionutils.h"
-#include "utils/fileutils.h"
+#include "utils/ioutils.h"
 
 CartridgeFactory::CartridgeFactory() :
     makeHeaderOnlyCartridgeForUnknownType() {

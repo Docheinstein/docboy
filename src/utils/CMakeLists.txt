@@ -1,29 +1,34 @@
 set(SOURCES
     arrayutils.h
     arrayutils.tpp
-    binutils.h
     binutils.cpp
+    binutils.h
     binutils.tpp
     enumutils.h
     enumutils.tpp
-    fileutils.h
-    fileutils.cpp
-    fileutils.tpp
-    hexdump.h
+    exceptionutils.h
     hexdump.cpp
-    iniutils.h
+    hexdump.h
     iniutils.cpp
-    log.h
+    iniutils.h
+    ioutils.cpp
+    ioutils.h
+    ioutils.tpp
     log.cpp
+    log.h
+    osutils.cpp
+    osutils.h
+    path.cpp
+    path.h
     stdutils.h
     stdutils.tpp
-    log.cpp
-    strutils.h
     strutils.cpp
+    strutils.h
     termcolor.h
-    timeutils.h
     timeutils.cpp
+    timeutils.h
 )
 
 add_library(utils STATIC ${SOURCES})
+
 target_include_directories(utils PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")

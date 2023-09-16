@@ -11,11 +11,12 @@
 #include "core/serial/endpoints/console.h"
 #include "core/state/state.h"
 #include "helpers.h"
-#include "utils/fileutils.h"
 #include "utils/iniutils.h"
+#include "utils/ioutils.h"
+#include "utils/path.h"
+#include "utils/stdutils.h"
 #include "window.h"
 #include <SDL.h>
-#include <filesystem>
 #include <iostream>
 
 #ifdef ENABLE_DEBUGGER
@@ -31,52 +32,53 @@
 #include "core/profiler/profiler.h"
 #endif
 
-static bool screenshot_bmp(uint16_t* framebuffer, const std::filesystem::path& path) {
-    if (screenshot(framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_PIXELFORMAT_RGBA8888, path)) {
+static bool screenshot_bmp(uint16_t* framebuffer, const path& path) {
+    if (screenshot(framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_PIXELFORMAT_RGBA8888,
+                   path.string())) {
         std::cout << "Screenshot saved to: " << path << std::endl;
         return true;
     }
     return false;
 }
 
-static bool screenshot_dat(uint16_t* framebuffer, const std::filesystem::path& path) {
+static bool screenshot_dat(uint16_t* framebuffer, const path& path) {
     bool ok;
-    write_file(path, framebuffer, sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT, &ok);
+    write_file(path.string(), framebuffer, sizeof(uint32_t) * Specs::Display::WIDTH * Specs::Display::HEIGHT, &ok);
     if (ok)
         std::cout << "Screenshot saved to: " << path << std::endl;
     return ok;
 }
 
-static bool write_save(const IReadableSave& state, const std::filesystem::path& path) {
+static bool write_save(const IReadableSave& state, const path& path) {
     const std::vector<uint8_t>& stateDate = state.readData();
     bool ok;
-    write_file(path, (void*)stateDate.data(), stateDate.size(), &ok);
+    write_file(path.string(), (void*)stateDate.data(), stateDate.size(), &ok);
     if (ok)
         std::cout << "Saved to: " << path << std::endl;
     return ok;
 }
 
-static std::optional<Save> read_save(const std::filesystem::path& path) {
+static std::optional<Save> read_save(const path& path) {
     bool ok;
-    const std::vector<uint8_t> data = read_file(path, &ok);
+    const std::vector<uint8_t> data = read_file(path.string(), &ok);
     if (!ok)
         return std::nullopt;
     std::cout << "Loaded from: " << path << std::endl;
     return Save(data);
 }
 
-static bool write_state(const IStataData& state, const std::filesystem::path& path) {
+static bool write_state(const IStataData& state, const path& path) {
     const std::vector<uint8_t>& stateDate = state.getData();
     bool ok;
-    write_file(path, (void*)stateDate.data(), stateDate.size(), &ok);
+    write_file(path.string(), (void*)stateDate.data(), stateDate.size(), &ok);
     if (ok)
         std::cout << "State saved to: " << path << std::endl;
     return ok;
 }
 
-static std::optional<State> read_state(const std::filesystem::path& path) {
+static std::optional<State> read_state(const path& path) {
     bool ok;
-    const std::vector<uint8_t> data = read_file(path, &ok);
+    const std::vector<uint8_t> data = read_file(path.string(), &ok);
     if (!ok)
         return std::nullopt;
     std::cout << "State loaded from: " << path << std::endl;
@@ -199,7 +201,7 @@ static std::map<Config::Input::KeyboardKey, SDL_Keycode> KEYBOARD_KEYS_TO_SDL_KE
     {Config::Input::KeyboardKey::Up, SDLK_UP},
 };
 
-static std::filesystem::path PREFERENCES_FILE = std::filesystem::temp_directory_path() / "docboy.prefs";
+static path PREFERENCES_FILE = temp_directory_path() / "docboy.prefs";
 
 static void savePreferencesToCache(const Window& window) {
     const auto [x, y] = window.getPosition();
@@ -208,11 +210,11 @@ static void savePreferencesToCache(const Window& window) {
         {"x", std::to_string(x)},
         {"y", std::to_string(y)},
     };
-    ini_write(PREFERENCES_FILE, ini);
+    ini_write(PREFERENCES_FILE.string(), ini);
 };
 
 static INI loadPreferencesFromCache() {
-    return ini_read(PREFERENCES_FILE);
+    return ini_read(PREFERENCES_FILE.string());
 };
 
 int main(int argc, char** argv) {
@@ -254,7 +256,7 @@ int main(int argc, char** argv) {
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    std::filesystem::path romPath = std::filesystem::path(args.rom);
+    path romPath = args.rom;
 
     Config cfg;
     if (!args.config.empty()) {
@@ -403,7 +405,7 @@ int main(int argc, char** argv) {
     std::map<SDL_Keycode, IJoypad::Key> keyboardInputMapping;
     for (const auto& [joypadKey, keyboardKey] : cfg.input.keyboardMapping) {
         SDL_Keycode sdlKey = KEYBOARD_KEYS_TO_SDL_KEYS[keyboardKey];
-        if (!RESERVED_SDL_KEYS.contains(sdlKey))
+        if (!contains(RESERVED_SDL_KEYS, sdlKey))
             keyboardInputMapping[sdlKey] = joypadKey;
     }
 

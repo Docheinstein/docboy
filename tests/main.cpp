@@ -13,8 +13,8 @@
 #include "core/serial/endpoints/buffer.h"
 #include "core/serial/port.h"
 #include "utils/binutils.h"
-#include "utils/fileutils.h"
 #include "utils/log.h"
+#include "utils/osutils.h"
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>

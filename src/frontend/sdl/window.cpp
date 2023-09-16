@@ -3,6 +3,7 @@
 #include "helpers.h"
 #include "utils/binutils.h"
 #include "utils/exceptionutils.h"
+#include "utils/stdutils.h"
 #include <SDL.h>
 #include <stdexcept>
 
@@ -56,12 +57,12 @@ uint64_t Window::addText(const std::string& text, int x, int y, uint32_t color, 
     } else {
         guid = rand(); // NOLINT(cert-msc50-cpp)
     }
-    texts.emplace_back(guid, text, x, y, color, numFramesAlive);
+    texts.push_back({guid, text, x, y, color, numFramesAlive});
     return guid;
 }
 
 void Window::removeText(uint64_t guid) {
-    std::erase_if(texts, [guid](const Text& t) {
+    erase_if(texts, [guid](const Text& t) {
         return t.guid == guid;
     });
 }

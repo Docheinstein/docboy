@@ -1,5 +1,5 @@
-#ifndef FILEUTILS_H
-#define FILEUTILS_H
+#ifndef IOUTILS_H
+#define IOUTILS_H
 
 #include <cstdint>
 #include <string>
@@ -17,6 +17,6 @@ void write_file(const std::string& filename, void* data, std::size_t length, boo
 
 void write_file_lines(const std::string& filename, const std::vector<std::string>& lines, bool* ok = nullptr);
 
-#include "fileutils.tpp"
+#include "ioutils.tpp"
 
-#endif // FILEUTILS_H
+#endif // IOUTILS_H
