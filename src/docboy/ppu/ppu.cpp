@@ -4,10 +4,9 @@
 #include "docboy/memory/memory.hpp"
 #include "docboy/ppu/video.h"
 #include "pixelmap.h"
-#include "utils/asserts.h"
 #include "utils/casts.hpp"
+#include "utils/macros.h"
 #include "utils/math.h"
-#include "utils/parcel.h"
 
 using namespace Specs::Bits::Video::LCDC;
 using namespace Specs::Bits::Video::STAT;
@@ -85,6 +84,11 @@ void Ppu::turnOff() {
     dots = 0;
     video.LY = 0;
     lcd.reset();
+
+    // clear oam entries eventually still there
+    for (uint32_t i = 0; i < array_size(oamEntries); i++)
+        oamEntries[i].clear();
+
     resetFetcher();
     enterOamScan();
 
@@ -92,8 +96,10 @@ void Ppu::turnOff() {
 }
 
 void Ppu::enterOamScan() {
-    // clear oam entries
-    oamEntries.clear();
+    checkCode(for (uint32_t i = 0; i < array_size(oamEntries); i++) { check(oamEntries[i].isEmpty()); });
+    ASSERTS_ONLY(oamEntriesCount = 0);
+    DEBUGGER_ONLY(scanlineOamEntries.clear());
+    oamScan.count = 0;
 
     tickSelector = &Ppu::oamScan0;
 
@@ -104,14 +110,14 @@ void Ppu::enterOamScan() {
 }
 
 void Ppu::oamScan0() {
-    check(oamEntries.isNotFull());
+    check(oamScan.count < 10);
     check(dots % 2 == 0);
 
     // figure out oam number
-    oamScan.number = dots / 2;
+    oamScan.entry.number = dots / 2;
 
     // read oam y
-    oamScan.y = oam[OAM_ENTRY_BYTES * oamScan.number + Specs::Bytes::OAM::Y];
+    oamScan.entry.y = oam[OAM_ENTRY_BYTES * oamScan.entry.number + Specs::Bytes::OAM::Y];
 
     tickSelector = &Ppu::oamScan1;
 
@@ -119,7 +125,7 @@ void Ppu::oamScan0() {
 }
 
 void Ppu::oamScan1() {
-    check(oamEntries.isNotFull());
+    check(oamScan.count < 10);
     check(dots % 2 == 1);
 
 #define ADVANCE_TO_OAM_PHASE_OR_PIXEL_TRANSFER(oamStatePtr)                                                            \
@@ -135,24 +141,30 @@ void Ppu::oamScan1() {
 
     // check if the sprite is upon this scanline
     const uint8_t LY = video.LY;
-    const int32_t objY = oamScan.y - TILE_DOUBLE_HEIGHT;
+    const int32_t objY = oamScan.entry.y - TILE_DOUBLE_HEIGHT;
 
     if (objY <= LY && LY < objY + objHeight) {
         // read oam entry x
-        const uint8_t oamScanEntryX = oam[OAM_ENTRY_BYTES * oamScan.number + Specs::Bytes::OAM::X];
+        const uint8_t oamEntryX = oam[OAM_ENTRY_BYTES * oamScan.entry.number + Specs::Bytes::OAM::X];
 
         // push oam entry
-        oamEntries.emplaceBack(static_cast<uint8_t>(dots / 2), oamScanEntryX, oamScan.y);
+        if (oamEntryX < 168) {
+            oamEntries[oamEntryX].emplaceBack(static_cast<uint8_t>(dots / 2),
+                                              oamScan.entry.y ASSERTS_OR_DEBUGGER_ONLY(COMMA oamEntryX));
+            DEBUGGER_ONLY(scanlineOamEntries.emplaceBack(static_cast<uint8_t>(dots / 2),
+                                                         oamScan.entry.y ASSERTS_OR_DEBUGGER_ONLY(COMMA oamEntryX)));
+            ASSERTS_ONLY(++oamEntriesCount);
+        }
 
         // check if there is room for other oam entries in this scanline
         // if that's not the case, complete oam scan now
-        if (oamEntries.isFull()) {
+        if (++oamScan.count == 10) {
             ADVANCE_TO_OAM_PHASE_OR_PIXEL_TRANSFER(&Ppu::oamScanCompleted);
             return;
         }
     }
 
-    check(oamEntries.isNotFull());
+    check(oamScan.count < 10);
 
     ADVANCE_TO_OAM_PHASE_OR_PIXEL_TRANSFER(&Ppu::oamScan0);
 
@@ -160,7 +172,7 @@ void Ppu::oamScan1() {
 }
 
 void Ppu::oamScanCompleted() {
-    check(oamEntries.isFull());
+    check(oamScan.count == 10);
 
     if (++dots == 80) {
         enterPixelTransfer();
@@ -171,8 +183,12 @@ void Ppu::enterPixelTransfer() {
     check(dots == 80);
     check(video.LY < 144);
 
+    checkCode(check(oamScan.count <= 10); check(oamEntriesCount <= oamScan.count);
+
+              uint8_t count {}; for (uint32_t i = 0; i < array_size(oamEntries);
+                                     i++) { count += oamEntries[i].size(); } check(count == oamEntriesCount););
+
     resetFetcher();
-    computeOamEntriesHit();
 
     if (test_bit<WIN_ENABLE>(video.LCDC) && video.WX == 7 && video.LY >= video.WY) {
         // the first bg fetch of this scanline is for the window
@@ -232,7 +248,7 @@ void Ppu::pixelTransfer0() {
     check(LX < 8);
     check(!firstFetchWasBg || bgPixelTransfer.discardedPixels == bgPixelTransfer.SCXmod8);
 
-    bool newLX = false;
+    uint8_t nextLX = LX;
 
     // for LX € [0, 8) just pop the pixels but do not push them to LCD
     if (!isPixelTransferBlocked() && bgFifo.isNotEmpty()) {
@@ -241,16 +257,15 @@ void Ppu::pixelTransfer0() {
         if (objFifo.isNotEmpty())
             objFifo.popFront();
 
-        if (++LX == 8)
-            tickSelector = &Ppu::pixelTransfer8;
+        nextLX = LX + 1;
 
-        newLX = true;
+        if (nextLX == 8)
+            tickSelector = &Ppu::pixelTransfer8;
     }
 
     tickFetcher();
 
-    if (newLX)
-        computeOamEntriesHit();
+    LX = nextLX;
 
     ++dots;
 }
@@ -258,7 +273,7 @@ void Ppu::pixelTransfer0() {
 void Ppu::pixelTransfer8() {
     check(LX >= 8);
 
-    bool newLX = false;
+    uint8_t nextLX = LX;
 
     // push a new pixel to the lcd if if the bg fifo contains
     // some pixels and it's not blocked by a sprite fetch
@@ -291,19 +306,19 @@ void Ppu::pixelTransfer8() {
 
         lcd.pushPixel(static_cast<Lcd::Pixel>(color));
 
-        if (++LX == 168) {
+        nextLX = LX + 1;
+
+        if (nextLX == 168) {
+            LX = 168;
             ++dots;
             enterHBlank();
             return;
         }
-
-        newLX = true;
     }
 
     tickFetcher();
 
-    if (newLX)
-        computeOamEntriesHit();
+    LX = nextLX;
 
     ++dots;
 }
@@ -341,12 +356,9 @@ void Ppu::enterHBlank() {
         const uint16_t eBgLB = LB + (firstFetchWasBg ? bgPixelTransfer.SCXmod8 : 0);
         check(dots >= eBgLB);
 
-        uint8_t visibleOamEntriesCount {};
-        for (uint8_t i = 0; i < oamEntries.size(); i++) visibleOamEntriesCount += oamEntries[i].x < 168;
-
         // A sprite fetch requires at least 6 cycles, therefore a more strict lower bound is
-        // -> eBgLB + 6 * oamEntries.size()
-        check(dots >= eBgLB + 6 * visibleOamEntriesCount);
+        // -> eBgLB + 6 * oamEntriesCount
+        check(dots >= eBgLB + 6 * oamEntriesCount);
 
         // The maximum number of dots a pixel transfer can take is
         // -> eBgLB + 10 * 11 + (7)
@@ -356,7 +368,7 @@ void Ppu::enterHBlank() {
         check(dots <= eBgLB + 11 * 10);
 
         // More strictly: check based on the sprites actually there for this line
-        check(dots <= eBgLB + 11 * visibleOamEntriesCount);
+        check(dots <= eBgLB + 11 * oamEntriesCount);
 
         // TODO: consider also (7) window penalty?
         // TODO: check timing based on the expected penalty for the sprites hit
@@ -442,22 +454,14 @@ void Ppu::writeLY(uint8_t LY) {
     }
 }
 
-void Ppu::computeOamEntriesHit() {
-    for (uint8_t i = 0; i < oamEntries.size(); i++) {
-        if (oamEntries[i].x == LX)
-            oamEntriesHit.pushBack(oamEntries[i]);
-    }
-}
-
 inline bool Ppu::isPixelTransferBlocked() const {
     // the pixel transfer is stalled if the fetcher is either fetching a sprite
     // or if there's a obj hit for this x that is ready to be fetched
-    return isFetchingSprite || oamEntriesHit.isNotEmpty();
+    return isFetchingSprite || oamEntries[LX].isNotEmpty();
 }
 
 void Ppu::resetFetcher() {
     LX = 0;
-    oamEntriesHit.clear();
     bgFifo.clear();
     objFifo.clear();
     isFetchingSprite = false;
@@ -623,14 +627,14 @@ void Ppu::bgwinPixelSliceFetcherGetTileDataHigh1() {
     // if there is a pending obj hit, discard the fetched bg pixels
     // and restart the obj prefetcher with the obj hit
     // note: the first obj prefetcher tick should overlap this tick, not the push one
-    if (oamEntriesHit.isNotEmpty() && bgFifo.isNotEmpty()) {
+    if (oamEntries[LX].isNotEmpty() && bgFifo.isNotEmpty()) {
         // the bg/win tile fetched is not thrown away: instead it is
         // cached so that the fetcher can start with it after the sprite
         // has been merged into obj fifo
         cacheInterruptedBgWinFetch();
 
         isFetchingSprite = true;
-        of.entry = oamEntriesHit.popBack();
+        of.entry = oamEntries[LX].popBack();
         objPrefetcherGetTile0();
         return;
     }
@@ -666,7 +670,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
     // if there is a pending obj hit, discard the fetched bg pixels
     // and restart the obj prefetcher with the obj hit
     // note: the first obj prefetcher tick overlap this tick
-    if (oamEntriesHit.isNotEmpty()) {
+    if (oamEntries[LX].isNotEmpty()) {
         if (!canPushToBgFifo) {
             // the bg/win tile fetched is not thrown away: instead it is
             // cached so that the fetcher can start with it after the sprite
@@ -675,7 +679,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
         }
 
         isFetchingSprite = true;
-        of.entry = oamEntriesHit.popBack();
+        of.entry = oamEntries[LX].popBack();
         objPrefetcherGetTile0();
         return;
     }
@@ -705,6 +709,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh0() {
 
 void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     check(isFetchingSprite);
+    check(of.entry.x == LX);
 
     PixelColorIndex objPixelsColors[8];
     const uint8_t(*pixelsMapPtr)[8] =
@@ -714,7 +719,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     ObjPixel objPixels[8];
     for (uint8_t i = 0; i < 8; i++) {
         objPixels[i] = {
-            .colorIndex = objPixelsColors[i], .attributes = of.attributes, .number = of.entry.number, .x = of.entry.x};
+            .colorIndex = objPixelsColors[i], .attributes = of.attributes, .number = of.entry.number, .x = LX};
     }
 
     // handle sprite-to-sprite conflicts by merging the new obj pixels with
@@ -752,10 +757,10 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
 
     check(objFifo.isFull());
 
-    if (oamEntriesHit.isNotEmpty() && bgFifo.isNotEmpty()) {
+    if (oamEntries[LX].isNotEmpty() && bgFifo.isNotEmpty()) {
         // still oam entries hit to be served for this x: setup the fetcher
         // for another obj fetch
-        of.entry = oamEntriesHit.popBack();
+        of.entry = oamEntries[LX].popBack();
         fetcherTickSelector = &Ppu::objPrefetcherGetTile0;
     } else {
         // no more oam entries to serve for this x: setup to fetcher with
@@ -842,16 +847,15 @@ void Ppu::saveState(Parcel& parcel) const {
     parcel.writeUInt8(objFifo.end);
     parcel.writeUInt8(objFifo.count);
 
-    parcel.writeBytes(oamEntries.data, sizeof(oamEntries.data));
-    parcel.writeUInt8(oamEntries.cursor);
-
-    parcel.writeBytes(oamEntriesHit.data, sizeof(oamEntriesHit.data));
-    parcel.writeUInt8(oamEntriesHit.cursor);
+    static_assert(std::is_trivially_copyable_v<typeof(oamEntries)>);
+    parcel.writeBytes(oamEntries, sizeof(oamEntries));
+    ASSERTS_ONLY(parcel.writeUInt8(oamEntriesCount));
 
     parcel.writeBool(isFetchingSprite);
 
-    parcel.writeUInt8(oamScan.number);
-    parcel.writeUInt8(oamScan.y);
+    parcel.writeUInt8(oamScan.count);
+    parcel.writeUInt8(oamScan.entry.number);
+    parcel.writeUInt8(oamScan.entry.y);
 
     parcel.writeUInt8(bgPixelTransfer.SCXmod8);
     parcel.writeUInt8(bgPixelTransfer.discardedPixels);
@@ -866,8 +870,8 @@ void Ppu::saveState(Parcel& parcel) const {
     parcel.writeBool(w.shown);
 
     parcel.writeUInt8(of.entry.number);
-    parcel.writeUInt8(of.entry.x);
     parcel.writeUInt8(of.entry.y);
+    ASSERTS_ONLY(parcel.writeUInt8(of.entry.x));
     parcel.writeUInt8(of.tileNumber);
     parcel.writeUInt8(of.attributes);
 
@@ -929,16 +933,15 @@ void Ppu::loadState(Parcel& parcel) {
     objFifo.end = parcel.readUInt8();
     objFifo.count = parcel.readUInt8();
 
-    parcel.readBytes(oamEntries.data, sizeof(oamEntries.data));
-    oamEntries.cursor = parcel.readUInt8();
-
-    parcel.readBytes(oamEntriesHit.data, sizeof(oamEntriesHit.data));
-    oamEntriesHit.cursor = parcel.readUInt8();
+    static_assert(std::is_trivially_copyable_v<typeof(oamEntries)>);
+    parcel.readBytes(oamEntries, sizeof(oamEntries));
+    ASSERTS_ONLY(oamEntriesCount = parcel.readUInt8());
 
     isFetchingSprite = parcel.readBool();
 
-    oamScan.number = parcel.readUInt8();
-    oamScan.y = parcel.readUInt8();
+    oamScan.count = parcel.readUInt8();
+    oamScan.entry.number = parcel.readUInt8();
+    oamScan.entry.y = parcel.readUInt8();
 
     bgPixelTransfer.SCXmod8 = parcel.readUInt8();
     bgPixelTransfer.discardedPixels = parcel.readUInt8();
@@ -953,8 +956,8 @@ void Ppu::loadState(Parcel& parcel) {
     w.shown = parcel.readBool();
 
     of.entry.number = parcel.readUInt8();
-    of.entry.x = parcel.readUInt8();
     of.entry.y = parcel.readUInt8();
+    ASSERTS_ONLY(of.entry.x = parcel.readUInt8());
     of.tileNumber = parcel.readUInt8();
     of.attributes = parcel.readUInt8();
 

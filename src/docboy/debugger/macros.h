@@ -10,10 +10,18 @@ class DebuggerBackend;
 #define DEBUGGABLE_CLASS()                                                                                             \
     friend class DebuggerBackend;                                                                                      \
     friend class DebuggerFrontend;
-#define DEBUGGER_ONLY(statement, ...) statement __VA_ARGS__
+#define DEBUGGER_ONLY(statement) statement
+#define ASSERTS_OR_DEBUGGER_ONLY(statement) statement
 #else
 #define DEBUGGABLE_CLASS()
 #define DEBUGGER_ONLY(statement)
-#endif
+
+#ifdef ENABLE_ASSERTS
+#define ASSERTS_OR_DEBUGGER_ONLY(statement) statement
+#else
+#define ASSERTS_OR_DEBUGGER_ONLY(statement)
+#endif // ENABLE_ASSERTS
+
+#endif // ENABLE_DEBUGGER
 
 #endif // DEBUGGERMACROS_H

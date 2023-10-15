@@ -10,6 +10,8 @@
 #include "utils/queue.hpp"
 #include "utils/vector.hpp"
 
+#include <vector>
+
 class Lcd;
 class VideoIO;
 class InterruptsIO;
@@ -51,8 +53,8 @@ private:
 
     struct OamScanEntry {
         uint8_t number; // [0, 40)
-        uint8_t x;
         uint8_t y;
+        ASSERTS_OR_DEBUGGER_ONLY(uint8_t x);
     };
 
     void turnOn();
@@ -108,7 +110,6 @@ private:
 
     void writeLY(uint8_t LY);
 
-    void computeOamEntriesHit();
     [[nodiscard]] bool isPixelTransferBlocked() const;
 
     void cacheInterruptedBgWinFetch();
@@ -131,10 +132,11 @@ private:
     FillQueue<BgPixel, 8> bgFifo {};
     Queue<ObjPixel, 8> objFifo {};
 
-    Vector<OamScanEntry, 10> oamEntries {};
-
-    // TODO: data structure indexed by x?
-    Vector<OamScanEntry, 10> oamEntriesHit {};
+    Vector<OamScanEntry, 10> oamEntries[168] {};
+    ASSERTS_ONLY(uint8_t oamEntriesCount {});
+#ifdef ENABLE_DEBUGGER
+    Vector<OamScanEntry, 10> scanlineOamEntries {}; // not cleared after oam scan
+#endif
 
     bool isFetchingSprite {};
 
@@ -142,8 +144,11 @@ private:
 
     // Oam Scan
     struct {
-        uint8_t number {};
-        uint8_t y {};
+        uint8_t count {}; // [0, 10]
+        struct {
+            uint8_t number {};
+            uint8_t y {};
+        } entry;
     } oamScan;
 
     struct {

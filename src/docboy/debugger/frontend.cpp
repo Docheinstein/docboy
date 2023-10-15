@@ -1002,7 +1002,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 std::string blockReason;
                 if (gb.ppu.isFetchingSprite)
                     blockReason = "fetching sprite";
-                if (gb.ppu.oamEntriesHit.isNotEmpty())
+                if (gb.ppu.oamEntries[gb.ppu.LX].isNotEmpty())
                     blockReason = "pending sprite hit";
                 if (gb.ppu.bgFifo.isEmpty())
                     blockReason = "empty bg fifo";
@@ -1087,33 +1087,39 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         std::cout << termcolor::yellow << "FetcherPhase     :  " << termcolor::reset << ppuFetcherPhase() << std::endl;
         std::cout << termcolor::yellow << "LX               :  " << termcolor::reset << +gb.ppu.LX << std::endl;
 
+        const auto& oamEntries = gb.ppu.scanlineOamEntries;
+
         std::cout << subheader("oam scanline entries") << std::endl;
         std::cout << termcolor::yellow << "OAM Number       :  " << termcolor::reset;
-        for (uint8_t i = 0; i < gb.ppu.oamEntries.size(); i++)
-            std::cout << std::setw(3) << +gb.ppu.oamEntries[i].number << " ";
+        for (uint8_t i = 0; i < oamEntries.size(); i++)
+            std::cout << std::setw(3) << +oamEntries[i].number << " ";
         std::cout << std::endl;
         std::cout << termcolor::yellow << "OAM X            :  " << termcolor::reset;
-        for (uint8_t i = 0; i < gb.ppu.oamEntries.size(); i++)
-            std::cout << std::setw(3) << +gb.ppu.oamEntries[i].x << " ";
+        for (uint8_t i = 0; i < oamEntries.size(); i++)
+            std::cout << std::setw(3) << +oamEntries[i].x << " ";
         std::cout << std::endl;
         std::cout << termcolor::yellow << "OAM Y            :  " << termcolor::reset;
-        for (uint8_t i = 0; i < gb.ppu.oamEntries.size(); i++)
-            std::cout << std::setw(3) << +gb.ppu.oamEntries[i].y << " ";
+        for (uint8_t i = 0; i < oamEntries.size(); i++)
+            std::cout << std::setw(3) << +oamEntries[i].y << " ";
         std::cout << std::endl;
 
-        std::cout << subheader("oam hit") << std::endl;
-        std::cout << termcolor::yellow << "OAM Number       :  " << termcolor::reset;
-        for (uint8_t i = 0; i < gb.ppu.oamEntriesHit.size(); i++)
-            std::cout << std::setw(3) << +gb.ppu.oamEntriesHit[i].number << " ";
-        std::cout << std::endl;
-        std::cout << termcolor::yellow << "OAM X            :  " << termcolor::reset;
-        for (uint8_t i = 0; i < gb.ppu.oamEntriesHit.size(); i++)
-            std::cout << std::setw(3) << +gb.ppu.oamEntriesHit[i].x << " ";
-        std::cout << std::endl;
-        std::cout << termcolor::yellow << "OAM Y            :  " << termcolor::reset;
-        for (uint8_t i = 0; i < gb.ppu.oamEntriesHit.size(); i++)
-            std::cout << std::setw(3) << +gb.ppu.oamEntriesHit[i].y << " ";
-        std::cout << std::endl;
+        if (gb.ppu.LX < array_size(gb.ppu.oamEntries)) {
+            const auto& oamEntriesHit = gb.ppu.oamEntries[gb.ppu.LX];
+
+            std::cout << subheader("oam hit") << std::endl;
+            std::cout << termcolor::yellow << "OAM Number       :  " << termcolor::reset;
+            for (uint8_t i = 0; i < oamEntriesHit.size(); i++)
+                std::cout << std::setw(3) << +(oamEntriesHit[i].number) << " ";
+            std::cout << std::endl;
+            std::cout << termcolor::yellow << "OAM X            :  " << termcolor::reset;
+            for (uint8_t i = 0; i < oamEntriesHit.size(); i++)
+                std::cout << std::setw(3) << +(oamEntriesHit[i].x) << " ";
+            std::cout << std::endl;
+            std::cout << termcolor::yellow << "OAM Y            :  " << termcolor::reset;
+            for (uint8_t i = 0; i < oamEntriesHit.size(); i++)
+                std::cout << std::setw(3) << +(oamEntriesHit[i].y) << " ";
+            std::cout << std::endl;
+        }
 
         uint8_t bgPixels[8];
         for (uint8_t i = 0; i < gb.ppu.bgFifo.size(); i++) {
