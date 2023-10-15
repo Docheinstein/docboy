@@ -12,6 +12,10 @@
 #include "utils/formatters.hpp"
 #include "utils/parcel.h"
 
+static constexpr uint8_t STATE_INSTRUCTION_FLAG_NORMAL = 0;
+static constexpr uint8_t STATE_INSTRUCTION_FLAG_CB = 1;
+static constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
+
 Cpu::Cpu(InterruptsIO& interrupts, Timers& timers, SerialPort& serial, BootIO& boot, Bus& bus) :
     interrupts(interrupts),
     timers(timers),
@@ -579,13 +583,17 @@ void Cpu::saveState(Parcel& parcel) const {
     parcel.writeBool(halted);
 
     if (instruction.microop.selector - &instructions[0][0] < 256 * 6) {
-        parcel.writeBool(false); // CB flag
+        parcel.writeUInt8(STATE_INSTRUCTION_FLAG_NORMAL);
         parcel.writeUInt16(instruction.microop.selector - &instructions[0][0]);
     } else if (instruction.microop.selector - &instructionsCB[0][0] < 256 * 4) {
-        parcel.writeBool(true); // CB flag
+        parcel.writeUInt8(STATE_INSTRUCTION_FLAG_CB);
         parcel.writeUInt16(instruction.microop.selector - &instructionsCB[0][0]);
-    } else
+    } else if (instruction.microop.selector - &ISR[0] < 5) {
+        parcel.writeUInt8(STATE_INSTRUCTION_FLAG_ISR);
+        parcel.writeUInt16(instruction.microop.selector - &ISR[0]);
+    } else {
         checkNoEntry();
+    }
 
     parcel.writeUInt8(instruction.microop.counter);
     DEBUGGER_ONLY(parcel.writeUInt16(instruction.address));
@@ -614,13 +622,17 @@ void Cpu::loadState(Parcel& parcel) {
     pendingEnableIME = parcel.readBool();
     halted = parcel.readBool();
 
-    const bool CB = parcel.readBool(); // CB flag
+    const uint8_t instructionFlag = parcel.readUInt8();
     const uint16_t offset = parcel.readInt16();
 
-    if (CB)
-        instruction.microop.selector = &instructionsCB[offset / 4][offset % 4];
-    else
+    if (instructionFlag == STATE_INSTRUCTION_FLAG_NORMAL)
         instruction.microop.selector = &instructions[offset / 6][offset % 6];
+    else if (instructionFlag == STATE_INSTRUCTION_FLAG_CB)
+        instruction.microop.selector = &instructionsCB[offset / 4][offset % 4];
+    else if (instructionFlag == STATE_INSTRUCTION_FLAG_ISR)
+        instruction.microop.selector = &ISR[offset];
+    else
+        checkNoEntry();
 
     instruction.microop.counter = parcel.readUInt8();
     DEBUGGER_ONLY(instruction.address = parcel.readUInt16());
