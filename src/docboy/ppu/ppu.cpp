@@ -786,64 +786,48 @@ inline void Ppu::restoreInterruptedBgWinFetch() {
 }
 
 void Ppu::saveState(Parcel& parcel) const {
-    if (tickSelector == &Ppu::oamScan0) {
-        parcel.writeUInt8(0);
-    } else if (tickSelector == &Ppu::oamScan1) {
-        parcel.writeUInt8(1);
-    } else if (tickSelector == &Ppu::oamScanCompleted) {
-        parcel.writeUInt8(2);
-    } else if (tickSelector == &Ppu::pixelTransferDummy0<false>) {
-        parcel.writeUInt8(3);
-    } else if (tickSelector == &Ppu::pixelTransferDummy0<true>) {
-        parcel.writeUInt8(4);
-    } else if (tickSelector == &Ppu::pixelTransferDiscard0) {
-        parcel.writeUInt8(5);
-    } else if (tickSelector == &Ppu::pixelTransfer0) {
-        parcel.writeUInt8(6);
-    } else if (tickSelector == &Ppu::pixelTransfer8) {
-        parcel.writeUInt8(7);
-    } else if (tickSelector == &Ppu::hBlank) {
-        parcel.writeUInt8(8);
-    } else if (tickSelector == &Ppu::vBlank) {
-        parcel.writeUInt8(9);
-    } else {
-        checkNoEntry();
-    }
+    static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScan0,
+                                                    &Ppu::oamScan1,
+                                                    &Ppu::oamScanCompleted,
+                                                    &Ppu::pixelTransferDummy0<false>,
+                                                    &Ppu::pixelTransferDummy0<true>,
+                                                    &Ppu::pixelTransferDiscard0,
+                                                    &Ppu::pixelTransfer0,
+                                                    &Ppu::pixelTransfer8,
+                                                    &Ppu::hBlank,
+                                                    &Ppu::vBlank};
 
-    if (fetcherTickSelector == &Ppu::bgwinPrefetcherGetTile0) {
-        parcel.writeUInt8(0);
-    } else if (fetcherTickSelector == &Ppu::bgPrefetcherGetTile0) {
-        parcel.writeUInt8(1);
-    } else if (fetcherTickSelector == &Ppu::bgPrefetcherGetTile1) {
-        parcel.writeUInt8(2);
-    } else if (fetcherTickSelector == &Ppu::winPrefetcherGetTile0) {
-        parcel.writeUInt8(3);
-    } else if (fetcherTickSelector == &Ppu::winPrefetcherGetTile1) {
-        parcel.writeUInt8(4);
-    } else if (fetcherTickSelector == &Ppu::objPrefetcherGetTile0) {
-        parcel.writeUInt8(5);
-    } else if (fetcherTickSelector == &Ppu::objPrefetcherGetTile1) {
-        parcel.writeUInt8(6);
-    } else if (fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataLow0) {
-        parcel.writeUInt8(7);
-    } else if (fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataLow1) {
-        parcel.writeUInt8(8);
-    } else if (fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0) {
-        parcel.writeUInt8(9);
-    } else if (fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1) {
-        parcel.writeUInt8(10);
-    } else if (fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush) {
-        parcel.writeUInt8(11);
-    } else if (fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow0) {
-        parcel.writeUInt8(12);
-    } else if (fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow1) {
-        parcel.writeUInt8(13);
-    } else if (fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh0) {
-        parcel.writeUInt8(14);
-    } else if (fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo) {
-        parcel.writeUInt8(15);
-    } else {
-        checkNoEntry();
+    static constexpr TickSelector FETCHER_TICK_SELECTORS[] {
+        &Ppu::bgwinPrefetcherGetTile0,
+        &Ppu::bgPrefetcherGetTile0,
+        &Ppu::bgPrefetcherGetTile1,
+        &Ppu::winPrefetcherGetTile0,
+        &Ppu::winPrefetcherGetTile1,
+        &Ppu::objPrefetcherGetTile0,
+        &Ppu::objPrefetcherGetTile1,
+        &Ppu::bgwinPixelSliceFetcherGetTileDataLow0,
+        &Ppu::bgwinPixelSliceFetcherGetTileDataLow1,
+        &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0,
+        &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1,
+        &Ppu::bgwinPixelSliceFetcherPush,
+        &Ppu::objPixelSliceFetcherGetTileDataLow0,
+        &Ppu::objPixelSliceFetcherGetTileDataLow1,
+        &Ppu::objPixelSliceFetcherGetTileDataHigh0,
+        &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo};
+
+    {
+        uint8_t i = 0;
+
+        while (i < (uint8_t)array_size(TICK_SELECTORS) && tickSelector != TICK_SELECTORS[i])
+            ++i;
+        check(i < array_size(TICK_SELECTORS));
+        parcel.writeUInt8(i);
+
+        i = 0;
+        while (i < (uint8_t)array_size(FETCHER_TICK_SELECTORS) && fetcherTickSelector != FETCHER_TICK_SELECTORS[i])
+            ++i;
+        check(i < array_size(FETCHER_TICK_SELECTORS));
+        parcel.writeUInt8(i);
     }
 
     parcel.writeBool(on);
@@ -896,69 +880,42 @@ void Ppu::saveState(Parcel& parcel) const {
 }
 
 void Ppu::loadState(Parcel& parcel) {
-    uint8_t tickSelectorNumber = parcel.readUInt8();
+    static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScan0,
+                                                    &Ppu::oamScan1,
+                                                    &Ppu::oamScanCompleted,
+                                                    &Ppu::pixelTransferDummy0<false>,
+                                                    &Ppu::pixelTransferDummy0<true>,
+                                                    &Ppu::pixelTransferDiscard0,
+                                                    &Ppu::pixelTransfer0,
+                                                    &Ppu::pixelTransfer8,
+                                                    &Ppu::hBlank,
+                                                    &Ppu::vBlank};
 
-    if (tickSelectorNumber == 0) {
-        tickSelector = &Ppu::oamScan0;
-    } else if (tickSelectorNumber == 1) {
-        tickSelector = &Ppu::oamScan1;
-    } else if (tickSelectorNumber == 2) {
-        tickSelector = &Ppu::oamScanCompleted;
-    } else if (tickSelectorNumber == 3) {
-        tickSelector = &Ppu::pixelTransferDummy0<false>;
-    } else if (tickSelectorNumber == 4) {
-        tickSelector = &Ppu::pixelTransferDummy0<true>;
-    } else if (tickSelectorNumber == 5) {
-        tickSelector = &Ppu::pixelTransferDiscard0;
-    } else if (tickSelectorNumber == 6) {
-        tickSelector = &Ppu::pixelTransfer0;
-    } else if (tickSelectorNumber == 7) {
-        tickSelector = &Ppu::pixelTransfer8;
-    } else if (tickSelectorNumber == 8) {
-        tickSelector = &Ppu::hBlank;
-    } else if (tickSelectorNumber == 9) {
-        tickSelector = &Ppu::vBlank;
-    } else {
-        checkNoEntry();
-    }
+    static constexpr TickSelector FETCHER_TICK_SELECTORS[] {
+        &Ppu::bgwinPrefetcherGetTile0,
+        &Ppu::bgPrefetcherGetTile0,
+        &Ppu::bgPrefetcherGetTile1,
+        &Ppu::winPrefetcherGetTile0,
+        &Ppu::winPrefetcherGetTile1,
+        &Ppu::objPrefetcherGetTile0,
+        &Ppu::objPrefetcherGetTile1,
+        &Ppu::bgwinPixelSliceFetcherGetTileDataLow0,
+        &Ppu::bgwinPixelSliceFetcherGetTileDataLow1,
+        &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0,
+        &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1,
+        &Ppu::bgwinPixelSliceFetcherPush,
+        &Ppu::objPixelSliceFetcherGetTileDataLow0,
+        &Ppu::objPixelSliceFetcherGetTileDataLow1,
+        &Ppu::objPixelSliceFetcherGetTileDataHigh0,
+        &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo};
 
-    uint8_t fetcherTickSelectorNumber = parcel.readUInt8();
+    const uint8_t tickSelectorNumber = parcel.readUInt8();
+    check(tickSelectorNumber < array_size(TICK_SELECTORS));
+    tickSelector = TICK_SELECTORS[tickSelectorNumber];
 
-    if (fetcherTickSelectorNumber == 0) {
-        fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;
-    } else if (fetcherTickSelectorNumber == 1) {
-        fetcherTickSelector = &Ppu::bgPrefetcherGetTile0;
-    } else if (fetcherTickSelectorNumber == 2) {
-        fetcherTickSelector = &Ppu::bgPrefetcherGetTile1;
-    } else if (fetcherTickSelectorNumber == 3) {
-        fetcherTickSelector = &Ppu::winPrefetcherGetTile0;
-    } else if (fetcherTickSelectorNumber == 4) {
-        fetcherTickSelector = &Ppu::winPrefetcherGetTile1;
-    } else if (fetcherTickSelectorNumber == 5) {
-        fetcherTickSelector = &Ppu::objPrefetcherGetTile0;
-    } else if (fetcherTickSelectorNumber == 6) {
-        fetcherTickSelector = &Ppu::objPrefetcherGetTile1;
-    } else if (fetcherTickSelectorNumber == 7) {
-        fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataLow0;
-    } else if (fetcherTickSelectorNumber == 8) {
-        fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataLow1;
-    } else if (fetcherTickSelectorNumber == 9) {
-        fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0;
-    } else if (fetcherTickSelectorNumber == 10) {
-        fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1;
-    } else if (fetcherTickSelectorNumber == 11) {
-        fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherPush;
-    } else if (fetcherTickSelectorNumber == 12) {
-        fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataLow0;
-    } else if (fetcherTickSelectorNumber == 13) {
-        fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataLow1;
-    } else if (fetcherTickSelectorNumber == 14) {
-        fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataHigh0;
-    } else if (fetcherTickSelectorNumber == 15) {
-        fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo;
-    } else {
-        checkNoEntry();
-    }
+    const uint8_t fetcherTickSelectorNumber = parcel.readUInt8();
+    check(fetcherTickSelectorNumber < array_size(FETCHER_TICK_SELECTORS));
+    fetcherTickSelector = FETCHER_TICK_SELECTORS[fetcherTickSelectorNumber];
 
     on = parcel.readBool();
     dots = parcel.readUInt16();
