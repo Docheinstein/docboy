@@ -39,8 +39,8 @@ static uint8_t pow2mod(uint8_t n) {
 }
 
 template <typename T>
-static T pow2(T n) {
-    return 1 << n;
+static double pow2(T n) {
+    return (n < 0) ? (1.0 / (1 << -n)) : (1 << n);
 }
 
 #endif // MATH_H

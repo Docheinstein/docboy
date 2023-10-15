@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
     bool quit {false};
     bool showFPS {false};
     uint32_t fps {0};
-    int8_t speedLevel {0};
+    int64_t speedLevel {0};
 
     std::chrono::high_resolution_clock::time_point lastFpsSampling = std::chrono::high_resolution_clock::now();
 
