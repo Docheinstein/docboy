@@ -11,6 +11,7 @@ BreakConstructorInitializers: AfterColon
 ColumnLimit: 120
 IndentWidth: 4
 IndentAccessModifiers: false
+NamespaceIndentation: Inner
 PackConstructorInitializers: Never
 PointerAlignment: Left
 SpaceBeforeCpp11BracedList: true

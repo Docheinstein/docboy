@@ -1,7 +1,4 @@
-set(SOURCES
-        main.cpp
-)
+add_executable(docboy-nogui)
 
-add_executable(docboy-nogui ${SOURCES})
-
-target_link_libraries(docboy-nogui PRIVATE core utils argumentum)
+target_sources(docboy-nogui PRIVATE main.cpp)
+target_link_libraries(docboy-nogui PRIVATE docboy utils extra argumentum)

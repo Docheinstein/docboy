@@ -1,11 +1,47 @@
 #include "window.h"
+#include "docboy/shared/specs.h"
 #include "glyphs.h"
-#include "helpers.h"
-#include "utils/binutils.h"
-#include "utils/exceptionutils.h"
-#include "utils/stdutils.h"
+#include "utils/exceptions.hpp"
+#include "utils/log.h"
+#include "utils/std.hpp"
 #include <SDL.h>
-#include <stdexcept>
+#include <string>
+
+#ifdef SDL2_IMAGE
+#include <SDL_image.h>
+#include <chrono>
+
+#endif
+
+Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
+    framebuffer(framebuffer),
+    width(static_cast<int>(scaling * Specs::Display::WIDTH)),
+    height(static_cast<int>(scaling * Specs::Display::HEIGHT)),
+    scaling(scaling) {
+
+    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+        fatal("SDL_Init error: " + SDL_GetError());
+
+    const int winX = static_cast<int>(x == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : x);
+    const int winY = static_cast<int>(y == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : y);
+
+    window = SDL_CreateWindow("DocBoy", winX, winY, width, height, SDL_WINDOW_SHOWN);
+    if (!window)
+        fatal("SDL_CreateWindow error: " + SDL_GetError());
+
+    renderer = SDL_CreateRenderer(window, -1, 0);
+    if (!renderer)
+        fatal("SDL_CreateRenderer error: " + SDL_GetError());
+
+    // TODO: figure out byte order
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, Specs::Display::WIDTH,
+                                Specs::Display::HEIGHT);
+    if (!texture)
+        fatal("SDL_CreateTexture error: " + SDL_GetError());
+
+    // TODO: don't know but setting these in SDL_CreateWindow does not work
+    //    SDL_SetWindowPosition(window, winX, winY);
+}
 
 Window::~Window() {
     SDL_DestroyTexture(texture);
@@ -14,72 +50,7 @@ Window::~Window() {
     SDL_Quit();
 }
 
-Window::Window(uint16_t* framebuffer, ILCDIO& lcd, int x, int y, float scaling) :
-    framebuffer(framebuffer),
-    lcd(lcd),
-    window(),
-    renderer(),
-    texture(),
-    width(static_cast<int>(scaling * WINDOW_WIDTH)),
-    height(static_cast<int>(scaling * WINDOW_HEIGHT)),
-    scaling(scaling) {
-
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
-        THROW(std::runtime_error(std::string("SDL_Init error: ") + SDL_GetError()));
-
-    window =
-        SDL_CreateWindow("DocBoy", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN);
-    if (!window)
-        THROW(std::runtime_error(std::string("SDL_CreateWindow error: ") + SDL_GetError()));
-
-    renderer = SDL_CreateRenderer(window, -1, 0);
-    if (!renderer)
-        THROW(std::runtime_error(std::string("SDL_CreateRenderer error: ") + SDL_GetError()));
-
-    // TODO: figure out byte order
-    texture =
-        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, WINDOW_WIDTH, WINDOW_HEIGHT);
-    if (!texture)
-        THROW(std::runtime_error(std::string("SDL_CreateTexture error: ") + SDL_GetError()));
-
-    // TODO: don't know but setting these in SDL_CreateWindow does not work
-    const auto winX = static_cast<int>(x == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : x);
-    const auto winY = static_cast<int>(y == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : y);
-    SDL_SetWindowPosition(window, winX, winY);
-}
-
-uint64_t Window::addText(const std::string& text, int x, int y, uint32_t color, uint64_t numFramesAlive,
-                         std::optional<uint64_t> optionalGuid) {
-    uint64_t guid;
-    if (optionalGuid) {
-        guid = *optionalGuid;
-        removeText(guid);
-    } else {
-        guid = rand(); // NOLINT(cert-msc50-cpp)
-    }
-    texts.push_back({guid, text, x, y, color, numFramesAlive});
-    return guid;
-}
-
-void Window::removeText(uint64_t guid) {
-    erase_if(texts, [guid](const Text& t) {
-        return t.guid == guid;
-    });
-}
-
-std::pair<int, int> Window::getPosition() const {
-    int x, y;
-    SDL_GetWindowPosition(window, &x, &y);
-    return {x, y};
-}
-
 void Window::render() {
-    auto now = std::chrono::high_resolution_clock::now();
-    if (now < lastRender + std::chrono::milliseconds(16)) {
-        return;
-    }
-    lastRender = now;
-
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
@@ -89,29 +60,52 @@ void Window::render() {
     SDL_RenderPresent(renderer);
 }
 
+void Window::clear() {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+}
+
+uint64_t Window::addText(const std::string& text, int x, int y, uint32_t color, std::optional<uint64_t> millisAlive,
+                         std::optional<uint64_t> optionalGuid) {
+    const uint64_t guid = optionalGuid ? *optionalGuid : rand(); // NOLINT(cert-msc50-cpp)
+    removeText(guid);
+
+    texts.push_back({guid, text, x, y, color,
+                     millisAlive ? std::optional(std::chrono::high_resolution_clock::now() +
+                                                 std::chrono::milliseconds(*millisAlive))
+                                 : std::nullopt});
+    return guid;
+}
+
+void Window::removeText(uint64_t guid) {
+    erase_if(texts, [guid](const Text& t) {
+        return t.guid == guid;
+    });
+}
+
 void Window::drawFramebuffer() {
-    bool lcdOn = get_bit<Bits::LCD::LCDC::LCD_ENABLE>(lcd.readLCDC());
-    if (lcdOn) {
-        SDL_Rect srcrect {.x = 0, .y = 0, .w = WINDOW_WIDTH, .h = WINDOW_HEIGHT};
-        SDL_Rect dstrect {.x = 0, .y = 0, .w = width, .h = height};
-        void* texturePixels;
-        int pitch;
+    SDL_Rect srcrect {.x = 0, .y = 0, .w = Specs::Display::WIDTH, .h = Specs::Display::HEIGHT};
+    SDL_Rect dstrect {.x = 0, .y = 0, .w = width, .h = height};
 
-        SDL_LockTexture(texture, &srcrect, (void**)&texturePixels, &pitch);
-        memcpy(texturePixels, framebuffer, WINDOW_WIDTH * WINDOW_HEIGHT * sizeof(uint16_t));
-        SDL_UnlockTexture(texture);
+    void* texturePixels;
+    int pitch;
 
-        SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
-    }
+    SDL_LockTexture(texture, &srcrect, (void**)&texturePixels, &pitch);
+    memcpy(texturePixels, framebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t));
+    SDL_UnlockTexture(texture);
+
+    SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
 }
 
 void Window::drawTexts() {
+    const auto now = std::chrono::high_resolution_clock::now();
+
     auto it = texts.begin();
     while (it != texts.end()) {
         Text& text = *it;
         drawText(text);
-        text.remainingFrames--;
-        if (text.remainingFrames == 0)
+        if (text.deadline && now > *text.deadline)
             it = texts.erase(it);
         else
             it++;
@@ -144,4 +138,26 @@ void Window::drawText(const Window::Text& text) {
 
     SDL_RenderCopy(renderer, textTexture, nullptr, &textDstRect);
     SDL_DestroyTexture(textTexture);
+}
+
+bool Window::screenshot(const std::string& filename) const {
+#ifdef SDL2_IMAGE
+    SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
+        (void*)framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_BITSPERPIXEL(SDL_PIXELFORMAT_RGB565),
+        Specs::Display::WIDTH * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGB565), SDL_PIXELFORMAT_RGB565);
+
+    if (!surface)
+        fatal("SDL_CreateRGBSurfaceWithFormatFrom error: " + SDL_GetError());
+
+    int result = IMG_SavePNG(surface, filename.c_str());
+
+    SDL_FreeSurface(surface);
+
+    if (result != 0)
+        WARN("SDL_SaveBMP error: " + SDL_GetError());
+
+    return result == 0;
+#else
+    WARN("Unsupported");
+#endif
 }

@@ -1,43 +1,49 @@
 #include "path.h"
-#include "exceptionutils.h"
-#include "osutils.h"
+#include "exceptions.hpp"
+#include "os.h"
+#include "strings.hpp"
 
-path::path(std::string path) :
-    path_string(std::move(path)) {
-    // TODO: sanitize trailing slash
-}
-
-path::path(const char* path) :
-    path_string(path) {
-    // TODO: sanitize trailing slash
+path::path(const std::string& path) {
+    check(!path.empty(), "cannot build an empty path");
+    split(path, std::back_inserter(parts), SEP);
+    isAbsolute = path[0] == SEP;
 }
 
 std::string path::string() const {
-    return path_string;
-}
-
-const char* path::c_str() const {
-    return path_string.c_str();
+    std::string s = join(parts, SEP);
+    if (isAbsolute)
+        return SEP + s;
+    return s;
 }
 
 path& path::replace_extension(const std::string& extension) {
-    std::size_t dot = path_string.find_last_of('.');
+    std::string& lastPart = parts.back();
+    std::size_t dot = lastPart.find_last_of('.');
     if (dot != std::string::npos) {
-        path_string.replace(dot + 1, std::string::npos, extension);
+        lastPart.replace(dot + 1, std::string::npos, extension);
     }
 
     return *this;
 }
 
 path& path::operator/(const std::string& part) {
-    // TODO cross platform
-    path_string += "/" + part;
+    parts.push_back(part);
+    return *this;
+}
+
+path& path::operator/(const path& part) {
+    check(!part.isAbsolute, "cannot append absolute path");
+    parts.insert(parts.end(), part.parts.begin(), part.parts.end());
     return *this;
 }
 
 std::ostream& operator<<(std::ostream& os, const path& path) {
-    os << path.path_string;
+    os << path.filename();
     return os;
+}
+
+std::string path::filename() const {
+    return parts.back();
 }
 
 path temp_directory_path() {

@@ -1,34 +1,31 @@
-set(SOURCES
-    arrayutils.h
-    arrayutils.tpp
-    binutils.cpp
-    binutils.h
-    binutils.tpp
-    enumutils.h
-    enumutils.tpp
-    exceptionutils.h
-    hexdump.cpp
-    hexdump.h
-    iniutils.cpp
-    iniutils.h
-    ioutils.cpp
-    ioutils.h
-    ioutils.tpp
-    log.cpp
+add_library(utils STATIC)
+
+target_sources(utils PRIVATE
+    arrays.h
+    asserts.h
+    bits.hpp
+    casts.hpp
+    chrono.hpp
+    exceptions.hpp
+    fillqueue.hpp
+    formatters.hpp
+    hexdump.hpp
+    io.cpp
+    io.h
     log.h
-    osutils.cpp
-    osutils.h
+    macros.h
+    math.h
+    os.cpp
+    os.h
+    parcel.cpp
+    parcel.h
     path.cpp
     path.h
-    stdutils.h
-    stdutils.tpp
-    strutils.cpp
-    strutils.h
-    termcolor.h
-    timeutils.cpp
-    timeutils.h
+    queue.hpp
+    std.hpp
+    strings.cpp
+    strings.hpp
+    termcolor.hpp
+    vector.hpp
 )
-
-add_library(utils STATIC ${SOURCES})
-
-target_include_directories(utils PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
+target_include_directories(utils PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

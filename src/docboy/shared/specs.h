@@ -1,0 +1,329 @@
+#ifndef SPECS_H
+#define SPECS_H
+
+#include <cstdint>
+
+namespace Specs {
+namespace Display {
+    constexpr uint32_t WIDTH = 160;
+    constexpr uint32_t HEIGHT = 144;
+} // namespace Display
+
+namespace Frequencies {
+    constexpr uint32_t CLOCK = 4194304;
+    constexpr uint32_t PPU = 4194304;
+    constexpr uint32_t CPU = 1048576;
+    constexpr uint32_t SERIAL = 8192;
+    constexpr uint32_t DIV = 16384;
+    constexpr uint32_t TAC[] = {4096, 262144, 65536, 16384};
+} // namespace Frequencies
+
+namespace Ppu {
+    constexpr uint32_t DOTS_PER_FRAME = 70224;
+}
+
+namespace MemoryLayout {
+    namespace BOOTROM {
+        constexpr uint16_t START = 0x0000;
+        constexpr uint16_t END = 0x00FF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace BOOTROM
+    namespace ROM0 {
+        constexpr uint16_t START = 0x0000;
+        constexpr uint16_t END = 0x3FFF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace ROM0
+    namespace ROM1 {
+        constexpr uint16_t START = 0x4000;
+        constexpr uint16_t END = 0x7FFF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace ROM1
+    namespace VRAM {
+        constexpr uint16_t START = 0x8000;
+        constexpr uint16_t END = 0x9FFF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace VRAM
+    namespace RAM {
+        constexpr uint16_t START = 0xA000;
+        constexpr uint16_t END = 0xBFFF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace RAM
+    namespace WRAM1 {
+        constexpr uint16_t START = 0xC000;
+        constexpr uint16_t END = 0xCFFF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace WRAM1
+    namespace WRAM2 {
+        constexpr uint16_t START = 0xD000;
+        constexpr uint16_t END = 0xDFFF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace WRAM2
+    namespace ECHO_RAM {
+        constexpr uint16_t START = 0xE000;
+        constexpr uint16_t END = 0xFDFF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace ECHO_RAM
+    namespace OAM {
+        constexpr uint16_t START = 0xFE00;
+        constexpr uint16_t END = 0xFE9F;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace OAM
+    namespace NOT_USABLE {
+        constexpr uint16_t START = 0xFEA0;
+        constexpr uint16_t END = 0xFEFF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace NOT_USABLE
+
+    namespace IO {
+        constexpr uint16_t START = 0xFF00;
+        constexpr uint16_t END = 0xFF7F;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace IO
+
+    namespace HRAM {
+        constexpr uint16_t START = 0xFF80;
+        constexpr uint16_t END = 0xFFFE;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace HRAM
+
+    constexpr uint16_t IE = 0xFFFF;
+} // namespace MemoryLayout
+
+namespace Registers {
+    namespace Joypad {
+        constexpr uint16_t P1 = 0xFF00;
+        constexpr uint16_t REGISTERS[] = {P1};
+    } // namespace Joypad
+
+    namespace Serial {
+        constexpr uint16_t SB = 0xFF01;
+        constexpr uint16_t SC = 0xFF02;
+        constexpr uint16_t REGISTERS[] = {SB, SC};
+    } // namespace Serial
+
+    namespace Timers {
+        constexpr uint16_t DIV = 0xFF04;
+        constexpr uint16_t TIMA = 0xFF05;
+        constexpr uint16_t TMA = 0xFF06;
+        constexpr uint16_t TAC = 0xFF07;
+        constexpr uint16_t REGISTERS[] = {DIV, TIMA, TMA, TAC};
+    } // namespace Timers
+
+    namespace Interrupts {
+        constexpr uint16_t IF = 0xFF0F;
+        constexpr uint16_t IE = 0xFFFF;
+        constexpr uint16_t REGISTERS[] = {IF, IE};
+    } // namespace Interrupts
+
+    namespace Sound {
+        constexpr uint16_t NR10 = 0xFF10;
+        constexpr uint16_t NR11 = 0xFF11;
+        constexpr uint16_t NR12 = 0xFF12;
+        constexpr uint16_t NR13 = 0xFF13;
+        constexpr uint16_t NR14 = 0xFF14;
+        constexpr uint16_t NR21 = 0xFF16;
+        constexpr uint16_t NR22 = 0xFF17;
+        constexpr uint16_t NR23 = 0xFF18;
+        constexpr uint16_t NR24 = 0xFF19;
+        constexpr uint16_t NR30 = 0xFF1A;
+        constexpr uint16_t NR31 = 0xFF1B;
+        constexpr uint16_t NR32 = 0xFF1C;
+        constexpr uint16_t NR33 = 0xFF1D;
+        constexpr uint16_t NR34 = 0xFF1E;
+        constexpr uint16_t NR41 = 0xFF20;
+        constexpr uint16_t NR42 = 0xFF21;
+        constexpr uint16_t NR43 = 0xFF22;
+        constexpr uint16_t NR44 = 0xFF23;
+        constexpr uint16_t NR50 = 0xFF24;
+        constexpr uint16_t NR51 = 0xFF25;
+        constexpr uint16_t NR52 = 0xFF26;
+        constexpr uint16_t WAVE0 = 0xFF30;
+        constexpr uint16_t WAVE1 = 0xFF31;
+        constexpr uint16_t WAVE2 = 0xFF32;
+        constexpr uint16_t WAVE3 = 0xFF33;
+        constexpr uint16_t WAVE4 = 0xFF34;
+        constexpr uint16_t WAVE5 = 0xFF35;
+        constexpr uint16_t WAVE6 = 0xFF36;
+        constexpr uint16_t WAVE7 = 0xFF37;
+        constexpr uint16_t WAVE8 = 0xFF38;
+        constexpr uint16_t WAVE9 = 0xFF39;
+        constexpr uint16_t WAVEA = 0xFF3A;
+        constexpr uint16_t WAVEB = 0xFF3B;
+        constexpr uint16_t WAVEC = 0xFF3C;
+        constexpr uint16_t WAVED = 0xFF3D;
+        constexpr uint16_t WAVEE = 0xFF3E;
+        constexpr uint16_t WAVEF = 0xFF3F;
+        constexpr uint16_t REGISTERS[] = {NR10,  NR11,  NR12,  NR13,  NR14,  NR21,  NR22,  NR23,  NR24,  NR30,
+                                          NR31,  NR32,  NR33,  NR34,  NR41,  NR42,  NR43,  NR44,  NR50,  NR51,
+                                          NR52,  WAVE0, WAVE1, WAVE2, WAVE3, WAVE4, WAVE5, WAVE6, WAVE7, WAVE8,
+                                          WAVE9, WAVEA, WAVEB, WAVEC, WAVED, WAVEE, WAVEF};
+    } // namespace Sound
+
+    namespace Video {
+        constexpr uint16_t LCDC = 0xFF40;
+        constexpr uint16_t STAT = 0xFF41;
+        constexpr uint16_t SCY = 0xFF42;
+        constexpr uint16_t SCX = 0xFF43;
+        constexpr uint16_t LY = 0xFF44;
+        constexpr uint16_t LYC = 0xFF45;
+        constexpr uint16_t DMA = 0xFF46;
+        constexpr uint16_t BGP = 0xFF47;
+        constexpr uint16_t OBP0 = 0xFF48;
+        constexpr uint16_t OBP1 = 0xFF49;
+        constexpr uint16_t WY = 0xFF4A;
+        constexpr uint16_t WX = 0xFF4B;
+        constexpr uint16_t REGISTERS[] = {
+            LCDC, STAT, SCY, SCX, LY, LYC, DMA, BGP, OBP0, OBP1, WY, WX,
+        };
+    } // namespace Video
+
+    namespace Boot {
+        constexpr uint16_t BOOT = 0xFF50;
+        constexpr uint16_t REGISTERS[] = {BOOT};
+    } // namespace Boot
+} // namespace Registers
+
+namespace Bits {
+    namespace Flags {
+        constexpr uint8_t Z = 7;
+        constexpr uint8_t N = 6;
+        constexpr uint8_t H = 5;
+        constexpr uint8_t C = 4;
+    } // namespace Flags
+
+    namespace Interrupts {
+        constexpr uint8_t JOYPAD = 4;
+        constexpr uint8_t SERIAL = 3;
+        constexpr uint8_t TIMER = 2;
+        constexpr uint8_t STAT = 1;
+        constexpr uint8_t VBLANK = 0;
+    } // namespace Interrupts
+
+    namespace Joypad {
+        namespace P1 {
+            constexpr uint8_t SELECT_ACTION_BUTTONS = 5;
+            constexpr uint8_t SELECT_DIRECTION_BUTTONS = 4;
+            constexpr uint8_t INPUT_DOWN_OR_START = 3;
+            constexpr uint8_t INPUT_UP_OR_SELECT = 2;
+            constexpr uint8_t INPUT_LEFT_OR_B = 1;
+            constexpr uint8_t INPUT_RIGHT_OR_A = 0;
+        } // namespace P1
+    }     // namespace Joypad
+
+    namespace Timers {
+        namespace TAC {
+            constexpr uint8_t ENABLE = 2;
+        }
+    } // namespace Timers
+
+    namespace Video {
+        namespace LCDC {
+            constexpr uint8_t LCD_ENABLE = 7;
+            constexpr uint8_t WIN_TILE_MAP = 6;
+            constexpr uint8_t WIN_ENABLE = 5;
+            constexpr uint8_t BG_WIN_TILE_DATA = 4;
+            constexpr uint8_t BG_TILE_MAP = 3;
+            constexpr uint8_t OBJ_SIZE = 2;
+            constexpr uint8_t OBJ_ENABLE = 1;
+            constexpr uint8_t BG_WIN_ENABLE = 0;
+        } // namespace LCDC
+        namespace STAT {
+            constexpr uint8_t LYC_EQ_LY_INTERRUPT = 6;
+            constexpr uint8_t OAM_INTERRUPT = 5;
+            constexpr uint8_t VBLANK_INTERRUPT = 4;
+            constexpr uint8_t HBLANK_INTERRUPT = 3;
+            constexpr uint8_t LYC_EQ_LY = 2;
+            constexpr uint8_t MODE_HIGH = 1;
+            constexpr uint8_t MODE_LOW = 0;
+        } // namespace STAT
+    }     // namespace Video
+
+    namespace OAM {
+        namespace Attributes {
+            constexpr uint8_t BG_OVER_OBJ = 7;
+            constexpr uint8_t Y_FLIP = 6;
+            constexpr uint8_t X_FLIP = 5;
+            constexpr uint8_t PALETTE_NUM = 4;
+        } // namespace Attributes
+    }     // namespace OAM
+
+    namespace Serial {
+        namespace SC {
+            constexpr uint8_t TRANSFER_START = 7;
+            constexpr uint8_t CLOCK = 0;
+        } // namespace SC
+    }     // namespace Serial
+
+} // namespace Bits
+
+namespace Bytes {
+    namespace OAM {
+        constexpr uint8_t ATTRIBUTES = 3;
+        constexpr uint8_t TILE_NUMBER = 2;
+        constexpr uint8_t X = 1;
+        constexpr uint8_t Y = 0;
+    } // namespace OAM
+} // namespace Bytes
+
+namespace Cartridge {
+    namespace Header {
+        namespace MemoryLayout {
+            constexpr uint16_t START = 0x0000;
+            constexpr uint16_t END = 0x014F;
+            constexpr uint16_t SIZE = 0x0150;
+
+            namespace ENTRY_POINT {
+                constexpr uint16_t START = 0x0100;
+                constexpr uint16_t END = 0x0103;
+            } // namespace ENTRY_POINT
+            namespace LOGO {
+                constexpr uint16_t START = 0x0104;
+                constexpr uint16_t END = 0x0133;
+            } // namespace LOGO
+            namespace TITLE {
+                constexpr uint16_t START = 0x0134;
+                constexpr uint16_t END = 0x0143;
+            } // namespace TITLE
+            namespace MANUFACTURER {
+                constexpr uint16_t START = 0x013F;
+                constexpr uint16_t END = 0x0142;
+            } // namespace MANUFACTURER
+            constexpr uint16_t CGB = 0x0143;
+            namespace NEW_LICENSEE {
+                constexpr uint16_t START = 0x0144;
+                constexpr uint16_t END = 0x0145;
+            } // namespace NEW_LICENSEE
+            constexpr uint16_t SGB = 0x0146;
+            constexpr uint16_t TYPE = 0x0147;
+            constexpr uint16_t ROM_SIZE = 0x0148;
+            constexpr uint16_t RAM_SIZE = 0x0149;
+            constexpr uint16_t DESTINATION_CODE = 0x14A;
+            constexpr uint16_t OLD_LICENSEE = 0x14B;
+            constexpr uint16_t ROM_VERSION_NUMBER = 0x14C;
+            constexpr uint16_t HEADER_CHECKSUM = 0x14D;
+        } // namespace MemoryLayout
+
+        namespace Rom {
+            constexpr uint32_t KB_32 = 0x0;
+            constexpr uint32_t KB_64 = 0x1;
+            constexpr uint32_t KB_128 = 0x2;
+            constexpr uint32_t KB_256 = 0x3;
+            constexpr uint32_t KB_512 = 0x4;
+            constexpr uint32_t MB_1 = 0x5;
+            constexpr uint32_t MB_2 = 0x6;
+            constexpr uint32_t MB_4 = 0x7;
+            constexpr uint32_t MB_8 = 0x8;
+        } // namespace Rom
+
+        namespace Ram {
+            constexpr uint32_t NONE = 0x0;
+            constexpr uint32_t KB_8 = 0x2;
+            constexpr uint32_t KB_32 = 0x3;
+            constexpr uint32_t KB_128 = 0x4;
+            constexpr uint32_t KB_64 = 0x5;
+        } // namespace Ram
+    }     // namespace Header
+} // namespace Cartridge
+} // namespace Specs
+
+#endif // SPECS_H

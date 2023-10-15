@@ -1,0 +1,86 @@
+#ifndef NULLIO_H
+#define NULLIO_H
+
+#include "byte.hpp"
+
+class NullIO {
+public:
+    BYTE(FF03, 0xFF03);
+
+    BYTE(FF08, 0xFF08);
+    BYTE(FF09, 0xFF09);
+    BYTE(FF0A, 0xFF0A);
+    BYTE(FF0B, 0xFF0B);
+    BYTE(FF0C, 0xFF0C);
+    BYTE(FF0D, 0xFF0D);
+    BYTE(FF0E, 0xFF0E);
+
+    BYTE(FF15, 0xFF15);
+
+    BYTE(FF1F, 0xFF1F);
+
+    BYTE(FF27, 0xFF27);
+    BYTE(FF28, 0xFF28);
+    BYTE(FF29, 0xFF29);
+    BYTE(FF2A, 0xFF2A);
+    BYTE(FF2B, 0xFF2B);
+    BYTE(FF2C, 0xFF2C);
+    BYTE(FF2D, 0xFF2D);
+    BYTE(FF2E, 0xFF2E);
+    BYTE(FF2F, 0xFF2F);
+
+    BYTE(FF4C, 0xFF4C);
+    BYTE(FF4D, 0xFF4D);
+    BYTE(FF4E, 0xFF4E);
+    BYTE(FF4F, 0xFF4F);
+
+    BYTE(FF51, 0xFF51);
+    BYTE(FF52, 0xFF52);
+    BYTE(FF53, 0xFF53);
+    BYTE(FF54, 0xFF54);
+    BYTE(FF55, 0xFF55);
+    BYTE(FF56, 0xFF56);
+    BYTE(FF57, 0xFF57);
+    BYTE(FF58, 0xFF58);
+    BYTE(FF59, 0xFF59);
+    BYTE(FF5A, 0xFF5A);
+    BYTE(FF5B, 0xFF5B);
+    BYTE(FF5C, 0xFF5C);
+    BYTE(FF5D, 0xFF5D);
+    BYTE(FF5E, 0xFF5E);
+    BYTE(FF5F, 0xFF5F);
+    BYTE(FF60, 0xFF60);
+    BYTE(FF61, 0xFF61);
+    BYTE(FF62, 0xFF62);
+    BYTE(FF63, 0xFF63);
+    BYTE(FF64, 0xFF64);
+    BYTE(FF65, 0xFF65);
+    BYTE(FF66, 0xFF66);
+    BYTE(FF67, 0xFF67);
+    BYTE(FF68, 0xFF68);
+    BYTE(FF69, 0xFF69);
+    BYTE(FF6A, 0xFF6A);
+    BYTE(FF6B, 0xFF6B);
+    BYTE(FF6C, 0xFF6C);
+    BYTE(FF6D, 0xFF6D);
+    BYTE(FF6E, 0xFF6E);
+    BYTE(FF6F, 0xFF6F);
+    BYTE(FF70, 0xFF70);
+    BYTE(FF71, 0xFF71);
+    BYTE(FF72, 0xFF72);
+    BYTE(FF73, 0xFF73);
+    BYTE(FF74, 0xFF74);
+    BYTE(FF75, 0xFF75);
+    BYTE(FF76, 0xFF76);
+    BYTE(FF77, 0xFF77);
+    BYTE(FF78, 0xFF78);
+    BYTE(FF79, 0xFF79);
+    BYTE(FF7A, 0xFF7A);
+    BYTE(FF7B, 0xFF7B);
+    BYTE(FF7C, 0xFF7C);
+    BYTE(FF7D, 0xFF7D);
+    BYTE(FF7E, 0xFF7E);
+    BYTE(FF7F, 0xFF7F);
+};
+
+#endif // NULLIO_H

@@ -1,154 +1,266 @@
+#define CATCH_CONFIG_RUNNER
 
-#include "catch2/catch_session.hpp"
-#include "catch2/generators/catch_generators.hpp"
-#include "catch2/generators/catch_generators_range.hpp"
-#include "core/bus/bus.h"
-#include "core/cartridge/cartridgefactory.h"
-#include "core/core.h"
-#include "core/debugger/core/core.h"
-#include "core/debugger/frontend.h"
-#include "core/gameboy.h"
-#include "core/helpers.h"
-#include "core/lcd/framebufferlcd.h"
-#include "core/serial/endpoints/buffer.h"
-#include "core/serial/port.h"
-#include "utils/binutils.h"
-#include "utils/log.h"
-#include "utils/osutils.h"
-#include <algorithm>
-#include <catch2/catch_test_macros.hpp>
-#include <cstring>
-#include <queue>
+#include "catch2/catch.hpp"
+#include "docboy/core/core.h"
+#include "docboy/gameboy/gameboy.h"
+#include "utils/bits.hpp"
+#include "utils/casts.hpp"
+#include "utils/fillqueue.hpp"
+#include "utils/formatters.hpp"
+#include "utils/hexdump.hpp"
+#include "utils/parcel.h"
+#include "utils/path.h"
+#include "utils/queue.hpp"
+#include "utils/vector.hpp"
+#include <optional>
 
-#undef SECTION
-#undef DYNAMIC_SECTION
-#define STATIC_SECTION(name) INTERNAL_CATCH_SECTION(name)
-#define DYNAMIC_SECTION(name, param) INTERNAL_CATCH_DYNAMIC_SECTION(name << " (" << param << ")")
-#define SECTION_PICKER(_1, _2, FUNC, ...) FUNC
-#define SECTION(...) SECTION_PICKER(__VA_ARGS__, DYNAMIC_SECTION, STATIC_SECTION)(__VA_ARGS__)
+#define TABLE_1(t1, data) GENERATE(table<t1> data)
+#define TABLE_2(t1, t2, data) GENERATE(table<t1, t2> data)
+#define TABLE_3(t1, t2, t3, data) GENERATE(table<t1, t2, t3> data)
+#define TABLE_4(t1, t2, t3, t4, data) GENERATE(table<t1, t2, t3, t4> data)
 
-#define GENERATE_TABLE_1(t1, data) GENERATE(table<t1> data)
-#define GENERATE_TABLE_2(t1, t2, data) GENERATE(table<t1, t2> data)
-#define GENERATE_TABLE_3(t1, t2, t3, data) GENERATE(table<t1, t2, t3> data)
+#define TABLE_PICKER(_1, _2, _3, _4, _5, FUNC, ...) FUNC
+#define TABLE(...) TABLE_PICKER(__VA_ARGS__, TABLE_4, TABLE_3, TABLE_2, TABLE_1)(__VA_ARGS__)
 
-#define GENERATE_TABLE_PICKER(_1, _2, _3, _4, FUNC, ...) FUNC
-#define GENERATE_TABLE(...)                                                                                            \
-    GENERATE_TABLE_PICKER(__VA_ARGS__, GENERATE_TABLE_3, GENERATE_TABLE_2, GENERATE_TABLE_1)(__VA_ARGS__)
+#ifdef SDL
 
-static std::string run_and_get_serial(const std::string& rom, uint64_t ticks) {
-    class SerialString : public ISerialEndpoint {
-    public:
-        uint8_t serialRead() override {
-            return 0xFF;
-        }
+#include <SDL.h>
+#include <SDL_image.h>
 
-        void serialWrite(uint8_t b) override {
-            data += (char)b;
-        }
+static constexpr uint32_t FRAMEBUFFER_NUM_PIXELS = Specs::Display::WIDTH * Specs::Display::HEIGHT;
+static constexpr uint32_t FRAMEBUFFER_SIZE = sizeof(uint16_t) * FRAMEBUFFER_NUM_PIXELS;
 
-        std::string data;
-    };
+using Palette = std::vector<uint16_t>;
 
-    SerialString serialString;
+static const Palette DEFAULT_PALETTE {};
+static const Palette GREY_PALETTE {0xFFFF, 0xAD55, 0x52AA, 0x0000}; // {0xFF, 0xAA, 0x55, 0x00} in RGB565
 
-    GameBoy gb = GameBoy::Builder().setFrequency(Clock::MAX_FREQUENCY).build();
+static constexpr uint64_t DURATION_VERY_LONG = 250'000'000;
+static constexpr uint64_t DURATION_LONG = 100'000'000;
+static constexpr uint64_t DURATION_MEDIUM = 30'000'000;
+static constexpr uint64_t DURATION_SHORT = 5'000'000;
+static constexpr uint64_t DURATION_VERY_SHORT = 1'500'000;
 
-    Core core(gb);
+static void load_png(const std::string& filename, void* buffer, int format = -1, uint32_t* size = nullptr) {
+    SDL_Surface* surface {};
+    SDL_Surface* convertedSurface {};
 
-    std::shared_ptr<SerialLink> serial = std::make_shared<SerialLink>();
-    serial->plug1.attach(&serialString);
-    core.attachSerialLink(serial->plug2);
+    surface = IMG_Load(filename.c_str());
+    if (!surface)
+        goto error;
 
-    core.loadROM(rom);
-
-    for (uint64_t i = 0; i < ticks; i++)
-        core.tick();
-
-    return serialString.data;
-}
-
-static std::string run_and_expect_string_over_serial(const std::string& rom, const std::string& expected,
-                                                     uint64_t maxticks) {
-    class SerialString : public ISerialEndpoint {
-    public:
-        uint8_t serialRead() override {
-            return 0xFF;
-        }
-
-        void serialWrite(uint8_t b) override {
-            data += (char)b;
-        }
-
-        std::string data;
-    };
-
-    SerialString serialString;
-
-    DebuggableGameBoy gb = DebuggableGameBoy::Builder().setFrequency(Clock::MAX_FREQUENCY).build();
-
-    DebuggableCore core(gb);
-
-    std::shared_ptr<SerialLink> serial = std::make_shared<SerialLink>();
-    serial->plug1.attach(&serialString);
-    core.attachSerialLink(serial->plug2);
-
-    core.loadROM(rom);
-
-    while (gb.clock.getTicks() < maxticks) {
-        for (uint64_t i = 0; i < 100000; i++)
-            core.tick();
-        if (serialString.data.size() >= expected.size())
-            break;
+    if (format != -1) {
+        convertedSurface = SDL_ConvertSurfaceFormat(surface, format, 0);
+        if (!convertedSurface)
+            goto error;
+        surface = convertedSurface;
+        convertedSurface = nullptr;
     }
 
-    return serialString.data;
+    if (size)
+        *size = surface->h * surface->pitch;
+
+    memcpy(buffer, surface->pixels, surface->h * surface->pitch);
+    goto cleanup;
+
+error:
+    if (size)
+        *size = 0;
+
+cleanup:
+    if (surface)
+        SDL_FreeSurface(surface);
 }
 
-static std::vector<uint32_t> run_and_get_framebuffer(const std::string& rom, uint64_t ticks) {
-    GameBoy gb = GameBoy::Builder().setFrequency(Clock::MAX_FREQUENCY).build();
-
-    Core core(gb);
-    core.loadROM(rom);
-
-    for (uint64_t i = 0; i < ticks; i++)
-        core.tick();
-
-    uint32_t* framebuffer = gb.lcd.getFrameBuffer();
-    std::vector<uint32_t> out;
-    size_t length = Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint32_t);
-    out.resize(length / sizeof(uint32_t));
-    memcpy(out.data(), framebuffer, length);
-
-    return out;
+[[maybe_unused]] static void dump_png_framebuffer(const std::string& filename) {
+    uint16_t buffer[FRAMEBUFFER_NUM_PIXELS];
+    load_png(filename, buffer, SDL_PIXELFORMAT_RGB565);
+    std::cout << hexdump(buffer, FRAMEBUFFER_NUM_PIXELS) << std::endl;
 }
 
-TEST_CASE("binutils", "[binutils]") {
-    SECTION("get and set bit") {
+static bool save_framebuffer_as_png(const std::string& filename, const uint16_t* buffer) {
+    SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
+        (void*)buffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_BITSPERPIXEL(SDL_PIXELFORMAT_RGB565),
+        Specs::Display::WIDTH * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGB565), SDL_PIXELFORMAT_RGB565);
+
+    int result = -1;
+    if (surface) {
+        result = IMG_SavePNG(surface, filename.c_str());
+    }
+
+    SDL_FreeSurface(surface);
+
+    return result == 0;
+}
+
+static inline uint16_t convert_framebuffer_pixel(uint16_t p, const Palette& pixelsConversionMap) {
+    for (uint8_t c = 0; c < 4; c++)
+        if (p == Lcd::RGB565_PALETTE[c])
+            return pixelsConversionMap[c];
+    checkNoEntry();
+    return p;
+}
+
+static void convert_framebuffer_pixels(uint16_t* dst, const uint16_t* src, const Palette& pixelsConversionMap) {
+    for (uint32_t i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
+        dst[i] = convert_framebuffer_pixel(src[i], pixelsConversionMap);
+    }
+}
+
+static bool are_framebuffer_equals(const uint16_t* buf1, const uint16_t* buf2) {
+    return memcmp(buf1, buf2, FRAMEBUFFER_SIZE) == 0;
+}
+
+class Runner {
+public:
+    struct Result {
+        bool areFramebufferEquals {};
+    };
+
+    Runner& rom(const std::string& filename) {
+        romName = filename;
+        core.loadRom(filename);
+        return *this;
+    }
+
+    Runner& expectFramebuffer(const std::string& filename) {
+        load_png(filename, expectedFramebuffer, SDL_PIXELFORMAT_RGB565);
+        return *this;
+    }
+
+    Runner& pixelsColor(const Palette& colors) {
+        pixelColors_ = colors;
+        return *this;
+    }
+
+    Runner& maxTicks(uint64_t ticks) {
+        maxTicks_ = ticks;
+        return *this;
+    }
+
+    Runner& framebufferCheckTicksInterval(uint64_t ticks) {
+        framebufferCheckTicksInterval_ = ticks;
+        return *this;
+    }
+
+    Result run() {
+        uint16_t lastFramebuffer[FRAMEBUFFER_NUM_PIXELS];
+
+        UNSCOPED_INFO("=== " << romName << " ===");
+        const auto compareFramebufferUsingPixelColors = [this, &lastFramebuffer]() {
+            // Compare framebuffer only in VBlank
+            check(keep_bits<2>(core.gb.video.STAT) == 1);
+            memcpy(lastFramebuffer, gb.lcd.getPixels(), FRAMEBUFFER_SIZE);
+            if (!pixelColors_.empty())
+                convert_framebuffer_pixels(lastFramebuffer, gb.lcd.getPixels(), pixelColors_);
+            return are_framebuffer_equals(lastFramebuffer, expectedFramebuffer);
+        };
+
+        bool hasEverCheckedFramebuffer {false};
+        bool pendingFramebufferCheck {false};
+
+        for (uint64_t i = 1; i <= maxTicks_; i++) {
+            core.tick();
+            if (pendingFramebufferCheck) {
+                // Compare framebuffer only in VBlank
+                if (keep_bits<2>(core.gb.video.STAT) == 1) {
+                    hasEverCheckedFramebuffer = true;
+                    if (compareFramebufferUsingPixelColors())
+                        return {.areFramebufferEquals = true};
+                    pendingFramebufferCheck = false;
+                }
+            } else {
+                pendingFramebufferCheck = i > 0 && i % framebufferCheckTicksInterval_ == 0;
+            }
+        }
+
+        if (hasEverCheckedFramebuffer) {
+            // Framebuffer not equals: figure out where's the (first) problem
+            uint32_t i;
+            for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
+                if (lastFramebuffer[i] != expectedFramebuffer[i]) {
+                    UNSCOPED_INFO("Framebuffer mismatch at position " << i << ": (actual) 0x" << hex(lastFramebuffer[i])
+                                                                      << " != (expected) 0x"
+                                                                      << hex(expectedFramebuffer[i]));
+                    break;
+                }
+            }
+            check(i < FRAMEBUFFER_NUM_PIXELS);
+
+            // Dump framebuffers
+            const auto pathActual = (temp_directory_path() / "framebuffer-actual.png").string();
+            const auto pathExpected = (temp_directory_path() / "framebuffer-expected.png").string();
+            save_framebuffer_as_png(pathActual, lastFramebuffer);
+            save_framebuffer_as_png(pathExpected, expectedFramebuffer);
+            UNSCOPED_INFO("You can find the PNGs of the framebuffers at " << pathActual << " and " << pathExpected);
+        } else {
+            UNSCOPED_INFO("Framebuffer has never been read!");
+        }
+
+        return {.areFramebufferEquals = false};
+    }
+
+    GameBoy gb;
+    Core core {gb};
+
+private:
+    std::string romName; // debug
+    uint64_t maxTicks_ {UINT64_MAX};
+    uint64_t framebufferCheckTicksInterval_ {UINT64_MAX};
+    Palette pixelColors_ {};
+    uint16_t expectedFramebuffer[FRAMEBUFFER_NUM_PIXELS] {};
+};
+#endif
+
+TEST_CASE("bits", "[bits]") {
+    SECTION("test bit") {
         uint8_t B = 0;
-        REQUIRE(get_bit<7>(B) == 0);
-        REQUIRE(get_bit<6>(B) == 0);
-        REQUIRE(get_bit<5>(B) == 0);
-        REQUIRE(get_bit<4>(B) == 0);
-        REQUIRE(get_bit<3>(B) == 0);
-        REQUIRE(get_bit<2>(B) == 0);
-        REQUIRE(get_bit<1>(B) == 0);
-        REQUIRE(get_bit<0>(B) == 0);
+
+        REQUIRE_FALSE(test_bit<7>(B));
+        REQUIRE_FALSE(test_bit<6>(B));
+        REQUIRE_FALSE(test_bit<5>(B));
+        REQUIRE_FALSE(test_bit<4>(B));
+        REQUIRE_FALSE(test_bit<3>(B));
+        REQUIRE_FALSE(test_bit<2>(B));
+        REQUIRE_FALSE(test_bit<1>(B));
+        REQUIRE_FALSE(test_bit<0>(B));
 
         B = ~B;
 
-        REQUIRE(get_bit<7>(B) == 1);
-        REQUIRE(get_bit<6>(B) == 1);
-        REQUIRE(get_bit<5>(B) == 1);
-        REQUIRE(get_bit<4>(B) == 1);
-        REQUIRE(get_bit<3>(B) == 1);
-        REQUIRE(get_bit<2>(B) == 1);
-        REQUIRE(get_bit<1>(B) == 1);
-        REQUIRE(get_bit<0>(B) == 1);
+        REQUIRE(test_bit<7>(B));
+        REQUIRE(test_bit<6>(B));
+        REQUIRE(test_bit<5>(B));
+        REQUIRE(test_bit<4>(B));
+        REQUIRE(test_bit<3>(B));
+        REQUIRE(test_bit<2>(B));
+        REQUIRE(test_bit<1>(B));
+        REQUIRE(test_bit<0>(B));
 
-        set_bit<0>(B, false);
-        REQUIRE(get_bit<0>(B) == 0);
+        B -= 1;
 
         REQUIRE(B == 0xFE);
+        REQUIRE_FALSE(test_bit<0>(B));
+    }
+
+    SECTION("get bit") {
+        uint8_t B = 0b10101110;
+        REQUIRE(get_bit<7>(B) == 0b10000000);
+        REQUIRE(get_bit<6>(B) == 0b0000000);
+        REQUIRE(get_bit<5>(B) == 0b100000);
+        REQUIRE(get_bit<4>(B) == 0b00000);
+        REQUIRE(get_bit<3>(B) == 0b1000);
+        REQUIRE(get_bit<2>(B) == 0b100);
+        REQUIRE(get_bit<1>(B) == 0b10);
+        REQUIRE(get_bit<0>(B) == 0);
+    }
+
+    SECTION("set bit") {
+        uint8_t B = 0b0000;
+        set_bit<2>(B);
+        REQUIRE(B == 0b0100);
+
+        set_bit<1>(B);
+        REQUIRE(B == 0b0110);
     }
 
     SECTION("get and set byte") {
@@ -202,6 +314,7 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(bitmask_on<7> == 0b01111111);
         REQUIRE(bitmask_on<8> == 0b11111111);
     }
+
     SECTION("bitmask_off") {
         REQUIRE((uint8_t)bitmask_off<0> == 0b11111111);
         REQUIRE((uint8_t)bitmask_off<1> == 0b11111110);
@@ -231,349 +344,442 @@ TEST_CASE("binutils", "[binutils]") {
         REQUIRE(bit<13> == (1 << 13));
         REQUIRE(bit<14> == (1 << 14));
         REQUIRE(bit<15> == (1 << 15));
-        REQUIRE(bit<16> == (1 << 16));
     }
 
-    SECTION("carry bit") {
-        int8_t s1;
-        uint8_t u1, u2;
+    SECTION("sum_carry") {
+        sum_carry_result<uint8_t> result {};
 
-        u1 = 3;
-        u2 = 1;
-        REQUIRE(sum_get_carry_bit<0>(u1, u2));
-        REQUIRE(sum_get_carry_bit<1>(u1, u2));
-        REQUIRE_FALSE(sum_get_carry_bit<2>(u1, u2));
+        result = sum_carry<0, uint8_t, uint8_t>(0b010, 0b101);
+        REQUIRE(result.sum == 0b010 + 0b101);
+        REQUIRE_FALSE(result.carry);
 
-        auto [result, c0, c1] = sum_carry<0, 1>(u1, u2);
-        REQUIRE(result == 4);
-        REQUIRE(c0);
-        REQUIRE(c1);
+        result = sum_carry<0, uint8_t, uint8_t>(0b011, 0b101);
+        REQUIRE(result.sum == 0b011 + 0b101);
+        REQUIRE(result.carry);
 
-        uint16_t uu1 = 0xB;
-        uint16_t uu2 = 0x7;
-        REQUIRE(sum_get_carry_bit<3>(uu1, uu2));
-        REQUIRE_FALSE(sum_get_carry_bit<4>(uu1, uu2));
+        result = sum_carry<7, uint8_t, uint8_t>(0b10010101, 0b10100101);
+        REQUIRE(result.sum == (uint8_t)(0b10010101 + 0b10100101));
+        REQUIRE(result.carry);
 
-        uu1 = 0xFFFF;
-        uu2 = 0xFFFF;
-        REQUIRE(sum_get_carry_bit<7>(uu1, uu2));
+        result = sum_carry<7, uint8_t, uint8_t>(0b10010101, 0b00010101);
+        REQUIRE(result.sum == (uint8_t)(0b10010101 + 0b00010101));
+        REQUIRE_FALSE(result.carry);
+    }
 
-        u1 = 0xFF;
-        auto [result2, _1] = sum_carry<3>(u1, (uint8_t)1);
-        REQUIRE(result2 == 0);
+    SECTION("inc_carry") {
+        sum_carry_result<int> result {};
 
-        //        u1 = 4;
-        //        auto [result3, _2] = sum_carry<3>(u1, -1);
-        //        REQUIRE(result3 == 3);
+        result = inc_carry<0>(0b010);
+        REQUIRE(result.sum == 0b010 + 1);
+        REQUIRE_FALSE(result.carry);
 
-        u1 = 0x10;
-        s1 = 1;
-        auto [result6, h2] = sub_borrow<3>(u1, 1);
-        REQUIRE(result6 == 0x0F);
-        REQUIRE(h2);
+        result = inc_carry<0>(0b011);
+        REQUIRE(result.sum == 0b011 + 1);
+        REQUIRE(result.carry);
+    }
 
-        /*
-        u1 = 0;
-        s1 = -1;
-        auto [result4, b0] = sum_carry<3>(u1, s1);
-        REQUIRE(result4 == 0xFF);
-        REQUIRE(b0);
+    SECTION("sum_test_carry_bit") {
+        REQUIRE_FALSE(sum_test_carry_bit<0>(0b010, 0b111));
+        REQUIRE(sum_test_carry_bit<1>(0b010, 0b111));
+        REQUIRE(sum_test_carry_bit<2>(0b010, 0b111));
+        REQUIRE_FALSE(sum_test_carry_bit<3>(0b010, 0b111));
+    }
 
-        u1 = 1;
-        s1 = -1;
-        auto [result5, b1] = sum_carry<3>(u1, s1);
-        REQUIRE(result5 == 0);
-        REQUIRE_FALSE(b1);
+    SECTION("inc_test_carry_bit") {
+        REQUIRE_FALSE(inc_test_carry_bit<0>(0b010));
+        REQUIRE_FALSE(inc_test_carry_bit<1>(0b010));
+        REQUIRE_FALSE(inc_test_carry_bit<2>(0b010));
 
-
-
-
-        uu1 = 0xFFFF;
-        uu2 = 0xFFFF;
-        auto [_, b3] = sum_carry<15>(uu1, uu2);
-        REQUIRE(b3);
-
-        uu1 = 0x000F;
-        s1 = 0x01;
-        auto [result7, h, c] = sum_carry<3, 7>(uu1, s1);
-        REQUIRE(result7 == 0x0010);
-        REQUIRE(h);
-
-        */
-
-        uu1 = 0x0000;
-        s1 = -1;
-        auto [result8, h3, c3] = sum_carry<3, 7>(uu1, s1);
-        REQUIRE(result8 == 0xFFFF);
-        REQUIRE_FALSE(h3);
-        REQUIRE_FALSE(c3);
+        REQUIRE(inc_test_carry_bit<0>(0b011));
+        REQUIRE_FALSE(inc_test_carry_bit<1>(0b010));
+        REQUIRE_FALSE(inc_test_carry_bit<2>(0b010));
     }
 }
 
-TEST_CASE("cartridge", "[cartridge]") {
-    auto [rom, title] =
-        GENERATE_TABLE(std::string, std::string,
-                       ({{"tests/roms/games/tetris.gb", "TETRIS"}, {"tests/roms/games/alleyway.gb", "ALLEY WAY"}}));
-
-    auto c = CartridgeFactory().makeCartridge(rom);
-
-    SECTION("cartridge loaded", rom) {
-        REQUIRE(c);
-    }
-
-    SECTION("cartridge header valid", rom) {
-        Cartridge::Header h = c->header();
-        REQUIRE(h.title == title);
-        REQUIRE(h.isNintendoLogoValid());
-        REQUIRE(h.isHeaderChecksumValid());
+TEST_CASE("casts", "[casts]") {
+    SECTION("unsigned_to_signed") {
+        REQUIRE(to_signed((uint8_t)0) == 0);
+        REQUIRE(to_signed((uint8_t)127) == 127);
+        REQUIRE(to_signed((uint8_t)128) == -128);
+        REQUIRE(to_signed((uint8_t)129) == -127);
+        REQUIRE(to_signed((uint8_t)255) == -1);
     }
 }
 
-TEST_CASE("cpu", "[cpu]") {
-    SECTION("instruction basic requirements") {
-        class FakeBus : public IBus {
-        public:
-            struct Access {
-                enum Type { Read, Write } type;
-                uint16_t addr;
-            };
+TEST_CASE("adt", "[adt]") {
+    SECTION("Vector") {
+        Vector<uint8_t, 8> v;
+        REQUIRE(v.isEmpty());
 
-            FakeBus() = default;
+        v.push_back(1);
+        v.push_back(2);
+        v.push_back(3);
+        v.push_back(4);
 
-            ~FakeBus() override = default;
+        REQUIRE(v.size() == 4);
 
-            [[nodiscard]] uint8_t read(uint16_t addr) const override {
-                if (addr >= MemoryMap::IO::START)
-                    return 0; // don't count interrupts, timers, ...
+        REQUIRE(v.pop_back() == 4);
+        REQUIRE(v.pop_back() == 3);
+        REQUIRE(v.pop_back() == 2);
+        REQUIRE(v.pop_back() == 1);
 
-                accesses.push_back({Access::Type::Read, addr});
-                uint8_t b = 0;
-                if (!data.empty()) {
-                    b = data.front();
-                    data.pop();
-                }
-                return b;
-            }
+        REQUIRE(v.isEmpty());
 
-            void write(uint16_t addr, uint8_t value) override {
-                if (addr == MemoryMap::IE || addr == Registers::Interrupts::IF)
-                    return;
-                accesses.push_back({Access::Type::Write, addr});
-            }
+        v.push_back(1);
+        v.push_back(2);
+        v.push_back(3);
+        v.push_back(4);
+        v.push_back(5);
+        v.push_back(6);
+        v.push_back(7);
+        v.push_back(8);
 
-            [[nodiscard]] unsigned long long getReadWriteCount() const {
-                return accesses.size();
-            }
+        REQUIRE(v.isFull());
+    }
 
-            [[nodiscard]] unsigned long long getReadCount() const {
-                return std::count_if(accesses.begin(), accesses.end(), [](const Access& a) {
-                    return a.type == Access::Read;
-                });
-            }
+    SECTION("Queue") {
+        Queue<uint8_t, 8> q;
+        REQUIRE(q.isEmpty());
 
-            [[nodiscard]] unsigned long long getWriteCount() const {
-                return std::count_if(accesses.begin(), accesses.end(), [](const Access& a) {
-                    return a.type == Access::Write;
-                });
-            }
+        q.push_back(1);
+        q.push_back(2);
+        REQUIRE(q.isNotEmpty());
+        REQUIRE(q.size() == 2);
 
-            [[nodiscard]] const std::vector<Access>& getAccesses() const {
-                return accesses;
-            }
+        q.clear();
+        REQUIRE(q.isEmpty());
 
-            void clear() {
-                while (!data.empty())
-                    data.pop();
-            }
+        q.push_back(1);
+        q.push_back(2);
+        q.push_back(3);
+        q.push_back(4);
+        q.push_back(5);
+        q.push_back(6);
+        q.push_back(7);
+        q.push_back(8);
 
-            void feed(uint8_t b) {
-                data.push(b);
-            }
+        REQUIRE(q[7] == 8);
 
-        private:
-            mutable std::vector<Access> accesses;
-            mutable std::queue<uint8_t> data;
-        };
+        REQUIRE(q.isFull());
 
-        class DummyClockable : public IClockable {
-            void tick() override {
-            }
-        };
+        REQUIRE(q.pop_front() == 1);
+        REQUIRE(q.pop_front() == 2);
+        REQUIRE(q.pop_front() == 3);
+        REQUIRE(q.pop_front() == 4);
+        REQUIRE(q.pop_front() == 5);
+        REQUIRE(q.pop_front() == 6);
+        REQUIRE(q.pop_front() == 7);
+        REQUIRE(q.pop_front() == 8);
 
-        bool cb = GENERATE(false, true);
-        uint8_t instr = GENERATE(range(0, 0xFF));
+        REQUIRE(q.isEmpty());
 
-        std::string instr_name = instruction_mnemonic(instr, cb);
+        q.push_back(1);
+        q.push_back(2);
 
-        auto length = instruction_length(instr, cb);
-        auto [duration_min, duration_max] = instruction_duration(instr, cb);
+        REQUIRE(q.size() == 2);
 
-        if (!duration_min)
-            return;
-        if (!cb && instr == 0x76 /* HALT */)
-            return;
+        q.clear();
+        REQUIRE(q.isEmpty());
 
-        FakeBus fakeBus;
-        DummyClockable dummyClockable;
-        DebuggableCPU cpu(fakeBus, dummyClockable, dummyClockable);
+        q.push_back(3);
+        q.push_back(4);
 
-        auto setupInstruction = [&fakeBus, &cpu, cb, instr]() {
-            if (cb)
-                fakeBus.feed(0xCB);
-            fakeBus.feed(instr); // feed with instruction
-            for (int i = 0; i < 10; i++)
-                fakeBus.feed((instr + 1) * 3); // feed with something else != instr
-            cpu.tick();                        // fetch
-            if (cb)
-                cpu.tick(); // fetch
-        };
+        REQUIRE(q[0] == 3);
+        REQUIRE(q[1] == 4);
 
-        auto getInstructionLength = [&fakeBus]() {
-            auto accesses = fakeBus.getAccesses();
-            unsigned long long length = 0;
+        REQUIRE(q.size() == 2);
+        REQUIRE(q.pop_front() == 3);
+        REQUIRE(q.size() == 1);
+        REQUIRE(q.pop_front() == 4);
+        REQUIRE(q.isEmpty());
 
-            auto lastRead = std::find_if(accesses.rend(), accesses.rbegin(), [](const FakeBus::Access& a) {
-                return a.type == FakeBus::Access::Read;
-            });
-            std::optional<FakeBus::Access> lastReadAddress;
-            // count sequential reads but skip the last one (fetch)
-            for (auto it = accesses.begin(); it != (lastRead.base() - 1); it++) {
-                auto a = *it;
-                if (a.type != FakeBus::Access::Read)
-                    continue;
-                if (!lastReadAddress) {
-                    ++length;
-                    lastReadAddress = a;
-                    continue;
-                }
-                if (lastReadAddress->addr + 1 == a.addr) {
-                    ++length;
-                    lastReadAddress = a;
-                }
-            }
+        q.push_back(3);
+        q.push_back(4);
 
-            return length;
-        };
+        REQUIRE(q[0] == 3);
+        REQUIRE(q[1] == 4);
 
-        SECTION("instruction implemented", instr_name) {
-            setupInstruction();
-            REQUIRE_NOTHROW(cpu.tick());
+        REQUIRE(q.pop_front() == 3);
+
+        REQUIRE(q[0] == 4);
+    }
+
+    SECTION("FillQueue") {
+        FillQueue<uint8_t, 8> q;
+        REQUIRE(q.isEmpty());
+
+        uint64_t x = 1;
+        q.fill(&x);
+
+        REQUIRE(q.isFull());
+
+        REQUIRE(q.pop_front() == 1);
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
+
+        REQUIRE(q.size() == 4);
+
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
+
+        REQUIRE(q.isEmpty());
+    }
+}
+
+TEST_CASE("parcel", "[parcel]") {
+    SECTION("Parcel") {
+        Parcel p;
+
+        bool b = true;
+        uint8_t u8 = 10;
+        uint16_t u16 = 231;
+        uint32_t u32 = 15523432;
+        uint64_t u64 = 155234124142432;
+
+        int8_t i8 = 10;
+        int16_t i16 = 231;
+        int32_t i32 = 15523432;
+        int64_t i64 = 155234124142432;
+
+        uint8_t B[4] {0x10, 0x42, 0xFF, 0xA4};
+
+        p.writeBool(b);
+        p.writeUInt8(u8);
+        p.writeUInt16(u16);
+        p.writeUInt32(u32);
+        p.writeUInt64(u64);
+        p.writeInt8(i8);
+        p.writeInt16(i16);
+        p.writeInt32(i32);
+        p.writeInt64(i64);
+        p.writeBytes(B, 4);
+
+        REQUIRE(p.readBool() == b);
+        REQUIRE(p.readUInt8() == u8);
+        REQUIRE(p.readUInt16() == u16);
+        REQUIRE(p.readUInt32() == u32);
+        REQUIRE(p.readUInt64() == u64);
+        REQUIRE(p.readInt8() == i8);
+        REQUIRE(p.readInt16() == i16);
+        REQUIRE(p.readInt32() == i32);
+        REQUIRE(p.readInt64() == i64);
+
+        uint8_t BB[4];
+        p.readBytes(BB, 4);
+        REQUIRE(memcmp(BB, B, 4) == 0);
+
+        REQUIRE(p.getRemainingSize() == 0);
+    }
+}
+
+TEST_CASE("state", "[state]") {
+    SECTION("State") {
+        std::vector<uint8_t> data1;
+
+        {
+            Runner runner;
+            runner.rom("tests/roms/blargg/cpu_instrs.gb").maxTicks(10'000).run();
+            data1.resize(runner.core.getStateSaveSize());
+            runner.core.saveState(data1.data());
         }
 
-        SECTION("instruction duration", instr_name) {
-            setupInstruction();
+        std::vector<uint8_t> data2(data1.size());
 
-            try {
-                uint8_t duration = cb ? 1 : 0;
-                do {
-                    cpu.tick();
-                    duration++;
-                } while (cpu.getState().instruction.microop != 0);
-                REQUIRE(duration_min <= duration);
-                REQUIRE(duration <= duration_max);
-            } catch (const std::runtime_error& e) {
-            }
+        {
+            Runner runner;
+            runner.rom("tests/roms/blargg/cpu_instrs.gb");
+            runner.core.loadState(data1.data());
+            runner.core.saveState(data2.data());
         }
 
-        SECTION("instruction length", instr_name) {
-            setupInstruction();
-            try {
-                do {
-                    cpu.tick();
-                } while (cpu.getState().instruction.microop != 0);
-                REQUIRE(length == getInstructionLength());
-            } catch (const std::runtime_error& e) {
-            }
+        REQUIRE(memcmp(data1.data(), data2.data(), data1.size()) == 0);
+    }
+}
+
+#ifdef SDL
+
+#define RUN_AND_CHECK_FRAMEBUFFER_EQUALS()                                                                             \
+    Runner()                                                                                                           \
+        .rom(rom)                                                                                                      \
+        .expectFramebuffer(expectedResult)                                                                             \
+        .pixelsColor(palette)                                                                                          \
+        .maxTicks(maxTicks)                                                                                            \
+        .framebufferCheckTicksInterval(DURATION_VERY_SHORT * 2 / 3)                                                    \
+        .run()                                                                                                         \
+        .areFramebufferEquals
+
+TEST_CASE("emulation", "[emulation]") {
+    SECTION("mbc") {
+        SECTION("mbc1") {
+            const auto [rom, expectedResult, maxTicks, palette] =
+                TABLE(std::string, std::string, uint64_t, Palette,
+                      ({{"tests/roms/mooneye/mbc/mbc1/bits_bank1.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/bits_bank2.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/bits_mode.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/bits_ramg.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/ram_64kb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/ram_256kb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_512kb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_1Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_2Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_4Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_8Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_16Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE}}));
+            REQUIRE(RUN_AND_CHECK_FRAMEBUFFER_EQUALS());
         }
 
-        SECTION("no more than one memory read/write per m-cycle", instr_name) {
-            setupInstruction();
-            try {
-                for (int m = 0; m < duration_min; m++) {
-                    auto ioCountBefore = fakeBus.getReadWriteCount();
-                    cpu.tick();
-                    auto ioCountAfter = fakeBus.getReadWriteCount();
-                    REQUIRE(ioCountAfter - ioCountBefore <= 1);
-                }
-            } catch (const std::runtime_error& e) {
-            }
+        SECTION("mbc5") {
+            const auto [rom, expectedResult, maxTicks, palette] =
+                TABLE(std::string, std::string, uint64_t, Palette,
+                      ({{"tests/roms/mooneye/mbc/mbc5/rom_512kb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_1Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_2Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_4Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_8Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_16Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_32Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_64Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
+                         DEFAULT_PALETTE}}));
+            REQUIRE(RUN_AND_CHECK_FRAMEBUFFER_EQUALS());
         }
     }
-}
 
-TEST_CASE("serial", "[serial]") {
-    SECTION("serial link and serial buffer") {
-        class SerialStringSource : public ISerialEndpoint {
-        public:
-            explicit SerialStringSource(const std::string& s) :
-                cursor() {
-                for (auto c : s)
-                    data.push_back(c);
-            }
-
-            uint8_t serialRead() override {
-                if (!hasData())
-                    return 0xFF;
-                return data[cursor++];
-            }
-
-            void serialWrite(uint8_t) override {
-            }
-
-            [[nodiscard]] const std::vector<uint8_t>& getData() const {
-                return data;
-            }
-
-            [[nodiscard]] bool hasData() const {
-                return cursor < data.size();
-            }
-
-        private:
-            std::vector<uint8_t> data;
-            size_t cursor;
-        };
-
-        std::string s = "Hello this is a test\nThis is sparta!";
-        SerialBuffer receiver;
-        SerialStringSource sender(s);
-        SerialLink serialLink;
-        serialLink.plug1.attach(&sender);
-        serialLink.plug2.attach(&receiver);
-        while (sender.hasData())
-            serialLink.tick();
-        REQUIRE(receiver.getData() == sender.getData());
+    SECTION("cpu") {
+        const auto [rom, expectedResult, maxTicks, palette] =
+            TABLE(std::string, std::string, uint64_t, Palette,
+                  ({{"tests/roms/blargg/cpu_instrs.gb", "tests/results/blargg/cpu_instrs.png", DURATION_VERY_LONG,
+                     DEFAULT_PALETTE}}));
+        REQUIRE(RUN_AND_CHECK_FRAMEBUFFER_EQUALS());
     }
-}
 
-TEST_CASE("blargg_cpu", "[.][cpu][core][timer][interrupt][blargg]") {
-    std::string testname =
-        GENERATE("01-special", "02-interrupts", "03-op sp,hl", "04-op r,imm", "05-op rp", "06-ld r,r",
-                 "07-jr,jp,call,ret,rst", "08-misc instrs", "09-op r,r", "10-bit ops", "11-op a,(hl)");
-
-    SECTION("cpu_instrs", testname) {
-        std::string rom = "tests/roms/tests/blargg/" + testname + ".gb";
-        std::string expectedSerial = testname + "\n\n\nPassed\n";
-        std::string serial = run_and_expect_string_over_serial(rom, expectedSerial, 150'000'000);
-        REQUIRE(serial == expectedSerial);
+    SECTION("ppu") {
+        SECTION("dmg-acid2") {
+            const auto [rom, expectedResult, maxTicks, palette] =
+                TABLE(std::string, std::string, uint64_t, Palette,
+                      ({
+                          {"tests/roms/dmg-acid2/dmg-acid2.gb", "tests/results/dmg-acid2/dmg-acid2.png",
+                           DURATION_VERY_SHORT, GREY_PALETTE},
+                      }));
+            REQUIRE(RUN_AND_CHECK_FRAMEBUFFER_EQUALS());
+        }
     }
-}
 
-TEST_CASE("blargg_ppu", "[.][ppu][blargg]") {
-    auto [rom, screenshot, ticks] =
-        GENERATE_TABLE(std::string, std::string, uint64_t,
-                       ({
-                           {"tests/roms/tests/blargg/06-ld r,r.gb", "tests/screenshots/blargg/06-ld r,r.dat", 6358441},
-                       }));
-
-    SECTION("cpu_instrs", rom) {
-        std::vector<uint32_t> expectedFramebuffer = read_file<uint32_t>(screenshot);
-        std::vector<uint32_t> framebuffer = run_and_get_framebuffer(rom, ticks);
-        REQUIRE(framebuffer == expectedFramebuffer);
+#ifdef MEALYBUG
+    SECTION("ppu disabled") {
+        SECTION("mealybug") {
+            const auto [rom, expectedResult, maxTicks, palette] = TABLE(
+                std::string, std::string, uint64_t, Palette,
+                ({
+                    {"tests/roms/mealybug/m2_win_en_toggle.gb", "tests/results/mealybug/m2_win_en_toggle.png",
+                     DURATION_VERY_SHORT, GREY_PALETTE},
+                    //                            {"tests/roms/mealybug/m3_bgp_change.gb",
+                    //                            "tests/results/mealybug/m3_bgp_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_bgp_change_sprites.gb",
+                    //                            "tests/results/mealybug/m3_bgp_change_sprites.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_bg_en_change2.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_bg_en_change2.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_bg_en_change.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_bg_en_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_bg_map_change2.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_bg_map_change2.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_bg_map_change.gb",
+                    //                            "tests/roms/mealybug/m3_lcdc_bg_map_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_obj_en_change.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_obj_en_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_obj_en_change_variant.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_obj_en_change_variant.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_obj_size_change.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_obj_size_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_obj_size_change_scx.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_obj_size_change_scx.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_tile_sel_change2.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_tile_sel_change2.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_tile_sel_change.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_tile_sel_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_tile_sel_win_change2.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_tile_sel_win_change2.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_tile_sel_win_change.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_tile_sel_win_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_win_en_change_multiple.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_win_en_change_multiple.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_win_en_change_multiple_wx.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_win_en_change_multiple_wx.png",
+                    //                            1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_win_map_change2.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_win_map_change2.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_lcdc_win_map_change.gb",
+                    //                            "tests/results/mealybug/m3_lcdc_win_map_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_obp0_change.gb",
+                    //                            "tests/results/mealybug/m3_obp0_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_scx_high_5_bits_change2.gb",
+                    //                            "tests/roms/mealybug/m3_scx_high_5_bits_change2.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_scx_high_5_bits.gb",
+                    //                            "tests/results/mealybug/m3_scx_high_5_bits.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_scx_low_3_bits.gb",
+                    //                            "tests/results/mealybug/m3_scx_low_3_bits.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_scy_change2.gb",
+                    //                            "tests/results/mealybug/m3_scy_change2.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_scy_change.gb",
+                    //                            "tests/results/mealybug/m3_scy_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_window_timing.gb",
+                    //                            "tests/results/mealybug/m3_window_timing.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_window_timing_wx_0.gb",
+                    //                            "tests/results/mealybug/m3_window_timing_wx_0.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_wx_4_change.gb",
+                    //                            "tests/results/mealybug/m3_wx_4_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_wx_4_change_sprites.gb",
+                    //                            "tests/results/mealybug/m3_wx_4_change_sprites.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_wx_5_change.gb",
+                    //                            "tests/results/mealybug/m3_wx_5_change.png", 1000000},
+                    //                            {"tests/roms/mealybug/m3_wx_6_change.gb",
+                    //                            "tests/results/mealybug/m3_wx_6_change.png", 1000000},
+                }));
+            REQUIRE(Runner()
+                        .rom(rom)
+                        .expectFramebuffer(expectedResult)
+                        .pixelsColor(palette)
+                        .maxTicks(maxTicks)
+                        .framebufferCheckTicksInterval(DURATION_VERY_SHORT)
+                        .run()
+                        .areFramebufferEquals);
+        }
     }
+#endif
 }
+
+#undef RUN_AND_CHECK_FRAMEBUFFER_EQUALS
+
+#endif
 
 int main(int argc, char* argv[]) {
-    Catch::Session session;
-    session.applyCommandLine(argc, argv);
-    return session.run();
+#ifdef SDL
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+        return 1;
+
+    IMG_Init(IMG_INIT_PNG);
+#endif
+
+    return Catch::Session().run(argc, argv);
 }

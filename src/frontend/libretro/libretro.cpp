@@ -1,9 +1,5 @@
 #include "libretro.h"
-#include "core/core.h"
-#include "core/definitions.h"
-#include "core/gameboy.h"
-#include "core/state/state.h"
-#include "utils/arrayutils.h"
+#include "docboy/core/core.h"
 #include <cstdarg>
 #include <cstring>
 
@@ -12,15 +8,16 @@ static retro_log_printf_t retro_log;
 
 static retro_environment_t environ_cb;
 static retro_video_refresh_t video_cb;
+static retro_audio_sample_batch_t audio_batch_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_input_state_t input_state_cb;
 
 // Use MAX_FREQUENCY since libretro frontend handles the emulation speed by itself
-static GameBoy gameboy {GameBoy::Builder().setFrequency(IClock::MAX_FREQUENCY).build()};
-static Core core(gameboy);
+static GameBoy gameboy;
+static Core core {gameboy};
+static const uint16_t* framebuffer {gameboy.lcd.getPixels()};
 
-static constexpr uint32_t STATE_SIZE_UNKNOWN = 0;
-static uint32_t stateSize = STATE_SIZE_UNKNOWN;
+static int16_t audiobuffer[4096] {};
 
 static void retro_fallback_log(enum retro_log_level level, const char* fmt, ...) {
     va_list va;
@@ -82,6 +79,7 @@ void retro_set_audio_sample(retro_audio_sample_t cb) {
 }
 
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) {
+    audio_batch_cb = cb;
 }
 
 void retro_set_input_poll(retro_input_poll_t cb) {
@@ -107,25 +105,28 @@ void retro_run(void) {
         RETRO_DEVICE_ID_JOYPAD_B,     RETRO_DEVICE_ID_JOYPAD_A,
     };
 
-    static constexpr IJoypad::Key RETRO_KEYS_TO_GAMEBOY_KEYS[] = {
-        IJoypad::Key::Left,  IJoypad::Key::Up,     IJoypad::Key::Down, IJoypad::Key::Right,
-        IJoypad::Key::Start, IJoypad::Key::Select, IJoypad::Key::B,    IJoypad::Key::A,
+    static constexpr Joypad::Key RETRO_KEYS_TO_GAMEBOY_KEYS[] = {
+        Joypad::Key::Left,  Joypad::Key::Up,     Joypad::Key::Down, Joypad::Key::Right,
+        Joypad::Key::Start, Joypad::Key::Select, Joypad::Key::B,    Joypad::Key::A,
     };
 
     input_poll_cb();
 
     for (uint32_t keyIndex = 0; keyIndex < array_size(RETRO_KEYS); keyIndex++) {
-        uint16_t retroKey = RETRO_KEYS[keyIndex];
+        const uint16_t retroKey = RETRO_KEYS[keyIndex];
         const bool isKeyPressed = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, retroKey);
-        core.setKey(RETRO_KEYS_TO_GAMEBOY_KEYS[keyIndex], isKeyPressed ? IJoypad::Pressed : IJoypad::Released);
+        core.setKey(RETRO_KEYS_TO_GAMEBOY_KEYS[keyIndex],
+                    isKeyPressed ? Joypad::KeyState::Pressed : Joypad::KeyState::Released);
     }
 
-    // Tick until next frame
+    // Emulate until next frame
     core.frame();
 
-    // Send framebuffer
-    video_cb(gameboy.lcd.getFrameBuffer(), Specs::Display::WIDTH, Specs::Display::HEIGHT,
-             Specs::Display::WIDTH * sizeof(uint16_t));
+    // Draw framebuffer
+    video_cb(framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, Specs::Display::WIDTH * sizeof(uint16_t));
+
+    // TODO: audio is needed to limit emulation at 60fps
+    audio_batch_cb(audiobuffer, 1476 / 2);
 }
 
 bool retro_load_game(const struct retro_game_info* info) {
@@ -149,14 +150,13 @@ bool retro_load_game(const struct retro_game_info* info) {
         return false;
     }
 
-    retro_log(RETRO_LOG_INFO, "Loading game: %s", info->path);
-    core.loadROM(info->path);
-    retro_log(RETRO_LOG_INFO, "Game loaded");
+    retro_log(RETRO_LOG_INFO, "Loading: %s", info->path);
+    core.loadRom(info->path);
+    retro_log(RETRO_LOG_INFO, "loaded: %s", info->path);
     return true;
 }
 
 void retro_unload_game(void) {
-    stateSize = STATE_SIZE_UNKNOWN;
 }
 
 unsigned retro_get_region(void) {
@@ -167,37 +167,40 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info* info, 
     return false;
 }
 
-#include <iostream>
 size_t retro_serialize_size(void) {
-    if (stateSize == STATE_SIZE_UNKNOWN) {
-        // Deduce state size only once since it will
-        // remain constant for a certain game
-        State state;
-        core.saveState(state);
-        stateSize = state.getData().size();
-    }
-    return stateSize;
+    return core.getStateSaveSize();
 }
 
-bool retro_serialize(void* data_, size_t size) {
-    State state;
-    core.saveState(state);
-    memcpy(data_, state.getData().data(), state.getData().size());
+bool retro_serialize(void* data, size_t size) {
+    core.saveState(data);
     return true;
 }
 
-bool retro_unserialize(const void* data_, size_t size) {
-    State state((uint8_t*)data_, size);
-    core.loadState(state);
+bool retro_unserialize(const void* data, size_t size) {
+    core.loadState(data);
     return true;
 }
 
 void* retro_get_memory_data(unsigned id) {
-    return nullptr;
+    switch (id) {
+    case RETRO_MEMORY_SAVE_RAM:
+        return gameboy.cartridgeSlot.cartridge->getRamSaveData();
+    case RETRO_MEMORY_RTC:
+        return nullptr;
+    default:
+        return nullptr;
+    }
 }
 
 size_t retro_get_memory_size(unsigned id) {
-    return 0;
+    switch (id) {
+    case RETRO_MEMORY_SAVE_RAM:
+        return gameboy.cartridgeSlot.cartridge->getRamSaveSize();
+    case RETRO_MEMORY_RTC:
+        return 0;
+    default:
+        return 0;
+    }
 }
 
 void retro_cheat_reset(void) {
