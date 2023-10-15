@@ -411,28 +411,28 @@ TEST_CASE("adt", "[adt]") {
         Vector<uint8_t, 8> v;
         REQUIRE(v.isEmpty());
 
-        v.push_back(1);
-        v.push_back(2);
-        v.push_back(3);
-        v.push_back(4);
+        v.pushBack(1);
+        v.pushBack(2);
+        v.pushBack(3);
+        v.pushBack(4);
 
         REQUIRE(v.size() == 4);
 
-        REQUIRE(v.pop_back() == 4);
-        REQUIRE(v.pop_back() == 3);
-        REQUIRE(v.pop_back() == 2);
-        REQUIRE(v.pop_back() == 1);
+        REQUIRE(v.popBack() == 4);
+        REQUIRE(v.popBack() == 3);
+        REQUIRE(v.popBack() == 2);
+        REQUIRE(v.popBack() == 1);
 
         REQUIRE(v.isEmpty());
 
-        v.push_back(1);
-        v.push_back(2);
-        v.push_back(3);
-        v.push_back(4);
-        v.push_back(5);
-        v.push_back(6);
-        v.push_back(7);
-        v.push_back(8);
+        v.pushBack(1);
+        v.pushBack(2);
+        v.pushBack(3);
+        v.pushBack(4);
+        v.pushBack(5);
+        v.pushBack(6);
+        v.pushBack(7);
+        v.pushBack(8);
 
         REQUIRE(v.isFull());
     }
@@ -441,65 +441,65 @@ TEST_CASE("adt", "[adt]") {
         Queue<uint8_t, 8> q;
         REQUIRE(q.isEmpty());
 
-        q.push_back(1);
-        q.push_back(2);
+        q.pushBack(1);
+        q.pushBack(2);
         REQUIRE(q.isNotEmpty());
         REQUIRE(q.size() == 2);
 
         q.clear();
         REQUIRE(q.isEmpty());
 
-        q.push_back(1);
-        q.push_back(2);
-        q.push_back(3);
-        q.push_back(4);
-        q.push_back(5);
-        q.push_back(6);
-        q.push_back(7);
-        q.push_back(8);
+        q.pushBack(1);
+        q.pushBack(2);
+        q.pushBack(3);
+        q.pushBack(4);
+        q.pushBack(5);
+        q.pushBack(6);
+        q.pushBack(7);
+        q.pushBack(8);
 
         REQUIRE(q[7] == 8);
 
         REQUIRE(q.isFull());
 
-        REQUIRE(q.pop_front() == 1);
-        REQUIRE(q.pop_front() == 2);
-        REQUIRE(q.pop_front() == 3);
-        REQUIRE(q.pop_front() == 4);
-        REQUIRE(q.pop_front() == 5);
-        REQUIRE(q.pop_front() == 6);
-        REQUIRE(q.pop_front() == 7);
-        REQUIRE(q.pop_front() == 8);
+        REQUIRE(q.popFront() == 1);
+        REQUIRE(q.popFront() == 2);
+        REQUIRE(q.popFront() == 3);
+        REQUIRE(q.popFront() == 4);
+        REQUIRE(q.popFront() == 5);
+        REQUIRE(q.popFront() == 6);
+        REQUIRE(q.popFront() == 7);
+        REQUIRE(q.popFront() == 8);
 
         REQUIRE(q.isEmpty());
 
-        q.push_back(1);
-        q.push_back(2);
+        q.pushBack(1);
+        q.pushBack(2);
 
         REQUIRE(q.size() == 2);
 
         q.clear();
         REQUIRE(q.isEmpty());
 
-        q.push_back(3);
-        q.push_back(4);
+        q.pushBack(3);
+        q.pushBack(4);
 
         REQUIRE(q[0] == 3);
         REQUIRE(q[1] == 4);
 
         REQUIRE(q.size() == 2);
-        REQUIRE(q.pop_front() == 3);
+        REQUIRE(q.popFront() == 3);
         REQUIRE(q.size() == 1);
-        REQUIRE(q.pop_front() == 4);
+        REQUIRE(q.popFront() == 4);
         REQUIRE(q.isEmpty());
 
-        q.push_back(3);
-        q.push_back(4);
+        q.pushBack(3);
+        q.pushBack(4);
 
         REQUIRE(q[0] == 3);
         REQUIRE(q[1] == 4);
 
-        REQUIRE(q.pop_front() == 3);
+        REQUIRE(q.popFront() == 3);
 
         REQUIRE(q[0] == 4);
     }
@@ -513,17 +513,17 @@ TEST_CASE("adt", "[adt]") {
 
         REQUIRE(q.isFull());
 
-        REQUIRE(q.pop_front() == 1);
-        REQUIRE(q.pop_front() == 0);
-        REQUIRE(q.pop_front() == 0);
-        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.popFront() == 1);
+        REQUIRE(q.popFront() == 0);
+        REQUIRE(q.popFront() == 0);
+        REQUIRE(q.popFront() == 0);
 
         REQUIRE(q.size() == 4);
 
-        REQUIRE(q.pop_front() == 0);
-        REQUIRE(q.pop_front() == 0);
-        REQUIRE(q.pop_front() == 0);
-        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.popFront() == 0);
+        REQUIRE(q.popFront() == 0);
+        REQUIRE(q.popFront() == 0);
+        REQUIRE(q.popFront() == 0);
 
         REQUIRE(q.isEmpty());
     }

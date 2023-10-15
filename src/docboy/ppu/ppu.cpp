@@ -142,7 +142,7 @@ void Ppu::oamScan1() {
         const uint8_t oamScanEntryX = oam[OAM_ENTRY_BYTES * oamScan.number + Specs::Bytes::OAM::X];
 
         // push oam entry
-        oamEntries.emplace_back(static_cast<uint8_t>(dots / 2), oamScanEntryX, oamScan.y);
+        oamEntries.emplaceBack(static_cast<uint8_t>(dots / 2), oamScanEntryX, oamScan.y);
 
         // check if there is room for other oam entries in this scanline
         // if that's not the case, complete oam scan now
@@ -216,7 +216,7 @@ void Ppu::pixelTransferDiscard0() {
     // note that LX is not incremented in this case:
     // this let the obj align with the bg
     if (!isPixelTransferBlocked() && bgFifo.isNotEmpty()) {
-        bgFifo.pop_front();
+        bgFifo.popFront();
 
         if (++bgPixelTransfer.discardedPixels == bgPixelTransfer.SCXmod8)
             // all the SCX % 8 pixels have been discard
@@ -236,10 +236,10 @@ void Ppu::pixelTransfer0() {
 
     // for LX € [0, 8) just pop the pixels but do not push them to LCD
     if (!isPixelTransferBlocked() && bgFifo.isNotEmpty()) {
-        bgFifo.pop_front();
+        bgFifo.popFront();
 
         if (objFifo.isNotEmpty())
-            objFifo.pop_front();
+            objFifo.popFront();
 
         if (++LX == 8)
             tickSelector = &Ppu::pixelTransfer8;
@@ -267,10 +267,10 @@ void Ppu::pixelTransfer8() {
         uint8_t color {NO_COLOR};
 
         // pop out a pixel from BG fifo
-        const BgPixel bgPixel = bgFifo.pop_front();
+        const BgPixel bgPixel = bgFifo.popFront();
 
         if (objFifo.isNotEmpty()) {
-            const ObjPixel objPixel = objFifo.pop_front();
+            const ObjPixel objPixel = objFifo.popFront();
 
             // take OBJ pixel instead of the BG pixel only if both are satisfied:
             // 1) OBJ_ENABLE is set
@@ -445,7 +445,7 @@ void Ppu::writeLY(uint8_t LY) {
 void Ppu::computeOamEntriesHit() {
     for (uint8_t i = 0; i < oamEntries.size(); i++) {
         if (oamEntries[i].x == LX)
-            oamEntriesHit.push_back(oamEntries[i]);
+            oamEntriesHit.pushBack(oamEntries[i]);
     }
 }
 
@@ -630,7 +630,7 @@ void Ppu::bgwinPixelSliceFetcherGetTileDataHigh1() {
         cacheInterruptedBgWinFetch();
 
         isFetchingSprite = true;
-        of.entry = oamEntriesHit.pop_back();
+        of.entry = oamEntriesHit.popBack();
         objPrefetcherGetTile0();
         return;
     }
@@ -675,7 +675,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
         }
 
         isFetchingSprite = true;
-        of.entry = oamEntriesHit.pop_back();
+        of.entry = oamEntriesHit.popBack();
         objPrefetcherGetTile0();
         return;
     }
@@ -747,7 +747,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
 
     // push the remaining obj pixels
     while (i < 8) {
-        objFifo.push_back(objPixels[i++]);
+        objFifo.pushBack(objPixels[i++]);
     }
 
     check(objFifo.isFull());
@@ -755,7 +755,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     if (oamEntriesHit.isNotEmpty() && bgFifo.isNotEmpty()) {
         // still oam entries hit to be served for this x: setup the fetcher
         // for another obj fetch
-        of.entry = oamEntriesHit.pop_back();
+        of.entry = oamEntriesHit.popBack();
         fetcherTickSelector = &Ppu::objPrefetcherGetTile0;
     } else {
         // no more oam entries to serve for this x: setup to fetcher with

@@ -44,7 +44,7 @@ struct FillQueue {
         cursor = 0;
     }
 
-    T pop_front() {
+    T popFront() {
         check(isNotEmpty());
         return data[cursor++];
     }

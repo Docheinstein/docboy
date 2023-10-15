@@ -40,14 +40,14 @@ struct Queue {
         return count;
     }
 
-    void push_back(T element) {
+    void pushBack(T element) {
         check(!isFull());
         data[end] = element;
         end = (end + 1) % N;
         ++count;
     }
 
-    T pop_front() {
+    T popFront() {
         check(isNotEmpty());
         T out = data[start];
         start = (start + 1) % N;

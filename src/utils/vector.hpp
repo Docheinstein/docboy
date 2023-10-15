@@ -39,18 +39,18 @@ struct Vector {
         return cursor;
     }
 
-    void push_back(T element) {
+    void pushBack(T element) {
         check(!isFull());
         data[cursor++] = element;
     }
 
     template <typename... Args>
-    void emplace_back(Args&&... args) {
+    void emplaceBack(Args&&... args) {
         check(!isFull());
         data[cursor++] = {std::forward<Args>(args)...};
     }
 
-    T pop_back() {
+    T popBack() {
         check(isNotEmpty());
         return data[--cursor];
     }
