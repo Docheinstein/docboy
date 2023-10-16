@@ -76,7 +76,7 @@ struct WatchpointHit {
     uint8_t newValue;
 };
 
-using Disassemble = std::vector<uint8_t>;
+using DisassembledInstruction = std::vector<uint8_t>;
 
 struct ExecutionCompleted {};
 struct ExecutionInterrupted {};

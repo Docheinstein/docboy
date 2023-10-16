@@ -6,6 +6,7 @@
 #include "utils/arrays.h"
 #include "utils/formatters.hpp"
 #include "utils/hexdump.hpp"
+#include "utils/memory.h"
 #include "utils/strings.hpp"
 #include "utils/termcolor.hpp"
 #include <csignal>
@@ -54,6 +55,14 @@ struct FrontendExamineCommand {
     std::optional<uint8_t> formatArg {};
     uint32_t length {};
     uint16_t address {};
+};
+
+struct FrontendSearchBytesCommand {
+    std::vector<uint8_t> bytes;
+};
+
+struct FrontendSearchInstructionsCommand {
+    std::vector<uint8_t> instruction;
 };
 
 struct FrontendDisplayCommand {
@@ -111,16 +120,19 @@ struct FrontendTraceCommand {
     std::optional<uint8_t> level {};
 };
 
+struct FrontendDumpDisassembleCommand {};
+
 struct FrontendHelpCommand {};
 struct FrontendQuitCommand {};
 
 using FrontendCommand =
     std::variant<FrontendBreakpointCommand, FrontendWatchpointCommand, FrontendDeleteCommand,
                  FrontendAutoDisassembleCommand, FrontendDisassembleCommand, FrontendDisassembleRangeCommand,
-                 FrontendExamineCommand, FrontendDisplayCommand, FrontendUndisplayCommand, FrontendShowCommand,
-                 FrontendHideCommand, FrontendDotCommand, FrontendStepCommand, FrontendMicroStepCommand,
-                 FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand, FrontendScanlineCommand,
-                 FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand, FrontendHelpCommand,
+                 FrontendExamineCommand, FrontendSearchBytesCommand, FrontendSearchInstructionsCommand,
+                 FrontendDisplayCommand, FrontendUndisplayCommand, FrontendShowCommand, FrontendHideCommand,
+                 FrontendDotCommand, FrontendStepCommand, FrontendMicroStepCommand, FrontendNextCommand,
+                 FrontendMicroNextCommand, FrontendFrameCommand, FrontendScanlineCommand, FrontendFrameBackCommand,
+                 FrontendContinueCommand, FrontendTraceCommand, FrontendDumpDisassembleCommand, FrontendHelpCommand,
                  FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
@@ -130,245 +142,280 @@ struct FrontendCommandInfo {
     std::optional<FrontendCommand> (*parser)(const std::vector<std::string>& groups);
 };
 
-static uint16_t address_str_to_addr(const std::string& s, bool* ok) {
-    if (std::optional<uint16_t> addr = mnemonic_to_address(s))
-        return *addr;
+template <typename T>
+static T parse_hex(const std::string& s, bool* ok) {
     const char* cs = s.c_str();
     char* endPtr;
-    uint16_t result = std::strtol(cs, &endPtr, 16);
+    T result = std::strtol(cs, &endPtr, 16);
     if (endPtr == cs || *endPtr != '\0') {
         if (ok)
             *ok = false;
         return 0;
     }
+
     return result;
 }
 
-static FrontendCommandInfo FRONTEND_COMMANDS[] =
-    {
-        {std::regex(R"(b\s+(\w+))"), "b <addr>", "Set breakpoint at <addr>",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendBreakpointCommand cmd {};
-             bool ok {true};
-             cmd.address = address_str_to_addr(groups[0], &ok);
-             return ok ? std::optional(cmd) : std::nullopt;
-         }},
-        {std::regex(R"(w(?:/([ra]))?\s+(\w+),(\w+)\s*(.*)?)"), "w[/r|a] <start>,<end> [<cond>]",
-         "Set watchpoint from <start> to <end>",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendWatchpointCommand cmd {};
-             bool ok {true};
-             const std::string& access = groups[0];
-             const std::string& from = groups[1];
-             const std::string& to = groups[2];
-             const std::string& condition = groups[3];
+static std::vector<uint8_t> parse_hex_str(const std::string& s, bool* ok) {
+    const std::string ss = (s.size() % 2 == 0) ? s : ("0" + s);
+    std::vector<uint8_t> result {};
+    for (uint32_t i = 0; i < ss.size() && (!ok || (*ok)); i += 2) {
+        result.push_back(parse_hex<uint8_t>(ss.substr(i, 2), ok));
+    }
+    return result;
+}
 
-             if (access == "r")
-                 cmd.type = Watchpoint::Type::Read;
-             else if (access == "a")
-                 cmd.type = Watchpoint::Type::ReadWrite;
-             else
-                 cmd.type = Watchpoint::Type::Change;
+static uint16_t address_str_to_addr(const std::string& s, bool* ok) {
+    if (std::optional<uint16_t> addr = mnemonic_to_address(s))
+        return *addr;
+    return parse_hex<uint16_t>(s, ok);
+}
 
-             cmd.address.from = address_str_to_addr(from, &ok);
-             cmd.address.to = address_str_to_addr(to, &ok);
+static FrontendCommandInfo
+    FRONTEND_COMMANDS[] =
+        {
+            {std::regex(R"(b\s+(\w+))"), "b <addr>", "Set breakpoint at <addr>",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendBreakpointCommand cmd {};
+                 bool ok {true};
+                 cmd.address = address_str_to_addr(groups[0], &ok);
+                 return ok ? std::optional(cmd) : std::nullopt;
+             }},
+            {std::regex(R"(w(?:/([ra]))?\s+(\w+),(\w+)\s*(.*)?)"), "w[/r|a] <start>,<end> [<cond>]",
+             "Set watchpoint from <start> to <end>",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendWatchpointCommand cmd {};
+                 bool ok {true};
+                 const std::string& access = groups[0];
+                 const std::string& from = groups[1];
+                 const std::string& to = groups[2];
+                 const std::string& condition = groups[3];
 
-             std::vector<std::string> tokens;
-             split(condition, std::back_inserter(tokens));
-             if (tokens.size() >= 2) {
-                 const auto& operation = tokens[0];
-                 const auto& operand = tokens[1];
-                 if (operation == "==") {
-                     cmd.condition.enabled = true;
-                     cmd.condition.condition.operation = Watchpoint::Condition::Operator::Equal;
-                     cmd.condition.condition.operand = address_str_to_addr(operand, &ok);
+                 if (access == "r")
+                     cmd.type = Watchpoint::Type::Read;
+                 else if (access == "a")
+                     cmd.type = Watchpoint::Type::ReadWrite;
+                 else
+                     cmd.type = Watchpoint::Type::Change;
+
+                 cmd.address.from = address_str_to_addr(from, &ok);
+                 cmd.address.to = address_str_to_addr(to, &ok);
+
+                 std::vector<std::string> tokens;
+                 split(condition, std::back_inserter(tokens));
+                 if (tokens.size() >= 2) {
+                     const auto& operation = tokens[0];
+                     const auto& operand = tokens[1];
+                     if (operation == "==") {
+                         cmd.condition.enabled = true;
+                         cmd.condition.condition.operation = Watchpoint::Condition::Operator::Equal;
+                         cmd.condition.condition.operand = address_str_to_addr(operand, &ok);
+                     }
                  }
-             }
 
-             return ok ? std::optional(cmd) : std::nullopt;
-         }},
-        {std::regex(R"(w(?:/([ra]))?\s+(\w+)\s*(.*)?)"), "w[/r|a] <addr> [<cond>]", "Set watchpoint at <addr>",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendWatchpointCommand cmd {};
-             bool ok {true};
-             const std::string& access = groups[0];
-             const std::string& from = groups[1];
-             const std::string& condition = groups[2];
+                 return ok ? std::optional(cmd) : std::nullopt;
+             }},
+            {std::regex(R"(w(?:/([ra]))?\s+(\w+)\s*(.*)?)"), "w[/r|a] <addr> [<cond>]", "Set watchpoint at <addr>",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendWatchpointCommand cmd {};
+                 bool ok {true};
+                 const std::string& access = groups[0];
+                 const std::string& from = groups[1];
+                 const std::string& condition = groups[2];
 
-             if (access == "r")
-                 cmd.type = Watchpoint::Type::Read;
-             else if (access == "a")
-                 cmd.type = Watchpoint::Type::ReadWrite;
-             else
-                 cmd.type = Watchpoint::Type::Change;
+                 if (access == "r")
+                     cmd.type = Watchpoint::Type::Read;
+                 else if (access == "a")
+                     cmd.type = Watchpoint::Type::ReadWrite;
+                 else
+                     cmd.type = Watchpoint::Type::Change;
 
-             cmd.address.from = cmd.address.to = address_str_to_addr(from, &ok);
+                 cmd.address.from = cmd.address.to = address_str_to_addr(from, &ok);
 
-             std::vector<std::string> tokens;
-             split(condition, std::back_inserter(tokens));
-             if (tokens.size() >= 2) {
-                 const auto& operation = tokens[0];
-                 const auto& operand = tokens[1];
-                 if (operation == "==") {
-                     cmd.condition.enabled = true;
-                     cmd.condition.condition.operation = Watchpoint::Condition::Operator::Equal;
-                     cmd.condition.condition.operand = address_str_to_addr(operand, &ok);
+                 std::vector<std::string> tokens;
+                 split(condition, std::back_inserter(tokens));
+                 if (tokens.size() >= 2) {
+                     const auto& operation = tokens[0];
+                     const auto& operand = tokens[1];
+                     if (operation == "==") {
+                         cmd.condition.enabled = true;
+                         cmd.condition.condition.operation = Watchpoint::Condition::Operator::Equal;
+                         cmd.condition.condition.operand = address_str_to_addr(operand, &ok);
+                     }
                  }
-             }
 
-             return ok ? std::optional(cmd) : std::nullopt;
-         }},
-        {std::regex(R"(del\s*(\d+)?)"), "del <num>", "Delete breakpoint or watchpoint <num>",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendDeleteCommand cmd {};
-             const std::string& num = groups[0];
-             if (!num.empty())
-                 cmd.num = std::stoi(num);
-             return cmd;
-         }},
-        {std::regex(R"(ad\s*(\d+)?)"), "ad <num>", "Automatically disassemble next <n> instructions (default = 10)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendAutoDisassembleCommand cmd {};
-             const std::string& n = groups[0];
-             cmd.n = !n.empty() ? std::stoi(n) : 10;
-             return cmd;
-         }},
-        {std::regex(R"(d\s*(\d+)?)"), "d [<n>]", "Disassemble next <n> instructions (default = 10)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendDisassembleCommand cmd {};
-             const std::string& n = groups[0];
-             cmd.n = !n.empty() ? std::stoi(n) : 10;
-             return cmd;
-         }},
-        {std::regex(R"(d\s+(\w+),(\w+))"), "d <start>,<end>", "Disassemble instructions from address <start> to <end>",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendDisassembleRangeCommand cmd {};
-             bool ok {true};
-             cmd.from = address_str_to_addr(groups[0], &ok);
-             cmd.to = address_str_to_addr(groups[1], &ok);
-             return ok ? std::optional(cmd) : std::nullopt;
-         }},
-        {std::regex(R"(x(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "x[/<length><format>] <addr>",
-         "Display memory content at <addr> (<format>: x, h[<cols>], b, d, i)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendExamineCommand cmd {};
-             bool ok {true};
-             const std::string& length = groups[0];
-             const std::string& format = groups[1];
-             const std::string& formatArg = groups[2];
-             const std::string& address = groups[3];
-             cmd.length = length.empty() ? 1 : std::stoi(length);
-             cmd.format = MemoryOutputFormat(format.empty() ? 'x' : format[0]);
-             if (!formatArg.empty())
-                 cmd.formatArg = stoi(formatArg);
-             cmd.address = address_str_to_addr(address, &ok);
-             return ok ? std::optional(cmd) : std::nullopt;
-         }},
-        {std::regex(R"(display(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "display[/<length><format>] <addr>",
-         "Automatically display memory content content at <addr> (<format>: x, h[<cols>], b, d, i)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendDisplayCommand cmd {};
-             bool ok {true};
-             const std::string& length = groups[0];
-             const std::string& format = groups[1];
-             const std::string& formatArg = groups[2];
-             const std::string& address = groups[3];
-             cmd.length = length.empty() ? 1 : std::stoi(length);
-             cmd.format = MemoryOutputFormat(format.empty() ? 'x' : format[0]);
-             if (!formatArg.empty())
-                 cmd.formatArg = stoi(formatArg);
-             cmd.address = address_str_to_addr(address, &ok);
-             return ok ? std::optional(cmd) : std::nullopt;
-         }},
-        {std::regex(R"(undisplay)"), "undisplay", "Undisplay expressions set with display",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendUndisplayCommand cmd {};
-             return cmd;
-         }},
-        {std::regex(R"(show\s*(\w+))"), "show <section>", "Show a section in the debugger layout",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendShowCommand cmd {.subject = groups[0]};
-             return cmd;
-         }},
-        {std::regex(R"(hide\s*(\w+))"), "hide <section>", "Hide a section from the debugger layout",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             FrontendHideCommand cmd {.subject = groups[0]};
-             return cmd;
-         }},
-        {std::regex(R"(\.\s*(\d+)?)"), ". [<count>]", "Continue running for <count> PPU dots (default = 1)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             const std::string& count = groups[0];
-             uint64_t n = count.empty() ? 1 : std::stoi(count);
-             return FrontendDotCommand {.count = n};
-         }},
-        {std::regex(R"(s\s*(\d+)?)"), "s [<count>]", "Continue running for <count> instructions (default = 1)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             const std::string& count = groups[0];
-             uint64_t n = count.empty() ? 1 : std::stoi(count);
-             return FrontendStepCommand {.count = n};
-         }},
-        {std::regex(R"(si\s*(\d+)?)"), "si [<count>]", "Continue running for <count> micro-operations (default = 1)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             const std::string& count = groups[0];
-             uint64_t n = count.empty() ? 1 : std::stoi(count);
-             return FrontendMicroStepCommand {.count = n};
-         }},
-        {std::regex(R"(n\s*(\d+)?)"), "n [<count>]",
-         "Continue running for <count> instructions at the same stack level (default = 1)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             const std::string& count = groups[0];
-             uint64_t n = count.empty() ? 1 : std::stoi(count);
-             return FrontendNextCommand {.count = n};
-         }},
-        {std::regex(R"(ni\s*(\d+)?)"), "ni [<count>]",
-         "Continue running for <count> micro-operations at the same stack level (default = 1)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             const std::string& count = groups[0];
-             uint64_t n = count.empty() ? 1 : std::stoi(count);
-             return FrontendMicroNextCommand {.count = n};
-         }},
-        {std::regex(R"(f\s*(\d+)?)"), "f [<count>]", "Continue running for <count> frames (default = 1)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             const std::string& count = groups[0];
-             uint64_t n = count.empty() ? 1 : std::stoi(count);
-             return FrontendFrameCommand {.count = n};
-         }},
-        {std::regex(R"(fb\s*(\d+)?)"), "fb [<count>]",
-         "Step back by <count> frames (default = 1, max = " + std::to_string(600) + ")",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             const std::string& count = groups[0];
-             uint64_t n = count.empty() ? 1 : std::stoi(count);
-             return FrontendFrameBackCommand {.count = n};
-         }},
-        {std::regex(R"(l\s*(\d+)?)"), "l [<count>]", "Continue running for <count> lines (default = 1)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             const std::string& count = groups[0];
-             uint64_t n = count.empty() ? 1 : std::stoi(count);
-             return FrontendScanlineCommand {.count = n};
-         }},
-        {std::regex(R"(c)"), "c", "Continue",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             return FrontendContinueCommand {};
-         }},
-        {std::regex(R"(trace\s*(\d+)?)"), "trace [<level>]",
-         "Set the trace level or toggle it (output on standard error)",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             const std::string& level = groups[0];
-             FrontendTraceCommand cmd;
-             if (!level.empty())
-                 cmd.level = std::stoi(level);
-             return cmd;
-         }},
-        {std::regex(R"(h(?:elp)?)"), "h", "Display help",
-         [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-             return FrontendHelpCommand {};
-         }},
-        {std::regex(R"(q)"), "q", "Quit",
-         [](
-             const std::vector<std::string>& groups) -> std::
-                                                         optional<FrontendCommand> {
-                                                             return FrontendQuitCommand {};
-                                                         }},
+                 return ok ? std::optional(cmd) : std::nullopt;
+             }},
+            {std::regex(R"(del\s*(\d+)?)"), "del <num>", "Delete breakpoint or watchpoint <num>",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendDeleteCommand cmd {};
+                 const std::string& num = groups[0];
+                 if (!num.empty())
+                     cmd.num = std::stoi(num);
+                 return cmd;
+             }},
+            {std::regex(R"(ad\s*(\d+)?)"), "ad <num>", "Automatically disassemble next <n> instructions (default = 10)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendAutoDisassembleCommand cmd {};
+                 const std::string& n = groups[0];
+                 cmd.n = !n.empty() ? std::stoi(n) : 10;
+                 return cmd;
+             }},
+            {std::regex(R"(d\s*(\d+)?)"), "d [<n>]", "Disassemble next <n> instructions (default = 10)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendDisassembleCommand cmd {};
+                 const std::string& n = groups[0];
+                 cmd.n = !n.empty() ? std::stoi(n) : 10;
+                 return cmd;
+             }},
+            {std::regex(R"(d\s+(\w+),(\w+))"), "d <start>,<end>",
+             "Disassemble instructions from address <start> to <end>",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendDisassembleRangeCommand cmd {};
+                 bool ok {true};
+                 cmd.from = address_str_to_addr(groups[0], &ok);
+                 cmd.to = address_str_to_addr(groups[1], &ok);
+                 return ok ? std::optional(cmd) : std::nullopt;
+             }},
+            {std::regex(R"(x(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "x[/<length><format>] <addr>",
+             "Display memory content at <addr> (<format>: x, h[<cols>], b, d, i)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendExamineCommand cmd {};
+                 bool ok {true};
+                 const std::string& length = groups[0];
+                 const std::string& format = groups[1];
+                 const std::string& formatArg = groups[2];
+                 const std::string& address = groups[3];
+                 cmd.length = length.empty() ? 1 : std::stoi(length);
+                 cmd.format = MemoryOutputFormat(format.empty() ? 'x' : format[0]);
+                 if (!formatArg.empty())
+                     cmd.formatArg = stoi(formatArg);
+                 cmd.address = address_str_to_addr(address, &ok);
+                 return ok ? std::optional(cmd) : std::nullopt;
+             }},
+            {std::regex(R"(/b\s+(\w+))"), "/b <bytes>", "Search for <bytes>",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendSearchBytesCommand cmd {};
+                 bool ok {true};
+                 const std::string& bytes = groups[0];
+                 cmd.bytes = parse_hex_str(bytes, &ok);
+                 return ok ? std::optional(cmd) : std::nullopt;
+             }},
+            {std::regex(R"(/i\s+(\w+))"), "/i <bytes>", "Search for instructions matching <bytes>",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendSearchInstructionsCommand cmd {};
+                 bool ok {true};
+                 const std::string& bytes = groups[0];
+                 cmd.instruction = parse_hex_str(bytes, &ok);
+                 return ok ? std::optional(cmd) : std::nullopt;
+             }},
+            {std::regex(R"(display(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "display[/<length><format>] <addr>",
+             "Automatically display memory content content at <addr> (<format>: x, h[<cols>], b, d, i)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendDisplayCommand cmd {};
+                 bool ok {true};
+                 const std::string& length = groups[0];
+                 const std::string& format = groups[1];
+                 const std::string& formatArg = groups[2];
+                 const std::string& address = groups[3];
+                 cmd.length = length.empty() ? 1 : std::stoi(length);
+                 cmd.format = MemoryOutputFormat(format.empty() ? 'x' : format[0]);
+                 if (!formatArg.empty())
+                     cmd.formatArg = stoi(formatArg);
+                 cmd.address = address_str_to_addr(address, &ok);
+                 return ok ? std::optional(cmd) : std::nullopt;
+             }},
+            {std::regex(R"(undisplay)"), "undisplay", "Undisplay expressions set with display",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendUndisplayCommand cmd {};
+                 return cmd;
+             }},
+            {std::regex(R"(show\s*(\w+))"), "show <section>", "Show a section in the debugger layout",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendShowCommand cmd {.subject = groups[0]};
+                 return cmd;
+             }},
+            {std::regex(R"(hide\s*(\w+))"), "hide <section>", "Hide a section from the debugger layout",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 FrontendHideCommand cmd {.subject = groups[0]};
+                 return cmd;
+             }},
+            {std::regex(R"(\.\s*(\d+)?)"), ". [<count>]", "Continue running for <count> PPU dots (default = 1)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& count = groups[0];
+                 uint64_t n = count.empty() ? 1 : std::stoi(count);
+                 return FrontendDotCommand {.count = n};
+             }},
+            {std::regex(R"(s\s*(\d+)?)"), "s [<count>]", "Continue running for <count> instructions (default = 1)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& count = groups[0];
+                 uint64_t n = count.empty() ? 1 : std::stoi(count);
+                 return FrontendStepCommand {.count = n};
+             }},
+            {std::regex(R"(si\s*(\d+)?)"), "si [<count>]",
+             "Continue running for <count> micro-operations (default = 1)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& count = groups[0];
+                 uint64_t n = count.empty() ? 1 : std::stoi(count);
+                 return FrontendMicroStepCommand {.count = n};
+             }},
+            {std::regex(R"(n\s*(\d+)?)"), "n [<count>]",
+             "Continue running for <count> instructions at the same stack level (default = 1)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& count = groups[0];
+                 uint64_t n = count.empty() ? 1 : std::stoi(count);
+                 return FrontendNextCommand {.count = n};
+             }},
+            {std::regex(R"(ni\s*(\d+)?)"), "ni [<count>]",
+             "Continue running for <count> micro-operations at the same stack level (default = 1)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& count = groups[0];
+                 uint64_t n = count.empty() ? 1 : std::stoi(count);
+                 return FrontendMicroNextCommand {.count = n};
+             }},
+            {std::regex(R"(f\s*(\d+)?)"), "f [<count>]", "Continue running for <count> frames (default = 1)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& count = groups[0];
+                 uint64_t n = count.empty() ? 1 : std::stoi(count);
+                 return FrontendFrameCommand {.count = n};
+             }},
+            {std::regex(R"(fb\s*(\d+)?)"), "fb [<count>]",
+             "Step back by <count> frames (default = 1, max = " + std::to_string(600) + ")",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& count = groups[0];
+                 uint64_t n = count.empty() ? 1 : std::stoi(count);
+                 return FrontendFrameBackCommand {.count = n};
+             }},
+            {std::regex(R"(l\s*(\d+)?)"), "l [<count>]", "Continue running for <count> lines (default = 1)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& count = groups[0];
+                 uint64_t n = count.empty() ? 1 : std::stoi(count);
+                 return FrontendScanlineCommand {.count = n};
+             }},
+            {std::regex(R"(c)"), "c", "Continue",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 return FrontendContinueCommand {};
+             }},
+            {std::regex(R"(trace\s*(\d+)?)"), "trace [<level>]", "Set the trace level or toggle it (output on stderr)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& level = groups[0];
+                 FrontendTraceCommand cmd;
+                 if (!level.empty())
+                     cmd.level = std::stoi(level);
+                 return cmd;
+             }},
+            {std::regex(R"(dump)"), "dump", "Dump the disassemble (output on stderr)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 return FrontendDumpDisassembleCommand {};
+             }},
+            {std::regex(R"(h(?:elp)?)"), "h", "Display help",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 return FrontendHelpCommand {};
+             }},
+            {std::regex(R"(q)"), "q", "Quit",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 return FrontendQuitCommand {};
+             }},
 };
 
 static std::optional<FrontendCommand> parse_cmdline(const std::string& s) {
@@ -479,6 +526,42 @@ DebuggerFrontend::handleCommand<FrontendDisassembleRangeCommand>(const FrontendD
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendExamineCommand>(const FrontendExamineCommand& cmd) {
     printMemory(cmd.address, cmd.length, cmd.format, cmd.formatArg);
+    return std::nullopt;
+}
+
+// SearchBytes
+template <>
+std::optional<Command>
+DebuggerFrontend::handleCommand<FrontendSearchBytesCommand>(const FrontendSearchBytesCommand& cmd) {
+    // TODO: handle bytes in different MBC banks?
+
+    // read all memory
+    std::vector<uint8_t> mem {};
+    mem.resize(0x10000);
+    for (uint32_t addr = 0; addr <= 0xFFFF; addr++) {
+        mem[addr] = backend.readMemory(addr);
+    }
+
+    // search for bytes in memory
+    std::vector<uint32_t> occurrences = mem_find_all(mem.data(), mem.size(), cmd.bytes.data(), cmd.bytes.size());
+    for (const auto& addr : occurrences) {
+        std::cout << hex((uint16_t)addr) << std::endl;
+    }
+
+    return std::nullopt;
+}
+
+// SearchInstructions
+template <>
+std::optional<Command>
+DebuggerFrontend::handleCommand<FrontendSearchInstructionsCommand>(const FrontendSearchInstructionsCommand& cmd) {
+    // find instruction among known disassembled instructions
+    std::vector<std::pair<uint16_t, DisassembledInstruction>> disassembled = backend.getDisassembledInstructions();
+    for (const auto& [addr, instr] : disassembled) {
+        if (instr == cmd.instruction) {
+            std::cout << hex(addr) << "    " << instruction_mnemonic(instr, addr) << std::endl;
+        }
+    }
     return std::nullopt;
 }
 
@@ -661,6 +744,23 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendTraceCommand>(con
     return std::nullopt;
 }
 
+// DumpDisassemble
+template <>
+std::optional<Command>
+DebuggerFrontend::handleCommand<FrontendDumpDisassembleCommand>(const FrontendDumpDisassembleCommand& cmd) {
+
+    std::vector<std::pair<uint16_t, DisassembledInstruction>> disassembled = backend.getDisassembledInstructions();
+    for (uint32_t i = 0; i < disassembled.size(); i++) {
+        const auto& [addr, instr] = disassembled[i];
+        std::cerr << DisassembleEntry {addr, instr}.toString() << std::endl;
+        if (i < disassembled.size() - 1 && addr + instr.size() != disassembled[i + 1].first)
+            std::cerr << std::endl; // next instruction is not adjacent to this one
+    }
+    std::cout << "Dumped " << disassembled.size() << " instructions" << std::endl;
+
+    return std::nullopt;
+}
+
 // Help
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendHelpCommand>(const FrontendHelpCommand& cmd) {
@@ -750,6 +850,10 @@ Command DebuggerFrontend::pullCommand(const ExecutionState& executionState) {
             commandToSend = handleCommand(std::get<FrontendDisassembleRangeCommand>(cmd));
         } else if (std::holds_alternative<FrontendExamineCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendExamineCommand>(cmd));
+        } else if (std::holds_alternative<FrontendSearchBytesCommand>(cmd)) {
+            commandToSend = handleCommand(std::get<FrontendSearchBytesCommand>(cmd));
+        } else if (std::holds_alternative<FrontendSearchInstructionsCommand>(cmd)) {
+            commandToSend = handleCommand(std::get<FrontendSearchInstructionsCommand>(cmd));
         } else if (std::holds_alternative<FrontendDisplayCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendDisplayCommand>(cmd));
         } else if (std::holds_alternative<FrontendUndisplayCommand>(cmd)) {
@@ -778,6 +882,8 @@ Command DebuggerFrontend::pullCommand(const ExecutionState& executionState) {
             commandToSend = handleCommand(std::get<FrontendContinueCommand>(cmd));
         } else if (std::holds_alternative<FrontendTraceCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendTraceCommand>(cmd));
+        } else if (std::holds_alternative<FrontendDumpDisassembleCommand>(cmd)) {
+            commandToSend = handleCommand(std::get<FrontendDumpDisassembleCommand>(cmd));
         } else if (std::holds_alternative<FrontendHelpCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendHelpCommand>(cmd));
         } else if (std::holds_alternative<FrontendQuitCommand>(cmd)) {
@@ -804,7 +910,7 @@ void DebuggerFrontend::onTick(uint64_t tick) {
             std::string instr;
             if (!cpu.isInISR()) {
                 backend.disassemble(cpu.instruction.address, 1);
-                auto disas = backend.getDisassembled(cpu.instruction.address);
+                auto disas = backend.getDisassembledInstruction(cpu.instruction.address);
                 if (disas)
                     instr = instruction_mnemonic(*disas, cpu.instruction.address);
                 else
@@ -968,7 +1074,7 @@ std::string DebuggerFrontend::watchpoint(const Watchpoint& w) {
 std::string DebuggerFrontend::breakpoint(const Breakpoint& b) const {
     std::stringstream ss;
     ss << termcolor::color<13> << "(" << b.id << ") " << hex(b.address);
-    auto instruction = backend.getDisassembled(b.address);
+    auto instruction = backend.getDisassembledInstruction(b.address);
     if (instruction) {
         ss << " : " << std::setw(9) << hex(*instruction) << "   " << std::left << std::setw(16)
            << instruction_mnemonic(*instruction, b.address);
@@ -1255,7 +1361,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             std::list<DisassembleEntry> codeView;
             uint8_t n = 0;
             for (int32_t addr = cpu.instruction.address; addr >= 0 && n < 6; addr--) {
-                auto entry = backend.getDisassembled(addr);
+                auto entry = backend.getDisassembledInstruction(addr);
                 if (entry) {
                     DisassembleEntry d = {.address = static_cast<uint16_t>(addr), .disassemble = *entry};
                     codeView.push_front(d);
@@ -1264,7 +1370,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }
             n = 0;
             for (int32_t addr = cpu.instruction.address + 1; addr <= 0xFFFF && n < 8; addr++) {
-                auto entry = backend.getDisassembled(addr);
+                auto entry = backend.getDisassembledInstruction(addr);
                 if (entry) {
                     DisassembleEntry d = {.address = static_cast<uint16_t>(addr), .disassemble = *entry};
                     codeView.push_back(d);
@@ -1370,7 +1476,7 @@ void DebuggerFrontend::printInstructions(uint16_t from, uint32_t n) const {
     backend.disassemble(from, n);
     uint32_t i = 0;
     for (uint32_t address = from; address <= 0xFFFF && i < n;) {
-        std::optional<Disassemble> disas = backend.getDisassembled(address);
+        std::optional<DisassembledInstruction> disas = backend.getDisassembledInstruction(address);
         if (!disas)
             fatal("Failed to disassemble at address" + std::to_string(address));
 

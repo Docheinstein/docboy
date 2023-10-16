@@ -68,7 +68,8 @@ public:
 
     void disassemble(uint16_t addr, size_t n);
     void disassembleRange(uint16_t from, uint16_t to);
-    [[nodiscard]] std::optional<Disassemble> getDisassembled(uint16_t addr) const;
+    [[nodiscard]] std::optional<DisassembledInstruction> getDisassembledInstruction(uint16_t addr) const;
+    [[nodiscard]] std::vector<std::pair<uint16_t, DisassembledInstruction>> getDisassembledInstructions() const;
 
     [[nodiscard]] uint8_t readMemory(uint16_t addr);
 
@@ -78,11 +79,9 @@ public:
     [[nodiscard]] const GameBoy& getGameBoy() const;
 
 private:
-    void setupAsMemoryObserver();
-
     void pullCommand(const ExecutionState& state);
 
-    [[nodiscard]] std::optional<Disassemble> doDisassemble(uint16_t addr);
+    [[nodiscard]] std::optional<DisassembledInstruction> doDisassemble(uint16_t addr);
 
     template <typename CommandType>
     void initializeCommandState();
@@ -107,7 +106,7 @@ private:
 
     std::vector<Breakpoint> breakpoints;
     std::vector<Watchpoint> watchpoints;
-    std::optional<Disassemble> disassembled[0x10000];
+    std::optional<DisassembledInstruction> disassembledInstructions[0x10000];
 
     std::optional<WatchpointHit> watchpointHit;
 

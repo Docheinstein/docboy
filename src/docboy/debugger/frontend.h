@@ -64,7 +64,7 @@ private:
 
     struct DisassembleEntry {
         uint16_t address {};
-        Disassemble disassemble {};
+        DisassembledInstruction disassemble {};
 
         [[nodiscard]] std::string toString() const;
     };

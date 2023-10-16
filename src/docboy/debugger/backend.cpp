@@ -119,6 +119,9 @@ void DebuggerBackend::onTick(uint64_t tick) {
 }
 
 void DebuggerBackend::onMemoryRead(uint16_t address, uint8_t value) {
+    if (!allowMemoryCallbacks)
+        return;
+
     std::optional<Watchpoint> w = getWatchpoint(address);
     if (w) {
         if ((w->type == Watchpoint::Type::Read || w->type == Watchpoint::Type::ReadWrite) &&
@@ -135,6 +138,9 @@ void DebuggerBackend::onMemoryRead(uint16_t address, uint8_t value) {
 }
 
 void DebuggerBackend::onMemoryWrite(uint16_t address, uint8_t oldValue, uint8_t newValue) {
+    if (!allowMemoryCallbacks)
+        return;
+
     std::optional<Watchpoint> w = getWatchpoint(address);
     if (w) {
         if (((w->type == Watchpoint::Type::ReadWrite || w->type == Watchpoint::Type::Write) ||
@@ -219,7 +225,7 @@ void DebuggerBackend::disassemble(uint16_t addr, size_t n) {
         auto instruction = doDisassemble(addressCursor);
         if (!instruction)
             break;
-        disassembled[addressCursor] = instruction;
+        disassembledInstructions[addressCursor] = instruction;
         addressCursor += instruction->size();
     }
 }
@@ -229,13 +235,23 @@ void DebuggerBackend::disassembleRange(uint16_t from, uint16_t to) {
         auto instruction = doDisassemble(addressCursor);
         if (!instruction)
             break;
-        disassembled[addressCursor] = instruction;
+        disassembledInstructions[addressCursor] = instruction;
         addressCursor += instruction->size();
     }
 }
 
-std::optional<Disassemble> DebuggerBackend::getDisassembled(uint16_t addr) const {
-    return disassembled[addr];
+std::optional<DisassembledInstruction> DebuggerBackend::getDisassembledInstruction(uint16_t addr) const {
+    return disassembledInstructions[addr];
+}
+
+std::vector<std::pair<uint16_t, DisassembledInstruction>> DebuggerBackend::getDisassembledInstructions() const {
+    std::vector<std::pair<uint16_t, DisassembledInstruction>> actuallyDisassembled;
+    for (uint32_t addr = 0; addr < array_size(disassembledInstructions); addr++) {
+        const auto& d = disassembledInstructions[addr];
+        if (d)
+            actuallyDisassembled.emplace_back(addr, *d);
+    }
+    return actuallyDisassembled;
 }
 
 uint8_t DebuggerBackend::readMemory(uint16_t addr) {
@@ -245,10 +261,10 @@ uint8_t DebuggerBackend::readMemory(uint16_t addr) {
     return value;
 }
 
-std::optional<Disassemble> DebuggerBackend::doDisassemble(uint16_t addr) {
+std::optional<DisassembledInstruction> DebuggerBackend::doDisassemble(uint16_t addr) {
     uint32_t addressCursor = addr;
     uint8_t opcode = readMemory(addressCursor++);
-    Disassemble instruction {opcode};
+    DisassembledInstruction instruction {opcode};
 
     // this works for CB and non CB because all CB instructions have length 2
     uint8_t length = instruction_length(opcode);
