@@ -13,6 +13,7 @@ SOURCES_CXX := \
     $(SOURCE_DIR)/docboy/serial/port.cpp \
     $(SOURCE_DIR)/frontend/libretro/libretro.cpp \
     $(SOURCE_DIR)/utils/io.cpp \
+    $(SOURCE_DIR)/utils/memory.cpp \
     $(SOURCE_DIR)/utils/os.cpp \
     $(SOURCE_DIR)/utils/parcel.cpp \
     $(SOURCE_DIR)/utils/path.cpp \

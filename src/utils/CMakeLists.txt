@@ -15,6 +15,8 @@ target_sources(utils PRIVATE
     log.h
     macros.h
     math.h
+    memory.h
+    memory.cpp
     os.cpp
     os.h
     parcel.cpp
