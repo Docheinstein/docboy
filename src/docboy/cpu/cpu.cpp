@@ -550,24 +550,50 @@ Cpu::Cpu(InterruptsIO& interrupts, Timers& timers, SerialPort& serial, BootIO& b
     },
     ISR { &Cpu::ISR_m1, &Cpu::ISR_m2, &Cpu::ISR_m3, &Cpu::ISR_m4, &Cpu::ISR_m5 } // clang-format on
 {
-
     instruction.microop.selector = instructions[0]; // start with NOP
+}
 
-#ifdef ENABLE_BOOTROM
-    const bool isBootRomEnabled = boot.BOOT == 0;
-#else
-    static constexpr bool isBootRomEnabled = false;
-#endif
-
-    if (!isBootRomEnabled) {
-        // Boot ROM not found: setup registers with values after BOOT process
-        AF = 0x01B0;
-        BC = 0x0013;
-        DE = 0x00D8;
-        HL = 0x014D;
-        PC = 0x0100;
-        SP = 0xFFFE;
+void Cpu::tick() {
+    // Eventually enable IME if it has been requested (by EI instruction) the cycle before
+    if (pendingEnableIME) {
+        pendingEnableIME = false;
+        IME = true;
     }
+
+    if (halted) {
+        // Exit HALT state if there is at least a pending interrupt
+        // (HALT state is exited even if IME is unset)
+        if (hasPendingInterrupts()) {
+            halted = false;
+        }
+    } else {
+        const MicroOperation microOpSelector = *instruction.microop.selector;
+
+        // Increase the micro op selector to the next micro op
+        // (must be increased before execute the micro op, so that fetch can overwrite eventually)
+        // TODO: get rid of counter?
+        ++instruction.microop.counter;
+        ++instruction.microop.selector;
+
+        if (haltBug) {
+            haltBug = false;
+            --PC;
+        }
+
+        // Execute the current micro op
+        (this->*microOpSelector)();
+    }
+
+    // Eventually serve pending interrupts
+    if (IME && hasPendingInterrupts()) {
+        // (this check is needed to ensure the interrupt service routine
+        // is triggered only at the beginning of an instruction)
+        // TODO
+        if (instruction.microop.counter == 0)
+            serveInterrupt();
+    }
+
+    IF_DEBUGGER(++cycles);
 }
 
 void Cpu::saveState(Parcel& parcel) const {
@@ -596,7 +622,7 @@ void Cpu::saveState(Parcel& parcel) const {
     }
 
     parcel.writeUInt8(instruction.microop.counter);
-    DEBUGGER_ONLY(parcel.writeUInt16(instruction.address));
+    IF_DEBUGGER(parcel.writeUInt16(instruction.address));
 
     parcel.writeBool(b);
     parcel.writeUInt8(u);
@@ -607,7 +633,7 @@ void Cpu::saveState(Parcel& parcel) const {
     parcel.writeUInt8(msb);
     parcel.writeUInt16(addr);
 
-    DEBUGGER_ONLY(parcel.writeUInt64(cycles));
+    IF_DEBUGGER(parcel.writeUInt64(cycles));
 }
 
 void Cpu::loadState(Parcel& parcel) {
@@ -635,7 +661,7 @@ void Cpu::loadState(Parcel& parcel) {
         checkNoEntry();
 
     instruction.microop.counter = parcel.readUInt8();
-    DEBUGGER_ONLY(instruction.address = parcel.readUInt16());
+    IF_DEBUGGER(instruction.address = parcel.readUInt16());
 
     b = parcel.readBool();
     u = parcel.readUInt8();
@@ -646,43 +672,7 @@ void Cpu::loadState(Parcel& parcel) {
     msb = parcel.readUInt8();
     addr = parcel.readUInt16();
 
-    DEBUGGER_ONLY(cycles = parcel.readUInt64());
-}
-
-void Cpu::tick() {
-    // Eventually enable IME if it has been requested (by EI instruction) the cycle before
-    if (pendingEnableIME) {
-        pendingEnableIME = false;
-        IME = true;
-    }
-
-    if (halted) {
-        // Exit HALT state if there is at least a pending interrupt
-        // (HALT state is exited even if IME is unset)
-        if (hasPendingInterrupts())
-            halted = false;
-    } else {
-        const MicroOperation microOpSelector = *instruction.microop.selector;
-
-        // Increase the micro op selector to the next micro op
-        // (must be increased before execute the micro op, so that fetch can overwrite eventually)
-        ++instruction.microop.counter;
-        ++instruction.microop.selector;
-
-        // Execute the current micro op
-        (this->*microOpSelector)();
-    }
-
-    // Eventually serve pending interrupts
-    if (IME && hasPendingInterrupts()) {
-        // (this check is needed to ensure the interrupt service routine
-        // is triggered only at the beginning of an instruction)
-        // TODO
-        if (instruction.microop.counter == 0)
-            serveInterrupt();
-    }
-
-    DEBUGGER_ONLY(++cycles);
+    IF_DEBUGGER(cycles = parcel.readUInt64());
 }
 
 void Cpu::serveInterrupt() {
@@ -919,7 +909,8 @@ void Cpu::STOP_m1() {
 }
 
 void Cpu::HALT_m1() {
-    halted = true;
+    halted = !hasPendingInterrupts();
+    haltBug = !IME && hasPendingInterrupts();
     fetch();
 }
 
@@ -2128,13 +2119,13 @@ void Cpu::CB_m1() {
 }
 
 inline void Cpu::fetch() {
-    DEBUGGER_ONLY(instruction.address = PC);
+    IF_DEBUGGER(instruction.address = PC);
     instruction.microop.counter = 0;
     instruction.microop.selector = instructions[bus.read(PC++)];
 }
 
 inline void Cpu::fetchCB() {
-    DEBUGGER_ONLY(instruction.address = PC);
+    IF_DEBUGGER(instruction.address = PC);
     instruction.microop.counter = 1;
     instruction.microop.selector = instructionsCB[bus.read(PC++)];
 }

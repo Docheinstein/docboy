@@ -1,6 +1,7 @@
 #ifndef VIDEO_H
 #define VIDEO_H
 
+#include "docboy/bootrom/macros.h"
 #include "docboy/dma/dma.h"
 #include "docboy/memory/byte.hpp"
 #include "utils/parcel.h"
@@ -50,14 +51,14 @@ public:
         WX = parcel.readUInt8();
     }
 
-    BYTE(LCDC, Specs::Registers::Video::LCDC, 0b10010001);
+    BYTE(LCDC, Specs::Registers::Video::LCDC, IF_BOOTROM_ELSE(0, 0x91));
     BYTE(STAT, Specs::Registers::Video::STAT);
     BYTE(SCY, Specs::Registers::Video::SCY);
     BYTE(SCX, Specs::Registers::Video::SCX);
     BYTE(LY, Specs::Registers::Video::LY);
     BYTE(LYC, Specs::Registers::Video::LYC);
     BYTE(DMA, Specs::Registers::Video::DMA);
-    BYTE(BGP, Specs::Registers::Video::BGP);
+    BYTE(BGP, Specs::Registers::Video::BGP, IF_BOOTROM_ELSE(0, 0xFC));
     BYTE(OBP0, Specs::Registers::Video::OBP0);
     BYTE(OBP1, Specs::Registers::Video::OBP1);
     BYTE(WY, Specs::Registers::Video::WY);

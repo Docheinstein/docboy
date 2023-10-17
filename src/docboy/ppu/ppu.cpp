@@ -66,7 +66,7 @@ void Ppu::tick() {
 
     check(dots < 456);
 
-    DEBUGGER_ONLY(++cycles);
+    IF_DEBUGGER(++cycles);
 }
 
 void Ppu::turnOn() {
@@ -97,8 +97,8 @@ void Ppu::turnOff() {
 
 void Ppu::enterOamScan() {
     checkCode(for (uint32_t i = 0; i < array_size(oamEntries); i++) { check(oamEntries[i].isEmpty()); });
-    ASSERTS_ONLY(oamEntriesCount = 0);
-    DEBUGGER_ONLY(scanlineOamEntries.clear());
+    IF_ASSERTS(oamEntriesCount = 0);
+    IF_DEBUGGER(scanlineOamEntries.clear());
     oamScan.count = 0;
 
     tickSelector = &Ppu::oamScan0;
@@ -150,10 +150,10 @@ void Ppu::oamScan1() {
         // push oam entry
         if (oamEntryX < 168) {
             oamEntries[oamEntryX].emplaceBack(static_cast<uint8_t>(dots / 2),
-                                              oamScan.entry.y ASSERTS_OR_DEBUGGER_ONLY(COMMA oamEntryX));
-            DEBUGGER_ONLY(scanlineOamEntries.emplaceBack(static_cast<uint8_t>(dots / 2),
-                                                         oamScan.entry.y ASSERTS_OR_DEBUGGER_ONLY(COMMA oamEntryX)));
-            ASSERTS_ONLY(++oamEntriesCount);
+                                              oamScan.entry.y IF_ASSERTS_OR_DEBUGGER(COMMA oamEntryX));
+            IF_DEBUGGER(scanlineOamEntries.emplaceBack(static_cast<uint8_t>(dots / 2),
+                                                       oamScan.entry.y IF_ASSERTS_OR_DEBUGGER(COMMA oamEntryX)));
+            IF_ASSERTS(++oamEntriesCount);
         }
 
         // check if there is room for other oam entries in this scanline
@@ -194,14 +194,14 @@ void Ppu::enterPixelTransfer() {
         // the first bg fetch of this scanline is for the window
         // do not discard any pixel due to SCX
         tickSelector = &Ppu::pixelTransferDummy0<false>;
-        ASSERTS_ONLY(firstFetchWasBg = false);
+        IF_ASSERTS(firstFetchWasBg = false);
     } else {
         // the first bg fetch of this scanline is for the bg
         // eventually discard SCX % 8 pixels
         tickSelector = &Ppu::pixelTransferDummy0<true>;
         bgPixelTransfer.SCXmod8 = pow2mod<TILE_WIDTH>(video.SCX);
         bgPixelTransfer.discardedPixels = 0;
-        ASSERTS_ONLY(firstFetchWasBg = true);
+        IF_ASSERTS(firstFetchWasBg = true);
     }
 
     updateStat<Phase::PixelTransfer>();
@@ -849,7 +849,7 @@ void Ppu::saveState(Parcel& parcel) const {
 
     static_assert(std::is_trivially_copyable_v<typeof(oamEntries)>);
     parcel.writeBytes(oamEntries, sizeof(oamEntries));
-    ASSERTS_ONLY(parcel.writeUInt8(oamEntriesCount));
+    IF_ASSERTS(parcel.writeUInt8(oamEntriesCount));
 
     parcel.writeBool(isFetchingSprite);
 
@@ -871,7 +871,7 @@ void Ppu::saveState(Parcel& parcel) const {
 
     parcel.writeUInt8(of.entry.number);
     parcel.writeUInt8(of.entry.y);
-    ASSERTS_ONLY(parcel.writeUInt8(of.entry.x));
+    IF_ASSERTS(parcel.writeUInt8(of.entry.x));
     parcel.writeUInt8(of.tileNumber);
     parcel.writeUInt8(of.attributes);
 
@@ -879,8 +879,8 @@ void Ppu::saveState(Parcel& parcel) const {
     parcel.writeUInt8(psf.tileDataLow);
     parcel.writeUInt8(psf.tileDataHigh);
 
-    DEBUGGER_ONLY(parcel.writeUInt64(cycles));
-    ASSERTS_ONLY(parcel.writeBool(firstFetchWasBg));
+    IF_DEBUGGER(parcel.writeUInt64(cycles));
+    IF_ASSERTS(parcel.writeBool(firstFetchWasBg));
 }
 
 void Ppu::loadState(Parcel& parcel) {
@@ -935,7 +935,7 @@ void Ppu::loadState(Parcel& parcel) {
 
     static_assert(std::is_trivially_copyable_v<typeof(oamEntries)>);
     parcel.readBytes(oamEntries, sizeof(oamEntries));
-    ASSERTS_ONLY(oamEntriesCount = parcel.readUInt8());
+    IF_ASSERTS(oamEntriesCount = parcel.readUInt8());
 
     isFetchingSprite = parcel.readBool();
 
@@ -957,7 +957,7 @@ void Ppu::loadState(Parcel& parcel) {
 
     of.entry.number = parcel.readUInt8();
     of.entry.y = parcel.readUInt8();
-    ASSERTS_ONLY(of.entry.x = parcel.readUInt8());
+    IF_ASSERTS(of.entry.x = parcel.readUInt8());
     of.tileNumber = parcel.readUInt8();
     of.attributes = parcel.readUInt8();
 
@@ -965,6 +965,6 @@ void Ppu::loadState(Parcel& parcel) {
     psf.tileDataLow = parcel.readUInt8();
     psf.tileDataHigh = parcel.readUInt8();
 
-    DEBUGGER_ONLY(cycles = parcel.readUInt64());
-    ASSERTS_ONLY(firstFetchWasBg = parcel.readBool());
+    IF_DEBUGGER(cycles = parcel.readUInt64());
+    IF_ASSERTS(firstFetchWasBg = parcel.readBool());
 }

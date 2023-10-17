@@ -54,7 +54,7 @@ private:
     struct OamScanEntry {
         uint8_t number; // [0, 40)
         uint8_t y;
-        ASSERTS_OR_DEBUGGER_ONLY(uint8_t x);
+        IF_ASSERTS_OR_DEBUGGER(uint8_t x);
     };
 
     void turnOn();
@@ -133,7 +133,7 @@ private:
     Queue<ObjPixel, 8> objFifo {};
 
     Vector<OamScanEntry, 10> oamEntries[168] {};
-    ASSERTS_ONLY(uint8_t oamEntriesCount {});
+    IF_ASSERTS(uint8_t oamEntriesCount {});
 #ifdef ENABLE_DEBUGGER
     Vector<OamScanEntry, 10> scanlineOamEntries {}; // not cleared after oam scan
 #endif
@@ -188,9 +188,9 @@ private:
         uint8_t tileDataHigh {};
     } psf;
 
-    DEBUGGER_ONLY(uint64_t cycles {});
+    IF_DEBUGGER(uint64_t cycles {});
 
-    ASSERTS_ONLY(bool firstFetchWasBg {});
+    IF_ASSERTS(bool firstFetchWasBg {});
 };
 
 #endif // PPU_H

@@ -34,6 +34,27 @@ byte& byte::operator++() {
     return *this;
 }
 
+byte& byte::operator+=(uint64_t value) {
+    uint8_t oldValue = data;
+    data += value;
+    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, data);
+    return *this;
+}
+
+byte& byte::operator--() {
+    uint8_t oldValue = data;
+    --data;
+    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, data);
+    return *this;
+}
+
+byte& byte::operator-=(uint64_t value) {
+    uint8_t oldValue = data;
+    data -= value;
+    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, data);
+    return *this;
+}
+
 byte& byte::operator|=(uint64_t value) {
     uint8_t oldValue = data;
     data |= value;

@@ -10,14 +10,14 @@ uint8_t JoypadIO::readP1() const {
     const uint8_t out =
         P1 | (test_bit<Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS>(P1) ? keep_bits<4>(keys)
                                                                               : keep_bits<4>(keys >> 4));
-    DEBUGGER_ONLY(DebuggerMemorySniffer::notifyMemoryRead(Specs::Registers::Joypad::P1, out));
+    IF_DEBUGGER(DebuggerMemorySniffer::notifyMemoryRead(Specs::Registers::Joypad::P1, out));
     return out;
 }
 
 void JoypadIO::writeP1(uint8_t value) {
-    DEBUGGER_ONLY(uint8_t oldValue = P1);
+    IF_DEBUGGER(uint8_t oldValue = P1);
     P1 = 0b11000000 | (value & 0b00110000);
-    DEBUGGER_ONLY(DebuggerMemorySniffer::notifyMemoryWrite(Specs::Registers::Joypad::P1, oldValue, P1));
+    IF_DEBUGGER(DebuggerMemorySniffer::notifyMemoryWrite(Specs::Registers::Joypad::P1, oldValue, P1));
 }
 
 Joypad::Joypad(InterruptsIO& interrupts) :

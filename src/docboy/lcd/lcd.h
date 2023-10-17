@@ -28,7 +28,7 @@ public:
 
     [[nodiscard]] const PixelRgb565* getPixels();
 
-    DEBUGGER_ONLY(void clearPixels());
+    IF_DEBUGGER(void clearPixels());
 
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
@@ -37,8 +37,8 @@ private:
     PixelRgb565 pixels[PIXEL_COUNT] {};
     uint16_t cursor {};
 
-    DEBUGGER_ONLY(uint8_t x {});
-    DEBUGGER_ONLY(uint8_t y {});
+    IF_DEBUGGER(uint8_t x {});
+    IF_DEBUGGER(uint8_t y {});
 };
 
 #include "lcd.tpp"

@@ -22,6 +22,9 @@ public:
     operator uint8_t() const;
 
     byte& operator++();
+    byte& operator+=(uint64_t value);
+    byte& operator--();
+    byte& operator-=(uint64_t value);
     byte& operator|=(uint64_t value);
     byte& operator&=(uint64_t value);
     uint8_t operator|(uint64_t value) const;

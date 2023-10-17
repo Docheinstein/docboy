@@ -86,7 +86,6 @@ positional arguments:
   rom                       ROM
 
 optional arguments:
-  -b  --boot-rom BOOT-ROM   Boot ROM
   -s, --serial              Display serial console
   -z, --scaling SCALING     Scaling factor
   -i, --cartridge-info      Dump cartridge info and quit
@@ -148,6 +147,8 @@ ad <num>                          : Automatically disassemble next <n> instructi
 d [<n>]                           : Disassemble next <n> instructions (default = 10)
 d <start>,<end>                   : Disassemble instructions from address <start> to <end>
 x[/<length><format>] <addr>       : Display memory content at <addr> (<format>: x, h[<cols>], b, d, i)
+/b <bytes>                        : Search for <bytes>
+/i <bytes>                        : Search for instructions matching <bytes>
 display[/<length><format>] <addr> : Automatically display memory content content at <addr> (<format>: x, h[<cols>], b, d, i)
 undisplay                         : Undisplay expressions set with display
 show <section>                    : Show a section in the debugger layout
@@ -161,7 +162,8 @@ f [<count>]                       : Continue running for <count> frames (default
 fb [<count>]                      : Step back by <count> frames (default = 1, max = 600)
 l [<count>]                       : Continue running for <count> lines (default = 1)
 c                                 : Continue
-trace [<level>]                   : Set the trace level or toggle it (output on standard error)
+trace [<level>]                   : Set the trace level or toggle it (output on stderr)
+dump                              : Dump the disassemble (output on stderr)
 h                                 : Display help
 q                                 : Quit
 ```
@@ -189,20 +191,22 @@ Here's the debugger!
 
 **CPU**
 
-| Test Suite   | Rom           | Status             |
-|--------------|---------------|--------------------|
-| blargg       | cpu_instrs    | :white_check_mark: |
+| Collection | Test       | Status             |
+|------------|------------|--------------------|
+| blargg     | cpu_instrs | :white_check_mark: |
+| blargg     | instr_timing | :white_check_mark: |
 
 
 **PPU**
 
-| Test Suite | Rom       | Status             |
+| Collection | Test      | Status             |
 |------------|-----------|--------------------|
 | dmg-agic2  | dmg-acid2 | :white_check_mark: |
 
 **MBC**
 
-| Test Suite | Rom      | Status             |
+| Collection | Test     | Status             |
 |------------|----------|--------------------|
 | mooneye    | mbc/mbc1 | :white_check_mark: |
 | mooneye    | mbc/mbc5 | :white_check_mark: |
+| mooneye    | timers   | WIP                |

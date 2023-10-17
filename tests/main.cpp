@@ -8,6 +8,7 @@
 #include "utils/fillqueue.hpp"
 #include "utils/formatters.hpp"
 #include "utils/hexdump.hpp"
+#include "utils/memory.h"
 #include "utils/parcel.h"
 #include "utils/path.h"
 #include "utils/queue.hpp"
@@ -40,6 +41,8 @@ static constexpr uint64_t DURATION_LONG = 100'000'000;
 static constexpr uint64_t DURATION_MEDIUM = 30'000'000;
 static constexpr uint64_t DURATION_SHORT = 5'000'000;
 static constexpr uint64_t DURATION_VERY_SHORT = 1'500'000;
+
+static constexpr uint64_t DEFAULT_DURATION = DURATION_MEDIUM;
 
 static void load_png(const std::string& filename, void* buffer, int format = -1, uint32_t* size = nullptr) {
     SDL_Surface* surface {};
@@ -406,6 +409,90 @@ TEST_CASE("casts", "[casts]") {
     }
 }
 
+TEST_CASE("memory", "[memory]") {
+    SECTION("mem_find_first") {
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 7, 3, 6, 9, 4, 2, 3};
+            uint8_t needle[] {1};
+            REQUIRE(mem_find_first(haystack, array_size(haystack), needle, array_size(needle)) == 0);
+        }
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 7, 3, 6, 9, 4, 2, 3};
+            uint8_t needle[] {2, 7, 3};
+            REQUIRE(mem_find_first(haystack, array_size(haystack), needle, array_size(needle)) == 3);
+        }
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 2, 2, 7, 3, 4, 2, 3};
+            uint8_t needle[] {2, 7, 3};
+            REQUIRE(mem_find_first(haystack, array_size(haystack), needle, array_size(needle)) == 5);
+        }
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 2, 2, 7, 3, 4, 2, 3};
+            uint8_t needle[] {2, 7, 4};
+            REQUIRE(mem_find_first(haystack, array_size(haystack), needle, array_size(needle)) == std::nullopt);
+        }
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 2, 2, 7, 3, 4, 2, 3};
+            uint8_t needle[] {3, 4, 2, 3, 5};
+            REQUIRE(mem_find_first(haystack, array_size(haystack), needle, array_size(needle)) == std::nullopt);
+        }
+    }
+    SECTION("mem_find_all") {
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 1, 3, 6, 1, 4, 2, 3};
+            uint8_t needle[] {1};
+            REQUIRE(mem_find_all(haystack, array_size(haystack), needle, array_size(needle)) ==
+                    std::vector<uint32_t> {0, 4, 7});
+        }
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 1, 3, 6, 1, 4, 2, 3};
+            uint8_t needle[] {0};
+            REQUIRE(mem_find_all(haystack, array_size(haystack), needle, array_size(needle)).empty());
+        }
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 1, 3, 6, 1, 4, 2, 3};
+            uint8_t needle[] {1, 4};
+            REQUIRE(mem_find_all(haystack, array_size(haystack), needle, array_size(needle)) ==
+                    std::vector<uint32_t> {0, 7});
+        }
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 1, 3, 6, 1, 4, 2, 1};
+            uint8_t needle[] {1, 4};
+            REQUIRE(mem_find_all(haystack, array_size(haystack), needle, array_size(needle)) ==
+                    std::vector<uint32_t> {0, 7});
+        }
+        {
+            uint8_t haystack[] {1, 4, 6, 2, 1, 3, 6, 1, 4, 2, 1};
+            uint8_t needle[] {4, 6, 2};
+            REQUIRE(mem_find_all(haystack, array_size(haystack), needle, array_size(needle)) ==
+                    std::vector<uint32_t> {1});
+        }
+        {
+            uint8_t haystack[] {1, 4, 4, 6, 2, 1, 6, 1, 4, 2, 1};
+            uint8_t needle[] {4, 6, 2};
+            REQUIRE(mem_find_all(haystack, array_size(haystack), needle, array_size(needle)) ==
+                    std::vector<uint32_t> {2});
+        }
+        {
+            uint8_t haystack[] {1, 2, 1, 2, 2, 1, 2, 1, 4, 2, 1};
+            uint8_t needle[] {2, 1, 2};
+            REQUIRE(mem_find_all(haystack, array_size(haystack), needle, array_size(needle)) ==
+                    std::vector<uint32_t> {1, 4});
+        }
+        {
+            uint8_t haystack[] {1, 2, 1, 2, 2, 1, 2, 1, 4, 2, 1};
+            uint8_t needle[] {4, 2, 1, 8};
+            REQUIRE(mem_find_all(haystack, array_size(haystack), needle, array_size(needle)).empty());
+        }
+        {
+            uint8_t haystack[] {1, 1, 1, 1};
+            uint8_t needle[] {1, 1, 1};
+            REQUIRE(mem_find_all(haystack, array_size(haystack), needle, array_size(needle)) ==
+                    std::vector<uint32_t> {0, 1});
+        }
+    }
+}
+
 TEST_CASE("adt", "[adt]") {
     SECTION("Vector") {
         Vector<uint8_t, 8> v;
@@ -601,89 +688,81 @@ TEST_CASE("state", "[state]") {
 
 #ifdef SDL
 
-#define RUN_AND_CHECK_FRAMEBUFFER_EQUALS()                                                                             \
-    Runner()                                                                                                           \
-        .rom(rom)                                                                                                      \
-        .expectFramebuffer(expectedResult)                                                                             \
-        .pixelsColor(palette)                                                                                          \
-        .maxTicks(maxTicks)                                                                                            \
-        .framebufferCheckTicksInterval(DURATION_VERY_SHORT * 2 / 3)                                                    \
-        .run()                                                                                                         \
-        .areFramebufferEquals
+static bool run_and_check_framebuffer_equals(const std::string& rom, const std::string& result,
+                                             const Palette& palette) {
+    return Runner()
+        .rom(rom)
+        .expectFramebuffer(result)
+        .pixelsColor(palette)
+        .maxTicks(DEFAULT_DURATION)
+        .framebufferCheckTicksInterval(DURATION_VERY_SHORT)
+        .run()
+        .areFramebufferEquals;
+}
 
 TEST_CASE("emulation", "[emulation]") {
     SECTION("mbc") {
         SECTION("mbc1") {
-            const auto [rom, expectedResult, maxTicks, palette] =
-                TABLE(std::string, std::string, uint64_t, Palette,
-                      ({{"tests/roms/mooneye/mbc/mbc1/bits_bank1.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/bits_bank2.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/bits_mode.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/bits_ramg.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/ram_64kb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/ram_256kb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/rom_512kb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/rom_1Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/rom_2Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/rom_4Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/rom_8Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc1/rom_16Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE}}));
-            REQUIRE(RUN_AND_CHECK_FRAMEBUFFER_EQUALS());
+            const auto [rom, expectedResult, palette] =
+                TABLE(std::string, std::string, Palette,
+                      ({{"tests/roms/mooneye/mbc/mbc1/bits_bank1.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/bits_bank2.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/bits_mode.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/bits_ramg.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/ram_64kb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/ram_256kb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_512kb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_1Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_2Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_4Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_8Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc1/rom_16Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE}}));
+            REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
         }
 
         SECTION("mbc5") {
-            const auto [rom, expectedResult, maxTicks, palette] =
-                TABLE(std::string, std::string, uint64_t, Palette,
-                      ({{"tests/roms/mooneye/mbc/mbc5/rom_512kb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc5/rom_1Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc5/rom_2Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc5/rom_4Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc5/rom_8Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc5/rom_16Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc5/rom_32Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE},
-                        {"tests/roms/mooneye/mbc/mbc5/rom_64Mb.gb", "tests/results/mooneye/ok.png", DURATION_MEDIUM,
-                         DEFAULT_PALETTE}}));
-            REQUIRE(RUN_AND_CHECK_FRAMEBUFFER_EQUALS());
+            const auto [rom, expectedResult, palette] =
+                TABLE(std::string, std::string, Palette,
+                      ({{"tests/roms/mooneye/mbc/mbc5/rom_512kb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_1Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_2Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_4Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_8Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_16Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_32Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                        {"tests/roms/mooneye/mbc/mbc5/rom_64Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE}}));
+            REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
         }
     }
 
     SECTION("cpu") {
-        const auto [rom, expectedResult, maxTicks, palette] =
-            TABLE(std::string, std::string, uint64_t, Palette,
-                  ({{"tests/roms/blargg/cpu_instrs.gb", "tests/results/blargg/cpu_instrs.png", DURATION_VERY_LONG,
-                     DEFAULT_PALETTE}}));
-        REQUIRE(RUN_AND_CHECK_FRAMEBUFFER_EQUALS());
+        const auto [rom, expectedResult, palette] =
+            TABLE(std::string, std::string, Palette,
+                  ({
+                      {"tests/roms/blargg/cpu_instrs.gb", "tests/results/blargg/cpu_instrs.png", DEFAULT_PALETTE},
+                      {"tests/roms/blargg/instr_timing.gb", "tests/results/blargg/instr_timing.png", DEFAULT_PALETTE},
+                  }));
+        REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
     }
 
     SECTION("ppu") {
         SECTION("dmg-acid2") {
-            const auto [rom, expectedResult, maxTicks, palette] =
-                TABLE(std::string, std::string, uint64_t, Palette,
+            const auto [rom, expectedResult, palette] =
+                TABLE(std::string, std::string, Palette,
                       ({
-                          {"tests/roms/dmg-acid2/dmg-acid2.gb", "tests/results/dmg-acid2/dmg-acid2.png",
-                           DURATION_VERY_SHORT, GREY_PALETTE},
+                          {"tests/roms/dmg-acid2/dmg-acid2.gb", "tests/results/dmg-acid2/dmg-acid2.png", GREY_PALETTE},
                       }));
-            REQUIRE(RUN_AND_CHECK_FRAMEBUFFER_EQUALS());
+            REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
         }
+    }
+
+    SECTION("timers") {
+        const auto [rom, expectedResult, palette] =
+            TABLE(std::string, std::string, Palette,
+                  ({
+                      {"tests/roms/mooneye/timers/div_write.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
+                  }));
+        REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
     }
 
 #ifdef MEALYBUG
@@ -768,8 +847,6 @@ TEST_CASE("emulation", "[emulation]") {
     }
 #endif
 }
-
-#undef RUN_AND_CHECK_FRAMEBUFFER_EQUALS
 
 #endif
 

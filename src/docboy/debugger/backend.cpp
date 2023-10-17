@@ -452,7 +452,9 @@ void DebuggerBackend::handleCommand<FrameBackCommand, FrameBackCommandState>(con
     for (uint32_t i = 0; i < cmd.count - 1 && history.size() > 1; i++) {
         history.pop_back();
     }
-    check(!history.empty());
+
+    if (history.empty())
+        return;
 
     // Load the state
     core.loadState(history.back().data());

@@ -41,9 +41,9 @@ public:
     Hram hram {};
 
     Dma dma {bus, oam};
-    BOOTROM_ONLY(std::unique_ptr<BootRom> bootRom {});
+    IF_BOOTROM(std::unique_ptr<BootRom> bootRom {});
     CartridgeSlot cartridgeSlot {};
-    BootIO boot {BOOTROM_ONLY(static_cast<bool>(bootRom))};
+    BootIO boot {};
     Joypad joypad {interrupts};
     SerialPort serialPort {interrupts};
     Timers timers {interrupts};
@@ -51,7 +51,7 @@ public:
     SoundIO sound {};
     VideoIO video {dma};
     NullIO nullIO {};
-    Bus bus {BOOTROM_ONLY(*bootRom COMMA) cartridgeSlot,
+    Bus bus {IF_BOOTROM(*bootRom COMMA) cartridgeSlot,
              vram,
              wram1,
              wram2,

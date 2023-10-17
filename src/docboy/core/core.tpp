@@ -11,14 +11,7 @@
 
 
 static constexpr uint8_t CPU_PERIOD = Specs::Frequencies::CLOCK / Specs::Frequencies::CPU;
-static constexpr uint16_t DIV_PERIOD = Specs::Frequencies::CLOCK / Specs::Frequencies::DIV;
 static constexpr uint16_t SERIAL_PERIOD = Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
-static constexpr uint16_t TIMA_PERIODS[] = {
-    Specs::Frequencies::CLOCK / Specs::Frequencies::TAC[0],
-    Specs::Frequencies::CLOCK / Specs::Frequencies::TAC[1],
-    Specs::Frequencies::CLOCK / Specs::Frequencies::TAC[2],
-    Specs::Frequencies::CLOCK / Specs::Frequencies::TAC[3],
-};
 
 inline
 void Core::tick() {
@@ -27,14 +20,7 @@ void Core::tick() {
 
     if (ticks % CPU_PERIOD == 0) {
         // DIV
-        if (ticks % DIV_PERIOD == 0)
-            gb.timers.tickDIV();
-
-        // TIMA
-        if (test_bit<Specs::Bits::Timers::TAC::ENABLE>(gb.timers.TAC)) {
-            if (ticks % TIMA_PERIODS[keep_bits<2>(gb.timers.TAC)] == 0)
-                gb.timers.tickTIMA();
-        }
+        gb.timers.tick();
 
         // CPU
         gb.cpu.tick();

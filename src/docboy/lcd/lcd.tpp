@@ -4,8 +4,8 @@
 
 inline void Lcd::reset() {
     cursor = 0;
-    DEBUGGER_ONLY(x = 0);
-    DEBUGGER_ONLY(y = 0);
+    IF_DEBUGGER(x = 0);
+    IF_DEBUGGER(y = 0);
 }
 
 inline void Lcd::pushPixel(Lcd::Pixel pixel) {
@@ -13,8 +13,8 @@ inline void Lcd::pushPixel(Lcd::Pixel pixel) {
     pixels[cursor] = RGB565_PALETTE[static_cast<uint8_t>(pixel)];
     if (++cursor == PIXEL_COUNT)
         cursor = 0;
-    DEBUGGER_ONLY(x = (x + 1) % Specs::Display::WIDTH);
-    DEBUGGER_ONLY(y = (y + (x == 0)) % Specs::Display::HEIGHT);
+    IF_DEBUGGER(x = (x + 1) % Specs::Display::WIDTH);
+    IF_DEBUGGER(y = (y + (x == 0)) % Specs::Display::HEIGHT);
 }
 
 inline const uint16_t *Lcd::getPixels() {

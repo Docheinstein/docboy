@@ -60,30 +60,22 @@ int main(int argc, char* argv[]) {
         bool serial {};
         float scaling {};
         bool dumpCartridgeInfo {};
-        DEBUGGER_ONLY(bool debugger {});
+        IF_DEBUGGER(bool debugger {});
     } args;
 
     argumentum::argument_parser parser {};
     auto params = parser.params();
+    IF_BOOTROM(params.add_parameter(args.bootRom, "boot-rom").help("Boot ROM"));
     params.add_parameter(args.rom, "rom").help("ROM");
-    BOOTROM_ONLY(params.add_parameter(args.bootRom, "--boot-rom", "-b").nargs(1).help("Boot ROM"));
     params.add_parameter(args.serial, "--serial", "-s").help("Display serial console");
     params.add_parameter(args.scaling, "--scaling", "-z").nargs(1).default_value(1).help("Scaling factor");
     params.add_parameter(args.dumpCartridgeInfo, "--cartridge-info", "-i").help("Dump cartridge info and quit");
-    DEBUGGER_ONLY(params.add_parameter(args.debugger, "--debugger", "-d").help("Attach debugger"));
+    IF_DEBUGGER(params.add_parameter(args.debugger, "--debugger", "-d").help("Attach debugger"));
 
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-#ifdef ENABLE_BOOTROM
-    std::unique_ptr<BootRom> bootRom;
-
-    if (!args.bootRom.empty()) {
-        bootRom = BootRomFactory().create(argv[2]);
-    }
-#endif
-
-    GameBoy gb {BOOTROM_ONLY(std::move(bootRom))};
+    GameBoy gb {IF_BOOTROM(BootRomFactory().create(args.bootRom))};
     Core core {gb};
 
     path romPath {args.rom};
@@ -293,7 +285,7 @@ int main(int argc, char* argv[]) {
 
     std::chrono::high_resolution_clock::time_point nextFrameTime = std::chrono::high_resolution_clock::now();
 
-    while (!quit DEBUGGER_ONLY(&&!core.isDebuggerAskingToShutdown())) {
+    while (!quit IF_DEBUGGER(&&!core.isDebuggerAskingToShutdown())) {
         // wait until next frame
         std::chrono::high_resolution_clock::time_point now;
         do {

@@ -1,6 +1,7 @@
 #ifndef CPU_H
 #define CPU_H
 
+#include "docboy/bootrom/macros.h"
 #include "docboy/debugger/macros.h"
 #include <cstdint>
 
@@ -575,7 +576,7 @@ private:
     template <uint8_t n, Register16 r>
     void SET_arr_m3();
 
-    DEBUGGER_ONLY(bool isInISR() const);
+    IF_DEBUGGER(bool isInISR() const);
 
     InterruptsIO& interrupts;
     Timers& timers;
@@ -587,17 +588,18 @@ private:
     MicroOperation instructionsCB[256][4];
     MicroOperation ISR[5];
 
-    uint16_t AF {};
-    uint16_t BC {};
-    uint16_t DE {};
-    uint16_t HL {};
-    uint16_t PC {};
-    uint16_t SP {};
+    uint16_t AF {IF_NOT_BOOTROM(0x01B0)};
+    uint16_t BC {IF_NOT_BOOTROM(0x0013)};
+    uint16_t DE {IF_NOT_BOOTROM(0x00D8)};
+    uint16_t HL {IF_NOT_BOOTROM(0x014D)};
+    uint16_t PC {IF_NOT_BOOTROM(0x0100)};
+    uint16_t SP {IF_NOT_BOOTROM(0xFFFE)};
 
     bool IME {};
     bool pendingEnableIME {};
 
     bool halted {};
+    bool haltBug {};
 
     struct {
         struct {
@@ -605,7 +607,7 @@ private:
             uint8_t counter {};
         } microop;
 
-        DEBUGGER_ONLY(uint16_t address {});
+        IF_DEBUGGER(uint16_t address {});
     } instruction {};
 
     // scratchpad
@@ -620,7 +622,7 @@ private:
         uint16_t addr {};
     };
 
-    DEBUGGER_ONLY(uint64_t cycles {});
+    IF_DEBUGGER(uint64_t cycles {});
 };
 
 #endif // CPU_H

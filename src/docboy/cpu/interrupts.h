@@ -1,6 +1,7 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
+#include "docboy/bootrom/macros.h"
 #include "docboy/memory/byte.hpp"
 #include "docboy/shared/specs.h"
 #include "utils/bits.hpp"
@@ -41,7 +42,7 @@ public:
         IE = parcel.readUInt8();
     }
 
-    BYTE(IF, Specs::Registers::Interrupts::IF);
+    BYTE(IF, Specs::Registers::Interrupts::IF, IF_BOOTROM_ELSE(0, 0x01));
     BYTE(IE, Specs::Registers::Interrupts::IE);
 };
 

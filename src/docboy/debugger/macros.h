@@ -10,16 +10,16 @@ class DebuggerBackend;
 #define DEBUGGABLE_CLASS()                                                                                             \
     friend class DebuggerBackend;                                                                                      \
     friend class DebuggerFrontend;
-#define DEBUGGER_ONLY(statement) statement
-#define ASSERTS_OR_DEBUGGER_ONLY(statement) statement
+#define IF_DEBUGGER(statement) statement
+#define IF_ASSERTS_OR_DEBUGGER(statement) statement
 #else
 #define DEBUGGABLE_CLASS()
-#define DEBUGGER_ONLY(statement)
+#define IF_DEBUGGER(statement)
 
 #ifdef ENABLE_ASSERTS
-#define ASSERTS_OR_DEBUGGER_ONLY(statement) statement
+#define IF_ASSERTS_OR_DEBUGGER(statement) statement
 #else
-#define ASSERTS_OR_DEBUGGER_ONLY(statement)
+#define IF_ASSERTS_OR_DEBUGGER(statement)
 #endif // ENABLE_ASSERTS
 
 #endif // ENABLE_DEBUGGER

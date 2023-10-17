@@ -29,7 +29,7 @@ class NullIO;
 
 class Bus {
 public:
-    Bus(BOOTROM_ONLY(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& vram, Wram1& wram1, Wram2& wram2,
+    Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& vram, Wram1& wram1, Wram2& wram2,
         Oam& oam, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts,
         SoundIO& sound, VideoIO& video, BootIO& boot, NullIO& null);
 
@@ -73,9 +73,12 @@ private:
     [[nodiscard]] uint8_t readP1(uint16_t address) const;
     void writeP1(uint16_t address, uint8_t value);
 
+    [[nodiscard]] uint8_t readDIV(uint16_t address) const;
+    void writeDIV(uint16_t address, uint8_t value);
+
     void writeDMA(uint16_t address, uint8_t value);
 
-    BOOTROM_ONLY(BootRom& bootRom);
+    IF_BOOTROM(BootRom& bootRom);
     CartridgeSlot& cartridgeSlot;
     Vram& vram;
     Wram1& wram1;

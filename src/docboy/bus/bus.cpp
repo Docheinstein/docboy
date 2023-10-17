@@ -37,10 +37,10 @@ Bus::MemoryAccess::MemoryAccess(Bus::NonTrivialMemoryRead r, Bus::NonTrivialMemo
     write.nonTrivial = w;
 }
 
-Bus::Bus(BOOTROM_ONLY(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& vram, Wram1& wram1, Wram2& wram2,
+Bus::Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& vram, Wram1& wram1, Wram2& wram2,
          Oam& oam, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts,
          SoundIO& sound, VideoIO& video, BootIO& boot, NullIO& nullIO) :
-    BOOTROM_ONLY(bootRom(bootRom) COMMA) cartridgeSlot(cartridgeSlot),
+    IF_BOOTROM(bootRom(bootRom) COMMA) cartridgeSlot(cartridgeSlot),
     vram(vram),
     wram1(wram1),
     wram2(wram2),
@@ -100,7 +100,7 @@ Bus::Bus(BOOTROM_ONLY(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram
     /* FF02 */ memoryAccessors[Specs::Registers::Serial::SC] = &serial.SC;
     /* FF03 */ memoryAccessors[0xFF03] = &nullIO.FF03;
     // TODO: timers write are non trivial
-    /* FF04 */ memoryAccessors[Specs::Registers::Timers::DIV] = &timers.DIV;
+    /* FF04 */ memoryAccessors[Specs::Registers::Timers::DIV] = {&Bus::readDIV, &Bus::writeDIV};
     /* FF05 */ memoryAccessors[Specs::Registers::Timers::TIMA] = &timers.TIMA;
     /* FF06 */ memoryAccessors[Specs::Registers::Timers::TMA] = &timers.TMA;
     /* FF07 */ memoryAccessors[Specs::Registers::Timers::TAC] = &timers.TAC;
@@ -294,4 +294,12 @@ void Bus::writeP1(uint16_t address, uint8_t value) {
 
 void Bus::writeDMA(uint16_t address, uint8_t value) {
     video.writeDMA(value);
+}
+
+uint8_t Bus::readDIV(uint16_t address) const {
+    return timers.readDIV();
+}
+
+void Bus::writeDIV(uint16_t address, uint8_t value) {
+    timers.writeDIV(value);
 }

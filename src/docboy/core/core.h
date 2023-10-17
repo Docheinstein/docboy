@@ -39,15 +39,15 @@ public:
     void loadState(const void* data) const;
     [[nodiscard]] uint32_t getStateSaveSize() const;
 
-    DEBUGGER_ONLY(void attachDebugger(DebuggerBackend& debugger));
-    DEBUGGER_ONLY(void detachDebugger());
-    DEBUGGER_ONLY(bool isDebuggerAskingToShutdown() const);
+    IF_DEBUGGER(void attachDebugger(DebuggerBackend& debugger));
+    IF_DEBUGGER(void detachDebugger());
+    IF_DEBUGGER(bool isDebuggerAskingToShutdown() const);
 
     GameBoy& gb;
 
     uint64_t ticks {};
 
-    DEBUGGER_ONLY(DebuggerBackend* debugger {});
+    IF_DEBUGGER(DebuggerBackend* debugger {});
 
 private:
     Parcel parcelizeState() const;

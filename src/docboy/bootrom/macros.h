@@ -2,9 +2,13 @@
 #define BOOTROMMACROS_H
 
 #ifdef ENABLE_BOOTROM
-#define BOOTROM_ONLY(statement) statement
+#define IF_BOOTROM(statement) statement
+#define IF_NOT_BOOTROM(statement)
+#define IF_BOOTROM_ELSE(t, f) t
 #else
-#define BOOTROM_ONLY(statement)
+#define IF_BOOTROM(statement)
+#define IF_NOT_BOOTROM(statement) statement
+#define IF_BOOTROM_ELSE(t, f) f
 #endif
 
 #endif // BOOTROMMACROS_H
