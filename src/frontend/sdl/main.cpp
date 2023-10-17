@@ -373,5 +373,11 @@ int main(int argc, char* argv[]) {
     // write ram state
     writeSave(savePath);
 
+#ifdef ENABLE_SERIAL
+    if (serialConsole) {
+        serialConsole->flush();
+    }
+#endif
+
     return 0;
 }

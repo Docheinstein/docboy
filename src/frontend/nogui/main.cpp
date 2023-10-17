@@ -116,5 +116,11 @@ int main(int argc, char* argv[]) {
         std::cout << "SpeedUp: " << 1000.0 * (double)secondsToRun / (double)elapsedMillis << std::endl;
     }
 
+#ifdef ENABLE_SERIAL
+    if (serialConsole) {
+        serialConsole->flush();
+    }
+#endif
+
     return 0;
 }
