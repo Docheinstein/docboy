@@ -18,10 +18,10 @@ void Core::tick() {
     TICK_DEBUGGER(ticks);
     RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
 
-    if (ticks % CPU_PERIOD == 0) {
-        // DIV
-        gb.timers.tick();
+    // Timers
+    gb.timers.tick();
 
+    if (ticks % CPU_PERIOD == 0) {
         // CPU
         gb.cpu.tick();
 

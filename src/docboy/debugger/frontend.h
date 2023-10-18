@@ -28,6 +28,7 @@ public:
             bool flags {true};
             bool registers {true};
             bool interrupts {true};
+            bool timers {true};
             struct {
                 bool joypad {false};
                 bool serial {false};
@@ -83,6 +84,8 @@ private:
     static std::string boolColored(bool value);
     static std::string flag(const std::string& name, bool value);
     static std::string reg(const std::string& name, uint16_t value);
+    static std::string timer(const std::string& name, uint16_t value, int width = 8);
+    static std::string timer(const std::string& name, uint8_t value, int width = 8, int valueWidth = 17);
     static std::string interrupt(const std::string& name, bool IME, bool IE, bool IF);
     static std::string io(uint16_t addrress, uint8_t value, int width = 6);
     static std::string watchpoint(const Watchpoint& breakpoint);

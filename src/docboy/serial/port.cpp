@@ -22,7 +22,7 @@ void SerialPort::tick() {
 }
 
 void SerialPort::attach(SerialLink::Plug& plug) {
-    link = &plug.attach(this);
+    link = &plug.attach(*this);
 }
 
 void SerialPort::detach() {

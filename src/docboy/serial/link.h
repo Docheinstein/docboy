@@ -11,7 +11,7 @@ public:
     struct Plug {
         explicit Plug(SerialLink& link);
 
-        SerialLink& attach(ISerialEndpoint* endpoint);
+        SerialLink& attach(ISerialEndpoint& endpoint);
         void detach();
 
         SerialLink& link;

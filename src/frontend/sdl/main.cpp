@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
     if (args.serial) {
         serialConsole = std::make_unique<SerialConsole>(std::cerr, 16);
         serialLink = std::make_unique<SerialLink>();
-        serialLink->plug1.attach(&*serialConsole);
+        serialLink->plug1.attach(*serialConsole);
         core.attachSerialLink(serialLink->plug2);
     }
 #endif

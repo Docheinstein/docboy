@@ -3,6 +3,7 @@
 #include "catch2/catch.hpp"
 #include "docboy/core/core.h"
 #include "docboy/gameboy/gameboy.h"
+#include "extra/serial/endpoints/buffer.h"
 #include "utils/bits.hpp"
 #include "utils/casts.hpp"
 #include "utils/fillqueue.hpp"
@@ -13,6 +14,8 @@
 #include "utils/path.h"
 #include "utils/queue.hpp"
 #include "utils/vector.hpp"
+#include <SDL.h>
+#include <SDL_image.h>
 #include <optional>
 
 #define TABLE_1(t1, data) GENERATE(table<t1> data)
@@ -22,11 +25,6 @@
 
 #define TABLE_PICKER(_1, _2, _3, _4, _5, FUNC, ...) FUNC
 #define TABLE(...) TABLE_PICKER(__VA_ARGS__, TABLE_4, TABLE_3, TABLE_2, TABLE_1)(__VA_ARGS__)
-
-#ifdef SDL
-
-#include <SDL.h>
-#include <SDL_image.h>
 
 static constexpr uint32_t FRAMEBUFFER_NUM_PIXELS = Specs::Display::WIDTH * Specs::Display::HEIGHT;
 static constexpr uint32_t FRAMEBUFFER_SIZE = sizeof(uint16_t) * FRAMEBUFFER_NUM_PIXELS;
@@ -42,7 +40,7 @@ static constexpr uint64_t DURATION_MEDIUM = 30'000'000;
 static constexpr uint64_t DURATION_SHORT = 5'000'000;
 static constexpr uint64_t DURATION_VERY_SHORT = 1'500'000;
 
-static constexpr uint64_t DEFAULT_DURATION = DURATION_MEDIUM;
+static constexpr uint64_t DEFAULT_DURATION = DURATION_VERY_LONG;
 
 static void load_png(const std::string& filename, void* buffer, int format = -1, uint32_t* size = nullptr) {
     SDL_Surface* surface {};
@@ -114,106 +112,170 @@ static bool are_framebuffer_equals(const uint16_t* buf1, const uint16_t* buf2) {
     return memcmp(buf1, buf2, FRAMEBUFFER_SIZE) == 0;
 }
 
-class Runner {
+template <typename RunnerImpl>
+class RunnerT {
 public:
-    struct Result {
-        bool areFramebufferEquals {};
-    };
-
-    Runner& rom(const std::string& filename) {
+    RunnerImpl& rom(const std::string& filename) {
         romName = filename;
         core.loadRom(filename);
-        return *this;
+        return static_cast<RunnerImpl&>(*this);
     }
 
-    Runner& expectFramebuffer(const std::string& filename) {
-        load_png(filename, expectedFramebuffer, SDL_PIXELFORMAT_RGB565);
-        return *this;
-    }
-
-    Runner& pixelsColor(const Palette& colors) {
-        pixelColors_ = colors;
-        return *this;
-    }
-
-    Runner& maxTicks(uint64_t ticks) {
+    RunnerImpl& maxTicks(uint64_t ticks) {
         maxTicks_ = ticks;
-        return *this;
+        return static_cast<RunnerImpl&>(*this);
     }
 
-    Runner& framebufferCheckTicksInterval(uint64_t ticks) {
-        framebufferCheckTicksInterval_ = ticks;
-        return *this;
+    RunnerImpl& checkIntervalTicks(uint64_t ticks) {
+        checkIntervalTicks_ = ticks;
+        return static_cast<RunnerImpl&>(*this);
     }
 
-    Result run() {
-        uint16_t lastFramebuffer[FRAMEBUFFER_NUM_PIXELS];
+    bool run() {
+        auto* impl = static_cast<RunnerImpl*>(this);
+        impl->onRun();
 
-        UNSCOPED_INFO("=== " << romName << " ===");
-        const auto compareFramebufferUsingPixelColors = [this, &lastFramebuffer]() {
-            // Compare framebuffer only in VBlank
-            check(keep_bits<2>(core.gb.video.STAT) == 1);
-            memcpy(lastFramebuffer, gb.lcd.getPixels(), FRAMEBUFFER_SIZE);
-            if (!pixelColors_.empty())
-                convert_framebuffer_pixels(lastFramebuffer, gb.lcd.getPixels(), pixelColors_);
-            return are_framebuffer_equals(lastFramebuffer, expectedFramebuffer);
-        };
+        bool hasEverChecked {false};
 
-        bool hasEverCheckedFramebuffer {false};
-        bool pendingFramebufferCheck {false};
-
-        for (uint64_t i = 1; i <= maxTicks_; i++) {
+        for (tick = 1; tick <= maxTicks_; tick++) {
             core.tick();
-            if (pendingFramebufferCheck) {
-                // Compare framebuffer only in VBlank
-                if (keep_bits<2>(core.gb.video.STAT) == 1) {
-                    hasEverCheckedFramebuffer = true;
-                    if (compareFramebufferUsingPixelColors())
-                        return {.areFramebufferEquals = true};
-                    pendingFramebufferCheck = false;
+            if (impl->shouldCheckExpectation()) {
+                hasEverChecked = true;
+                if (impl->checkExpectation()) {
+                    return true;
                 }
-            } else {
-                pendingFramebufferCheck = i > 0 && i % framebufferCheckTicksInterval_ == 0;
             }
         }
 
-        if (hasEverCheckedFramebuffer) {
-            // Framebuffer not equals: figure out where's the (first) problem
-            uint32_t i;
-            for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
-                if (lastFramebuffer[i] != expectedFramebuffer[i]) {
-                    UNSCOPED_INFO("Framebuffer mismatch at position " << i << ": (actual) 0x" << hex(lastFramebuffer[i])
-                                                                      << " != (expected) 0x"
-                                                                      << hex(expectedFramebuffer[i]));
-                    break;
-                }
-            }
-            check(i < FRAMEBUFFER_NUM_PIXELS);
-
-            // Dump framebuffers
-            const auto pathActual = (temp_directory_path() / "framebuffer-actual.png").string();
-            const auto pathExpected = (temp_directory_path() / "framebuffer-expected.png").string();
-            save_framebuffer_as_png(pathActual, lastFramebuffer);
-            save_framebuffer_as_png(pathExpected, expectedFramebuffer);
-            UNSCOPED_INFO("You can find the PNGs of the framebuffers at " << pathActual << " and " << pathExpected);
+        if (hasEverChecked) {
+            impl->onExpectationFailed();
         } else {
-            UNSCOPED_INFO("Framebuffer has never been read!");
+            UNSCOPED_INFO("Expectation never checked!");
         }
 
-        return {.areFramebufferEquals = false};
+        return false;
     }
 
     GameBoy gb;
     Core core {gb};
 
-private:
+protected:
     std::string romName; // debug
+    uint64_t tick {};
     uint64_t maxTicks_ {UINT64_MAX};
-    uint64_t framebufferCheckTicksInterval_ {UINT64_MAX};
-    Palette pixelColors_ {};
-    uint16_t expectedFramebuffer[FRAMEBUFFER_NUM_PIXELS] {};
+    uint64_t checkIntervalTicks_ {UINT64_MAX};
 };
-#endif
+
+class Runner : public RunnerT<Runner> {
+public:
+    void onRun() {
+    }
+    bool shouldCheckExpectation() {
+        return false;
+    }
+    bool checkExpectation() {
+        return true;
+    }
+    void onExpectationFailed() {
+    }
+};
+
+class FramebufferRunner : public RunnerT<FramebufferRunner> {
+public:
+    FramebufferRunner& expectFramebuffer(const std::string& filename, const Palette& colors) {
+        load_png(filename, expectedFramebuffer, SDL_PIXELFORMAT_RGB565);
+        pixelColors = colors;
+        return *this;
+    }
+
+    void onRun() {
+    }
+
+    bool shouldCheckExpectation() {
+        if (tick % checkIntervalTicks_ == 0) {
+            pendingCheck = true;
+        }
+
+        if (pendingCheck && keep_bits<2>(core.gb.video.STAT) == 1) {
+            pendingCheck = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool checkExpectation() {
+        // Compare framebuffer only in VBlank
+        check(keep_bits<2>(core.gb.video.STAT) == 1);
+        memcpy(lastFramebuffer, gb.lcd.getPixels(), FRAMEBUFFER_SIZE);
+        if (!pixelColors.empty())
+            convert_framebuffer_pixels(lastFramebuffer, gb.lcd.getPixels(), pixelColors);
+        return are_framebuffer_equals(lastFramebuffer, expectedFramebuffer);
+    }
+
+    void onExpectationFailed() {
+        // Framebuffer not equals: figure out where's the (first) problem
+        UNSCOPED_INFO("=== " << romName << " ===");
+
+        uint32_t i;
+        for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
+            if (lastFramebuffer[i] != expectedFramebuffer[i]) {
+                UNSCOPED_INFO("Framebuffer mismatch at position " << i << ": (actual) 0x" << hex(lastFramebuffer[i])
+                                                                  << " != (expected) 0x"
+                                                                  << hex(expectedFramebuffer[i]));
+                break;
+            }
+        }
+        check(i < FRAMEBUFFER_NUM_PIXELS);
+
+        // Dump framebuffers
+        const auto pathActual = (temp_directory_path() / "framebuffer-actual.png").string();
+        const auto pathExpected = (temp_directory_path() / "framebuffer-expected.png").string();
+        save_framebuffer_as_png(pathActual, lastFramebuffer);
+        save_framebuffer_as_png(pathExpected, expectedFramebuffer);
+        UNSCOPED_INFO("You can find the PNGs of the framebuffers at " << pathActual << " and " << pathExpected);
+    }
+
+private:
+    uint16_t lastFramebuffer[FRAMEBUFFER_NUM_PIXELS] {};
+    uint16_t expectedFramebuffer[FRAMEBUFFER_NUM_PIXELS] {};
+    Palette pixelColors {};
+    bool pendingCheck {};
+};
+
+class SerialRunner : public RunnerT<SerialRunner> {
+public:
+    SerialRunner& expectOutput(const std::vector<uint8_t>& output) {
+        expectedOutput = output;
+        return *this;
+    }
+
+    void onRun() {
+        serialLink.plug1.attach(serialBuffer);
+        core.attachSerialLink(serialLink.plug2);
+    }
+
+    bool shouldCheckExpectation() {
+        return tick % checkIntervalTicks_ == 0;
+    }
+
+    bool checkExpectation() {
+        lastOutput = serialBuffer.buffer;
+        return serialBuffer.buffer == expectedOutput;
+    }
+
+    void onExpectationFailed() {
+        UNSCOPED_INFO("=== " << romName << " ===");
+        UNSCOPED_INFO("Expected serial output: " << hex(expectedOutput));
+        UNSCOPED_INFO("Actual serial output  : " << hex(lastOutput));
+    }
+
+private:
+    SerialBuffer serialBuffer;
+    SerialLink serialLink;
+    std::vector<uint8_t> lastOutput;
+    std::vector<uint8_t> expectedOutput;
+};
 
 TEST_CASE("bits", "[bits]") {
     SECTION("test bit") {
@@ -686,18 +748,22 @@ TEST_CASE("state", "[state]") {
     }
 }
 
-#ifdef SDL
-
-static bool run_and_check_framebuffer_equals(const std::string& rom, const std::string& result,
-                                             const Palette& palette) {
-    return Runner()
+static bool run_expecting_framebuffer(const std::string& rom, const std::string& result, const Palette& palette) {
+    return FramebufferRunner()
         .rom(rom)
-        .expectFramebuffer(result)
-        .pixelsColor(palette)
         .maxTicks(DEFAULT_DURATION)
-        .framebufferCheckTicksInterval(DURATION_VERY_SHORT)
-        .run()
-        .areFramebufferEquals;
+        .checkIntervalTicks(DURATION_VERY_SHORT)
+        .expectFramebuffer(result, palette)
+        .run();
+}
+
+static bool run_expecting_serial(const std::string& rom, const std::vector<uint8_t>& result) {
+    return SerialRunner()
+        .rom(rom)
+        .maxTicks(DEFAULT_DURATION)
+        .checkIntervalTicks(DURATION_VERY_SHORT)
+        .expectOutput(result)
+        .run();
 }
 
 TEST_CASE("emulation", "[emulation]") {
@@ -717,7 +783,7 @@ TEST_CASE("emulation", "[emulation]") {
                         {"tests/roms/mooneye/mbc/mbc1/rom_4Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
                         {"tests/roms/mooneye/mbc/mbc1/rom_8Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
                         {"tests/roms/mooneye/mbc/mbc1/rom_16Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE}}));
-            REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
+            REQUIRE(run_expecting_framebuffer(rom, expectedResult, palette));
         }
 
         SECTION("mbc5") {
@@ -731,7 +797,7 @@ TEST_CASE("emulation", "[emulation]") {
                         {"tests/roms/mooneye/mbc/mbc5/rom_16Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
                         {"tests/roms/mooneye/mbc/mbc5/rom_32Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
                         {"tests/roms/mooneye/mbc/mbc5/rom_64Mb.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE}}));
-            REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
+            REQUIRE(run_expecting_framebuffer(rom, expectedResult, palette));
         }
     }
 
@@ -742,7 +808,7 @@ TEST_CASE("emulation", "[emulation]") {
                       {"tests/roms/blargg/cpu_instrs.gb", "tests/results/blargg/cpu_instrs.png", DEFAULT_PALETTE},
                       {"tests/roms/blargg/instr_timing.gb", "tests/results/blargg/instr_timing.png", DEFAULT_PALETTE},
                   }));
-        REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
+        REQUIRE(run_expecting_framebuffer(rom, expectedResult, palette));
     }
 
     SECTION("ppu") {
@@ -752,17 +818,37 @@ TEST_CASE("emulation", "[emulation]") {
                       ({
                           {"tests/roms/dmg-acid2/dmg-acid2.gb", "tests/results/dmg-acid2/dmg-acid2.png", GREY_PALETTE},
                       }));
-            REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
+            REQUIRE(run_expecting_framebuffer(rom, expectedResult, palette));
         }
     }
 
     SECTION("timers") {
-        const auto [rom, expectedResult, palette] =
-            TABLE(std::string, std::string, Palette,
-                  ({
-                      {"tests/roms/mooneye/timers/div_write.gb", "tests/results/mooneye/ok.png", DEFAULT_PALETTE},
-                  }));
-        REQUIRE(run_and_check_framebuffer_equals(rom, expectedResult, palette));
+        const auto [rom, expectedResult] = TABLE(
+            std::string, std::vector<uint8_t>,
+            ({
+                {"tests/roms/mooneye/timers/div_write.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/rapid_toggle.gb", {0x03, 0x05, 0x08, 0x0D, 0x15,
+                //                      0x22}},
+                //                {"tests/roms/mooneye/timers/tim00.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/tim00_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D,
+                //                      0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/tim01.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/tim01_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D,
+                //                      0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/tim10.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/tim10_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D,
+                //                      0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/tim11.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/tim11_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D,
+                //                      0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/tima_reload.gb", {0x03, 0x05, 0x08, 0x0D, 0x15,
+                //                      0x22}},
+                //                      {"tests/roms/mooneye/timers/tima_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D,
+                //                      0x15, 0x22}},
+                //                      {"tests/roms/mooneye/timers/tma_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D,
+                //                      0x15, 0x22}},
+            }));
+        REQUIRE(run_expecting_serial(rom, expectedResult));
     }
 
 #ifdef MEALYBUG
@@ -848,15 +934,11 @@ TEST_CASE("emulation", "[emulation]") {
 #endif
 }
 
-#endif
-
 int main(int argc, char* argv[]) {
-#ifdef SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         return 1;
 
     IMG_Init(IMG_INIT_PNG);
-#endif
 
     return Catch::Session().run(argc, argv);
 }

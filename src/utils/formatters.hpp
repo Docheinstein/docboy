@@ -35,7 +35,7 @@ std::string bin(const T* data, size_t length) {
 
 template <typename T>
 std::string bin(const std::vector<T>& vec) {
-    return hex(vec.data(), vec.size() * sizeof(T));
+    return bin(vec.data(), vec.size() * sizeof(T));
 }
 
 template <typename T>

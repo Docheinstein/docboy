@@ -5,8 +5,8 @@ SerialLink::Plug::Plug(SerialLink& link) :
     link(link) {
 }
 
-SerialLink& SerialLink::Plug::attach(ISerialEndpoint* e) {
-    endpoint = e;
+SerialLink& SerialLink::Plug::attach(ISerialEndpoint& e) {
+    endpoint = &e;
     return link;
 }
 

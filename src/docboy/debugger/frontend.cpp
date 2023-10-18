@@ -1013,8 +1013,23 @@ std::string DebuggerFrontend::flag(const std::string& name, bool value) {
 std::string DebuggerFrontend::reg(const std::string& name, uint16_t value) {
     std::stringstream ss;
     ss << termcolor::bold << termcolor::red << name << termcolor::reset << " : " << bin((uint8_t)(value >> 8)) << " "
-       << bin((uint8_t)(value & 0xFF)) << "  "
-       << "(" << hex((uint8_t)(value >> 8)) << " " << hex((uint8_t)(value & 0xFF)) << ")";
+       << bin((uint8_t)(value & 0xFF)) << " (" << hex((uint8_t)(value >> 8)) << " " << hex((uint8_t)(value & 0xFF))
+       << ")";
+    return ss.str();
+}
+
+std::string DebuggerFrontend::timer(const std::string& name, uint16_t value, int width) {
+    std::stringstream ss;
+    ss << termcolor::bold << termcolor::red << std::left << std::setw(width) << name << termcolor::reset << " : "
+       << bin((uint8_t)(value >> 8)) << " " << bin((uint8_t)(value & 0xFF)) << " (" << hex((uint8_t)(value >> 8)) << " "
+       << hex((uint8_t)(value & 0xFF)) << ")";
+    return ss.str();
+}
+
+std::string DebuggerFrontend::timer(const std::string& name, uint8_t value, int width, int valueWidth) {
+    std::stringstream ss;
+    ss << termcolor::bold << termcolor::red << std::left << std::setw(width) << name << termcolor::reset << " : "
+       << std::left << std::setw(valueWidth) << bin(value) << " (" << hex(value) << ")";
     return ss.str();
 }
 
@@ -1318,6 +1333,16 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         std::cout << interrupt("SERIAL", cpu.IME, get_bit<Specs::Bits::Interrupts::SERIAL>(IE),
                                get_bit<Specs::Bits::Interrupts::SERIAL>(IF))
                   << std::endl;
+    }
+
+    // Timers
+    if (config.sections.timers) {
+        std::cout << header("timers") << std::endl;
+        std::cout << timer("DIV (16)", gb.timers.DIV) << std::endl;
+        std::cout << timer("DIV", backend.readMemory(Specs::Registers::Timers::DIV)) << std::endl;
+        std::cout << timer("TIMA", backend.readMemory(Specs::Registers::Timers::TIMA)) << std::endl;
+        std::cout << timer("TMA", backend.readMemory(Specs::Registers::Timers::TMA)) << std::endl;
+        std::cout << timer("TAC", backend.readMemory(Specs::Registers::Timers::TAC)) << std::endl;
     }
 
     // IO

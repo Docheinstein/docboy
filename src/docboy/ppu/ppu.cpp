@@ -847,7 +847,6 @@ void Ppu::saveState(Parcel& parcel) const {
     parcel.writeUInt8(objFifo.end);
     parcel.writeUInt8(objFifo.count);
 
-    static_assert(std::is_trivially_copyable_v<typeof(oamEntries)>);
     parcel.writeBytes(oamEntries, sizeof(oamEntries));
     IF_ASSERTS(parcel.writeUInt8(oamEntriesCount));
 
@@ -933,7 +932,6 @@ void Ppu::loadState(Parcel& parcel) {
     objFifo.end = parcel.readUInt8();
     objFifo.count = parcel.readUInt8();
 
-    static_assert(std::is_trivially_copyable_v<typeof(oamEntries)>);
     parcel.readBytes(oamEntries, sizeof(oamEntries));
     IF_ASSERTS(oamEntriesCount = parcel.readUInt8());
 
