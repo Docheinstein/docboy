@@ -9,8 +9,7 @@
 #include "docboy/bus/bus.h"
 #include "docboy/cartridge/slot.h"
 #include "docboy/cpu/cpu.h"
-#include "docboy/cpu/interrupts.h"
-#include "docboy/cpu/timers.h"
+#include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/memory/hram.h"
@@ -24,6 +23,7 @@
 #include "docboy/ppu/video.h"
 #include "docboy/serial/port.h"
 #include "docboy/sound/sound.h"
+#include "docboy/timers/timers.h"
 #include "utils/macros.h"
 
 class GameBoy {
@@ -65,7 +65,7 @@ public:
              video,
              boot,
              nullIO};
-    Cpu cpu {interrupts, timers, serialPort, boot, bus};
+    Cpu cpu {interrupts, bus};
     Lcd lcd {};
     Ppu ppu {lcd, video, interrupts, vram, oam};
 };

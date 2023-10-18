@@ -24,13 +24,11 @@ target_sources(docboy PRIVATE
     core/core.tpp
     cpu/cpu.cpp
     cpu/cpu.h
-    cpu/interrupts.h
-    cpu/timers.cpp
-    cpu/timers.h
     debugger/macros.h
     dma/dma.cpp
     dma/dma.h
     gameboy/gameboy.h
+    interrupts/interrupts.h
     joypad/joypad.cpp
     joypad/joypad.h
     lcd/lcd.cpp
@@ -64,6 +62,8 @@ target_sources(docboy PRIVATE
     serial/serial.h
     shared/specs.h
     sound/sound.h
+    timers/timers.cpp
+    timers/timers.h
 )
 
 if (ENABLE_BOOTROM)

@@ -1,5 +1,5 @@
 #include "ppu.h"
-#include "docboy/cpu/interrupts.h"
+#include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/memory/memory.hpp"
 #include "docboy/ppu/video.h"

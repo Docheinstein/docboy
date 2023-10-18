@@ -1,5 +1,5 @@
 #include "port.h"
-#include "docboy/cpu/interrupts.h"
+#include "docboy/interrupts/interrupts.h"
 #include "link.h"
 
 SerialPort::SerialPort(InterruptsIO& interrupts) :

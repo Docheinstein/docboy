@@ -1,10 +1,9 @@
 #include "cpu.h"
 #include "docboy/boot/boot.h"
 #include "docboy/bus/bus.h"
+#include "docboy/interrupts/interrupts.h"
 #include "docboy/memory/byte.hpp"
 #include "docboy/serial/port.h"
-#include "interrupts.h"
-#include "timers.h"
 #include "utils/asserts.h"
 #include "utils/bits.hpp"
 #include "utils/casts.hpp"
@@ -16,11 +15,8 @@ static constexpr uint8_t STATE_INSTRUCTION_FLAG_NORMAL = 0;
 static constexpr uint8_t STATE_INSTRUCTION_FLAG_CB = 1;
 static constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
 
-Cpu::Cpu(InterruptsIO& interrupts, Timers& timers, SerialPort& serial, BootIO& boot, Bus& bus) :
+Cpu::Cpu(InterruptsIO& interrupts, Bus& bus) :
     interrupts(interrupts),
-    timers(timers),
-    serial(serial),
-    boot(boot),
     bus(bus),
     // clang-format off
     instructions {

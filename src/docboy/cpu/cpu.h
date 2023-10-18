@@ -6,7 +6,6 @@
 #include <cstdint>
 
 class InterruptsIO;
-class Timers;
 class SerialPort;
 class BootIO;
 class Bus;
@@ -17,7 +16,7 @@ class Cpu {
     DEBUGGABLE_CLASS()
 
 public:
-    Cpu(InterruptsIO& interrupts, Timers& timers, SerialPort& serial, BootIO& boot, Bus& bus);
+    Cpu(InterruptsIO& interrupts, Bus& bus);
 
     void tick();
 
@@ -579,9 +578,6 @@ private:
     IF_DEBUGGER(bool isInISR() const);
 
     InterruptsIO& interrupts;
-    Timers& timers;
-    SerialPort& serial;
-    BootIO& boot;
     Bus& bus;
 
     MicroOperation instructions[256][6];

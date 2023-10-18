@@ -1,8 +1,7 @@
 #include "bus.h"
 #include "docboy/boot/boot.h"
 #include "docboy/cartridge/slot.h"
-#include "docboy/cpu/interrupts.h"
-#include "docboy/cpu/timers.h"
+#include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/memory/memory.hpp"
 #include "docboy/memory/null.h"
@@ -10,6 +9,7 @@
 #include "docboy/serial/serial.h"
 #include "docboy/shared/specs.h"
 #include "docboy/sound/sound.h"
+#include "docboy/timers/timers.h"
 #include "utils/formatters.hpp"
 #include "utils/log.h"
 

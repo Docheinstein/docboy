@@ -1,6 +1,6 @@
 #include "joypad.h"
-#include "docboy/cpu/interrupts.h"
 #include "docboy/debugger/macros.h"
+#include "docboy/interrupts/interrupts.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "docboy/debugger/memsniffer.h"
