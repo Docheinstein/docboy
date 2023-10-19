@@ -26,6 +26,17 @@ void TimersIO::writeDIV(uint8_t value) {
     setDIV(0);
     IF_DEBUGGER(DebuggerMemorySniffer::notifyMemoryWrite(Specs::Registers::Timers::DIV, oldValue, value));
 }
+#if 0
+void TimersIO::writeTAC(uint8_t value) {
+    // TODO: this should fit a unique falling edge detector
+    const bool tacDivBit = test_bit(DIV, TAC_DIV_BITS_SELECTOR[keep_bits<2>(TAC)]);
+    const bool timaWasEnabled = test_bit<Specs::Bits::Timers::TAC::ENABLE>(TAC);
+    TAC = value;
+    const bool timaIsEnabled = test_bit<Specs::Bits::Timers::TAC::ENABLE>(TAC);
+    if ((timaWasEnabled && tacDivBit && !timaIsEnabled)) {
+        incTIMA();
+    }
+}
 
 inline void TimersIO::setDIV(uint16_t value) {
     const uint8_t b = TAC_DIV_BITS_SELECTOR[keep_bits<2>(TAC)];
@@ -41,16 +52,38 @@ inline void TimersIO::setDIV(uint16_t value) {
         incTIMA();
     }
 }
+#endif
+
+void TimersIO::writeTAC(uint8_t value) {
+    TAC = value;
+    onFallingEdgeIncTIMA();
+}
+
+inline void TimersIO::setDIV(uint16_t value) {
+    DIV = value;
+    onFallingEdgeIncTIMA();
+}
 
 inline void TimersIO::incTIMA() {
-    // Increment TIMA
     if (TIMA == 0xFF) {
         // TIMA would overflow: reset it to TMA and raise interrupt
         TIMA = (uint8_t)TMA;
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Timer>();
     } else {
+        // Increment TIMA
         ++TIMA;
     }
+}
+
+void TimersIO::onFallingEdgeIncTIMA() {
+    // TIMA is incremented if (DIV bit selected by TAC && TAC enable)
+    // was true and now it's false
+    const bool tacDivBit = test_bit(DIV, TAC_DIV_BITS_SELECTOR[keep_bits<2>(TAC)]);
+    const bool tacEnable = test_bit<Specs::Bits::Timers::TAC::ENABLE>(TAC);
+    const bool divBitAndTacEnable = tacDivBit && tacEnable;
+    if (lastDivBitAndTacEnable && !divBitAndTacEnable)
+        incTIMA();
+    lastDivBitAndTacEnable = divBitAndTacEnable;
 }
 
 Timers::Timers(InterruptsIO& interrupts) :

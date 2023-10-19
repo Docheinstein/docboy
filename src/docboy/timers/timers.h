@@ -28,6 +28,8 @@ public:
 
     void writeDIV(uint8_t value);
 
+    void writeTAC(uint8_t value);
+
     uint16_t DIV {IF_NOT_BOOTROM(0xABCC)};
     BYTE(TIMA, Specs::Registers::Timers::TIMA);
     BYTE(TMA, Specs::Registers::Timers::TMA);
@@ -36,8 +38,11 @@ public:
 protected:
     void setDIV(uint16_t value);
     void incTIMA();
+    void onFallingEdgeIncTIMA();
 
     InterruptsIO& interrupts;
+
+    bool lastDivBitAndTacEnable {};
 };
 
 class Timers : public TimersIO {

@@ -103,7 +103,7 @@ Bus::Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
     /* FF04 */ memoryAccessors[Specs::Registers::Timers::DIV] = {&Bus::readDIV, &Bus::writeDIV};
     /* FF05 */ memoryAccessors[Specs::Registers::Timers::TIMA] = &timers.TIMA;
     /* FF06 */ memoryAccessors[Specs::Registers::Timers::TMA] = &timers.TMA;
-    /* FF07 */ memoryAccessors[Specs::Registers::Timers::TAC] = &timers.TAC;
+    /* FF07 */ memoryAccessors[Specs::Registers::Timers::TAC] = {&timers.TAC, &Bus::writeTAC};
     /* FF08 */ memoryAccessors[0xFF08] = &nullIO.FF08;
     /* FF09 */ memoryAccessors[0xFF09] = &nullIO.FF09;
     /* FF0A */ memoryAccessors[0xFF0A] = &nullIO.FF0A;
@@ -302,4 +302,8 @@ uint8_t Bus::readDIV(uint16_t address) const {
 
 void Bus::writeDIV(uint16_t address, uint8_t value) {
     timers.writeDIV(value);
+}
+
+void Bus::writeTAC(uint16_t address, uint8_t value) {
+    timers.writeTAC(value);
 }
