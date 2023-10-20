@@ -15,6 +15,8 @@ class InterruptsIO;
 
 class TimersIO {
 public:
+    DEBUGGABLE_CLASS();
+
     explicit TimersIO(InterruptsIO& interrupts);
 
     void saveState(Parcel& parcel) const;
@@ -27,22 +29,25 @@ public:
     }
 
     void writeDIV(uint8_t value);
-
+    void writeTIMA(uint8_t value);
+    void writeTMA(uint8_t value);
     void writeTAC(uint8_t value);
 
     uint16_t DIV {IF_NOT_BOOTROM(0xABCC)};
     BYTE(TIMA, Specs::Registers::Timers::TIMA);
     BYTE(TMA, Specs::Registers::Timers::TMA);
-    BYTE(TAC, Specs::Registers::Timers::TAC);
+    BYTE(TAC, Specs::Registers::Timers::TAC, 0xFF);
 
 protected:
     void setDIV(uint16_t value);
     void incTIMA();
-    void onFallingEdgeIncTIMA();
+    void onFallingEdgeIncTima();
+    void handlePendingTimaReload();
 
     InterruptsIO& interrupts;
 
     bool lastDivBitAndTacEnable {};
+    uint8_t timaState {};
 };
 
 class Timers : public TimersIO {

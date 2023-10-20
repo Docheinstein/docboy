@@ -75,7 +75,8 @@ private:
 
     [[nodiscard]] uint8_t readDIV(uint16_t address) const;
     void writeDIV(uint16_t address, uint8_t value);
-
+    void writeTIMA(uint16_t address, uint8_t value);
+    void writeTMA(uint16_t address, uint8_t value);
     void writeTAC(uint16_t address, uint8_t value);
 
     void writeDMA(uint16_t address, uint8_t value);

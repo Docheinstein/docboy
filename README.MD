@@ -209,4 +209,4 @@ Here's the debugger!
 |------------|----------|--------------------|
 | mooneye    | mbc/mbc1 | :white_check_mark: |
 | mooneye    | mbc/mbc5 | :white_check_mark: |
-| mooneye    | timers   | WIP                |
+| mooneye    | timers   | :white_check_mark:                |

@@ -1018,11 +1018,17 @@ std::string DebuggerFrontend::reg(const std::string& name, uint16_t value) {
     return ss.str();
 }
 
-std::string DebuggerFrontend::timer(const std::string& name, uint16_t value, int width) {
+std::string DebuggerFrontend::div(const std::string& name, uint16_t value, uint8_t highlightBit, int width) {
     std::stringstream ss;
-    ss << termcolor::bold << termcolor::red << std::left << std::setw(width) << name << termcolor::reset << " : "
-       << bin((uint8_t)(value >> 8)) << " " << bin((uint8_t)(value & 0xFF)) << " (" << hex((uint8_t)(value >> 8)) << " "
-       << hex((uint8_t)(value & 0xFF)) << ")";
+    ss << termcolor::bold << termcolor::red << std::left << std::setw(width) << name << termcolor::reset << " : ";
+    for (int8_t b = 15; b >= 0; b--) {
+        if (b == highlightBit)
+            ss << termcolor::yellow;
+        ss << test_bit(value, b) << termcolor::reset;
+        if (b == 8)
+            ss << " ";
+    }
+    ss << " (" << hex((uint8_t)(value >> 8)) << " " << hex((uint8_t)(value & 0xFF)) << ")";
     return ss.str();
 }
 
@@ -1338,9 +1344,14 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     // Timers
     if (config.sections.timers) {
         std::cout << header("timers") << std::endl;
-        std::cout << timer("DIV (16)", gb.timers.DIV) << std::endl;
+        std::cout << div("DIV (16)", gb.timers.DIV, Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(gb.timers.TAC)])
+                  << std::endl;
         std::cout << timer("DIV", backend.readMemory(Specs::Registers::Timers::DIV)) << std::endl;
-        std::cout << timer("TIMA", backend.readMemory(Specs::Registers::Timers::TIMA)) << std::endl;
+        std::cout << timer("TIMA", backend.readMemory(Specs::Registers::Timers::TIMA));
+        if (gb.timers.timaState)
+            std::cout << termcolor::yellow << "    [pending TMA reload (" << gb.timers.timaState << ")]" << std::endl;
+        else
+            std::cout << std::endl;
         std::cout << timer("TMA", backend.readMemory(Specs::Registers::Timers::TMA)) << std::endl;
         std::cout << timer("TAC", backend.readMemory(Specs::Registers::Timers::TAC)) << std::endl;
     }

@@ -1,7 +1,14 @@
 #include "timers.h"
 #include "docboy/interrupts/interrupts.h"
 
-static constexpr uint8_t TAC_DIV_BITS_SELECTOR[] {9, 3, 5, 7};
+enum TimaOverflowState : uint8_t {
+    /* TIMA has just overflow this cycle and will be reload the next cycle.  */
+    PendingReload = 2,
+    /* TIMA has overflow the cycle before and will be reloaded this cycle.  */
+    Reload = 1,
+    /* No pending overflow of TIMA to handle. */
+    None = 0
+};
 
 TimersIO::TimersIO(InterruptsIO& interrupts) :
     interrupts(interrupts) {
@@ -26,59 +33,42 @@ void TimersIO::writeDIV(uint8_t value) {
     setDIV(0);
     IF_DEBUGGER(DebuggerMemorySniffer::notifyMemoryWrite(Specs::Registers::Timers::DIV, oldValue, value));
 }
-#if 0
-void TimersIO::writeTAC(uint8_t value) {
-    // TODO: this should fit a unique falling edge detector
-    const bool tacDivBit = test_bit(DIV, TAC_DIV_BITS_SELECTOR[keep_bits<2>(TAC)]);
-    const bool timaWasEnabled = test_bit<Specs::Bits::Timers::TAC::ENABLE>(TAC);
-    TAC = value;
-    const bool timaIsEnabled = test_bit<Specs::Bits::Timers::TAC::ENABLE>(TAC);
-    if ((timaWasEnabled && tacDivBit && !timaIsEnabled)) {
-        incTIMA();
+
+void TimersIO::writeTIMA(uint8_t value) {
+    // Writing to TIMA in the same cycle it has been reloaded is ignored
+    if (timaState != Reload) {
+        TIMA = value;
+        timaState = None;
     }
 }
 
-inline void TimersIO::setDIV(uint16_t value) {
-    const uint8_t b = TAC_DIV_BITS_SELECTOR[keep_bits<2>(TAC)];
-
-    const bool tacDivBitBefore = test_bit(DIV, b);
-    DIV = value;
-    const bool tacDivBitAfter = test_bit(DIV, b);
-
-    // Increment TIMA if:
-    // 1) Has falling edge on DIV bit selected by TAC
-    // 2) TAC enable is set
-    if ((tacDivBitBefore && !tacDivBitAfter) && test_bit<Specs::Bits::Timers::TAC::ENABLE>(TAC)) {
-        incTIMA();
-    }
+void TimersIO::writeTMA(uint8_t value) {
+    // Writing TMA in the same cycle TIMA has been reloaded writes TIMA too
+    TMA = value;
+    if (timaState == Reload)
+        TIMA = value;
 }
-#endif
 
 void TimersIO::writeTAC(uint8_t value) {
-    TAC = value;
-    onFallingEdgeIncTIMA();
+    TAC = keep_bits<3>(value);
+    onFallingEdgeIncTima();
 }
 
 inline void TimersIO::setDIV(uint16_t value) {
     DIV = value;
-    onFallingEdgeIncTIMA();
+    onFallingEdgeIncTima();
 }
 
 inline void TimersIO::incTIMA() {
-    if (TIMA == 0xFF) {
-        // TIMA would overflow: reset it to TMA and raise interrupt
-        TIMA = (uint8_t)TMA;
-        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Timer>();
-    } else {
-        // Increment TIMA
-        ++TIMA;
-    }
+    // When TIMA overflow TMA is reloaded in TIMA: but it is delayed by 1 m-cycle
+    if (++TIMA == 0)
+        timaState = PendingReload;
 }
 
-void TimersIO::onFallingEdgeIncTIMA() {
+inline void TimersIO::onFallingEdgeIncTima() {
     // TIMA is incremented if (DIV bit selected by TAC && TAC enable)
     // was true and now it's false
-    const bool tacDivBit = test_bit(DIV, TAC_DIV_BITS_SELECTOR[keep_bits<2>(TAC)]);
+    const bool tacDivBit = test_bit(DIV, Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(TAC)]);
     const bool tacEnable = test_bit<Specs::Bits::Timers::TAC::ENABLE>(TAC);
     const bool divBitAndTacEnable = tacDivBit && tacEnable;
     if (lastDivBitAndTacEnable && !divBitAndTacEnable)
@@ -86,10 +76,20 @@ void TimersIO::onFallingEdgeIncTIMA() {
     lastDivBitAndTacEnable = divBitAndTacEnable;
 }
 
+inline void TimersIO::handlePendingTimaReload() {
+    if (timaState != TimaOverflowState::None) {
+        if (--timaState == Reload) {
+            TIMA = (uint8_t)TMA;
+            interrupts.raiseInterrupt<InterruptsIO::InterruptType::Timer>();
+        }
+    }
+}
+
 Timers::Timers(InterruptsIO& interrupts) :
     TimersIO(interrupts) {
 }
 
 void Timers::tick() {
-    setDIV(DIV + 1);
+    handlePendingTimaReload();
+    setDIV(DIV + 4);
 }

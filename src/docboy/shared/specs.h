@@ -324,6 +324,10 @@ namespace Cartridge {
         } // namespace Ram
     }     // namespace Header
 } // namespace Cartridge
+
+namespace Timers {
+    static constexpr uint8_t TAC_DIV_BITS_SELECTOR[] {9, 3, 5, 7};
+}
 } // namespace Specs
 
 #endif // SPECS_H

@@ -101,8 +101,8 @@ Bus::Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
     /* FF03 */ memoryAccessors[0xFF03] = &nullIO.FF03;
     // TODO: timers write are non trivial
     /* FF04 */ memoryAccessors[Specs::Registers::Timers::DIV] = {&Bus::readDIV, &Bus::writeDIV};
-    /* FF05 */ memoryAccessors[Specs::Registers::Timers::TIMA] = &timers.TIMA;
-    /* FF06 */ memoryAccessors[Specs::Registers::Timers::TMA] = &timers.TMA;
+    /* FF05 */ memoryAccessors[Specs::Registers::Timers::TIMA] = {&timers.TIMA, &Bus::writeTIMA};
+    /* FF06 */ memoryAccessors[Specs::Registers::Timers::TMA] = {&timers.TMA, &Bus::writeTMA};
     /* FF07 */ memoryAccessors[Specs::Registers::Timers::TAC] = {&timers.TAC, &Bus::writeTAC};
     /* FF08 */ memoryAccessors[0xFF08] = &nullIO.FF08;
     /* FF09 */ memoryAccessors[0xFF09] = &nullIO.FF09;
@@ -302,6 +302,14 @@ uint8_t Bus::readDIV(uint16_t address) const {
 
 void Bus::writeDIV(uint16_t address, uint8_t value) {
     timers.writeDIV(value);
+}
+
+void Bus::writeTIMA(uint16_t address, uint8_t value) {
+    timers.writeTIMA(value);
+}
+
+void Bus::writeTMA(uint16_t address, uint8_t value) {
+    timers.writeTMA(value);
 }
 
 void Bus::writeTAC(uint16_t address, uint8_t value) {
