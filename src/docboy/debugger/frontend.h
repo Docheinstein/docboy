@@ -29,6 +29,7 @@ public:
             bool registers {true};
             bool interrupts {true};
             bool timers {true};
+            bool dma {true};
             struct {
                 bool joypad {false};
                 bool serial {false};

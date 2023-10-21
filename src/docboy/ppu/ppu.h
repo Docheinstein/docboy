@@ -44,13 +44,6 @@ private:
         uint8_t x;
     };
 
-    enum class Phase : uint8_t {
-        HBlank = 0,
-        VBlank = 1,
-        OamScan = 2,
-        PixelTransfer = 3,
-    };
-
     struct OamScanEntry {
         uint8_t number; // [0, 40)
         uint8_t y;
@@ -105,7 +98,7 @@ private:
     void enterVBlank();
     void enterNewFrame();
 
-    template <Phase P>
+    template <uint8_t Phase>
     void updateStat();
 
     void writeLY(uint8_t LY);

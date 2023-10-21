@@ -210,6 +210,19 @@ Here's the debugger!
 |------------|----------|--------------------|
 | mooneye    | timers   | :white_check_mark: |
 
+
+**Interrupts**
+
+| Collection | Test       | Status             |
+|------------|------------|--------------------|
+| mooneye    | interrupts | :white_check_mark: |
+
+**DMA**
+
+| Collection | Test    | Status             |
+|------------|---------|--------------------|
+| mooneye    | oam_dma | :white_check_mark: |
+
 **MBC**
 
 | Collection | Test     | Status              |

@@ -53,7 +53,7 @@ Bus::Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
     video(video),
     boot(boot) {
 
-    const MemoryAccess null {&Bus::readNull, &Bus::writeNull};
+    const MemoryAccess FF {&Bus::readFF, &Bus::writeNop};
 
     /* 0x0000 - 0x7FFF */
     for (uint16_t i = Specs::MemoryLayout::ROM0::START; i <= Specs::MemoryLayout::ROM1::END; i++) {
@@ -62,7 +62,7 @@ Bus::Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
 
     /* 0x8000 - 0x9FFF */
     for (uint16_t i = Specs::MemoryLayout::VRAM::START; i <= Specs::MemoryLayout::VRAM::END; i++) {
-        memoryAccessors[i] = &vram[i - Specs::MemoryLayout::VRAM::START];
+        memoryAccessors[i] = {&Bus::readVram, &Bus::writeVram};
     }
 
     /* 0xA000 - 0xBFFF */
@@ -82,41 +82,41 @@ Bus::Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
 
     /* 0xE000 - 0xFDFF */
     for (uint16_t i = Specs::MemoryLayout::ECHO_RAM::START; i <= Specs::MemoryLayout::ECHO_RAM::END; i++) {
-        memoryAccessors[i] = null;
+        memoryAccessors[i] = &wram1[i - Specs::MemoryLayout::ECHO_RAM::START];
     }
 
     /* 0xFE00 - 0xFE9F */
     for (uint16_t i = Specs::MemoryLayout::OAM::START; i <= Specs::MemoryLayout::OAM::END; i++) {
-        memoryAccessors[i] = &oam[i - Specs::MemoryLayout::OAM::START];
+        memoryAccessors[i] = {&Bus::readOam, &Bus::writeOam};
     }
 
     /* 0xFEA0 - 0xFEFF */
     for (uint16_t i = Specs::MemoryLayout::NOT_USABLE::START; i <= Specs::MemoryLayout::NOT_USABLE::END; i++) {
-        memoryAccessors[i] = null;
+        memoryAccessors[i] = FF;
     }
 
     /* FF00 */ memoryAccessors[Specs::Registers::Joypad::P1] = {&Bus::readP1, &Bus::writeP1};
     /* FF01 */ memoryAccessors[Specs::Registers::Serial::SB] = &serial.SB;
     /* FF02 */ memoryAccessors[Specs::Registers::Serial::SC] = {&serial.SC, &Bus::writeSC};
-    /* FF03 */ memoryAccessors[0xFF03] = null;
+    /* FF03 */ memoryAccessors[0xFF03] = FF;
     /* FF04 */ memoryAccessors[Specs::Registers::Timers::DIV] = {&Bus::readDIV, &Bus::writeDIV};
     /* FF05 */ memoryAccessors[Specs::Registers::Timers::TIMA] = {&timers.TIMA, &Bus::writeTIMA};
     /* FF06 */ memoryAccessors[Specs::Registers::Timers::TMA] = {&timers.TMA, &Bus::writeTMA};
     /* FF07 */ memoryAccessors[Specs::Registers::Timers::TAC] = {&timers.TAC, &Bus::writeTAC};
-    /* FF08 */ memoryAccessors[0xFF08] = null;
-    /* FF09 */ memoryAccessors[0xFF09] = null;
-    /* FF0A */ memoryAccessors[0xFF0A] = null;
-    /* FF0B */ memoryAccessors[0xFF0B] = null;
-    /* FF0C */ memoryAccessors[0xFF0C] = null;
-    /* FF0D */ memoryAccessors[0xFF0D] = null;
-    /* FF0E */ memoryAccessors[0xFF0E] = null;
+    /* FF08 */ memoryAccessors[0xFF08] = FF;
+    /* FF09 */ memoryAccessors[0xFF09] = FF;
+    /* FF0A */ memoryAccessors[0xFF0A] = FF;
+    /* FF0B */ memoryAccessors[0xFF0B] = FF;
+    /* FF0C */ memoryAccessors[0xFF0C] = FF;
+    /* FF0D */ memoryAccessors[0xFF0D] = FF;
+    /* FF0E */ memoryAccessors[0xFF0E] = FF;
     /* FF0F */ memoryAccessors[Specs::Registers::Interrupts::IF] = {&interrupts.IF, &Bus::writeIF};
     /* FF10 */ memoryAccessors[Specs::Registers::Sound::NR10] = {&sound.NR10, &Bus::writeNR10};
     /* FF11 */ memoryAccessors[Specs::Registers::Sound::NR11] = &sound.NR11;
     /* FF12 */ memoryAccessors[Specs::Registers::Sound::NR12] = &sound.NR12;
     /* FF13 */ memoryAccessors[Specs::Registers::Sound::NR13] = &sound.NR13;
     /* FF14 */ memoryAccessors[Specs::Registers::Sound::NR14] = &sound.NR14;
-    /* FF15 */ memoryAccessors[0xFF15] = null;
+    /* FF15 */ memoryAccessors[0xFF15] = FF;
     /* FF16 */ memoryAccessors[Specs::Registers::Sound::NR21] = &sound.NR21;
     /* FF17 */ memoryAccessors[Specs::Registers::Sound::NR22] = &sound.NR22;
     /* FF18 */ memoryAccessors[Specs::Registers::Sound::NR23] = &sound.NR23;
@@ -126,7 +126,7 @@ Bus::Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
     /* FF1C */ memoryAccessors[Specs::Registers::Sound::NR32] = {&sound.NR32, &Bus::writeNR32};
     /* FF1D */ memoryAccessors[Specs::Registers::Sound::NR33] = &sound.NR33;
     /* FF1E */ memoryAccessors[Specs::Registers::Sound::NR34] = &sound.NR34;
-    /* FF1F */ memoryAccessors[0xFF1F] = null;
+    /* FF1F */ memoryAccessors[0xFF1F] = FF;
     /* FF20 */ memoryAccessors[Specs::Registers::Sound::NR41] = {&sound.NR41, &Bus::writeNR41};
     /* FF21 */ memoryAccessors[Specs::Registers::Sound::NR42] = &sound.NR42;
     /* FF22 */ memoryAccessors[Specs::Registers::Sound::NR43] = &sound.NR43;
@@ -134,15 +134,15 @@ Bus::Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
     /* FF24 */ memoryAccessors[Specs::Registers::Sound::NR50] = &sound.NR50;
     /* FF25 */ memoryAccessors[Specs::Registers::Sound::NR51] = &sound.NR51;
     /* FF26 */ memoryAccessors[Specs::Registers::Sound::NR52] = {&sound.NR52, &Bus::writeNR52};
-    /* FF27 */ memoryAccessors[0xFF27] = null;
-    /* FF28 */ memoryAccessors[0xFF28] = null;
-    /* FF29 */ memoryAccessors[0xFF29] = null;
-    /* FF2A */ memoryAccessors[0xFF2A] = null;
-    /* FF2B */ memoryAccessors[0xFF2B] = null;
-    /* FF2C */ memoryAccessors[0xFF2C] = null;
-    /* FF2D */ memoryAccessors[0xFF2D] = null;
-    /* FF2E */ memoryAccessors[0xFF2E] = null;
-    /* FF2F */ memoryAccessors[0xFF2F] = null;
+    /* FF27 */ memoryAccessors[0xFF27] = FF;
+    /* FF28 */ memoryAccessors[0xFF28] = FF;
+    /* FF29 */ memoryAccessors[0xFF29] = FF;
+    /* FF2A */ memoryAccessors[0xFF2A] = FF;
+    /* FF2B */ memoryAccessors[0xFF2B] = FF;
+    /* FF2C */ memoryAccessors[0xFF2C] = FF;
+    /* FF2D */ memoryAccessors[0xFF2D] = FF;
+    /* FF2E */ memoryAccessors[0xFF2E] = FF;
+    /* FF2F */ memoryAccessors[0xFF2F] = FF;
     /* FF30 */ memoryAccessors[Specs::Registers::Sound::WAVE0] = &sound.WAVE0;
     /* FF31 */ memoryAccessors[Specs::Registers::Sound::WAVE1] = &sound.WAVE1;
     /* FF32 */ memoryAccessors[Specs::Registers::Sound::WAVE2] = &sound.WAVE2;
@@ -171,58 +171,58 @@ Bus::Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
     /* FF49 */ memoryAccessors[Specs::Registers::Video::OBP1] = &video.OBP1;
     /* FF4A */ memoryAccessors[Specs::Registers::Video::WY] = &video.WY;
     /* FF4B */ memoryAccessors[Specs::Registers::Video::WX] = &video.WX;
-    /* FF4C */ memoryAccessors[0xFF4C] = null;
-    /* FF4D */ memoryAccessors[0xFF4D] = null;
-    /* FF4E */ memoryAccessors[0xFF4E] = null;
-    /* FF4F */ memoryAccessors[0xFF4F] = null;
+    /* FF4C */ memoryAccessors[0xFF4C] = FF;
+    /* FF4D */ memoryAccessors[0xFF4D] = FF;
+    /* FF4E */ memoryAccessors[0xFF4E] = FF;
+    /* FF4F */ memoryAccessors[0xFF4F] = FF;
     /* FF50 */ memoryAccessors[Specs::Registers::Boot::BOOT] = {&boot.BOOT, &Bus::writeBOOT};
-    /* FF51 */ memoryAccessors[0xFF51] = null;
-    /* FF52 */ memoryAccessors[0xFF52] = null;
-    /* FF53 */ memoryAccessors[0xFF53] = null;
-    /* FF54 */ memoryAccessors[0xFF54] = null;
-    /* FF55 */ memoryAccessors[0xFF55] = null;
-    /* FF56 */ memoryAccessors[0xFF56] = null;
-    /* FF57 */ memoryAccessors[0xFF57] = null;
-    /* FF58 */ memoryAccessors[0xFF58] = null;
-    /* FF59 */ memoryAccessors[0xFF59] = null;
-    /* FF5A */ memoryAccessors[0xFF5A] = null;
-    /* FF5B */ memoryAccessors[0xFF5B] = null;
-    /* FF5C */ memoryAccessors[0xFF5C] = null;
-    /* FF5D */ memoryAccessors[0xFF5D] = null;
-    /* FF5E */ memoryAccessors[0xFF5E] = null;
-    /* FF5F */ memoryAccessors[0xFF5F] = null;
-    /* FF60 */ memoryAccessors[0xFF60] = null;
-    /* FF61 */ memoryAccessors[0xFF61] = null;
-    /* FF62 */ memoryAccessors[0xFF62] = null;
-    /* FF63 */ memoryAccessors[0xFF63] = null;
-    /* FF64 */ memoryAccessors[0xFF64] = null;
-    /* FF65 */ memoryAccessors[0xFF65] = null;
-    /* FF66 */ memoryAccessors[0xFF66] = null;
-    /* FF67 */ memoryAccessors[0xFF67] = null;
-    /* FF68 */ memoryAccessors[0xFF68] = null;
-    /* FF69 */ memoryAccessors[0xFF69] = null;
-    /* FF6A */ memoryAccessors[0xFF6A] = null;
-    /* FF6B */ memoryAccessors[0xFF6B] = null;
-    /* FF6C */ memoryAccessors[0xFF6C] = null;
-    /* FF6D */ memoryAccessors[0xFF6D] = null;
-    /* FF6E */ memoryAccessors[0xFF6E] = null;
-    /* FF6F */ memoryAccessors[0xFF6F] = null;
-    /* FF70 */ memoryAccessors[0xFF70] = null;
-    /* FF71 */ memoryAccessors[0xFF71] = null;
-    /* FF72 */ memoryAccessors[0xFF72] = null;
-    /* FF73 */ memoryAccessors[0xFF73] = null;
-    /* FF74 */ memoryAccessors[0xFF74] = null;
-    /* FF75 */ memoryAccessors[0xFF75] = null;
-    /* FF76 */ memoryAccessors[0xFF76] = null;
-    /* FF77 */ memoryAccessors[0xFF77] = null;
-    /* FF78 */ memoryAccessors[0xFF78] = null;
-    /* FF79 */ memoryAccessors[0xFF79] = null;
-    /* FF7A */ memoryAccessors[0xFF7A] = null;
-    /* FF7B */ memoryAccessors[0xFF7B] = null;
-    /* FF7C */ memoryAccessors[0xFF7C] = null;
-    /* FF7D */ memoryAccessors[0xFF7D] = null;
-    /* FF7E */ memoryAccessors[0xFF7E] = null;
-    /* FF7F */ memoryAccessors[0xFF7F] = null;
+    /* FF51 */ memoryAccessors[0xFF51] = FF;
+    /* FF52 */ memoryAccessors[0xFF52] = FF;
+    /* FF53 */ memoryAccessors[0xFF53] = FF;
+    /* FF54 */ memoryAccessors[0xFF54] = FF;
+    /* FF55 */ memoryAccessors[0xFF55] = FF;
+    /* FF56 */ memoryAccessors[0xFF56] = FF;
+    /* FF57 */ memoryAccessors[0xFF57] = FF;
+    /* FF58 */ memoryAccessors[0xFF58] = FF;
+    /* FF59 */ memoryAccessors[0xFF59] = FF;
+    /* FF5A */ memoryAccessors[0xFF5A] = FF;
+    /* FF5B */ memoryAccessors[0xFF5B] = FF;
+    /* FF5C */ memoryAccessors[0xFF5C] = FF;
+    /* FF5D */ memoryAccessors[0xFF5D] = FF;
+    /* FF5E */ memoryAccessors[0xFF5E] = FF;
+    /* FF5F */ memoryAccessors[0xFF5F] = FF;
+    /* FF60 */ memoryAccessors[0xFF60] = FF;
+    /* FF61 */ memoryAccessors[0xFF61] = FF;
+    /* FF62 */ memoryAccessors[0xFF62] = FF;
+    /* FF63 */ memoryAccessors[0xFF63] = FF;
+    /* FF64 */ memoryAccessors[0xFF64] = FF;
+    /* FF65 */ memoryAccessors[0xFF65] = FF;
+    /* FF66 */ memoryAccessors[0xFF66] = FF;
+    /* FF67 */ memoryAccessors[0xFF67] = FF;
+    /* FF68 */ memoryAccessors[0xFF68] = FF;
+    /* FF69 */ memoryAccessors[0xFF69] = FF;
+    /* FF6A */ memoryAccessors[0xFF6A] = FF;
+    /* FF6B */ memoryAccessors[0xFF6B] = FF;
+    /* FF6C */ memoryAccessors[0xFF6C] = FF;
+    /* FF6D */ memoryAccessors[0xFF6D] = FF;
+    /* FF6E */ memoryAccessors[0xFF6E] = FF;
+    /* FF6F */ memoryAccessors[0xFF6F] = FF;
+    /* FF70 */ memoryAccessors[0xFF70] = FF;
+    /* FF71 */ memoryAccessors[0xFF71] = FF;
+    /* FF72 */ memoryAccessors[0xFF72] = FF;
+    /* FF73 */ memoryAccessors[0xFF73] = FF;
+    /* FF74 */ memoryAccessors[0xFF74] = FF;
+    /* FF75 */ memoryAccessors[0xFF75] = FF;
+    /* FF76 */ memoryAccessors[0xFF76] = FF;
+    /* FF77 */ memoryAccessors[0xFF77] = FF;
+    /* FF78 */ memoryAccessors[0xFF78] = FF;
+    /* FF79 */ memoryAccessors[0xFF79] = FF;
+    /* FF7A */ memoryAccessors[0xFF7A] = FF;
+    /* FF7B */ memoryAccessors[0xFF7B] = FF;
+    /* FF7C */ memoryAccessors[0xFF7C] = FF;
+    /* FF7D */ memoryAccessors[0xFF7D] = FF;
+    /* FF7E */ memoryAccessors[0xFF7E] = FF;
+    /* FF7F */ memoryAccessors[0xFF7F] = FF;
 
     /* 0xFF80 - 0xFFFE */
     for (uint16_t i = Specs::MemoryLayout::HRAM::START; i <= Specs::MemoryLayout::HRAM::END; i++) {
@@ -266,6 +266,32 @@ uint8_t Bus::readCartridgeRam(uint16_t address) const {
 
 void Bus::writeCartridgeRam(uint16_t address, uint8_t value) {
     return cartridgeSlot.writeRam(address, value);
+}
+
+uint8_t Bus::readVram(uint16_t address) const {
+    // VRAM is blocked during Pixel Transfer
+    if (keep_bits<2>(video.STAT) != Specs::Ppu::Phases::PIXEL_TRANSFER)
+        return vram[address - Specs::MemoryLayout::VRAM::START];
+    return 0xFF;
+}
+
+void Bus::writeVram(uint16_t address, uint8_t value) {
+    // VRAM is blocked during Pixel Transfer
+    if (keep_bits<2>(video.STAT) != Specs::Ppu::Phases::PIXEL_TRANSFER)
+        vram[address - Specs::MemoryLayout::VRAM::START] = value;
+}
+
+uint8_t Bus::readOam(uint16_t address) const {
+    // OAM is blocked during OAM Scan and Pixel Transfer
+    if (keep_bits<2>(video.STAT) < Specs::Ppu::Phases::OAM_SCAN)
+        return oam[address - Specs::MemoryLayout::OAM::START];
+    return 0xFF;
+}
+
+void Bus::writeOam(uint16_t address, uint8_t value) {
+    // OAM is blocked during OAM Scan and Pixel Transfer
+    if (keep_bits<2>(video.STAT) < Specs::Ppu::Phases::OAM_SCAN)
+        oam[address - Specs::MemoryLayout::OAM::START] = value;
 }
 
 uint8_t Bus::readP1(uint16_t address) const {
@@ -340,9 +366,9 @@ void Bus::writeBOOT(uint16_t address, uint8_t value) {
     boot.writeBOOT(value);
 }
 
-uint8_t Bus::readNull(uint16_t address) const {
+uint8_t Bus::readFF(uint16_t address) const {
     return 0xFF;
 }
 
-void Bus::writeNull(uint16_t address, uint8_t value) {
+void Bus::writeNop(uint16_t address, uint8_t value) {
 }

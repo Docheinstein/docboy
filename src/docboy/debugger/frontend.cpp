@@ -558,7 +558,7 @@ DebuggerFrontend::handleCommand<FrontendSearchInstructionsCommand>(const Fronten
     // find instruction among known disassembled instructions
     std::vector<std::pair<uint16_t, DisassembledInstruction>> disassembled = backend.getDisassembledInstructions();
     for (const auto& [addr, instr] : disassembled) {
-        if (instr == cmd.instruction) {
+        if (mem_find_first(instr.data(), instr.size(), cmd.instruction.data(), cmd.instruction.size())) {
             std::cout << hex(addr) << "    " << instruction_mnemonic(instr, addr) << std::endl;
         }
     }
@@ -608,6 +608,8 @@ static bool handleShowHideFrontendCommand(const std::string& subject, DebuggerFr
                                &config.sections.cpu,
                                &config.sections.flags,
                                &config.sections.registers,
+                               &config.sections.interrupts,
+                               &config.sections.timers,
                                &config.sections.io.interrupts,
                                &config.sections.io.timers,
                                &config.sections.code,
@@ -644,12 +646,25 @@ static bool handleShowHideFrontendCommand(const std::string& subject, DebuggerFr
                             &config.sections.io.interrupts, &config.sections.io.sound, &config.sections.io.video}))
         return true;
 
+    if (setBoolsIfMatch<B>(subject, {"timers"}, {&config.sections.timers, &config.sections.io.timers}))
+        return true;
+
+    if (setBoolsIfMatch<B>(subject, {"interrupts"}, {&config.sections.interrupts, &config.sections.io.interrupts}))
+        return true;
+
+    if (setBoolsIfMatch<B>(subject, {"dma"}, {&config.sections.dma}))
+        return true;
+
+    if (setBoolsIfMatch<B>(subject, {"code"}, {&config.sections.code}))
+        return true;
+
     if (setBoolsIfMatch<B>(subject, {"all"},
                            {&config.sections.breakpoints, &config.sections.watchpoints, &config.sections.cpu,
                             &config.sections.ppu, &config.sections.flags, &config.sections.registers,
-                            &config.sections.interrupts, &config.sections.io.joypad, &config.sections.io.serial,
-                            &config.sections.io.timers, &config.sections.io.interrupts, &config.sections.io.sound,
-                            &config.sections.io.video, &config.sections.code}))
+                            &config.sections.interrupts, &config.sections.timers, &config.sections.dma,
+                            &config.sections.io.joypad, &config.sections.io.serial, &config.sections.io.timers,
+                            &config.sections.io.interrupts, &config.sections.io.sound, &config.sections.io.video,
+                            &config.sections.code}))
         return true;
 
     return false;
@@ -1292,6 +1307,22 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         std::cout << subheader("win") << std::endl;
         std::cout << termcolor::yellow << "WLY              :  " << termcolor::reset << +gb.ppu.w.WLY << std::endl;
+    }
+
+    // DMA
+    if (config.sections.dma) {
+        std::cout << header("DMA") << std::endl;
+        if (gb.dma.active) {
+            std::cout << termcolor::yellow << "DMA Transfer : " << termcolor::green << "In Progress" << termcolor::reset
+                      << std::endl;
+            std::cout << termcolor::yellow << "DMA Source   : " << termcolor::reset << hex(gb.dma.source) << std::endl;
+            std::cout << termcolor::yellow << "DMA Progress : " << termcolor::reset
+                      << hex(gb.dma.source + gb.dma.cursor) << " => " << gb.dma.cursor << " [" << +gb.dma.cursor << "/"
+                      << "160]" << std::endl;
+        } else {
+            std::cout << termcolor::yellow << "DMA Transfer : " << termcolor::color<240> << "None" << termcolor::reset
+                      << std::endl;
+        }
     }
 
     // Flags

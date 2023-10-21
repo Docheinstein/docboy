@@ -63,6 +63,12 @@ private:
     [[nodiscard]] uint8_t readCartridgeRam(uint16_t address) const;
     void writeCartridgeRam(uint16_t address, uint8_t value);
 
+    [[nodiscard]] uint8_t readVram(uint16_t address) const;
+    void writeVram(uint16_t address, uint8_t value);
+
+    [[nodiscard]] uint8_t readOam(uint16_t address) const;
+    void writeOam(uint16_t address, uint8_t value);
+
     [[nodiscard]] uint8_t readP1(uint16_t address) const;
     void writeP1(uint16_t address, uint8_t value);
 
@@ -89,8 +95,8 @@ private:
 
     void writeBOOT(uint16_t address, uint8_t value);
 
-    [[nodiscard]] uint8_t readNull(uint16_t address) const;
-    void writeNull(uint16_t address, uint8_t value);
+    [[nodiscard]] uint8_t readFF(uint16_t address) const;
+    void writeNop(uint16_t address, uint8_t value);
 
     IF_BOOTROM(BootRom& bootRom);
     CartridgeSlot& cartridgeSlot;

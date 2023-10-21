@@ -103,7 +103,7 @@ void Ppu::enterOamScan() {
 
     tickSelector = &Ppu::oamScan0;
 
-    updateStat<Phase::OamScan>();
+    updateStat<Specs::Ppu::Phases::OAM_SCAN>();
 
     if (test_bit<OAM_INTERRUPT>(video.STAT))
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
@@ -204,7 +204,7 @@ void Ppu::enterPixelTransfer() {
         IF_ASSERTS(firstFetchWasBg = true);
     }
 
-    updateStat<Phase::PixelTransfer>();
+    updateStat<Specs::Ppu::Phases::PIXEL_TRANSFER>();
 }
 
 template <bool Bg>
@@ -381,7 +381,7 @@ void Ppu::enterHBlank() {
 
     tickSelector = &Ppu::hBlank;
 
-    updateStat<Phase::HBlank>();
+    updateStat<Specs::Ppu::Phases::HBLANK>();
 
     if (test_bit<HBLANK_INTERRUPT>(video.STAT))
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
@@ -405,7 +405,7 @@ void Ppu::hBlank() {
 void Ppu::enterVBlank() {
     tickSelector = &Ppu::vBlank;
 
-    updateStat<Phase::VBlank>();
+    updateStat<Specs::Ppu::Phases::VBLANK>();
 
     if (test_bit<VBLANK_INTERRUPT>(video.STAT))
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
@@ -432,9 +432,9 @@ void Ppu::enterNewFrame() {
     enterOamScan();
 }
 
-template <Ppu::Phase P>
+template <uint8_t Phase>
 inline void Ppu::updateStat() {
-    video.STAT = ((uint8_t)video.STAT & 0b11111100) | static_cast<uint8_t>(P);
+    video.STAT = ((uint8_t)video.STAT & 0b11111100) | Phase;
 }
 
 void Ppu::writeLY(uint8_t LY) {

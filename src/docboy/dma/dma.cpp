@@ -18,7 +18,12 @@ void Dma::tick() {
     if (!active)
         return;
 
-    oam[cursor] = bus.read(source + cursor);
+    // DMA source cannot exceed 0xDF00 (copied from mGBA)
+    uint16_t src = source + cursor;
+    if (src >= 0xE000)
+        src &= ~0x2000;
+
+    oam[cursor] = bus.read(src);
     active = ++cursor < Specs::MemoryLayout::OAM::SIZE;
 }
 
