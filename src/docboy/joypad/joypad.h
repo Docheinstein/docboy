@@ -12,7 +12,7 @@ public:
 
 protected:
     uint8_t P1 {0b11000000};
-    uint8_t keys {0xFF};
+    uint8_t keys {0b11111111};
 };
 
 class Joypad : public JoypadIO {

@@ -35,7 +35,7 @@ constexpr uint32_t log_2 = Log2<n>::value;
 template <uint8_t m>
 static uint8_t pow2mod(uint8_t n) {
     static_assert(is_power_of_2<m>);
-    return n & bitmask_on<log_2<m>>;
+    return n & bitmask<log_2<m>>;
 }
 
 template <typename T>

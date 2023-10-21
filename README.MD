@@ -207,6 +207,8 @@ Here's the debugger!
 
 | Collection | Test     | Status             |
 |------------|----------|--------------------|
+| mooneye    | bits     | :white_check_mark:                |
+| mooneye    | instr    | :white_check_mark:                |
+| mooneye    | timers   | :white_check_mark:                |
 | mooneye    | mbc/mbc1 | :white_check_mark: |
 | mooneye    | mbc/mbc5 | :white_check_mark: |
-| mooneye    | timers   | :white_check_mark:                |

@@ -5,6 +5,30 @@
 
 class SoundIO {
 public:
+    void writeNR10(uint8_t value) {
+        NR10 = 0b10000000 | value;
+    }
+
+    void writeNR30(uint8_t value) {
+        NR30 = 0b01111111 | value;
+    }
+
+    void writeNR32(uint8_t value) {
+        NR30 = 0b10011111 | value;
+    }
+
+    void writeNR41(uint8_t value) {
+        NR41 = 0b11000000 | value;
+    }
+
+    void writeNR44(uint8_t value) {
+        NR44 = 0b00111111 | value;
+    }
+
+    void writeNR52(uint8_t value) {
+        NR52 = 0b01110000 | value;
+    }
+
     void saveState(Parcel& parcel) const {
         parcel.writeUInt8(NR10);
         parcel.writeUInt8(NR11);
@@ -85,27 +109,27 @@ public:
         WAVEF = parcel.readUInt8();
     }
 
-    BYTE(NR10, Specs::Registers::Sound::NR10);
-    BYTE(NR11, Specs::Registers::Sound::NR11);
-    BYTE(NR12, Specs::Registers::Sound::NR12);
-    BYTE(NR13, Specs::Registers::Sound::NR13);
-    BYTE(NR14, Specs::Registers::Sound::NR14);
-    BYTE(NR21, Specs::Registers::Sound::NR21);
+    BYTE(NR10, Specs::Registers::Sound::NR10, 0b10000000);
+    BYTE(NR11, Specs::Registers::Sound::NR11, IF_BOOTROM_ELSE(0, 0b10111111));
+    BYTE(NR12, Specs::Registers::Sound::NR12, IF_BOOTROM_ELSE(0, 0b11110011));
+    BYTE(NR13, Specs::Registers::Sound::NR13, IF_BOOTROM_ELSE(0, 0b11111111));
+    BYTE(NR14, Specs::Registers::Sound::NR14, 0b10111111); // TODO: B8 or BF?
+    BYTE(NR21, Specs::Registers::Sound::NR21, IF_BOOTROM_ELSE(0, 0b00111111));
     BYTE(NR22, Specs::Registers::Sound::NR22);
-    BYTE(NR23, Specs::Registers::Sound::NR23);
-    BYTE(NR24, Specs::Registers::Sound::NR24);
-    BYTE(NR30, Specs::Registers::Sound::NR30);
-    BYTE(NR31, Specs::Registers::Sound::NR31);
-    BYTE(NR32, Specs::Registers::Sound::NR32);
-    BYTE(NR33, Specs::Registers::Sound::NR33);
-    BYTE(NR34, Specs::Registers::Sound::NR34);
-    BYTE(NR41, Specs::Registers::Sound::NR41);
+    BYTE(NR23, Specs::Registers::Sound::NR23, IF_BOOTROM_ELSE(0, 0b11111111));
+    BYTE(NR24, Specs::Registers::Sound::NR24, 0b10111111); // TODO: B8 or BF?
+    BYTE(NR30, Specs::Registers::Sound::NR30, 0b01111111);
+    BYTE(NR31, Specs::Registers::Sound::NR31, IF_BOOTROM_ELSE(0, 0b11111111));
+    BYTE(NR32, Specs::Registers::Sound::NR32, 0b10011111);
+    BYTE(NR33, Specs::Registers::Sound::NR33, IF_BOOTROM_ELSE(0, 0b11111111));
+    BYTE(NR34, Specs::Registers::Sound::NR34, 0b10111111); // TODO: B8 or BF?
+    BYTE(NR41, Specs::Registers::Sound::NR41, IF_BOOTROM_ELSE(0, 0b11111111));
     BYTE(NR42, Specs::Registers::Sound::NR42);
     BYTE(NR43, Specs::Registers::Sound::NR43);
-    BYTE(NR44, Specs::Registers::Sound::NR44);
-    BYTE(NR50, Specs::Registers::Sound::NR50);
-    BYTE(NR51, Specs::Registers::Sound::NR51);
-    BYTE(NR52, Specs::Registers::Sound::NR52);
+    BYTE(NR44, Specs::Registers::Sound::NR44, 0b10111111); // TODO: B8 or BF?
+    BYTE(NR50, Specs::Registers::Sound::NR50, IF_BOOTROM_ELSE(0, 0b01110111));
+    BYTE(NR51, Specs::Registers::Sound::NR51, IF_BOOTROM_ELSE(0, 0b11110011));
+    BYTE(NR52, Specs::Registers::Sound::NR52, IF_BOOTROM_ELSE(0, 0b11110001));
     BYTE(WAVE0, Specs::Registers::Sound::WAVE0);
     BYTE(WAVE1, Specs::Registers::Sound::WAVE1);
     BYTE(WAVE2, Specs::Registers::Sound::WAVE2);

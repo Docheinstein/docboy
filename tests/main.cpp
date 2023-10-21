@@ -17,6 +17,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <optional>
+#include <utility>
 
 #define TABLE_1(t1, data) GENERATE(table<t1> data)
 #define TABLE_2(t1, t2, data) GENERATE(table<t1, t2> data)
@@ -372,15 +373,15 @@ TEST_CASE("bits", "[bits]") {
     }
 
     SECTION("bitmask_on") {
-        REQUIRE(bitmask_on<0> == 0b00000000);
-        REQUIRE(bitmask_on<1> == 0b00000001);
-        REQUIRE(bitmask_on<2> == 0b00000011);
-        REQUIRE(bitmask_on<3> == 0b00000111);
-        REQUIRE(bitmask_on<4> == 0b00001111);
-        REQUIRE(bitmask_on<5> == 0b00011111);
-        REQUIRE(bitmask_on<6> == 0b00111111);
-        REQUIRE(bitmask_on<7> == 0b01111111);
-        REQUIRE(bitmask_on<8> == 0b11111111);
+        REQUIRE(bitmask<0> == 0b00000000);
+        REQUIRE(bitmask<1> == 0b00000001);
+        REQUIRE(bitmask<2> == 0b00000011);
+        REQUIRE(bitmask<3> == 0b00000111);
+        REQUIRE(bitmask<4> == 0b00001111);
+        REQUIRE(bitmask<5> == 0b00011111);
+        REQUIRE(bitmask<6> == 0b00111111);
+        REQUIRE(bitmask<7> == 0b01111111);
+        REQUIRE(bitmask<8> == 0b11111111);
     }
 
     SECTION("bitmask_off") {
@@ -393,6 +394,33 @@ TEST_CASE("bits", "[bits]") {
         REQUIRE((uint8_t)bitmask_off<6> == 0b11000000);
         REQUIRE((uint8_t)bitmask_off<7> == 0b10000000);
         REQUIRE((uint8_t)bitmask_off<8> == 0b00000000);
+    }
+
+    SECTION("bitmask_range") {
+        REQUIRE(bitmask_range<0, 0> == 0b00000001);
+        REQUIRE(bitmask_range<1, 0> == 0b00000011);
+        REQUIRE(bitmask_range<2, 0> == 0b00000111);
+        REQUIRE(bitmask_range<3, 0> == 0b00001111);
+        REQUIRE(bitmask_range<4, 0> == 0b00011111);
+        REQUIRE(bitmask_range<5, 0> == 0b00111111);
+        REQUIRE(bitmask_range<6, 0> == 0b01111111);
+        REQUIRE(bitmask_range<7, 0> == 0b11111111);
+
+        REQUIRE(bitmask_range<0, 0> == 0b00000001);
+        REQUIRE(bitmask_range<1, 0> == 0b00000011);
+        REQUIRE(bitmask_range<2, 0> == 0b00000111);
+        REQUIRE(bitmask_range<3, 0> == 0b00001111);
+        REQUIRE(bitmask_range<4, 0> == 0b00011111);
+        REQUIRE(bitmask_range<5, 0> == 0b00111111);
+        REQUIRE(bitmask_range<6, 0> == 0b01111111);
+        REQUIRE(bitmask_range<7, 0> == 0b11111111);
+
+        REQUIRE(bitmask_range<2, 2> == 0b00000100);
+        REQUIRE(bitmask_range<3, 2> == 0b00001100);
+        REQUIRE(bitmask_range<4, 2> == 0b00011100);
+        REQUIRE(bitmask_range<5, 2> == 0b00111100);
+        REQUIRE(bitmask_range<6, 2> == 0b01111100);
+        REQUIRE(bitmask_range<7, 2> == 0b11111100);
     }
 
     SECTION("bit") {
@@ -733,7 +761,7 @@ TEST_CASE("state", "[state]") {
 
         {
             Runner runner;
-            runner.rom("blargg/cpu_instrs.gb").maxTicks(10'000).run();
+            runner.rom("tests/roms/blargg/cpu_instrs.gb").maxTicks(10'000).run();
             data1.resize(runner.core.getStateSaveSize());
             runner.core.saveState(data1.data());
         }
@@ -742,7 +770,7 @@ TEST_CASE("state", "[state]") {
 
         {
             Runner runner;
-            runner.rom("blargg/cpu_instrs.gb");
+            runner.rom("tests/roms/blargg/cpu_instrs.gb");
             runner.core.loadState(data1.data());
             runner.core.saveState(data2.data());
         }
@@ -751,99 +779,124 @@ TEST_CASE("state", "[state]") {
     }
 }
 
-static bool run_expecting_framebuffer(const std::string& rom, const std::string& result, const Palette& palette) {
-    return FramebufferRunner()
-        .rom(TEST_ROMS_PATH + rom)
-        .maxTicks(DEFAULT_DURATION)
-        .checkIntervalTicks(DURATION_VERY_SHORT)
-        .expectFramebuffer(TEST_RESULTS_PATH + result, palette)
-        .run();
+struct FramebufferRunnerParams {
+    FramebufferRunnerParams(std::string&& rom, std::string&& expected, const Palette& palette_ = DEFAULT_PALETTE) :
+        rom(std::move(rom)) {
+        result = std::move(expected);
+        palette = palette_;
+    }
+
+    std::string rom;
+    std::string result;
+    Palette palette;
+};
+
+struct SerialRunnerParams {
+    SerialRunnerParams(std::string&& rom, std::vector<uint8_t>&& expected) :
+        rom(std::move(rom)) {
+        result = std::move(expected);
+    }
+
+    std::string rom;
+    std::vector<uint8_t> result;
+};
+
+using F = FramebufferRunnerParams;
+using S = SerialRunnerParams;
+using RunnerParams = std::variant<F, S>;
+
+static bool run_with_params(const RunnerParams& p) {
+    if (std::holds_alternative<FramebufferRunnerParams>(p)) {
+        const auto pf = std::get<FramebufferRunnerParams>(p);
+        return FramebufferRunner()
+            .rom(TEST_ROMS_PATH + pf.rom)
+            .maxTicks(DEFAULT_DURATION)
+            .checkIntervalTicks(DURATION_VERY_SHORT)
+            .expectFramebuffer(TEST_RESULTS_PATH + pf.result, pf.palette)
+            .run();
+    }
+
+    if (std::holds_alternative<SerialRunnerParams>(p)) {
+        const auto ps = std::get<SerialRunnerParams>(p);
+        return SerialRunner()
+            .rom(TEST_ROMS_PATH + ps.rom)
+            .maxTicks(DEFAULT_DURATION)
+            .checkIntervalTicks(DURATION_VERY_SHORT)
+            .expectOutput(ps.result)
+            .run();
+    }
+
+    checkNoEntry();
+    return false;
 }
 
-static bool run_expecting_serial(const std::string& rom, const std::vector<uint8_t>& result) {
-    return SerialRunner()
-        .rom(TEST_ROMS_PATH + rom)
-        .maxTicks(DEFAULT_DURATION)
-        .checkIntervalTicks(DURATION_VERY_SHORT)
-        .expectOutput(result)
-        .run();
-}
+#define RUN_TEST_ROMS(...)                                                                                             \
+    const auto [params] = TABLE(RunnerParams, ({__VA_ARGS__}));                                                        \
+    REQUIRE(run_with_params(params))
 
-TEST_CASE("emulation", "[emulation]") {
+TEST_CASE("emulation", "[emulation][.]") {
     SECTION("mbc") {
         SECTION("mbc1") {
-            const auto [rom, expectedResult, palette] =
-                TABLE(std::string, std::string, Palette,
-                      ({{"mooneye/mbc/mbc1/bits_bank1.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/bits_bank2.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/bits_mode.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/bits_ramg.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/ram_64kb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/ram_256kb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/rom_512kb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/rom_1Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/rom_2Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/rom_4Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/rom_8Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc1/rom_16Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE}}));
-            REQUIRE(run_expecting_framebuffer(rom, expectedResult, palette));
+            RUN_TEST_ROMS(F {"mooneye/mbc/mbc1/bits_bank1.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/bits_bank2.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/bits_mode.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/bits_ramg.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/ram_64kb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/ram_256kb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/rom_512kb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/rom_1Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/rom_2Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/rom_4Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/rom_8Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc1/rom_16Mb.gb", "mooneye/ok.png"});
         }
 
         SECTION("mbc5") {
-            const auto [rom, expectedResult, palette] =
-                TABLE(std::string, std::string, Palette,
-                      ({{"mooneye/mbc/mbc5/rom_512kb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc5/rom_1Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc5/rom_2Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc5/rom_4Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc5/rom_8Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc5/rom_16Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc5/rom_32Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE},
-                        {"mooneye/mbc/mbc5/rom_64Mb.gb", "mooneye/ok.png", DEFAULT_PALETTE}}));
-            REQUIRE(run_expecting_framebuffer(rom, expectedResult, palette));
+            RUN_TEST_ROMS(F {"mooneye/mbc/mbc5/rom_512kb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc5/rom_1Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc5/rom_2Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc5/rom_4Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc5/rom_8Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc5/rom_16Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc5/rom_32Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc5/rom_64Mb.gb", "mooneye/ok.png"});
+        }
+    }
+
+    SECTION("memory") {
+        SECTION("oam") {
+            RUN_TEST_ROMS(F {"mooneye/bits/mem_oam.gb", "mooneye/ok.png"}, );
+        }
+        SECTION("io") {
+            RUN_TEST_ROMS(F {"mooneye/bits/unused_hwio-GS.gb", "mooneye/ok.png"}, );
         }
     }
 
     SECTION("cpu") {
-        const auto [rom, expectedResult, palette] =
-            TABLE(std::string, std::string, Palette,
-                  ({
-                      {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png", DEFAULT_PALETTE},
-                      {"blargg/instr_timing.gb", "blargg/instr_timing.png", DEFAULT_PALETTE},
-                  }));
-        REQUIRE(run_expecting_framebuffer(rom, expectedResult, palette));
+        RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png"},
+                      F {"blargg/instr_timing.gb", "blargg/instr_timing.png"},
+                      F {"mooneye/instr/daa.gb", "mooneye/ok.png"},
+                      S {"mooneye/bits/reg_f.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
     }
 
     SECTION("ppu") {
-        SECTION("dmg-acid2") {
-            const auto [rom, expectedResult, palette] =
-                TABLE(std::string, std::string, Palette,
-                      ({
-                          {"dmg-acid2/dmg-acid2.gb", "dmg-acid2/dmg-acid2.png", GREY_PALETTE},
-                      }));
-            REQUIRE(run_expecting_framebuffer(rom, expectedResult, palette));
-        }
+        RUN_TEST_ROMS(F {"dmg-acid2/dmg-acid2.gb", "dmg-acid2/dmg-acid2.png", GREY_PALETTE}, );
     }
 
     SECTION("timers") {
-        const auto [rom, expectedResult] =
-            TABLE(std::string, std::vector<uint8_t>,
-                  ({
-                      {"mooneye/timers/div_write.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/rapid_toggle.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tim00.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tim00_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tim01.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tim01_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tim10.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tim10_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tim11.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tim11_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tima_reload.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tima_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      {"mooneye/timers/tma_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                  }));
-        REQUIRE(run_expecting_serial(rom, expectedResult));
+        RUN_TEST_ROMS(S {"mooneye/timers/div_write.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/rapid_toggle.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim00.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim00_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim01.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim01_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim10.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim10_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim11.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim11_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tima_reload.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tima_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tma_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
     }
 
 #ifdef MEALYBUG

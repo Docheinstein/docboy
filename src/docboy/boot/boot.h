@@ -8,6 +8,11 @@
 
 class BootIO {
 public:
+    void writeBOOT(uint8_t value) {
+        // BOOT disable is one-way only
+        BOOT |= value;
+    }
+
     void saveState(Parcel& parcel) const {
         parcel.writeUInt8(BOOT);
     }
@@ -16,6 +21,6 @@ public:
         BOOT = parcel.readUInt8();
     }
 
-    BYTE(BOOT, Specs::Registers::Boot::BOOT, IF_NOT_BOOTROM(1));
+    BYTE(BOOT, Specs::Registers::Boot::BOOT, IF_BOOTROM_ELSE(0b11111110, 0b11111111));
 };
 #endif // BOOT_H

@@ -191,6 +191,10 @@ namespace Bits {
         constexpr uint8_t C = 4;
     } // namespace Flags
 
+    namespace Boot {
+        constexpr uint8_t BOOT_ENABLE = 0;
+    } // namespace Boot
+
     namespace Interrupts {
         constexpr uint8_t JOYPAD = 4;
         constexpr uint8_t SERIAL = 3;

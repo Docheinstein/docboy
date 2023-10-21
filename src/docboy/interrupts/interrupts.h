@@ -17,6 +17,10 @@ public:
         Joypad,
     };
 
+    void writeIF(uint8_t value) {
+        IF = 0b11100000 | value;
+    }
+
     template <InterruptType Type>
     void raiseInterrupt() {
         if constexpr (Type == InterruptType::VBlank) {
@@ -42,7 +46,7 @@ public:
         IE = parcel.readUInt8();
     }
 
-    BYTE(IF, Specs::Registers::Interrupts::IF, IF_BOOTROM_ELSE(0, 0x01));
+    BYTE(IF, Specs::Registers::Interrupts::IF, 0b11100001);
     BYTE(IE, Specs::Registers::Interrupts::IE);
 };
 

@@ -10,7 +10,7 @@
 
 class SerialIO {
 public:
-    BYTE(SB, Specs::Registers::Serial::SB);
+    BYTE(SB, Specs::Registers::Serial::SB, 0b01111110);
     BYTE(SC, Specs::Registers::Serial::SC);
 
     void saveState(Parcel& parcel) const {
@@ -21,6 +21,10 @@ public:
     void loadState(Parcel& parcel) {
         SB = parcel.readUInt8();
         SC = parcel.readUInt8();
+    }
+
+    void writeSC(uint8_t value) {
+        SC = 0b01111110 | value;
     }
 };
 

@@ -1,5 +1,4 @@
 #include "cpu.h"
-#include "docboy/boot/boot.h"
 #include "docboy/bus/bus.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/memory/byte.hpp"
@@ -2127,7 +2126,7 @@ inline void Cpu::fetchCB() {
 }
 
 inline bool Cpu::hasPendingInterrupts() const {
-    return interrupts.IE & interrupts.IF & bitmask_on<5>;
+    return interrupts.IE & interrupts.IF & bitmask<5>;
 }
 // e.g. e.g. CB 00 | RLC B
 

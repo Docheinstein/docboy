@@ -36,7 +36,7 @@ public:
     uint16_t DIV {IF_NOT_BOOTROM(0xABCC)};
     BYTE(TIMA, Specs::Registers::Timers::TIMA);
     BYTE(TMA, Specs::Registers::Timers::TMA);
-    BYTE(TAC, Specs::Registers::Timers::TAC, 0xFF);
+    BYTE(TAC, Specs::Registers::Timers::TAC, 0b11111000);
 
 protected:
     void setDIV(uint16_t value);

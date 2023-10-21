@@ -50,7 +50,7 @@ void TimersIO::writeTMA(uint8_t value) {
 }
 
 void TimersIO::writeTAC(uint8_t value) {
-    TAC = keep_bits<3>(value);
+    TAC = 0b11111000 | value;
     onFallingEdgeIncTima();
 }
 

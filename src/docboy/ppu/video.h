@@ -16,6 +16,10 @@ public:
         dma(dma) {
     }
 
+    void writeSTAT(uint8_t value) {
+        STAT = 0b10000000 | value;
+    }
+
     void writeDMA(uint8_t value) {
         DMA = value;
         dma.transfer(DMA << 8);
@@ -52,7 +56,7 @@ public:
     }
 
     BYTE(LCDC, Specs::Registers::Video::LCDC, IF_BOOTROM_ELSE(0, 0x91));
-    BYTE(STAT, Specs::Registers::Video::STAT);
+    BYTE(STAT, Specs::Registers::Video::STAT, IF_BOOTROM_ELSE(0x80, 0x85));
     BYTE(SCY, Specs::Registers::Video::SCY);
     BYTE(SCX, Specs::Registers::Video::SCX);
     BYTE(LY, Specs::Registers::Video::LY);

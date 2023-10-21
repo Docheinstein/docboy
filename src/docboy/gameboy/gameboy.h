@@ -14,7 +14,6 @@
 #include "docboy/lcd/lcd.h"
 #include "docboy/memory/hram.h"
 #include "docboy/memory/memory.hpp"
-#include "docboy/memory/null.h"
 #include "docboy/memory/oam.h"
 #include "docboy/memory/vram.h"
 #include "docboy/memory/wram1.h"
@@ -50,7 +49,6 @@ public:
     InterruptsIO interrupts {};
     SoundIO sound {};
     VideoIO video {dma};
-    NullIO nullIO {};
     Bus bus {IF_BOOTROM(*bootRom COMMA) cartridgeSlot,
              vram,
              wram1,
@@ -63,8 +61,7 @@ public:
              interrupts,
              sound,
              video,
-             boot,
-             nullIO};
+             boot};
     Cpu cpu {interrupts, bus};
     Lcd lcd {};
     Ppu ppu {lcd, video, interrupts, vram, oam};

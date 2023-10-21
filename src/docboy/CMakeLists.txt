@@ -45,7 +45,6 @@ target_sources(docboy PRIVATE
     memory/fwd/wram2fwd.h
     memory/hram.h
     memory/memory.hpp
-    memory/null.h
     memory/oam.h
     memory/vram.h
     memory/wram1.h

@@ -37,7 +37,10 @@ template <uint8_t n>
 constexpr uint64_t bit = uint64_t(1) << n;
 
 template <uint8_t n>
-constexpr uint64_t bitmask_on = bit<n> - 1;
+constexpr uint64_t bitmask = bit<n> - 1;
+
+template <uint8_t from, uint8_t to, std::enable_if_t<from >= to>* = nullptr>
+constexpr uint64_t bitmask_range = bitmask<from - to + 1> << to;
 
 template <uint8_t n>
 constexpr uint64_t bitmask_off = uint64_t(-1) << n;
@@ -150,7 +153,14 @@ void set_bit(T&& dest) {
 template <uint8_t n, typename T>
 [[nodiscard]] auto keep_bits(T&& value) {
     static_assert(n < 8 * sizeof(T));
-    return value & bitmask_on<n>;
+    return value & bitmask<n>;
+}
+
+template <uint8_t from, uint8_t to, typename T, std::enable_if_t<from >= to>* = nullptr>
+[[nodiscard]] auto keep_bits_range(T&& value) {
+    static_assert(from < 8 * sizeof(T));
+    static_assert(to < 8 * sizeof(T));
+    return value & bitmask_range<from, to>;
 }
 
 template <uint8_t n, typename T>
@@ -163,13 +173,13 @@ template <uint8_t n, typename T>
 
 template <uint8_t b, typename T1, typename T2>
 bool sum_test_carry_bit(T1 v1, T2 v2) {
-    static constexpr uint64_t mask = bitmask_on<b + 1>;
+    static constexpr uint64_t mask = bitmask<b + 1>;
     return ((uint64_t(v1) & mask) + (uint64_t(v2) & mask)) & bit<b + 1>;
 }
 
 template <uint8_t b, typename T1>
 bool inc_test_carry_bit(T1 v1) {
-    static constexpr uint64_t mask = bitmask_on<b + 1>;
+    static constexpr uint64_t mask = bitmask<b + 1>;
     return ((uint64_t(v1) & mask) + uint64_t(1)) & bit<b + 1>;
 }
 
@@ -191,7 +201,7 @@ sum_carry_result<T1> inc_carry(T1 v1) {
 template <uint8_t b, typename T1, typename T2>
 bool sub_get_borrow_bit(T1 v1, T2 v2) {
     // TODO: can be optimized?
-    uint64_t mask = bitmask_on<b + 1>;
+    uint64_t mask = bitmask<b + 1>;
     v2 = (v2 < 0) ? -v2 : v2;
     uint64_t vm1 = (((uint64_t)v1) & mask);
     uint64_t vm2 = (((uint64_t)v2) & mask);

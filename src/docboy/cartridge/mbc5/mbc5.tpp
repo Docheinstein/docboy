@@ -61,7 +61,7 @@ void Mbc5<RomSize, RamSize, Battery>::writeRom(uint16_t address, uint8_t value) 
         }
 
         // 0x2000 - 0x2FFF
-        romBankSelector = discard_bits<8>(romBankSelector) | value;
+        romBankSelector = keep_bits_range<15, 8>(romBankSelector) | value;
         return;
     }
 
