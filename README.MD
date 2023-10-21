@@ -195,6 +195,7 @@ Here's the debugger!
 |------------|------------|--------------------|
 | blargg     | cpu_instrs | :white_check_mark: |
 | blargg     | instr_timing | :white_check_mark: |
+| mooneye    | instr    | :white_check_mark:        |
 
 
 **PPU**
@@ -203,12 +204,22 @@ Here's the debugger!
 |------------|-----------|--------------------|
 | dmg-agic2  | dmg-acid2 | :white_check_mark: |
 
-**MBC**
+**Timers**
 
 | Collection | Test     | Status             |
 |------------|----------|--------------------|
-| mooneye    | bits     | :white_check_mark:                |
-| mooneye    | instr    | :white_check_mark:                |
-| mooneye    | timers   | :white_check_mark:                |
-| mooneye    | mbc/mbc1 | :white_check_mark: |
-| mooneye    | mbc/mbc5 | :white_check_mark: |
+| mooneye    | timers   | :white_check_mark: |
+
+**MBC**
+
+| Collection | Test     | Status              |
+|------------|----------|---------------------|
+| mooneye    | mbc/mbc1 | :white_check_mark:  |
+| mooneye    | mbc/mbc5 | :white_check_mark:  |
+
+**IO**
+
+| Collection | Test     | Status             |
+|------------|----------|--------------------|
+| mooneye    | bits     | :white_check_mark: |
+
