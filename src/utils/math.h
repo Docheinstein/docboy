@@ -6,12 +6,12 @@
 
 template <uint32_t n>
 struct IsPowerOf2 {
-    static constexpr uint32_t half = n >> 1;
-    static constexpr bool value = (n & 1) == 0 && IsPowerOf2<half>::value;
+    static constexpr uint32_t h = n >> 1;
+    static constexpr bool value = (n & 1) == 0 && IsPowerOf2<h>::value;
 };
 
 template <>
-struct IsPowerOf2<2> {
+struct IsPowerOf2<1> {
     static constexpr bool value = true;
 };
 
@@ -32,10 +32,12 @@ struct Log2<1> {
 template <uint32_t n>
 constexpr uint32_t log_2 = Log2<n>::value;
 
-template <uint8_t m>
-static uint8_t pow2mod(uint8_t n) {
-    static_assert(is_power_of_2<m>);
-    return n & bitmask<log_2<m>>;
+template <uint64_t m>
+static uint64_t mod(uint64_t n) {
+    if constexpr (is_power_of_2<m>) {
+        return n & bitmask<log_2<m>>;
+    }
+    return n % m;
 }
 
 template <typename T>

@@ -1,7 +1,9 @@
 #include "core.h"
+#include "utils/math.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "docboy/debugger/backend.h"
+
 #define TICK_DEBUGGER(n) if (debugger) debugger->onTick(n)
 #define RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN() if (debugger && debugger->isAskingToShutdown()) return
 #else
@@ -11,26 +13,27 @@
 
 
 static constexpr uint8_t CPU_PERIOD = Specs::Frequencies::CLOCK / Specs::Frequencies::CPU;
-static constexpr uint16_t SERIAL_PERIOD = Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
+static constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
+// TODO: deduce SERIAL_TICKS_OFFSET also for bootrom version when sure about bootrom timing
+static constexpr uint64_t SERIAL_TICKS_OFFSET = (SERIAL_PERIOD - 48); // deduced from boot_sclk_align-dmgABCmgb.gb
 
 inline
 void Core::tick() {
     TICK_DEBUGGER(ticks);
     RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
 
-    if (ticks % CPU_PERIOD == 0) {
+    if (mod<CPU_PERIOD>(ticks) == 0) {
         // Timers
         gb.timers.tick();
 
         // CPU
         gb.cpu.tick();
 
-
         // DMA
         gb.dma.tick();
 
         // Serial
-        if (ticks % SERIAL_PERIOD == 0)
+        if (mod<SERIAL_PERIOD>(ticks + SERIAL_TICKS_OFFSET) == 0)
             gb.serialPort.tick();
     }
 

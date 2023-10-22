@@ -248,7 +248,7 @@ void Bus::write(uint16_t address, uint8_t value) {
 
 uint8_t Bus::readCartridgeRom(uint16_t address) const {
 #ifdef ENABLE_BOOTROM
-    if (test_bit<Specs::Bits::Boot::BOOT_ENABLE> == 0 && address <= Specs::MemoryLayout::BOOTROM::END) {
+    if (test_bit<Specs::Bits::Boot::BOOT_ENABLE>(boot.BOOT) == 0 && address <= Specs::MemoryLayout::BOOTROM::END) {
         return bootRom[address];
     }
 #endif

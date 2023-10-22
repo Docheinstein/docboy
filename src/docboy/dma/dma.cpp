@@ -1,6 +1,7 @@
 #include "dma.h"
 #include "docboy/bus/bus.h"
 #include "docboy/memory/memory.hpp"
+#include "utils/bits.hpp"
 
 Dma::Dma(Bus& bus, Oam& oam) :
     bus(bus),
@@ -8,22 +9,19 @@ Dma::Dma(Bus& bus, Oam& oam) :
 }
 
 void Dma::transfer(uint16_t address) {
-    // TODO: what does happen if a transfer is already in progress?
     active = true;
-    source = address;
     cursor = 0;
+
+    // DMA source cannot exceed 0xDF00
+    if (address >= 0xE000)
+        reset_bit<13>(address);
+    source = address;
 }
 
 void Dma::tick() {
     if (!active)
         return;
-
-    // DMA source cannot exceed 0xDF00 (copied from mGBA)
-    uint16_t src = source + cursor;
-    if (src >= 0xE000)
-        src &= ~0x2000;
-
-    oam[cursor] = bus.read(src);
+    oam[cursor] = bus.read(source + cursor);
     active = ++cursor < Specs::MemoryLayout::OAM::SIZE;
 }
 

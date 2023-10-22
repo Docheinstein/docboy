@@ -199,7 +199,7 @@ void Ppu::enterPixelTransfer() {
         // the first bg fetch of this scanline is for the bg
         // eventually discard SCX % 8 pixels
         tickSelector = &Ppu::pixelTransferDummy0<true>;
-        bgPixelTransfer.SCXmod8 = pow2mod<TILE_WIDTH>(video.SCX);
+        bgPixelTransfer.SCXmod8 = mod<TILE_WIDTH>(video.SCX);
         bgPixelTransfer.discardedPixels = 0;
         IF_ASSERTS(firstFetchWasBg = true);
     }
@@ -497,7 +497,7 @@ void Ppu::bgwinPrefetcherGetTile0() {
 void Ppu::bgPrefetcherGetTile0() {
     check(!isFetchingSprite);
 
-    bwf.tilemapX = pow2mod<TILEMAP_WIDTH>((bwf.LX + video.SCX) / TILE_WIDTH);
+    bwf.tilemapX = mod<TILEMAP_WIDTH>((bwf.LX + video.SCX) / TILE_WIDTH);
 
     fetcherTickSelector = &Ppu::bgPrefetcherGetTile1;
 }
@@ -508,7 +508,7 @@ void Ppu::bgPrefetcherGetTile1() {
     const uint8_t SCY = video.SCY;
     const uint8_t LY = video.LY;
     const uint8_t LCDC = video.LCDC;
-    const uint8_t tilemapY = pow2mod<TILEMAP_HEIGHT>((LY + SCY) / TILE_HEIGHT);
+    const uint8_t tilemapY = mod<TILEMAP_HEIGHT>((LY + SCY) / TILE_HEIGHT);
 
     const uint16_t vTilemapAddr = (0x1800 | (test_bit<BG_TILE_MAP>(LCDC) << 10)); // 0x9800 or 0x9C00 (global)
     const uint16_t vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + bwf.tilemapX;
@@ -522,7 +522,7 @@ void Ppu::bgPrefetcherGetTile1() {
                                    // signed addressing mode with 0x9000 as (global) base address
                                    0x1000 + TILE_BYTES * to_signed(tileNumber);
 
-    const uint8_t tileY = pow2mod<TILE_HEIGHT>(LY + SCY);
+    const uint8_t tileY = mod<TILE_HEIGHT>(LY + SCY);
 
     psf.vTileDataAddress = vTileAddr + TILE_ROW_BYTES * tileY;
 
@@ -555,7 +555,7 @@ void Ppu::winPrefetcherGetTile1() {
                                    // signed addressing mode with 0x9000 as (global) base address
                                    0x1000 + TILE_BYTES * to_signed(tileNumber);
 
-    const uint8_t tileY = pow2mod<TILE_WIDTH>(w.WLY);
+    const uint8_t tileY = mod<TILE_WIDTH>(w.WLY);
 
     psf.vTileDataAddress = vTileAddr + TILE_ROW_BYTES * tileY;
 
@@ -662,7 +662,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
         bgFifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[psf.tileDataHigh << 8 | psf.tileDataLow]);
 
         // advance to next tile
-        bwf.LX += TILE_WIDTH; // automatically handle modulo 8 by overflowing
+        bwf.LX += TILE_WIDTH; // automatically handle mod 8 by overflowing
 
         fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;
     }

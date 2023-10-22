@@ -492,6 +492,47 @@ TEST_CASE("bits", "[bits]") {
     }
 }
 
+TEST_CASE("math", "[math]") {
+    SECTION("mod") {
+        REQUIRE(mod<4>(0) == 0);
+        REQUIRE(mod<4>(1) == 1);
+        REQUIRE(mod<4>(2) == 2);
+        REQUIRE(mod<4>(3) == 3);
+        REQUIRE(mod<4>(4) == 0);
+        REQUIRE(mod<4>(5) == 1);
+        REQUIRE(mod<4>(6) == 2);
+        REQUIRE(mod<4>(7) == 3);
+
+        REQUIRE(mod<5>(0) == 0);
+        REQUIRE(mod<5>(1) == 1);
+        REQUIRE(mod<5>(2) == 2);
+        REQUIRE(mod<5>(3) == 3);
+        REQUIRE(mod<5>(4) == 4);
+        REQUIRE(mod<5>(5) == 0);
+        REQUIRE(mod<5>(6) == 1);
+        REQUIRE(mod<5>(7) == 2);
+    }
+
+    SECTION("log") {
+        REQUIRE(log_2<1> == 0);
+        REQUIRE(log_2<2> == 1);
+        REQUIRE(log_2<4> == 2);
+        REQUIRE(log_2<8> == 3);
+    }
+
+    SECTION("is_power_of_2") {
+        REQUIRE(is_power_of_2<1>);
+        REQUIRE(is_power_of_2<2>);
+        REQUIRE(is_power_of_2<4>);
+        REQUIRE(is_power_of_2<8>);
+
+        REQUIRE_FALSE(is_power_of_2<3>);
+        REQUIRE_FALSE(is_power_of_2<5>);
+        REQUIRE_FALSE(is_power_of_2<6>);
+        REQUIRE_FALSE(is_power_of_2<9>);
+    }
+}
+
 TEST_CASE("casts", "[casts]") {
     SECTION("unsigned_to_signed") {
         REQUIRE(to_signed((uint8_t)0) == 0);
@@ -907,6 +948,10 @@ TEST_CASE("emulation", "[emulation][.]") {
         RUN_TEST_ROMS(S {"mooneye/oam_dma/basic.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/oam_dma/reg_read.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/oam_dma/sources-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
+    }
+
+    SECTION("serial") {
+        RUN_TEST_ROMS(F {"mooneye/serial/boot_sclk_align-dmgABCmgb.gb", "mooneye/boot_sclk_align-dmgABCmgb.png"});
     }
 
 #ifdef MEALYBUG
