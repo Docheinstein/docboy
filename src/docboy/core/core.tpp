@@ -14,6 +14,7 @@
 
 static constexpr uint8_t CPU_PERIOD = Specs::Frequencies::CLOCK / Specs::Frequencies::CPU;
 static constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
+
 // TODO: deduce SERIAL_TICKS_OFFSET also for bootrom version when sure about bootrom timing
 static constexpr uint64_t SERIAL_TICKS_OFFSET = (SERIAL_PERIOD - 48); // deduced from boot_sclk_align-dmgABCmgb.gb
 

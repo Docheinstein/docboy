@@ -3,8 +3,8 @@ add_library(docboy STATIC)
 target_sources(docboy PRIVATE
     boot/boot.h
     bootrom/macros.h
-    bus/bus.cpp
-    bus/bus.h
+    mmu/mmu.cpp
+    mmu/mmu.h
     cartridge/cartridge.h
     cartridge/factory.cpp
     cartridge/factory.h

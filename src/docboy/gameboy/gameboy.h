@@ -6,7 +6,6 @@
 #endif
 
 #include "docboy/boot/boot.h"
-#include "docboy/bus/bus.h"
 #include "docboy/cartridge/slot.h"
 #include "docboy/cpu/cpu.h"
 #include "docboy/interrupts/interrupts.h"
@@ -18,6 +17,7 @@
 #include "docboy/memory/vram.h"
 #include "docboy/memory/wram1.h"
 #include "docboy/memory/wram2.h"
+#include "docboy/mmu/mmu.h"
 #include "docboy/ppu/ppu.h"
 #include "docboy/ppu/video.h"
 #include "docboy/serial/port.h"
@@ -39,7 +39,7 @@ public:
     Oam oam {};
     Hram hram {};
 
-    Dma dma {bus, oam};
+    Dma dma {mmu, oam};
     IF_BOOTROM(std::unique_ptr<BootRom> bootRom {});
     CartridgeSlot cartridgeSlot {};
     BootIO boot {};
@@ -49,7 +49,7 @@ public:
     InterruptsIO interrupts {};
     SoundIO sound {};
     VideoIO video {dma};
-    Bus bus {IF_BOOTROM(*bootRom COMMA) cartridgeSlot,
+    Mmu mmu {IF_BOOTROM(*bootRom COMMA) cartridgeSlot,
              vram,
              wram1,
              wram2,
@@ -61,8 +61,9 @@ public:
              interrupts,
              sound,
              video,
-             boot};
-    Cpu cpu {interrupts, bus};
+             boot,
+             dma};
+    Cpu cpu {interrupts, mmu};
     Lcd lcd {};
     Ppu ppu {lcd, video, interrupts, vram, oam};
 };

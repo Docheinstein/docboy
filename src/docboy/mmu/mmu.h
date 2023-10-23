@@ -1,5 +1,5 @@
-#ifndef BUS_H
-#define BUS_H
+#ifndef MMU_H
+#define MMU_H
 
 #include <cstdint>
 
@@ -25,19 +25,22 @@ class InterruptsIO;
 class SoundIO;
 class VideoIO;
 class BootIO;
+class Dma;
 
-class Bus {
+class Mmu {
 public:
-    Bus(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& vram, Wram1& wram1, Wram2& wram2,
+    Mmu(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& vram, Wram1& wram1, Wram2& wram2,
         Oam& oam, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts,
-        SoundIO& sound, VideoIO& video, BootIO& boot);
+        SoundIO& sound, VideoIO& video, BootIO& boot, Dma& dma);
+
+    void tick();
 
     [[nodiscard]] uint8_t read(uint16_t address) const;
     void write(uint16_t address, uint8_t value);
 
 private:
-    using NonTrivialMemoryRead = uint8_t (Bus::*)(uint16_t) const;
-    using NonTrivialMemoryWrite = void (Bus::*)(uint16_t, uint8_t);
+    using NonTrivialMemoryRead = uint8_t (Mmu::*)(uint16_t) const;
+    using NonTrivialMemoryWrite = void (Mmu::*)(uint16_t, uint8_t);
 
     struct MemoryAccess {
         MemoryAccess() = default;
@@ -113,6 +116,9 @@ private:
     VideoIO& video;
     BootIO& boot;
 
+    Dma& dma;
+
     MemoryAccess memoryAccessors[UINT16_MAX + 1] {};
 };
-#endif // BUS_H
+
+#endif // MMU_H

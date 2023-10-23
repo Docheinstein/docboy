@@ -256,7 +256,7 @@ std::vector<std::pair<uint16_t, DisassembledInstruction>> DebuggerBackend::getDi
 
 uint8_t DebuggerBackend::readMemory(uint16_t addr) {
     allowMemoryCallbacks = false;
-    uint8_t value = core.gb.bus.read(addr);
+    uint8_t value = core.gb.mmu.read(addr);
     allowMemoryCallbacks = true;
     return value;
 }

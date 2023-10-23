@@ -1,15 +1,16 @@
 #include "dma.h"
-#include "docboy/bus/bus.h"
 #include "docboy/memory/memory.hpp"
+#include "docboy/mmu/mmu.h"
+#include "utils/asserts.h"
 #include "utils/bits.hpp"
 
-Dma::Dma(Bus& bus, Oam& oam) :
-    bus(bus),
+Dma::Dma(Mmu& mmu, Oam& oam) :
+    mmu(mmu),
     oam(oam) {
 }
 
 void Dma::transfer(uint16_t address) {
-    active = true;
+    state = TransferState::Pending; // delay DMA start by one m-cycle
     cursor = 0;
 
     // DMA source cannot exceed 0xDF00
@@ -19,20 +20,27 @@ void Dma::transfer(uint16_t address) {
 }
 
 void Dma::tick() {
-    if (!active)
+    if (state == TransferState::None) {
         return;
-    oam[cursor] = bus.read(source + cursor);
-    active = ++cursor < Specs::MemoryLayout::OAM::SIZE;
+    } else if (state == TransferState::Active) {
+        oam[cursor] = mmu.read(source + cursor);
+        if (++cursor >= Specs::MemoryLayout::OAM::SIZE)
+            state = TransferState::Finished;
+    } else if (state == TransferState::Pending) {
+        state = TransferState::Active;
+    } else if (state == TransferState::Finished) {
+        state = TransferState::None;
+    }
 }
 
 void Dma::saveState(Parcel& parcel) const {
-    parcel.writeBool(active);
+    parcel.writeUInt8(static_cast<uint8_t>(state));
     parcel.writeUInt16(source);
     parcel.writeUInt8(cursor);
 }
 
 void Dma::loadState(Parcel& parcel) {
-    active = parcel.readBool();
+    state = static_cast<TransferState>(parcel.readUInt8());
     source = parcel.readUInt16();
     cursor = parcel.readUInt8();
 }

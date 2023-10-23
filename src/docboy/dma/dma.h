@@ -5,7 +5,7 @@
 #include "docboy/memory/fwd/oamfwd.h"
 #include <cstdint>
 
-class Bus;
+class Mmu;
 
 class Parcel;
 
@@ -13,7 +13,7 @@ class Dma {
 public:
     DEBUGGABLE_CLASS();
 
-    explicit Dma(Bus& bus, Oam& oam);
+    explicit Dma(Mmu& mmu, Oam& oam);
 
     void transfer(uint16_t address);
     void tick();
@@ -21,11 +21,26 @@ public:
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
 
+    [[nodiscard]] inline bool isTransferring() const {
+        return state != TransferState::None;
+    }
+
 private:
-    Bus& bus;
+    enum class TransferState : uint8_t {
+        /* Not transferring */
+        None,
+        /* DMA transfer required: starting next cycle */
+        Pending,
+        /* DMA transfer running */
+        Active,
+        /* DMA Transfer just finished this cycle */
+        Finished
+    };
+
+    Mmu& mmu;
     Oam& oam;
 
-    bool active {};
+    TransferState state {TransferState::None};
     uint16_t source {};
     uint8_t cursor {};
 };

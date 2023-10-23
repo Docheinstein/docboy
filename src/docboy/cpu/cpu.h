@@ -8,7 +8,7 @@
 class InterruptsIO;
 class SerialPort;
 class BootIO;
-class Bus;
+class Mmu;
 
 class Parcel;
 
@@ -16,7 +16,7 @@ class Cpu {
     DEBUGGABLE_CLASS()
 
 public:
-    Cpu(InterruptsIO& interrupts, Bus& bus);
+    Cpu(InterruptsIO& interrupts, Mmu& mmu);
 
     void tick();
 
@@ -578,7 +578,7 @@ private:
     IF_DEBUGGER(bool isInISR() const);
 
     InterruptsIO& interrupts;
-    Bus& bus;
+    Mmu& mmu;
 
     MicroOperation instructions[256][6];
     MicroOperation instructionsCB[256][4];
