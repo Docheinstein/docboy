@@ -937,39 +937,40 @@ TEST_CASE("emulation", "[emulation][.]") {
                       S {"mooneye/rst_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
     }
 
-    //    SECTION("ppu") {
-    //        RUN_TEST_ROMS(F {"dmg-acid2/dmg-acid2.gb", "dmg-acid2/dmg-acid2.png", GREY_PALETTE}, );
-    //    }
-    //
-    //    SECTION("timers") {
-    //        RUN_TEST_ROMS(S {"mooneye/timers/div_write.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/rapid_toggle.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tim00.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tim00_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tim01.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tim01_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tim10.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tim10_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tim11.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tim11_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tima_reload.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tima_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/timers/tma_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
-    //    }
-    //
-    //    SECTION("interrupts") {
-    //        RUN_TEST_ROMS(S {"mooneye/interrupts/ie_push.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
-    //    }
-    //
-    //    SECTION("dma") {
-    //        RUN_TEST_ROMS(S {"mooneye/oam_dma/basic.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/oam_dma/reg_read.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                      S {"mooneye/oam_dma/sources-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
-    //    }
-    //
-    //    SECTION("serial") {
-    //        RUN_TEST_ROMS(F {"mooneye/serial/boot_sclk_align-dmgABCmgb.gb", "mooneye/boot_sclk_align-dmgABCmgb.png"});
-    //    }
+    SECTION("ppu") {
+        RUN_TEST_ROMS(F {"dmg-acid2/dmg-acid2.gb", "dmg-acid2/dmg-acid2.png", GREY_PALETTE}, );
+    }
+
+    SECTION("timers") {
+        RUN_TEST_ROMS(S {"mooneye/timers/div_write.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/rapid_toggle.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim00.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim00_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim01.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim01_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim10.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim10_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim11.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tim11_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tima_reload.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tima_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/timers/tma_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/boot_div-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
+    }
+
+    SECTION("interrupts") {
+        RUN_TEST_ROMS(S {"mooneye/interrupts/ie_push.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
+    }
+
+    SECTION("dma") {
+        RUN_TEST_ROMS(S {"mooneye/oam_dma/basic.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/oam_dma/reg_read.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/oam_dma/sources-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
+    }
+
+    SECTION("serial") {
+        RUN_TEST_ROMS(F {"mooneye/serial/boot_sclk_align-dmgABCmgb.gb", "mooneye/boot_sclk_align-dmgABCmgb.png"});
+    }
 
 #ifdef MEALYBUG
     SECTION("ppu disabled") {
