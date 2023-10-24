@@ -22,7 +22,7 @@ public:
 
     void writeDMA(uint8_t value) {
         DMA = value;
-        dma.transfer(DMA << 8);
+        dma.startTransfer(DMA << 8);
     }
 
     void saveState(Parcel& parcel) const {

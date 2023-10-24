@@ -1,6 +1,20 @@
 #include "timers.h"
 #include "docboy/interrupts/interrupts.h"
 
+/* TIMA overflow timing example.
+ *   t                  CPU                              Timer
+ * CPU   |
+ * Timer |                                      TIMA overflows -> PendingReload
+ *
+ * CPU   | [writing TIMA aborts PendingReload]
+ *       | [writing TMA is considered]
+ * Timer |                                      PendingReload -> Reload (TIMA = TMA, raise interrupt)
+ *
+ * CPU   | [writing TIMA is ignored]
+ *       | [writing TMA writes TIMA too]
+ * DMA   |                                      Reload -> None
+ */
+
 enum TimaOverflowState : uint8_t {
     /* TIMA has just overflow this cycle and will be reload the next cycle.  */
     PendingReload = 2,
@@ -60,7 +74,7 @@ inline void TimersIO::setDIV(uint16_t value) {
 }
 
 inline void TimersIO::incTIMA() {
-    // When TIMA overflow TMA is reloaded in TIMA: but it is delayed by 1 m-cycle
+    // When TIMA overflows, TMA is reloaded in TIMA: but it is delayed by 1 m-cycle
     if (++TIMA == 0)
         timaState = PendingReload;
 }

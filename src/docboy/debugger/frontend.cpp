@@ -1312,18 +1312,32 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     // DMA
     if (config.sections.dma) {
         std::cout << header("DMA") << std::endl;
-        if (gb.dma.state == Dma::TransferState::Active) {
-            std::cout << termcolor::yellow << "DMA Transfer     : " << termcolor::green << "In Progress"
-                      << termcolor::reset << std::endl;
+        if (gb.dma.request.state != 0 || gb.dma.transferring) {
+            std::cout << termcolor::yellow << "DMA Request      : ";
+            if (gb.dma.request.state == 1) {
+                std::cout << termcolor::green << "Requested" << termcolor::reset;
+            }
+            if (gb.dma.request.state == 2) {
+                std::cout << termcolor::green << "Pending" << termcolor::reset;
+            } else if (gb.dma.request.state == 0) {
+                std::cout << "None";
+            }
+            std::cout << std::endl;
+
+            std::cout << termcolor::yellow << "DMA Transfer     : ";
+            if (gb.dma.transferring) {
+                std::cout << termcolor::green << "In Progress" << termcolor::reset;
+            } else {
+                std::cout << "None";
+            }
+            std::cout << std::endl;
+
             std::cout << termcolor::yellow << "DMA Source       : " << termcolor::reset << hex(gb.dma.source)
                       << std::endl;
             std::cout << termcolor::yellow << "DMA Progress     : " << termcolor::reset
                       << hex(gb.dma.source + gb.dma.cursor) << " => "
                       << hex(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << +gb.dma.cursor << "/"
                       << "159]" << std::endl;
-        } else if (gb.dma.state == Dma::TransferState::Pending) {
-            std::cout << termcolor::yellow << "DMA Transfer     : " << termcolor::green << "Pending" << termcolor::reset
-                      << std::endl;
         } else {
             std::cout << termcolor::yellow << "DMA Transfer     : " << termcolor::color<240> << "None"
                       << termcolor::reset << std::endl;
