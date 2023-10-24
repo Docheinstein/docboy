@@ -876,42 +876,45 @@ static bool run_with_params(const RunnerParams& p) {
     REQUIRE(run_with_params(params))
 
 TEST_CASE("emulation", "[emulation][.]") {
-    //    SECTION("mbc") {
-    //        SECTION("mbc1") {
-    //            RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/bits_bank2.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/bits_mode.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/bits_ramg.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/ram_64kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/ram_256kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/rom_2Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/rom_4Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc1/rom_16Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
-    //        }
-    //
-    //        SECTION("mbc5") {
-    //            RUN_TEST_ROMS(S {"mooneye/mbc/mbc5/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc5/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc5/rom_2Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc5/rom_4Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc5/rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc5/rom_16Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc5/rom_32Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-    //                          S {"mooneye/mbc/mbc5/rom_64Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
-    //        }
-    //    }
+    SECTION("mbc") {
+        SECTION("mbc1") {
+            RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/bits_bank2.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/bits_mode.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/bits_ramg.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/ram_64kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/ram_256kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/rom_2Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/rom_4Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc1/rom_16Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
+        }
 
-    //    SECTION("memory") {
-    //        SECTION("oam") {
-    //            RUN_TEST_ROMS(S {"mooneye/bits/mem_oam.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
-    //        }
-    //        SECTION("io") {
-    //            RUN_TEST_ROMS(S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
-    //        }
-    //    }
+        SECTION("mbc5") {
+            RUN_TEST_ROMS(S {"mooneye/mbc/mbc5/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc5/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc5/rom_2Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc5/rom_4Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc5/rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc5/rom_16Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc5/rom_32Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/mbc/mbc5/rom_64Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
+        }
+    }
+
+    SECTION("memory") {
+        SECTION("oam") {
+            RUN_TEST_ROMS(S {"mooneye/bits/mem_oam.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
+        }
+        SECTION("io") {
+            RUN_TEST_ROMS(S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                          S {"mooneye/boot_hwio-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+
+            );
+        }
+    }
 
     SECTION("cpu") {
         RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png"},
