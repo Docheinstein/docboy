@@ -71,8 +71,6 @@ private:
         [[nodiscard]] std::string toString() const;
     };
 
-    enum class TraceLevel : uint8_t { NoTrace = 0, Cpu = 1, Interrupts = 2, Timers = 3, MaxTrace = Timers };
-
     template <typename FrontendCommandType>
     std::optional<Command> handleCommand(const FrontendCommandType& cmd);
 
@@ -106,7 +104,7 @@ private:
     Config config {};
     std::string lastCmdline;
     std::vector<DisplayEntry> displayEntries;
-    TraceLevel trace {TraceLevel::NoTrace};
+    uint32_t trace {};
 
     uint16_t numAutoDisassemble {};
     bool reprintUI {};

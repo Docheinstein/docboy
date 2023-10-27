@@ -133,6 +133,14 @@ private:
 
     bool isFetchingSprite {};
 
+#ifdef ENABLE_DEBUGGER
+    struct {
+        uint16_t oamScan {};
+        uint16_t pixelTransfer {};
+        uint16_t hBlank {};
+    } timings;
+#endif
+
     // Scratchpads
 
     // Oam Scan

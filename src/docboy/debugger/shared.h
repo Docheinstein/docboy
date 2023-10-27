@@ -5,6 +5,9 @@
 #include <variant>
 #include <vector>
 
+struct TickCommand {
+    uint64_t count;
+};
 struct DotCommand {
     uint64_t count;
 };
@@ -32,8 +35,8 @@ struct ScanlineCommand {
 struct ContinueCommand {};
 struct AbortCommand {};
 
-using Command = std::variant<DotCommand, StepCommand, MicroStepCommand, NextCommand, MicroNextCommand, FrameCommand,
-                             FrameBackCommand, ScanlineCommand, ContinueCommand, AbortCommand>;
+using Command = std::variant<TickCommand, DotCommand, StepCommand, MicroStepCommand, NextCommand, MicroNextCommand,
+                             FrameCommand, FrameBackCommand, ScanlineCommand, ContinueCommand, AbortCommand>;
 
 template <typename Op>
 struct LogicExpression {

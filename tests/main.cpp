@@ -919,6 +919,8 @@ TEST_CASE("emulation", "[emulation][.]") {
         RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png"},
                       F {"blargg/instr_timing.gb", "blargg/instr_timing.png"},
                       F {"blargg/halt_bug.gb", "blargg/halt_bug.png"},
+                      F {"blargg/mem_timing.gb", "blargg/mem_timing.png"},
+                      F {"blargg/mem_timing-2.gb", "blargg/mem_timing-2.png"},
                       S {"mooneye/instr/daa.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/bits/reg_f.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/boot_regs-dmgABC.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -938,11 +940,31 @@ TEST_CASE("emulation", "[emulation][.]") {
                       S {"mooneye/ret_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/reti_intr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/reti_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/rst_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
+                      S {"mooneye/rst_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/halt_ime0_ei.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/halt_ime0_nointr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/halt_ime1_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/halt_ime1_timing2-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+
+        );
     }
 
     SECTION("ppu") {
-        RUN_TEST_ROMS(F {"dmg-acid2/dmg-acid2.gb", "dmg-acid2/dmg-acid2.png", GREY_PALETTE}, );
+        RUN_TEST_ROMS(
+            F {"dmg-acid2/dmg-acid2.gb", "dmg-acid2/dmg-acid2.png", GREY_PALETTE},
+            //                S {"mooneye/ppu/hblank_ly_scx_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ppu/intr_1_2_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ppu/intr_2_0_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            //                S {"mooneye/ppu/intr_2_mode0_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            //                S {"mooneye/ppu/intr_2_mode0_timing_sprites.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            //                S {"mooneye/ppu/intr_2_mode3_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            //                S {"mooneye/ppu/intr_2_oam_ok_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            //                S {"mooneye/ppu/lcdon_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            //                S {"mooneye/ppu/lcdon_write_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            //                S {"mooneye/ppu/stat_irq_blocking.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            //                S {"mooneye/ppu/stat_lyc_onoff.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            //                S {"mooneye/ppu/vblank_stat_intr-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+        );
     }
 
     SECTION("timers") {

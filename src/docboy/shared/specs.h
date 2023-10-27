@@ -20,12 +20,12 @@ namespace Frequencies {
 
 namespace Ppu {
     constexpr uint32_t DOTS_PER_FRAME = 70224;
-    namespace Phases {
+    namespace Modes {
         constexpr uint8_t HBLANK = 0;
         constexpr uint8_t VBLANK = 1;
         constexpr uint8_t OAM_SCAN = 2;
         constexpr uint8_t PIXEL_TRANSFER = 3;
-    } // namespace Phases
+    } // namespace Modes
 } // namespace Ppu
 
 namespace MemoryLayout {

@@ -17,7 +17,7 @@ public:
     }
 
     void writeSTAT(uint8_t value) {
-        STAT = 0b10000000 | value;
+        STAT = 0b10000000 | (value & 0b01111000) | keep_bits<2>(STAT);
     }
 
     void writeDMA(uint8_t value) {

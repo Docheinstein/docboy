@@ -21,9 +21,6 @@ void DebuggerBackend::onTick(uint64_t tick) {
 
     Cpu& cpu = core.gb.cpu;
 
-    if (!cpu.cycles)
-        return; // do not stop on first fetch
-
     // Notify the frontend for extra actions to take (e.g. handle CTRL+C, tracing)
     frontend->onTick(tick);
 
@@ -86,7 +83,9 @@ void DebuggerBackend::onTick(uint64_t tick) {
     const Command& cmd = *command;
 
     // T-Cycle commands (PPU)
-    if (std::holds_alternative<DotCommand>(cmd)) {
+    if (std::holds_alternative<TickCommand>(cmd)) {
+        handleCommand<TickCommand, TickCommandState>();
+    } else if (std::holds_alternative<DotCommand>(cmd)) {
         handleCommand<DotCommand, DotCommandState>();
     } else if (std::holds_alternative<FrameCommand>(cmd)) {
         handleCommand<FrameCommand, FrameCommandState>();
@@ -280,7 +279,9 @@ void DebuggerBackend::pullCommand(const ExecutionState& state) {
 
     const Command& cmd = *command;
 
-    if (std::holds_alternative<DotCommand>(cmd)) {
+    if (std::holds_alternative<TickCommand>(cmd)) {
+        initializeCommandState<TickCommand>();
+    } else if (std::holds_alternative<DotCommand>(cmd)) {
         initializeCommandState<DotCommand>();
     } else if (std::holds_alternative<StepCommand>(cmd)) {
         initializeCommandState<StepCommand>();
@@ -321,6 +322,12 @@ void DebuggerBackend::proceed() {
 template <typename CommandType>
 void DebuggerBackend::initializeCommandState() {
     initializeCommandState(std::get<CommandType>(*command));
+}
+
+// Tick
+template <>
+void DebuggerBackend::initializeCommandState<TickCommand>(const TickCommand& cmd) {
+    commandState = TickCommandState {.target = core.ticks + cmd.count};
 }
 
 // Dot
@@ -384,6 +391,13 @@ void DebuggerBackend::initializeCommandState<AbortCommand>(const AbortCommand& c
 }
 
 // ===================== COMMANDS IMPLEMENTATION ===============================
+
+// Tick
+template <>
+void DebuggerBackend::handleCommand<TickCommand, TickCommandState>(const TickCommand& cmd, TickCommandState& state) {
+    if (core.ticks >= state.target)
+        pullCommand(ExecutionCompleted());
+}
 
 // Dot
 template <>

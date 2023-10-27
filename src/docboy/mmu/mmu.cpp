@@ -272,14 +272,14 @@ void Mmu::writeCartridgeRam(uint16_t address, uint8_t value) {
 
 uint8_t Mmu::readVram(uint16_t address) const {
     // VRAM is blocked during Pixel Transfer
-    if (keep_bits<2>(video.STAT) != Specs::Ppu::Phases::PIXEL_TRANSFER)
+    if (keep_bits<2>(video.STAT) != Specs::Ppu::Modes::PIXEL_TRANSFER)
         return vram[address - Specs::MemoryLayout::VRAM::START];
     return 0xFF;
 }
 
 void Mmu::writeVram(uint16_t address, uint8_t value) {
     // VRAM is blocked during Pixel Transfer
-    if (keep_bits<2>(video.STAT) != Specs::Ppu::Phases::PIXEL_TRANSFER)
+    if (keep_bits<2>(video.STAT) != Specs::Ppu::Modes::PIXEL_TRANSFER)
         vram[address - Specs::MemoryLayout::VRAM::START] = value;
 }
 
@@ -287,7 +287,7 @@ uint8_t Mmu::readOam(uint16_t address) const {
     // OAM is blocked:
     // * during OAM Scan and Pixel Transfer
     // * during DMA transfer
-    if (!dma.isTransferring() && keep_bits<2>(video.STAT) < Specs::Ppu::Phases::OAM_SCAN)
+    if (!dma.isTransferring() && keep_bits<2>(video.STAT) < Specs::Ppu::Modes::OAM_SCAN)
         return oam[address - Specs::MemoryLayout::OAM::START];
     return 0xFF;
 }
@@ -296,7 +296,7 @@ void Mmu::writeOam(uint16_t address, uint8_t value) {
     // OAM is blocked:
     // * during OAM Scan and Pixel Transfer
     // * during DMA transfer
-    if (!dma.isTransferring() && keep_bits<2>(video.STAT) < Specs::Ppu::Phases::OAM_SCAN)
+    if (!dma.isTransferring() && keep_bits<2>(video.STAT) < Specs::Ppu::Modes::OAM_SCAN)
         oam[address - Specs::MemoryLayout::OAM::START] = value;
 }
 

@@ -82,6 +82,10 @@ struct FrontendHideCommand {
     std::string subject;
 };
 
+struct FrontendTickCommand {
+    uint64_t count {};
+};
+
 struct FrontendDotCommand {
     uint64_t count {};
 };
@@ -130,16 +134,28 @@ using FrontendCommand =
                  FrontendAutoDisassembleCommand, FrontendDisassembleCommand, FrontendDisassembleRangeCommand,
                  FrontendExamineCommand, FrontendSearchBytesCommand, FrontendSearchInstructionsCommand,
                  FrontendDisplayCommand, FrontendUndisplayCommand, FrontendShowCommand, FrontendHideCommand,
-                 FrontendDotCommand, FrontendStepCommand, FrontendMicroStepCommand, FrontendNextCommand,
-                 FrontendMicroNextCommand, FrontendFrameCommand, FrontendScanlineCommand, FrontendFrameBackCommand,
-                 FrontendContinueCommand, FrontendTraceCommand, FrontendDumpDisassembleCommand, FrontendHelpCommand,
-                 FrontendQuitCommand>;
+                 FrontendTickCommand, FrontendDotCommand, FrontendStepCommand, FrontendMicroStepCommand,
+                 FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand, FrontendScanlineCommand,
+                 FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand,
+                 FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
     std::regex regex;
     std::string format;
     std::string help;
     std::optional<FrontendCommand> (*parser)(const std::vector<std::string>& groups);
+};
+
+enum TraceFlag : uint32_t {
+    TraceFlagNoTrace = 0,
+    TraceFlagInstruction = 1 << 1,
+    TraceFlagRegisters = 1 << 2,
+    TraceFlagInterrupts = 1 << 3,
+    TraceFlagTimers = 1 << 4,
+    TraceFlagPpu = 1 << 5,
+    TraceMCycle = 1 << 6,
+    TraceTCycle = 1 << 7,
+    MaxTrace = (TraceTCycle << 1) - 1,
 };
 
 template <typename T>
@@ -339,6 +355,12 @@ static FrontendCommandInfo
              [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
                  FrontendHideCommand cmd {.subject = groups[0]};
                  return cmd;
+             }},
+            {std::regex(R"(t\s*(\d+)?)"), "t [<count>]", "Continue running for <count> clock ticks (default = 1)",
+             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+                 const std::string& count = groups[0];
+                 uint64_t n = count.empty() ? 1 : std::stoi(count);
+                 return FrontendTickCommand {.count = n};
              }},
             {std::regex(R"(\.\s*(\d+)?)"), ". [<count>]", "Continue running for <count> PPU dots (default = 1)",
              [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
@@ -694,6 +716,12 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendHideCommand>(cons
     return std::nullopt;
 }
 
+// Tick
+template <>
+std::optional<Command> DebuggerFrontend::handleCommand<FrontendTickCommand>(const FrontendTickCommand& cmd) {
+    return TickCommand {.count = cmd.count};
+}
+
 // Dot
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendDotCommand>(const FrontendDotCommand& cmd) {
@@ -752,9 +780,9 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendContinueCommand>(
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendTraceCommand>(const FrontendTraceCommand& cmd) {
     if (cmd.level)
-        trace = static_cast<TraceLevel>(*cmd.level);
+        trace = *cmd.level;
     else
-        trace = trace != TraceLevel::NoTrace ? TraceLevel::NoTrace : TraceLevel::MaxTrace;
+        trace = trace ? 0 : MaxTrace;
     std::cout << "Trace: " << +static_cast<uint8_t>(trace) << std::endl;
     return std::nullopt;
 }
@@ -877,6 +905,8 @@ Command DebuggerFrontend::pullCommand(const ExecutionState& executionState) {
             commandToSend = handleCommand(std::get<FrontendShowCommand>(cmd));
         } else if (std::holds_alternative<FrontendHideCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendHideCommand>(cmd));
+        } else if (std::holds_alternative<FrontendTickCommand>(cmd)) {
+            commandToSend = handleCommand(std::get<FrontendTickCommand>(cmd));
         } else if (std::holds_alternative<FrontendDotCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendDotCommand>(cmd));
         } else if (std::holds_alternative<FrontendStepCommand>(cmd)) {
@@ -910,48 +940,60 @@ Command DebuggerFrontend::pullCommand(const ExecutionState& executionState) {
 }
 
 void DebuggerFrontend::onTick(uint64_t tick) {
-    if (trace != TraceLevel::NoTrace) {
-        if (tick % 4 != 0) {
-            // trace only at m-cycle level
-            return;
-        }
-
+    if (trace) {
         const Cpu& cpu = gb.cpu;
-        if (cpu.instruction.microop.counter != 0)
-            // trace only at the beginning of a new instruction
+
+        const bool mTrace = (trace & TraceMCycle) || (trace & TraceTCycle);
+        const bool tTrace = (trace & TraceTCycle);
+        const bool isMcycle = tick % 4 == 0;
+        const bool isNewInstruction = cpu.instruction.microop.counter != 0;
+
+        std::cerr << std::left << std::setw(12) << "[" + std::to_string(tick) + "] ";
+
+        if (!(tTrace || (mTrace && isMcycle) || isNewInstruction)) {
+            // do not trace
             return;
+        }
 
-        if (trace >= TraceLevel::Cpu) {
+        if (trace & TraceFlagInstruction) {
             std::string instr;
-            if (!cpu.isInISR()) {
-                backend.disassemble(cpu.instruction.address, 1);
-                auto disas = backend.getDisassembledInstruction(cpu.instruction.address);
-                if (disas)
-                    instr = instruction_mnemonic(*disas, cpu.instruction.address);
-                else
-                    instr = "unknown";
+            if (cpu.halted) {
+                instr = "<HALTED>";
             } else {
-                instr = "ISR " + hex(cpu.instruction.address);
+                if (!cpu.isInISR()) {
+                    backend.disassemble(cpu.instruction.address, 1);
+                    auto disas = backend.getDisassembledInstruction(cpu.instruction.address);
+                    if (disas)
+                        instr = instruction_mnemonic(*disas, cpu.instruction.address);
+                    else
+                        instr = "unknown";
+                } else {
+                    instr = "ISR " + hex(cpu.instruction.address);
+                }
             }
+
+            std::cerr << std::left << std::setw(28) << instr << ((tTrace && isMcycle) ? "(*)" : "   ") << "  ";
+        }
+
+        if (trace & TraceFlagRegisters) {
             std::cerr << "AF:" << hex(cpu.AF) << " BC:" << hex(cpu.BC) << " DE:" << hex(cpu.DE) << " HL:" << hex(cpu.HL)
-                      << " SP:" << hex(cpu.SP) << " PC:" << hex((uint16_t)(cpu.PC - 1)) << " INSTR: " << std::left
-                      << std::setw(28) << instr << " T:";
-
-            if (trace > TraceLevel::Cpu)
-                std::cerr << std::left << std::setw(12);
-
-            std::cerr << gb.cpu.cycles;
+                      << " SP:" << hex(cpu.SP) << " PC:" << hex((uint16_t)(cpu.PC)) << "  ";
         }
 
-        if (trace >= TraceLevel::Interrupts) {
+        if (trace & TraceFlagInterrupts) {
             const InterruptsIO& interrupts = gb.interrupts;
-            std::cerr << " IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF);
+            std::cerr << "IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF) << "  ";
         }
 
-        if (trace >= TraceLevel::Timers) {
+        if (trace & TraceFlagTimers) {
             const Timers& timers = gb.timers;
-            std::cerr << " DIV:" << hex((uint8_t)timers.DIV) << " TIMA:" << hex((uint8_t)timers.TIMA)
-                      << " TMA:" << hex((uint8_t)timers.TMA) << " TAC:" << hex((uint8_t)timers.TAC);
+            std::cerr << "DIV:" << hex((uint8_t)timers.DIV) << " TIMA:" << hex((uint8_t)timers.TIMA)
+                      << " TMA:" << hex((uint8_t)timers.TMA) << " TAC:" << hex((uint8_t)timers.TAC) << "  ";
+        }
+
+        if (trace & TraceFlagPpu) {
+            const Ppu& ppu = gb.ppu;
+            std::cerr << "Mode:" << +keep_bits<2>(gb.video.STAT) << " Dots:" << std::setw(12) << ppu.dots << "  ";
         }
 
         std::cerr << std::endl;
@@ -1131,7 +1173,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
     // PPU
     if (config.sections.ppu) {
-        auto ppuPhase = [this]() -> std::string {
+        auto ppuMode = [this]() -> std::string {
             if (gb.ppu.tickSelector == &Ppu::oamScan0 || gb.ppu.tickSelector == &Ppu::oamScan1)
                 return "Oam Scan";
             if (gb.ppu.tickSelector == &Ppu::pixelTransferDummy0<false> ||
@@ -1162,7 +1204,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             checkNoEntry();
             return "Unknown";
         };
-        auto ppuFetcherPhase = [this]() {
+        auto ppuFetcherMode = [this]() {
             if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPrefetcherGetTile0)
                 return "BG/WIN GetTile0";
             if (gb.ppu.fetcherTickSelector == &Ppu::bgPrefetcherGetTile0)
@@ -1224,9 +1266,9 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         std::cout << subheader("ppu") << std::endl;
         std::cout << termcolor::yellow << "On               :  " << termcolor::reset << gb.ppu.on << std::endl;
         std::cout << termcolor::yellow << "Cycle            :  " << termcolor::reset << gb.ppu.cycles << std::endl;
-        std::cout << termcolor::yellow << "Phase            :  " << termcolor::reset << ppuPhase() << std::endl;
+        std::cout << termcolor::yellow << "Mode             :  " << termcolor::reset << ppuMode() << std::endl;
         std::cout << termcolor::yellow << "Dots             :  " << termcolor::reset << gb.ppu.dots << std::endl;
-        std::cout << termcolor::yellow << "FetcherPhase     :  " << termcolor::reset << ppuFetcherPhase() << std::endl;
+        std::cout << termcolor::yellow << "FetcherMode      :  " << termcolor::reset << ppuFetcherMode() << std::endl;
         std::cout << termcolor::yellow << "LX               :  " << termcolor::reset << +gb.ppu.LX << std::endl;
 
         const auto& oamEntries = gb.ppu.scanlineOamEntries;
@@ -1307,6 +1349,14 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         std::cout << subheader("win") << std::endl;
         std::cout << termcolor::yellow << "WLY              :  " << termcolor::reset << +gb.ppu.w.WLY << std::endl;
+
+        std::cout << subheader("timings") << std::endl;
+        std::cout << termcolor::yellow << "OAM Scan         :  " << termcolor::reset << gb.ppu.timings.oamScan
+                  << std::endl;
+        std::cout << termcolor::yellow << "Pixel Transfer   :  " << termcolor::reset << gb.ppu.timings.pixelTransfer
+                  << std::endl;
+        std::cout << termcolor::yellow << "HBlank           :  " << termcolor::reset << gb.ppu.timings.hBlank
+                  << std::endl;
     }
 
     // DMA

@@ -10,6 +10,9 @@ class DebuggerFrontend;
 class Core;
 class GameBoy;
 
+struct TickCommandState {
+    uint64_t target {};
+};
 struct DotCommandState {
     uint64_t target {};
 };
@@ -39,9 +42,9 @@ struct ScanlineCommandState {
 struct ContinueCommandState {};
 struct AbortCommandState {};
 
-using CommandState = std::variant<DotCommandState, StepCommandState, MicroStepCommandState, NextCommandState,
-                                  MicroNextCommandState, FrameCommandState, FrameBackCommandState, ScanlineCommandState,
-                                  ContinueCommandState, AbortCommandState>;
+using CommandState = std::variant<TickCommandState, DotCommandState, StepCommandState, MicroStepCommandState,
+                                  NextCommandState, MicroNextCommandState, FrameCommandState, FrameBackCommandState,
+                                  ScanlineCommandState, ContinueCommandState, AbortCommandState>;
 
 class DebuggerBackend {
 public:

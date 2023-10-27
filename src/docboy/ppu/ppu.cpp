@@ -73,9 +73,9 @@ void Ppu::turnOn() {
     check(!on);
     on = true;
 
-    // TODO: needed? how to do it without phase?
+    // TODO: needed? how to do it without mode?
     // lcdIo.writeSTAT(reset_bits<2>(lcdIo.readSTAT()) | state);
-    //    video.STAT = ((uint8_t) video.STAT & 0b11111100) | phase;
+    //    video.STAT = ((uint8_t) video.STAT & 0b11111100) | mode;
 }
 
 void Ppu::turnOff() {
@@ -96,14 +96,21 @@ void Ppu::turnOff() {
 }
 
 void Ppu::enterOamScan() {
-    checkCode(for (uint32_t i = 0; i < array_size(oamEntries); i++) { check(oamEntries[i].isEmpty()); });
+    checkCode({
+        for (uint32_t i = 0; i < array_size(oamEntries); i++) {
+            check(oamEntries[i].isEmpty());
+        }
+    });
     IF_ASSERTS(oamEntriesCount = 0);
     IF_DEBUGGER(scanlineOamEntries.clear());
+
+    IF_DEBUGGER(timings.hBlank = 456 - (timings.oamScan + timings.pixelTransfer));
+
     oamScan.count = 0;
 
     tickSelector = &Ppu::oamScan0;
 
-    updateStat<Specs::Ppu::Phases::OAM_SCAN>();
+    updateStat<Specs::Ppu::Modes::OAM_SCAN>();
 
     if (test_bit<OAM_INTERRUPT>(video.STAT))
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
@@ -128,7 +135,7 @@ void Ppu::oamScan1() {
     check(oamScan.count < 10);
     check(dots % 2 == 1);
 
-#define ADVANCE_TO_OAM_PHASE_OR_PIXEL_TRANSFER(oamStatePtr)                                                            \
+#define ADVANCE_TO_OAM_MODE_OR_PIXEL_TRANSFER(oamStatePtr)                                                             \
     do {                                                                                                               \
         if (++dots == 80)                                                                                              \
             enterPixelTransfer();                                                                                      \
@@ -159,16 +166,16 @@ void Ppu::oamScan1() {
         // check if there is room for other oam entries in this scanline
         // if that's not the case, complete oam scan now
         if (++oamScan.count == 10) {
-            ADVANCE_TO_OAM_PHASE_OR_PIXEL_TRANSFER(&Ppu::oamScanCompleted);
+            ADVANCE_TO_OAM_MODE_OR_PIXEL_TRANSFER(&Ppu::oamScanCompleted);
             return;
         }
     }
 
     check(oamScan.count < 10);
 
-    ADVANCE_TO_OAM_PHASE_OR_PIXEL_TRANSFER(&Ppu::oamScan0);
+    ADVANCE_TO_OAM_MODE_OR_PIXEL_TRANSFER(&Ppu::oamScan0);
 
-#undef ADVANCE_TO_OAM_PHASE_OR_PIXEL_TRANSFER
+#undef ADVANCE_TO_OAM_MODE_OR_PIXEL_TRANSFER
 }
 
 void Ppu::oamScanCompleted() {
@@ -183,10 +190,18 @@ void Ppu::enterPixelTransfer() {
     check(dots == 80);
     check(video.LY < 144);
 
-    checkCode(check(oamScan.count <= 10); check(oamEntriesCount <= oamScan.count);
+    checkCode({
+        check(oamScan.count <= 10);
+        check(oamEntriesCount <= oamScan.count);
 
-              uint8_t count {}; for (uint32_t i = 0; i < array_size(oamEntries);
-                                     i++) { count += oamEntries[i].size(); } check(count == oamEntriesCount););
+        uint8_t count {};
+        for (uint32_t i = 0; i < array_size(oamEntries); i++) {
+            count += oamEntries[i].size();
+        }
+        check(count == oamEntriesCount);
+    });
+
+    IF_DEBUGGER(timings.oamScan = dots);
 
     resetFetcher();
 
@@ -204,13 +219,15 @@ void Ppu::enterPixelTransfer() {
         IF_ASSERTS(firstFetchWasBg = true);
     }
 
-    updateStat<Specs::Ppu::Phases::PIXEL_TRANSFER>();
+    updateStat<Specs::Ppu::Modes::PIXEL_TRANSFER>();
 }
 
 template <bool Bg>
 void Ppu::pixelTransferDummy0() {
     check(LX == 0);
-    if (++dots == 86) {
+    // TODO: Pandocs says this lasts 4 dots, while Nitty Gritty says 6 docs.
+    //       Figure out which is right: right now I use 4 since this passes mooneye intr_2_0_timing
+    if (++dots == 84) {
         bgFifo.fill(DUMMY_TILE);
         if constexpr (Bg) {
             if (bgPixelTransfer.SCXmod8)
@@ -327,11 +344,12 @@ void Ppu::enterHBlank() {
     check(LX == 168);
     check(video.LY < 144);
 
-    checkCode(
+    // clang-format off
+    checkCode({
         // Check Pixel Transfer Timing.
 
-        static constexpr uint16_t LB = 80 + 6 + 21 * 8;                             // 254
-        static constexpr uint16_t UB = 80 + 6 + 21 * 8 + 11 * 10 + 7 /* window? */; // 371
+        static constexpr uint16_t LB = 80 + 4 + 21 * 8;                // 252
+        static constexpr uint16_t UB = LB + 11 * 10 + 7 /* window? */; // 369
 
         // The minimum number of dots a pixel transfer can take is
         // -> 6 * 21 * 8 = 174.
@@ -372,7 +390,10 @@ void Ppu::enterHBlank() {
 
         // TODO: consider also (7) window penalty?
         // TODO: check timing based on the expected penalty for the sprites hit
-    );
+    });
+    // clang-format on
+
+    IF_DEBUGGER(timings.pixelTransfer = dots - timings.oamScan);
 
     // eventually increase window line counter if the window
     // has been displayed at least once in this scanline
@@ -381,7 +402,7 @@ void Ppu::enterHBlank() {
 
     tickSelector = &Ppu::hBlank;
 
-    updateStat<Specs::Ppu::Phases::HBLANK>();
+    updateStat<Specs::Ppu::Modes::HBLANK>();
 
     if (test_bit<HBLANK_INTERRUPT>(video.STAT))
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
@@ -403,9 +424,11 @@ void Ppu::hBlank() {
 }
 
 void Ppu::enterVBlank() {
+    IF_DEBUGGER(timings.hBlank = 456 - timings.pixelTransfer);
+
     tickSelector = &Ppu::vBlank;
 
-    updateStat<Specs::Ppu::Phases::VBLANK>();
+    updateStat<Specs::Ppu::Modes::VBLANK>();
 
     if (test_bit<VBLANK_INTERRUPT>(video.STAT))
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
@@ -432,9 +455,10 @@ void Ppu::enterNewFrame() {
     enterOamScan();
 }
 
-template <uint8_t Phase>
+template <uint8_t Mode>
 inline void Ppu::updateStat() {
-    video.STAT = ((uint8_t)video.STAT & 0b11111100) | Phase;
+    check(Mode <= 0b11);
+    video.STAT = ((uint8_t)video.STAT & 0b11111100) | Mode;
 }
 
 void Ppu::writeLY(uint8_t LY) {
