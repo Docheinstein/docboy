@@ -112,8 +112,9 @@ void Ppu::enterOamScan() {
 
     updateStat<Specs::Ppu::Modes::OAM_SCAN>();
 
-    if (test_bit<OAM_INTERRUPT>(video.STAT))
-        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
+    // OAM interrupt is raised (outside of this function):
+    // * At dot 454   for transition HBLANK -> OAM
+    // * At dot 456/0 for transition VBLANK -> OAM
 }
 
 void Ppu::oamScan0() {
@@ -225,8 +226,6 @@ void Ppu::enterPixelTransfer() {
 template <bool Bg>
 void Ppu::pixelTransferDummy0() {
     check(LX == 0);
-    // TODO: Pandocs says this lasts 4 dots, while Nitty Gritty says 6 docs.
-    //       Figure out which is right: right now I use 4 since this passes mooneye intr_2_0_timing
     if (++dots == 84) {
         bgFifo.fill(DUMMY_TILE);
         if constexpr (Bg) {
@@ -400,7 +399,11 @@ void Ppu::enterHBlank() {
     w.WLY += w.shown;
     w.shown = false;
 
-    tickSelector = &Ppu::hBlank;
+    if (video.LY == 143) {
+        tickSelector = &Ppu::hBlankLastLine;
+    } else {
+        tickSelector = &Ppu::hBlank;
+    }
 
     updateStat<Specs::Ppu::Modes::HBLANK>();
 
@@ -410,16 +413,39 @@ void Ppu::enterHBlank() {
 
 void Ppu::hBlank() {
     check(LX == 168);
-    check(video.LY < 144);
+    check(video.LY < 143);
+    if (++dots == 454) {
+        // LY is increased at dot 454 and eventually it raises OAM interrupt
+        // (but STAT and LYC_EQ_LY interrupt are updated at dot 456)
+        ++video.LY;
+        if (test_bit<OAM_INTERRUPT>(video.STAT))
+            interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
+        tickSelector = &Ppu::hBlank454;
+    }
+}
+
+void Ppu::hBlank454() {
     if (++dots == 456) {
         dots = 0;
-        const uint8_t nextLY = (video.LY + 1);
-        writeLY(nextLY);
-        if (nextLY == 144)
-            enterVBlank();
-        else {
-            enterOamScan();
-        }
+        updateLine(video.LY /* already increased at dot 454 */);
+        enterOamScan();
+    }
+}
+
+void Ppu::hBlankLastLine() {
+    check(LX == 168);
+    check(video.LY == 143);
+    if (++dots == 454) {
+        ++video.LY;
+        tickSelector = &Ppu::hBlankLastLine454;
+    }
+}
+
+void Ppu::hBlankLastLine454() {
+    if (++dots == 456) {
+        dots = 0;
+        updateLine(video.LY /* already increased at dot 454 */);
+        enterVBlank();
     }
 }
 
@@ -430,7 +456,8 @@ void Ppu::enterVBlank() {
 
     updateStat<Specs::Ppu::Modes::VBLANK>();
 
-    if (test_bit<VBLANK_INTERRUPT>(video.STAT))
+    if (test_bit<VBLANK_INTERRUPT>(video.STAT) ||
+        test_bit<OAM_INTERRUPT>(video.STAT) /* STAT interrupt is triggered also by OAM mode when entering VBLANK */)
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
 
     interrupts.raiseInterrupt<InterruptsIO::InterruptType::VBlank>();
@@ -440,19 +467,32 @@ void Ppu::vBlank() {
     check(video.LY >= 144 && video.LY < 154);
     if (++dots == 456) {
         dots = 0;
-        const uint8_t nextLY = (video.LY + 1) % 154;
-        writeLY(nextLY);
+        // LY never reaches 154: it is set to 0 instead (which lasts 2 scanlines).
+        const uint8_t nextLY = (video.LY + 1) % 153;
+        updateLine(nextLY);
         if (nextLY == 0) {
-            // end of vblank
-            enterNewFrame();
+            tickSelector = &Ppu::vBlankLastLine;
         }
+    }
+}
+
+void Ppu::vBlankLastLine() {
+    check(video.LY == 0);
+    if (++dots == 456) {
+        dots = 0;
+        // end of vblank
+        enterNewFrame();
     }
 }
 
 void Ppu::enterNewFrame() {
     // reset window line counter
     w.WLY = 0;
+
     enterOamScan();
+
+    if (test_bit<OAM_INTERRUPT>(video.STAT))
+        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
 }
 
 template <uint8_t Mode>
@@ -461,7 +501,7 @@ inline void Ppu::updateStat() {
     video.STAT = ((uint8_t)video.STAT & 0b11111100) | Mode;
 }
 
-void Ppu::writeLY(uint8_t LY) {
+void Ppu::updateLine(uint8_t LY) {
     check(LY < 154);
 
     // write LY

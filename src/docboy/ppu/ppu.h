@@ -1,6 +1,7 @@
 #ifndef PPU_H
 #define PPU_H
 
+#include "docboy/bootrom/macros.h"
 #include "docboy/debugger/macros.h"
 #include "docboy/memory/fwd/oamfwd.h"
 #include "docboy/memory/fwd/vramfwd.h"
@@ -63,7 +64,11 @@ private:
     void pixelTransfer0();
     void pixelTransfer8();
     void hBlank();
+    void hBlank454();
+    void hBlankLastLine();
+    void hBlankLastLine454();
     void vBlank();
+    void vBlankLastLine();
 
     // Fetcher states
     void bgwinPrefetcherGetTile0();
@@ -101,7 +106,7 @@ private:
     template <uint8_t Phase>
     void updateStat();
 
-    void writeLY(uint8_t LY);
+    void updateLine(uint8_t LY);
 
     [[nodiscard]] bool isPixelTransferBlocked() const;
 
@@ -114,13 +119,13 @@ private:
     Vram& vram;
     Oam& oam;
 
-    TickSelector tickSelector {&Ppu::oamScan0};
+    TickSelector tickSelector {IF_BOOTROM_ELSE(&Ppu::oamScan0, &Ppu::vBlankLastLine)};
     FetcherTickSelector fetcherTickSelector {&Ppu::bgPrefetcherGetTile0};
 
     bool on {};
 
-    uint16_t dots {}; // [0, 456)
-    uint8_t LX {};    // LX=X+8, therefore [0, 168)
+    uint16_t dots {IF_BOOTROM_ELSE(0, 395)}; // [0, 456)
+    uint8_t LX {};                           // LX=X+8, therefore [0, 168)
 
     FillQueue<BgPixel, 8> bgFifo {};
     Queue<ObjPixel, 8> objFifo {};
