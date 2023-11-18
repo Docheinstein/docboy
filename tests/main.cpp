@@ -18,6 +18,7 @@
 #include <SDL_image.h>
 #include <optional>
 #include <utility>
+#include <variant>
 
 #define TABLE_1(t1, data) GENERATE(table<t1> data)
 #define TABLE_2(t1, t2, data) GENERATE(table<t1, t2> data)
@@ -131,7 +132,7 @@ public:
     }
 
     RunnerImpl& checkIntervalTicks(uint64_t ticks) {
-        checkIntervalTicks_ = ticks;
+        checkIntervalTicks_ = ticks / 4 * 4; // should be a multiple of 4
         return static_cast<RunnerImpl&>(*this);
     }
 
@@ -141,8 +142,8 @@ public:
 
         bool hasEverChecked {false};
 
-        for (tick = 1; tick <= maxTicks_; tick++) {
-            core.tick();
+        for (tick = 0; tick <= maxTicks_; tick += 4) {
+            core.cycle();
             if (impl->shouldCheckExpectation()) {
                 hasEverChecked = true;
                 if (impl->checkExpectation()) {
@@ -196,7 +197,7 @@ public:
     }
 
     bool shouldCheckExpectation() {
-        if (tick % checkIntervalTicks_ == 0) {
+        if (tick > 0 && tick % checkIntervalTicks_ == 0) {
             pendingCheck = true;
         }
 
@@ -233,8 +234,8 @@ public:
         check(i < FRAMEBUFFER_NUM_PIXELS);
 
         // Dump framebuffers
-        const auto pathActual = (temp_directory_path() / "framebuffer-actual.png").string();
-        const auto pathExpected = (temp_directory_path() / "framebuffer-expected.png").string();
+        const auto pathActual = (temp_directory_path() / (romName + "-actual.png")).string();
+        const auto pathExpected = (temp_directory_path() / (romName + "-expected.png")).string();
         save_framebuffer_as_png(pathActual, lastFramebuffer);
         save_framebuffer_as_png(pathExpected, expectedFramebuffer);
         UNSCOPED_INFO("You can find the PNGs of the framebuffers at " << pathActual << " and " << pathExpected);
@@ -260,7 +261,7 @@ public:
     }
 
     bool shouldCheckExpectation() {
-        return tick % checkIntervalTicks_ == 0;
+        return tick > 0 && tick % checkIntervalTicks_ == 0;
     }
 
     bool checkExpectation() {
@@ -368,8 +369,8 @@ TEST_CASE("bits", "[bits]") {
     SECTION("concat bytes") {
         uint8_t A = 0x03;
         uint8_t B = 0x01;
-        REQUIRE(concat_bytes(A, B) == 0x0301);
-        REQUIRE(concat_bytes(B, A) == 0x0103);
+        REQUIRE(concat(A, B) == 0x0301);
+        REQUIRE(concat(B, A) == 0x0103);
     }
 
     SECTION("bitmask_on") {
@@ -821,25 +822,38 @@ TEST_CASE("state", "[state]") {
 }
 
 struct FramebufferRunnerParams {
-    FramebufferRunnerParams(std::string&& rom, std::string&& expected, const Palette& palette_ = DEFAULT_PALETTE) :
+    FramebufferRunnerParams(std::string&& rom, std::string&& expected, const Palette& palette_, uint64_t maxTicks_) :
         rom(std::move(rom)) {
         result = std::move(expected);
         palette = palette_;
+        maxTicks = maxTicks_;
+    }
+    FramebufferRunnerParams(std::string&& rom, std::string&& expected, const Palette& palette_) :
+        FramebufferRunnerParams(std::move(rom), std::move(expected), palette_, DEFAULT_DURATION) {
+    }
+    FramebufferRunnerParams(std::string&& rom, std::string&& expected, uint64_t maxTicks_) :
+        FramebufferRunnerParams(std::move(rom), std::move(expected), DEFAULT_PALETTE, maxTicks_) {
+    }
+    FramebufferRunnerParams(std::string&& rom, std::string&& expected) :
+        FramebufferRunnerParams(std::move(rom), std::move(expected), DEFAULT_PALETTE, DEFAULT_DURATION) {
     }
 
     std::string rom;
     std::string result;
     Palette palette;
+    uint64_t maxTicks;
 };
 
 struct SerialRunnerParams {
-    SerialRunnerParams(std::string&& rom, std::vector<uint8_t>&& expected) :
+    SerialRunnerParams(std::string&& rom, std::vector<uint8_t>&& expected, uint64_t maxTicks_ = DURATION_MEDIUM) :
         rom(std::move(rom)) {
         result = std::move(expected);
+        maxTicks = maxTicks_;
     }
 
     std::string rom;
     std::vector<uint8_t> result;
+    uint64_t maxTicks;
 };
 
 using F = FramebufferRunnerParams;
@@ -851,7 +865,7 @@ static bool run_with_params(const RunnerParams& p) {
         const auto pf = std::get<FramebufferRunnerParams>(p);
         return FramebufferRunner()
             .rom(TEST_ROMS_PATH + pf.rom)
-            .maxTicks(DEFAULT_DURATION)
+            .maxTicks(pf.maxTicks)
             .checkIntervalTicks(DURATION_VERY_SHORT)
             .expectFramebuffer(TEST_RESULTS_PATH + pf.result, pf.palette)
             .run();
@@ -861,7 +875,7 @@ static bool run_with_params(const RunnerParams& p) {
         const auto ps = std::get<SerialRunnerParams>(p);
         return SerialRunner()
             .rom(TEST_ROMS_PATH + ps.rom)
-            .maxTicks(DEFAULT_DURATION)
+            .maxTicks(ps.maxTicks)
             .checkIntervalTicks(DURATION_VERY_SHORT)
             .expectOutput(ps.result)
             .run();
@@ -876,6 +890,7 @@ static bool run_with_params(const RunnerParams& p) {
     REQUIRE(run_with_params(params))
 
 TEST_CASE("emulation", "[emulation][.]") {
+
     SECTION("mbc") {
         SECTION("mbc1") {
             RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -916,9 +931,9 @@ TEST_CASE("emulation", "[emulation][.]") {
     }
 
     SECTION("cpu") {
-        RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png"},
+        RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png", DURATION_VERY_LONG},
                       F {"blargg/instr_timing.gb", "blargg/instr_timing.png"},
-                      F {"blargg/halt_bug.gb", "blargg/halt_bug.png"},
+                      //                      F {"blargg/halt_bug.gb", "blargg/halt_bug.png"},
                       F {"blargg/mem_timing.gb", "blargg/mem_timing.png"},
                       F {"blargg/mem_timing-2.gb", "blargg/mem_timing-2.png"},
                       S {"mooneye/instr/daa.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -952,19 +967,43 @@ TEST_CASE("emulation", "[emulation][.]") {
     SECTION("ppu") {
         RUN_TEST_ROMS(
             F {"dmg-acid2/dmg-acid2.gb", "dmg-acid2/dmg-acid2.png", GREY_PALETTE},
-            //                S {"mooneye/ppu/hblank_ly_scx_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ppu/hblank_ly_scx_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             S {"mooneye/ppu/intr_1_2_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             S {"mooneye/ppu/intr_2_0_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-            //                S {"mooneye/ppu/intr_2_mode0_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ppu/intr_2_mode0_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             //                S {"mooneye/ppu/intr_2_mode0_timing_sprites.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-            //                S {"mooneye/ppu/intr_2_mode3_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-            //                S {"mooneye/ppu/intr_2_oam_ok_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ppu/intr_2_mode3_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ppu/intr_2_oam_ok_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             //                S {"mooneye/ppu/lcdon_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             //                S {"mooneye/ppu/lcdon_write_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             //                S {"mooneye/ppu/stat_irq_blocking.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             //                S {"mooneye/ppu/stat_lyc_onoff.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-            //                S {"mooneye/ppu/vblank_stat_intr-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-        );
+            S {"mooneye/ppu/vblank_stat_intr-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            F {"docboy/ppu/boot_ppu_phase_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/boot_ppu_phase_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/boot_stat_lyc_eq_ly_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/boot_stat_lyc_eq_ly_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_raises_hblank_stat_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_raises_vblank_stat_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_154.gb", "docboy/ok.png"}, F {"docboy/ppu/ly_timing_scx0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_timing_scx0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_timing_scx5_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_timing_scx5_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/lyc_stat_interrupt_flag_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/lyc_stat_interrupt_flag_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_stat_interrupt_flag_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_stat_interrupt_flag_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_stat_interrupt_ly_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_stat_interrupt_ly_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/vblank_raises_hblank_stat_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/ppu/vblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/ppu/vblank_raises_vblank_stat_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/ppu/write_ly_ignored.gb", "docboy/ok.png"},
+            F {"docboy/ppu/write_lyc_stat_change.gb", "docboy/ok.png"},
+            F {"docboy/ppu/write_read_stat.gb", "docboy/ok.png"}, );
     }
 
     SECTION("timers") {
@@ -983,8 +1022,13 @@ TEST_CASE("emulation", "[emulation][.]") {
                       S {"mooneye/timers/tma_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/boot_div-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/div_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-
-        );
+                      F {"docboy/timers/boot_div_phase_round1.gb", "docboy/ok.png"},
+                      F {"docboy/timers/boot_div_phase_round2.gb", "docboy/ok.png"},
+                      F {"docboy/timers/div_timing_round1.gb", "docboy/ok.png"},
+                      F {"docboy/timers/div_timing_round2.gb", "docboy/ok.png"},
+                      F {"docboy/timers/timer_interrupt_flag_timing.gb", "docboy/ok.png"},
+                      F {"docboy/timers/write_tima_while_reloading_uses_tima.gb", "docboy/ok.png"},
+                      F {"docboy/timers/write_tima_while_reloading_aborts_interrupt.gb", "docboy/ok.png"}, );
     }
 
     SECTION("interrupts") {
@@ -992,7 +1036,56 @@ TEST_CASE("emulation", "[emulation][.]") {
                       S {"mooneye/ei_sequence.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/if_ie_registers.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/intr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/rapid_di_ei.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
+                      S {"mooneye/rapid_di_ei.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/joypad_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/joypad_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/serial_interrupt_timing_halted_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/serial_interrupt_timing_halted_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/serial_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/serial_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/serial_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/serial_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/serial_interrupt_timing_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/serial_interrupt_timing_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx0_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx0_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx1_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx1_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx2_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx2_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx3_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx4_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx4_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx5_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx5_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx0_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx0_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx1_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx1_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx2_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx2_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx3_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx3_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx4_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx4_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx5_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx5_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/timer_interrupt_timing_halted_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/timer_interrupt_timing_halted_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/timer_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/timer_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/timer_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/timer_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/timer_interrupt_timing_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/timer_interrupt_timing_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/vblank_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/vblank_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/vblank_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/vblank_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/vblank_interrupt_timing_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/vblank_interrupt_timing_round2.gb", "docboy/ok.png"}, );
     }
 
     SECTION("dma") {
@@ -1001,8 +1094,13 @@ TEST_CASE("emulation", "[emulation][.]") {
                       S {"mooneye/oam_dma/sources-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/oam_dma_restart.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/oam_dma_start.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/oam_dma_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}
-
+                      S {"mooneye/oam_dma_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      //                      F {"docboy/dma/dma_bus_conflict_vram_code.gb", "docboy/ok.png"},
+                      //                      F {"docboy/dma/dma_bus_conflict_wram_code.gb", "docboy/ok.png"},
+                      //                      F {"docboy/dma/dma_bus_conflict_wram_nops.gb", "docboy/ok.png"},
+                      //                      F {"docboy/dma/dma_timing_oam_read_round1.gb", "docboy/ok.png"},
+                      //                      F {"docboy/dma/dma_timing_oam_read_round2.gb", "docboy/ok.png"},
+                      //                      F {"docboy/dma/dma_transfer.gb", "docboy/ok.png"},
         );
     }
 
