@@ -17,12 +17,17 @@ public:
     }
 
     void writeSTAT(uint8_t value) {
-        STAT = 0b10000000 | (value & 0b01111000) | keep_bits<2>(STAT);
+        STAT = 0b10000000 | (value & 0b01111000) | keep_bits<3>(STAT);
     }
 
     void writeDMA(uint8_t value) {
         DMA = value;
         dma.startTransfer(DMA << 8);
+    }
+
+    void writeLYC(uint8_t value) {
+        LYC = value;
+        set_bit<Specs::Bits::Video::STAT::LYC_EQ_LY>(STAT, LY == LYC);
     }
 
     void saveState(Parcel& parcel) const {

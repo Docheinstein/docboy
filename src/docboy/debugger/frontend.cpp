@@ -1,6 +1,8 @@
 #include "frontend.h"
 #include "backend.h"
+#include "docboy/core/core.h"
 #include "docboy/gameboy/gameboy.h"
+#include "helpers.h"
 #include "mnemonics.h"
 #include "shared.h"
 #include "utils/arrays.h"
@@ -15,6 +17,11 @@
 #include <optional>
 #include <regex>
 #include <utility>
+
+static constexpr int PINK = 13;
+static constexpr int CYAN = 36;
+static constexpr int DARK_GRAY = 240;
+static constexpr int LIGHT_GRAY = 244;
 
 struct FrontendBreakpointCommand {
     uint16_t address {};
@@ -147,14 +154,15 @@ struct FrontendCommandInfo {
 };
 
 enum TraceFlag : uint32_t {
-    TraceFlagNoTrace = 0,
-    TraceFlagInstruction = 1 << 1,
-    TraceFlagRegisters = 1 << 2,
-    TraceFlagInterrupts = 1 << 3,
-    TraceFlagTimers = 1 << 4,
-    TraceFlagPpu = 1 << 5,
-    TraceMCycle = 1 << 6,
-    TraceTCycle = 1 << 7,
+    TraceFlagInstruction = 1,
+    TraceFlagRegisters = 1 << 1,
+    TraceFlagInterrupts = 1 << 2,
+    TraceFlagTimers = 1 << 3,
+    TraceFlagStack = 1 << 4,
+    TraceFlagDma = 1 << 5,
+    TraceFlagPpu = 1 << 6,
+    TraceMCycle = 1 << 7,
+    TraceTCycle = 1 << 8,
     MaxTrace = (TraceTCycle << 1) - 1,
 };
 
@@ -472,7 +480,8 @@ static void detach_sigint_handler() {
 
 DebuggerFrontend::DebuggerFrontend(DebuggerBackend& backend) :
     backend(backend),
-    gb(backend.getGameBoy()) {
+    core(backend.getCore()),
+    gb(core.gb) {
     attach_sigint_handler();
 }
 
@@ -628,9 +637,6 @@ static bool handleShowHideFrontendCommand(const std::string& subject, DebuggerFr
                                &config.sections.breakpoints,
                                &config.sections.watchpoints,
                                &config.sections.cpu,
-                               &config.sections.flags,
-                               &config.sections.registers,
-                               &config.sections.interrupts,
                                &config.sections.timers,
                                &config.sections.io.interrupts,
                                &config.sections.io.timers,
@@ -671,9 +677,6 @@ static bool handleShowHideFrontendCommand(const std::string& subject, DebuggerFr
     if (setBoolsIfMatch<B>(subject, {"timers"}, {&config.sections.timers, &config.sections.io.timers}))
         return true;
 
-    if (setBoolsIfMatch<B>(subject, {"interrupts"}, {&config.sections.interrupts, &config.sections.io.interrupts}))
-        return true;
-
     if (setBoolsIfMatch<B>(subject, {"dma"}, {&config.sections.dma}))
         return true;
 
@@ -682,8 +685,7 @@ static bool handleShowHideFrontendCommand(const std::string& subject, DebuggerFr
 
     if (setBoolsIfMatch<B>(subject, {"all"},
                            {&config.sections.breakpoints, &config.sections.watchpoints, &config.sections.cpu,
-                            &config.sections.ppu, &config.sections.flags, &config.sections.registers,
-                            &config.sections.interrupts, &config.sections.timers, &config.sections.dma,
+                            &config.sections.ppu, &config.sections.timers, &config.sections.dma,
                             &config.sections.io.joypad, &config.sections.io.serial, &config.sections.io.timers,
                             &config.sections.io.interrupts, &config.sections.io.sound, &config.sections.io.video,
                             &config.sections.code}))
@@ -946,33 +948,33 @@ void DebuggerFrontend::onTick(uint64_t tick) {
         const bool mTrace = (trace & TraceMCycle) || (trace & TraceTCycle);
         const bool tTrace = (trace & TraceTCycle);
         const bool isMcycle = tick % 4 == 0;
-        const bool isNewInstruction = cpu.instruction.microop.counter != 0;
-
-        std::cerr << std::left << std::setw(12) << "[" + std::to_string(tick) + "] ";
+        const bool isNewInstruction = cpu.instruction.microop.counter == 0;
 
         if (!(tTrace || (mTrace && isMcycle) || isNewInstruction)) {
             // do not trace
             return;
         }
 
+        std::cerr << std::left << std::setw(12) << "[" + std::to_string(tick) + "] " << (isMcycle ? "* " : "  ");
+
         if (trace & TraceFlagInstruction) {
             std::string instr;
             if (cpu.halted) {
                 instr = "<HALTED>";
             } else {
-                if (!cpu.isInISR()) {
+                if (DebuggerHelpers::isInIsr(cpu)) {
+                    instr = "ISR " + hex(cpu.instruction.address);
+                } else {
                     backend.disassemble(cpu.instruction.address, 1);
                     auto disas = backend.getDisassembledInstruction(cpu.instruction.address);
                     if (disas)
                         instr = instruction_mnemonic(*disas, cpu.instruction.address);
                     else
                         instr = "unknown";
-                } else {
-                    instr = "ISR " + hex(cpu.instruction.address);
                 }
             }
 
-            std::cerr << std::left << std::setw(28) << instr << ((tTrace && isMcycle) ? "(*)" : "   ") << "  ";
+            std::cerr << std::left << std::setw(28) << instr << "  ";
         }
 
         if (trace & TraceFlagRegisters) {
@@ -982,13 +984,28 @@ void DebuggerFrontend::onTick(uint64_t tick) {
 
         if (trace & TraceFlagInterrupts) {
             const InterruptsIO& interrupts = gb.interrupts;
-            std::cerr << "IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF) << "  ";
+            std::cerr << "IME:"
+                      << (cpu.IME == Cpu::ImeState::Enabled ? "1" : (cpu.IME == Cpu::ImeState::Pending ? "!" : "0"))
+                      << " IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF) << "  ";
+        }
+
+        if (trace & TraceFlagStack) {
+            std::cerr << "SP[" << hex((uint16_t)(cpu.SP + 1)) << "]:" << hex(backend.readMemory(cpu.SP + 1)) << " "
+                      << "SP[" << hex(cpu.SP) << "]:" << hex(backend.readMemory(cpu.SP)) << " "
+                      << "SP[" << hex((uint16_t)(cpu.SP - 1)) << "]:" << hex(backend.readMemory(cpu.SP - 1)) << "  ";
+        }
+
+        if (trace & TraceFlagDma) {
+            std::cerr << "DMA:" << std::setw(3) << (gb.dma.isTransferring() ? std::to_string(gb.dma.cursor) : "OFF")
+                      << "  ";
         }
 
         if (trace & TraceFlagTimers) {
-            const Timers& timers = gb.timers;
-            std::cerr << "DIV:" << hex((uint8_t)timers.DIV) << " TIMA:" << hex((uint8_t)timers.TIMA)
-                      << " TMA:" << hex((uint8_t)timers.TMA) << " TAC:" << hex((uint8_t)timers.TAC) << "  ";
+            std::cerr << "DIV16:" << hex(gb.timers.DIV)
+                      << " DIV:" << hex(backend.readMemory(Specs::Registers::Timers::DIV))
+                      << " TIMA:" << hex(backend.readMemory(Specs::Registers::Timers::TIMA))
+                      << " TMA:" << hex(backend.readMemory(Specs::Registers::Timers::TMA))
+                      << " TAC:" << hex(backend.readMemory(Specs::Registers::Timers::TAC)) << "  ";
         }
 
         if (trace & TraceFlagPpu) {
@@ -1039,17 +1056,23 @@ std::string DebuggerFrontend::title(const std::string& title, const std::string&
     for (uint32_t i = 0; i < w2; i++)
         hr2 += sep;
     std::stringstream ss;
-    ss << termcolor::color<240> << hr1 << termcolor::attr<color> << paddedLabel << termcolor::color<240> << hr2
-       << termcolor::reset;
+    ss << termcolor::color<DARK_GRAY> << hr1 << termcolor::attr<color> << paddedLabel
+       << termcolor::color<DARK_GRAY> << hr2 << termcolor::reset;
     return ss.str();
 }
 
 std::string DebuggerFrontend::header(const std::string& t, const std::string& sep) {
-    return title<36 /* cyan */>(t, sep);
+    std::stringstream ss;
+    ss << termcolor::bold << title<CYAN>(t, sep) << termcolor::reset;
+    return ss.str();
 }
 
 std::string DebuggerFrontend::subheader(const std::string& t, const std::string& sep) {
-    return title<32 /* green */>(t, sep);
+    return title<CYAN>(t, sep);
+}
+
+std::string DebuggerFrontend::hr(const std::string& sep) {
+    return title<0>("", sep);
 }
 
 std::string DebuggerFrontend::boolColored(bool value) {
@@ -1057,7 +1080,7 @@ std::string DebuggerFrontend::boolColored(bool value) {
     if (value)
         ss << "1";
     else
-        ss << termcolor::color<240> << "0" << termcolor::reset;
+        ss << termcolor::color<DARK_GRAY> << "0" << termcolor::reset;
     return ss.str();
 }
 
@@ -1102,7 +1125,7 @@ std::string DebuggerFrontend::interrupt(const std::string& name, bool IME, bool 
     if (IME && IE && IF)
         ss << termcolor::cyan << "ON " << termcolor::reset << "  ";
     else
-        ss << termcolor::color<240> << "OFF" << termcolor::reset << "  ";
+        ss << termcolor::color<DARK_GRAY> << "OFF" << termcolor::reset << "  ";
 
     ss << "IE : " << boolColored(IE) << " | "
        << "IF : " << boolColored(IF) << termcolor::reset;
@@ -1111,9 +1134,9 @@ std::string DebuggerFrontend::interrupt(const std::string& name, bool IME, bool 
 
 std::string DebuggerFrontend::io(uint16_t address, uint8_t value, int width) {
     std::stringstream ss;
-    ss << termcolor::color<244> << hex(address) << "   " << std::right << termcolor::bold << termcolor::red << std::left
-       << std::setw(width) << address_to_mnemonic(address) << termcolor::reset << " : " << bin(value) << " ("
-       << hex(value) << ")";
+    ss << termcolor::color<LIGHT_GRAY> << hex(address) << "   " << std::right << termcolor::bold << termcolor::red
+       << std::left << std::setw(width) << address_to_mnemonic(address) << termcolor::reset << " : " << bin(value)
+       << " (" << hex(value) << ")";
     return ss.str();
 }
 
@@ -1151,7 +1174,7 @@ std::string DebuggerFrontend::watchpoint(const Watchpoint& w) {
 
 std::string DebuggerFrontend::breakpoint(const Breakpoint& b) const {
     std::stringstream ss;
-    ss << termcolor::color<13> << "(" << b.id << ") " << hex(b.address);
+    ss << termcolor::color<PINK> << "(" << b.id << ") " << hex(b.address);
     auto instruction = backend.getDisassembledInstruction(b.address);
     if (instruction) {
         ss << " : " << std::setw(9) << hex(*instruction) << "   " << std::left << std::setw(16)
@@ -1164,12 +1187,23 @@ std::string DebuggerFrontend::breakpoint(const Breakpoint& b) const {
 void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     const Cpu& cpu = gb.cpu;
 
-    // CPU
-    if (config.sections.cpu) {
-        std::cout << header("CPU") << std::endl;
-        std::cout << termcolor::yellow << "Halted           :  " << termcolor::reset << gb.cpu.halted << std::endl;
-        std::cout << termcolor::yellow << "Cycle            :  " << termcolor::reset << gb.cpu.cycles << std::endl;
+    // GAMEBOY
+    std::cout << header("GAMEBOY") << std::endl;
+    std::cout << termcolor::yellow << "T-Cycle          :  " << termcolor::reset << core.ticks << std::endl;
+    std::cout << termcolor::yellow << "M-Cycle          :  " << termcolor::reset << core.ticks / 4 << std::endl;
+
+    std::cout << termcolor::yellow << "Phase            :  " << termcolor::reset;
+    for (uint8_t t = 0; t < 4; t++) {
+        if (core.ticks % 4 == t) {
+            std::cout << "T" << +t;
+        } else {
+            std::cout << termcolor::color<DARK_GRAY> << "T" << +t << termcolor::reset;
+        }
+        if (t < 3) {
+            std::cout << " ";
+        }
     }
+    std::cout << std::endl;
 
     // PPU
     if (config.sections.ppu) {
@@ -1196,10 +1230,13 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
                 return ss.str();
             }
-            if (gb.ppu.tickSelector == &Ppu::hBlank)
+            if (gb.ppu.tickSelector == &Ppu::hBlank || gb.ppu.tickSelector == &Ppu::hBlank454 ||
+                gb.ppu.tickSelector == &Ppu::hBlankLastLine || gb.ppu.tickSelector == &Ppu::hBlankLastLine454)
                 return "Horizontal Blank";
             if (gb.ppu.tickSelector == &Ppu::vBlank)
                 return "Vertical Blank";
+            if (gb.ppu.tickSelector == &Ppu::vBlankLastLine)
+                return "Vertical Blank (Last Line)";
 
             checkNoEntry();
             return "Unknown";
@@ -1251,7 +1288,15 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         };
 
         std::cout << header("PPU") << std::endl;
+        // PPU
+        std::cout << termcolor::yellow << "On               :  " << termcolor::reset << gb.ppu.on << std::endl;
+        std::cout << termcolor::yellow << "Cycle            :  " << termcolor::reset << gb.ppu.cycles << std::endl;
+        std::cout << termcolor::yellow << "Mode             :  " << termcolor::reset << ppuMode() << std::endl;
+        std::cout << termcolor::yellow << "Dots             :  " << termcolor::reset << gb.ppu.dots << std::endl;
+        std::cout << termcolor::yellow << "FetcherMode      :  " << termcolor::reset << ppuFetcherMode() << std::endl;
+        std::cout << termcolor::yellow << "LX               :  " << termcolor::reset << +gb.ppu.LX << std::endl;
 
+        // LCD
         std::cout << subheader("lcd") << std::endl;
         std::cout << termcolor::yellow << "X                :  " << termcolor::reset << +gb.lcd.x << std::endl;
         std::cout << termcolor::yellow << "Y                :  " << termcolor::reset << +gb.lcd.y << std::endl;
@@ -1263,14 +1308,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         }
         std::cout << std::endl;
 
-        std::cout << subheader("ppu") << std::endl;
-        std::cout << termcolor::yellow << "On               :  " << termcolor::reset << gb.ppu.on << std::endl;
-        std::cout << termcolor::yellow << "Cycle            :  " << termcolor::reset << gb.ppu.cycles << std::endl;
-        std::cout << termcolor::yellow << "Mode             :  " << termcolor::reset << ppuMode() << std::endl;
-        std::cout << termcolor::yellow << "Dots             :  " << termcolor::reset << gb.ppu.dots << std::endl;
-        std::cout << termcolor::yellow << "FetcherMode      :  " << termcolor::reset << ppuFetcherMode() << std::endl;
-        std::cout << termcolor::yellow << "LX               :  " << termcolor::reset << +gb.ppu.LX << std::endl;
-
+        // OAM Scanline entries
         const auto& oamEntries = gb.ppu.scanlineOamEntries;
 
         std::cout << subheader("oam scanline entries") << std::endl;
@@ -1289,7 +1327,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         if (gb.ppu.LX < array_size(gb.ppu.oamEntries)) {
             const auto& oamEntriesHit = gb.ppu.oamEntries[gb.ppu.LX];
-
+            // OAM Hit
             std::cout << subheader("oam hit") << std::endl;
             std::cout << termcolor::yellow << "OAM Number       :  " << termcolor::reset;
             for (uint8_t i = 0; i < oamEntriesHit.size(); i++)
@@ -1309,6 +1347,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         for (uint8_t i = 0; i < gb.ppu.bgFifo.size(); i++) {
             bgPixels[i] = gb.ppu.bgFifo[i].colorIndex;
         }
+
+        // BG Fifo
         std::cout << subheader("bg fifo") << std::endl;
         std::cout << termcolor::yellow << "BG Fifo Pixels   :  " << termcolor::reset
                   << hex(bgPixels, gb.ppu.bgFifo.size()) << std::endl;
@@ -1324,6 +1364,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             objNumbers[i] = p.number;
             objXs[i] = p.x;
         }
+        // OBJ Fifo
         std::cout << subheader("obj fifo") << std::endl;
         std::cout << termcolor::yellow << "OBJ Fifo Pixels  :  " << termcolor::reset
                   << hex(objPixels, gb.ppu.objFifo.size()) << std::endl;
@@ -1334,6 +1375,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         std::cout << termcolor::yellow << "OBJ Fifo X       :  " << termcolor::reset
                   << hex(objXs, gb.ppu.objFifo.size()) << std::endl;
 
+        // Pixel Slice Fetcher
         std::cout << subheader("pixel slice fetcher") << std::endl;
         std::cout << termcolor::yellow << "Tile Data Addr.  : " << termcolor::reset
                   << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.psf.vTileDataAddress) << std::endl;
@@ -1344,12 +1386,14 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             std::cout << termcolor::yellow << "Tile Data Ready  : " << termcolor::green << "Ready to merge"
                       << termcolor::reset << std::endl;
         else
-            std::cout << termcolor::yellow << "Tile Data Ready  : " << termcolor::color<240> << "Not ready"
+            std::cout << termcolor::yellow << "Tile Data Ready  : " << termcolor::color<DARK_GRAY> << "Not ready"
                       << termcolor::reset << std::endl;
 
-        std::cout << subheader("win") << std::endl;
+        // Window
+        std::cout << subheader("window") << std::endl;
         std::cout << termcolor::yellow << "WLY              :  " << termcolor::reset << +gb.ppu.w.WLY << std::endl;
 
+#if 0
         std::cout << subheader("timings") << std::endl;
         std::cout << termcolor::yellow << "OAM Scan         :  " << termcolor::reset << gb.ppu.timings.oamScan
                   << std::endl;
@@ -1357,24 +1401,128 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                   << std::endl;
         std::cout << termcolor::yellow << "HBlank           :  " << termcolor::reset << gb.ppu.timings.hBlank
                   << std::endl;
+#endif
+    }
+
+    // CPU
+    if (config.sections.cpu) {
+        std::cout << header("CPU") << std::endl;
+        std::cout << termcolor::yellow << "Halted           :  " << termcolor::reset << gb.cpu.halted << std::endl;
+        std::cout << termcolor::yellow << "Cycle            :  " << termcolor::reset << gb.cpu.cycles << std::endl;
+
+        // Registers
+        std::cout << subheader("registers") << std::endl;
+        std::cout << reg("AF", cpu.AF) << std::endl;
+        std::cout << reg("BC", cpu.BC) << std::endl;
+        std::cout << reg("DE", cpu.DE) << std::endl;
+        std::cout << reg("HL", cpu.HL) << std::endl;
+        std::cout << reg("PC", cpu.PC) << std::endl;
+        std::cout << reg("SP", cpu.SP) << std::endl;
+
+        // Flags
+        std::cout << subheader("flags") << std::endl;
+        std::cout << flag("Z", get_bit<Specs::Bits::Flags::Z>(cpu.AF)) << "  |  "
+                  << flag("N", get_bit<Specs::Bits::Flags::N>(cpu.AF)) << "  |  "
+                  << flag("H", get_bit<Specs::Bits::Flags::H>(cpu.AF)) << "  |  "
+                  << flag("C", get_bit<Specs::Bits::Flags::C>(cpu.AF)) << std::endl;
+
+        // Interrupts
+        uint8_t IE = gb.interrupts.IE;
+        uint8_t IF = gb.interrupts.IF;
+
+        std::cout << subheader("interrupts") << std::endl;
+
+        std::cout << termcolor::yellow << "State           :  " << termcolor::reset;
+        if (gb.cpu.interrupt.state == Cpu::InterruptState::None) {
+            std::cout << termcolor::color<DARK_GRAY> << "None" << termcolor::reset << std::endl;
+        } else if (gb.cpu.interrupt.state == Cpu::InterruptState::Pending) {
+            std::cout << termcolor::green << "Pending" << termcolor::reset << std::endl;
+        } else if (gb.cpu.interrupt.state == Cpu::InterruptState::Serving) {
+            std::cout << termcolor::green << "Serving" << termcolor::reset << std::endl;
+        }
+
+        if (gb.cpu.interrupt.state == Cpu::InterruptState::Pending) {
+            std::cout << termcolor::yellow << "Remain. Ticks   :  " << termcolor::reset
+                      << +gb.cpu.interrupt.remainingTicks << std::endl;
+        }
+
+        std::cout << hr() << std::endl;
+
+        std::cout << termcolor::bold << termcolor::red << "IME" << termcolor::reset << " : "
+                  << boolColored(cpu.IME == Cpu::ImeState::Enabled);
+        if (cpu.IME == Cpu::ImeState::Pending) {
+            std::cout << termcolor::yellow << "         [pending]";
+        }
+        std::cout << std::endl;
+
+        std::cout << termcolor::bold << termcolor::red << "IE" << termcolor::reset << "  : " << bin(IE) << std::endl;
+        std::cout << termcolor::bold << termcolor::red << "IF" << termcolor::reset << "  : " << bin(IF) << std::endl;
+        std::cout << interrupt("VBLANK", cpu.IME == Cpu::ImeState::Enabled,
+                               get_bit<Specs::Bits::Interrupts::VBLANK>(IE),
+                               get_bit<Specs::Bits::Interrupts::VBLANK>(IF))
+                  << std::endl;
+        std::cout << interrupt("STAT  ", cpu.IME == Cpu::ImeState::Enabled, get_bit<Specs::Bits::Interrupts::STAT>(IE),
+                               get_bit<Specs::Bits::Interrupts::STAT>(IF))
+                  << std::endl;
+        std::cout << interrupt("TIMER ", cpu.IME == Cpu::ImeState::Enabled, get_bit<Specs::Bits::Interrupts::TIMER>(IE),
+                               get_bit<Specs::Bits::Interrupts::TIMER>(IF))
+                  << std::endl;
+        std::cout << interrupt("JOYPAD", cpu.IME == Cpu::ImeState::Enabled,
+                               get_bit<Specs::Bits::Interrupts::JOYPAD>(IE),
+                               get_bit<Specs::Bits::Interrupts::JOYPAD>(IF))
+                  << std::endl;
+        std::cout << interrupt("SERIAL", cpu.IME == Cpu::ImeState::Enabled,
+                               get_bit<Specs::Bits::Interrupts::SERIAL>(IE),
+                               get_bit<Specs::Bits::Interrupts::SERIAL>(IF))
+                  << std::endl;
+    }
+
+    // MMU
+    if (config.sections.mmu) {
+        std::cout << header("MMU") << std::endl;
+
+        std::cout << subheader("read request") << std::endl;
+        if (gb.mmu.readRequest.pending) {
+            std::cout << termcolor::yellow << "Read Request   : " << termcolor::green << "Pending" << termcolor::reset
+                      << std::endl;
+            std::cout << termcolor::yellow << "Address        : " << termcolor::reset << hex(gb.mmu.readRequest.address)
+                      << std::endl;
+            std::cout << termcolor::yellow << "Value          : " << termcolor::reset
+                      << hex(gb.mmu.read(gb.mmu.readRequest.address)) << std::endl;
+        } else {
+            std::cout << termcolor::yellow << "Read Request   : " << termcolor::color<DARK_GRAY> << "None"
+                      << termcolor::reset << std::endl;
+        }
+
+        std::cout << subheader("write request") << std::endl;
+        if (gb.mmu.writeRequest.pending) {
+            std::cout << termcolor::yellow << "Write Request  : " << termcolor::green << "Pending" << termcolor::reset
+                      << std::endl;
+            std::cout << termcolor::yellow << "Address        : " << termcolor::reset
+                      << hex(gb.mmu.writeRequest.address) << std::endl;
+            std::cout << termcolor::yellow << "Value          : " << termcolor::reset << hex(gb.mmu.writeRequest.value)
+                      << std::endl;
+        } else {
+            std::cout << termcolor::yellow << "Write Request  : " << termcolor::color<DARK_GRAY> << "None"
+                      << termcolor::reset << std::endl;
+        }
     }
 
     // DMA
     if (config.sections.dma) {
         std::cout << header("DMA") << std::endl;
-        if (gb.dma.request.state != 0 || gb.dma.transferring) {
-            std::cout << termcolor::yellow << "DMA Request      : ";
-            if (gb.dma.request.state == 1) {
+        if (gb.dma.request.state != Dma::RequestState::None || gb.dma.transferring) {
+            std::cout << termcolor::yellow << "DMA Request    : ";
+            if (gb.dma.request.state == Dma::RequestState::Requested) {
                 std::cout << termcolor::green << "Requested" << termcolor::reset;
-            }
-            if (gb.dma.request.state == 2) {
+            } else if (gb.dma.request.state == Dma::RequestState::Pending) {
                 std::cout << termcolor::green << "Pending" << termcolor::reset;
-            } else if (gb.dma.request.state == 0) {
+            } else if (gb.dma.request.state == Dma::RequestState::None) {
                 std::cout << "None";
             }
             std::cout << std::endl;
 
-            std::cout << termcolor::yellow << "DMA Transfer     : ";
+            std::cout << termcolor::yellow << "DMA Transfer   : ";
             if (gb.dma.transferring) {
                 std::cout << termcolor::green << "In Progress" << termcolor::reset;
             } else {
@@ -1382,76 +1530,31 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }
             std::cout << std::endl;
 
-            std::cout << termcolor::yellow << "DMA Source       : " << termcolor::reset << hex(gb.dma.source)
+            std::cout << termcolor::yellow << "DMA Source     : " << termcolor::reset << hex(gb.dma.source)
                       << std::endl;
-            std::cout << termcolor::yellow << "DMA Progress     : " << termcolor::reset
+            std::cout << termcolor::yellow << "DMA Progress   : " << termcolor::reset
                       << hex(gb.dma.source + gb.dma.cursor) << " => "
                       << hex(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << +gb.dma.cursor << "/"
                       << "159]" << std::endl;
         } else {
-            std::cout << termcolor::yellow << "DMA Transfer     : " << termcolor::color<240> << "None"
+            std::cout << termcolor::yellow << "DMA Transfer   : " << termcolor::color<DARK_GRAY> << "None"
                       << termcolor::reset << std::endl;
         }
     }
 
-    // Flags
-    if (config.sections.flags) {
-        std::cout << header("flags") << std::endl;
-        std::cout << flag("Z", get_bit<Specs::Bits::Flags::Z>(cpu.AF)) << "  |  "
-                  << flag("N", get_bit<Specs::Bits::Flags::N>(cpu.AF)) << "  |  "
-                  << flag("H", get_bit<Specs::Bits::Flags::H>(cpu.AF)) << "  |  "
-                  << flag("C", get_bit<Specs::Bits::Flags::C>(cpu.AF)) << std::endl;
-    }
-
-    // Registers
-    if (config.sections.registers) {
-        std::cout << header("registers") << std::endl;
-        std::cout << reg("AF", cpu.AF) << std::endl;
-        std::cout << reg("BC", cpu.BC) << std::endl;
-        std::cout << reg("DE", cpu.DE) << std::endl;
-        std::cout << reg("HL", cpu.HL) << std::endl;
-        std::cout << reg("PC", cpu.PC) << std::endl;
-        std::cout << reg("SP", cpu.SP) << std::endl;
-    }
-
-    // Interrupts
-    if (config.sections.interrupts) {
-        uint8_t IE = gb.interrupts.IE;
-        uint8_t IF = gb.interrupts.IF;
-
-        std::cout << header("interrupts") << std::endl;
-        std::cout << termcolor::bold << termcolor::red << "IME" << termcolor::reset << " : " << boolColored(cpu.IME)
-                  << std::endl;
-        std::cout << termcolor::bold << termcolor::red << "IE" << termcolor::reset << "  : " << bin(IE) << std::endl;
-        std::cout << termcolor::bold << termcolor::red << "IF" << termcolor::reset << "  : " << bin(IF) << std::endl;
-        std::cout << interrupt("VBLANK", cpu.IME, get_bit<Specs::Bits::Interrupts::VBLANK>(IE),
-                               get_bit<Specs::Bits::Interrupts::VBLANK>(IF))
-                  << std::endl;
-        std::cout << interrupt("STAT  ", cpu.IME, get_bit<Specs::Bits::Interrupts::STAT>(IE),
-                               get_bit<Specs::Bits::Interrupts::STAT>(IF))
-                  << std::endl;
-        std::cout << interrupt("TIMER ", cpu.IME, get_bit<Specs::Bits::Interrupts::TIMER>(IE),
-                               get_bit<Specs::Bits::Interrupts::TIMER>(IF))
-                  << std::endl;
-        std::cout << interrupt("JOYPAD", cpu.IME, get_bit<Specs::Bits::Interrupts::JOYPAD>(IE),
-                               get_bit<Specs::Bits::Interrupts::JOYPAD>(IF))
-                  << std::endl;
-        std::cout << interrupt("SERIAL", cpu.IME, get_bit<Specs::Bits::Interrupts::SERIAL>(IE),
-                               get_bit<Specs::Bits::Interrupts::SERIAL>(IF))
-                  << std::endl;
-    }
-
     // Timers
     if (config.sections.timers) {
-        std::cout << header("timers") << std::endl;
+        std::cout << header("TIMERS") << std::endl;
         std::cout << div("DIV (16)", gb.timers.DIV, Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(gb.timers.TAC)])
                   << std::endl;
         std::cout << timer("DIV", backend.readMemory(Specs::Registers::Timers::DIV)) << std::endl;
         std::cout << timer("TIMA", backend.readMemory(Specs::Registers::Timers::TIMA));
-        if (gb.timers.timaState)
-            std::cout << termcolor::yellow << "    [pending TMA reload (" << gb.timers.timaState << ")]" << std::endl;
-        else
-            std::cout << std::endl;
+        if (gb.timers.timaState == TimersIO::TimaState::PendingReload) {
+            std::cout << termcolor::yellow << "    [pending TMA reload]";
+        } else if (gb.timers.timaState == TimersIO::TimaState::Reload) {
+            std::cout << termcolor::yellow << "    [TMA reload]";
+        }
+        std::cout << std::endl;
         std::cout << timer("TMA", backend.readMemory(Specs::Registers::Timers::TMA)) << std::endl;
         std::cout << timer("TAC", backend.readMemory(Specs::Registers::Timers::TAC)) << std::endl;
     }
@@ -1488,11 +1591,11 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
     // Code (disassemble)
     if (config.sections.code) {
-        if (cpu.isInISR()) {
+        if (const auto isrPhase = DebuggerHelpers::getIsrPhase(cpu); isrPhase != std::nullopt) {
             std::cout << subheader("code") << std::endl;
             std::cout << termcolor::yellow << "ISR";
-            std::cout << termcolor::reset << termcolor::color<245> << "   M" << (cpu.instruction.microop.counter + 1)
-                      << "/" << 5 << termcolor::reset << std::endl;
+            std::cout << termcolor::reset << termcolor::color<LIGHT_GRAY> << "   M" << (*isrPhase + 1) << "/" << 5
+                      << termcolor::reset << std::endl;
         } else {
             std::list<DisassembleEntry> codeView;
             uint8_t n = 0;
@@ -1515,12 +1618,12 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }
 
             if (!codeView.empty()) {
-                std::cout << header("code") << std::endl;
+                std::cout << header("CODE") << std::endl;
                 std::list<DisassembleEntry>::const_iterator lastEntry;
                 for (auto entry = codeView.begin(); entry != codeView.end(); entry++) {
                     if (entry != codeView.begin()) {
                         if (lastEntry->address + lastEntry->disassemble.size() < entry->address)
-                            std::cout << termcolor::color<240> << "  ...." << termcolor::reset << std::endl;
+                            std::cout << termcolor::color<DARK_GRAY> << "  ...." << termcolor::reset << std::endl;
                     }
                     std::cout << disassembleEntry(*entry) << std::endl;
                     lastEntry = entry;
@@ -1533,7 +1636,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     if (config.sections.breakpoints) {
         const auto& breakpoints = backend.getBreakpoints();
         if (!breakpoints.empty()) {
-            std::cout << header("breakpoints") << std::endl;
+            std::cout << header("BREAKPOINTS") << std::endl;
             for (const auto& b : breakpoints)
                 std::cout << breakpoint(b) << std::endl;
         }
@@ -1543,7 +1646,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     if (config.sections.watchpoints) {
         const auto& watchpoints = backend.getWatchpoints();
         if (!watchpoints.empty()) {
-            std::cout << header("watchpoints") << std::endl;
+            std::cout << header("WATCHPOINTS") << std::endl;
             for (const auto& w : watchpoints)
                 std::cout << watchpoint(w) << std::endl;
         }
@@ -1551,7 +1654,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
     // Display
     if (!displayEntries.empty()) {
-        std::cout << header("display") << std::endl;
+        std::cout << header("DISPLAY") << std::endl;
         for (const auto& d : displayEntries) {
             printDisplayEntry(d);
         }
@@ -1559,12 +1662,12 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
     // Stop reason
     if (std::holds_alternative<ExecutionBreakpointHit>(executionState)) {
-        std::cout << header("interruption") << std::endl;
+        std::cout << header("INTERRUPTION") << std::endl;
         auto hit = std::get<ExecutionBreakpointHit>(executionState).breakpointHit;
         std::cout << "Triggered breakpoint [" << hit.breakpoint.id << "] at address " << hex(hit.breakpoint.address)
                   << std::endl;
     } else if (std::holds_alternative<ExecutionWatchpointHit>(executionState)) {
-        std::cout << header("interruption") << std::endl;
+        std::cout << header("INTERRUPTION") << std::endl;
         auto hit = std::get<ExecutionWatchpointHit>(executionState).watchpointHit;
         std::cout << "Triggered watchpoint [" << hit.watchpoint.id << "] at address " << hex(hit.address) << std::endl;
         if (hit.accessType == WatchpointHit::AccessType::Read) {
@@ -1575,7 +1678,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             std::cout << "New: " << hex(hit.newValue) << std::endl;
         }
     } else if (std::holds_alternative<ExecutionInterrupted>(executionState)) {
-        std::cout << header("interruption") << std::endl;
+        std::cout << header("INTERRUPTION") << std::endl;
         std::cout << "User interruption requested" << std::endl;
     }
 }
@@ -1668,7 +1771,7 @@ std::string DebuggerFrontend::disassembleEntry(const DebuggerFrontend::Disassemb
     if (isCurrentInstruction)
         ss << termcolor::bold << termcolor::green;
     else if (isPastInstruction)
-        ss << termcolor::color<240>;
+        ss << termcolor::color<DARK_GRAY>;
 
     ss << hex(entry.address) << " : " << std::left << std::setw(9) << hex(entry.disassemble) << "   " << std::left
        << std::setw(16) << instruction_mnemonic(entry.disassemble, entry.address);
@@ -1676,8 +1779,8 @@ std::string DebuggerFrontend::disassembleEntry(const DebuggerFrontend::Disassemb
     if (isCurrentInstruction) {
         auto [min, max] = instruction_duration(entry.disassemble);
         if (min) {
-            ss << termcolor::reset << termcolor::color<245> << "   M" << (currentInstructionMicroop + 1) << "/" << +min
-               << (max != min ? (std::string(":") + std::to_string(+max)) : "") << termcolor::reset;
+            ss << termcolor::reset << termcolor::color<LIGHT_GRAY> << "   M" << (currentInstructionMicroop + 1) << "/"
+               << +min << (max != min ? (std::string(":") + std::to_string(+max)) : "") << termcolor::reset;
         }
     }
     return ss.str();

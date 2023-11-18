@@ -79,7 +79,7 @@ public:
     void proceed();
     void interrupt();
 
-    [[nodiscard]] const GameBoy& getGameBoy() const;
+    [[nodiscard]] const Core& getCore() const;
 
 private:
     void pullCommand(const ExecutionState& state);

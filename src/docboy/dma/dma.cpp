@@ -1,7 +1,6 @@
 #include "dma.h"
 #include "docboy/memory/memory.hpp"
 #include "docboy/mmu/mmu.h"
-#include "utils/asserts.h"
 #include "utils/bits.hpp"
 
 /* DMA request timing example.
@@ -16,15 +15,6 @@
  * CPU | [OAM reads FF]
  * DMA |                   Transfer first byte
  */
-
-enum RequestState : uint8_t {
-    /* DMA transfer has been requested this cycle */
-    Requested = 2,
-    /* DMA transfer is pending and will (re)start next cycle */
-    Pending = 1,
-    /* No DMA request */
-    None = 0,
-};
 
 Dma::Dma(Mmu& mmu, Oam& oam) :
     mmu(mmu),
@@ -42,12 +32,14 @@ void Dma::startTransfer(uint16_t address) {
 
 void Dma::tick() {
     if (transferring) {
+        // TODO: use requestRead() with exact DMA timing instead of read()
         oam[cursor] = mmu.read(source + cursor);
         transferring = ++cursor < Specs::MemoryLayout::OAM::SIZE;
     }
 
-    if (request.state != None) {
-        if (--request.state == None) {
+    if (request.state != RequestState::None) {
+        request.state = (RequestState)((uint8_t)request.state - 1);
+        if (request.state == RequestState::None) {
             transferring = true;
             source = request.source;
             cursor = 0;
@@ -56,7 +48,7 @@ void Dma::tick() {
 }
 
 void Dma::saveState(Parcel& parcel) const {
-    parcel.writeUInt8(request.state);
+    parcel.writeUInt8((uint8_t)request.state);
     parcel.writeUInt16(request.source);
     parcel.writeBool(transferring);
     parcel.writeUInt16(source);
@@ -64,7 +56,7 @@ void Dma::saveState(Parcel& parcel) const {
 }
 
 void Dma::loadState(Parcel& parcel) {
-    request.state = parcel.readUInt8();
+    request.state = (RequestState)parcel.readUInt8();
     request.source = parcel.readUInt16();
     transferring = parcel.readBool();
     source = parcel.readUInt16();

@@ -14,11 +14,13 @@
     do                                                                                                                 \
     code while (0)
 #define IF_ASSERTS(statement) statement
+#define IF_ASSERTS_ELSE(t, f) t
 #else
 #define check(...) ((void)(0))
 #define checkNoEntry() ((void)(0))
 #define checkCode(code) ((void)(0))
 #define IF_ASSERTS(statement)
+#define IF_ASSERTS_ELSE(t, f) f
 #endif
 
 #endif // assertS_H

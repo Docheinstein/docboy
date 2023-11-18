@@ -1,6 +1,7 @@
 #include "backend.h"
 #include "docboy/core/core.h"
 #include "frontend.h"
+#include "helpers.h"
 #include "mnemonics.h"
 #include "utils/std.hpp"
 #include <algorithm>
@@ -51,7 +52,7 @@ void DebuggerBackend::onTick(uint64_t tick) {
 
     // Check breakpoints
     if (isMCycle) {
-        if (!cpu.isInISR() && cpu.instruction.microop.counter == 0) {
+        if (!DebuggerHelpers::isInIsr(cpu) && cpu.instruction.microop.counter == 0) {
             // Disassemble the current instruction
             disassemble(cpu.instruction.address, 1);
             auto b = getBreakpoint(cpu.instruction.address);
@@ -308,8 +309,8 @@ void DebuggerBackend::interrupt() {
     interrupted = true;
 }
 
-const GameBoy& DebuggerBackend::getGameBoy() const {
-    return core.gb;
+const Core& DebuggerBackend::getCore() const {
+    return core;
 }
 
 void DebuggerBackend::proceed() {
@@ -410,7 +411,7 @@ void DebuggerBackend::handleCommand<DotCommand, DotCommandState>(const DotComman
 template <>
 void DebuggerBackend::handleCommand<StepCommand, StepCommandState>(const StepCommand& cmd, StepCommandState& state) {
     Cpu& cpu = core.gb.cpu;
-    if (!cpu.isInISR() && cpu.instruction.microop.counter == 0) {
+    if (!DebuggerHelpers::isInIsr(cpu) && cpu.instruction.microop.counter == 0) {
         if (++state.counter >= cmd.count)
             pullCommand(ExecutionCompleted());
     }
@@ -428,7 +429,7 @@ void DebuggerBackend::handleCommand<MicroStepCommand, MicroStepCommandState>(con
 template <>
 void DebuggerBackend::handleCommand<NextCommand, NextCommandState>(const NextCommand& cmd, NextCommandState& state) {
     Cpu& cpu = core.gb.cpu;
-    if (!cpu.isInISR() && cpu.instruction.microop.counter == 0) {
+    if (!DebuggerHelpers::isInIsr(cpu) && cpu.instruction.microop.counter == 0) {
         if (cpu.SP == state.stackLevel)
             ++state.counter;
         if (state.counter >= cmd.count || cpu.SP > state.stackLevel)

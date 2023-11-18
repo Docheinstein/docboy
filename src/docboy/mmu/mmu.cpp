@@ -165,8 +165,8 @@ Mmu::Mmu(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
     /* FF41 */ memoryAccessors[Specs::Registers::Video::STAT] = {&video.STAT, &Mmu::writeSTAT};
     /* FF42 */ memoryAccessors[Specs::Registers::Video::SCY] = &video.SCY;
     /* FF43 */ memoryAccessors[Specs::Registers::Video::SCX] = &video.SCX;
-    /* FF44 */ memoryAccessors[Specs::Registers::Video::LY] = &video.LY;
-    /* FF45 */ memoryAccessors[Specs::Registers::Video::LYC] = &video.LYC;
+    /* FF44 */ memoryAccessors[Specs::Registers::Video::LY] = {&video.LY, &Mmu::writeNop};
+    /* FF45 */ memoryAccessors[Specs::Registers::Video::LYC] = {&video.LYC, &Mmu::writeLYC};
     /* FF46 */ memoryAccessors[Specs::Registers::Video::DMA] = {&video.DMA, &Mmu::writeDMA};
     /* FF47 */ memoryAccessors[Specs::Registers::Video::BGP] = &video.BGP;
     /* FF48 */ memoryAccessors[Specs::Registers::Video::OBP0] = &video.OBP0;
@@ -232,6 +232,32 @@ Mmu::Mmu(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& 
     }
 
     /* FFFF */ memoryAccessors[Specs::MemoryLayout::IE] = &interrupts.IE;
+}
+
+void Mmu::requestRead(uint16_t address, uint8_t& dest) {
+    readRequest.pending = true;
+    readRequest.address = address;
+    readRequest.dest = &dest;
+}
+
+void Mmu::requestWrite(uint16_t address, uint8_t value) {
+    writeRequest.pending = true;
+    writeRequest.address = address;
+    writeRequest.value = value;
+}
+
+void Mmu::flushReadRequest() {
+    if (readRequest.pending) {
+        readRequest.pending = false;
+        *readRequest.dest = read(readRequest.address);
+    }
+}
+
+void Mmu::flushWriteRequest() {
+    if (writeRequest.pending) {
+        writeRequest.pending = false;
+        write(writeRequest.address, writeRequest.value);
+    }
 }
 
 uint8_t Mmu::read(uint16_t address) const {
@@ -366,6 +392,10 @@ void Mmu::writeSTAT(uint16_t address, uint8_t value) {
 
 void Mmu::writeDMA(uint16_t address, uint8_t value) {
     video.writeDMA(value);
+}
+
+void Mmu::writeLYC(uint16_t address, uint8_t value) {
+    video.writeLYC(value);
 }
 
 void Mmu::writeBOOT(uint16_t address, uint8_t value) {

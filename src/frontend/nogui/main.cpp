@@ -86,18 +86,18 @@ int main(int argc, char* argv[]) {
     if (args.serial) {
         serialConsole = std::make_unique<SerialConsole>(std::cerr, 16);
         serialLink = std::make_unique<SerialLink>();
-        serialLink->plug1.attach(&*serialConsole);
+        serialLink->plug1.attach(*serialConsole);
         core.attachSerialLink(serialLink->plug2);
     }
 #endif
 
     const auto tStart = std::chrono::high_resolution_clock::now();
-    for (uint64_t tick = 0; tick < args.ticksToRun; tick++) {
+    for (uint64_t tick = 0; tick < args.ticksToRun; tick += 4) {
 #ifdef ENABLE_DEBUGGER
         if (core.isDebuggerAskingToShutdown())
             break;
 #endif
-        core.tick();
+        core.cycle();
     }
     const auto tEnd = std::chrono::high_resolution_clock::now();
     const auto elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(tEnd - tStart).count();

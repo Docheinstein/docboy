@@ -1,12 +1,99 @@
 #include "core.h"
 #include "docboy/cartridge/factory.h"
+#include "utils/math.h"
 #include <iostream>
+
+#ifdef ENABLE_DEBUGGER
+#include "docboy/debugger/backend.h"
+
+#define TICK_DEBUGGER(n)                                                                                               \
+    if (debugger)                                                                                                      \
+    debugger->onTick(n)
+#define RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN()                                                                     \
+    if (debugger && debugger->isAskingToShutdown())                                                                    \
+    return
+#define TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(n)                                                              \
+    do {                                                                                                               \
+        TICK_DEBUGGER(n);                                                                                              \
+        RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();                                                                    \
+    } while (0)
+#else
+#define TICK_DEBUGGER(n) (void)(0)
+#define RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN() (void)(0)
+#define TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(n) (void)(0)
+#endif
+
+static constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
+
+// TODO: deduce SERIAL_TICKS_OFFSET also for bootrom version when sure about bootrom timing
+static constexpr uint64_t SERIAL_PHASE_OFFSET = (SERIAL_PERIOD - 48); // deduced from boot_sclk_align-dmgABCmgb.gb
 
 static constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
 static uint32_t STATE_SAVE_SIZE = STATE_SAVE_SIZE_UNKNOWN;
 
 Core::Core(GameBoy& gb) :
     gb(gb) {
+}
+
+inline void Core::tick_t0() {
+    gb.cpu.tick();
+    gb.ppu.tick();
+    gb.cpu.checkInterrupt_t0();
+}
+
+inline void Core::tick_t1() {
+    gb.mmu.flushWriteRequest();
+    gb.ppu.tick();
+    gb.cpu.checkInterrupt_t1();
+}
+
+inline void Core::tick_t2() {
+    gb.ppu.tick();
+    gb.cpu.checkInterrupt_t2();
+}
+
+inline void Core::tick_t3() {
+    gb.mmu.flushReadRequest();
+    if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3)
+        gb.serialPort.tick();
+    gb.timers.tick();
+    gb.dma.tick();
+    gb.ppu.tick();
+    gb.cpu.checkInterrupt_t3();
+}
+
+void Core::cycle() {
+    check(mod<4>(ticks) == 0);
+
+    TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(ticks);
+    tick_t0();
+    ++ticks;
+
+    TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(ticks);
+    tick_t1();
+    ++ticks;
+
+    TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(ticks);
+    tick_t2();
+    ++ticks;
+
+    TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(ticks);
+    tick_t3();
+    ++ticks;
+}
+
+void Core::frame() {
+    byte& LY = gb.video.LY;
+    if (LY >= 144) {
+        while (LY != 0) {
+            cycle();
+            RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+        }
+    }
+    while (LY < 144) {
+        cycle();
+        RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+    }
 }
 
 void Core::loadRom(const std::string& filename) const {

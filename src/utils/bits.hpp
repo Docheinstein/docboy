@@ -64,7 +64,7 @@ void set_byte(T& dest, uint8_t value) {
     dest |= (value << (8 * n));
 }
 
-inline uint16_t concat_bytes(uint8_t msb, uint8_t lsb) {
+inline uint16_t concat(uint8_t msb, uint8_t lsb) {
     return ((uint16_t)msb) << 8 | lsb;
 }
 

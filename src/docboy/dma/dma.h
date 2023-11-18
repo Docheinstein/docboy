@@ -26,11 +26,20 @@ public:
     }
 
 private:
+    enum class RequestState : uint8_t {
+        /* DMA transfer has been requested this cycle */
+        Requested = 2,
+        /* DMA transfer is pending and will (re)start next cycle */
+        Pending = 1,
+        /* No DMA request */
+        None = 0,
+    };
+
     Mmu& mmu;
     Oam& oam;
 
     struct {
-        uint8_t state {};
+        RequestState state {};
         uint16_t source {};
     } request;
 

@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "docboy/bootrom/macros.h"
+#include "docboy/debugger/macros.h"
 #include "docboy/memory/fwd/bytefwd.h"
 #include "docboy/memory/fwd/hramfwd.h"
 #include "docboy/memory/fwd/memoryfwd.h"
@@ -29,12 +30,19 @@ class Dma;
 
 class Mmu {
 public:
+    DEBUGGABLE_CLASS()
+
     Mmu(IF_BOOTROM(BootRom& bootRom COMMA) CartridgeSlot& cartridgeSlot, Vram& vram, Wram1& wram1, Wram2& wram2,
         Oam& oam, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts,
         SoundIO& sound, VideoIO& video, BootIO& boot, Dma& dma);
 
-    void tick();
+    void requestRead(uint16_t address, uint8_t& dest);
+    void requestWrite(uint16_t address, uint8_t value);
 
+    void flushReadRequest();
+    void flushWriteRequest();
+
+    // TODO make this private and just use requestRead with accurate timings
     [[nodiscard]] uint8_t read(uint16_t address) const;
     void write(uint16_t address, uint8_t value);
 
@@ -93,8 +101,8 @@ private:
     void writeNR52(uint16_t address, uint8_t value);
 
     void writeSTAT(uint16_t address, uint8_t value);
-
     void writeDMA(uint16_t address, uint8_t value);
+    void writeLYC(uint16_t address, uint8_t value);
 
     void writeBOOT(uint16_t address, uint8_t value);
 
@@ -119,6 +127,18 @@ private:
     Dma& dma;
 
     MemoryAccess memoryAccessors[UINT16_MAX + 1] {};
+
+    struct {
+        bool pending {};
+        uint16_t address {};
+        uint8_t* dest {};
+    } readRequest;
+
+    struct {
+        bool pending {};
+        uint16_t address {};
+        uint8_t value {};
+    } writeRequest;
 };
 
 #endif // MMU_H

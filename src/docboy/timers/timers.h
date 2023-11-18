@@ -39,6 +39,15 @@ public:
     BYTE(TAC, Specs::Registers::Timers::TAC, 0b11111000);
 
 protected:
+    enum class TimaState : uint8_t {
+        /* TIMA has just overflow this cycle and will be reload the next cycle.  */
+        PendingReload = 2,
+        /* TIMA has overflow the cycle before and will be reloaded this cycle.  */
+        Reload = 1,
+        /* No pending overflow of TIMA to handle. */
+        None = 0
+    };
+
     void setDIV(uint16_t value);
     void incTIMA();
     void onFallingEdgeIncTima();
@@ -47,7 +56,7 @@ protected:
     InterruptsIO& interrupts;
 
     bool lastDivBitAndTacEnable {};
-    uint8_t timaState {};
+    TimaState timaState {};
 };
 
 class Timers : public TimersIO {

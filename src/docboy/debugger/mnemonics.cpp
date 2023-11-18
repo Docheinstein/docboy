@@ -612,7 +612,7 @@ std::string instruction_mnemonic(const std::vector<uint8_t>& instruction, uint16
         if (instruction.size() < 3)
             return "[INVALID]";
         char buf[32];
-        uint16_t uu = concat_bytes(instruction[2], instruction[1]);
+        uint16_t uu = concat(instruction[2], instruction[1]);
         snprintf(buf, sizeof(buf), INSTRUCTIONS[opcode].mnemonic, uu);
         return buf;
     }

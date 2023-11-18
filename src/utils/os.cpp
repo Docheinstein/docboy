@@ -1,5 +1,10 @@
 #include "os.h"
 
+bool file_exists(const std::string& filename) {
+    struct stat st {};
+    return stat(filename.c_str(), &st) == 0;
+}
+
 bool is_file(const std::string& filename) {
     struct stat st {};
     return stat(filename.c_str(), &st) == 0 && S_ISREG(st.st_mode);

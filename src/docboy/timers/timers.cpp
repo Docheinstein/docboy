@@ -15,15 +15,6 @@
  * DMA   |                                      Reload -> None
  */
 
-enum TimaOverflowState : uint8_t {
-    /* TIMA has just overflow this cycle and will be reload the next cycle.  */
-    PendingReload = 2,
-    /* TIMA has overflow the cycle before and will be reloaded this cycle.  */
-    Reload = 1,
-    /* No pending overflow of TIMA to handle. */
-    None = 0
-};
-
 TimersIO::TimersIO(InterruptsIO& interrupts) :
     interrupts(interrupts) {
 }
@@ -50,16 +41,16 @@ void TimersIO::writeDIV(uint8_t value) {
 
 void TimersIO::writeTIMA(uint8_t value) {
     // Writing to TIMA in the same cycle it has been reloaded is ignored
-    if (timaState != Reload) {
+    if (timaState != TimaState::Reload) {
         TIMA = value;
-        timaState = None;
+        timaState = TimaState::None;
     }
 }
 
 void TimersIO::writeTMA(uint8_t value) {
     // Writing TMA in the same cycle TIMA has been reloaded writes TIMA too
     TMA = value;
-    if (timaState == Reload)
+    if (timaState == TimaState::Reload)
         TIMA = value;
 }
 
@@ -75,8 +66,9 @@ inline void TimersIO::setDIV(uint16_t value) {
 
 inline void TimersIO::incTIMA() {
     // When TIMA overflows, TMA is reloaded in TIMA: but it is delayed by 1 m-cycle
-    if (++TIMA == 0)
-        timaState = PendingReload;
+    if (++TIMA == 0) {
+        timaState = TimaState::PendingReload;
+    }
 }
 
 inline void TimersIO::onFallingEdgeIncTima() {
@@ -91,8 +83,9 @@ inline void TimersIO::onFallingEdgeIncTima() {
 }
 
 inline void TimersIO::handlePendingTimaReload() {
-    if (timaState != TimaOverflowState::None) {
-        if (--timaState == Reload) {
+    if (timaState != TimaState::None) {
+        timaState = (TimaState)((uint8_t)timaState - 1);
+        if (timaState == TimaState::Reload) {
             TIMA = (uint8_t)TMA;
             interrupts.raiseInterrupt<InterruptsIO::InterruptType::Timer>();
         }

@@ -21,7 +21,6 @@ target_sources(docboy PRIVATE
     cartridge/slot.h
     core/core.cpp
     core/core.h
-    core/core.tpp
     cpu/cpu.cpp
     cpu/cpu.h
     debugger/macros.h
@@ -87,6 +86,8 @@ if (ENABLE_DEBUGGER)
         debugger/shared.h
         debugger/frontend.h
         debugger/frontend.cpp
+        debugger/helpers.h
+        debugger/helpers.cpp
         debugger/memsniffer.h
         debugger/memsniffer.h
         debugger/memsniffer.cpp

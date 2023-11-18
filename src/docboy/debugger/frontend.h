@@ -8,6 +8,7 @@
 
 class DebuggerBackend;
 class GameBoy;
+class Core;
 
 enum class MemoryOutputFormat : char {
     Binary = 'b',
@@ -25,9 +26,7 @@ public:
             bool watchpoints {true};
             bool cpu {true};
             bool ppu {true};
-            bool flags {true};
-            bool registers {true};
-            bool interrupts {true};
+            bool mmu {true};
             bool timers {true};
             bool dma {true};
             struct {
@@ -80,6 +79,8 @@ private:
     static std::string header(const std::string& title = "", const std::string& sep = "—");
     static std::string subheader(const std::string& title = "", const std::string& sep = "—");
 
+    static std::string hr(const std::string& sep = "—");
+
     static std::string boolColored(bool value);
     static std::string flag(const std::string& name, bool value);
     static std::string reg(const std::string& name, uint16_t value);
@@ -99,6 +100,7 @@ private:
     void printIO(const uint16_t* addresses, uint32_t length, uint32_t columns = 4) const;
 
     DebuggerBackend& backend;
+    const Core& core;
     const GameBoy& gb;
 
     Config config {};

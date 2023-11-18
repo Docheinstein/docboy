@@ -9,7 +9,8 @@
 class DebuggerBackend;
 #define DEBUGGABLE_CLASS()                                                                                             \
     friend class DebuggerBackend;                                                                                      \
-    friend class DebuggerFrontend;
+    friend class DebuggerFrontend;                                                                                     \
+    friend class DebuggerHelpers;
 #define IF_DEBUGGER(statement) statement
 #define IF_ASSERTS_OR_DEBUGGER(statement) statement
 #else

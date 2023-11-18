@@ -3,6 +3,7 @@
 #include "docboy/core/core.h"
 #include "extra/cartridge/header.h"
 #include "extra/serial/endpoints/console.h"
+#include "os.h"
 #include "utils/formatters.hpp"
 #include "utils/io.h"
 #include "utils/path.h"
@@ -74,6 +75,17 @@ int main(int argc, char* argv[]) {
 
     if (!parser.parse_args(argc, argv, 1))
         return 1;
+
+    const auto ensureExists =
+        [](const std::string& path) {
+            if (!file_exists(path)) {
+                std::cerr << "ERROR: failed to load '" << path << "'" << std::endl;
+                exit(1);
+            }
+        }
+
+    IF_BOOTROM(ensureExists(args.booRom));
+    ensureExists(args.rom);
 
     GameBoy gb {IF_BOOTROM(BootRomFactory().create(args.bootRom))};
     Core core {gb};

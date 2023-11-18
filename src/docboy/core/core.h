@@ -15,7 +15,7 @@ public:
     explicit Core(GameBoy& gb);
 
     // Emulation
-    void tick();
+    void cycle();
     void frame();
 
     // Load ROM
@@ -26,7 +26,9 @@ public:
     void attachSerialLink(SerialLink::Plug& plug) const;
 
     // Input
-    void setKey(Joypad::Key key, Joypad::KeyState state) const;
+    void setKey(Joypad::Key key, Joypad::KeyState state) const {
+        gb.joypad.setKeyState(key, state);
+    }
 
     // Save/Load RAM
     void saveRam(void* data) const;
@@ -50,10 +52,13 @@ public:
     IF_DEBUGGER(DebuggerBackend* debugger {});
 
 private:
+    void tick_t0();
+    void tick_t1();
+    void tick_t2();
+    void tick_t3();
+
     Parcel parcelizeState() const;
     void unparcelizeState(Parcel&& parcel) const;
 };
-
-#include "core.tpp"
 
 #endif // CORE_H
