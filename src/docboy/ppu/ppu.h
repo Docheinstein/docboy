@@ -2,9 +2,9 @@
 #define PPU_H
 
 #include "docboy/bootrom/macros.h"
+#include "docboy/bus/oambus.h"
+#include "docboy/bus/vrambus.h"
 #include "docboy/debugger/macros.h"
-#include "docboy/memory/fwd/oamfwd.h"
-#include "docboy/memory/fwd/vramfwd.h"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
 #include "utils/fillqueue.hpp"
@@ -22,7 +22,10 @@ class Ppu {
     DEBUGGABLE_CLASS()
 
 public:
-    Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, Vram& vram, Oam& oam);
+    using VramBusView = AcquirableBusProxy<VramBus, AcquirableBusDevice::Ppu>;
+    using OamBusView = AcquirableBusProxy<OamBus, AcquirableBusDevice::Ppu>;
+
+    Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBusView vramBus, OamBusView oamBus);
 
     void tick();
 
@@ -116,8 +119,8 @@ private:
     Lcd& lcd;
     VideoIO& video;
     InterruptsIO& interrupts;
-    Vram& vram;
-    Oam& oam;
+    VramBusView vram;
+    OamBusView oam;
 
     TickSelector tickSelector {IF_BOOTROM_ELSE(&Ppu::oamScan0, &Ppu::vBlankLastLine)};
     FetcherTickSelector fetcherTickSelector {&Ppu::bgPrefetcherGetTile0};

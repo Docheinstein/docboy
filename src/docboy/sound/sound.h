@@ -1,6 +1,7 @@
 #ifndef SOUND_H
 #define SOUND_H
 
+#include "docboy/bootrom/macros.h"
 #include "docboy/memory/byte.hpp"
 
 class SoundIO {

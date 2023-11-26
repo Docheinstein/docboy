@@ -15,7 +15,7 @@ class InterruptsIO;
 
 class TimersIO {
 public:
-    DEBUGGABLE_CLASS();
+    DEBUGGABLE_CLASS()
 
     explicit TimersIO(InterruptsIO& interrupts);
 
@@ -39,13 +39,11 @@ public:
     BYTE(TAC, Specs::Registers::Timers::TAC, 0b11111000);
 
 protected:
-    enum class TimaState : uint8_t {
-        /* TIMA has just overflow this cycle and will be reload the next cycle.  */
-        PendingReload = 2,
-        /* TIMA has overflow the cycle before and will be reloaded this cycle.  */
-        Reload = 1,
-        /* No pending overflow of TIMA to handle. */
-        None = 0
+    struct TimaReloadState {
+        using Type = uint8_t;
+        static constexpr Type Pending = 2;
+        static constexpr Type Reload = 1;
+        static constexpr Type None = 0;
     };
 
     void setDIV(uint16_t value);
@@ -55,8 +53,8 @@ protected:
 
     InterruptsIO& interrupts;
 
+    TimaReloadState::Type timaState {};
     bool lastDivBitAndTacEnable {};
-    TimaState timaState {};
 };
 
 class Timers : public TimersIO {

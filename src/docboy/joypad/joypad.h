@@ -17,9 +17,21 @@ protected:
 
 class Joypad : public JoypadIO {
 public:
-    enum class Key : uint8_t { Down = 7, Up = 6, Left = 5, Right = 4, Start = 3, Select = 2, B = 1, A = 0 };
+    enum class Key : uint8_t {
+        Down = 7,
+        Up = 6,
+        Left = 5,
+        Right = 4,
+        Start = 3,
+        Select = 2,
+        B = 1,
+        A = 0,
+    };
 
-    enum class KeyState : uint8_t { Pressed = 0, Released = 1 };
+    enum class KeyState : uint8_t {
+        Pressed = 0,
+        Released = 1,
+    };
 
     explicit Joypad(InterruptsIO& interrupts);
 

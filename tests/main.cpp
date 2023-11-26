@@ -161,8 +161,8 @@ public:
         return false;
     }
 
-    GameBoy gb;
-    Core core {gb};
+    std::unique_ptr<GameBoy> gb {std::make_unique<GameBoy>()};
+    Core core {*gb};
 
 protected:
     std::string romName; // debug
@@ -212,9 +212,9 @@ public:
     bool checkExpectation() {
         // Compare framebuffer only in VBlank
         check(keep_bits<2>(core.gb.video.STAT) == 1);
-        memcpy(lastFramebuffer, gb.lcd.getPixels(), FRAMEBUFFER_SIZE);
+        memcpy(lastFramebuffer, gb->lcd.getPixels(), FRAMEBUFFER_SIZE);
         if (!pixelColors.empty())
-            convert_framebuffer_pixels(lastFramebuffer, gb.lcd.getPixels(), pixelColors);
+            convert_framebuffer_pixels(lastFramebuffer, gb->lcd.getPixels(), pixelColors);
         return are_framebuffer_equals(lastFramebuffer, expectedFramebuffer);
     }
 
@@ -863,6 +863,7 @@ using RunnerParams = std::variant<F, S>;
 static bool run_with_params(const RunnerParams& p) {
     if (std::holds_alternative<FramebufferRunnerParams>(p)) {
         const auto pf = std::get<FramebufferRunnerParams>(p);
+        INFO("=== " << TEST_ROMS_PATH + pf.rom << " ===");
         return FramebufferRunner()
             .rom(TEST_ROMS_PATH + pf.rom)
             .maxTicks(pf.maxTicks)
@@ -873,6 +874,7 @@ static bool run_with_params(const RunnerParams& p) {
 
     if (std::holds_alternative<SerialRunnerParams>(p)) {
         const auto ps = std::get<SerialRunnerParams>(p);
+        INFO("=== " << TEST_ROMS_PATH + ps.rom << " ===");
         return SerialRunner()
             .rom(TEST_ROMS_PATH + ps.rom)
             .maxTicks(ps.maxTicks)
@@ -890,7 +892,6 @@ static bool run_with_params(const RunnerParams& p) {
     REQUIRE(run_with_params(params))
 
 TEST_CASE("emulation", "[emulation][.]") {
-
     SECTION("mbc") {
         SECTION("mbc1") {
             RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1095,13 +1096,22 @@ TEST_CASE("emulation", "[emulation][.]") {
                       S {"mooneye/oam_dma_restart.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/oam_dma_start.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/oam_dma_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      //                      F {"docboy/dma/dma_bus_conflict_vram_code.gb", "docboy/ok.png"},
-                      //                      F {"docboy/dma/dma_bus_conflict_wram_code.gb", "docboy/ok.png"},
-                      //                      F {"docboy/dma/dma_bus_conflict_wram_nops.gb", "docboy/ok.png"},
-                      //                      F {"docboy/dma/dma_timing_oam_read_round1.gb", "docboy/ok.png"},
-                      //                      F {"docboy/dma/dma_timing_oam_read_round2.gb", "docboy/ok.png"},
-                      //                      F {"docboy/dma/dma_transfer.gb", "docboy/ok.png"},
-        );
+                      F {"docboy/dma/dma_during_oam_scan.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_read_vram_cpu_read_rom.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_read_wram1_cpu_read_oam.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_read_wram1_cpu_read_rom.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_read_wram1_cpu_read_vram.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_read_wram1_cpu_write_hram.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_read_wram1_cpu_write_wram2.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_timing_round1.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_timing_round2.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_transfer.gb", "docboy/ok.png"},
+                      F {"docboy/dma/dma_transfer_ff00.gb", "docboy/ok.png"}, );
+    }
+
+    SECTION("bus") {
+        RUN_TEST_ROMS(F {"docboy/bus/read_oam_in_pixel_transfer.gb", "docboy/ok.png"},
+                      F {"docboy/bus/read_vram_in_pixel_transfer.gb", "docboy/ok.png"});
     }
 
     SECTION("serial") {

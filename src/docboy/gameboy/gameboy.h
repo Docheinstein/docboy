@@ -5,7 +5,14 @@
 #include "docboy/bootrom/bootrom.h"
 #endif
 
+#include <memory>
+
 #include "docboy/boot/boot.h"
+#include "docboy/boot/lock.h"
+#include "docboy/bus/cpubus.h"
+#include "docboy/bus/extbus.h"
+#include "docboy/bus/oambus.h"
+#include "docboy/bus/vrambus.h"
 #include "docboy/cartridge/slot.h"
 #include "docboy/cpu/cpu.h"
 #include "docboy/interrupts/interrupts.h"
@@ -39,33 +46,24 @@ public:
     Oam oam {};
     Hram hram {};
 
-    Dma dma {mmu, oam};
     IF_BOOTROM(std::unique_ptr<BootRom> bootRom {});
     CartridgeSlot cartridgeSlot {};
-    BootIO boot {};
+    BootIO boot {IF_BOOTROM(BootLock {mmu})};
     Joypad joypad {interrupts};
     SerialPort serialPort {interrupts};
     Timers timers {interrupts};
     InterruptsIO interrupts {};
     SoundIO sound {};
     VideoIO video {dma};
-    Mmu mmu {IF_BOOTROM(*bootRom COMMA) cartridgeSlot,
-             vram,
-             wram1,
-             wram2,
-             oam,
-             hram,
-             joypad,
-             serialPort,
-             timers,
-             interrupts,
-             sound,
-             video,
-             boot,
-             dma};
-    Cpu cpu {interrupts, mmu};
+    ExtBus extBus {cartridgeSlot, wram1, wram2};
+    CpuBus cpuBus {IF_BOOTROM(*bootRom COMMA) hram, joypad, serialPort, timers, interrupts, sound, video, boot};
+    VramBus vramBus {vram};
+    OamBus oamBus {oam};
+    Dma dma {Dma::MmuView {mmu}, Dma::OamBusView {oamBus}};
+    Mmu mmu {IF_BOOTROM(*bootRom COMMA) extBus, cpuBus, vramBus, oamBus};
+    Cpu cpu {interrupts, Cpu::MmuView {mmu}};
     Lcd lcd {};
-    Ppu ppu {lcd, video, interrupts, vram, oam};
+    Ppu ppu {lcd, video, interrupts, Ppu::VramBusView {vramBus}, Ppu::OamBusView {oamBus}};
 };
 
 #endif // GAMEBOY_H

@@ -28,6 +28,7 @@ target_sources(utils PRIVATE
     strings.cpp
     strings.hpp
     termcolor.hpp
+    traits.h
     vector.hpp
 )
 target_include_directories(utils PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

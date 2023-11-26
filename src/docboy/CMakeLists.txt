@@ -2,12 +2,27 @@ add_library(docboy STATIC)
 
 target_sources(docboy PRIVATE
     boot/boot.h
+    bootrom/bootrom.h
+    bootrom/factory.cpp
+    bootrom/factory.h
+    bootrom/fwd/bootromfwd.h
     bootrom/macros.h
-    mmu/mmu.cpp
-    mmu/mmu.h
+    bus/acqbus.h
+    bus/bus.h
+    bus/bus.hpp
+    bus/cpubus.cpp
+    bus/cpubus.h
+    bus/extbus.cpp
+    bus/extbus.h
+    bus/fwd/busfwd.h
+    bus/oambus.cpp
+    bus/oambus.h
+    bus/vrambus.cpp
+    bus/vrambus.h
     cartridge/cartridge.h
     cartridge/factory.cpp
     cartridge/factory.h
+    cartridge/helpers.h
     cartridge/mbc1/mbc1.h
     cartridge/mbc1/mbc1.tpp
     cartridge/mbc3/mbc3.h
@@ -16,7 +31,6 @@ target_sources(docboy PRIVATE
     cartridge/mbc5/mbc5.tpp
     cartridge/nombc/nombc.h
     cartridge/nombc/nombc.tpp
-    cartridge/helpers.h
     cartridge/slot.cpp
     cartridge/slot.h
     core/core.cpp
@@ -48,6 +62,8 @@ target_sources(docboy PRIVATE
     memory/vram.h
     memory/wram1.h
     memory/wram2.h
+    mmu/mmu.h
+    mmu/mmu.hpp
     ppu/pixelmap.h
     ppu/ppu.cpp
     ppu/ppu.h
@@ -68,6 +84,8 @@ if (ENABLE_BOOTROM)
     target_compile_definitions(docboy PUBLIC ENABLE_BOOTROM)
 
     target_sources(docboy PRIVATE
+        boot/lock.h
+        boot/lock.cpp
         bootrom/bootrom.h
         bootrom/factory.cpp
         bootrom/factory.h
@@ -81,18 +99,17 @@ if (ENABLE_DEBUGGER)
     target_compile_definitions(docboy PUBLIC ENABLE_DEBUGGER_MEMORY_SNIFFER)
 
     target_sources(docboy PRIVATE
-        debugger/backend.h
-        debugger/backend.cpp
-        debugger/shared.h
-        debugger/frontend.h
-        debugger/frontend.cpp
-        debugger/helpers.h
-        debugger/helpers.cpp
-        debugger/memsniffer.h
-        debugger/memsniffer.h
-        debugger/memsniffer.cpp
-        debugger/mnemonics.h
-        debugger/mnemonics.cpp
+          debugger/backend.cpp
+            debugger/backend.h
+            debugger/frontend.cpp
+            debugger/frontend.h
+            debugger/helpers.cpp
+            debugger/helpers.h
+            debugger/memsniffer.cpp
+            debugger/memsniffer.h
+            debugger/mnemonics.cpp
+            debugger/mnemonics.h
+            debugger/shared.h
     )
 endif ()
 

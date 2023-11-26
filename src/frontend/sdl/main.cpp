@@ -57,7 +57,7 @@ static void dump_cartridge_info(const ICartridge& cartridge) {
 int main(int argc, char* argv[]) {
     struct {
         std::string rom;
-        std::string bootRom;
+        IF_BOOTROM(std::string bootRom);
         bool serial {};
         float scaling {};
         bool dumpCartridgeInfo {};
@@ -76,19 +76,18 @@ int main(int argc, char* argv[]) {
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    const auto ensureExists =
-        [](const std::string& path) {
-            if (!file_exists(path)) {
-                std::cerr << "ERROR: failed to load '" << path << "'" << std::endl;
-                exit(1);
-            }
+    const auto ensureExists = [](const std::string& path) {
+        if (!file_exists(path)) {
+            std::cerr << "ERROR: failed to load '" << path << "'" << std::endl;
+            exit(1);
         }
+    };
 
-    IF_BOOTROM(ensureExists(args.booRom));
+    IF_BOOTROM(ensureExists(args.bootRom));
     ensureExists(args.rom);
 
-    GameBoy gb {IF_BOOTROM(BootRomFactory().create(args.bootRom))};
-    Core core {gb};
+    std::unique_ptr<GameBoy> gb {std::make_unique<GameBoy>(IF_BOOTROM(BootRomFactory().create(args.bootRom)))};
+    Core core {*gb};
 
     path romPath {args.rom};
 
@@ -112,7 +111,7 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    Window window {gb.lcd.getPixels(), 100, 100, args.scaling};
+    Window window {gb->lcd.getPixels(), 100, 100, args.scaling};
 
 #ifdef ENABLE_DEBUGGER
     struct {
@@ -139,7 +138,7 @@ int main(int argc, char* argv[]) {
         });
         debugger.frontend->setOnCommandPulledCallback([&window, &gb](const std::string& cmd) {
             if (cmd == "clear") {
-                gb.lcd.clearPixels();
+                gb->lcd.clearPixels();
                 window.clear();
                 return true;
             }
@@ -235,7 +234,7 @@ int main(int argc, char* argv[]) {
 
     const auto dumpFramebuffer = [&gb](const std::string& path) {
         bool ok;
-        write_file(path, gb.lcd.getPixels(), Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t), &ok);
+        write_file(path, gb->lcd.getPixels(), Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t), &ok);
         return ok;
     };
 

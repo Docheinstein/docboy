@@ -7,11 +7,15 @@
 #include "docboy/debugger/backend.h"
 
 #define TICK_DEBUGGER(n)                                                                                               \
-    if (debugger)                                                                                                      \
-    debugger->onTick(n)
+    if (debugger) {                                                                                                    \
+        debugger->onTick(n);                                                                                           \
+    }
+
 #define RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN()                                                                     \
-    if (debugger && debugger->isAskingToShutdown())                                                                    \
-    return
+    if (debugger && debugger->isAskingToShutdown()) {                                                                  \
+        return;                                                                                                        \
+    }
+
 #define TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(n)                                                              \
     do {                                                                                                               \
         TICK_DEBUGGER(n);                                                                                              \
@@ -39,27 +43,30 @@ inline void Core::tick_t0() {
     gb.cpu.tick();
     gb.ppu.tick();
     gb.cpu.checkInterrupt_t0();
+    gb.mmu.tick_t0();
 }
 
 inline void Core::tick_t1() {
-    gb.mmu.flushWriteRequest();
     gb.ppu.tick();
     gb.cpu.checkInterrupt_t1();
+    gb.dma.tickWrite();
+    gb.mmu.tick_t1();
 }
 
 inline void Core::tick_t2() {
     gb.ppu.tick();
     gb.cpu.checkInterrupt_t2();
+    gb.mmu.tick_t2();
 }
 
 inline void Core::tick_t3() {
-    gb.mmu.flushReadRequest();
     if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3)
         gb.serialPort.tick();
     gb.timers.tick();
-    gb.dma.tick();
+    gb.dma.tickRead();
     gb.ppu.tick();
     gb.cpu.checkInterrupt_t3();
+    gb.mmu.tick_t3();
 }
 
 void Core::cycle() {
@@ -131,7 +138,11 @@ uint32_t Core::getStateSaveSize() const {
     return STATE_SAVE_SIZE;
 }
 
-void Core::saveState(void* data) const {
+void Core::saveState(void* data) {
+    // TODO: find way to serialize mmu requests (containing pointers) instead of cheating?
+    while (gb.mmu.hasRequests()) {
+        cycle();
+    }
     memcpy(data, parcelizeState().getData(), getStateSaveSize());
 }
 
@@ -150,6 +161,8 @@ Parcel Core::parcelizeState() const {
     gb.wram2.saveState(p);
     gb.oam.saveState(p);
     gb.hram.saveState(p);
+    gb.vramBus.saveState(p);
+    gb.oamBus.saveState(p);
     gb.boot.saveState(p);
     gb.serialPort.saveState(p);
     gb.timers.saveState(p);
@@ -173,6 +186,8 @@ void Core::unparcelizeState(Parcel&& p) const {
     gb.wram2.loadState(p);
     gb.oam.loadState(p);
     gb.hram.loadState(p);
+    gb.vramBus.loadState(p);
+    gb.oamBus.loadState(p);
     gb.boot.loadState(p);
     gb.serialPort.loadState(p);
     gb.timers.loadState(p);

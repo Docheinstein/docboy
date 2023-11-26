@@ -3,20 +3,21 @@
 
 #include "docboy/bootrom/macros.h"
 #include "docboy/debugger/macros.h"
+#include "docboy/mmu/mmu.h"
 #include <cstdint>
 
 class InterruptsIO;
 class SerialPort;
 class BootIO;
-class Mmu;
-
 class Parcel;
 
 class Cpu {
     DEBUGGABLE_CLASS()
 
 public:
-    Cpu(InterruptsIO& interrupts, Mmu& mmu);
+    using MmuView = MmuProxy<MmuDevice::Cpu>;
+
+    Cpu(InterruptsIO& interrupts, MmuView mmu);
 
     void tick();
 
@@ -599,7 +600,7 @@ private:
     void SET_arr_m2();
 
     InterruptsIO& interrupts;
-    Mmu& mmu;
+    MmuView mmu;
 
     Instruction instructions[256];
     Instruction instructionsCB[256];

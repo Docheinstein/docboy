@@ -23,3 +23,8 @@ std::optional<uint8_t> DebuggerHelpers::getIsrPhase(const Cpu& cpu) {
 bool DebuggerHelpers::isInIsr(const Cpu& cpu) {
     return getIsrPhase(cpu) != std::nullopt;
 }
+
+uint8_t DebuggerHelpers::readMemory(const Mmu& mmu, uint16_t address) {
+    const Mmu::BusAccess& busAccess = mmu.busAccessors[address];
+    return (*busAccess.read)(busAccess.bus, address);
+}

@@ -996,7 +996,7 @@ void DebuggerFrontend::onTick(uint64_t tick) {
         }
 
         if (trace & TraceFlagDma) {
-            std::cerr << "DMA:" << std::setw(3) << (gb.dma.isTransferring() ? std::to_string(gb.dma.cursor) : "OFF")
+            std::cerr << "DMA:" << std::setw(3) << (gb.dma.transferring ? std::to_string(gb.dma.cursor) : "OFF")
                       << "  ";
         }
 
@@ -1482,6 +1482,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         std::cout << header("MMU") << std::endl;
 
         std::cout << subheader("read request") << std::endl;
+        // TODO
+        /*
         if (gb.mmu.readRequest.pending) {
             std::cout << termcolor::yellow << "Read Request   : " << termcolor::green << "Pending" << termcolor::reset
                       << std::endl;
@@ -1506,6 +1508,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             std::cout << termcolor::yellow << "Write Request  : " << termcolor::color<DARK_GRAY> << "None"
                       << termcolor::reset << std::endl;
         }
+        */
     }
 
     // DMA
@@ -1549,9 +1552,9 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                   << std::endl;
         std::cout << timer("DIV", backend.readMemory(Specs::Registers::Timers::DIV)) << std::endl;
         std::cout << timer("TIMA", backend.readMemory(Specs::Registers::Timers::TIMA));
-        if (gb.timers.timaState == TimersIO::TimaState::PendingReload) {
+        if (gb.timers.timaState == TimersIO::TimaReloadState::Pending) {
             std::cout << termcolor::yellow << "    [pending TMA reload]";
-        } else if (gb.timers.timaState == TimersIO::TimaState::Reload) {
+        } else if (gb.timers.timaState == TimersIO::TimaReloadState::Reload) {
             std::cout << termcolor::yellow << "    [TMA reload]";
         }
         std::cout << std::endl;

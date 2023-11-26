@@ -1,6 +1,5 @@
 #include "cpu.h"
 #include "docboy/interrupts/interrupts.h"
-#include "docboy/mmu/mmu.h"
 #include "docboy/serial/port.h"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
@@ -11,7 +10,7 @@ static constexpr uint8_t STATE_INSTRUCTION_FLAG_NORMAL = 0;
 static constexpr uint8_t STATE_INSTRUCTION_FLAG_CB = 1;
 static constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
 
-Cpu::Cpu(InterruptsIO& interrupts, Mmu& mmu) :
+Cpu::Cpu(InterruptsIO& interrupts, MmuView mmu) :
     interrupts(interrupts),
     mmu(mmu),
     // clang-format off
@@ -1041,11 +1040,12 @@ void Cpu::ISR_m3() {
     }
 
     PC = nextPC;
+
+    // The push of the low byte of PC must happen after the IE/IF flags have been read
+    mmu.requestWrite(--SP, get_byte<0>(uu));
 }
 
 void Cpu::ISR_m4() {
-    // The push of the low byte of PC must happen after the IE/IF flags have been read
-    mmu.requestWrite(--SP, get_byte<0>(uu));
     IME = ImeState::Disabled;
     interrupt.state = InterruptState::None;
     fetch();

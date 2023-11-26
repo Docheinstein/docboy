@@ -7,6 +7,7 @@
 #include "utils/casts.hpp"
 #include "utils/macros.h"
 #include "utils/math.h"
+#include "utils/traits.h"
 
 using namespace Specs::Bits::Video::LCDC;
 using namespace Specs::Bits::Video::STAT;
@@ -44,12 +45,13 @@ static inline uint8_t resolveColor(const uint8_t colorIndex, const uint8_t palet
 
 static constexpr uint8_t DUMMY_TILE[8] {};
 
-Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, Vram& vram, Oam& oam) :
+Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBusView vramBus, OamBusView oamBus) :
     lcd(lcd),
     video(video),
     interrupts(interrupts),
-    vram(vram),
-    oam(oam) {
+    vram(vramBus),
+    oam(oamBus) {
+    IF_NOT_BOOTROM(oamBus.acquire());
 }
 
 void Ppu::tick() {
@@ -70,15 +72,18 @@ void Ppu::tick() {
 }
 
 void Ppu::turnOn() {
+    // TODO: what actually happens here?
+
     check(!on);
     on = true;
 
-    // TODO: needed? how to do it without mode?
-    // lcdIo.writeSTAT(reset_bits<2>(lcdIo.readSTAT()) | state);
-    //    video.STAT = ((uint8_t) video.STAT & 0b11111100) | mode;
+    // TODO: apparently needed because after turn on STAT Mode remains HBlank but PPU is in Oam Scan
+    oam.acquire();
 }
 
 void Ppu::turnOff() {
+    // TODO: what actually happens here?
+
     check(on);
     on = false;
     dots = 0;
@@ -90,9 +95,12 @@ void Ppu::turnOff() {
         oamEntries[i].clear();
 
     resetFetcher();
-    enterOamScan();
 
-    video.STAT = discard_bits<2>(video.STAT);
+    IF_ASSERTS(oamEntriesCount = 0);
+    IF_DEBUGGER(scanlineOamEntries.clear());
+    tickSelector = &Ppu::oamScan0;
+
+    updateStat<Specs::Ppu::Modes::HBLANK>();
 }
 
 void Ppu::enterOamScan() {
@@ -120,6 +128,7 @@ void Ppu::enterOamScan() {
 void Ppu::oamScan0() {
     check(oamScan.count < 10);
     check(dots % 2 == 0);
+    check(oam.isAcquired());
 
     // figure out oam number
     oamScan.entry.number = dots / 2;
@@ -135,6 +144,7 @@ void Ppu::oamScan0() {
 void Ppu::oamScan1() {
     check(oamScan.count < 10);
     check(dots % 2 == 1);
+    check(oam.isAcquired());
 
 #define ADVANCE_TO_OAM_MODE_OR_PIXEL_TRANSFER(oamStatePtr)                                                             \
     do {                                                                                                               \
@@ -226,6 +236,9 @@ void Ppu::enterPixelTransfer() {
 template <bool Bg>
 void Ppu::pixelTransferDummy0() {
     check(LX == 0);
+    check(oam.isAcquired());
+    check(vram.isAcquired());
+
     if (++dots == 84) {
         bgFifo.fill(DUMMY_TILE);
         if constexpr (Bg) {
@@ -243,6 +256,8 @@ void Ppu::pixelTransferDiscard0() {
     check(LX == 0);
     check(bgPixelTransfer.SCXmod8 < 8);
     check(bgPixelTransfer.discardedPixels < bgPixelTransfer.SCXmod8);
+    check(oam.isAcquired());
+    check(vram.isAcquired());
 
     // the first SCX % 8 of a background tile are simply discarded
     // note that LX is not incremented in this case:
@@ -263,6 +278,8 @@ void Ppu::pixelTransferDiscard0() {
 void Ppu::pixelTransfer0() {
     check(LX < 8);
     check(!firstFetchWasBg || bgPixelTransfer.discardedPixels == bgPixelTransfer.SCXmod8);
+    check(oam.isAcquired());
+    check(vram.isAcquired());
 
     uint8_t nextLX = LX;
 
@@ -288,6 +305,8 @@ void Ppu::pixelTransfer0() {
 
 void Ppu::pixelTransfer8() {
     check(LX >= 8);
+    check(oam.isAcquired());
+    check(vram.isAcquired());
 
     uint8_t nextLX = LX;
 
@@ -498,6 +517,27 @@ void Ppu::enterNewFrame() {
 template <uint8_t Mode>
 inline void Ppu::updateStat() {
     check(Mode <= 0b11);
+    //    video.STAT = ((uint8_t)video.STAT & 0b11111100) | Mode;
+
+    if constexpr (Mode == Specs::Ppu::Modes::OAM_SCAN) {
+        check(!vram.isAcquired()); // TODO: can't enable because -> OAM transition of turnOff
+                                   //        vram.release(); // TODO: shouldn't be necessary ^
+        oam.acquire();
+    } else if constexpr (Mode == Specs::Ppu::Modes::PIXEL_TRANSFER) {
+        check(oam.isAcquired());
+        vram.acquire();
+        oam.acquire();
+    } else if constexpr (Mode == Specs::Ppu::Modes::HBLANK) {
+        // check(oam.acquired); // TODO: can't enable because VBLANK -> HBLANK transition of turnOff
+        vram.release();
+        oam.release();
+    } else if constexpr (Mode == Specs::Ppu::Modes::VBLANK) {
+        check(!vram.isAcquired());
+        check(!oam.isAcquired());
+    } else {
+        static_assert(always_false<decltype(Mode)>);
+    }
+
     video.STAT = ((uint8_t)video.STAT & 0b11111100) | Mode;
 }
 
@@ -864,7 +904,11 @@ void Ppu::saveState(Parcel& parcel) const {
                                                     &Ppu::pixelTransfer0,
                                                     &Ppu::pixelTransfer8,
                                                     &Ppu::hBlank,
-                                                    &Ppu::vBlank};
+                                                    &Ppu::hBlank454,
+                                                    &Ppu::hBlankLastLine,
+                                                    &Ppu::hBlankLastLine454,
+                                                    &Ppu::vBlank,
+                                                    &Ppu::vBlankLastLine};
 
     static constexpr TickSelector FETCHER_TICK_SELECTORS[] {
         &Ppu::bgwinPrefetcherGetTile0,
@@ -956,7 +1000,11 @@ void Ppu::loadState(Parcel& parcel) {
                                                     &Ppu::pixelTransfer0,
                                                     &Ppu::pixelTransfer8,
                                                     &Ppu::hBlank,
-                                                    &Ppu::vBlank};
+                                                    &Ppu::hBlank454,
+                                                    &Ppu::hBlankLastLine,
+                                                    &Ppu::hBlankLastLine454,
+                                                    &Ppu::vBlank,
+                                                    &Ppu::vBlankLastLine};
 
     static constexpr TickSelector FETCHER_TICK_SELECTORS[] {
         &Ppu::bgwinPrefetcherGetTile0,

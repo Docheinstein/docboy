@@ -37,7 +37,7 @@ public:
     [[nodiscard]] uint32_t getRamSaveSize() const;
 
     // Save/Load State
-    void saveState(void* data) const;
+    void saveState(void* data);
     void loadState(const void* data) const;
     [[nodiscard]] uint32_t getStateSaveSize() const;
 

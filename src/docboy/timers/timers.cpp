@@ -4,11 +4,11 @@
 /* TIMA overflow timing example.
  *   t                  CPU                              Timer
  * CPU   |
- * Timer |                                      TIMA overflows -> PendingReload
+ * Timer |                                      TIMA overflows -> Pending
  *
  * CPU   | [writing TIMA aborts PendingReload]
  *       | [writing TMA is considered]
- * Timer |                                      PendingReload -> Reload (TIMA = TMA, raise interrupt)
+ * Timer |                                      Pending -> Reload (TIMA = TMA, raise interrupt)
  *
  * CPU   | [writing TIMA is ignored]
  *       | [writing TMA writes TIMA too]
@@ -24,6 +24,8 @@ void TimersIO::saveState(Parcel& parcel) const {
     parcel.writeUInt8(TIMA);
     parcel.writeUInt8(TMA);
     parcel.writeUInt8(TAC);
+    parcel.writeUInt8(timaState);
+    parcel.writeBool(lastDivBitAndTacEnable);
 }
 
 void TimersIO::loadState(Parcel& parcel) {
@@ -31,6 +33,8 @@ void TimersIO::loadState(Parcel& parcel) {
     TIMA = parcel.readUInt8();
     TMA = parcel.readUInt8();
     TAC = parcel.readUInt8();
+    timaState = parcel.readUInt8();
+    lastDivBitAndTacEnable = parcel.readBool();
 }
 
 void TimersIO::writeDIV(uint8_t value) {
@@ -41,16 +45,16 @@ void TimersIO::writeDIV(uint8_t value) {
 
 void TimersIO::writeTIMA(uint8_t value) {
     // Writing to TIMA in the same cycle it has been reloaded is ignored
-    if (timaState != TimaState::Reload) {
+    if (timaState != TimaReloadState::Reload) {
         TIMA = value;
-        timaState = TimaState::None;
+        timaState = TimaReloadState::None;
     }
 }
 
 void TimersIO::writeTMA(uint8_t value) {
     // Writing TMA in the same cycle TIMA has been reloaded writes TIMA too
     TMA = value;
-    if (timaState == TimaState::Reload)
+    if (timaState == TimaReloadState::Reload)
         TIMA = value;
 }
 
@@ -67,7 +71,7 @@ inline void TimersIO::setDIV(uint16_t value) {
 inline void TimersIO::incTIMA() {
     // When TIMA overflows, TMA is reloaded in TIMA: but it is delayed by 1 m-cycle
     if (++TIMA == 0) {
-        timaState = TimaState::PendingReload;
+        timaState = TimaReloadState::Pending;
     }
 }
 
@@ -83,9 +87,8 @@ inline void TimersIO::onFallingEdgeIncTima() {
 }
 
 inline void TimersIO::handlePendingTimaReload() {
-    if (timaState != TimaState::None) {
-        timaState = (TimaState)((uint8_t)timaState - 1);
-        if (timaState == TimaState::Reload) {
+    if (timaState != TimaReloadState::None) {
+        if (--timaState == TimaReloadState::Reload) {
             TIMA = (uint8_t)TMA;
             interrupts.raiseInterrupt<InterruptsIO::InterruptType::Timer>();
         }
