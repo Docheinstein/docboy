@@ -1481,34 +1481,57 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     if (config.sections.mmu) {
         std::cout << header("MMU") << std::endl;
 
-        std::cout << subheader("read request") << std::endl;
-        // TODO
-        /*
-        if (gb.mmu.readRequest.pending) {
-            std::cout << termcolor::yellow << "Read Request   : " << termcolor::green << "Pending" << termcolor::reset
-                      << std::endl;
-            std::cout << termcolor::yellow << "Address        : " << termcolor::reset << hex(gb.mmu.readRequest.address)
-                      << std::endl;
-            std::cout << termcolor::yellow << "Value          : " << termcolor::reset
-                      << hex(gb.mmu.read(gb.mmu.readRequest.address)) << std::endl;
-        } else {
-            std::cout << termcolor::yellow << "Read Request   : " << termcolor::color<DARK_GRAY> << "None"
-                      << termcolor::reset << std::endl;
-        }
+        const auto printBusRequest = [this](const Mmu::BusRequest& req) {
+            if (req.state == Mmu::BusRequest::State::Read) {
+                std::cout << termcolor::yellow << "Request        : " << termcolor::green << "Read" << termcolor::reset
+                          << std::endl;
+                std::cout << termcolor::yellow << "Address        : " << termcolor::reset << hex(req.address)
+                          << std::endl;
+                std::cout << termcolor::yellow << "Value          : " << termcolor::reset
+                          << hex(backend.readMemory(req.address)) << std::endl;
+            } else if (req.state == Mmu::BusRequest::State::Write) {
+                std::cout << termcolor::yellow << "Request        : " << termcolor::red << "Write" << termcolor::reset
+                          << std::endl;
+                std::cout << termcolor::yellow << "Address        : " << termcolor::reset << hex(req.address)
+                          << std::endl;
+                std::cout << termcolor::yellow << "Value          : " << termcolor::reset << hex(req.write.value)
+                          << std::endl;
+            } else {
+                std::cout << termcolor::yellow << "Request        : " << termcolor::color<DARK_GRAY> << "None"
+                          << termcolor::reset << std::endl;
+            }
+        };
+        std::cout << subheader("cpu request") << std::endl;
+        printBusRequest(gb.mmu.requests[MmuDevice::Cpu]);
 
-        std::cout << subheader("write request") << std::endl;
-        if (gb.mmu.writeRequest.pending) {
-            std::cout << termcolor::yellow << "Write Request  : " << termcolor::green << "Pending" << termcolor::reset
-                      << std::endl;
-            std::cout << termcolor::yellow << "Address        : " << termcolor::reset
-                      << hex(gb.mmu.writeRequest.address) << std::endl;
-            std::cout << termcolor::yellow << "Value          : " << termcolor::reset << hex(gb.mmu.writeRequest.value)
-                      << std::endl;
-        } else {
-            std::cout << termcolor::yellow << "Write Request  : " << termcolor::color<DARK_GRAY> << "None"
-                      << termcolor::reset << std::endl;
-        }
-        */
+        std::cout << subheader("dma request") << std::endl;
+        printBusRequest(gb.mmu.requests[MmuDevice::Dma]);
+    }
+
+    // Bus
+    if (config.sections.bus) {
+        std::cout << header("BUS") << std::endl;
+
+        const auto printAcquirers = [](const auto& bus) {
+            std::cout << termcolor::yellow << "Acquired By         : " << termcolor::reset;
+            if (bus.template isAcquiredBy<AcquirableBusDevice::Dma>()) {
+                std::cout << "DMA ";
+            } else {
+                std::cout << termcolor::color<DARK_GRAY> << "DMA " << termcolor::reset;
+            }
+            if (bus.template isAcquiredBy<AcquirableBusDevice::Ppu>()) {
+                std::cout << "PPU";
+            } else {
+                std::cout << termcolor::color<DARK_GRAY> << "PPU" << termcolor::reset;
+            }
+            std::cout << std::endl;
+        };
+        std::cout << subheader("ext bus") << std::endl;
+        std::cout << subheader("cpu bus") << std::endl;
+        std::cout << subheader("vram bus") << std::endl;
+        printAcquirers(gb.vramBus);
+        std::cout << subheader("oam bus") << std::endl;
+        printAcquirers(gb.oamBus);
     }
 
     // DMA

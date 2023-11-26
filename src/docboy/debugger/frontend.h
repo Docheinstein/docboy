@@ -27,6 +27,7 @@ public:
             bool cpu {true};
             bool ppu {true};
             bool mmu {true};
+            bool bus {true};
             bool timers {true};
             bool dma {true};
             struct {
