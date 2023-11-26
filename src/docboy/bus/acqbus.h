@@ -2,6 +2,7 @@
 #define ACQBUS_H
 
 #include "bus.h"
+#include "utils/bits.hpp"
 #include "utils/parcel.h"
 
 struct AcquirableBusDevice {

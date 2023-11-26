@@ -752,7 +752,7 @@ void Cpu::checkInterrupt() {
      * Joypad    |     |     |     |     |
      */
 
-    static constexpr uint8_t UNKNOWN_INTERRUPT_TIMING = UINT8_MAX;
+    IF_ASSERTS(static constexpr uint8_t UNKNOWN_INTERRUPT_TIMING = UINT8_MAX);
     static constexpr uint8_t U = IF_ASSERTS_ELSE(UNKNOWN_INTERRUPT_TIMING, 1);
     static constexpr uint8_t J = 1; // not sure about joypad timing
 
