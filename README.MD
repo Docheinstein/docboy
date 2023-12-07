@@ -170,8 +170,7 @@ q                                 : Quit
 
 Here's the debugger!
 
-![Debugger 2](images/debugger-2.png)
-![Debugger 1](images/debugger-1.png)
+![Debugger](images/debugger.png)
 
 ## Screenshots
 
