@@ -10,21 +10,13 @@
     if (debugger) {                                                                                                    \
         debugger->onTick(n);                                                                                           \
     }
-
 #define RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN()                                                                     \
     if (debugger && debugger->isAskingToShutdown()) {                                                                  \
         return;                                                                                                        \
     }
-
-#define TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(n)                                                              \
-    do {                                                                                                               \
-        TICK_DEBUGGER(n);                                                                                              \
-        RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();                                                                    \
-    } while (0)
 #else
 #define TICK_DEBUGGER(n) (void)(0)
 #define RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN() (void)(0)
-#define TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(n) (void)(0)
 #endif
 
 static constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
@@ -72,19 +64,23 @@ inline void Core::tick_t3() {
 void Core::cycle() {
     check(mod<4>(ticks) == 0);
 
-    TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(ticks);
+    TICK_DEBUGGER(ticks);
+    RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
     tick_t0();
     ++ticks;
 
-    TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(ticks);
+    TICK_DEBUGGER(ticks);
+    RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
     tick_t1();
     ++ticks;
 
-    TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(ticks);
+    TICK_DEBUGGER(ticks);
+    RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
     tick_t2();
     ++ticks;
 
-    TICK_DEBUGGER_AND_RETURN_IF_ASKING_TO_SHUTDOWN(ticks);
+    TICK_DEBUGGER(ticks);
+    RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
     tick_t3();
     ++ticks;
 }

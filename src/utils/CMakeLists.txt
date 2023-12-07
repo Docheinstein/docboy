@@ -27,7 +27,6 @@ target_sources(utils PRIVATE
     std.hpp
     strings.cpp
     strings.hpp
-    termcolor.hpp
     traits.h
     vector.hpp
 )

@@ -111,6 +111,8 @@ if (ENABLE_DEBUGGER)
             debugger/mnemonics.h
             debugger/shared.h
     )
+
+    target_link_libraries(docboy PRIVATE tui)
 endif ()
 
 if (ENABLE_SERIAL)

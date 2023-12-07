@@ -27,3 +27,13 @@ bool equals_ignore_case(const std::string& s1, const std::string& s2) {
         return std::tolower(c1) == std::tolower(c2);
     });
 }
+
+std::string lpad(const std::string& s, std::size_t length, char ch) {
+    const std::size_t inLength = s.length();
+    return length < inLength ? std::string(length - inLength, ch) + s : s;
+}
+
+std::string rpad(const std::string& s, std::size_t length, char ch) {
+    const std::size_t inLength = s.length();
+    return inLength < length ? s + std::string(length - inLength, ch) : s;
+}

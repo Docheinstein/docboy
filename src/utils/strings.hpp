@@ -39,6 +39,10 @@ std::string join(const Container<std::string>& container, SepType sep) {
 }
 
 std::string trim(const std::string& s);
+
 bool equals_ignore_case(const std::string& s1, const std::string& s2);
+
+std::string lpad(const std::string& s, std::size_t length, char ch = ' ');
+std::string rpad(const std::string& s, std::size_t length, char ch = ' ');
 
 #endif // STRINGS_HPP

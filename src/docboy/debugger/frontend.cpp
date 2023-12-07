@@ -1,27 +1,26 @@
 #include "frontend.h"
 #include "backend.h"
 #include "docboy/core/core.h"
-#include "docboy/gameboy/gameboy.h"
 #include "helpers.h"
 #include "mnemonics.h"
 #include "shared.h"
-#include "utils/arrays.h"
+#include "tui/block.h"
+#include "tui/decorators.h"
+#include "tui/divider.h"
+#include "tui/factory.h"
+#include "tui/hlayout.h"
+#include "tui/presenter.h"
+#include "tui/vlayout.h"
 #include "utils/formatters.hpp"
 #include "utils/hexdump.hpp"
 #include "utils/memory.h"
 #include "utils/strings.hpp"
-#include "utils/termcolor.hpp"
 #include <csignal>
 #include <iostream>
 #include <list>
 #include <optional>
 #include <regex>
 #include <utility>
-
-static constexpr int PINK = 13;
-static constexpr int CYAN = 36;
-static constexpr int DARK_GRAY = 240;
-static constexpr int LIGHT_GRAY = 244;
 
 struct FrontendBreakpointCommand {
     uint16_t address {};
@@ -81,14 +80,6 @@ struct FrontendDisplayCommand {
 
 struct FrontendUndisplayCommand {};
 
-struct FrontendShowCommand {
-    std::string subject;
-};
-
-struct FrontendHideCommand {
-    std::string subject;
-};
-
 struct FrontendTickCommand {
     uint64_t count {};
 };
@@ -140,11 +131,10 @@ using FrontendCommand =
     std::variant<FrontendBreakpointCommand, FrontendWatchpointCommand, FrontendDeleteCommand,
                  FrontendAutoDisassembleCommand, FrontendDisassembleCommand, FrontendDisassembleRangeCommand,
                  FrontendExamineCommand, FrontendSearchBytesCommand, FrontendSearchInstructionsCommand,
-                 FrontendDisplayCommand, FrontendUndisplayCommand, FrontendShowCommand, FrontendHideCommand,
-                 FrontendTickCommand, FrontendDotCommand, FrontendStepCommand, FrontendMicroStepCommand,
-                 FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand, FrontendScanlineCommand,
-                 FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand,
-                 FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
+                 FrontendDisplayCommand, FrontendUndisplayCommand, FrontendTickCommand, FrontendDotCommand,
+                 FrontendStepCommand, FrontendMicroStepCommand, FrontendNextCommand, FrontendMicroNextCommand,
+                 FrontendFrameCommand, FrontendScanlineCommand, FrontendFrameBackCommand, FrontendContinueCommand,
+                 FrontendTraceCommand, FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
     std::regex regex;
@@ -354,16 +344,6 @@ static FrontendCommandInfo
                  FrontendUndisplayCommand cmd {};
                  return cmd;
              }},
-            {std::regex(R"(show\s*(\w+))"), "show <section>", "Show a section in the debugger layout",
-             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-                 FrontendShowCommand cmd {.subject = groups[0]};
-                 return cmd;
-             }},
-            {std::regex(R"(hide\s*(\w+))"), "hide <section>", "Hide a section from the debugger layout",
-             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-                 FrontendHideCommand cmd {.subject = groups[0]};
-                 return cmd;
-             }},
             {std::regex(R"(t\s*(\d+)?)"), "t [<count>]", "Continue running for <count> clock ticks (default = 1)",
              [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
                  const std::string& count = groups[0];
@@ -497,6 +477,7 @@ std::optional<Command>
 DebuggerFrontend::handleCommand<FrontendBreakpointCommand>(const FrontendBreakpointCommand& cmd) {
     uint32_t id = backend.addBreakpoint(cmd.address);
     std::cout << "Breakpoint [" << id << "] at " << hex(cmd.address) << std::endl;
+    reprintUI = true;
     return std::nullopt;
 }
 
@@ -513,6 +494,7 @@ DebuggerFrontend::handleCommand<FrontendWatchpointCommand>(const FrontendWatchpo
     else
         std::cout << "Watchpoint [" << id << "] at " << hex(cmd.address.from) << " - " << hex(cmd.address.to)
                   << std::endl;
+    reprintUI = true;
     return std::nullopt;
 }
 
@@ -556,7 +538,7 @@ DebuggerFrontend::handleCommand<FrontendDisassembleRangeCommand>(const FrontendD
 // Examine
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendExamineCommand>(const FrontendExamineCommand& cmd) {
-    printMemory(cmd.address, cmd.length, cmd.format, cmd.formatArg);
+    std::cout << dumpMemory(cmd.address, cmd.length, cmd.format, cmd.formatArg);
     return std::nullopt;
 }
 
@@ -605,7 +587,8 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendDisplayCommand>(c
                       .length = cmd.length,
                       .expression = DisplayEntry::Examine {.address = cmd.address}};
     displayEntries.push_back(d);
-    printDisplayEntry(d);
+    std::cout << dumpDisplayEntry(d);
+    reprintUI = true;
     return std::nullopt;
 }
 
@@ -613,107 +596,6 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendDisplayCommand>(c
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendUndisplayCommand>(const FrontendUndisplayCommand& cmd) {
     displayEntries.clear();
-    return std::nullopt;
-}
-
-template <bool B>
-static bool setBoolsIfMatch(const std::string& s, std::initializer_list<std::string> targets,
-                            std::initializer_list<bool*> bs) {
-    for (const auto& target : targets) {
-        if (s == target) {
-            for (bool* b : bs)
-                *b = B;
-            return true;
-        }
-    }
-    return false;
-}
-
-// Show/Hide
-template <bool B>
-static bool handleShowHideFrontendCommand(const std::string& subject, DebuggerFrontend::Config& config) {
-    if (setBoolsIfMatch<B>(subject, {"cpu"},
-                           {
-                               &config.sections.breakpoints,
-                               &config.sections.watchpoints,
-                               &config.sections.cpu,
-                               &config.sections.timers,
-                               &config.sections.io.interrupts,
-                               &config.sections.io.timers,
-                               &config.sections.code,
-                           }))
-        return true;
-
-    if (setBoolsIfMatch<B>(subject, {"video", "ppu"},
-                           {
-                               &config.sections.ppu,
-                               &config.sections.io.video,
-                           }))
-        return true;
-
-    if (setBoolsIfMatch<B>(subject, {"sound", "audio"},
-                           {
-                               &config.sections.io.sound,
-                           }))
-        return true;
-
-    if (setBoolsIfMatch<B>(subject, {"joypad", "input"},
-                           {
-                               &config.sections.io.joypad,
-                           }))
-        return true;
-
-    if (setBoolsIfMatch<B>(subject, {"serial"},
-                           {
-                               &config.sections.io.serial,
-                           }))
-        return true;
-
-    if (setBoolsIfMatch<B>(subject, {"io"},
-                           {&config.sections.io.joypad, &config.sections.io.serial, &config.sections.io.timers,
-                            &config.sections.io.interrupts, &config.sections.io.sound, &config.sections.io.video}))
-        return true;
-
-    if (setBoolsIfMatch<B>(subject, {"timers"}, {&config.sections.timers, &config.sections.io.timers}))
-        return true;
-
-    if (setBoolsIfMatch<B>(subject, {"dma"}, {&config.sections.dma}))
-        return true;
-
-    if (setBoolsIfMatch<B>(subject, {"code"}, {&config.sections.code}))
-        return true;
-
-    if (setBoolsIfMatch<B>(subject, {"all"},
-                           {&config.sections.breakpoints, &config.sections.watchpoints, &config.sections.cpu,
-                            &config.sections.ppu, &config.sections.timers, &config.sections.dma,
-                            &config.sections.io.joypad, &config.sections.io.serial, &config.sections.io.timers,
-                            &config.sections.io.interrupts, &config.sections.io.sound, &config.sections.io.video,
-                            &config.sections.code}))
-        return true;
-
-    return false;
-}
-
-// Show
-template <>
-std::optional<Command> DebuggerFrontend::handleCommand<FrontendShowCommand>(const FrontendShowCommand& cmd) {
-    if (!handleShowHideFrontendCommand<true>(cmd.subject, config)) {
-        std::cout << "Unknown section '" << cmd.subject << "'" << std::endl;
-        return std::nullopt;
-    }
-
-    reprintUI = true;
-    return std::nullopt;
-}
-
-// Hide
-template <>
-std::optional<Command> DebuggerFrontend::handleCommand<FrontendHideCommand>(const FrontendHideCommand& cmd) {
-    if (!handleShowHideFrontendCommand<false>(cmd.subject, config)) {
-        std::cout << "Unknown section '" << cmd.subject << "'" << std::endl;
-        return std::nullopt;
-    }
-
     reprintUI = true;
     return std::nullopt;
 }
@@ -809,7 +691,14 @@ DebuggerFrontend::handleCommand<FrontendDumpDisassembleCommand>(const FrontendDu
 // Help
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendHelpCommand>(const FrontendHelpCommand& cmd) {
-    printHelp();
+    auto it = std::max_element(std::begin(FRONTEND_COMMANDS), std::end(FRONTEND_COMMANDS),
+                               [](const FrontendCommandInfo& i1, const FrontendCommandInfo& i2) {
+                                   return i1.format.length() < i2.format.length();
+                               });
+    const int longestCommandFormat = static_cast<int>(it->format.length());
+    for (const auto& info : FRONTEND_COMMANDS) {
+        std::cout << std::left << std::setw(longestCommandFormat) << info.format << " : " << info.help << std::endl;
+    }
     return std::nullopt;
 }
 
@@ -820,6 +709,8 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendQuitCommand>(cons
 }
 
 Command DebuggerFrontend::pullCommand(const ExecutionState& executionState) {
+    using namespace Tui;
+
     std::optional<Command> commandToSend {};
     std::string cmdline;
 
@@ -837,7 +728,7 @@ Command DebuggerFrontend::pullCommand(const ExecutionState& executionState) {
         }
 
         // Prompt
-        std::cout << termcolor::bold << termcolor::green << ">> " << termcolor::reset;
+        std::cout << bold(green(">>")).str() << std::endl;
 
         // Eventually notify observers of this frontend that a command
         // is about to be pulled
@@ -903,10 +794,6 @@ Command DebuggerFrontend::pullCommand(const ExecutionState& executionState) {
             commandToSend = handleCommand(std::get<FrontendDisplayCommand>(cmd));
         } else if (std::holds_alternative<FrontendUndisplayCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendUndisplayCommand>(cmd));
-        } else if (std::holds_alternative<FrontendShowCommand>(cmd)) {
-            commandToSend = handleCommand(std::get<FrontendShowCommand>(cmd));
-        } else if (std::holds_alternative<FrontendHideCommand>(cmd)) {
-            commandToSend = handleCommand(std::get<FrontendHideCommand>(cmd));
         } else if (std::holds_alternative<FrontendTickCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendTickCommand>(cmd));
         } else if (std::holds_alternative<FrontendDotCommand>(cmd)) {
@@ -1001,7 +888,7 @@ void DebuggerFrontend::onTick(uint64_t tick) {
         }
 
         if (trace & TraceFlagTimers) {
-            std::cerr << "DIV16:" << hex(gb.timers.DIV)
+            std::cerr << "DIc16:" << hex(gb.timers.DIV)
                       << " DIV:" << hex(backend.readMemory(Specs::Registers::Timers::DIV))
                       << " TIMA:" << hex(backend.readMemory(Specs::Registers::Timers::TIMA))
                       << " TMA:" << hex(backend.readMemory(Specs::Registers::Timers::TMA))
@@ -1032,190 +919,190 @@ void DebuggerFrontend::setOnCommandPulledCallback(std::function<bool(const std::
 
 // ================================= UI ========================================
 
-void DebuggerFrontend::printHelp() {
-    auto it = std::max_element(std::begin(FRONTEND_COMMANDS), std::end(FRONTEND_COMMANDS),
-                               [](const FrontendCommandInfo& i1, const FrontendCommandInfo& i2) {
-                                   return i1.format.length() < i2.format.length();
-                               });
-    const int longestCommandFormat = static_cast<int>(it->format.length());
-    for (const auto& info : FRONTEND_COMMANDS) {
-        std::cout << std::left << std::setw(longestCommandFormat) << info.format << " : " << info.help << std::endl;
-    }
-}
-
-template <uint8_t color>
-std::string DebuggerFrontend::title(const std::string& title, const std::string& sep) {
-    static constexpr uint32_t WIDTH = 80;
-    std::string paddedLabel = title.empty() ? "" : (" " + title + " ");
-    uint32_t w2 = (WIDTH - paddedLabel.size()) / 2;
-    uint32_t w1 = WIDTH - w2 - paddedLabel.size();
-    std::string hr1;
-    std::string hr2;
-    for (uint32_t i = 0; i < w1; i++)
-        hr1 += sep;
-    for (uint32_t i = 0; i < w2; i++)
-        hr2 += sep;
-    std::stringstream ss;
-    ss << termcolor::color<DARK_GRAY> << hr1 << termcolor::attr<color> << paddedLabel
-       << termcolor::color<DARK_GRAY> << hr2 << termcolor::reset;
-    return ss.str();
-}
-
-std::string DebuggerFrontend::header(const std::string& t, const std::string& sep) {
-    std::stringstream ss;
-    ss << termcolor::bold << title<CYAN>(t, sep) << termcolor::reset;
-    return ss.str();
-}
-
-std::string DebuggerFrontend::subheader(const std::string& t, const std::string& sep) {
-    return title<CYAN>(t, sep);
-}
-
-std::string DebuggerFrontend::hr(const std::string& sep) {
-    return title<0>("", sep);
-}
-
-std::string DebuggerFrontend::boolColored(bool value) {
-    std::stringstream ss;
-    if (value)
-        ss << "1";
-    else
-        ss << termcolor::color<DARK_GRAY> << "0" << termcolor::reset;
-    return ss.str();
-}
-
-std::string DebuggerFrontend::flag(const std::string& name, bool value) {
-    std::stringstream ss;
-    ss << termcolor::bold << termcolor::red << name << termcolor::reset << " : " << boolColored(value);
-    return ss.str();
-}
-
-std::string DebuggerFrontend::reg(const std::string& name, uint16_t value) {
-    std::stringstream ss;
-    ss << termcolor::bold << termcolor::red << name << termcolor::reset << " : " << bin((uint8_t)(value >> 8)) << " "
-       << bin((uint8_t)(value & 0xFF)) << " (" << hex((uint8_t)(value >> 8)) << " " << hex((uint8_t)(value & 0xFF))
-       << ")";
-    return ss.str();
-}
-
-std::string DebuggerFrontend::div(const std::string& name, uint16_t value, uint8_t highlightBit, int width) {
-    std::stringstream ss;
-    ss << termcolor::bold << termcolor::red << std::left << std::setw(width) << name << termcolor::reset << " : ";
-    for (int8_t b = 15; b >= 0; b--) {
-        if (b == highlightBit)
-            ss << termcolor::yellow;
-        ss << test_bit(value, b) << termcolor::reset;
-        if (b == 8)
-            ss << " ";
-    }
-    ss << " (" << hex((uint8_t)(value >> 8)) << " " << hex((uint8_t)(value & 0xFF)) << ")";
-    return ss.str();
-}
-
-std::string DebuggerFrontend::timer(const std::string& name, uint8_t value, int width, int valueWidth) {
-    std::stringstream ss;
-    ss << termcolor::bold << termcolor::red << std::left << std::setw(width) << name << termcolor::reset << " : "
-       << std::left << std::setw(valueWidth) << bin(value) << " (" << hex(value) << ")";
-    return ss.str();
-}
-
-std::string DebuggerFrontend::interrupt(const std::string& name, bool IME, bool IE, bool IF) {
-    std::stringstream ss;
-    ss << termcolor::bold << termcolor::red << name << "  ";
-    if (IME && IE && IF)
-        ss << termcolor::cyan << "ON " << termcolor::reset << "  ";
-    else
-        ss << termcolor::color<DARK_GRAY> << "OFF" << termcolor::reset << "  ";
-
-    ss << "IE : " << boolColored(IE) << " | "
-       << "IF : " << boolColored(IF) << termcolor::reset;
-    return ss.str();
-}
-
-std::string DebuggerFrontend::io(uint16_t address, uint8_t value, int width) {
-    std::stringstream ss;
-    ss << termcolor::color<LIGHT_GRAY> << hex(address) << "   " << std::right << termcolor::bold << termcolor::red
-       << std::left << std::setw(width) << address_to_mnemonic(address) << termcolor::reset << " : " << bin(value)
-       << " (" << hex(value) << ")";
-    return ss.str();
-}
-
-std::string DebuggerFrontend::watchpoint(const Watchpoint& w) {
-    std::stringstream ss;
-    ss << termcolor::yellow << "(" << w.id << ") ";
-    if (w.address.from != w.address.to)
-        ss << hex(w.address.from) << " - " << hex(w.address.to);
-    else
-        ss << hex(w.address.from);
-    if (w.condition.enabled) {
-        if (w.condition.condition.operation == Watchpoint::Condition::Operator::Equal) {
-            ss << " == " << hex(w.condition.condition.operand);
-        }
-    }
-
-    switch (w.type) {
-    case Watchpoint::Type::Read:
-        ss << " (read)";
-        break;
-    case Watchpoint::Type::Write:
-        ss << " (write)";
-        break;
-    case Watchpoint::Type::ReadWrite:
-        ss << " (read/write)";
-        break;
-    case Watchpoint::Type::Change:
-        ss << " (change)";
-        break;
-    }
-
-    ss << termcolor::reset;
-    return ss.str();
-}
-
-std::string DebuggerFrontend::breakpoint(const Breakpoint& b) const {
-    std::stringstream ss;
-    ss << termcolor::color<PINK> << "(" << b.id << ") " << hex(b.address);
-    auto instruction = backend.getDisassembledInstruction(b.address);
-    if (instruction) {
-        ss << " : " << std::setw(9) << hex(*instruction) << "   " << std::left << std::setw(16)
-           << instruction_mnemonic(*instruction, b.address);
-    }
-    ss << termcolor::reset;
-    return ss.str();
-}
-
 void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
-    const Cpu& cpu = gb.cpu;
+    using namespace Tui;
 
-    // GAMEBOY
-    std::cout << header("GAMEBOY") << std::endl;
-    std::cout << termcolor::yellow << "T-Cycle          :  " << termcolor::reset << core.ticks << std::endl;
-    std::cout << termcolor::yellow << "M-Cycle          :  " << termcolor::reset << core.ticks / 4 << std::endl;
+    const auto title = [](const Text& text, uint8_t width, const std::string& sep = "—") {
+        check(width >= text.size());
+        Text t {text.size() > 0 ? (" " + text + " ") : text};
 
-    std::cout << termcolor::yellow << "Phase            :  " << termcolor::reset;
-    for (uint8_t t = 0; t < 4; t++) {
-        if (core.ticks % 4 == t) {
-            std::cout << "T" << +t;
-        } else {
-            std::cout << termcolor::color<DARK_GRAY> << "T" << +t << termcolor::reset;
+        Token sepToken {sep, true};
+
+        const uint8_t w1 = (width - t.size()) / 2;
+        Text pre;
+        for (uint8_t i = 0; i < w1; i++)
+            pre += sepToken;
+
+        const uint8_t w2 = width - t.size() - w1;
+        Text post;
+        for (uint8_t i = 0; i < w2; i++)
+            post += sepToken;
+
+        return darkgray(std::move(pre)) + t + darkgray(std::move(post));
+    };
+
+    const auto header = [title](const char* c, uint8_t width) {
+        return title(bold(cyan(c)), width);
+    };
+
+    const auto subheader = [title](const char* c, uint8_t width) {
+        return title(cyan(c), width);
+    };
+
+    const auto hr = [title](uint8_t width) {
+        return title("", width);
+    };
+
+    const auto colorbool = [](bool b) -> Text {
+        return b ? b : gray(b);
+    };
+
+    const auto makeHorizontalLineDivider = []() {
+        return make_divider(Text {} + "  " + Token {"│", 1} + "  ");
+    };
+
+    const auto makeVerticalLineDivider = []() {
+        return make_divider(Text {Token {"—", 1}});
+    };
+
+    const auto makeSpaceDivider = []() {
+        return make_divider(" ");
+    };
+
+    // Gameboy
+    const auto makeGameboyBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("GAMEBOY", width) << endl;
+
+        b << yellow("T-Cycle") << "  :  " << core.ticks << endl;
+        b << yellow("M-Cycle") << "  :  " << core.ticks / 4 << endl;
+
+        return b;
+    };
+
+    // CPU
+    const auto makeCpuBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("CPU", width) << endl;
+
+        // State
+        b << yellow("Cycle") << "   :  " << gb.cpu.cycles << endl;
+        b << yellow("Halted") << "  :  " << gb.cpu.halted << endl;
+
+        // Registers
+        const auto reg = [](uint16_t value) {
+            return bin((uint8_t)(value >> 8)) + " " + bin((uint8_t)(value & 0xFF)) + " (" + hex((uint8_t)(value >> 8)) +
+                   " " + hex((uint8_t)(value & 0xFF)) + ")";
+        };
+        b << subheader("registers", width) << endl;
+        b << red("AF") << "      :  " << reg(gb.cpu.AF) << endl;
+        b << red("BC") << "      :  " << reg(gb.cpu.BC) << endl;
+        b << red("DE") << "      :  " << reg(gb.cpu.DE) << endl;
+        b << red("HL") << "      :  " << reg(gb.cpu.HL) << endl;
+        b << red("PC") << "      :  " << reg(gb.cpu.PC) << endl;
+        b << red("SP") << "      :  " << reg(gb.cpu.SP) << endl;
+
+        // Flags
+        const auto flag = [](bool value) {
+            return (value ? value : darkgray(value));
+        };
+        b << subheader("flags", width) << endl;
+        b << red("Z") << " : " << flag(get_bit<Specs::Bits::Flags::Z>(gb.cpu.AF)) << "    " << red("N") << " : "
+          << flag(get_bit<Specs::Bits::Flags::N>(gb.cpu.AF)) << "    " << red("H") << " : "
+          << flag(get_bit<Specs::Bits::Flags::H>(gb.cpu.AF)) << "    " << red("C") << " : "
+          << flag(get_bit<Specs::Bits::Flags::C>(gb.cpu.AF)) << endl;
+
+        // Interrupts
+        const bool IME = gb.cpu.IME == Cpu::ImeState::Enabled;
+        const uint8_t IE = gb.interrupts.IE;
+        const uint8_t IF = gb.interrupts.IF;
+
+        b << subheader("interrupts", width) << endl;
+
+        b << yellow("State") << "   :  " <<
+            [this]() {
+                switch (gb.cpu.interrupt.state) {
+                case Cpu::InterruptState::None:
+                    return darkgray("None");
+                case Cpu::InterruptState::Pending:
+                    return green("Pending");
+                case Cpu::InterruptState::Serving:
+                    return green("Serving");
+                }
+                checkNoEntry();
+                return Text {};
+            }()
+          << endl;
+
+        if (gb.cpu.interrupt.state == Cpu::InterruptState::Pending) {
+            b << yellow("Ticks") << "   :  " << gb.cpu.interrupt.remainingTicks << endl;
         }
-        if (t < 3) {
-            std::cout << " ";
-        }
-    }
-    std::cout << std::endl;
+
+        Text t {hr(width)};
+
+        b << hr(width) << endl;
+
+        b << red("IME") << "     :  " <<
+            [this]() {
+                switch (gb.cpu.IME) {
+                case Cpu::ImeState::Enabled:
+                    return cyan("ON");
+                case Cpu::ImeState::Pending:
+                    return yellow("Pending");
+                case Cpu::ImeState::Disabled:
+                    return darkgray("OFF");
+                }
+                checkNoEntry();
+                return Text {};
+            }()
+          << endl;
+
+        b << red("IE ") << "     :  " << bin(IE) << endl;
+        b << red("IF ") << "     :  " << bin(IF) << endl;
+
+        const auto intr = [colorbool](bool IME, bool IE, bool IF) {
+            return "IE : " + colorbool(IE) + "    IF : " + colorbool(IF) + "    " +
+                   ((IME && IE && IF) ? green("ON ") : darkgray("OFF"));
+        };
+
+        b << red("VBLANK") << "  :  "
+          << intr(IME, test_bit<Specs::Bits::Interrupts::VBLANK>(IE), test_bit<Specs::Bits::Interrupts::VBLANK>(IF))
+          << endl;
+        b << red("STAT") << "    :  "
+          << intr(IME, test_bit<Specs::Bits::Interrupts::STAT>(IE), test_bit<Specs::Bits::Interrupts::STAT>(IF))
+          << endl;
+        b << red("TIMER") << "   :  "
+          << intr(IME, test_bit<Specs::Bits::Interrupts::TIMER>(IE), test_bit<Specs::Bits::Interrupts::TIMER>(IF))
+          << endl;
+        b << red("JOYPAD") << "  :  "
+          << intr(IME, test_bit<Specs::Bits::Interrupts::JOYPAD>(IE), test_bit<Specs::Bits::Interrupts::JOYPAD>(IF))
+          << endl;
+        b << red("SERIAL") << "  :  "
+          << intr(IME, test_bit<Specs::Bits::Interrupts::SERIAL>(IE), test_bit<Specs::Bits::Interrupts::SERIAL>(IF))
+          << endl;
+
+        return b;
+    };
 
     // PPU
-    if (config.sections.ppu) {
-        auto ppuMode = [this]() -> std::string {
+    const auto makePpuBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("PPU", width) << endl;
+
+        b << yellow("On") << "               :  " << gb.ppu.on << endl;
+        b << yellow("Cycle") << "            :  " << gb.ppu.cycles << endl;
+        b << yellow("Mode") << "             :  " << [this]() -> Text {
             if (gb.ppu.tickSelector == &Ppu::oamScan0 || gb.ppu.tickSelector == &Ppu::oamScan1)
                 return "Oam Scan";
             if (gb.ppu.tickSelector == &Ppu::pixelTransferDummy0<false> ||
                 gb.ppu.tickSelector == &Ppu::pixelTransferDummy0<true> ||
                 gb.ppu.tickSelector == &Ppu::pixelTransferDiscard0 || gb.ppu.tickSelector == &Ppu::pixelTransfer0 ||
                 gb.ppu.tickSelector == &Ppu::pixelTransfer8) {
-                std::stringstream ss;
-                ss << "Pixel Transfer";
+
+                Text t {"Pixel Transfer"};
 
                 std::string blockReason;
                 if (gb.ppu.isFetchingSprite)
@@ -1226,9 +1113,9 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     blockReason = "empty bg fifo";
 
                 if (!blockReason.empty())
-                    ss << termcolor::yellow << " [blocked: " << blockReason << termcolor::reset << "]";
+                    t += yellow("[blocked: ") + blockReason + "]";
 
-                return ss.str();
+                return t;
             }
             if (gb.ppu.tickSelector == &Ppu::hBlank || gb.ppu.tickSelector == &Ppu::hBlank454 ||
                 gb.ppu.tickSelector == &Ppu::hBlankLastLine || gb.ppu.tickSelector == &Ppu::hBlankLastLine454)
@@ -1240,46 +1127,53 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
             checkNoEntry();
             return "Unknown";
-        };
-        auto ppuFetcherMode = [this]() {
-            if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPrefetcherGetTile0)
-                return "BG/WIN GetTile0";
-            if (gb.ppu.fetcherTickSelector == &Ppu::bgPrefetcherGetTile0)
-                return "BG Prefetcher GetTile0";
-            if (gb.ppu.fetcherTickSelector == &Ppu::bgPrefetcherGetTile1)
-                return "BG Prefetcher GetTile1";
-            if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile0)
-                return "WIN Prefetcher GetTile0";
-            if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile1)
-                return "WIN Prefetcher GetTile1";
-            if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataLow0)
-                return "BG/WIN PixelSliceFetcher GetTileDataLow0";
-            if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataLow1)
-                return "BG/WIN PixelSliceFetcher GetTileDataLow1";
-            if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0)
-                return "BG/WIN PixelSliceFetcher GetTileDataHigh0";
-            if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1)
-                return "BG/WIN PixelSliceFetcher GetTileDataHigh1";
-            if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
-                return "BG/WIN PixelSliceFetcher Push";
-            if (gb.ppu.fetcherTickSelector == &Ppu::objPrefetcherGetTile0)
-                return "OBJ Prefetcher GetTile0";
-            if (gb.ppu.fetcherTickSelector == &Ppu::objPrefetcherGetTile1)
-                return "OBJ Prefetcher GetTile1";
-            if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow0)
-                return "OBJ PixelSliceFetcher GetTileDataLow0";
-            if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow1)
-                return "OBJ PixelSliceFetcher GetTileDataLow1";
-            if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh0)
-                return "OBJ PixelSliceFetcher GetTileDataHigh0";
-            if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
-                return "OBJ PixelSliceFetcher GetTileDataHigh1AndMerge";
+        }() << endl;
 
-            checkNoEntry();
-            return "Unknown";
-        };
+        b << yellow("Dots") << "             :  " << gb.ppu.dots << endl;
+        b << yellow("FetcherMode") << "      :  " <<
+            [this]() {
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPrefetcherGetTile0)
+                    return "BG/WIN GetTile0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPrefetcherGetTile0)
+                    return "BG Prefetcher GetTile0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPrefetcherGetTile1)
+                    return "BG Prefetcher GetTile1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile0)
+                    return "WIN Prefetcher GetTile0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile1)
+                    return "WIN Prefetcher GetTile1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataLow0)
+                    return "BG/WIN PixelSliceFetcher GetTileDataLow0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataLow1)
+                    return "BG/WIN PixelSliceFetcher GetTileDataLow1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0)
+                    return "BG/WIN PixelSliceFetcher GetTileDataHigh0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1)
+                    return "BG/WIN PixelSliceFetcher GetTileDataHigr1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
+                    return "BG/WIN PixelSliceFetcher Push";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPrefetcherGetTile0)
+                    return "OBJ Prefetcher GetTile0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPrefetcherGetTile1)
+                    return "OBJ Prefetcher GetTile1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow0)
+                    return "OBJ PixelSliceFetcher GetTileDataLow0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow1)
+                    return "OBJ PixelSliceFetcher GetTileDataLow1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh0)
+                    return "OBJ PixelSliceFetcher GetTileDataHigh0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
+                    return "OBJ PixelSliceFetcher GetTileDataHigr1AndMerge";
 
-        auto lcdColor = [](uint16_t lcdColor) {
+                checkNoEntry();
+                return "Unknown";
+            }()
+          << endl;
+
+        b << yellow("LX") << "               :  " << gb.ppu.LX << endl;
+
+        // LCD
+        const auto colorIndex = [](uint16_t lcdColor) {
             for (uint8_t i = 0; i < 4; i++) {
                 if (lcdColor == Lcd::RGB565_PALETTE[i])
                     return hex(i);
@@ -1287,76 +1181,71 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             return hex((uint8_t)0); // allowed because framebuffer could be cleared by the debugger
         };
 
-        std::cout << header("PPU") << std::endl;
-        // PPU
-        std::cout << termcolor::yellow << "On               :  " << termcolor::reset << gb.ppu.on << std::endl;
-        std::cout << termcolor::yellow << "Cycle            :  " << termcolor::reset << gb.ppu.cycles << std::endl;
-        std::cout << termcolor::yellow << "Mode             :  " << termcolor::reset << ppuMode() << std::endl;
-        std::cout << termcolor::yellow << "Dots             :  " << termcolor::reset << gb.ppu.dots << std::endl;
-        std::cout << termcolor::yellow << "FetcherMode      :  " << termcolor::reset << ppuFetcherMode() << std::endl;
-        std::cout << termcolor::yellow << "LX               :  " << termcolor::reset << +gb.ppu.LX << std::endl;
-
-        // LCD
-        std::cout << subheader("lcd") << std::endl;
-        std::cout << termcolor::yellow << "X                :  " << termcolor::reset << +gb.lcd.x << std::endl;
-        std::cout << termcolor::yellow << "Y                :  " << termcolor::reset << +gb.lcd.y << std::endl;
-        std::cout << termcolor::yellow << "Last Pixels      :  " << termcolor::reset;
+        b << subheader("lcd", width) << endl;
+        b << yellow("X") << "                :  " << gb.lcd.x << endl;
+        b << yellow("Y") << "                :  " << gb.lcd.x << endl;
+        b << yellow("Last Pixels") << "      :  ";
         for (int32_t i = 0; i < 8; i++) {
             int32_t idx = gb.lcd.cursor - 8 + i;
-            if (idx >= 0)
-                std::cout << lcdColor(gb.lcd.pixels[idx]) << " ";
+            if (idx >= 0) {
+                b << colorIndex(gb.lcd.pixels[idx]) << " ";
+            }
         }
-        std::cout << std::endl;
+        b << endl;
 
         // OAM Scanline entries
         const auto& oamEntries = gb.ppu.scanlineOamEntries;
+        b << subheader("oam scanline entries", width) << endl;
 
-        std::cout << subheader("oam scanline entries") << std::endl;
-        std::cout << termcolor::yellow << "OAM Number       :  " << termcolor::reset;
-        for (uint8_t i = 0; i < oamEntries.size(); i++)
-            std::cout << std::setw(3) << +oamEntries[i].number << " ";
-        std::cout << std::endl;
-        std::cout << termcolor::yellow << "OAM X            :  " << termcolor::reset;
-        for (uint8_t i = 0; i < oamEntries.size(); i++)
-            std::cout << std::setw(3) << +oamEntries[i].x << " ";
-        std::cout << std::endl;
-        std::cout << termcolor::yellow << "OAM Y            :  " << termcolor::reset;
-        for (uint8_t i = 0; i < oamEntries.size(); i++)
-            std::cout << std::setw(3) << +oamEntries[i].y << " ";
-        std::cout << std::endl;
+        const auto oamEntriesInfo = [](const auto& v, uint8_t (*fn)(const Ppu::OamScanEntry&)) {
+            Text t {};
+            for (uint8_t i = 0; i < v.size(); i++) {
+                t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
+            }
+            return t;
+        };
+
+        b << yellow("OAM Number") << "       :  " << oamEntriesInfo(oamEntries, [](const Ppu::OamScanEntry& e) {
+            return e.number;
+        }) << endl;
+        b << yellow("OAM X") << "            :  " << oamEntriesInfo(oamEntries, [](const Ppu::OamScanEntry& e) {
+            return e.x;
+        }) << endl;
+        b << yellow("OAM Y") << "            :  " << oamEntriesInfo(oamEntries, [](const Ppu::OamScanEntry& e) {
+            return e.y;
+        }) << endl;
 
         if (gb.ppu.LX < array_size(gb.ppu.oamEntries)) {
             const auto& oamEntriesHit = gb.ppu.oamEntries[gb.ppu.LX];
             // OAM Hit
-            std::cout << subheader("oam hit") << std::endl;
-            std::cout << termcolor::yellow << "OAM Number       :  " << termcolor::reset;
-            for (uint8_t i = 0; i < oamEntriesHit.size(); i++)
-                std::cout << std::setw(3) << +(oamEntriesHit[i].number) << " ";
-            std::cout << std::endl;
-            std::cout << termcolor::yellow << "OAM X            :  " << termcolor::reset;
-            for (uint8_t i = 0; i < oamEntriesHit.size(); i++)
-                std::cout << std::setw(3) << +(oamEntriesHit[i].x) << " ";
-            std::cout << std::endl;
-            std::cout << termcolor::yellow << "OAM Y            :  " << termcolor::reset;
-            for (uint8_t i = 0; i < oamEntriesHit.size(); i++)
-                std::cout << std::setw(3) << +(oamEntriesHit[i].y) << " ";
-            std::cout << std::endl;
+            b << subheader("oam hit", width) << endl;
+
+            b << yellow("OAM Number") << "       :  " << oamEntriesInfo(oamEntriesHit, [](const Ppu::OamScanEntry& e) {
+                return e.number;
+            }) << endl;
+            b << yellow("OAM X") << "            :  " << oamEntriesInfo(oamEntriesHit, [](const Ppu::OamScanEntry& e) {
+                return e.x;
+            }) << endl;
+            b << yellow("OAM Y") << "            :  " << oamEntriesInfo(oamEntriesHit, [](const Ppu::OamScanEntry& e) {
+                return e.y;
+            }) << endl;
         }
+
+        // BG Fifo
+        b << subheader("bg fifo", width) << endl;
 
         uint8_t bgPixels[8];
         for (uint8_t i = 0; i < gb.ppu.bgFifo.size(); i++) {
             bgPixels[i] = gb.ppu.bgFifo[i].colorIndex;
         }
+        b << yellow("BG Fifo Pixels") << "   :  " << hex(bgPixels, gb.ppu.bgFifo.size()) << endl;
 
-        // BG Fifo
-        std::cout << subheader("bg fifo") << std::endl;
-        std::cout << termcolor::yellow << "BG Fifo Pixels   :  " << termcolor::reset
-                  << hex(bgPixels, gb.ppu.bgFifo.size()) << std::endl;
-
+        // OBJ Fifo
         uint8_t objPixels[8];
         uint8_t objAttrs[8];
         uint8_t objNumbers[8];
         uint8_t objXs[8];
+
         for (uint8_t i = 0; i < gb.ppu.objFifo.size(); i++) {
             const Ppu::ObjPixel& p = gb.ppu.objFifo[i];
             objPixels[i] = p.colorIndex;
@@ -1364,450 +1253,530 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             objNumbers[i] = p.number;
             objXs[i] = p.x;
         }
-        // OBJ Fifo
-        std::cout << subheader("obj fifo") << std::endl;
-        std::cout << termcolor::yellow << "OBJ Fifo Pixels  :  " << termcolor::reset
-                  << hex(objPixels, gb.ppu.objFifo.size()) << std::endl;
-        std::cout << termcolor::yellow << "OBJ Fifo Number  :  " << termcolor::reset
-                  << hex(objNumbers, gb.ppu.objFifo.size()) << std::endl;
-        std::cout << termcolor::yellow << "OBJ Fifo Attribs :  " << termcolor::reset
-                  << hex(objAttrs, gb.ppu.objFifo.size()) << std::endl;
-        std::cout << termcolor::yellow << "OBJ Fifo X       :  " << termcolor::reset
-                  << hex(objXs, gb.ppu.objFifo.size()) << std::endl;
+
+        b << subheader("obj fifo", width) << endl;
+
+        b << yellow("OBJ Fifo Pixels") << "  :  " << hex(objPixels, gb.ppu.objFifo.size()) << endl;
+        b << yellow("OBJ Fifo Number") << "  :  " << hex(objNumbers, gb.ppu.objFifo.size()) << endl;
+        b << yellow("OBJ Fifo Attrs.") << "  :  " << hex(objAttrs, gb.ppu.objFifo.size()) << endl;
+        b << yellow("OBJ Fifo X") << "       :  " << hex(objXs, gb.ppu.objFifo.size()) << endl;
 
         // Pixel Slice Fetcher
-        std::cout << subheader("pixel slice fetcher") << std::endl;
-        std::cout << termcolor::yellow << "Tile Data Addr.  : " << termcolor::reset
-                  << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.psf.vTileDataAddress) << std::endl;
-        if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
-            std::cout << termcolor::yellow << "Tile Data Ready  : " << termcolor::green << "Ready to push"
-                      << termcolor::reset << std::endl;
-        else if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
-            std::cout << termcolor::yellow << "Tile Data Ready  : " << termcolor::green << "Ready to merge"
-                      << termcolor::reset << std::endl;
-        else
-            std::cout << termcolor::yellow << "Tile Data Ready  : " << termcolor::color<DARK_GRAY> << "Not ready"
-                      << termcolor::reset << std::endl;
+        b << subheader("pixel slice fetcher", width) << endl;
+        b << yellow("Tile Data Addr.") << "  :  "
+          << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.psf.vTileDataAddress) << endl;
+        b << yellow("Tile Data Ready") << "  :  " <<
+            [this]() {
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
+                    return green("Ready to push");
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
+                    return green("Ready to merge");
+                return darkgray("Not ready");
+            }()
+          << endl;
 
         // Window
-        std::cout << subheader("window") << std::endl;
-        std::cout << termcolor::yellow << "WLY              :  " << termcolor::reset << +gb.ppu.w.WLY << std::endl;
+        b << subheader("window", width) << endl;
+        b << yellow("WLY") << "              :  " << gb.ppu.w.WLY << endl;
 
-#if 0
-        std::cout << subheader("timings") << std::endl;
-        std::cout << termcolor::yellow << "OAM Scan         :  " << termcolor::reset << gb.ppu.timings.oamScan
-                  << std::endl;
-        std::cout << termcolor::yellow << "Pixel Transfer   :  " << termcolor::reset << gb.ppu.timings.pixelTransfer
-                  << std::endl;
-        std::cout << termcolor::yellow << "HBlank           :  " << termcolor::reset << gb.ppu.timings.hBlank
-                  << std::endl;
-#endif
-    }
-
-    // CPU
-    if (config.sections.cpu) {
-        std::cout << header("CPU") << std::endl;
-        std::cout << termcolor::yellow << "Halted           :  " << termcolor::reset << gb.cpu.halted << std::endl;
-        std::cout << termcolor::yellow << "Cycle            :  " << termcolor::reset << gb.cpu.cycles << std::endl;
-
-        // Registers
-        std::cout << subheader("registers") << std::endl;
-        std::cout << reg("AF", cpu.AF) << std::endl;
-        std::cout << reg("BC", cpu.BC) << std::endl;
-        std::cout << reg("DE", cpu.DE) << std::endl;
-        std::cout << reg("HL", cpu.HL) << std::endl;
-        std::cout << reg("PC", cpu.PC) << std::endl;
-        std::cout << reg("SP", cpu.SP) << std::endl;
-
-        // Flags
-        std::cout << subheader("flags") << std::endl;
-        std::cout << flag("Z", get_bit<Specs::Bits::Flags::Z>(cpu.AF)) << "  |  "
-                  << flag("N", get_bit<Specs::Bits::Flags::N>(cpu.AF)) << "  |  "
-                  << flag("H", get_bit<Specs::Bits::Flags::H>(cpu.AF)) << "  |  "
-                  << flag("C", get_bit<Specs::Bits::Flags::C>(cpu.AF)) << std::endl;
-
-        // Interrupts
-        uint8_t IE = gb.interrupts.IE;
-        uint8_t IF = gb.interrupts.IF;
-
-        std::cout << subheader("interrupts") << std::endl;
-
-        std::cout << termcolor::yellow << "State           :  " << termcolor::reset;
-        if (gb.cpu.interrupt.state == Cpu::InterruptState::None) {
-            std::cout << termcolor::color<DARK_GRAY> << "None" << termcolor::reset << std::endl;
-        } else if (gb.cpu.interrupt.state == Cpu::InterruptState::Pending) {
-            std::cout << termcolor::green << "Pending" << termcolor::reset << std::endl;
-        } else if (gb.cpu.interrupt.state == Cpu::InterruptState::Serving) {
-            std::cout << termcolor::green << "Serving" << termcolor::reset << std::endl;
-        }
-
-        if (gb.cpu.interrupt.state == Cpu::InterruptState::Pending) {
-            std::cout << termcolor::yellow << "Remain. Ticks   :  " << termcolor::reset
-                      << +gb.cpu.interrupt.remainingTicks << std::endl;
-        }
-
-        std::cout << hr() << std::endl;
-
-        std::cout << termcolor::bold << termcolor::red << "IME" << termcolor::reset << " : "
-                  << boolColored(cpu.IME == Cpu::ImeState::Enabled);
-        if (cpu.IME == Cpu::ImeState::Pending) {
-            std::cout << termcolor::yellow << "         [pending]";
-        }
-        std::cout << std::endl;
-
-        std::cout << termcolor::bold << termcolor::red << "IE" << termcolor::reset << "  : " << bin(IE) << std::endl;
-        std::cout << termcolor::bold << termcolor::red << "IF" << termcolor::reset << "  : " << bin(IF) << std::endl;
-        std::cout << interrupt("VBLANK", cpu.IME == Cpu::ImeState::Enabled,
-                               get_bit<Specs::Bits::Interrupts::VBLANK>(IE),
-                               get_bit<Specs::Bits::Interrupts::VBLANK>(IF))
-                  << std::endl;
-        std::cout << interrupt("STAT  ", cpu.IME == Cpu::ImeState::Enabled, get_bit<Specs::Bits::Interrupts::STAT>(IE),
-                               get_bit<Specs::Bits::Interrupts::STAT>(IF))
-                  << std::endl;
-        std::cout << interrupt("TIMER ", cpu.IME == Cpu::ImeState::Enabled, get_bit<Specs::Bits::Interrupts::TIMER>(IE),
-                               get_bit<Specs::Bits::Interrupts::TIMER>(IF))
-                  << std::endl;
-        std::cout << interrupt("JOYPAD", cpu.IME == Cpu::ImeState::Enabled,
-                               get_bit<Specs::Bits::Interrupts::JOYPAD>(IE),
-                               get_bit<Specs::Bits::Interrupts::JOYPAD>(IF))
-                  << std::endl;
-        std::cout << interrupt("SERIAL", cpu.IME == Cpu::ImeState::Enabled,
-                               get_bit<Specs::Bits::Interrupts::SERIAL>(IE),
-                               get_bit<Specs::Bits::Interrupts::SERIAL>(IF))
-                  << std::endl;
-    }
+        return b;
+    };
 
     // MMU
-    if (config.sections.mmu) {
-        std::cout << header("MMU") << std::endl;
+    const auto makeMmuBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
 
-        const auto printBusRequest = [this](const Mmu::BusRequest& req) {
+        b << header("MMU", width) << endl;
+
+        const auto busRequest = [this](const Mmu::BusRequest& req) {
+            Text t {};
             if (req.state == Mmu::BusRequest::State::Read) {
-                std::cout << termcolor::yellow << "Request        : " << termcolor::green << "Read" << termcolor::reset
-                          << std::endl;
-                std::cout << termcolor::yellow << "Address        : " << termcolor::reset << hex(req.address)
-                          << std::endl;
-                std::cout << termcolor::yellow << "Value          : " << termcolor::reset
-                          << hex(backend.readMemory(req.address)) << std::endl;
+                t += yellow("Request") + "  :  " + green("Read") + "\n";
+                t += yellow("Address") + "  :  " + hex(req.address) + "\n";
+                t += yellow("Value") + "    :  " + hex(backend.readMemory(req.address));
             } else if (req.state == Mmu::BusRequest::State::Write) {
-                std::cout << termcolor::yellow << "Request        : " << termcolor::red << "Write" << termcolor::reset
-                          << std::endl;
-                std::cout << termcolor::yellow << "Address        : " << termcolor::reset << hex(req.address)
-                          << std::endl;
-                std::cout << termcolor::yellow << "Value          : " << termcolor::reset << hex(req.write.value)
-                          << std::endl;
+                t += yellow("Request") + "  :  " + red("Write") + "\n";
+                t += yellow("Address") + "  :  " + hex(req.address) + "\n";
+                t += yellow("Value") + "    :  " + hex(req.write.value);
             } else {
-                std::cout << termcolor::yellow << "Request        : " << termcolor::color<DARK_GRAY> << "None"
-                          << termcolor::reset << std::endl;
+                t += yellow("Request") + "  :  " + darkgray("None");
             }
+            return t;
         };
-        std::cout << subheader("cpu request") << std::endl;
-        printBusRequest(gb.mmu.requests[MmuDevice::Cpu]);
 
-        std::cout << subheader("dma request") << std::endl;
-        printBusRequest(gb.mmu.requests[MmuDevice::Dma]);
-    }
+        b << subheader("cpu request", width) << endl;
+        b << busRequest(gb.mmu.requests[MmuDevice::Cpu]) << endl;
+
+        b << subheader("dma request", width) << endl;
+        b << busRequest(gb.mmu.requests[MmuDevice::Dma]) << endl;
+
+        return b;
+    };
 
     // Bus
-    if (config.sections.bus) {
-        std::cout << header("BUS") << std::endl;
+    const auto makeBusBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
 
-        const auto printAcquirers = [](const auto& bus) {
-            std::cout << termcolor::yellow << "Acquired By         : " << termcolor::reset;
-            if (bus.template isAcquiredBy<AcquirableBusDevice::Dma>()) {
-                std::cout << "DMA ";
-            } else {
-                std::cout << termcolor::color<DARK_GRAY> << "DMA " << termcolor::reset;
-            }
-            if (bus.template isAcquiredBy<AcquirableBusDevice::Ppu>()) {
-                std::cout << "PPU";
-            } else {
-                std::cout << termcolor::color<DARK_GRAY> << "PPU" << termcolor::reset;
-            }
-            std::cout << std::endl;
+        b << header("BUS", width) << endl;
+
+        const auto acquirers = [&b](const auto& bus) {
+            Text t {};
+            t += yellow("Acquired By") + "  :  ";
+            t += (bus.template isAcquiredBy<AcquirableBusDevice::Dma>() ? Text {"DMA"} : darkgray("DMA")) += " ";
+            t += (bus.template isAcquiredBy<AcquirableBusDevice::Ppu>() ? "PPU" : darkgray("PPU"));
+            return t;
         };
-        std::cout << subheader("ext bus") << std::endl;
-        std::cout << subheader("cpu bus") << std::endl;
-        std::cout << subheader("vram bus") << std::endl;
-        printAcquirers(gb.vramBus);
-        std::cout << subheader("oam bus") << std::endl;
-        printAcquirers(gb.oamBus);
-    }
+
+        b << subheader("ext bus", width) << endl;
+        // No info at the moment
+
+        b << subheader("cpu bus", width) << endl;
+        // No info at the moment
+
+        b << subheader("vram bus", width) << endl;
+        b << acquirers(gb.vramBus) << endl;
+
+        b << subheader("oam bus", width) << endl;
+        b << acquirers(gb.oamBus) << endl;
+
+        return b;
+    };
 
     // DMA
-    if (config.sections.dma) {
-        std::cout << header("DMA") << std::endl;
+    const auto makeDmaBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("DMA", width) << endl;
+
         if (gb.dma.request.state != Dma::RequestState::None || gb.dma.transferring) {
-            std::cout << termcolor::yellow << "DMA Request    : ";
-            if (gb.dma.request.state == Dma::RequestState::Requested) {
-                std::cout << termcolor::green << "Requested" << termcolor::reset;
-            } else if (gb.dma.request.state == Dma::RequestState::Pending) {
-                std::cout << termcolor::green << "Pending" << termcolor::reset;
-            } else if (gb.dma.request.state == Dma::RequestState::None) {
-                std::cout << "None";
-            }
-            std::cout << std::endl;
+            b << yellow("DMA Request") << "   :  ";
+            b <<
+                [this]() {
+                    switch (gb.dma.request.state) {
+                    case Dma::RequestState::Requested:
+                        return green("Requested");
+                    case Dma::RequestState::Pending:
+                        return green("Pending");
+                    case Dma::RequestState::None:
+                        return Text {"None"};
+                    }
+                    checkNoEntry();
+                    return Text {};
+                }()
+              << endl;
 
-            std::cout << termcolor::yellow << "DMA Transfer   : ";
-            if (gb.dma.transferring) {
-                std::cout << termcolor::green << "In Progress" << termcolor::reset;
-            } else {
-                std::cout << "None";
-            }
-            std::cout << std::endl;
+            b << yellow("DMA Transfer") << "  :  ";
+            b << (gb.dma.transferring ? green("In Progress") : "None");
+            b << endl;
 
-            std::cout << termcolor::yellow << "DMA Source     : " << termcolor::reset << hex(gb.dma.source)
-                      << std::endl;
-            std::cout << termcolor::yellow << "DMA Progress   : " << termcolor::reset
-                      << hex(gb.dma.source + gb.dma.cursor) << " => "
-                      << hex(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << +gb.dma.cursor << "/"
-                      << "159]" << std::endl;
+            b << yellow("DMA Source") << "    :  " << hex(gb.dma.source) << endl;
+            b << yellow("DMA Progress") << "  :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
+              << hex<uint16_t>(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << gb.dma.cursor << "/"
+              << "159]" << endl;
         } else {
-            std::cout << termcolor::yellow << "DMA Transfer   : " << termcolor::color<DARK_GRAY> << "None"
-                      << termcolor::reset << std::endl;
+            b << yellow("DMA Transfer") << " : " << darkgray("None") << endl;
         }
-    }
+
+        return b;
+    };
 
     // Timers
-    if (config.sections.timers) {
-        std::cout << header("TIMERS") << std::endl;
-        std::cout << div("DIV (16)", gb.timers.DIV, Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(gb.timers.TAC)])
-                  << std::endl;
-        std::cout << timer("DIV", backend.readMemory(Specs::Registers::Timers::DIV)) << std::endl;
-        std::cout << timer("TIMA", backend.readMemory(Specs::Registers::Timers::TIMA));
-        if (gb.timers.timaState == TimersIO::TimaReloadState::Pending) {
-            std::cout << termcolor::yellow << "    [pending TMA reload]";
-        } else if (gb.timers.timaState == TimersIO::TimaReloadState::Reload) {
-            std::cout << termcolor::yellow << "    [TMA reload]";
-        }
-        std::cout << std::endl;
-        std::cout << timer("TMA", backend.readMemory(Specs::Registers::Timers::TMA)) << std::endl;
-        std::cout << timer("TAC", backend.readMemory(Specs::Registers::Timers::TAC)) << std::endl;
-    }
+    const auto makeTimersBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("TIMERS", width) << endl;
+
+        b << red("DIV (16)") << "  :  " << [this]() -> Text {
+            uint8_t div = gb.timers.DIV;
+            Text t {};
+            uint8_t highlightBit = Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(gb.timers.TAC)];
+            for (int8_t b = 15; b >= 0; b--) {
+                bool high = test_bit(div, b);
+                t += ((b == highlightBit) ? yellow(Text {high}) : Text {high});
+                if (b == 8)
+                    t += " ";
+            }
+            t += " (" + hex((uint8_t)(div >> 8)) + " " + hex((uint8_t)(div & 0xFF)) + ")";
+            return t;
+        }() << endl;
+
+        const auto timer = [](uint8_t value) {
+            return Text {bin(value)} + "          (" + hex(value) + ")";
+        };
+
+        b << red("DIV") << "       :  " << timer(backend.readMemory(Specs::Registers::Timers::DIV)) << endl;
+        b << red("TIMA") << "      :  " << timer(backend.readMemory(Specs::Registers::Timers::TIMA)) <<
+            [this]() {
+                switch (gb.timers.timaState) {
+                case TimersIO::TimaReloadState::Pending:
+                    return yellow("[pending TMA reload]");
+                case TimersIO::TimaReloadState::Reload:
+                    return yellow("[TMA reload]");
+                default:
+                    return Text {};
+                }
+            }()
+          << endl;
+        b << red("TMA") << "       :  " << timer(backend.readMemory(Specs::Registers::Timers::TMA)) << endl;
+        b << red("TAC") << "       :  " << timer(backend.readMemory(Specs::Registers::Timers::TAC)) << endl;
+
+        return b;
+    };
 
     // IO
-    if (config.sections.io.joypad || config.sections.io.serial || config.sections.io.timers ||
-        config.sections.io.interrupts || config.sections.io.sound || config.sections.io.video) {
-        std::cout << header("IO") << std::endl;
-        if (config.sections.io.joypad) {
-            std::cout << subheader("joypad") << std::endl;
-            printIO(Specs::Registers::Joypad::REGISTERS, array_size(Specs::Registers::Joypad::REGISTERS));
-        }
-        if (config.sections.io.serial) {
-            std::cout << subheader("serial") << std::endl;
-            printIO(Specs::Registers::Serial::REGISTERS, array_size(Specs::Registers::Serial::REGISTERS));
-        }
-        if (config.sections.io.timers) {
-            std::cout << subheader("timers") << std::endl;
-            printIO(Specs::Registers::Timers::REGISTERS, array_size(Specs::Registers::Timers::REGISTERS));
-        }
-        if (config.sections.io.interrupts) {
-            std::cout << subheader("interrupts") << std::endl;
-            printIO(Specs::Registers::Interrupts::REGISTERS, array_size(Specs::Registers::Interrupts::REGISTERS));
-        }
-        if (config.sections.io.sound) {
-            std::cout << subheader("sound") << std::endl;
-            printIO(Specs::Registers::Sound::REGISTERS, array_size(Specs::Registers::Sound::REGISTERS));
-        }
-        if (config.sections.io.video) {
-            std::cout << subheader("video") << std::endl;
-            printIO(Specs::Registers::Video::REGISTERS, array_size(Specs::Registers::Video::REGISTERS));
-        }
-    }
+    const auto makeIoBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
 
-    // Code (disassemble)
-    if (config.sections.code) {
-        if (const auto isrPhase = DebuggerHelpers::getIsrPhase(cpu); isrPhase != std::nullopt) {
-            std::cout << subheader("code") << std::endl;
-            std::cout << termcolor::yellow << "ISR";
-            std::cout << termcolor::reset << termcolor::color<LIGHT_GRAY> << "   M" << (*isrPhase + 1) << "/" << 5
-                      << termcolor::reset << std::endl;
+        b << header("IO", width) << endl;
+
+        const auto ios = [this, width](const uint16_t* addresses, uint32_t length) {
+            static constexpr uint8_t MNEMONIC_MAX_LENGTH = 6;
+            static constexpr uint8_t IO_LENGTH = 4 + MNEMONIC_MAX_LENGTH + 5 + 8 + 2 + 2 + 1 + 4;
+            const uint8_t columns = (width + 4) / IO_LENGTH;
+
+            const auto io = [](uint16_t address, uint8_t value) {
+                return lightgray(hex(address)) + " " +
+                       red(address_to_mnemonic(address)).rpad(Text::Length {MNEMONIC_MAX_LENGTH}) + "  :  " +
+                       bin(value) + " (" + hex(value) + ")";
+            };
+
+            Text t {};
+
+            uint32_t i;
+            for (i = 0; i < length; i++) {
+                if (i > 0) {
+                    if (i % columns == 0)
+                        t += "\n";
+                    else
+                        t += "    ";
+                }
+
+                uint16_t addr = addresses[i];
+                uint8_t value = backend.readMemory(addr);
+                t += io(addr, value);
+            }
+
+            return t;
+        };
+
+        b << subheader("joypad", width) << endl;
+        b << ios(Specs::Registers::Joypad::REGISTERS, array_size(Specs::Registers::Joypad::REGISTERS)) << endl;
+        b << subheader("serial", width) << endl;
+        b << ios(Specs::Registers::Serial::REGISTERS, array_size(Specs::Registers::Serial::REGISTERS)) << endl;
+        b << subheader("timers", width) << endl;
+        b << ios(Specs::Registers::Timers::REGISTERS, array_size(Specs::Registers::Timers::REGISTERS)) << endl;
+        b << subheader("interrupts", width) << endl;
+        b << ios(Specs::Registers::Interrupts::REGISTERS, array_size(Specs::Registers::Interrupts::REGISTERS)) << endl;
+        b << subheader("sound", width) << endl;
+        b << ios(Specs::Registers::Sound::REGISTERS, array_size(Specs::Registers::Sound::REGISTERS)) << endl;
+        b << subheader("video", width) << endl;
+        b << ios(Specs::Registers::Video::REGISTERS, array_size(Specs::Registers::Video::REGISTERS)) << endl;
+
+        return b;
+    };
+
+    // Code
+    const auto makeCodeBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("CODE", width) << endl;
+
+        if (const auto isrPhase = DebuggerHelpers::getIsrPhase(gb.cpu); isrPhase != std::nullopt) {
+            b << yellow("ISR") << "   " << lightgray("M" + std::to_string(*isrPhase + 1) + "/5") << endl;
         } else {
             std::list<DisassembleEntry> codeView;
-            uint8_t n = 0;
-            for (int32_t addr = cpu.instruction.address; addr >= 0 && n < 6; addr--) {
-                auto entry = backend.getDisassembledInstruction(addr);
-                if (entry) {
-                    DisassembleEntry d = {.address = static_cast<uint16_t>(addr), .disassemble = *entry};
-                    codeView.push_front(d);
-                    n++;
+
+            // Past instructions
+            {
+                static constexpr uint8_t CODE_VIEW_PAST_INSTRUCTION_COUNT = 6;
+                uint8_t n = 0;
+                for (int32_t addr = gb.cpu.instruction.address; addr >= 0 && n < CODE_VIEW_PAST_INSTRUCTION_COUNT;
+                     addr--) {
+                    auto entry = backend.getDisassembledInstruction(addr);
+                    if (entry) {
+                        DisassembleEntry d = {.address = static_cast<uint16_t>(addr), .disassemble = *entry};
+                        codeView.push_front(d);
+                        n++;
+                    }
                 }
             }
-            n = 0;
-            for (int32_t addr = cpu.instruction.address + 1; addr <= 0xFFFF && n < 8; addr++) {
-                auto entry = backend.getDisassembledInstruction(addr);
-                if (entry) {
-                    DisassembleEntry d = {.address = static_cast<uint16_t>(addr), .disassemble = *entry};
-                    codeView.push_back(d);
-                    n++;
+
+            // Next instructions
+            {
+                static constexpr uint8_t CODE_VIEW_NEXT_INSTRUCTION_COUNT = 8;
+                uint8_t n = 0;
+                for (int32_t addr = gb.cpu.instruction.address + 1;
+                     addr <= 0xFFFF && n < CODE_VIEW_NEXT_INSTRUCTION_COUNT; addr++) {
+                    auto entry = backend.getDisassembledInstruction(addr);
+                    if (entry) {
+                        DisassembleEntry d = {.address = static_cast<uint16_t>(addr), .disassemble = *entry};
+                        codeView.push_back(d);
+                        n++;
+                    }
                 }
             }
 
             if (!codeView.empty()) {
-                std::cout << header("CODE") << std::endl;
+                const auto disassembleEntry = [this](const DisassembleEntry& entry) {
+                    uint16_t currentInstructionAddress = gb.cpu.instruction.address;
+                    uint8_t currentInstructionMicroop = gb.cpu.instruction.microop.counter;
+
+                    uint16_t instrStart = entry.address;
+                    uint16_t instrEnd = instrStart + entry.disassemble.size();
+                    bool isCurrentInstruction =
+                        instrStart <= currentInstructionAddress && currentInstructionAddress < instrEnd;
+                    bool isPastInstruction = currentInstructionAddress >= instrEnd;
+
+                    Text t {};
+
+                    if (backend.getBreakpoint(entry.address))
+                        t += red(Text {Token {"•", 1}});
+                    else
+                        t += " ";
+
+                    t += " ";
+
+                    t += hex(entry.address) + "  :  " + rpad(hex(entry.disassemble), 9) + "   " +
+                         rpad(instruction_mnemonic(entry.disassemble, entry.address), 23);
+
+                    if (isCurrentInstruction) {
+                        auto [min, max] = instruction_duration(entry.disassemble);
+                        if (min)
+                            t += "   " + lightgray("M" + std::to_string(currentInstructionMicroop + 1) + "/" +
+                                                   std::to_string(min) +
+                                                   (max != min ? (std::string(":") + std::to_string(+max)) : ""));
+                    }
+
+                    if (isCurrentInstruction)
+                        return green(std::move(t));
+                    if (isPastInstruction)
+                        return darkgray(std::move(t));
+                    return t;
+                };
+
                 std::list<DisassembleEntry>::const_iterator lastEntry;
                 for (auto entry = codeView.begin(); entry != codeView.end(); entry++) {
-                    if (entry != codeView.begin()) {
-                        if (lastEntry->address + lastEntry->disassemble.size() < entry->address)
-                            std::cout << termcolor::color<DARK_GRAY> << "  ...." << termcolor::reset << std::endl;
-                    }
-                    std::cout << disassembleEntry(*entry) << std::endl;
+                    if (entry != codeView.begin() &&
+                        lastEntry->address + lastEntry->disassemble.size() < entry->address)
+                        b << "  " << darkgray("....") << endl;
+                    b << disassembleEntry(*entry) << endl;
                     lastEntry = entry;
                 }
             }
         }
-    }
+
+        return b;
+    };
 
     // Breakpoints
-    if (config.sections.breakpoints) {
-        const auto& breakpoints = backend.getBreakpoints();
-        if (!breakpoints.empty()) {
-            std::cout << header("BREAKPOINTS") << std::endl;
-            for (const auto& b : breakpoints)
-                std::cout << breakpoint(b) << std::endl;
-        }
-    }
+    const auto makeBreakpointsBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("BREAKPOINTS", width) << endl;
+
+        const auto breakpoint = [this](const Breakpoint& b) {
+            Text t {"(" + std::to_string(b.id) + ") " + hex(b.address)};
+            const auto instr = backend.getDisassembledInstruction(b.address);
+            if (instr) {
+                t += "  :  " + rpad(hex(*instr), 9) + "   " + rpad(instruction_mnemonic(*instr, b.address), 23);
+            }
+            return lightmagenta(std::move(t));
+        };
+
+        for (const auto& br : backend.getBreakpoints())
+            b << breakpoint(br) << endl;
+
+        return b;
+    };
 
     // Watchpoints
-    if (config.sections.watchpoints) {
-        const auto& watchpoints = backend.getWatchpoints();
-        if (!watchpoints.empty()) {
-            std::cout << header("WATCHPOINTS") << std::endl;
-            for (const auto& w : watchpoints)
-                std::cout << watchpoint(w) << std::endl;
+    const auto makeWatchpointsBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        const auto watchpoint = [](const Watchpoint& w) {
+            Text t {"(" + std::to_string(w.id) + ") " + hex(w.address.from)};
+
+            if (w.address.from != w.address.to)
+                t += " - " + std::to_string(w.address.to);
+
+            if (w.condition.enabled) {
+                if (w.condition.condition.operation == Watchpoint::Condition::Operator::Equal) {
+                    t += " == " + hex(w.condition.condition.operand);
+                }
+            }
+
+            t += " " + [&w]() -> Text {
+                switch (w.type) {
+                case Watchpoint::Type::Read:
+                    return "(read)";
+                case Watchpoint::Type::Write:
+                    return "(write)";
+                case Watchpoint::Type::ReadWrite:
+                    return "(read/write)";
+                case Watchpoint::Type::Change:
+                    return "(change)";
+                }
+                return "";
+            }();
+
+            return yellow(std::move(t));
+        };
+
+        b << header("WATCHPOINTS", width) << endl;
+        for (const auto& w : backend.getWatchpoints()) {
+            b << watchpoint(w) << endl;
         }
-    }
+
+        return b;
+    };
 
     // Display
-    if (!displayEntries.empty()) {
-        std::cout << header("DISPLAY") << std::endl;
+    const auto makeDisplayBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("DISPLAY", width) << endl;
+
         for (const auto& d : displayEntries) {
-            printDisplayEntry(d);
+            b << dumpDisplayEntry(d) << endl;
         }
+
+        return b;
+    };
+
+    // Interruption
+    const auto makeInterruptionBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        if (std::holds_alternative<ExecutionBreakpointHit>(executionState)) {
+            b << header("INTERRUPTION", width) << endl;
+            auto hit = std::get<ExecutionBreakpointHit>(executionState).breakpointHit;
+            b << "Triggered breakpoint (" << hit.breakpoint.id << ") at address " << hex(hit.breakpoint.address)
+              << endl;
+        } else if (std::holds_alternative<ExecutionWatchpointHit>(executionState)) {
+            b << header("INTERRUPTION", width) << endl;
+            const auto hit = std::get<ExecutionWatchpointHit>(executionState).watchpointHit;
+            b << "Triggered watchpoint (" << hit.watchpoint.id << ") at address " << hex(hit.address) << endl;
+            if (hit.accessType == WatchpointHit::AccessType::Read) {
+                b << "Read at address " << hex(hit.address) << ": " << hex(hit.newValue) << endl;
+            } else {
+                b << "Write at address " << hex(hit.address) << endl;
+                b << "Old: " << hex(hit.oldValue) << endl;
+                b << "New: " << hex(hit.newValue) << endl;
+            }
+        } else if (std::holds_alternative<ExecutionInterrupted>(executionState)) {
+            b << header("INTERRUPTION", width) << endl;
+            b << "User interruption request" << endl;
+        }
+
+        return b;
+    };
+
+    static constexpr uint32_t COLUMN_1_WIDTH = 40;
+    auto c1 {make_vertical_layout()};
+    c1->addNode(makeGameboyBlock(COLUMN_1_WIDTH));
+    c1->addNode(makeSpaceDivider());
+    c1->addNode(makeCpuBlock(COLUMN_1_WIDTH));
+    c1->addNode(makeSpaceDivider());
+    c1->addNode(makeTimersBlock(COLUMN_1_WIDTH));
+
+    static constexpr uint32_t COLUMN_2_WIDTH = 40;
+    auto c2 {make_vertical_layout()};
+    c2->addNode(makeMmuBlock(COLUMN_2_WIDTH));
+    c2->addNode(makeSpaceDivider());
+    c2->addNode(makeBusBlock(COLUMN_2_WIDTH));
+    c2->addNode(makeSpaceDivider());
+    c2->addNode(makeDmaBlock(COLUMN_2_WIDTH));
+
+    static constexpr uint32_t COLUMN_3_WIDTH = 66;
+    auto c3 {make_vertical_layout()};
+    c3->addNode(makeIoBlock(COLUMN_3_WIDTH));
+
+    static constexpr uint32_t COLUMN_4_WIDTH = 70;
+    auto c4 {make_vertical_layout()};
+    c4->addNode(makePpuBlock(COLUMN_4_WIDTH));
+
+    static constexpr uint32_t FULL_WIDTH = COLUMN_1_WIDTH + COLUMN_2_WIDTH + COLUMN_3_WIDTH + COLUMN_4_WIDTH;
+
+    auto r1 {make_horizontal_layout()};
+    r1->addNode(std::move(c1));
+    r1->addNode(makeHorizontalLineDivider());
+    r1->addNode(std::move(c2));
+    r1->addNode(makeHorizontalLineDivider());
+    r1->addNode(std::move(c3));
+    r1->addNode(makeHorizontalLineDivider());
+    r1->addNode(std::move(c4));
+
+    static constexpr uint32_t CODE_WIDTH = 56;
+    static constexpr uint32_t BREAKPOINTS_WIDTH = 50;
+    static constexpr uint32_t WATCHPOINTS_WIDTH = 30;
+    static constexpr uint32_t DISPLAY_WIDTH = FULL_WIDTH - CODE_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH;
+
+    auto r2 {make_horizontal_layout()};
+    r2->addNode(makeCodeBlock(CODE_WIDTH));
+    r2->addNode(makeHorizontalLineDivider());
+    r2->addNode(makeBreakpointsBlock(BREAKPOINTS_WIDTH));
+    r2->addNode(makeHorizontalLineDivider());
+    r2->addNode(makeWatchpointsBlock(WATCHPOINTS_WIDTH));
+    r2->addNode(makeHorizontalLineDivider());
+    r2->addNode(makeDisplayBlock(DISPLAY_WIDTH));
+
+    auto root {make_vertical_layout()};
+    root->addNode(std::move(r1));
+    root->addNode(makeVerticalLineDivider());
+    root->addNode(std::move(r2));
+    auto interruptionBlock {makeInterruptionBlock(FULL_WIDTH)};
+    if (!interruptionBlock->lines.empty()) {
+        root->addNode(makeInterruptionBlock(FULL_WIDTH));
     }
 
-    // Stop reason
-    if (std::holds_alternative<ExecutionBreakpointHit>(executionState)) {
-        std::cout << header("INTERRUPTION") << std::endl;
-        auto hit = std::get<ExecutionBreakpointHit>(executionState).breakpointHit;
-        std::cout << "Triggered breakpoint [" << hit.breakpoint.id << "] at address " << hex(hit.breakpoint.address)
-                  << std::endl;
-    } else if (std::holds_alternative<ExecutionWatchpointHit>(executionState)) {
-        std::cout << header("INTERRUPTION") << std::endl;
-        auto hit = std::get<ExecutionWatchpointHit>(executionState).watchpointHit;
-        std::cout << "Triggered watchpoint [" << hit.watchpoint.id << "] at address " << hex(hit.address) << std::endl;
-        if (hit.accessType == WatchpointHit::AccessType::Read) {
-            std::cout << "Read at address " << hex(hit.address) << ": " << hex(hit.newValue) << std::endl;
-        } else {
-            std::cout << "Write at address " << hex(hit.address) << std::endl;
-            std::cout << "Old: " << hex(hit.oldValue) << std::endl;
-            std::cout << "New: " << hex(hit.newValue) << std::endl;
-        }
-    } else if (std::holds_alternative<ExecutionInterrupted>(executionState)) {
-        std::cout << header("INTERRUPTION") << std::endl;
-        std::cout << "User interruption requested" << std::endl;
-    }
+    Presenter(std::cout).present(*root);
 }
 
-void DebuggerFrontend::printMemory(uint16_t from, uint32_t n, MemoryOutputFormat fmt,
-                                   std::optional<uint8_t> fmtArg) const {
+std::string DebuggerFrontend::dumpMemory(uint16_t from, uint32_t n, MemoryOutputFormat fmt,
+                                         std::optional<uint8_t> fmtArg) const {
+    std::string s;
+
     if (fmt == MemoryOutputFormat::Hexadecimal) {
         for (uint32_t i = 0; i < n; i++)
-            std::cout << hex(backend.readMemory(from + i)) << " ";
-        std::cout << std::endl;
+            s += hex(backend.readMemory(from + i)) + " ";
     } else if (fmt == MemoryOutputFormat::Binary) {
         for (uint32_t i = 0; i < n; i++)
-            std::cout << bin(backend.readMemory(from + i)) << " ";
-        std::cout << std::endl;
+            s += bin(backend.readMemory(from + i)) + " ";
     } else if (fmt == MemoryOutputFormat::Decimal) {
         for (uint32_t i = 0; i < n; i++)
-            std::cout << +backend.readMemory(from + i) << " ";
-        std::cout << std::endl;
+            s += std::to_string(backend.readMemory(from + i)) + " ";
     } else if (fmt == MemoryOutputFormat::Instruction) {
-        printInstructions(from, n);
+        backend.disassemble(from, n);
+        uint32_t i = 0;
+        for (uint32_t address = from; address <= 0xFFFF && i < n;) {
+            std::optional<DisassembledInstruction> disas = backend.getDisassembledInstruction(address);
+            if (!disas)
+                fatal("Failed to disassemble at address" + std::to_string(address));
+
+            DisassembleEntry d = {.address = static_cast<uint16_t>(address), .disassemble = *disas};
+            s += d.toString() + ((i < n - 1) ? "\n" : "");
+            address += disas->size();
+            i++;
+        }
     } else if (fmt == MemoryOutputFormat::Hexdump) {
         std::vector<uint8_t> data;
         for (uint32_t i = 0; i < n; i++)
             data.push_back(backend.readMemory(from + i));
         uint8_t cols = fmtArg ? *fmtArg : 16;
-        std::string hexdump =
-            Hexdump().setBaseAddress(from).showAddresses(true).showAscii(false).setNumColumns(cols).hexdump(
-                data.data(), data.size());
-        std::cout << hexdump << std::endl;
+        s += Hexdump().setBaseAddress(from).showAddresses(true).showAscii(false).setNumColumns(cols).hexdump(
+            data.data(), data.size());
     }
+    return s;
 }
 
-void DebuggerFrontend::printInstructions(uint16_t from, uint32_t n) const {
-    backend.disassemble(from, n);
-    uint32_t i = 0;
-    for (uint32_t address = from; address <= 0xFFFF && i < n;) {
-        std::optional<DisassembledInstruction> disas = backend.getDisassembledInstruction(address);
-        if (!disas)
-            fatal("Failed to disassemble at address" + std::to_string(address));
-
-        DisassembleEntry d = {.address = static_cast<uint16_t>(address), .disassemble = *disas};
-        std::cout << d.toString() << std::endl;
-        address += disas->size();
-        i++;
-    }
-}
-
-void DebuggerFrontend::printDisplayEntry(const DebuggerFrontend::DisplayEntry& d) const {
+std::string DebuggerFrontend::dumpDisplayEntry(const DebuggerFrontend::DisplayEntry& d) const {
+    std::stringstream ss;
     if (std::holds_alternative<DisplayEntry::Examine>(d.expression)) {
         DisplayEntry::Examine dx = std::get<DisplayEntry::Examine>(d.expression);
-        std::cout << d.id << ": "
-                  << "x/" << d.length << static_cast<char>(d.format)
-                  << (d.formatArg ? std::to_string(*d.formatArg) : "") << " " << hex(dx.address) << std::endl;
-        printMemory(dx.address, d.length, d.format, d.formatArg);
-    }
-}
-
-void DebuggerFrontend::printIO(const uint16_t* addresses, uint32_t length, uint32_t columns) const {
-    uint32_t i;
-    for (i = 0; i < length;) {
-        uint16_t addr = addresses[i];
-        uint8_t value = backend.readMemory(addr);
-        std::cout << io(addr, value);
-        i++;
-        if (i % columns == 0)
-            std::cout << std::endl;
-        else
-            std::cout << "    ";
-    }
-    if (i % columns != 0)
-        std::cout << std::endl;
-}
-
-std::string DebuggerFrontend::disassembleEntry(const DebuggerFrontend::DisassembleEntry& entry) const {
-    uint16_t currentInstructionAddress = gb.cpu.instruction.address;
-    uint8_t currentInstructionMicroop = gb.cpu.instruction.microop.counter;
-
-    uint16_t instrStart = entry.address;
-    uint16_t instrEnd = instrStart + entry.disassemble.size();
-    bool isCurrentInstruction = instrStart <= currentInstructionAddress && currentInstructionAddress < instrEnd;
-    bool isPastInstruction = currentInstructionAddress >= instrEnd;
-
-    std::stringstream ss;
-
-    if (backend.getBreakpoint(entry.address))
-        ss << termcolor::bold << termcolor::red << "• " << termcolor::reset;
-    else
-        ss << "  ";
-
-    if (isCurrentInstruction)
-        ss << termcolor::bold << termcolor::green;
-    else if (isPastInstruction)
-        ss << termcolor::color<DARK_GRAY>;
-
-    ss << hex(entry.address) << " : " << std::left << std::setw(9) << hex(entry.disassemble) << "   " << std::left
-       << std::setw(16) << instruction_mnemonic(entry.disassemble, entry.address);
-
-    if (isCurrentInstruction) {
-        auto [min, max] = instruction_duration(entry.disassemble);
-        if (min) {
-            ss << termcolor::reset << termcolor::color<LIGHT_GRAY> << "   M" << (currentInstructionMicroop + 1) << "/"
-               << +min << (max != min ? (std::string(":") + std::to_string(+max)) : "") << termcolor::reset;
-        }
+        ss << d.id << ": "
+           << "x/" << d.length << static_cast<char>(d.format) << (d.formatArg ? std::to_string(*d.formatArg) : "")
+           << " " << hex(dx.address) << std::endl;
+        ss << dumpMemory(dx.address, d.length, d.format, d.formatArg);
     }
     return ss.str();
 }
