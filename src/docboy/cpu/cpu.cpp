@@ -1,5 +1,6 @@
 #include "cpu.h"
 #include "docboy/interrupts/interrupts.h"
+#include "docboy/mmu/mmu.h"
 #include "docboy/serial/port.h"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
@@ -10,9 +11,9 @@ static constexpr uint8_t STATE_INSTRUCTION_FLAG_NORMAL = 0;
 static constexpr uint8_t STATE_INSTRUCTION_FLAG_CB = 1;
 static constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
 
-Cpu::Cpu(InterruptsIO& interrupts, MmuView mmu) :
+Cpu::Cpu(InterruptsIO& interrupts, MmuSocket<MmuDevice::Cpu> mmu) :
     interrupts(interrupts),
-    mmu(mmu),
+    mmu(mmu.attach(&busData)),
     // clang-format off
     instructions {
         /* 00 */ { &Cpu::NOP_m0 },
@@ -589,7 +590,7 @@ void Cpu::tick() {
     // Eventually fetch a new instruction
     if (fetcher.fetching) {
         fetcher.fetching = false;
-        instruction.microop.selector = &fetcher.instructions[instr][0];
+        instruction.microop.selector = &fetcher.instructions[busData][0];
     }
 
     const MicroOperation microop = *instruction.microop.selector;
@@ -664,12 +665,13 @@ void Cpu::saveState(Parcel& parcel) const {
     parcel.writeUInt8(instruction.microop.counter);
     IF_DEBUGGER(parcel.writeUInt16(instruction.address));
 
+    parcel.writeUInt8(busData);
     parcel.writeBool(b);
     parcel.writeUInt8(u);
     parcel.writeUInt8(u2);
-    parcel.writeUInt16(uu);
     parcel.writeUInt8(lsb);
     parcel.writeUInt8(msb);
+    parcel.writeUInt16(uu);
     parcel.writeUInt16(addr);
 
     IF_DEBUGGER(parcel.writeUInt64(cycles));
@@ -717,12 +719,13 @@ void Cpu::loadState(Parcel& parcel) {
     instruction.microop.counter = parcel.readUInt8();
     IF_DEBUGGER(instruction.address = parcel.readUInt16());
 
+    busData = parcel.readUInt8();
     b = parcel.readBool();
     u = parcel.readUInt8();
     u2 = parcel.readUInt8();
-    uu = parcel.readUInt16();
     lsb = parcel.readUInt8();
     msb = parcel.readUInt8();
+    uu = parcel.readUInt16();
     addr = parcel.readUInt16();
 
     IF_DEBUGGER(cycles = parcel.readUInt64());
@@ -840,7 +843,7 @@ inline void Cpu::fetch() {
     instruction.microop.counter = 0;
     fetcher.fetching = true;
     fetcher.instructions = instructions;
-    mmu.requestRead(PC++, instr);
+    mmu.requestRead(PC++);
 }
 
 inline void Cpu::fetchCB() {
@@ -848,7 +851,7 @@ inline void Cpu::fetchCB() {
     check(instruction.microop.counter == 1);
     fetcher.fetching = true;
     fetcher.instructions = instructionsCB;
-    mmu.requestRead(PC++, instr);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register8 r>
@@ -1089,17 +1092,18 @@ void Cpu::EI_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::LD_rr_uu_m0() {
-    mmu.requestRead(PC++, lsb);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::LD_rr_uu_m1() {
-    mmu.requestRead(PC++, msb);
+    lsb = busData;
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::LD_rr_uu_m2() {
-    writeRegister16<rr>(concat(msb, lsb));
+    writeRegister16<rr>(concat(busData, lsb));
     fetch();
 }
 
@@ -1107,12 +1111,12 @@ void Cpu::LD_rr_uu_m2() {
 
 template <Cpu::Register16 rr>
 void Cpu::LD_arr_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::LD_arr_u_m1() {
-    mmu.requestWrite(readRegister16<rr>(), u);
+    mmu.requestWrite(readRegister16<rr>(), busData);
 }
 
 template <Cpu::Register16 rr>
@@ -1149,12 +1153,12 @@ void Cpu::LD_arri_r_m1() {
 
 template <Cpu::Register8 r>
 void Cpu::LD_r_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register8 r>
 void Cpu::LD_r_u_m1() {
-    writeRegister8<r>(u);
+    writeRegister8<r>(busData);
     fetch();
 }
 
@@ -1162,17 +1166,18 @@ void Cpu::LD_r_u_m1() {
 
 template <Cpu::Register16 rr>
 void Cpu::LD_ann_rr_m0() {
-    mmu.requestRead(PC++, lsb);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::LD_ann_rr_m1() {
-    mmu.requestRead(PC++, msb);
+    lsb = busData;
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::LD_ann_rr_m2() {
-    addr = concat(msb, lsb);
+    addr = concat(busData, lsb);
     uu = readRegister16<rr>();
     mmu.requestWrite(addr, get_byte<0>(uu));
 }
@@ -1191,12 +1196,12 @@ void Cpu::LD_ann_rr_m4() {
 
 template <Cpu::Register8 r, Cpu::Register16 rr>
 void Cpu::LD_r_arr_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register8 r, Cpu::Register16 rr>
 void Cpu::LD_r_arr_m1() {
-    writeRegister8<r>(u);
+    writeRegister8<r>(busData);
     fetch();
 }
 
@@ -1204,12 +1209,12 @@ void Cpu::LD_r_arr_m1() {
 
 template <Cpu::Register8 r, Cpu::Register16 rr, int8_t inc>
 void Cpu::LD_r_arri_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register8 r, Cpu::Register16 rr, int8_t inc>
 void Cpu::LD_r_arri_m1() {
-    writeRegister8<r>(u);
+    writeRegister8<r>(busData);
     writeRegister16<rr>(readRegister16<rr>() + inc);
     fetch();
 }
@@ -1226,12 +1231,12 @@ void Cpu::LD_r_r_m0() {
 
 template <Cpu::Register8 r>
 void Cpu::LDH_an_r_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register8 r>
 void Cpu::LDH_an_r_m1() {
-    mmu.requestWrite(concat(0xFF, u), readRegister8<r>());
+    mmu.requestWrite(concat(0xFF, busData), readRegister8<r>());
 }
 
 template <Cpu::Register8 r>
@@ -1243,17 +1248,17 @@ void Cpu::LDH_an_r_m2() {
 
 template <Cpu::Register8 r>
 void Cpu::LDH_r_an_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register8 r>
 void Cpu::LDH_r_an_m1() {
-    mmu.requestRead(concat(0xFF, u), u);
+    mmu.requestRead(concat(0xFF, busData));
 }
 
 template <Cpu::Register8 r>
 void Cpu::LDH_r_an_m2() {
-    writeRegister8<r>(u);
+    writeRegister8<r>(busData);
     fetch();
 }
 
@@ -1273,12 +1278,12 @@ void Cpu::LDH_ar_r_m1() {
 
 template <Cpu::Register8 r1, Cpu::Register8 r2>
 void Cpu::LDH_r_ar_m0() {
-    mmu.requestRead(concat(0xFF, readRegister8<r2>()), u);
+    mmu.requestRead(concat(0xFF, readRegister8<r2>()));
 }
 
 template <Cpu::Register8 r1, Cpu::Register8 r2>
 void Cpu::LDH_r_ar_m1() {
-    writeRegister8<r1>(u);
+    writeRegister8<r1>(busData);
     fetch();
 }
 
@@ -1286,17 +1291,18 @@ void Cpu::LDH_r_ar_m1() {
 
 template <Cpu::Register8 r>
 void Cpu::LD_ann_r_m0() {
-    mmu.requestRead(PC++, lsb);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register8 r>
 void Cpu::LD_ann_r_m1() {
-    mmu.requestRead(PC++, msb);
+    lsb = busData;
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register8 r>
 void Cpu::LD_ann_r_m2() {
-    mmu.requestWrite(concat(msb, lsb), readRegister8<r>());
+    mmu.requestWrite(concat(busData, lsb), readRegister8<r>());
 }
 
 template <Cpu::Register8 r>
@@ -1308,22 +1314,23 @@ void Cpu::LD_ann_r_m3() {
 
 template <Cpu::Register8 r>
 void Cpu::LD_r_ann_m0() {
-    mmu.requestRead(PC++, lsb);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register8 r>
 void Cpu::LD_r_ann_m1() {
-    mmu.requestRead(PC++, msb);
+    lsb = busData;
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register8 r>
 void Cpu::LD_r_ann_m2() {
-    mmu.requestRead(concat(msb, lsb), u);
+    mmu.requestRead(concat(busData, lsb));
 }
 
 template <Cpu::Register8 r>
 void Cpu::LD_r_ann_m3() {
-    writeRegister8<r>(u);
+    writeRegister8<r>(busData);
     fetch();
 }
 
@@ -1344,13 +1351,13 @@ void Cpu::LD_rr_rr_m1() {
 
 template <Cpu::Register16 rr1, Cpu::Register16 rr2>
 void Cpu::LD_rr_rrs_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register16 rr1, Cpu::Register16 rr2>
 void Cpu::LD_rr_rrs_m1() {
     uu = readRegister16<rr2>();
-    auto [result, h, c] = sum_carry<3, 7>(uu, to_signed(u));
+    auto [result, h, c] = sum_carry<3, 7>(uu, to_signed(busData));
     writeRegister16<rr1>(result);
     resetFlag<(Flag::Z)>();
     resetFlag<(Flag::N)>();
@@ -1398,12 +1405,12 @@ void Cpu::INC_rr_m1() {
 template <Cpu::Register16 rr>
 void Cpu::INC_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::INC_arr_m1() {
-    auto [result, h] = sum_carry<3>(u, 1);
+    auto [result, h] = sum_carry<3>(busData, 1);
     mmu.requestWrite(addr, result);
     setFlag<Flag::Z>(result == 0);
     resetFlag<(Flag::N)>();
@@ -1448,12 +1455,12 @@ void Cpu::DEC_rr_m1() {
 template <Cpu::Register16 rr>
 void Cpu::DEC_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::DEC_arr_m1() {
-    auto [result, h] = sub_borrow<3>(u, 1);
+    auto [result, h] = sub_borrow<3>(busData, 1);
     mmu.requestWrite(addr, result);
     setFlag<Flag::Z>(result == 0);
     setFlag<(Flag::N)>();
@@ -1482,12 +1489,12 @@ void Cpu::ADD_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::ADD_arr_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
 void Cpu::ADD_arr_m1() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), busData);
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     resetFlag<(Flag::N)>();
@@ -1499,11 +1506,11 @@ void Cpu::ADD_arr_m1() {
 // C6 | ADD A,d8
 
 void Cpu::ADD_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::ADD_u_m1() {
-    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sum_carry<3, 7>(readRegister8<Register8::A>(), busData);
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     resetFlag<(Flag::N)>();
@@ -1531,13 +1538,13 @@ void Cpu::ADC_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::ADC_arr_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
 void Cpu::ADC_arr_m1() {
     // TODO: is this ok?
-    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), u);
+    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), busData);
     auto [result, h, c] = sum_carry<3, 7>(tmp, testFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
@@ -1550,11 +1557,11 @@ void Cpu::ADC_arr_m1() {
 // CE | ADC A,d8
 
 void Cpu::ADC_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::ADC_u_m1() {
-    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), u);
+    auto [tmp, h0, c0] = sum_carry<3, 7>(readRegister8<Register8::A>(), busData);
     auto [result, h, c] = sum_carry<3, 7>(tmp, testFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
@@ -1584,13 +1591,13 @@ void Cpu::ADD_rr_rr_m1() {
 
 template <Cpu::Register16 rr>
 void Cpu::ADD_rr_s_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::ADD_rr_s_m1() {
     // TODO: is it ok to carry bit 3 and 7?
-    auto [result, h, c] = sum_carry<3, 7>(readRegister16<rr>(), to_signed(u));
+    auto [result, h, c] = sum_carry<3, 7>(readRegister16<rr>(), to_signed(busData));
     writeRegister16<rr>(result);
     resetFlag<(Flag::Z)>();
     resetFlag<(Flag::N)>();
@@ -1625,12 +1632,12 @@ void Cpu::SUB_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::SUB_arr_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
 void Cpu::SUB_arr_m1() {
-    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), busData);
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     setFlag<(Flag::N)>();
@@ -1642,11 +1649,11 @@ void Cpu::SUB_arr_m1() {
 // D6 | SUB A,d8
 
 void Cpu::SUB_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::SUB_u_m1() {
-    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), busData);
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     setFlag<(Flag::N)>();
@@ -1674,13 +1681,13 @@ void Cpu::SBC_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::SBC_arr_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
 void Cpu::SBC_arr_m1() {
     // TODO: dont like this - C very much...
-    auto [tmp, h0, c0] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
+    auto [tmp, h0, c0] = sub_borrow<3, 7>(readRegister8<Register8::A>(), busData);
     auto [result, h, c] = sub_borrow<3, 7>(tmp, +testFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
@@ -1693,11 +1700,11 @@ void Cpu::SBC_arr_m1() {
 // D6 | SBC A,d8
 
 void Cpu::SBC_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::SBC_u_m1() {
-    auto [tmp, h0, c0] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
+    auto [tmp, h0, c0] = sub_borrow<3, 7>(readRegister8<Register8::A>(), busData);
     auto [result, h, c] = sub_borrow<3, 7>(tmp, +testFlag<Flag::C>());
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
@@ -1724,12 +1731,12 @@ void Cpu::AND_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::AND_arr_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
 void Cpu::AND_arr_m1() {
-    uint8_t result = readRegister8<Register8::A>() & u;
+    uint8_t result = readRegister8<Register8::A>() & busData;
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     resetFlag<(Flag::N)>();
@@ -1741,11 +1748,11 @@ void Cpu::AND_arr_m1() {
 // E6 | AND d8
 
 void Cpu::AND_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::AND_u_m1() {
-    uint8_t result = readRegister8<Register8::A>() & u;
+    uint8_t result = readRegister8<Register8::A>() & busData;
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     resetFlag<(Flag::N)>();
@@ -1771,12 +1778,12 @@ void Cpu::OR_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::OR_arr_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
 void Cpu::OR_arr_m1() {
-    uint8_t result = readRegister8<Register8::A>() | u;
+    uint8_t result = readRegister8<Register8::A>() | busData;
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     resetFlag<(Flag::N)>();
@@ -1788,11 +1795,11 @@ void Cpu::OR_arr_m1() {
 // F6 | OR d8
 
 void Cpu::OR_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::OR_u_m1() {
-    uint8_t result = readRegister8<Register8::A>() | u;
+    uint8_t result = readRegister8<Register8::A>() | busData;
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     resetFlag<(Flag::N)>();
@@ -1816,12 +1823,12 @@ void Cpu::XOR_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::XOR_arr_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
 void Cpu::XOR_arr_m1() {
-    uint8_t result = readRegister8<Register8::A>() ^ u;
+    uint8_t result = readRegister8<Register8::A>() ^ busData;
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     resetFlag<(Flag::N)>();
@@ -1833,11 +1840,11 @@ void Cpu::XOR_arr_m1() {
 // EE | XOR d8
 
 void Cpu::XOR_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::XOR_u_m1() {
-    uint8_t result = readRegister8<Register8::A>() ^ u;
+    uint8_t result = readRegister8<Register8::A>() ^ busData;
     writeRegister8<Register8::A>(result);
     setFlag<Flag::Z>(result == 0);
     resetFlag<(Flag::N)>();
@@ -1858,12 +1865,12 @@ void Cpu::CP_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::CP_arr_m0() {
-    mmu.requestRead(readRegister16<rr>(), u);
+    mmu.requestRead(readRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
 void Cpu::CP_arr_m1() {
-    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), busData);
     setFlag<Flag::Z>(result == 0);
     setFlag<(Flag::N)>();
     setFlag<Flag::H>(h);
@@ -1874,11 +1881,11 @@ void Cpu::CP_arr_m1() {
 // FE | CP d8
 
 void Cpu::CP_u_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::CP_u_m1() {
-    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), u);
+    auto [result, h, c] = sub_borrow<3, 7>(readRegister8<Register8::A>(), busData);
     setFlag<Flag::Z>(result == 0);
     setFlag<(Flag::N)>();
     setFlag<Flag::H>(h);
@@ -2000,11 +2007,11 @@ void Cpu::RRA_m0() {
 // e.g. 18 | JR r8
 
 void Cpu::JR_s_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::JR_s_m1() {
-    PC = (int16_t)PC + to_signed(u);
+    PC = (int16_t)PC + to_signed(busData);
 }
 
 void Cpu::JR_s_m2() {
@@ -2016,13 +2023,13 @@ void Cpu::JR_s_m2() {
 
 template <Cpu::Flag f, bool y>
 void Cpu::JR_c_s_m0() {
-    mmu.requestRead(PC++, u);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::JR_c_s_m1() {
     if (checkFlag<f, y>()) {
-        PC = PC + to_signed(u);
+        PC = PC + to_signed(busData);
     } else {
         fetch();
     }
@@ -2036,15 +2043,16 @@ void Cpu::JR_c_s_m2() {
 // e.g. C3 | JP a16
 
 void Cpu::JP_uu_m0() {
-    mmu.requestRead(PC++, lsb);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::JP_uu_m1() {
-    mmu.requestRead(PC++, msb);
+    lsb = busData;
+    mmu.requestRead(PC++);
 }
 
 void Cpu::JP_uu_m2() {
-    PC = concat(msb, lsb);
+    PC = concat(busData, lsb);
 }
 
 void Cpu::JP_uu_m3() {
@@ -2064,18 +2072,19 @@ void Cpu::JP_rr_m0() {
 
 template <Cpu::Flag f, bool y>
 void Cpu::JP_c_uu_m0() {
-    mmu.requestRead(PC++, lsb);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::JP_c_uu_m1() {
-    mmu.requestRead(PC++, msb);
+    lsb = busData;
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::JP_c_uu_m2() {
     if (checkFlag<f, y>()) {
-        PC = concat(msb, lsb);
+        PC = concat(busData, lsb);
     } else {
         fetch();
     }
@@ -2089,14 +2098,16 @@ void Cpu::JP_c_uu_m3() {
 // CD | CALL a16
 
 void Cpu::CALL_uu_m0() {
-    mmu.requestRead(PC++, lsb);
+    mmu.requestRead(PC++);
 }
 
 void Cpu::CALL_uu_m1() {
-    mmu.requestRead(PC++, msb);
+    lsb = busData;
+    mmu.requestRead(PC++);
 }
 
 void Cpu::CALL_uu_m2() {
+    msb = busData;
     // internal delay
 }
 
@@ -2117,18 +2128,22 @@ void Cpu::CALL_uu_m5() {
 
 template <Cpu::Flag f, bool y>
 void Cpu::CALL_c_uu_m0() {
-    mmu.requestRead(PC++, lsb);
+    mmu.requestRead(PC++);
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::CALL_c_uu_m1() {
-    mmu.requestRead(PC++, msb);
+    lsb = busData;
+    mmu.requestRead(PC++);
 }
 template <Cpu::Flag f, bool y>
 void Cpu::CALL_c_uu_m2() {
     if (!checkFlag<f, y>()) {
         fetch();
-    } // else: internal delay
+    } else {
+        // else: internal delay
+        msb = busData;
+    }
 }
 
 template <Cpu::Flag f, bool y>
@@ -2174,15 +2189,16 @@ void Cpu::RST_m3() {
 // C9 | RET
 
 void Cpu::RET_uu_m0() {
-    mmu.requestRead(SP++, lsb);
+    mmu.requestRead(SP++);
 }
 
 void Cpu::RET_uu_m1() {
-    mmu.requestRead(SP++, msb);
+    lsb = busData;
+    mmu.requestRead(SP++);
 }
 
 void Cpu::RET_uu_m2() {
-    PC = concat(msb, lsb);
+    PC = concat(busData, lsb);
 }
 
 void Cpu::RET_uu_m3() {
@@ -2192,15 +2208,16 @@ void Cpu::RET_uu_m3() {
 // D9 | RETI
 
 void Cpu::RETI_uu_m0() {
-    mmu.requestRead(SP++, lsb);
+    mmu.requestRead(SP++);
 }
 
 void Cpu::RETI_uu_m1() {
-    mmu.requestRead(SP++, msb);
+    lsb = busData;
+    mmu.requestRead(SP++);
 }
 
 void Cpu::RETI_uu_m2() {
-    PC = concat(msb, lsb);
+    PC = concat(busData, lsb);
     IME = ImeState::Enabled;
 }
 
@@ -2218,7 +2235,7 @@ template <Cpu::Flag f, bool y>
 void Cpu::RET_c_uu_m1() {
     // TODO: really bad but don't know why this lasts 2 m cycle if false
     if (checkFlag<f, y>()) {
-        mmu.requestRead(SP++, lsb);
+        mmu.requestRead(SP++);
     } else {
         fetch();
     }
@@ -2226,12 +2243,13 @@ void Cpu::RET_c_uu_m1() {
 
 template <Cpu::Flag f, bool y>
 void Cpu::RET_c_uu_m2() {
-    mmu.requestRead(SP++, msb);
+    lsb = busData;
+    mmu.requestRead(SP++);
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::RET_c_uu_m3() {
-    PC = concat(msb, lsb);
+    PC = concat(busData, lsb);
 }
 
 template <Cpu::Flag f, bool y>
@@ -2265,17 +2283,18 @@ void Cpu::PUSH_rr_m3() {
 
 template <Cpu::Register16 rr>
 void Cpu::POP_rr_m0() {
-    mmu.requestRead(SP++, lsb);
+    mmu.requestRead(SP++);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::POP_rr_m1() {
-    mmu.requestRead(SP++, msb);
+    lsb = busData;
+    mmu.requestRead(SP++);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::POP_rr_m2() {
-    writeRegister16<rr>(concat(msb, lsb));
+    writeRegister16<rr>(concat(busData, lsb));
     fetch();
 }
 
@@ -2283,7 +2302,7 @@ void Cpu::CB_m0() {
     fetchCB();
 }
 
-// e.g. e.g. CB 00 | RLC B
+// e.g. CB 00 | RLC B
 
 template <Cpu::Register8 r>
 void Cpu::RLC_r_m0() {
@@ -2298,18 +2317,18 @@ void Cpu::RLC_r_m0() {
     fetch();
 }
 
-// e.g. e.g. CB 06 | RLC (HL)
+// e.g. CB 06 | RLC (HL)
 
 template <Cpu::Register16 rr>
 void Cpu::RLC_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::RLC_arr_m1() {
-    bool b7 = get_bit<7>(u);
-    u = (u << 1) | b7;
+    bool b7 = get_bit<7>(busData);
+    u = (busData << 1) | b7;
     mmu.requestWrite(addr, u);
     setFlag<Flag::Z>(u == 0);
     resetFlag<(Flag::N)>();
@@ -2322,7 +2341,7 @@ void Cpu::RLC_arr_m2() {
     fetch();
 }
 
-// e.g. e.g. CB 08 | RRC B
+// e.g. CB 08 | RRC B
 
 template <Cpu::Register8 r>
 void Cpu::RRC_r_m0() {
@@ -2337,18 +2356,18 @@ void Cpu::RRC_r_m0() {
     fetch();
 }
 
-// e.g. e.g. CB 0E | RRC (HL)
+// e.g. CB 0E | RRC (HL)
 
 template <Cpu::Register16 rr>
 void Cpu::RRC_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::RRC_arr_m1() {
-    bool b0 = get_bit<0>(u);
-    u = (u >> 1) | (b0 << 7);
+    bool b0 = get_bit<0>(busData);
+    u = (busData >> 1) | (b0 << 7);
     mmu.requestWrite(addr, u);
     setFlag<Flag::Z>(u == 0);
     resetFlag<(Flag::N)>();
@@ -2361,7 +2380,7 @@ void Cpu::RRC_arr_m2() {
     fetch();
 }
 
-// e.g. e.g. CB 10 | RL B
+// e.g. CB 10 | RL B
 
 template <Cpu::Register8 r>
 void Cpu::RL_r_m0() {
@@ -2376,18 +2395,18 @@ void Cpu::RL_r_m0() {
     fetch();
 }
 
-// e.g. e.g. CB 16 | RL (HL)
+// e.g. CB 16 | RL (HL)
 
 template <Cpu::Register16 rr>
 void Cpu::RL_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::RL_arr_m1() {
-    bool b7 = get_bit<7>(u);
-    u = (u << 1) | testFlag<Flag::C>();
+    bool b7 = get_bit<7>(busData);
+    u = (busData << 1) | testFlag<Flag::C>();
     mmu.requestWrite(addr, u);
     setFlag<Flag::Z>(u == 0);
     resetFlag<(Flag::N)>();
@@ -2400,7 +2419,7 @@ void Cpu::RL_arr_m2() {
     fetch();
 }
 
-// e.g. e.g. CB 18 | RR B
+// e.g. CB 18 | RR B
 
 template <Cpu::Register8 r>
 void Cpu::RR_r_m0() {
@@ -2415,18 +2434,18 @@ void Cpu::RR_r_m0() {
     fetch();
 }
 
-// e.g. e.g. CB 1E | RR (HL)
+// e.g. CB 1E | RR (HL)
 
 template <Cpu::Register16 rr>
 void Cpu::RR_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::RR_arr_m1() {
-    bool b0 = get_bit<0>(u);
-    u = (u >> 1) | (testFlag<Flag::C>() << 7);
+    bool b0 = get_bit<0>(busData);
+    u = (busData >> 1) | (testFlag<Flag::C>() << 7);
     mmu.requestWrite(addr, u);
     setFlag<Flag::Z>(u == 0);
     resetFlag<(Flag::N)>();
@@ -2459,13 +2478,13 @@ void Cpu::SRA_r_m0() {
 template <Cpu::Register16 rr>
 void Cpu::SRA_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::SRA_arr_m1() {
-    bool b0 = get_bit<0>(u);
-    u = (u >> 1) | (u & bit<7>);
+    bool b0 = get_bit<0>(busData);
+    u = (busData >> 1) | (busData & bit<7>);
     mmu.requestWrite(addr, u);
     setFlag<Flag::Z>(u == 0);
     resetFlag<(Flag::N)>();
@@ -2498,13 +2517,13 @@ void Cpu::SRL_r_m0() {
 template <Cpu::Register16 rr>
 void Cpu::SRL_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::SRL_arr_m1() {
-    bool b0 = get_bit<0>(u);
-    u = (u >> 1);
+    bool b0 = get_bit<0>(busData);
+    u = (busData >> 1);
     mmu.requestWrite(addr, u);
     setFlag<Flag::Z>(u == 0);
     resetFlag<(Flag::N)>();
@@ -2537,13 +2556,13 @@ void Cpu::SLA_r_m0() {
 template <Cpu::Register16 rr>
 void Cpu::SLA_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::SLA_arr_m1() {
-    bool b7 = get_bit<7>(u);
-    u = u << 1;
+    bool b7 = get_bit<7>(busData);
+    u = busData << 1;
     mmu.requestWrite(addr, u);
     setFlag<Flag::Z>(u == 0);
     resetFlag<(Flag::N)>();
@@ -2575,12 +2594,12 @@ void Cpu::SWAP_r_m0() {
 template <Cpu::Register16 rr>
 void Cpu::SWAP_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::SWAP_arr_m1() {
-    u = ((u & 0x0F) << 4) | ((u & 0xF0) >> 4);
+    u = ((busData & 0x0F) << 4) | ((busData & 0xF0) >> 4);
     mmu.requestWrite(addr, u);
     setFlag<Flag::Z>(u == 0);
     resetFlag<(Flag::N)>();
@@ -2609,12 +2628,12 @@ void Cpu::BIT_r_m0() {
 template <uint8_t n, Cpu::Register16 rr>
 void Cpu::BIT_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <uint8_t n, Cpu::Register16 rr>
 void Cpu::BIT_arr_m1() {
-    b = test_bit<n>(u);
+    b = test_bit<n>(busData);
     setFlag<Flag::Z>(b == 0);
     resetFlag<(Flag::N)>();
     setFlag<(Flag::H)>();
@@ -2636,13 +2655,13 @@ void Cpu::RES_r_m0() {
 template <uint8_t n, Cpu::Register16 rr>
 void Cpu::RES_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <uint8_t n, Cpu::Register16 rr>
 void Cpu::RES_arr_m1() {
-    reset_bit<n>(u);
-    mmu.requestWrite(addr, u);
+    reset_bit<n>(busData);
+    mmu.requestWrite(addr, busData);
 }
 
 template <uint8_t n, Cpu::Register16 rr>
@@ -2665,13 +2684,13 @@ void Cpu::SET_r_m0() {
 template <uint8_t n, Cpu::Register16 rr>
 void Cpu::SET_arr_m0() {
     addr = readRegister16<rr>();
-    mmu.requestRead(addr, u);
+    mmu.requestRead(addr);
 }
 
 template <uint8_t n, Cpu::Register16 rr>
 void Cpu::SET_arr_m1() {
-    set_bit<n>(u);
-    mmu.requestWrite(addr, u);
+    set_bit<n>(busData);
+    mmu.requestWrite(addr, busData);
 }
 
 template <uint8_t n, Cpu::Register16 rr>

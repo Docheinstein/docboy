@@ -5,6 +5,37 @@
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
 #include "mmu.h"
+#include "utils/arrays.h"
+#include "utils/parcel.h"
+
+template <MmuDevice::Type d>
+MmuView<d>::MmuView(MmuIO& mmu, uint8_t* latch) :
+    mmu(mmu),
+    latch(latch) {
+}
+
+template <MmuDevice::Type d>
+void MmuView<d>::requestRead(uint16_t address) {
+    mmu.requestRead<d>(address);
+}
+
+template <MmuDevice::Type d>
+void MmuView<d>::requestWrite(uint16_t address, uint8_t value) {
+    *latch = value;
+    mmu.requestWrite<d>(address);
+}
+
+template <MmuDevice::Type d>
+MmuSocket<d>::MmuSocket(MmuIO& mmu, uint8_t*& latchRef) :
+    mmu(mmu),
+    latchRef(latchRef) {
+}
+
+template <MmuDevice::Type d>
+MmuView<d> MmuSocket<d>::attach(uint8_t* latch) {
+    latchRef = latch;
+    return MmuView<d>(mmu, latch);
+}
 
 inline MmuIO::MmuIO(IF_BOOTROM(BootRom& bootRom COMMA) ExtBus& extBus, CpuBus& cpuBus, VramBus& vramBus,
                     OamBus& oamBus) :
@@ -79,57 +110,75 @@ inline MmuIO::MmuIO(IF_BOOTROM(BootRom& bootRom COMMA) ExtBus& extBus, CpuBus& c
     busAccessors[Specs::MemoryLayout::IE] = {&cpuBus, &CpuBus::read, &CpuBus::write};
 }
 
+template <MmuDevice::Type d>
+MmuSocket<d> MmuIO::socket() {
+    return MmuSocket<d>(*this, lanes[d].data);
+}
+
+inline void MmuIO::saveState(Parcel& parcel) const {
+    const auto saveLane = [&parcel](const BusLane& lane) {
+        parcel.writeUInt8((uint8_t)lane.state);
+        parcel.writeUInt16(lane.address);
+        parcel.writeUInt8(*lane.data);
+    };
+
+    for (uint32_t i = 0; i < array_size(lanes); i++)
+        saveLane(lanes[i]);
+}
+
+inline void MmuIO::loadState(Parcel& parcel) {
+    const auto loadLane = [&parcel](BusLane& lane) {
+        lane.state = (BusLane::State)parcel.readUInt8();
+        lane.address = parcel.readUInt16();
+        *lane.data = parcel.readUInt8();
+    };
+
+    for (uint32_t i = 0; i < array_size(lanes); i++)
+        loadLane(lanes[i]);
+}
+
 template <>
-inline void MmuIO::requestRead<MmuIO::Device::Cpu>(uint16_t address, uint8_t& dest) {
-    BusRequest& cpuReq = requests[Device::Cpu];
-    const BusRequest& dmaReq = requests[Device::Dma];
+inline void MmuIO::requestRead<MmuIO::Device::Cpu>(uint16_t address) {
+    BusLane& cpuLane = lanes[Device::Cpu];
+    const BusLane& dmaLane = lanes[Device::Dma];
 
-    check(cpuReq.state == BusRequest::State::None);
-    cpuReq.state = BusRequest::State::Read;
-    cpuReq.read.destination = &dest;
+    check(cpuLane.state == BusLane::State::None);
+    cpuLane.state = BusLane::State::Read;
 
-    if (dmaReq.state == BusRequest::State::Read && busAt(address) == busAt(dmaReq.address)) {
-        cpuReq.address = dmaReq.address;
+    if (dmaLane.state == BusLane::State::Read && busAt(address) == busAt(dmaLane.address)) {
+        cpuLane.address = dmaLane.address;
     } else {
-        cpuReq.address = address;
+        cpuLane.address = address;
     }
 }
 
 template <>
-inline void MmuIO::requestRead<MmuIO::Device::Dma>(uint16_t address, uint8_t& dest) {
-    BusRequest& req = requests[Device::Dma];
-    check(req.state == BusRequest::State::None);
-    req.state = BusRequest::State::Read;
-    req.address = address;
-    req.read.destination = &dest;
+inline void MmuIO::requestRead<MmuIO::Device::Dma>(uint16_t address) {
+    BusLane& dmaLane = lanes[Device::Dma];
+    check(dmaLane.state == BusLane::State::None);
+    dmaLane.state = BusLane::State::Read;
+    dmaLane.address = address;
 }
 
 template <>
-inline void MmuIO::requestWrite<MmuIO::Device::Cpu>(uint16_t address, uint8_t value) {
-    const BusRequest& dmaReq = requests[Device::Dma];
+inline void MmuIO::requestWrite<MmuIO::Device::Cpu>(uint16_t address) {
+    const BusLane& dmaLane = lanes[Device::Dma];
 
-    if (dmaReq.state == BusRequest::State::Read && busAt(address) == busAt(dmaReq.address))
+    if (dmaLane.state == BusLane::State::Read && busAt(address) == busAt(dmaLane.address))
         return;
 
-    BusRequest& req = requests[Device::Cpu];
-    check(req.state == BusRequest::State::None);
-    req.state = BusRequest::State::Write;
-    req.address = address;
-    req.write.value = value;
+    BusLane& cpuLane = lanes[Device::Cpu];
+    check(cpuLane.state == BusLane::State::None);
+    cpuLane.state = BusLane::State::Write;
+    cpuLane.address = address;
 }
 
 template <>
-inline void MmuIO::requestWrite<MmuIO::Device::Dma>(uint16_t address, uint8_t value) {
-    BusRequest& req = requests[Device::Dma];
-    check(req.state == BusRequest::State::None);
-    req.state = BusRequest::State::Write;
-    req.address = address;
-    req.write.value = value;
-}
-
-inline bool MmuIO::hasRequests() const {
-    return requests[Device::Cpu].state == BusRequest::State::None &&
-           requests[Device::Dma].state == BusRequest::State::None;
+inline void MmuIO::requestWrite<MmuIO::Device::Dma>(uint16_t address) {
+    BusLane& dmaLane = lanes[Device::Dma];
+    check(dmaLane.state == BusLane::State::None);
+    dmaLane.state = BusLane::State::Write;
+    dmaLane.address = address;
 }
 
 inline IBus* MmuIO::busAt(uint16_t address) const {
@@ -141,15 +190,15 @@ inline Mmu::Mmu(IF_BOOTROM(BootRom& bootRom COMMA) ExtBus& extBus, CpuBus& cpuBu
 }
 
 inline void Mmu::tick_t0() {
-    handleWriteRequest(requests[Device::Cpu]);
-    handleReadRequest(requests[Device::Dma]);
+    handleWriteRequest(lanes[Device::Cpu]);
+    handleReadRequest(lanes[Device::Dma]);
 }
 
 inline void Mmu::tick_t1() {
 }
 
 inline void Mmu::tick_t2() {
-    handleReadRequest(requests[Device::Cpu]);
+    handleReadRequest(lanes[Device::Cpu]);
 }
 
 inline void Mmu::tick_t3() {
@@ -165,33 +214,18 @@ inline void Mmu::lockBootRom() {
 }
 #endif
 
-inline void Mmu::handleReadRequest(Mmu::BusRequest& request) {
-    if (request.state == BusRequest::State::Read) {
-        const BusAccess& busAccess = busAccessors[request.address];
-        (*request.read.destination) = (*busAccess.read)(busAccess.bus, request.address);
-        request.state = BusRequest::State::None;
+inline void Mmu::handleReadRequest(Mmu::BusLane& lane) {
+    if (lane.state == BusLane::State::Read) {
+        const BusAccess& busAccess = busAccessors[lane.address];
+        (*lane.data) = (*busAccess.read)(busAccess.bus, lane.address);
+        lane.state = BusLane::State::None;
     }
 }
 
-inline void Mmu::handleWriteRequest(Mmu::BusRequest& request) {
-    if (request.state == BusRequest::State::Write) {
-        const BusAccess& busAccess = busAccessors[request.address];
-        (*busAccess.write)(busAccess.bus, request.address, request.write.value);
-        request.state = BusRequest::State::None;
+inline void Mmu::handleWriteRequest(Mmu::BusLane& lane) {
+    if (lane.state == BusLane::State::Write) {
+        const BusAccess& busAccess = busAccessors[lane.address];
+        (*busAccess.write)(busAccess.bus, lane.address, *lane.data);
+        lane.state = BusLane::State::None;
     }
-}
-
-template <MmuDevice::Type d>
-MmuProxy<d>::MmuProxy(MmuIO& mmu) :
-    mmu(mmu) {
-}
-
-template <MmuDevice::Type d>
-void MmuProxy<d>::requestWrite(uint16_t address, uint8_t value) {
-    mmu.requestWrite<d>(address, value);
-}
-
-template <MmuDevice::Type d>
-void MmuProxy<d>::requestRead(uint16_t address, uint8_t& dest) {
-    mmu.requestRead<d>(address, dest);
 }

@@ -13,10 +13,9 @@ class Dma {
     DEBUGGABLE_CLASS()
 
 public:
-    using MmuView = MmuProxy<MmuDevice::Dma>;
-    using OamBusView = AcquirableBusProxy<OamBus, AcquirableBusDevice::Dma>;
+    using OamBusView = AcquirableBusView<OamBus, AcquirableBusDevice::Dma>;
 
-    explicit Dma(MmuView mmu, OamBusView oamBus);
+    explicit Dma(MmuSocket<MmuDevice::Dma> mmu, OamBusView oamBus);
 
     void startTransfer(uint16_t address);
 
@@ -34,7 +33,7 @@ private:
         static constexpr Type None = 0;
     };
 
-    MmuView mmu;
+    MmuView<MmuDevice::Dma> mmu;
     OamBusView oam;
 
     struct {
@@ -46,7 +45,7 @@ private:
     uint16_t source {};
     uint8_t cursor {};
 
-    uint8_t data {};
+    uint8_t busData {};
 };
 
 #endif // DMA_H

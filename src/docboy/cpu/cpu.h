@@ -7,17 +7,13 @@
 #include <cstdint>
 
 class InterruptsIO;
-class SerialPort;
-class BootIO;
 class Parcel;
 
 class Cpu {
     DEBUGGABLE_CLASS()
 
 public:
-    using MmuView = MmuProxy<MmuDevice::Cpu>;
-
-    Cpu(InterruptsIO& interrupts, MmuView mmu);
+    Cpu(InterruptsIO& interrupts, MmuSocket<MmuDevice::Cpu> mmu);
 
     void tick();
 
@@ -600,7 +596,7 @@ private:
     void SET_arr_m2();
 
     InterruptsIO& interrupts;
-    MmuView mmu;
+    MmuView<MmuDevice::Cpu> mmu;
 
     Instruction instructions[256];
     Instruction instructionsCB[256];
@@ -637,16 +633,17 @@ private:
         IF_DEBUGGER(uint16_t address {});
     } instruction {};
 
+    uint8_t busData {};
+
     // scratchpad
     struct {
         bool b {};
         uint8_t u {};
         uint8_t u2 {};
-        uint16_t uu {};
         uint8_t lsb {};
         uint8_t msb {};
+        uint16_t uu {};
         uint16_t addr {};
-        uint8_t instr {};
     };
 
     IF_DEBUGGER(uint64_t cycles {});

@@ -22,8 +22,8 @@ class Ppu {
     DEBUGGABLE_CLASS()
 
 public:
-    using VramBusView = AcquirableBusProxy<VramBus, AcquirableBusDevice::Ppu>;
-    using OamBusView = AcquirableBusProxy<OamBus, AcquirableBusDevice::Ppu>;
+    using VramBusView = AcquirableBusView<VramBus, AcquirableBusDevice::Ppu>;
+    using OamBusView = AcquirableBusView<OamBus, AcquirableBusDevice::Ppu>;
 
     Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBusView vramBus, OamBusView oamBus);
 

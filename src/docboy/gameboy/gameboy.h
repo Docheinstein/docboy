@@ -59,9 +59,9 @@ public:
     CpuBus cpuBus {IF_BOOTROM(*bootRom COMMA) hram, joypad, serialPort, timers, interrupts, sound, video, boot};
     VramBus vramBus {vram};
     OamBus oamBus {oam};
-    Dma dma {Dma::MmuView {mmu}, Dma::OamBusView {oamBus}};
     Mmu mmu {IF_BOOTROM(*bootRom COMMA) extBus, cpuBus, vramBus, oamBus};
-    Cpu cpu {interrupts, Cpu::MmuView {mmu}};
+    Dma dma {mmu.socket<MmuDevice::Dma>(), Dma::OamBusView {oamBus}};
+    Cpu cpu {interrupts, mmu.socket<MmuDevice::Cpu>()};
     Lcd lcd {};
     Ppu ppu {lcd, video, interrupts, Ppu::VramBusView {vramBus}, Ppu::OamBusView {oamBus}};
 };

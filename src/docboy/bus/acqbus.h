@@ -48,9 +48,9 @@ private:
 };
 
 template <typename Bus, AcquirableBusDevice::Type d>
-class AcquirableBusProxy {
+class AcquirableBusView {
 public:
-    explicit AcquirableBusProxy(Bus& bus) :
+    explicit AcquirableBusView(Bus& bus) :
         bus(bus) {
     }
 

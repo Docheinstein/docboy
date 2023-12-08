@@ -14,8 +14,8 @@
  * DMA |                   Transfer first byte
  */
 
-Dma::Dma(MmuView mmu, OamBusView oamBus) :
-    mmu(mmu),
+Dma::Dma(MmuSocket<MmuDevice::Dma> mmu, OamBusView oamBus) :
+    mmu(mmu.attach(&busData)),
     oam(oamBus) {
 }
 
@@ -40,7 +40,7 @@ void Dma::tickRead() {
 
     if (transferring) {
         if (cursor < Specs::MemoryLayout::OAM::SIZE) {
-            mmu.requestRead(source + cursor, data);
+            mmu.requestRead(source + cursor);
         } else {
             transferring = false;
             oam.release();
@@ -50,7 +50,7 @@ void Dma::tickRead() {
 
 void Dma::tickWrite() {
     if (transferring) {
-        oam[cursor] = data;
+        oam[cursor] = busData;
         cursor++;
     }
 }
@@ -61,7 +61,7 @@ void Dma::saveState(Parcel& parcel) const {
     parcel.writeBool(transferring);
     parcel.writeUInt16(source);
     parcel.writeUInt8(cursor);
-    parcel.writeUInt8(data);
+    parcel.writeUInt8(busData);
 }
 
 void Dma::loadState(Parcel& parcel) {
@@ -70,5 +70,5 @@ void Dma::loadState(Parcel& parcel) {
     transferring = parcel.readBool();
     source = parcel.readUInt16();
     cursor = parcel.readUInt8();
-    data = parcel.readUInt8();
+    busData = parcel.readUInt8();
 }
