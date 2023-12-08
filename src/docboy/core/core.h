@@ -38,7 +38,7 @@ public:
 
     // Save/Load State
     void saveState(void* data);
-    void loadState(const void* data) const;
+    void loadState(const void* data);
     [[nodiscard]] uint32_t getStateSaveSize() const;
 
     IF_DEBUGGER(void attachDebugger(DebuggerBackend& debugger));
@@ -58,7 +58,10 @@ private:
     void tick_t3();
 
     Parcel parcelizeState() const;
-    void unparcelizeState(Parcel&& parcel) const;
+    void unparcelizeState(Parcel&& parcel);
+
+    void saveState(Parcel& parcel) const;
+    void loadState(Parcel& parcel);
 };
 
 #endif // CORE_H

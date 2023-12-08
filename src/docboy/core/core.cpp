@@ -135,19 +135,17 @@ uint32_t Core::getStateSaveSize() const {
 }
 
 void Core::saveState(void* data) {
-    // TODO: find way to serialize mmu requests (containing pointers) instead of cheating?
-    while (gb.mmu.hasRequests()) {
-        cycle();
-    }
     memcpy(data, parcelizeState().getData(), getStateSaveSize());
 }
 
-void Core::loadState(const void* data) const {
+void Core::loadState(const void* data) {
     unparcelizeState(Parcel {data, getStateSaveSize()});
 }
 
 Parcel Core::parcelizeState() const {
     Parcel p;
+
+    p.writeUInt64(ticks);
 
     gb.cpu.saveState(p);
     gb.ppu.saveState(p);
@@ -167,13 +165,16 @@ Parcel Core::parcelizeState() const {
     gb.video.saveState(p);
     gb.lcd.saveState(p);
     gb.dma.saveState(p);
+    gb.mmu.saveState(p);
 
     STATE_SAVE_SIZE = p.getSize();
 
     return p;
 }
 
-void Core::unparcelizeState(Parcel&& p) const {
+void Core::unparcelizeState(Parcel&& p) {
+    ticks = p.readUInt64();
+
     gb.cpu.loadState(p);
     gb.ppu.loadState(p);
     gb.cartridgeSlot.cartridge->loadState(p);
@@ -192,7 +193,16 @@ void Core::unparcelizeState(Parcel&& p) const {
     gb.video.loadState(p);
     gb.lcd.loadState(p);
     gb.dma.loadState(p);
+    gb.mmu.loadState(p);
     check(p.getRemainingSize() == 0);
+}
+
+void Core::saveState(Parcel& parcel) const {
+    parcel.writeUInt64(ticks);
+}
+
+void Core::loadState(Parcel& parcel) {
+    ticks = parcel.readUInt64();
 }
 
 #ifdef ENABLE_DEBUGGER
