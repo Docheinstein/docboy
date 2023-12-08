@@ -142,7 +142,7 @@ public:
 
         bool hasEverChecked {false};
 
-        for (tick = 0; tick <= maxTicks_; tick += 4) {
+        for (tick = core.ticks; tick <= maxTicks_; tick += 4) {
             core.cycle();
             if (impl->shouldCheckExpectation()) {
                 hasEverChecked = true;
@@ -154,7 +154,7 @@ public:
 
         if (hasEverChecked) {
             impl->onExpectationFailed();
-        } else {
+        } else if (impl->shouldCheckExpectation()) {
             UNSCOPED_INFO("Expectation never checked!");
         }
 
@@ -798,7 +798,7 @@ TEST_CASE("parcel", "[parcel]") {
 }
 
 TEST_CASE("state", "[state]") {
-    SECTION("State") {
+    SECTION("State Round 1") {
         std::vector<uint8_t> data1;
 
         {
@@ -818,6 +818,36 @@ TEST_CASE("state", "[state]") {
         }
 
         REQUIRE(memcmp(data1.data(), data2.data(), data1.size()) == 0);
+    }
+    SECTION("State Round 2") {
+        std::vector<uint8_t> data1;
+        std::vector<uint8_t> data2;
+        std::vector<uint8_t> data3;
+
+        {
+            Runner runner;
+            runner.rom("tests/roms/blargg/cpu_instrs.gb");
+
+            runner.maxTicks(1'000'000).run();
+            data1.resize(runner.core.getStateSaveSize());
+            data2.resize(runner.core.getStateSaveSize());
+            data3.resize(runner.core.getStateSaveSize());
+            runner.core.saveState(data1.data());
+
+            runner.maxTicks(2'000'000).run();
+            runner.core.saveState(data2.data());
+        }
+
+        {
+            Runner runner;
+            runner.rom("tests/roms/blargg/cpu_instrs.gb");
+
+            runner.core.loadState(data1.data());
+            runner.maxTicks(2'000'000).run();
+            runner.core.saveState(data3.data());
+        }
+
+        REQUIRE(memcmp(data2.data(), data3.data(), data2.size()) == 0);
     }
 }
 
