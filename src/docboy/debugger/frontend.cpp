@@ -942,7 +942,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     };
 
     const auto header = [title](const char* c, uint8_t width) {
-        return title(bold(cyan(c)), width);
+        return title(bold(lightcyan(c)), width);
     };
 
     const auto subheader = [title](const char* c, uint8_t width) {
@@ -978,6 +978,16 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("T-Cycle") << "  :  " << core.ticks << endl;
         b << yellow("M-Cycle") << "  :  " << core.ticks / 4 << endl;
 
+        b << yellow("Phase") << "    :  ";
+        for (uint8_t t = 0; t < 4; t++) {
+            Text phase {"T" + std::to_string(t)};
+            b << (core.ticks % 4 == t ? phase : darkgray(std::move(phase)));
+            if (t < 3) {
+                b << " ";
+            }
+        }
+        b << endl;
+
         return b;
     };
 
@@ -1008,11 +1018,16 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         const auto flag = [](bool value) {
             return (value ? value : darkgray(value));
         };
+
         b << subheader("flags", width) << endl;
         b << red("Z") << " : " << flag(get_bit<Specs::Bits::Flags::Z>(gb.cpu.AF)) << "    " << red("N") << " : "
           << flag(get_bit<Specs::Bits::Flags::N>(gb.cpu.AF)) << "    " << red("H") << " : "
           << flag(get_bit<Specs::Bits::Flags::H>(gb.cpu.AF)) << "    " << red("C") << " : "
           << flag(get_bit<Specs::Bits::Flags::C>(gb.cpu.AF)) << endl;
+
+        // Bus data
+        b << subheader("bus data", width) << endl;
+        b << yellow("Data") << "    :  " << gb.cpu.busData << endl;
 
         // Interrupts
         const bool IME = gb.cpu.IME == Cpu::ImeState::Enabled;
@@ -1288,16 +1303,16 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         b << header("MMU", width) << endl;
 
-        const auto busRequest = [this](const Mmu::BusRequest& req) {
+        const auto busLane = [this](const Mmu::BusLane& lane) {
             Text t {};
-            if (req.state == Mmu::BusRequest::State::Read) {
+            if (lane.state == Mmu::BusLane::State::Read) {
                 t += yellow("Request") + "  :  " + green("Read") + "\n";
-                t += yellow("Address") + "  :  " + hex(req.address) + "\n";
-                t += yellow("Value") + "    :  " + hex(backend.readMemory(req.address));
-            } else if (req.state == Mmu::BusRequest::State::Write) {
+                t += yellow("Address") + "  :  " + hex(lane.address) + "\n";
+                t += yellow("Value") + "    :  " + hex(backend.readMemory(lane.address));
+            } else if (lane.state == Mmu::BusLane::State::Write) {
                 t += yellow("Request") + "  :  " + red("Write") + "\n";
-                t += yellow("Address") + "  :  " + hex(req.address) + "\n";
-                t += yellow("Value") + "    :  " + hex(req.write.value);
+                t += yellow("Address") + "  :  " + hex(lane.address) + "\n";
+                t += yellow("Value") + "    :  " + hex(*lane.data);
             } else {
                 t += yellow("Request") + "  :  " + darkgray("None");
             }
@@ -1305,10 +1320,10 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         };
 
         b << subheader("cpu request", width) << endl;
-        b << busRequest(gb.mmu.requests[MmuDevice::Cpu]) << endl;
+        b << busLane(gb.mmu.lanes[MmuDevice::Cpu]) << endl;
 
         b << subheader("dma request", width) << endl;
-        b << busRequest(gb.mmu.requests[MmuDevice::Dma]) << endl;
+        b << busLane(gb.mmu.lanes[MmuDevice::Dma]) << endl;
 
         return b;
     };
@@ -1376,6 +1391,10 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         } else {
             b << yellow("DMA Transfer") << " : " << darkgray("None") << endl;
         }
+
+        // Bus data
+        b << subheader("bus data", width) << endl;
+        b << yellow("Data") << "         :  " << gb.dma.busData << endl;
 
         return b;
     };
@@ -1528,16 +1547,21 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     bool isPastInstruction = currentInstructionAddress >= instrEnd;
 
                     Text t {};
-
                     if (backend.getBreakpoint(entry.address))
                         t += red(Text {Token {"•", 1}});
                     else
                         t += " ";
-
                     t += " ";
 
-                    t += hex(entry.address) + "  :  " + rpad(hex(entry.disassemble), 9) + "   " +
-                         rpad(instruction_mnemonic(entry.disassemble, entry.address), 23);
+                    Text instr {hex(entry.address) + "  :  " + rpad(hex(entry.disassemble), 9) + "   " +
+                                rpad(instruction_mnemonic(entry.disassemble, entry.address), 23)};
+
+                    if (isCurrentInstruction)
+                        t += green(std::move(instr));
+                    else if (isPastInstruction)
+                        t += darkgray(std::move(instr));
+                    else
+                        t += instr;
 
                     if (isCurrentInstruction) {
                         auto [min, max] = instruction_duration(entry.disassemble);
@@ -1547,10 +1571,6 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                                                    (max != min ? (std::string(":") + std::to_string(+max)) : ""));
                     }
 
-                    if (isCurrentInstruction)
-                        return green(std::move(t));
-                    if (isPastInstruction)
-                        return darkgray(std::move(t));
                     return t;
                 };
 
@@ -1676,8 +1696,6 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     c1->addNode(makeGameboyBlock(COLUMN_1_WIDTH));
     c1->addNode(makeSpaceDivider());
     c1->addNode(makeCpuBlock(COLUMN_1_WIDTH));
-    c1->addNode(makeSpaceDivider());
-    c1->addNode(makeTimersBlock(COLUMN_1_WIDTH));
 
     static constexpr uint32_t COLUMN_2_WIDTH = 40;
     auto c2 {make_vertical_layout()};
@@ -1686,6 +1704,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     c2->addNode(makeBusBlock(COLUMN_2_WIDTH));
     c2->addNode(makeSpaceDivider());
     c2->addNode(makeDmaBlock(COLUMN_2_WIDTH));
+    c2->addNode(makeSpaceDivider());
+    c2->addNode(makeTimersBlock(COLUMN_2_WIDTH));
 
     static constexpr uint32_t COLUMN_3_WIDTH = 66;
     auto c3 {make_vertical_layout()};
