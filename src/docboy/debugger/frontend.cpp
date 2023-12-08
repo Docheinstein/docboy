@@ -538,7 +538,7 @@ DebuggerFrontend::handleCommand<FrontendDisassembleRangeCommand>(const FrontendD
 // Examine
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendExamineCommand>(const FrontendExamineCommand& cmd) {
-    std::cout << dumpMemory(cmd.address, cmd.length, cmd.format, cmd.formatArg);
+    std::cout << dumpMemory(cmd.address, cmd.length, cmd.format, cmd.formatArg) << std::endl;
     return std::nullopt;
 }
 
@@ -1027,7 +1027,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         // Bus data
         b << subheader("bus data", width) << endl;
-        b << yellow("Data") << "    :  " << gb.cpu.busData << endl;
+        b << yellow("Data") << "    :  " << bin(gb.cpu.busData) << " (" << hex(gb.cpu.busData) << ")" << endl;
 
         // Interrupts
         const bool IME = gb.cpu.IME == Cpu::ImeState::Enabled;
@@ -1308,11 +1308,12 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             if (lane.state == Mmu::BusLane::State::Read) {
                 t += yellow("Request") + "  :  " + green("Read") + "\n";
                 t += yellow("Address") + "  :  " + hex(lane.address) + "\n";
-                t += yellow("Value") + "    :  " + hex(backend.readMemory(lane.address));
+                t += yellow("Data") + "     :  " + bin(backend.readMemory(lane.address)) + " (" +
+                     hex(backend.readMemory(lane.address)) + ")";
             } else if (lane.state == Mmu::BusLane::State::Write) {
                 t += yellow("Request") + "  :  " + red("Write") + "\n";
                 t += yellow("Address") + "  :  " + hex(lane.address) + "\n";
-                t += yellow("Value") + "    :  " + hex(*lane.data);
+                t += yellow("Data") + "     :  " + bin(*lane.data) + " (" + hex(*lane.data) + ")";
             } else {
                 t += yellow("Request") + "  :  " + darkgray("None");
             }
@@ -1394,7 +1395,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         // Bus data
         b << subheader("bus data", width) << endl;
-        b << yellow("Data") << "         :  " << gb.dma.busData << endl;
+        b << yellow("Data") << "         :  " << bin(gb.cpu.busData) << " (" << hex(gb.cpu.busData) << ")" << endl;
 
         return b;
     };
