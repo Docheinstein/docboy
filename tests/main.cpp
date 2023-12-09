@@ -973,7 +973,7 @@ TEST_CASE("emulation", "[emulation][.]") {
     SECTION("cpu") {
         RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png", DURATION_VERY_LONG},
                       F {"blargg/instr_timing.gb", "blargg/instr_timing.png"},
-                      //                      F {"blargg/halt_bug.gb", "blargg/halt_bug.png"},
+                      F {"blargg/halt_bug.gb", "blargg/halt_bug.png"},
                       F {"blargg/mem_timing.gb", "blargg/mem_timing.png"},
                       F {"blargg/mem_timing-2.gb", "blargg/mem_timing-2.png"},
                       S {"mooneye/instr/daa.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},

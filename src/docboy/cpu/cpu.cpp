@@ -1068,7 +1068,7 @@ void Cpu::HALT_m0() {
     check(interrupt.state != InterruptState::Serving);
 
     if (getPendingInterrupts()) {
-        haltBug = IME == ImeState::Enabled;
+        haltBug = IME != ImeState::Enabled;
     } else {
         halted = true;
     }
