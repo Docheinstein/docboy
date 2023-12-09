@@ -76,6 +76,7 @@ private:
 
     void vBlank();
     void vBlankLastLine();
+    void vBlankLastLine454();
 
     // Fetcher states
     void bgwinPrefetcherGetTile0();

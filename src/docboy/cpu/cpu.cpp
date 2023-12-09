@@ -751,7 +751,7 @@ void Cpu::checkInterrupt() {
      * VBlank    |  1  |     |     |     |
      * Stat      |  1  |  2  |  2  |  2  |
      * Timer     |     |     |     |  3  |
-     * Serial    |     |     |     |  2  |
+     * Serial    |     |     |     |  3  |
      * Joypad    |     |     |     |     |
      */
 
@@ -769,12 +769,12 @@ void Cpu::checkInterrupt() {
         /*  5 : Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
         /*  6 : Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /*  7 : Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /*  8 : Serial */ {{1, 1, U, 2}, {U, U, U, 2}},
-        /*  9 : Serial + VBlank */ {{1, 1, U, 2}, {1, U, U, 2}},
+        /*  8 : Serial */ {{1, 1, U, 2}, {U, U, U, 3}},
+        /*  9 : Serial + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
         /* 10 : Serial + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /* 11 : Serial + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /* 12 : Serial + Timer */ {{1, 1, U, 2}, {U, U, U, 2}},
-        /* 13 : Serial + Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 2}},
+        /* 12 : Serial + Timer */ {{1, 1, U, 2}, {U, U, U, 3}},
+        /* 13 : Serial + Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
         /* 14 : Serial + Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /* 15 : Serial + Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /* 16 : Joypad */ {{J, J, J, J}, {J, J, J, J}},

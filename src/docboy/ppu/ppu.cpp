@@ -110,9 +110,6 @@ void Ppu::turnOff() {
     // STAT's mode goes to HBLANK, even if the PPU will start with OAM scan
     updateMode<HBLANK>();
 
-    // STAT's LYC_EQ_LY is always reset (regardless the value of LYC)
-    resetLycEqLy();
-
     vram.release();
     oam.release();
 }
@@ -562,6 +559,15 @@ void Ppu::vBlank() {
 
 void Ppu::vBlankLastLine() {
     check(video.LY == 0);
+    if (++dots == 454) {
+        // It seems that STAT's mode is reset the last cycle (to investigate)
+        updateMode<0>();
+        tickSelector = &Ppu::vBlankLastLine454;
+    }
+}
+
+void Ppu::vBlankLastLine454() {
+    check(video.LY == 0);
     if (++dots == 456) {
         dots = 0;
         // end of vblank
@@ -956,7 +962,8 @@ void Ppu::saveState(Parcel& parcel) const {
                                                     &Ppu::hBlankLastLine,
                                                     &Ppu::hBlankLastLine454,
                                                     &Ppu::vBlank,
-                                                    &Ppu::vBlankLastLine};
+                                                    &Ppu::vBlankLastLine,
+                                                    &Ppu::vBlankLastLine454};
 
     static constexpr TickSelector FETCHER_TICK_SELECTORS[] {
         &Ppu::bgwinPrefetcherGetTile0,

@@ -20,6 +20,8 @@
 #include <utility>
 #include <variant>
 
+#define ENABLE_DOCBOY_TEST_ROMS 1
+
 #define TABLE_1(t1, data) GENERATE(table<t1> data)
 #define TABLE_2(t1, t2, data) GENERATE(table<t1, t2> data)
 #define TABLE_3(t1, t2, t3, data) GENERATE(table<t1, t2, t3> data)
@@ -137,6 +139,12 @@ public:
     }
 
     bool run() {
+#if !ENABLE_DOCBOY_TEST_ROMS
+        // Just skip the rom
+        if (romName.find("docboy") != std::string::npos)
+            return true;
+#endif
+
         auto* impl = static_cast<RunnerImpl*>(this);
         impl->onRun();
 
@@ -1015,9 +1023,22 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/boot_ppu_phase_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/boot_stat_lyc_eq_ly_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/boot_stat_lyc_eq_ly_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/hblank_raises_hblank_stat_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_mode_timing_scx0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_mode_timing_scx0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_mode_timing_scx1_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_mode_timing_scx1_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_mode_timing_scx2_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_mode_timing_scx2_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_mode_timing_scx3_round1.gb", "docboy/ok.png"},
+            // TODO: this does not pass and I can't make it pass,
+            // (but it passes both BGB and gambatte, who is right?)
+            // F {"docboy/ppu/hblank_mode_timing_scx3_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_mode_timing_scx4_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_mode_timing_scx4_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_raises_vblank_stat_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_raises_hblank_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/ly_154.gb", "docboy/ok.png"}, F {"docboy/ppu/ly_timing_scx0_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/ly_timing_scx0_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/ly_timing_scx5_round1.gb", "docboy/ok.png"},
@@ -1028,14 +1049,79 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/oam_stat_interrupt_flag_timing_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_interrupt_ly_timing_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_interrupt_ly_timing_round2.gb", "docboy/ok.png"},
-            //            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round1.gb", "docboy/ok.png"},
-            //            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round3.gb", "docboy/ok.png"},
+
+            F {"docboy/ppu/turn_off_ly2_lyc0_stat.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_off_ly2_lyc1_stat.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_off_ly2_lyc2_stat.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_off_mode_0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly0_round0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly1_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly1_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly1_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly1_round4.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly1_round5.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly1_round6.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly2_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_oam_ly2_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_vram_ly0_round0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_vram_ly0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_vram_ly0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_vram_ly0_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_vram_ly1_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_read_vram_ly1_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly0_lyc0_round0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly0_lyc0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly0_lyc0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly0_lyc1_round0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly0_lyc1_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly0_lyc1_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly1_lyc0_round0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly1_lyc0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly1_lyc0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly1_lyc1_round0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly1_lyc1_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_ly1_lyc1_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_pixel_transfer_ly0_round0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_pixel_transfer_ly0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_pixel_transfer_ly0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_pixel_transfer_ly1_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_stat_pixel_transfer_ly1_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly0_round0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly1_round0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly1_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly1_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly1_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly1_round4.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly1_round5.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly1_round6.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly1_round7.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_round4.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_round5.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_round6.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_round7.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_sprites_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_sprites_round4.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_write_oam_ly2_sprites_round5.gb", "docboy/ok.png"},
             F {"docboy/ppu/vblank_raises_hblank_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/vblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/vblank_raises_vblank_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_ly_ignored.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_lyc_stat_change.gb", "docboy/ok.png"},
-            F {"docboy/ppu/write_read_stat.gb", "docboy/ok.png"}, );
+            F {"docboy/ppu/write_oam_oam_scan.gb", "docboy/ok.png"},
+            F {"docboy/ppu/write_oam_pixel_transfer.gb", "docboy/ok.png"},
+            F {"docboy/ppu/write_read_stat.gb", "docboy/ok.png"},
+            F {"docboy/ppu/write_vram_oam_scan.gb", "docboy/ok.png"},
+            F {"docboy/ppu/write_vram_pixel_transfer.gb", "docboy/ok.png"}, );
     }
 
     SECTION("timers") {

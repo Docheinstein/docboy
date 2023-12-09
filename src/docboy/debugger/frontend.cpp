@@ -1138,7 +1138,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 return "Horizontal Blank";
             if (gb.ppu.tickSelector == &Ppu::vBlank)
                 return "Vertical Blank";
-            if (gb.ppu.tickSelector == &Ppu::vBlankLastLine)
+            if (gb.ppu.tickSelector == &Ppu::vBlankLastLine || gb.ppu.tickSelector == &Ppu::vBlankLastLine454)
                 return "Vertical Blank (Last Line)";
 
             checkNoEntry();
