@@ -1110,7 +1110,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("On") << "               :  " << gb.ppu.on << endl;
         b << yellow("Cycle") << "            :  " << gb.ppu.cycles << endl;
         b << yellow("Mode") << "             :  " << [this]() -> Text {
-            if (gb.ppu.tickSelector == &Ppu::oamScan0 || gb.ppu.tickSelector == &Ppu::oamScan1)
+            if (gb.ppu.tickSelector == &Ppu::oamScanEven || gb.ppu.tickSelector == &Ppu::oamScanOdd ||
+                gb.ppu.tickSelector == &Ppu::oamScanDone)
                 return "Oam Scan";
             if (gb.ppu.tickSelector == &Ppu::pixelTransferDummy0<false> ||
                 gb.ppu.tickSelector == &Ppu::pixelTransferDummy0<true> ||
@@ -1128,7 +1129,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     blockReason = "empty bg fifo";
 
                 if (!blockReason.empty())
-                    t += yellow("[blocked: ") + blockReason + "]";
+                    t += yellow(" [blocked: " + blockReason + "]");
 
                 return t;
             }
@@ -1523,7 +1524,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
             // Next instructions
             {
-                static constexpr uint8_t CODE_VIEW_NEXT_INSTRUCTION_COUNT = 8;
+                static constexpr uint8_t CODE_VIEW_NEXT_INSTRUCTION_COUNT = 12;
                 uint8_t n = 0;
                 for (int32_t addr = gb.cpu.instruction.address + 1;
                      addr <= 0xFFFF && n < CODE_VIEW_NEXT_INSTRUCTION_COUNT; addr++) {

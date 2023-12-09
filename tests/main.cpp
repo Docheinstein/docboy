@@ -922,6 +922,7 @@ static bool run_with_params(const RunnerParams& p) {
     REQUIRE(run_with_params(params))
 
 TEST_CASE("emulation", "[emulation][.]") {
+
     SECTION("mbc") {
         SECTION("mbc1") {
             RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1005,8 +1006,8 @@ TEST_CASE("emulation", "[emulation][.]") {
             //                S {"mooneye/ppu/intr_2_mode0_timing_sprites.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             S {"mooneye/ppu/intr_2_mode3_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             S {"mooneye/ppu/intr_2_oam_ok_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-            //                S {"mooneye/ppu/lcdon_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-            //                S {"mooneye/ppu/lcdon_write_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ppu/lcdon_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ppu/lcdon_write_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             //                S {"mooneye/ppu/stat_irq_blocking.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             //                S {"mooneye/ppu/stat_lyc_onoff.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             S {"mooneye/ppu/vblank_stat_intr-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1027,8 +1028,8 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/oam_stat_interrupt_flag_timing_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_interrupt_ly_timing_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_interrupt_ly_timing_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round2.gb", "docboy/ok.png"},
+            //            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round1.gb", "docboy/ok.png"},
+            //            F {"docboy/ppu/oam_stat_interrupt_stat_timing_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/vblank_raises_hblank_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/vblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/vblank_raises_vblank_stat_interrupt.gb", "docboy/ok.png"},

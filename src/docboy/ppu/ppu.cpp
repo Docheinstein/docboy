@@ -13,6 +13,8 @@ using namespace Specs::Bits::Video::LCDC;
 using namespace Specs::Bits::Video::STAT;
 using namespace Specs::Bits::OAM::Attributes;
 
+using namespace Specs::Ppu::Modes;
+
 static constexpr uint8_t TILE_WIDTH = 8;
 static constexpr uint8_t TILE_HEIGHT = 8;
 static constexpr uint8_t TILE_DOUBLE_HEIGHT = 16;
@@ -55,14 +57,18 @@ Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBusView vramBus
 }
 
 void Ppu::tick() {
-    const bool enabled = test_bit<LCD_ENABLE>(video.LCDC);
-
-    if (on != enabled) {
-        enabled ? turnOn() : turnOff();
+    if (on) {
+        if (!test_bit<LCD_ENABLE>(video.LCDC)) {
+            turnOff();
+            return;
+        }
+    } else {
+        if (test_bit<LCD_ENABLE>(video.LCDC)) {
+            turnOn();
+        } else {
+            return;
+        }
     }
-
-    if (!on)
-        return;
 
     (this->*(tickSelector))();
 
@@ -72,18 +78,18 @@ void Ppu::tick() {
 }
 
 void Ppu::turnOn() {
-    // TODO: what actually happens here?
-
     check(!on);
+    check(video.LY == 0);
+
     on = true;
 
-    // TODO: apparently needed because after turn on STAT Mode remains HBlank but PPU is in Oam Scan
-    oam.acquire();
+    // OAM bus is not acquired even if the PPU will proceed with OAM scan from here.
+
+    // STAT's LYC_EQ_LY is updated properly (but interrupt is not raised)
+    set_bit<LYC_EQ_LY>(video.STAT, video.LY == video.LYC);
 }
 
 void Ppu::turnOff() {
-    // TODO: what actually happens here?
-
     check(on);
     on = false;
     dots = 0;
@@ -98,9 +104,17 @@ void Ppu::turnOff() {
 
     IF_ASSERTS(oamEntriesCount = 0);
     IF_DEBUGGER(scanlineOamEntries.clear());
-    tickSelector = &Ppu::oamScan0;
 
-    updateStat<Specs::Ppu::Modes::HBLANK>();
+    tickSelector = &Ppu::oamScanEven;
+
+    // STAT's mode goes to HBLANK, even if the PPU will start with OAM scan
+    updateMode<HBLANK>();
+
+    // STAT's LYC_EQ_LY is always reset (regardless the value of LYC)
+    resetLycEqLy();
+
+    vram.release();
+    oam.release();
 }
 
 void Ppu::enterOamScan() {
@@ -116,56 +130,53 @@ void Ppu::enterOamScan() {
 
     oamScan.count = 0;
 
-    tickSelector = &Ppu::oamScan0;
+    tickSelector = &Ppu::oamScanEven;
 
-    updateStat<Specs::Ppu::Modes::OAM_SCAN>();
+    updateMode<OAM_SCAN>();
 
-    // OAM interrupt is raised (outside of this function):
+    // OAM interrupt is not raised here, instead it is raised:
     // * At dot 454   for transition HBLANK -> OAM
     // * At dot 456/0 for transition VBLANK -> OAM
+
+    check(!vram.isAcquired());
+    oam.acquire();
 }
 
-void Ppu::oamScan0() {
-    check(oamScan.count < 10);
+void Ppu::oamScanEven() {
     check(dots % 2 == 0);
-    check(oam.isAcquired());
+    check(oamScan.count < 10);
+    check(oam.isAcquired() || keep_bits<2>(video.STAT) == HBLANK /* oam bus is not acquired after turn on */ ||
+          dots == 76 /* oam bus seems released this cycle */);
 
-    // figure out oam number
+    // Figure out oam number
     oamScan.entry.number = dots / 2;
 
-    // read oam y
+    // Read oam y
     oamScan.entry.y = oam[OAM_ENTRY_BYTES * oamScan.entry.number + Specs::Bytes::OAM::Y];
 
-    tickSelector = &Ppu::oamScan1;
+    tickSelector = &Ppu::oamScanOdd;
 
     ++dots;
 }
 
-void Ppu::oamScan1() {
-    check(oamScan.count < 10);
+void Ppu::oamScanOdd() {
     check(dots % 2 == 1);
-    check(oam.isAcquired());
+    check(oamScan.count < 10);
+    check(oam.isAcquired() || keep_bits<2>(video.STAT) == HBLANK /* oam bus is not acquired after turn on */ ||
+          dots == 77 /* oam bus seems released this cycle */);
 
-#define ADVANCE_TO_OAM_MODE_OR_PIXEL_TRANSFER(oamStatePtr)                                                             \
-    do {                                                                                                               \
-        if (++dots == 80)                                                                                              \
-            enterPixelTransfer();                                                                                      \
-        else                                                                                                           \
-            tickSelector = oamStatePtr;                                                                                \
-    } while (0)
-
-    // read oam entry height
+    // Read oam entry height
     const uint8_t objHeight = TILE_WIDTH << test_bit<OBJ_SIZE>(video.LCDC);
 
-    // check if the sprite is upon this scanline
+    // Check if the sprite is upon this scanline
     const uint8_t LY = video.LY;
     const int32_t objY = oamScan.entry.y - TILE_DOUBLE_HEIGHT;
 
     if (objY <= LY && LY < objY + objHeight) {
-        // read oam entry x
+        // Read oam entry x
         const uint8_t oamEntryX = oam[OAM_ENTRY_BYTES * oamScan.entry.number + Specs::Bytes::OAM::X];
 
-        // push oam entry
+        // Push oam entry
         if (oamEntryX < 168) {
             oamEntries[oamEntryX].emplaceBack(static_cast<uint8_t>(dots / 2),
                                               oamScan.entry.y IF_ASSERTS_OR_DEBUGGER(COMMA oamEntryX));
@@ -174,25 +185,66 @@ void Ppu::oamScan1() {
             IF_ASSERTS(++oamEntriesCount);
         }
 
-        // check if there is room for other oam entries in this scanline
-        // if that's not the case, complete oam scan now
-        if (++oamScan.count == 10) {
-            ADVANCE_TO_OAM_MODE_OR_PIXEL_TRANSFER(&Ppu::oamScanCompleted);
-            return;
-        }
+        ++oamScan.count;
     }
 
-    check(oamScan.count < 10);
+    ++dots;
 
-    ADVANCE_TO_OAM_MODE_OR_PIXEL_TRANSFER(&Ppu::oamScan0);
+    // Start of oddities
+    if (dots == 76) {
+        // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
+        // [mooneye: lcdon_write_timing]
+        if (keep_bits<2>(video.STAT) != HBLANK) {
+            oam.release();
+        }
+    } else if (dots == 78) {
+        if (keep_bits<2>(video.STAT) != HBLANK) {
+            // OAM bus is re-acquired this cycle
+            // [mooneye: lcdon_write_timing]
+            oam.acquire();
 
-#undef ADVANCE_TO_OAM_MODE_OR_PIXEL_TRANSFER
+            // VRAM bus is acquired one cycle before STAT is updated
+            // [mooneye: lcdon_timing]
+            vram.acquire();
+        }
+    }
+    // End of oddities
+
+    if (dots == 80) {
+        enterPixelTransfer();
+    } else {
+        // Check if there is room for other oam entries in this scanline
+        // if that's not the case, complete oam scan now
+        tickSelector = (oamScan.count == 10) ? &Ppu::oamScanDone : &Ppu::oamScanEven;
+    }
 }
 
-void Ppu::oamScanCompleted() {
+void Ppu::oamScanDone() {
     check(oamScan.count == 10);
 
-    if (++dots == 80) {
+    ++dots;
+
+    // Start of oddities
+    if (dots == 76) {
+        // OAM bus seems to be released (writes to OAM works normally) just for this cycle
+        // [mooneye: lcdon_write_timing]
+        if (keep_bits<2>(video.STAT) != HBLANK) {
+            oam.release();
+        }
+    } else if (dots == 78) {
+        if (keep_bits<2>(video.STAT) != HBLANK) {
+            // OAM bus is re-acquired this cycle
+            // [mooneye: lcdon_write_timing]
+            oam.acquire();
+
+            // VRAM bus is acquired one cycle before STAT is updated
+            // [mooneye: lcdon_timing]
+            vram.acquire();
+        }
+    }
+    // End of oddities
+
+    if (dots == 80) {
         enterPixelTransfer();
     }
 }
@@ -230,10 +282,13 @@ void Ppu::enterPixelTransfer() {
         IF_ASSERTS(firstFetchWasBg = true);
     }
 
-    updateStat<Specs::Ppu::Modes::PIXEL_TRANSFER>();
+    updateMode<PIXEL_TRANSFER>();
+
+    vram.acquire();
+    oam.acquire();
 }
 
-template <bool Bg>
+template <bool bg>
 void Ppu::pixelTransferDummy0() {
     check(LX == 0);
     check(oam.isAcquired());
@@ -241,7 +296,7 @@ void Ppu::pixelTransferDummy0() {
 
     if (++dots == 84) {
         bgFifo.fill(DUMMY_TILE);
-        if constexpr (Bg) {
+        if constexpr (bg) {
             if (bgPixelTransfer.SCXmod8)
                 tickSelector = &Ppu::pixelTransferDiscard0;
             else
@@ -424,29 +479,36 @@ void Ppu::enterHBlank() {
         tickSelector = &Ppu::hBlank;
     }
 
-    updateStat<Specs::Ppu::Modes::HBLANK>();
+    updateMode<HBLANK>();
 
-    if (test_bit<HBLANK_INTERRUPT>(video.STAT))
-        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
+    eventuallyRaiseStatInterrupt<bit<HBLANK_INTERRUPT>>();
+
+    vram.release();
+    oam.release();
 }
 
 void Ppu::hBlank() {
     check(LX == 168);
     check(video.LY < 143);
     if (++dots == 454) {
-        // LY is increased at dot 454 and eventually it raises OAM interrupt
-        // (but STAT and LYC_EQ_LY interrupt are updated at dot 456)
+        // LY is increased at dot 454
         ++video.LY;
-        if (test_bit<OAM_INTERRUPT>(video.STAT))
-            interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
+
         tickSelector = &Ppu::hBlank454;
+
+        // LYC_EQ_LY is always reset [mooneye: lcdon_timing]
+        resetLycEqLy();
+
+        eventuallyRaiseStatInterrupt<bit<OAM_INTERRUPT>>();
+
+        oam.acquire();
     }
 }
 
 void Ppu::hBlank454() {
     if (++dots == 456) {
         dots = 0;
-        updateLine(video.LY /* already increased at dot 454 */);
+        updateLycEqLy();
         enterOamScan();
     }
 }
@@ -455,6 +517,7 @@ void Ppu::hBlankLastLine() {
     check(LX == 168);
     check(video.LY == 143);
     if (++dots == 454) {
+        // LY is increased here: at dot 454 (not 456)
         ++video.LY;
         tickSelector = &Ppu::hBlankLastLine454;
     }
@@ -463,7 +526,7 @@ void Ppu::hBlankLastLine() {
 void Ppu::hBlankLastLine454() {
     if (++dots == 456) {
         dots = 0;
-        updateLine(video.LY /* already increased at dot 454 */);
+        updateLycEqLy();
         enterVBlank();
     }
 }
@@ -473,13 +536,15 @@ void Ppu::enterVBlank() {
 
     tickSelector = &Ppu::vBlank;
 
-    updateStat<Specs::Ppu::Modes::VBLANK>();
+    updateMode<VBLANK>();
 
-    if (test_bit<VBLANK_INTERRUPT>(video.STAT) ||
-        test_bit<OAM_INTERRUPT>(video.STAT) /* STAT interrupt is triggered also by OAM mode when entering VBLANK */)
-        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
+    // STAT interrupt is triggered either by VBlank or OAM flag when entering VBLANK */
+    eventuallyRaiseStatInterrupt<bit<VBLANK_INTERRUPT> | bit<OAM_INTERRUPT>>();
 
     interrupts.raiseInterrupt<InterruptsIO::InterruptType::VBlank>();
+
+    check(!vram.isAcquired());
+    check(!oam.isAcquired());
 }
 
 void Ppu::vBlank() {
@@ -487,9 +552,9 @@ void Ppu::vBlank() {
     if (++dots == 456) {
         dots = 0;
         // LY never reaches 154: it is set to 0 instead (which lasts 2 scanlines).
-        const uint8_t nextLY = (video.LY + 1) % 153;
-        updateLine(nextLY);
-        if (nextLY == 0) {
+        video.LY = (video.LY + 1) % 153;
+        updateLycEqLy();
+        if (video.LY == 0) {
             tickSelector = &Ppu::vBlankLastLine;
         }
     }
@@ -510,52 +575,35 @@ void Ppu::enterNewFrame() {
 
     enterOamScan();
 
-    if (test_bit<OAM_INTERRUPT>(video.STAT))
-        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
+    eventuallyRaiseStatInterrupt<bit<OAM_INTERRUPT>>();
 }
 
-template <uint8_t Mode>
-inline void Ppu::updateStat() {
-    check(Mode <= 0b11);
-    //    video.STAT = ((uint8_t)video.STAT & 0b11111100) | Mode;
-
-    if constexpr (Mode == Specs::Ppu::Modes::OAM_SCAN) {
-        check(!vram.isAcquired()); // TODO: can't enable because -> OAM transition of turnOff
-                                   //        vram.release(); // TODO: shouldn't be necessary ^
-        oam.acquire();
-    } else if constexpr (Mode == Specs::Ppu::Modes::PIXEL_TRANSFER) {
-        check(oam.isAcquired());
-        vram.acquire();
-        oam.acquire();
-    } else if constexpr (Mode == Specs::Ppu::Modes::HBLANK) {
-        // check(oam.acquired); // TODO: can't enable because VBLANK -> HBLANK transition of turnOff
-        vram.release();
-        oam.release();
-    } else if constexpr (Mode == Specs::Ppu::Modes::VBLANK) {
-        check(!vram.isAcquired());
-        check(!oam.isAcquired());
-    } else {
-        static_assert(always_false<decltype(Mode)>);
-    }
-
-    video.STAT = ((uint8_t)video.STAT & 0b11111100) | Mode;
+template <uint8_t mode>
+inline void Ppu::updateMode() {
+    check(mode <= 0b11);
+    video.STAT = ((uint8_t)video.STAT & 0b11111100) | mode;
 }
 
-void Ppu::updateLine(uint8_t LY) {
-    check(LY < 154);
+inline void Ppu::resetLycEqLy() {
+    // Reset STAT's LYC=LY Flag
+    reset_bit<LYC_EQ_LY>(video.STAT);
+}
 
-    // write LY
-    video.LY = LY;
+inline void Ppu::updateLycEqLy() {
+    const bool LY_equals_LYC = video.LY == video.LYC;
 
-    const bool LY_equals_LYC = LY == video.LYC;
-
-    // update STAT's LYC=LY Flag
+    // Update STAT's LYC=LY Flag
     set_bit<LYC_EQ_LY>(video.STAT, LY_equals_LYC);
 
-    // eventually raise STAT interrupt
-    if (LY_equals_LYC && test_bit<LYC_EQ_LY_INTERRUPT>(video.STAT)) {
+    if (LY_equals_LYC)
+        // Eventually raise LYC=LY interrupt
+        eventuallyRaiseStatInterrupt<bit<LYC_EQ_LY_INTERRUPT>>();
+}
+
+template <uint8_t flags>
+void Ppu::eventuallyRaiseStatInterrupt() {
+    if ((uint8_t)video.STAT & flags)
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
-    }
 }
 
 inline bool Ppu::isPixelTransferBlocked() const {
@@ -895,9 +943,9 @@ inline void Ppu::restoreInterruptedBgWinFetch() {
 }
 
 void Ppu::saveState(Parcel& parcel) const {
-    static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScan0,
-                                                    &Ppu::oamScan1,
-                                                    &Ppu::oamScanCompleted,
+    static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScanEven,
+                                                    &Ppu::oamScanOdd,
+                                                    &Ppu::oamScanDone,
                                                     &Ppu::pixelTransferDummy0<false>,
                                                     &Ppu::pixelTransferDummy0<true>,
                                                     &Ppu::pixelTransferDiscard0,
@@ -991,9 +1039,9 @@ void Ppu::saveState(Parcel& parcel) const {
 }
 
 void Ppu::loadState(Parcel& parcel) {
-    static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScan0,
-                                                    &Ppu::oamScan1,
-                                                    &Ppu::oamScanCompleted,
+    static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScanEven,
+                                                    &Ppu::oamScanOdd,
+                                                    &Ppu::oamScanDone,
                                                     &Ppu::pixelTransferDummy0<false>,
                                                     &Ppu::pixelTransferDummy0<true>,
                                                     &Ppu::pixelTransferDiscard0,

@@ -482,7 +482,7 @@ void DebuggerBackend::handleCommand<FrameBackCommand, FrameBackCommandState>(con
 template <>
 void DebuggerBackend::handleCommand<ScanlineCommand, ScanlineCommandState>(const ScanlineCommand& cmd,
                                                                            ScanlineCommandState& state) {
-    bool isNewLine = core.gb.ppu.tickSelector == &Ppu::oamScan0 && core.gb.ppu.dots == 0;
+    bool isNewLine = core.gb.ppu.tickSelector == &Ppu::oamScanEven && core.gb.ppu.dots == 0;
     if (isNewLine) {
         if (++state.counter >= cmd.count)
             pullCommand(ExecutionCompleted());

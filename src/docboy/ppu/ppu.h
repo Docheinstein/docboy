@@ -58,18 +58,22 @@ private:
     void turnOff();
 
     // PPU states
-    void oamScan0();
-    void oamScan1();
-    void oamScanCompleted();
-    template <bool Bg>
+
+    void oamScanEven();
+    void oamScanOdd();
+    void oamScanDone();
+
+    template <bool bg>
     void pixelTransferDummy0();
     void pixelTransferDiscard0();
     void pixelTransfer0();
     void pixelTransfer8();
+
     void hBlank();
     void hBlank454();
     void hBlankLastLine();
     void hBlankLastLine454();
+
     void vBlank();
     void vBlankLastLine();
 
@@ -106,10 +110,14 @@ private:
     void enterVBlank();
     void enterNewFrame();
 
-    template <uint8_t Phase>
-    void updateStat();
+    template <uint8_t mode>
+    void updateMode();
 
-    void updateLine(uint8_t LY);
+    void resetLycEqLy();
+    void updateLycEqLy();
+
+    template <uint8_t flags>
+    void eventuallyRaiseStatInterrupt();
 
     [[nodiscard]] bool isPixelTransferBlocked() const;
 
