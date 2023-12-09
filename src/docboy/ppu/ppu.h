@@ -131,7 +131,7 @@ private:
     VramBusView vram;
     OamBusView oam;
 
-    TickSelector tickSelector {IF_BOOTROM_ELSE(&Ppu::oamScan0, &Ppu::vBlankLastLine)};
+    TickSelector tickSelector {IF_BOOTROM_ELSE(&Ppu::oamScanEven, &Ppu::vBlankLastLine)};
     FetcherTickSelector fetcherTickSelector {&Ppu::bgPrefetcherGetTile0};
 
     bool on {};

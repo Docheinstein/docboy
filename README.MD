@@ -175,7 +175,7 @@ Here's the debugger!
 
 ## Screenshots
 
-![DMG boot](images/dmg_boot.png)
+![DMG boot](images/nintendo.png)
 ![Tetris](images/tetris.png)
 ![Alleyway](images/alleyway.png)
 ![Bubble Bobble](images/bubble-bobble.png)
