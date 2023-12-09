@@ -57,6 +57,7 @@ Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBusView vramBus
 }
 
 void Ppu::tick() {
+    // Handle turn on/turn off
     if (on) {
         if (!test_bit<LCD_ENABLE>(video.LCDC)) {
             turnOff();
@@ -70,7 +71,11 @@ void Ppu::tick() {
         }
     }
 
+    // Tick ahead by one dot
     (this->*(tickSelector))();
+
+    // Update the LYC_EQ_LY flag
+    updateLycEqLy();
 
     check(dots < 456);
 
@@ -493,9 +498,6 @@ void Ppu::hBlank() {
 
         tickSelector = &Ppu::hBlank454;
 
-        // LYC_EQ_LY is always reset [mooneye: lcdon_timing]
-        resetLycEqLy();
-
         eventuallyRaiseStatInterrupt<bit<OAM_INTERRUPT>>();
 
         oam.acquire();
@@ -505,7 +507,6 @@ void Ppu::hBlank() {
 void Ppu::hBlank454() {
     if (++dots == 456) {
         dots = 0;
-        updateLycEqLy();
         enterOamScan();
     }
 }
@@ -523,7 +524,6 @@ void Ppu::hBlankLastLine() {
 void Ppu::hBlankLastLine454() {
     if (++dots == 456) {
         dots = 0;
-        updateLycEqLy();
         enterVBlank();
     }
 }
@@ -550,7 +550,6 @@ void Ppu::vBlank() {
         dots = 0;
         // LY never reaches 154: it is set to 0 instead (which lasts 2 scanlines).
         video.LY = (video.LY + 1) % 153;
-        updateLycEqLy();
         if (video.LY == 0) {
             tickSelector = &Ppu::vBlankLastLine;
         }
@@ -590,20 +589,27 @@ inline void Ppu::updateMode() {
     video.STAT = ((uint8_t)video.STAT & 0b11111100) | mode;
 }
 
-inline void Ppu::resetLycEqLy() {
-    // Reset STAT's LYC=LY Flag
-    reset_bit<LYC_EQ_LY>(video.STAT);
-}
-
 inline void Ppu::updateLycEqLy() {
-    const bool LY_equals_LYC = video.LY == video.LYC;
+    if (dots == 454 /* TODO: && keep_bits<2>(video.STAT) == HBLANK ?*/) {
+        // LYC_EQ_LY is always 0 at dot 454 [mooneye: lcdon_timing]
+        reset_bit<LYC_EQ_LY>(video.STAT);
+        return;
+    }
 
-    // Update STAT's LYC=LY Flag
-    set_bit<LYC_EQ_LY>(video.STAT, LY_equals_LYC);
+    // Compare LY with LYC
+    const bool lycEqLy = video.LYC == video.LY;
 
-    if (LY_equals_LYC)
+    // Update STAT's LYC=LY Flag according to the current comparison
+    set_bit<LYC_EQ_LY>(video.STAT, lycEqLy);
+
+    // LYC_EQ_LY interrupt is raised only on raising edge [mooneye: stat_lyc_onoff]
+    if (!lastLycEqLy && lycEqLy) {
         // Eventually raise LYC=LY interrupt
         eventuallyRaiseStatInterrupt<bit<LYC_EQ_LY_INTERRUPT>>();
+    }
+
+    // Cache comparison result
+    lastLycEqLy = lycEqLy;
 }
 
 template <uint8_t flags>
@@ -999,6 +1005,7 @@ void Ppu::saveState(Parcel& parcel) const {
     }
 
     parcel.writeBool(on);
+    parcel.writeBool(lastLycEqLy);
     parcel.writeUInt16(dots);
     parcel.writeUInt8(LX);
 
@@ -1088,6 +1095,7 @@ void Ppu::loadState(Parcel& parcel) {
     fetcherTickSelector = FETCHER_TICK_SELECTORS[fetcherTickSelectorNumber];
 
     on = parcel.readBool();
+    lastLycEqLy = parcel.readBool();
     dots = parcel.readUInt16();
     LX = parcel.readUInt8();
 

@@ -97,7 +97,7 @@ CpuBus::CpuBus(IF_BOOTROM(BootRom& bootRom COMMA) Hram& hram, JoypadIO& joypad, 
     /* FF42 */ memoryAccessors[Specs::Registers::Video::SCY] = &io.video.SCY;
     /* FF43 */ memoryAccessors[Specs::Registers::Video::SCX] = &io.video.SCX;
     /* FF44 */ memoryAccessors[Specs::Registers::Video::LY] = {&io.video.LY, &CpuBus::writeNop};
-    /* FF45 */ memoryAccessors[Specs::Registers::Video::LYC] = {&io.video.LYC, &CpuBus::writeLYC};
+    /* FF45 */ memoryAccessors[Specs::Registers::Video::LYC] = &io.video.LYC;
     /* FF46 */ memoryAccessors[Specs::Registers::Video::DMA] = {&io.video.DMA, &CpuBus::writeDMA};
     /* FF47 */ memoryAccessors[Specs::Registers::Video::BGP] = &io.video.BGP;
     /* FF48 */ memoryAccessors[Specs::Registers::Video::OBP0] = &io.video.OBP0;
@@ -231,10 +231,6 @@ void CpuBus::writeSTAT(uint16_t address, uint8_t value) {
 
 void CpuBus::writeDMA(uint16_t address, uint8_t value) {
     io.video.writeDMA(value);
-}
-
-void CpuBus::writeLYC(uint16_t address, uint8_t value) {
-    io.video.writeLYC(value);
 }
 
 void CpuBus::writeBOOT(uint16_t address, uint8_t value) {

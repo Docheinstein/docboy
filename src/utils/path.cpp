@@ -46,6 +46,12 @@ std::string path::filename() const {
     return parts.back();
 }
 
+path operator/(const path& p1, const path& p2) {
+    path p {p1};
+    p = p / p2;
+    return p;
+}
+
 path temp_directory_path() {
     // Implementation inspired by boost::temp_directory_path
     std::string temp_path;

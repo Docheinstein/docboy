@@ -45,7 +45,6 @@ private:
 
     void writeSTAT(uint16_t address, uint8_t value);
     void writeDMA(uint16_t address, uint8_t value);
-    void writeLYC(uint16_t address, uint8_t value);
 
     void writeBOOT(uint16_t address, uint8_t value);
 

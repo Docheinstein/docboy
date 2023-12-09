@@ -242,8 +242,8 @@ public:
         check(i < FRAMEBUFFER_NUM_PIXELS);
 
         // Dump framebuffers
-        const auto pathActual = (temp_directory_path() / (romName + "-actual.png")).string();
-        const auto pathExpected = (temp_directory_path() / (romName + "-expected.png")).string();
+        const auto pathActual = (temp_directory_path() / (path {romName}.filename() + "-actual.png")).string();
+        const auto pathExpected = (temp_directory_path() / (path {romName}.filename() + "-expected.png")).string();
         save_framebuffer_as_png(pathActual, lastFramebuffer);
         save_framebuffer_as_png(pathExpected, expectedFramebuffer);
         UNSCOPED_INFO("You can find the PNGs of the framebuffers at " << pathActual << " and " << pathExpected);
@@ -1017,7 +1017,7 @@ TEST_CASE("emulation", "[emulation][.]") {
             S {"mooneye/ppu/lcdon_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             S {"mooneye/ppu/lcdon_write_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             //                S {"mooneye/ppu/stat_irq_blocking.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-            //                S {"mooneye/ppu/stat_lyc_onoff.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ppu/stat_lyc_onoff.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             S {"mooneye/ppu/vblank_stat_intr-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             F {"docboy/ppu/boot_ppu_phase_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/boot_ppu_phase_round2.gb", "docboy/ok.png"},
@@ -1116,6 +1116,7 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/vblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/vblank_raises_vblank_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_ly_ignored.gb", "docboy/ok.png"},
+            F {"docboy/ppu/write_lyc_matching_ly.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_lyc_stat_change.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_oam_oam_scan.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_oam_pixel_transfer.gb", "docboy/ok.png"},

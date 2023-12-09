@@ -114,7 +114,6 @@ private:
     template <uint8_t mode>
     void updateMode();
 
-    void resetLycEqLy();
     void updateLycEqLy();
 
     template <uint8_t flags>
@@ -135,6 +134,8 @@ private:
     FetcherTickSelector fetcherTickSelector {&Ppu::bgPrefetcherGetTile0};
 
     bool on {};
+
+    bool lastLycEqLy {};
 
     uint16_t dots {IF_BOOTROM_ELSE(0, 395)}; // [0, 456)
     uint8_t LX {};                           // LX=X+8, therefore [0, 168)

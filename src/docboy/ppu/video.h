@@ -25,11 +25,6 @@ public:
         dma.startTransfer(DMA << 8);
     }
 
-    void writeLYC(uint8_t value) {
-        LYC = value;
-        set_bit<Specs::Bits::Video::STAT::LYC_EQ_LY>(STAT, LY == LYC);
-    }
-
     void saveState(Parcel& parcel) const {
         parcel.writeUInt8(LCDC);
         parcel.writeUInt8(STAT);
