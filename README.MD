@@ -152,8 +152,7 @@ x[/<length><format>] <addr>       : Display memory content at <addr> (<format>: 
 /i <bytes>                        : Search for instructions matching <bytes>
 display[/<length><format>] <addr> : Automatically display memory content content at <addr> (<format>: x, h[<cols>], b, d, i)
 undisplay                         : Undisplay expressions set with display
-show <section>                    : Show a section in the debugger layout
-hide <section>                    : Hide a section from the debugger layout
+t [<count>]                       : Continue running for <count> clock ticks (default = 1)
 . [<count>]                       : Continue running for <count> PPU dots (default = 1)
 s [<count>]                       : Continue running for <count> instructions (default = 1)
 si [<count>]                      : Continue running for <count> micro-operations (default = 1)
