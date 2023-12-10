@@ -47,15 +47,6 @@ struct FrontendAutoDisassembleCommand {
     uint16_t n {};
 };
 
-struct FrontendDisassembleCommand {
-    uint16_t n {};
-};
-
-struct FrontendDisassembleRangeCommand {
-    uint16_t from {};
-    uint16_t to {};
-};
-
 struct FrontendExamineCommand {
     MemoryOutputFormat format {};
     std::optional<uint8_t> formatArg {};
@@ -129,12 +120,12 @@ struct FrontendQuitCommand {};
 
 using FrontendCommand =
     std::variant<FrontendBreakpointCommand, FrontendWatchpointCommand, FrontendDeleteCommand,
-                 FrontendAutoDisassembleCommand, FrontendDisassembleCommand, FrontendDisassembleRangeCommand,
-                 FrontendExamineCommand, FrontendSearchBytesCommand, FrontendSearchInstructionsCommand,
-                 FrontendDisplayCommand, FrontendUndisplayCommand, FrontendTickCommand, FrontendDotCommand,
-                 FrontendStepCommand, FrontendMicroStepCommand, FrontendNextCommand, FrontendMicroNextCommand,
-                 FrontendFrameCommand, FrontendScanlineCommand, FrontendFrameBackCommand, FrontendContinueCommand,
-                 FrontendTraceCommand, FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
+                 FrontendAutoDisassembleCommand, FrontendExamineCommand, FrontendSearchBytesCommand,
+                 FrontendSearchInstructionsCommand, FrontendDisplayCommand, FrontendUndisplayCommand,
+                 FrontendTickCommand, FrontendDotCommand, FrontendStepCommand, FrontendMicroStepCommand,
+                 FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand, FrontendScanlineCommand,
+                 FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand,
+                 FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
     std::regex regex;
@@ -274,22 +265,6 @@ static FrontendCommandInfo
                  const std::string& n = groups[0];
                  cmd.n = !n.empty() ? std::stoi(n) : 10;
                  return cmd;
-             }},
-            {std::regex(R"(d\s*(\d+)?)"), "d [<n>]", "Disassemble next <n> instructions (default = 10)",
-             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-                 FrontendDisassembleCommand cmd {};
-                 const std::string& n = groups[0];
-                 cmd.n = !n.empty() ? std::stoi(n) : 10;
-                 return cmd;
-             }},
-            {std::regex(R"(d\s+(\w+),(\w+))"), "d <start>,<end>",
-             "Disassemble instructions from address <start> to <end>",
-             [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-                 FrontendDisassembleRangeCommand cmd {};
-                 bool ok {true};
-                 cmd.from = address_str_to_addr(groups[0], &ok);
-                 cmd.to = address_str_to_addr(groups[1], &ok);
-                 return ok ? std::optional(cmd) : std::nullopt;
              }},
             {std::regex(R"(x(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "x[/<length><format>] <addr>",
              "Display memory content at <addr> (<format>: x, h[<cols>], b, d, i)",
@@ -458,6 +433,13 @@ static void detach_sigint_handler() {
     sigaction(SIGINT, nullptr, nullptr);
 }
 
+static std::string to_string(const DisassembledInstructionReference& instr) {
+    std::stringstream ss;
+    ss << hex(instr.address) << "  :  " << std::left << std::setw(9) << hex(instr.instruction) << "   " << std::left
+       << std::setw(23) << instruction_mnemonic(instr.instruction, instr.address);
+    return ss.str();
+}
+
 DebuggerFrontend::DebuggerFrontend(DebuggerBackend& backend) :
     backend(backend),
     core(backend.getCore()),
@@ -513,24 +495,7 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendDeleteCommand>(co
 template <>
 std::optional<Command>
 DebuggerFrontend::handleCommand<FrontendAutoDisassembleCommand>(const FrontendAutoDisassembleCommand& cmd) {
-    numAutoDisassemble = cmd.n;
-    return std::nullopt;
-}
-
-// Disassemble
-template <>
-std::optional<Command>
-DebuggerFrontend::handleCommand<FrontendDisassembleCommand>(const FrontendDisassembleCommand& cmd) {
-    backend.disassemble(gb.cpu.instruction.address, cmd.n);
-    reprintUI = true;
-    return std::nullopt;
-}
-
-// DisassembleRange
-template <>
-std::optional<Command>
-DebuggerFrontend::handleCommand<FrontendDisassembleRangeCommand>(const FrontendDisassembleRangeCommand& cmd) {
-    backend.disassembleRange(cmd.from, cmd.to);
+    autoDisassembleNextInstructions = cmd.n;
     reprintUI = true;
     return std::nullopt;
 }
@@ -569,8 +534,7 @@ template <>
 std::optional<Command>
 DebuggerFrontend::handleCommand<FrontendSearchInstructionsCommand>(const FrontendSearchInstructionsCommand& cmd) {
     // find instruction among known disassembled instructions
-    std::vector<std::pair<uint16_t, DisassembledInstruction>> disassembled = backend.getDisassembledInstructions();
-    for (const auto& [addr, instr] : disassembled) {
+    for (const auto& [addr, instr] : backend.getDisassembledInstructions()) {
         if (mem_find_first(instr.data(), instr.size(), cmd.instruction.data(), cmd.instruction.size())) {
             std::cout << hex(addr) << "    " << instruction_mnemonic(instr, addr) << std::endl;
         }
@@ -675,12 +639,11 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendTraceCommand>(con
 template <>
 std::optional<Command>
 DebuggerFrontend::handleCommand<FrontendDumpDisassembleCommand>(const FrontendDumpDisassembleCommand& cmd) {
-
-    std::vector<std::pair<uint16_t, DisassembledInstruction>> disassembled = backend.getDisassembledInstructions();
+    std::vector<DisassembledInstructionReference> disassembled = backend.getDisassembledInstructions();
     for (uint32_t i = 0; i < disassembled.size(); i++) {
-        const auto& [addr, instr] = disassembled[i];
-        std::cerr << DisassembleEntry {addr, instr}.toString() << std::endl;
-        if (i < disassembled.size() - 1 && addr + instr.size() != disassembled[i + 1].first)
+        const auto& instr = disassembled[i];
+        std::cerr << to_string(instr) << std::endl;
+        if (i < disassembled.size() - 1 && instr.address + instr.instruction.size() != disassembled[i + 1].address)
             std::cerr << std::endl; // next instruction is not adjacent to this one
     }
     std::cout << "Dumped " << disassembled.size() << " instructions" << std::endl;
@@ -715,10 +678,6 @@ Command DebuggerFrontend::pullCommand(const ExecutionState& executionState) {
     std::string cmdline;
 
     reprintUI = true;
-
-    // Speculatively disassemble next instructions
-    if (numAutoDisassemble > 0)
-        backend.disassemble(gb.cpu.instruction.address, numAutoDisassemble);
 
     // Pull command loop
     do {
@@ -780,10 +739,6 @@ Command DebuggerFrontend::pullCommand(const ExecutionState& executionState) {
             commandToSend = handleCommand(std::get<FrontendDeleteCommand>(cmd));
         } else if (std::holds_alternative<FrontendAutoDisassembleCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendAutoDisassembleCommand>(cmd));
-        } else if (std::holds_alternative<FrontendDisassembleCommand>(cmd)) {
-            commandToSend = handleCommand(std::get<FrontendDisassembleCommand>(cmd));
-        } else if (std::holds_alternative<FrontendDisassembleRangeCommand>(cmd)) {
-            commandToSend = handleCommand(std::get<FrontendDisassembleRangeCommand>(cmd));
         } else if (std::holds_alternative<FrontendExamineCommand>(cmd)) {
             commandToSend = handleCommand(std::get<FrontendExamineCommand>(cmd));
         } else if (std::holds_alternative<FrontendSearchBytesCommand>(cmd)) {
@@ -845,23 +800,22 @@ void DebuggerFrontend::onTick(uint64_t tick) {
         std::cerr << std::left << std::setw(12) << "[" + std::to_string(tick) + "] " << (isMcycle ? "* " : "  ");
 
         if (trace & TraceFlagInstruction) {
-            std::string instr;
+            std::string instrStr;
             if (cpu.halted) {
-                instr = "<HALTED>";
+                instrStr = "<HALTED>";
             } else {
                 if (DebuggerHelpers::isInIsr(cpu)) {
-                    instr = "ISR " + hex(cpu.instruction.address);
+                    instrStr = "ISR " + hex(cpu.instruction.address);
                 } else {
-                    backend.disassemble(cpu.instruction.address, 1);
-                    auto disas = backend.getDisassembledInstruction(cpu.instruction.address);
-                    if (disas)
-                        instr = instruction_mnemonic(*disas, cpu.instruction.address);
+                    const auto instr = backend.disassemble(cpu.instruction.address);
+                    if (instr)
+                        instrStr = instruction_mnemonic(instr->instruction, cpu.instruction.address);
                     else
-                        instr = "unknown";
+                        instrStr = "unknown";
                 }
             }
 
-            std::cerr << std::left << std::setw(28) << instr << "  ";
+            std::cerr << std::left << std::setw(28) << instrStr << "  ";
         }
 
         if (trace & TraceFlagRegisters) {
@@ -1074,8 +1028,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }()
           << endl;
 
-        b << red("IE ") << "     :  " << bin(IE) << endl;
-        b << red("IF ") << "     :  " << bin(IF) << endl;
+        b << red("IE ") << "     :  " << bin(IE) << " (" << hex(IE) << ")" << endl;
+        b << red("IF ") << "     :  " << bin(IF) << " (" << hex(IF) << ")" << endl;
 
         const auto intr = [colorbool](bool IME, bool IE, bool IF) {
             return "IE : " + colorbool(IE) + "    IF : " + colorbool(IF) + "    " +
@@ -1187,6 +1141,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
           << endl;
 
         b << yellow("LX") << "               :  " << gb.ppu.LX << endl;
+        b << yellow("Last Stat IRQ") << "    :  " << gb.ppu.lastStatIrq << endl;
 
         // LCD
         const auto colorIndex = [](uint16_t lcdColor) {
@@ -1505,49 +1460,67 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         if (const auto isrPhase = DebuggerHelpers::getIsrPhase(gb.cpu); isrPhase != std::nullopt) {
             b << yellow("ISR") << "   " << lightgray("M" + std::to_string(*isrPhase + 1) + "/5") << endl;
         } else {
-            std::list<DisassembleEntry> codeView;
+
+            struct DisassembledInstructionEntry : DisassembledInstructionReference {
+                enum class Type { Past, Current, Future, FutureGuess };
+
+                DisassembledInstructionEntry(uint16_t address, const DisassembledInstruction& instruction, Type type) :
+                    DisassembledInstructionReference(address, instruction),
+                    type(type) {
+                }
+
+                DisassembledInstructionEntry(uint16_t address, DisassembledInstruction&& instruction, Type type) :
+                    DisassembledInstructionReference(address, std::move(instruction)),
+                    type(type) {
+                }
+
+                Type type;
+            };
+
+            std::list<DisassembledInstructionEntry> codeView;
+
+            const auto currentInstructionOpt = backend.disassemble(gb.cpu.instruction.address, true);
+            check(currentInstructionOpt);
+
+            const auto& currentInstruction = *currentInstructionOpt;
 
             // Past instructions
             {
                 static constexpr uint8_t CODE_VIEW_PAST_INSTRUCTION_COUNT = 6;
                 uint8_t n = 0;
-                for (int32_t addr = gb.cpu.instruction.address; addr >= 0 && n < CODE_VIEW_PAST_INSTRUCTION_COUNT;
+                for (int32_t addr = currentInstruction.address - 1; addr >= 0 && n < CODE_VIEW_PAST_INSTRUCTION_COUNT;
                      addr--) {
-                    auto entry = backend.getDisassembledInstruction(addr);
-                    if (entry) {
-                        DisassembleEntry d = {.address = static_cast<uint16_t>(addr), .disassemble = *entry};
-                        codeView.push_front(d);
+                    auto instr = backend.getDisassembledInstruction(addr);
+                    if (instr) {
+                        codeView.emplace_front(static_cast<uint16_t>(addr), *instr,
+                                               DisassembledInstructionEntry::Type::Past);
                         n++;
                     }
                 }
             }
 
+            // Current instruction
+            codeView.emplace_back(currentInstruction.address, currentInstruction.instruction,
+                                  DisassembledInstructionEntry::Type::Current);
+
             // Next instructions
             {
-                static constexpr uint8_t CODE_VIEW_NEXT_INSTRUCTION_COUNT = 12;
-                uint8_t n = 0;
-                for (int32_t addr = gb.cpu.instruction.address + 1;
-                     addr <= 0xFFFF && n < CODE_VIEW_NEXT_INSTRUCTION_COUNT; addr++) {
-                    auto entry = backend.getDisassembledInstruction(addr);
-                    if (entry) {
-                        DisassembleEntry d = {.address = static_cast<uint16_t>(addr), .disassemble = *entry};
-                        codeView.push_back(d);
-                        n++;
-                    }
+                uint32_t addr = currentInstruction.address + currentInstruction.instruction.size();
+                for (uint16_t n = 0; n < autoDisassembleNextInstructions && addr <= 0xFFFF; n++) {
+                    const auto knownInstr = backend.getDisassembledInstruction(addr);
+                    auto instr = backend.disassemble(addr);
+                    if (!instr)
+                        break;
+                    const bool known = knownInstr && *knownInstr == instr->instruction;
+                    addr = instr->address + instr->instruction.size();
+                    codeView.emplace_back(instr->address, std::move(instr->instruction),
+                                          known ? DisassembledInstructionEntry::Type::Future
+                                                : DisassembledInstructionEntry::Type::FutureGuess);
                 }
             }
 
             if (!codeView.empty()) {
-                const auto disassembleEntry = [this](const DisassembleEntry& entry) {
-                    uint16_t currentInstructionAddress = gb.cpu.instruction.address;
-                    uint8_t currentInstructionMicroop = gb.cpu.instruction.microop.counter;
-
-                    uint16_t instrStart = entry.address;
-                    uint16_t instrEnd = instrStart + entry.disassemble.size();
-                    bool isCurrentInstruction =
-                        instrStart <= currentInstructionAddress && currentInstructionAddress < instrEnd;
-                    bool isPastInstruction = currentInstructionAddress >= instrEnd;
-
+                const auto disassembleEntry = [this](const DisassembledInstructionEntry& entry) {
                     Text t {};
                     if (backend.getBreakpoint(entry.address))
                         t += red(Text {Token {"•", 1}});
@@ -1555,20 +1528,21 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                         t += " ";
                     t += " ";
 
-                    Text instr {hex(entry.address) + "  :  " + rpad(hex(entry.disassemble), 9) + "   " +
-                                rpad(instruction_mnemonic(entry.disassemble, entry.address), 23)};
+                    Text instrText {to_string(entry)};
 
-                    if (isCurrentInstruction)
-                        t += green(std::move(instr));
-                    else if (isPastInstruction)
-                        t += darkgray(std::move(instr));
-                    else
-                        t += instr;
+                    if (entry.type == DisassembledInstructionEntry::Type::Current)
+                        instrText = green(std::move(instrText));
+                    else if (entry.type == DisassembledInstructionEntry::Type::Past)
+                        instrText = darkgray(std::move(instrText));
+                    else if (entry.type == DisassembledInstructionEntry::Type::FutureGuess)
+                        instrText = lightestgray(std::move(instrText));
 
-                    if (isCurrentInstruction) {
-                        auto [min, max] = instruction_duration(entry.disassemble);
+                    t += instrText;
+
+                    if (entry.type == DisassembledInstructionEntry::Type::Current) {
+                        auto [min, max] = instruction_duration(entry.instruction);
                         if (min)
-                            t += "   " + lightgray("M" + std::to_string(currentInstructionMicroop + 1) + "/" +
+                            t += "   " + lightgray("M" + std::to_string(gb.cpu.instruction.microop.counter + 1) + "/" +
                                                    std::to_string(min) +
                                                    (max != min ? (std::string(":") + std::to_string(+max)) : ""));
                     }
@@ -1576,11 +1550,12 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     return t;
                 };
 
-                std::list<DisassembleEntry>::const_iterator lastEntry;
+                // Fill gaps between non-consecutive instructions with ...
+                std::list<DisassembledInstructionEntry>::const_iterator lastEntry;
                 for (auto entry = codeView.begin(); entry != codeView.end(); entry++) {
                     if (entry != codeView.begin() &&
-                        lastEntry->address + lastEntry->disassemble.size() < entry->address)
-                        b << "  " << darkgray("....") << endl;
+                        lastEntry->address + lastEntry->instruction.size() < entry->address)
+                        b << "  " << darkgray("...") << endl;
                     b << disassembleEntry(*entry) << endl;
                     lastEntry = entry;
                 }
@@ -1768,15 +1743,15 @@ std::string DebuggerFrontend::dumpMemory(uint16_t from, uint32_t n, MemoryOutput
         for (uint32_t i = 0; i < n; i++)
             s += std::to_string(backend.readMemory(from + i)) + " ";
     } else if (fmt == MemoryOutputFormat::Instruction) {
-        backend.disassemble(from, n);
+        backend.disassembleMultiple(from, n);
         uint32_t i = 0;
         for (uint32_t address = from; address <= 0xFFFF && i < n;) {
             std::optional<DisassembledInstruction> disas = backend.getDisassembledInstruction(address);
             if (!disas)
                 fatal("Failed to disassemble at address" + std::to_string(address));
 
-            DisassembleEntry d = {.address = static_cast<uint16_t>(address), .disassemble = *disas};
-            s += d.toString() + ((i < n - 1) ? "\n" : "");
+            s += to_string(DisassembledInstructionReference {static_cast<uint16_t>(address), *disas}) +
+                 ((i < n - 1) ? "\n" : "");
             address += disas->size();
             i++;
         }
@@ -1800,12 +1775,5 @@ std::string DebuggerFrontend::dumpDisplayEntry(const DebuggerFrontend::DisplayEn
            << " " << hex(dx.address) << std::endl;
         ss << dumpMemory(dx.address, d.length, d.format, d.formatArg);
     }
-    return ss.str();
-}
-
-std::string DebuggerFrontend::DisassembleEntry::toString() const {
-    std::stringstream ss;
-    ss << hex(address) << " : " << std::left << std::setw(9) << hex(disassemble) << "   " << std::left << std::setw(16)
-       << instruction_mnemonic(disassemble, address);
     return ss.str();
 }

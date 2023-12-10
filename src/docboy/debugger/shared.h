@@ -81,6 +81,21 @@ struct WatchpointHit {
 
 using DisassembledInstruction = std::vector<uint8_t>;
 
+struct DisassembledInstructionReference {
+    DisassembledInstructionReference(uint16_t address, const DisassembledInstruction& instruction) :
+        address(address),
+        instruction(instruction) {
+    }
+
+    DisassembledInstructionReference(uint16_t address, DisassembledInstruction&& instruction) :
+        address(address),
+        instruction(std::move(instruction)) {
+    }
+
+    uint16_t address;
+    DisassembledInstruction instruction;
+};
+
 struct ExecutionCompleted {};
 struct ExecutionInterrupted {};
 struct ExecutionBreakpointHit {

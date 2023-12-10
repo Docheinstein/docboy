@@ -42,13 +42,6 @@ private:
         std::variant<Examine /*, ...*/> expression;
     };
 
-    struct DisassembleEntry {
-        uint16_t address {};
-        DisassembledInstruction disassemble {};
-
-        [[nodiscard]] std::string toString() const;
-    };
-
     template <typename FrontendCommandType>
     std::optional<Command> handleCommand(const FrontendCommandType& cmd);
 
@@ -66,7 +59,7 @@ private:
     std::vector<DisplayEntry> displayEntries;
     uint32_t trace {};
 
-    uint16_t numAutoDisassemble {};
+    uint16_t autoDisassembleNextInstructions {10};
     bool reprintUI {};
 
     std::function<void()> onPullingCommandCallback {};

@@ -69,10 +69,12 @@ public:
     void removePoint(uint32_t id);
     void clearPoints();
 
-    void disassemble(uint16_t addr, size_t n);
-    void disassembleRange(uint16_t from, uint16_t to);
+    std::optional<DisassembledInstructionReference> disassemble(uint16_t addr, bool cache = false);
+    std::vector<DisassembledInstructionReference> disassembleMultiple(uint16_t addr, uint16_t n = 1,
+                                                                      bool cache = false);
+    std::vector<DisassembledInstructionReference> disassembleRange(uint16_t from, uint16_t to, bool cache = false);
     [[nodiscard]] std::optional<DisassembledInstruction> getDisassembledInstruction(uint16_t addr) const;
-    [[nodiscard]] std::vector<std::pair<uint16_t, DisassembledInstruction>> getDisassembledInstructions() const;
+    [[nodiscard]] std::vector<DisassembledInstructionReference> getDisassembledInstructions() const;
 
     [[nodiscard]] uint8_t readMemory(uint16_t addr);
 

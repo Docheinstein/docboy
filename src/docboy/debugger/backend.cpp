@@ -219,39 +219,60 @@ void DebuggerBackend::clearPoints() {
     watchpoints.clear();
 }
 
-void DebuggerBackend::disassemble(uint16_t addr, size_t n) {
+std::optional<DisassembledInstructionReference> DebuggerBackend::disassemble(uint16_t addr, bool cache) {
+    auto instrs = disassembleMultiple(addr, 1, cache);
+    if (instrs.empty())
+        return {};
+    return instrs[0];
+}
+
+std::vector<DisassembledInstructionReference> DebuggerBackend::disassembleMultiple(uint16_t addr, uint16_t n,
+                                                                                   bool cache) {
+    std::vector<DisassembledInstructionReference> refs;
+
     uint32_t addressCursor = addr;
-    for (size_t i = 0; i < n && addressCursor <= 0xFFFF; i++) {
+    for (uint32_t i = 0; i < n && addressCursor <= 0xFFFF; i++) {
         auto instruction = doDisassemble(addressCursor);
         if (!instruction)
             break;
-        disassembledInstructions[addressCursor] = instruction;
+        if (cache)
+            disassembledInstructions[addressCursor] = instruction;
+        refs.emplace_back(addressCursor, *instruction);
         addressCursor += instruction->size();
     }
+
+    return refs;
 }
 
-void DebuggerBackend::disassembleRange(uint16_t from, uint16_t to) {
+std::vector<DisassembledInstructionReference> DebuggerBackend::disassembleRange(uint16_t from, uint16_t to,
+                                                                                bool cache) {
+    std::vector<DisassembledInstructionReference> refs;
+
     for (uint32_t addressCursor = from; addressCursor <= to && addressCursor <= 0xFFFF;) {
         auto instruction = doDisassemble(addressCursor);
         if (!instruction)
             break;
-        disassembledInstructions[addressCursor] = instruction;
+        if (cache)
+            disassembledInstructions[addressCursor] = instruction;
+        refs.emplace_back(addressCursor, *instruction);
         addressCursor += instruction->size();
     }
+
+    return refs;
 }
 
 std::optional<DisassembledInstruction> DebuggerBackend::getDisassembledInstruction(uint16_t addr) const {
     return disassembledInstructions[addr];
 }
 
-std::vector<std::pair<uint16_t, DisassembledInstruction>> DebuggerBackend::getDisassembledInstructions() const {
-    std::vector<std::pair<uint16_t, DisassembledInstruction>> actuallyDisassembled;
+std::vector<DisassembledInstructionReference> DebuggerBackend::getDisassembledInstructions() const {
+    std::vector<DisassembledInstructionReference> refs;
     for (uint32_t addr = 0; addr < array_size(disassembledInstructions); addr++) {
-        const auto& d = disassembledInstructions[addr];
-        if (d)
-            actuallyDisassembled.emplace_back(addr, *d);
+        if (disassembledInstructions[addr]) {
+            refs.emplace_back(addr, *disassembledInstructions[addr]);
+        }
     }
-    return actuallyDisassembled;
+    return refs;
 }
 
 uint8_t DebuggerBackend::readMemory(uint16_t addr) {
