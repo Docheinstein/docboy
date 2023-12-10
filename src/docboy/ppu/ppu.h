@@ -102,6 +102,9 @@ private:
     void objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo();
 
     // Misc
+    void tickStat();
+    void updateStatIrq(bool irq);
+
     void tickFetcher();
     void resetFetcher();
 
@@ -113,11 +116,6 @@ private:
 
     template <uint8_t mode>
     void updateMode();
-
-    void updateLycEqLy();
-
-    template <uint8_t flags>
-    void eventuallyRaiseStatInterrupt();
 
     [[nodiscard]] bool isPixelTransferBlocked() const;
 
@@ -135,7 +133,7 @@ private:
 
     bool on {};
 
-    bool lastLycEqLy {};
+    bool lastStatIrq {};
 
     uint16_t dots {IF_BOOTROM_ELSE(0, 395)}; // [0, 456)
     uint8_t LX {};                           // LX=X+8, therefore [0, 168)

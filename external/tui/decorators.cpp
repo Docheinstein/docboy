@@ -71,6 +71,10 @@ Text lightgray(Text&& text) {
     return COLORIZE(248, text);
 }
 
+Text lightestgray(Text&& text) {
+    return COLORIZE(250, text);
+}
+
 Text darkgray(Text&& text) {
     return COLORIZE(240, text);
 }

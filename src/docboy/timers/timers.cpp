@@ -77,11 +77,11 @@ inline void TimersIO::incTIMA() {
 
 inline void TimersIO::onFallingEdgeIncTima() {
     // TIMA is incremented if (DIV bit selected by TAC && TAC enable)
-    // was true and now it's false
+    // was true and now it's false (on falling edge)
     const bool tacDivBit = test_bit(DIV, Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(TAC)]);
     const bool tacEnable = test_bit<Specs::Bits::Timers::TAC::ENABLE>(TAC);
     const bool divBitAndTacEnable = tacDivBit && tacEnable;
-    if (lastDivBitAndTacEnable && !divBitAndTacEnable)
+    if (lastDivBitAndTacEnable > divBitAndTacEnable)
         incTIMA();
     lastDivBitAndTacEnable = divBitAndTacEnable;
 }

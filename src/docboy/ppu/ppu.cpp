@@ -71,15 +71,56 @@ void Ppu::tick() {
         }
     }
 
-    // Tick ahead by one dot
+    // Tick PPU by one dot
     (this->*(tickSelector))();
 
-    // Update the LYC_EQ_LY flag
-    updateLycEqLy();
+    // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt
+    tickStat();
 
     check(dots < 456);
 
     IF_DEBUGGER(++cycles);
+}
+
+inline void Ppu::tickStat() {
+    // STAT interrupt request is checked every dot (not only during modes or lines transitions).
+    // OAM Stat interrupt seems to be an exception to this rule:
+    // it is raised only as a consequence of a transition of mode, not always
+    // (e.g. manually writing STAT's OAM interrupt flag while in OAM does not raise a request).
+    // Note that the interrupt request is done only on raising edge
+    // [mooneye's stat_irq_blocking and stat_lyc_onoff].
+
+    const bool lycEqLy = video.LYC == video.LY;
+
+    const bool lycEqLyIrq =
+        test_bit<LYC_EQ_LY_INTERRUPT>(video.STAT) && lycEqLy && dots != 454 /* LYC_EQ_LY is always 0 at dot 454*/;
+
+    const uint8_t mode = keep_bits<2>(video.STAT);
+
+    const bool hblankIrq = test_bit<HBLANK_INTERRUPT>(video.STAT) && mode == HBLANK;
+
+    // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
+    const bool vblankIrq =
+        (test_bit<VBLANK_INTERRUPT>(video.STAT) || test_bit<OAM_INTERRUPT>(video.STAT)) && mode == VBLANK;
+
+    // Eventually raise STAT interrupt
+    updateStatIrq(lycEqLyIrq || hblankIrq || vblankIrq);
+
+    // Update STAT's LYC_EQ_LY
+    if (dots == 454 /* TODO: && keep_bits<2>(video.STAT) == HBLANK ?*/) {
+        // LYC_EQ_LY is always 0 at dot 454 [mooneye: lcdon_timing]
+        reset_bit<LYC_EQ_LY>(video.STAT);
+    } else {
+        // Update STAT's LYC=LY Flag according to the current comparison
+        set_bit<LYC_EQ_LY>(video.STAT, lycEqLy);
+    }
+}
+
+void Ppu::updateStatIrq(bool irq) {
+    // Raise STAT interrupt request only on rising edge
+    if (lastStatIrq < irq)
+        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
+    lastStatIrq = irq;
 }
 
 void Ppu::turnOn() {
@@ -135,10 +176,6 @@ void Ppu::enterOamScan() {
     tickSelector = &Ppu::oamScanEven;
 
     updateMode<OAM_SCAN>();
-
-    // OAM interrupt is not raised here, instead it is raised:
-    // * At dot 454   for transition HBLANK -> OAM
-    // * At dot 456/0 for transition VBLANK -> OAM
 
     check(!vram.isAcquired());
     oam.acquire();
@@ -475,15 +512,9 @@ void Ppu::enterHBlank() {
     w.WLY += w.shown;
     w.shown = false;
 
-    if (video.LY == 143) {
-        tickSelector = &Ppu::hBlankLastLine;
-    } else {
-        tickSelector = &Ppu::hBlank;
-    }
+    tickSelector = video.LY == 143 ? &Ppu::hBlankLastLine : &Ppu::hBlank;
 
     updateMode<HBLANK>();
-
-    eventuallyRaiseStatInterrupt<bit<HBLANK_INTERRUPT>>();
 
     vram.release();
     oam.release();
@@ -498,7 +529,8 @@ void Ppu::hBlank() {
 
         tickSelector = &Ppu::hBlank454;
 
-        eventuallyRaiseStatInterrupt<bit<OAM_INTERRUPT>>();
+        // Eventually raise OAM interrupt
+        updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT));
 
         oam.acquire();
     }
@@ -534,9 +566,6 @@ void Ppu::enterVBlank() {
     tickSelector = &Ppu::vBlank;
 
     updateMode<VBLANK>();
-
-    // STAT interrupt is triggered either by VBlank or OAM flag when entering VBLANK */
-    eventuallyRaiseStatInterrupt<bit<VBLANK_INTERRUPT> | bit<OAM_INTERRUPT>>();
 
     interrupts.raiseInterrupt<InterruptsIO::InterruptType::VBlank>();
 
@@ -580,42 +609,14 @@ void Ppu::enterNewFrame() {
 
     enterOamScan();
 
-    eventuallyRaiseStatInterrupt<bit<OAM_INTERRUPT>>();
+    // Eventually raise OAM interrupt
+    updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT));
 }
 
 template <uint8_t mode>
 inline void Ppu::updateMode() {
     check(mode <= 0b11);
     video.STAT = ((uint8_t)video.STAT & 0b11111100) | mode;
-}
-
-inline void Ppu::updateLycEqLy() {
-    if (dots == 454 /* TODO: && keep_bits<2>(video.STAT) == HBLANK ?*/) {
-        // LYC_EQ_LY is always 0 at dot 454 [mooneye: lcdon_timing]
-        reset_bit<LYC_EQ_LY>(video.STAT);
-        return;
-    }
-
-    // Compare LY with LYC
-    const bool lycEqLy = video.LYC == video.LY;
-
-    // Update STAT's LYC=LY Flag according to the current comparison
-    set_bit<LYC_EQ_LY>(video.STAT, lycEqLy);
-
-    // LYC_EQ_LY interrupt is raised only on raising edge [mooneye: stat_lyc_onoff]
-    if (!lastLycEqLy && lycEqLy) {
-        // Eventually raise LYC=LY interrupt
-        eventuallyRaiseStatInterrupt<bit<LYC_EQ_LY_INTERRUPT>>();
-    }
-
-    // Cache comparison result
-    lastLycEqLy = lycEqLy;
-}
-
-template <uint8_t flags>
-void Ppu::eventuallyRaiseStatInterrupt() {
-    if ((uint8_t)video.STAT & flags)
-        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
 }
 
 inline bool Ppu::isPixelTransferBlocked() const {
@@ -1005,7 +1006,7 @@ void Ppu::saveState(Parcel& parcel) const {
     }
 
     parcel.writeBool(on);
-    parcel.writeBool(lastLycEqLy);
+    parcel.writeBool(lastStatIrq);
     parcel.writeUInt16(dots);
     parcel.writeUInt8(LX);
 
@@ -1095,7 +1096,7 @@ void Ppu::loadState(Parcel& parcel) {
     fetcherTickSelector = FETCHER_TICK_SELECTORS[fetcherTickSelectorNumber];
 
     on = parcel.readBool();
-    lastLycEqLy = parcel.readBool();
+    lastStatIrq = parcel.readBool();
     dots = parcel.readUInt16();
     LX = parcel.readUInt8();
 
