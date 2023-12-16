@@ -333,7 +333,7 @@ void Ppu::pixelTransferDummy0() {
     check(oam.isAcquired());
     check(vram.isAcquired());
 
-    if (++dots == 84) {
+    if (++dots == 83) {
         bgFifo.fill(DUMMY_TILE);
         if constexpr (bg) {
             if (bgPixelTransfer.SCXmod8)
@@ -460,19 +460,19 @@ void Ppu::enterHBlank() {
     checkCode({
         // Check Pixel Transfer Timing.
 
-        static constexpr uint16_t LB = 80 + 4 + 21 * 8;                // 252
-        static constexpr uint16_t UB = LB + 11 * 10 + 7 /* window? */; // 369
+        static constexpr uint16_t LB = 80 + 3 + 21 * 8;                // 251
+        static constexpr uint16_t UB = LB + 11 * 10 + 7 /* window? */; // 368
 
         // The minimum number of dots a pixel transfer can take is
-        // -> 6 * 21 * 8 = 174.
+        // -> 3 + 21 * 8 = 171.
         //
-        // 6 cycles for the first dummy fetch
+        // 3 cycles for the first dummy fetch
         // 8 cycles for push the first tile (that is simply discarded)
         // 8 * 20 cycles for push the 160 pixels.
         check(dots >= LB);
 
         // The maximum number of dots a pixel transfer can take is
-        // -> LB + 11 * 10 + 7 = 291.
+        // -> LB + 11 * 10 + 7 = 288.
         //
         // 11 the maximum number of cycles a sprite can take
         // 10 the maximum number of sprites that can be rendered on a line
@@ -554,10 +554,20 @@ void Ppu::hBlankLastLine() {
 }
 
 void Ppu::hBlankLastLine454() {
-    if (++dots == 456) {
-        dots = 0;
-        enterVBlank();
-    }
+    check(dots == 454);
+
+    ++dots;
+    tickSelector = &Ppu::hBlankLastLine455;
+
+    // VBlank mode is set at dot 455 (though I'm not sure about it)
+    updateMode<VBLANK>();
+}
+
+void Ppu::hBlankLastLine455() {
+    check(dots == 455);
+
+    dots = 0;
+    enterVBlank();
 }
 
 void Ppu::enterVBlank() {
@@ -565,7 +575,7 @@ void Ppu::enterVBlank() {
 
     tickSelector = &Ppu::vBlank;
 
-    updateMode<VBLANK>();
+    check(((uint8_t)video.STAT & 0b11) == VBLANK);
 
     interrupts.raiseInterrupt<InterruptsIO::InterruptType::VBlank>();
 

@@ -739,17 +739,17 @@ void Cpu::checkInterrupt() {
      * -----------------------------------
      * NotHalted | T0  |  T1 |  T2 |  T3 |
      * -----------------------------------
-     * VBlank    |  1  | 1/2 |     |     |
-     * Stat      |  1  |  1  |  1  |  2  |
-     * Timer     |  1  | 1/2 |     |  2  |
-     * Serial    |  1  | 1/2 |     |  2  |
-     * Joypad    | 1/2 | 1/2 |     |     |
+     * VBlank    |  1  |  1  |     |     |
+     * Stat      |  1  |  1  |  2  |  2  |
+     * Timer     |  1  |  1  |     |  2  |
+     * Serial    |  1  |  1  |     |  2  |
+     * Joypad    |  1  |  1  |     |     |
      *
      * -----------------------------------
      * Halted    | T0  |  T1 |  T2 |  T3 |
      * -----------------------------------
      * VBlank    |  1  |     |     |     |
-     * Stat      |  1  |  2  |  2  |  2  |
+     * Stat      |  2  |  2  |  2  |  2  |
      * Timer     |     |     |     |  3  |
      * Serial    |     |     |     |  3  |
      * Joypad    |     |     |     |     |
@@ -763,20 +763,20 @@ void Cpu::checkInterrupt() {
     static constexpr uint8_t INTERRUPTS_TIMINGS[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
         /*  0 : None */ {{U, U, U, U}, {U, U, U, U}},
         /*  1 : VBlank */ {{1, 1, U, U}, {1, U, U, U}},
-        /*  2 : STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /*  3 : STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
+        /*  2 : STAT */ {{1, 1, 2, 2}, {2, 2, 2, 2}},
+        /*  3 : STAT + VBlank */ {{1, 1, 2, 2}, {1, 2, 2, 2}},
         /*  4 : Timer */ {{1, 1, U, 2}, {U, U, U, 3}},
         /*  5 : Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
-        /*  6 : Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /*  7 : Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
+        /*  6 : Timer + STAT */ {{1, 1, 2, 2}, {2, 2, 2, 2}},
+        /*  7 : Timer + STAT + VBlank */ {{1, 1, 2, 2}, {1, 2, 2, 2}},
         /*  8 : Serial */ {{1, 1, U, 2}, {U, U, U, 3}},
         /*  9 : Serial + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
-        /* 10 : Serial + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /* 11 : Serial + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
+        /* 10 : Serial + STAT */ {{1, 1, 2, 2}, {2, 2, 2, 2}},
+        /* 11 : Serial + STAT + VBlank */ {{1, 1, 2, 2}, {1, 2, 2, 2}},
         /* 12 : Serial + Timer */ {{1, 1, U, 2}, {U, U, U, 3}},
         /* 13 : Serial + Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
-        /* 14 : Serial + Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /* 15 : Serial + Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
+        /* 14 : Serial + Timer + STAT */ {{1, 1, 2, 2}, {2, 2, 2, 2}},
+        /* 15 : Serial + Timer + STAT + VBlank */ {{1, 1, 2, 2}, {1, 2, 2, 2}},
         /* 16 : Joypad */ {{J, J, J, J}, {J, J, J, J}},
         /* 17 : Joypad + VBlank */ {{J, J, J, J}, {J, J, J, J}},
         /* 18 : Joypad + STAT */ {{J, J, J, J}, {J, J, J, J}},

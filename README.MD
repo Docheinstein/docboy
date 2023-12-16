@@ -175,7 +175,7 @@ Here's the debugger!
 ## Screenshots
 
 ![DMG boot](images/nintendo.png)
-![Tetris](images/tetris.png)
+![Tetris](images/tetris.png)****
 ![Alleyway](images/alleyway.png)
 ![Bubble Bobble](images/bubble-bobble.png)
 ![Donkey Kong](images/donkey-kong.png)
@@ -188,6 +188,11 @@ Here's the debugger!
 
 ## Tests results
 
+Passing all the tests of the following test suites:
+* `blargg`
+* `docboy`
+* `dmg-acid2`
+* `mooneye`
 
 | Test Rom                                    |       Result       |
 |---------------------------------------------|:------------------:|
@@ -263,8 +268,8 @@ Here's the debugger!
 | mooneye/ppu/intr_2_oam_ok_timing.gb         | :white_check_mark: |
 | mooneye/ppu/lcdon_timing-GS.gb              | :white_check_mark: |
 | mooneye/ppu/lcdon_write_timing-GS.gb        | :white_check_mark: |
-| mooneye/ppu/stat_irq_blocking.gb            |        :x:         |
-| mooneye/ppu/stat_lyc_onoff.gb               |        :x:         |
+| mooneye/ppu/stat_irq_blocking.gb            | :white_check_mark: |
+| mooneye/ppu/stat_lyc_onoff.gb               | :white_check_mark: |
 | mooneye/ppu/vblank_stat_intr-GS.gb          | :white_check_mark: |
 | mooneye/push_timing.gb                      | :white_check_mark: |
 | mooneye/rapid_di_ei.gb                      | :white_check_mark: |

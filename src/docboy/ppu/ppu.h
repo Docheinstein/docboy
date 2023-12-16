@@ -73,6 +73,7 @@ private:
     void hBlank454();
     void hBlankLastLine();
     void hBlankLastLine454();
+    void hBlankLastLine455();
 
     void vBlank();
     void vBlankLastLine();
