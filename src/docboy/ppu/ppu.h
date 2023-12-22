@@ -118,7 +118,10 @@ private:
     template <uint8_t mode>
     void updateMode();
 
-    [[nodiscard]] bool isPixelTransferBlocked() const;
+    void increaseLX();
+
+    [[nodiscard]] bool isBgFifoReadyToBePopped() const;
+    [[nodiscard]] bool isObjReadyToBeFetched() const;
 
     void cacheInterruptedBgWinFetch();
     void restoreInterruptedBgWinFetch();

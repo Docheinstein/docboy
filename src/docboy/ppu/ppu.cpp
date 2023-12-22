@@ -356,7 +356,7 @@ void Ppu::pixelTransferDiscard0() {
     // the first SCX % 8 of a background tile are simply discarded
     // note that LX is not incremented in this case:
     // this let the obj align with the bg
-    if (!isPixelTransferBlocked() && bgFifo.isNotEmpty()) {
+    if (isBgFifoReadyToBePopped()) {
         bgFifo.popFront();
 
         if (++bgPixelTransfer.discardedPixels == bgPixelTransfer.SCXmod8)
@@ -375,24 +375,25 @@ void Ppu::pixelTransfer0() {
     check(oam.isAcquired());
     check(vram.isAcquired());
 
-    uint8_t nextLX = LX;
+    bool incLX = false;
 
     // for LX € [0, 8) just pop the pixels but do not push them to LCD
-    if (!isPixelTransferBlocked() && bgFifo.isNotEmpty()) {
+    if (isBgFifoReadyToBePopped()) {
         bgFifo.popFront();
 
         if (objFifo.isNotEmpty())
             objFifo.popFront();
 
-        nextLX = LX + 1;
+        incLX = true;
 
-        if (nextLX == 8)
+        if (LX + 1 == 8)
             tickSelector = &Ppu::pixelTransfer8;
     }
 
     tickFetcher();
 
-    LX = nextLX;
+    if (incLX)
+        increaseLX();
 
     ++dots;
 }
@@ -402,11 +403,11 @@ void Ppu::pixelTransfer8() {
     check(oam.isAcquired());
     check(vram.isAcquired());
 
-    uint8_t nextLX = LX;
+    bool incLX = false;
 
     // push a new pixel to the lcd if if the bg fifo contains
     // some pixels and it's not blocked by a sprite fetch
-    if (!isPixelTransferBlocked() && bgFifo.isNotEmpty()) {
+    if (isBgFifoReadyToBePopped()) {
         static constexpr uint8_t NO_COLOR = 4;
         uint8_t color {NO_COLOR};
 
@@ -435,10 +436,10 @@ void Ppu::pixelTransfer8() {
 
         lcd.pushPixel(static_cast<Lcd::Pixel>(color));
 
-        nextLX = LX + 1;
+        incLX = true;
 
-        if (nextLX == 168) {
-            LX = 168;
+        if (LX + 1 == 168) {
+            increaseLX();
             ++dots;
             enterHBlank();
             return;
@@ -447,7 +448,8 @@ void Ppu::pixelTransfer8() {
 
     tickFetcher();
 
-    LX = nextLX;
+    if (incLX)
+        increaseLX();
 
     ++dots;
 }
@@ -629,10 +631,32 @@ inline void Ppu::updateMode() {
     video.STAT = ((uint8_t)video.STAT & 0b11111100) | mode;
 }
 
-inline bool Ppu::isPixelTransferBlocked() const {
-    // the pixel transfer is stalled if the fetcher is either fetching a sprite
-    // or if there's a obj hit for this x that is ready to be fetched
-    return isFetchingSprite || oamEntries[LX].isNotEmpty();
+inline void Ppu::increaseLX() {
+    // Clear oam entries of current LX (it might contain OBJs not served).
+    // While doing so update oamEntriesCount so that it will contain
+    // the real oam entries count.
+    check(oamEntriesCount >= oamEntries[LX].size());
+    IF_ASSERTS(oamEntriesCount -= oamEntries[LX].size());
+    oamEntries[LX].clear();
+
+    // Increase LX.
+    ++LX;
+}
+
+inline bool Ppu::isBgFifoReadyToBePopped() const {
+    // The condition for which the bg fifo can be popped are:
+    // - the bg fifo should not be empty
+    // - the fetcher is not fetching a sprite
+    // - there are no more oam entries for this LX to be fetched or obj are disabled in LCDC
+    return bgFifo.isNotEmpty() && !isFetchingSprite && (oamEntries[LX].isEmpty() || !test_bit<OBJ_ENABLE>(video.LCDC));
+}
+
+inline bool Ppu::isObjReadyToBeFetched() const {
+    // The condition for which a obj fetch can be served are:
+    // - bg fifo should not be empty
+    // - obj should be enabled in LCDC
+    // - there should be at least a pending oam entry for the current LX
+    return oamEntries[LX].isNotEmpty() && bgFifo.isNotEmpty() && test_bit<OBJ_ENABLE>(video.LCDC);
 }
 
 void Ppu::resetFetcher() {
@@ -802,7 +826,7 @@ void Ppu::bgwinPixelSliceFetcherGetTileDataHigh1() {
     // if there is a pending obj hit, discard the fetched bg pixels
     // and restart the obj prefetcher with the obj hit
     // note: the first obj prefetcher tick should overlap this tick, not the push one
-    if (oamEntries[LX].isNotEmpty() && bgFifo.isNotEmpty()) {
+    if (isObjReadyToBeFetched()) {
         // the bg/win tile fetched is not thrown away: instead it is
         // cached so that the fetcher can start with it after the sprite
         // has been merged into obj fifo
@@ -845,7 +869,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
     // if there is a pending obj hit, discard the fetched bg pixels
     // and restart the obj prefetcher with the obj hit
     // note: the first obj prefetcher tick overlap this tick
-    if (oamEntries[LX].isNotEmpty()) {
+    if (oamEntries[LX].isNotEmpty() && test_bit<OBJ_ENABLE>(video.LCDC)) {
         if (!canPushToBgFifo) {
             // the bg/win tile fetched is not thrown away: instead it is
             // cached so that the fetcher can start with it after the sprite
@@ -932,7 +956,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
 
     check(objFifo.isFull());
 
-    if (oamEntries[LX].isNotEmpty() && bgFifo.isNotEmpty()) {
+    if (isObjReadyToBeFetched()) {
         // still oam entries hit to be served for this x: setup the fetcher
         // for another obj fetch
         of.entry = oamEntries[LX].popBack();
