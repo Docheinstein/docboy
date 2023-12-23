@@ -123,8 +123,8 @@ private:
     [[nodiscard]] bool isBgFifoReadyToBePopped() const;
     [[nodiscard]] bool isObjReadyToBeFetched() const;
 
-    void cacheInterruptedBgWinFetch();
-    void restoreInterruptedBgWinFetch();
+    void cacheBgWinFetch();
+    void restoreBgWinFetch();
 
     Lcd& lcd;
     VideoIO& video;

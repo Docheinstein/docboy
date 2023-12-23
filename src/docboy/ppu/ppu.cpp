@@ -418,10 +418,9 @@ void Ppu::pixelTransfer8() {
             const ObjPixel objPixel = objFifo.popFront();
 
             // take OBJ pixel instead of the BG pixel only if both are satisfied:
-            // 1) OBJ_ENABLE is set
-            // 2) it's opaque
-            // 3) either BG_OVER_OBJ is disabled or the BG color is 0
-            if (test_bit<OBJ_ENABLE>(video.LCDC) && isObjOpaque(objPixel.colorIndex) &&
+            // - it's opaque
+            // - either BG_OVER_OBJ is disabled or the BG color is 0
+            if (isObjOpaque(objPixel.colorIndex) &&
                 (!test_bit<BG_OVER_OBJ>(objPixel.attributes) || bgPixel.colorIndex == 0)) {
                 color = resolveColor(objPixel.colorIndex,
                                      test_bit<PALETTE_NUM>(objPixel.attributes) ? video.OBP1 : video.OBP0);
@@ -656,7 +655,7 @@ inline bool Ppu::isObjReadyToBeFetched() const {
     // - bg fifo should not be empty
     // - obj should be enabled in LCDC
     // - there should be at least a pending oam entry for the current LX
-    return oamEntries[LX].isNotEmpty() && bgFifo.isNotEmpty() && test_bit<OBJ_ENABLE>(video.LCDC);
+    return oamEntries[LX].isNotEmpty() && test_bit<OBJ_ENABLE>(video.LCDC);
 }
 
 void Ppu::resetFetcher() {
@@ -823,14 +822,14 @@ void Ppu::bgwinPixelSliceFetcherGetTileDataHigh0() {
 void Ppu::bgwinPixelSliceFetcherGetTileDataHigh1() {
     check(!isFetchingSprite);
 
-    // if there is a pending obj hit, discard the fetched bg pixels
-    // and restart the obj prefetcher with the obj hit
+    // if there is a pending obj hit (and the bg fifo is not empty),
+    // discard the fetched bg pixels and restart the obj prefetcher with the obj hit
     // note: the first obj prefetcher tick should overlap this tick, not the push one
-    if (isObjReadyToBeFetched()) {
+    if (isObjReadyToBeFetched() && bgFifo.isNotEmpty()) {
         // the bg/win tile fetched is not thrown away: instead it is
         // cached so that the fetcher can start with it after the sprite
         // has been merged into obj fifo
-        cacheInterruptedBgWinFetch();
+        cacheBgWinFetch();
 
         isFetchingSprite = true;
         of.entry = oamEntries[LX].popBack();
@@ -845,12 +844,17 @@ void Ppu::bgwinPixelSliceFetcherPush() {
     check(!isFetchingSprite);
 
     /*
-     * As far as I'm understanding, there are 4 possible cases
-     * bgFifo.IsEmpty() | oamEntriesHit.isEmpty()
-     *        0         |           0              | cache bg fetch and start obj prefetcher (tick now)
-     *        0         |           1              | wait (nop)
-     *        1         |           0              | push to bg fifo and start obj prefetcher (tick now)
-     *        1         |           1              | push to bg fifo and prepare for bg/win prefetcher (tick next dot)
+     * As far as I'm understanding, there are 4 possible cases:
+     *
+     * [canPushToBgFifo] | [isObjReadyToBeFetched]
+     * ---------------------------------------------------------
+     * bgFifo.IsEmpty()  | oamEntries[LX].isNotEmpty() &&
+     *                   | test_bit<OBJ_ENABLE>(video.LCDC)
+     * ---------------------------------------------------------
+     *        0         |           0              | wait (nop)
+     *        0         |           1              | cache bg fetch and start obj prefetcher (tick now)
+     *        1         |           0              | push to bg fifo and prepare for bg/win prefetcher (tick next dot)
+     *        1         |           1              | push to bg fifo and start obj prefetcher (tick now)
      */
 
     // the pixels can be pushed only if the bg fifo is empty,
@@ -869,12 +873,12 @@ void Ppu::bgwinPixelSliceFetcherPush() {
     // if there is a pending obj hit, discard the fetched bg pixels
     // and restart the obj prefetcher with the obj hit
     // note: the first obj prefetcher tick overlap this tick
-    if (oamEntries[LX].isNotEmpty() && test_bit<OBJ_ENABLE>(video.LCDC)) {
+    if (isObjReadyToBeFetched()) {
         if (!canPushToBgFifo) {
             // the bg/win tile fetched is not thrown away: instead it is
             // cached so that the fetcher can start with it after the sprite
             // has been merged into obj fifo
-            cacheInterruptedBgWinFetch();
+            cacheBgWinFetch();
         }
 
         isFetchingSprite = true;
@@ -886,6 +890,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
 
 void Ppu::objPixelSliceFetcherGetTileDataLow0() {
     check(isFetchingSprite);
+    check(bgFifo.isNotEmpty());
 
     psf.tileDataLow = vram[psf.vTileDataAddress];
 
@@ -894,12 +899,14 @@ void Ppu::objPixelSliceFetcherGetTileDataLow0() {
 
 void Ppu::objPixelSliceFetcherGetTileDataLow1() {
     check(isFetchingSprite);
+    check(bgFifo.isNotEmpty());
 
     fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataHigh0;
 }
 
 void Ppu::objPixelSliceFetcherGetTileDataHigh0() {
     check(isFetchingSprite);
+    check(bgFifo.isNotEmpty());
 
     psf.tileDataHigh = vram[psf.vTileDataAddress + 1];
 
@@ -909,6 +916,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh0() {
 void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     check(isFetchingSprite);
     check(of.entry.x == LX);
+    check(bgFifo.isNotEmpty());
 
     PixelColorIndex objPixelsColors[8];
     const uint8_t(*pixelsMapPtr)[8] =
@@ -967,7 +975,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
         isFetchingSprite = false;
 
         if (bwf.interruptedFetch.hasData) {
-            restoreInterruptedBgWinFetch();
+            restoreBgWinFetch();
             fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherPush;
         } else {
             fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;
@@ -975,14 +983,14 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     }
 }
 
-inline void Ppu::cacheInterruptedBgWinFetch() {
+inline void Ppu::cacheBgWinFetch() {
     bwf.interruptedFetch.tileDataLow = psf.tileDataLow;
     bwf.interruptedFetch.tileDataHigh = psf.tileDataHigh;
     check(!bwf.interruptedFetch.hasData);
     bwf.interruptedFetch.hasData = true;
 }
 
-inline void Ppu::restoreInterruptedBgWinFetch() {
+inline void Ppu::restoreBgWinFetch() {
     psf.tileDataLow = bwf.interruptedFetch.tileDataLow;
     psf.tileDataHigh = bwf.interruptedFetch.tileDataHigh;
     check(bwf.interruptedFetch.hasData);
