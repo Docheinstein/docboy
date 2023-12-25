@@ -143,6 +143,8 @@ private:
     uint16_t dots {IF_BOOTROM_ELSE(0, 395)}; // [0, 456)
     uint8_t LX {};                           // LX=X+8, therefore [0, 168)
 
+    uint8_t lastBGP {IF_BOOTROM_ELSE(0, 0xFC)};
+
     FillQueue<BgPixel, 8> bgFifo {};
     Queue<ObjPixel, 8> objFifo {};
 

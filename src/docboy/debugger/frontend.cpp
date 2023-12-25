@@ -1140,6 +1140,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
           << endl;
 
         b << yellow("LX") << "               :  " << gb.ppu.LX << endl;
+        b << yellow("Last BGP") << "         :  " << gb.ppu.lastBGP << endl;
         b << yellow("Last Stat IRQ") << "    :  " << gb.ppu.lastStatIrq << endl;
 
         // LCD

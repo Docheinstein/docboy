@@ -74,6 +74,13 @@ void Ppu::tick() {
     // Tick PPU by one dot
     (this->*(tickSelector))();
 
+    // There is 1 T-cycle delay between video.BGP and the BGP value the PPU sees.
+    // During this T-Cycle, the PPU sees the last BGP ORed with the new one.
+    // Therefore, we store the last BGP value here so that we can use (video.BGP | BGP)
+    // for resolving BG color.
+    // [mealybug/m3_bgp_change]
+    lastBGP = video.BGP;
+
     // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt
     tickStat();
 
@@ -412,7 +419,11 @@ void Ppu::pixelTransfer8() {
         }
 
         if (color == NO_COLOR) {
-            color = test_bit<BG_WIN_ENABLE>(video.LCDC) ? resolveColor(bgPixel.colorIndex, video.BGP) : 0;
+            // There is 1 T-cycle delay between video.BGP and the BGP value the PPU sees.
+            // During this T-Cycle, the PPU sees the last BGP ORed with the new BGP.
+            // [mealybug/m3_bgp_change]
+            const uint8_t BGP = (uint8_t)video.BGP | lastBGP;
+            color = test_bit<BG_WIN_ENABLE>(video.LCDC) ? resolveColor(bgPixel.colorIndex, BGP) : 0;
         }
 
         check(color < NUMBER_OF_COLORS);
@@ -1044,6 +1055,7 @@ void Ppu::saveState(Parcel& parcel) const {
     parcel.writeBool(lastStatIrq);
     parcel.writeUInt16(dots);
     parcel.writeUInt8(LX);
+    parcel.writeUInt8(lastBGP);
 
     parcel.writeBytes(bgFifo.data, sizeof(bgFifo.data));
     parcel.writeUInt8(bgFifo.cursor);
@@ -1134,6 +1146,7 @@ void Ppu::loadState(Parcel& parcel) {
     lastStatIrq = parcel.readBool();
     dots = parcel.readUInt16();
     LX = parcel.readUInt8();
+    lastBGP = parcel.readUInt8();
 
     parcel.readBytes(bgFifo.data, sizeof(bgFifo.data));
     bgFifo.cursor = parcel.readUInt8();
