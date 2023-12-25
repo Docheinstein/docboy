@@ -307,19 +307,9 @@ void Ppu::enterPixelTransfer() {
 
     resetFetcher();
 
-    if (test_bit<WIN_ENABLE>(video.LCDC) && video.WX == 7 && video.LY >= video.WY) {
-        // the first bg fetch of this scanline is for the window
-        // do not discard any pixel due to SCX
-        tickSelector = &Ppu::pixelTransferDummy0<false>;
-        IF_ASSERTS(firstFetchWasBg = false);
-    } else {
-        // the first bg fetch of this scanline is for the bg
-        // eventually discard SCX % 8 pixels
-        tickSelector = &Ppu::pixelTransferDummy0<true>;
-        bgPixelTransfer.SCXmod8 = mod<TILE_WIDTH>(video.SCX);
-        bgPixelTransfer.discardedPixels = 0;
-        IF_ASSERTS(firstFetchWasBg = true);
-    }
+    tickSelector = &Ppu::pixelTransferDummy0;
+    pixelTransfer.initialSCX.toDiscard = mod<TILE_WIDTH>(video.SCX);
+    pixelTransfer.initialSCX.discarded = 0;
 
     updateMode<PIXEL_TRANSFER>();
 
@@ -327,7 +317,6 @@ void Ppu::enterPixelTransfer() {
     oam.acquire();
 }
 
-template <bool bg>
 void Ppu::pixelTransferDummy0() {
     check(LX == 0);
     check(oam.isAcquired());
@@ -335,21 +324,14 @@ void Ppu::pixelTransferDummy0() {
 
     if (++dots == 83) {
         bgFifo.fill(DUMMY_TILE);
-        if constexpr (bg) {
-            if (bgPixelTransfer.SCXmod8)
-                tickSelector = &Ppu::pixelTransferDiscard0;
-            else
-                tickSelector = &Ppu::pixelTransfer0;
-        } else {
-            tickSelector = &Ppu::pixelTransfer0;
-        }
+        tickSelector = pixelTransfer.initialSCX.toDiscard ? &Ppu::pixelTransferDiscard0 : &Ppu::pixelTransfer0;
     }
 }
 
 void Ppu::pixelTransferDiscard0() {
     check(LX == 0);
-    check(bgPixelTransfer.SCXmod8 < 8);
-    check(bgPixelTransfer.discardedPixels < bgPixelTransfer.SCXmod8);
+    check(pixelTransfer.initialSCX.toDiscard < 8);
+    check(pixelTransfer.initialSCX.discarded < pixelTransfer.initialSCX.toDiscard);
     check(oam.isAcquired());
     check(vram.isAcquired());
 
@@ -359,7 +341,7 @@ void Ppu::pixelTransferDiscard0() {
     if (isBgFifoReadyToBePopped()) {
         bgFifo.popFront();
 
-        if (++bgPixelTransfer.discardedPixels == bgPixelTransfer.SCXmod8)
+        if (++pixelTransfer.initialSCX.discarded == pixelTransfer.initialSCX.toDiscard)
             // all the SCX % 8 pixels have been discard
             tickSelector = &Ppu::pixelTransfer0;
     }
@@ -371,7 +353,7 @@ void Ppu::pixelTransferDiscard0() {
 
 void Ppu::pixelTransfer0() {
     check(LX < 8);
-    check(!firstFetchWasBg || bgPixelTransfer.discardedPixels == bgPixelTransfer.SCXmod8);
+    check(pixelTransfer.initialSCX.discarded == pixelTransfer.initialSCX.toDiscard);
     check(oam.isAcquired());
     check(vram.isAcquired());
 
@@ -388,6 +370,8 @@ void Ppu::pixelTransfer0() {
 
         if (LX + 1 == 8)
             tickSelector = &Ppu::pixelTransfer8;
+
+        eventuallySetupFetcherForWindow();
     }
 
     tickFetcher();
@@ -443,6 +427,8 @@ void Ppu::pixelTransfer8() {
             enterHBlank();
             return;
         }
+
+        eventuallySetupFetcherForWindow();
     }
 
     tickFetcher();
@@ -462,7 +448,6 @@ void Ppu::enterHBlank() {
         // Check Pixel Transfer Timing.
 
         static constexpr uint16_t LB = 80 + 3 + 21 * 8;                // 251
-        static constexpr uint16_t UB = LB + 11 * 10 + 7 /* window? */; // 368
 
         // The minimum number of dots a pixel transfer can take is
         // -> 3 + 21 * 8 = 171.
@@ -472,19 +457,10 @@ void Ppu::enterHBlank() {
         // 8 * 20 cycles for push the 160 pixels.
         check(dots >= LB);
 
-        // The maximum number of dots a pixel transfer can take is
-        // -> LB + 11 * 10 + 7 = 288.
-        //
-        // 11 the maximum number of cycles a sprite can take
-        // 10 the maximum number of sprites that can be rendered on a line
-        // 7  window penalty
-        check(dots <= UB);
-
-        // If the BG has been rendered and SCX % 8 was > 0,
-        // then pixel transfer is delayed by SCX % 8 dots.
-
-        // Therefore a more strict lower bound is eBgLB = 80 + 174 + SCX % 8
-        const uint16_t eBgLB = LB + (firstFetchWasBg ? bgPixelTransfer.SCXmod8 : 0);
+        // If SCX % 8 was > 0 the pixel transfer is delayed by SCX % 8 dots.
+        // Furthermore, each window triggers delays pixel transfer by 6 dots.
+        // Therefore, a more strict lower bound is eBgLB = 80 + 174 + SCX % 8 + 6 * WinTriggers
+        const uint16_t eBgLB = LB + pixelTransfer.initialSCX.toDiscard + 6 * w.lineTriggers;
         check(dots >= eBgLB);
 
         // A sprite fetch requires at least 6 cycles, therefore a more strict lower bound is
@@ -500,18 +476,10 @@ void Ppu::enterHBlank() {
 
         // More strictly: check based on the sprites actually there for this line
         check(dots <= eBgLB + 11 * oamEntriesCount);
-
-        // TODO: consider also (7) window penalty?
-        // TODO: check timing based on the expected penalty for the sprites hit
     });
     // clang-format on
 
     IF_DEBUGGER(timings.pixelTransfer = dots - timings.oamScan);
-
-    // eventually increase window line counter if the window
-    // has been displayed at least once in this scanline
-    w.WLY += w.shown;
-    w.shown = false;
 
     tickSelector = video.LY == 143 ? &Ppu::hBlankLastLine : &Ppu::hBlank;
 
@@ -615,8 +583,9 @@ void Ppu::vBlankLastLine454() {
 }
 
 void Ppu::enterNewFrame() {
-    // reset window line counter
-    w.WLY = 0;
+    // Reset window line counter
+    // (reset to 255 so that it will go to 0 at the first window trigger).
+    w.WLY = UINT8_MAX;
 
     enterOamScan();
 
@@ -652,10 +621,38 @@ inline bool Ppu::isBgFifoReadyToBePopped() const {
 
 inline bool Ppu::isObjReadyToBeFetched() const {
     // The condition for which a obj fetch can be served are:
-    // - bg fifo should not be empty
-    // - obj should be enabled in LCDC
     // - there should be at least a pending oam entry for the current LX
+    // - obj should be enabled in LCDC
     return oamEntries[LX].isNotEmpty() && test_bit<OBJ_ENABLE>(video.LCDC);
+}
+
+bool Ppu::isWindowTriggering() const {
+    // The condition for which the window can be triggered are:
+    // - current pixel transfer LX should match WX
+    // - current LY should be greater than WY
+    // - window should be enabled in LCDC
+    return LX == video.WX && video.LY >= video.WY && test_bit<WIN_ENABLE>(video.LCDC);
+}
+
+inline void Ppu::eventuallySetupFetcherForWindow() {
+    // Eventually reset the fetcher so that it fetches the window, if it is triggering now.
+    if (!w.active && isWindowTriggering()) {
+        w.active = true;
+
+        // Store the triggering WX.
+        w.WX = video.WX;
+
+        // Increase the window line counter.
+        ++w.WLY;
+
+        IF_ASSERTS_OR_DEBUGGER(++w.lineTriggers);
+
+        // Throw away the pixels in the BG fifo.
+        bgFifo.clear();
+
+        // Setup the fetcher to fetch a window tile
+        fetcherTickSelector = &Ppu::winPrefetcherGetTile0;
+    }
 }
 
 void Ppu::resetFetcher() {
@@ -664,6 +661,8 @@ void Ppu::resetFetcher() {
     objFifo.clear();
     isFetchingSprite = false;
     bwf.LX = 0;
+    w.active = false;
+    IF_ASSERTS_OR_DEBUGGER(w.lineTriggers = 0);
     fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;
 }
 
@@ -674,19 +673,16 @@ inline void Ppu::tickFetcher() {
 void Ppu::bgwinPrefetcherGetTile0() {
     check(!isFetchingSprite);
 
-    // check whether fetch the tile for the window or for the bg
-    if (test_bit<WIN_ENABLE>(video.LCDC)) {
-        const uint8_t WX = video.WX;
-
-        // TODO: figure out what actually happens if WX - 7 % 8 != 0: is the window just not shown?
-
-        //        if (mod2<TILE_WIDTH>(WX - 7) == 0) {
-        // TODO: is the check above needed or not?
-        if (bwf.LX >= WX - 7 && video.LY >= video.WY) {
+    // Check whether fetch the tile for the window or for the BG
+    if (w.active) {
+        if (test_bit<WIN_ENABLE>(video.LCDC) /* TODO: other conditions checked? WY?*/) {
+            // Proceed to fetch window
             winPrefetcherGetTile0();
-            w.shown = true;
             return;
         }
+
+        // Abort window fetch and proceed with BG fetch
+        w.active = false;
     }
 
     bgPrefetcherGetTile0();
@@ -729,9 +725,7 @@ void Ppu::bgPrefetcherGetTile1() {
 
 void Ppu::winPrefetcherGetTile0() {
     check(!isFetchingSprite);
-
-    bwf.tilemapX = (bwf.LX - (video.WX - 7)) / TILE_WIDTH;
-
+    bwf.tilemapX = (bwf.LX - (w.WX - 7)) / TILE_WIDTH;
     fetcherTickSelector = &Ppu::winPrefetcherGetTile1;
 }
 
@@ -1001,8 +995,7 @@ void Ppu::saveState(Parcel& parcel) const {
     static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScanEven,
                                                     &Ppu::oamScanOdd,
                                                     &Ppu::oamScanDone,
-                                                    &Ppu::pixelTransferDummy0<false>,
-                                                    &Ppu::pixelTransferDummy0<true>,
+                                                    &Ppu::pixelTransferDummy0,
                                                     &Ppu::pixelTransferDiscard0,
                                                     &Ppu::pixelTransfer0,
                                                     &Ppu::pixelTransfer8,
@@ -1069,8 +1062,8 @@ void Ppu::saveState(Parcel& parcel) const {
     parcel.writeUInt8(oamScan.entry.number);
     parcel.writeUInt8(oamScan.entry.y);
 
-    parcel.writeUInt8(bgPixelTransfer.SCXmod8);
-    parcel.writeUInt8(bgPixelTransfer.discardedPixels);
+    parcel.writeUInt8(pixelTransfer.initialSCX.toDiscard);
+    parcel.writeUInt8(pixelTransfer.initialSCX.discarded);
 
     parcel.writeUInt8(bwf.LX);
     parcel.writeUInt8(bwf.tilemapX);
@@ -1079,7 +1072,9 @@ void Ppu::saveState(Parcel& parcel) const {
     parcel.writeBool(bwf.interruptedFetch.hasData);
 
     parcel.writeUInt8(w.WLY);
-    parcel.writeBool(w.shown);
+    parcel.writeUInt8(w.WX);
+    parcel.writeBool(w.active);
+    IF_ASSERTS_OR_DEBUGGER(parcel.writeUInt8(w.lineTriggers));
 
     parcel.writeUInt8(of.entry.number);
     parcel.writeUInt8(of.entry.y);
@@ -1092,15 +1087,13 @@ void Ppu::saveState(Parcel& parcel) const {
     parcel.writeUInt8(psf.tileDataHigh);
 
     IF_DEBUGGER(parcel.writeUInt64(cycles));
-    IF_ASSERTS(parcel.writeBool(firstFetchWasBg));
 }
 
 void Ppu::loadState(Parcel& parcel) {
     static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScanEven,
                                                     &Ppu::oamScanOdd,
                                                     &Ppu::oamScanDone,
-                                                    &Ppu::pixelTransferDummy0<false>,
-                                                    &Ppu::pixelTransferDummy0<true>,
+                                                    &Ppu::pixelTransferDummy0,
                                                     &Ppu::pixelTransferDiscard0,
                                                     &Ppu::pixelTransfer0,
                                                     &Ppu::pixelTransfer8,
@@ -1159,8 +1152,8 @@ void Ppu::loadState(Parcel& parcel) {
     oamScan.entry.number = parcel.readUInt8();
     oamScan.entry.y = parcel.readUInt8();
 
-    bgPixelTransfer.SCXmod8 = parcel.readUInt8();
-    bgPixelTransfer.discardedPixels = parcel.readUInt8();
+    pixelTransfer.initialSCX.toDiscard = parcel.readUInt8();
+    pixelTransfer.initialSCX.discarded = parcel.readUInt8();
 
     bwf.LX = parcel.readUInt8();
     bwf.tilemapX = parcel.readUInt8();
@@ -1169,7 +1162,9 @@ void Ppu::loadState(Parcel& parcel) {
     bwf.interruptedFetch.hasData = parcel.readBool();
 
     w.WLY = parcel.readUInt8();
-    w.shown = parcel.readBool();
+    w.WX = parcel.readUInt8();
+    w.active = parcel.readBool();
+    IF_ASSERTS_OR_DEBUGGER(w.lineTriggers = parcel.readUInt8());
 
     of.entry.number = parcel.readUInt8();
     of.entry.y = parcel.readUInt8();
@@ -1182,5 +1177,4 @@ void Ppu::loadState(Parcel& parcel) {
     psf.tileDataHigh = parcel.readUInt8();
 
     IF_DEBUGGER(cycles = parcel.readUInt64());
-    IF_ASSERTS(firstFetchWasBg = parcel.readBool());
 }

@@ -1,0 +1,8 @@
+add_executable(cmpframebuffers cmpframebuffers.cpp)
+target_link_libraries(cmpframebuffers PRIVATE testutils utils)
+
+add_executable(convframebuffer convframebuffer.cpp)
+target_link_libraries(convframebuffer PRIVATE testutils utils)
+
+add_executable(dumpframebuffer dumpframebuffer.cpp)
+target_link_libraries(dumpframebuffer PRIVATE testutils)

@@ -1067,8 +1067,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             if (gb.ppu.tickSelector == &Ppu::oamScanEven || gb.ppu.tickSelector == &Ppu::oamScanOdd ||
                 gb.ppu.tickSelector == &Ppu::oamScanDone)
                 return "Oam Scan";
-            if (gb.ppu.tickSelector == &Ppu::pixelTransferDummy0<false> ||
-                gb.ppu.tickSelector == &Ppu::pixelTransferDummy0<true> ||
+            if (gb.ppu.tickSelector == &Ppu::pixelTransferDummy0 ||
                 gb.ppu.tickSelector == &Ppu::pixelTransferDiscard0 || gb.ppu.tickSelector == &Ppu::pixelTransfer0 ||
                 gb.ppu.tickSelector == &Ppu::pixelTransfer8) {
 
@@ -1119,7 +1118,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0)
                     return "BG/WIN PixelSliceFetcher GetTileDataHigh0";
                 if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1)
-                    return "BG/WIN PixelSliceFetcher GetTileDataHigr1";
+                    return "BG/WIN PixelSliceFetcher GetTileDataHigh1";
                 if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
                     return "BG/WIN PixelSliceFetcher Push";
                 if (gb.ppu.fetcherTickSelector == &Ppu::objPrefetcherGetTile0)
@@ -1133,7 +1132,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh0)
                     return "OBJ PixelSliceFetcher GetTileDataHigh0";
                 if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
-                    return "OBJ PixelSliceFetcher GetTileDataHigr1AndMerge";
+                    return "OBJ PixelSliceFetcher GetTileDataHigh1AndMerge";
 
                 checkNoEntry();
                 return "Unknown";
@@ -1232,10 +1231,28 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("OBJ Fifo Attrs.") << "  :  " << hex(objAttrs, gb.ppu.objFifo.size()) << endl;
         b << yellow("OBJ Fifo X") << "       :  " << hex(objXs, gb.ppu.objFifo.size()) << endl;
 
+        // OBJ Prefetcher
+        b << subheader("obj prefetcher", width) << endl;
+        b << yellow("OAM Number") << "       :  " << gb.ppu.of.entry.number << endl;
+        b << yellow("Tile Number") << "      :  " << gb.ppu.of.tileNumber << endl;
+        b << yellow("OBJ Attributes") << "   :  " << gb.ppu.of.attributes << endl;
+
+        // BG/WIN Prefetcher
+        b << subheader("bg/win prefetcher", width) << endl;
+        b << yellow("LX") << "               :  " << gb.ppu.bwf.LX << endl;
+        b << yellow("Tile Map X") << "       :  " << gb.ppu.bwf.tilemapX << endl;
+        b << yellow("Cached Fetch") << "     :  "
+          << (gb.ppu.bwf.interruptedFetch.hasData ? hex<uint16_t>(gb.ppu.bwf.interruptedFetch.tileDataHigh << 8 |
+                                                                  gb.ppu.bwf.interruptedFetch.tileDataHigh)
+                                                  : darkgray("None"))
+          << endl;
+
         // Pixel Slice Fetcher
         b << subheader("pixel slice fetcher", width) << endl;
         b << yellow("Tile Data Addr.") << "  :  "
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.psf.vTileDataAddress) << endl;
+        b << yellow("Tile Data") << "        :  "
+          << hex<uint16_t>(gb.ppu.psf.tileDataHigh << 8 | gb.ppu.psf.tileDataHigh) << endl;
         b << yellow("Tile Data Ready") << "  :  " <<
             [this]() {
                 if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
@@ -1248,7 +1265,10 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         // Window
         b << subheader("window", width) << endl;
-        b << yellow("WLY") << "              :  " << gb.ppu.w.WLY << endl;
+        b << yellow("WLY") << "              :  " << (gb.ppu.w.WLY != UINT8_MAX ? gb.ppu.w.WLY : darkgray("None"))
+          << endl;
+        b << yellow("Active") << "           :  " << gb.ppu.w.active << endl;
+        b << yellow("WX") << "               :  " << (gb.ppu.w.lineTriggers ? gb.ppu.w.WX : darkgray("None")) << endl;
 
         return b;
     };

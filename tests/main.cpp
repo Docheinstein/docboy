@@ -4,6 +4,7 @@
 #include "docboy/core/core.h"
 #include "docboy/gameboy/gameboy.h"
 #include "extra/serial/endpoints/buffer.h"
+#include "testutils/img.h"
 #include "utils/bits.hpp"
 #include "utils/casts.hpp"
 #include "utils/fillqueue.hpp"
@@ -33,9 +34,6 @@
 static const std::string TEST_ROMS_PATH = "tests/roms/";
 static const std::string TEST_RESULTS_PATH = "tests/results/";
 
-static constexpr uint32_t FRAMEBUFFER_NUM_PIXELS = Specs::Display::WIDTH * Specs::Display::HEIGHT;
-static constexpr uint32_t FRAMEBUFFER_SIZE = sizeof(uint16_t) * FRAMEBUFFER_NUM_PIXELS;
-
 using Palette = std::vector<uint16_t>;
 
 static const Palette DEFAULT_PALETTE {};
@@ -48,76 +46,6 @@ static constexpr uint64_t DURATION_SHORT = 5'000'000;
 static constexpr uint64_t DURATION_VERY_SHORT = 1'500'000;
 
 static constexpr uint64_t DEFAULT_DURATION = DURATION_VERY_LONG;
-
-static void load_png(const std::string& filename, void* buffer, int format = -1, uint32_t* size = nullptr) {
-    SDL_Surface* surface {};
-    SDL_Surface* convertedSurface {};
-
-    surface = IMG_Load(filename.c_str());
-    if (!surface)
-        goto error;
-
-    if (format != -1) {
-        convertedSurface = SDL_ConvertSurfaceFormat(surface, format, 0);
-        if (!convertedSurface)
-            goto error;
-        surface = convertedSurface;
-        convertedSurface = nullptr;
-    }
-
-    if (size)
-        *size = surface->h * surface->pitch;
-
-    memcpy(buffer, surface->pixels, surface->h * surface->pitch);
-    goto cleanup;
-
-error:
-    if (size)
-        *size = 0;
-
-cleanup:
-    if (surface)
-        SDL_FreeSurface(surface);
-}
-
-[[maybe_unused]] static void dump_png_framebuffer(const std::string& filename) {
-    uint16_t buffer[FRAMEBUFFER_NUM_PIXELS];
-    load_png(filename, buffer, SDL_PIXELFORMAT_RGB565);
-    std::cout << hexdump(buffer, FRAMEBUFFER_NUM_PIXELS) << std::endl;
-}
-
-static bool save_framebuffer_as_png(const std::string& filename, const uint16_t* buffer) {
-    SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
-        (void*)buffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_BITSPERPIXEL(SDL_PIXELFORMAT_RGB565),
-        Specs::Display::WIDTH * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGB565), SDL_PIXELFORMAT_RGB565);
-
-    int result = -1;
-    if (surface) {
-        result = IMG_SavePNG(surface, filename.c_str());
-    }
-
-    SDL_FreeSurface(surface);
-
-    return result == 0;
-}
-
-static inline uint16_t convert_framebuffer_pixel(uint16_t p, const Palette& pixelsConversionMap) {
-    for (uint8_t c = 0; c < 4; c++)
-        if (p == Lcd::RGB565_PALETTE[c])
-            return pixelsConversionMap[c];
-    checkNoEntry();
-    return p;
-}
-
-static void convert_framebuffer_pixels(uint16_t* dst, const uint16_t* src, const Palette& pixelsConversionMap) {
-    for (uint32_t i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
-        dst[i] = convert_framebuffer_pixel(src[i], pixelsConversionMap);
-    }
-}
-
-static bool are_framebuffer_equals(const uint16_t* buf1, const uint16_t* buf2) {
-    return memcmp(buf1, buf2, FRAMEBUFFER_SIZE) == 0;
-}
 
 template <typename RunnerImpl>
 class RunnerT {
@@ -222,7 +150,7 @@ public:
         check(keep_bits<2>(core.gb.video.STAT) == 1);
         memcpy(lastFramebuffer, gb->lcd.getPixels(), FRAMEBUFFER_SIZE);
         if (!pixelColors.empty())
-            convert_framebuffer_pixels(lastFramebuffer, gb->lcd.getPixels(), pixelColors);
+            convert_framebuffer_pixels(gb->lcd.getPixels(), Lcd::RGB565_PALETTE, lastFramebuffer, pixelColors.data());
         return are_framebuffer_equals(lastFramebuffer, expectedFramebuffer);
     }
 
@@ -930,7 +858,6 @@ static bool run_with_params(const RunnerParams& p) {
     REQUIRE(run_with_params(params))
 
 TEST_CASE("emulation", "[emulation][.]") {
-
     SECTION("mbc") {
         SECTION("mbc1") {
             RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1114,10 +1041,40 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/pixel_transfer_timing_stat_interrupt_1_sprite_x0_scx4_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/pixel_transfer_timing_stat_interrupt_1_sprite_x0_scx5_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/pixel_transfer_timing_stat_interrupt_1_sprite_x0_scx5_round2.gb", "docboy/ok.png"},
-            //            F {"docboy/ppu/pixel_transfer_timing_window_misaligned_wx_round1.gb", "docboy/ok.png"},
-            //            F {"docboy/ppu/pixel_transfer_timing_window_misaligned_wx_round2.gb", "docboy/ok.png"},
-            //            F {"docboy/ppu/pixel_transfer_timing_window_round1.gb", "docboy/ok.png"},
-            //            F {"docboy/ppu/pixel_transfer_timing_window_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx1_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx1_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx7_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx7_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx7_scx0_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx7_scx0_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx7_scx7_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx7_scx7_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx8_scx7_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx8_scx7_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx15_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx15_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx17_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx17_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx128_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx128_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx129_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx129_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx130_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx130_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx131_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx131_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx132_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx132_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx133_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx133_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx134_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx134_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx135_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_window_wx_reenable_retrigger_wx135_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_winon_bgoff_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/pixel_transfer_timing_winon_bgoff_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_off_ly2_lyc0_stat.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_off_ly2_lyc1_stat.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_off_ly2_lyc2_stat.gb", "docboy/ok.png"},
@@ -1192,24 +1149,44 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/write_read_stat.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_vram_oam_scan.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_vram_pixel_transfer.gb", "docboy/ok.png"},
-            //                      F {"docboy/ppu/rendering/window_wx0.gb", "docboy/rendering/window_wx0.png"},
-            //                      F {"docboy/ppu/rendering/window_wx1.gb", "docboy/rendering/window_wx1.png"},
-            //                      F {"docboy/ppu/rendering/window_wx2.gb", "docboy/rendering/window_wx2.png"},
-            //                      F {"docboy/ppu/rendering/window_wx3.gb", "docboy/rendering/window_wx3.png"},
-            //                      F {"docboy/ppu/rendering/window_wx4.gb", "docboy/rendering/window_wx4.png"},
-            //                      F {"docboy/ppu/rendering/window_wx5.gb", "docboy/rendering/window_wx5.png"},
-            //                      F {"docboy/ppu/rendering/window_wx6.gb", "docboy/rendering/window_wx6.png"},
-            //                      F {"docboy/ppu/rendering/window_wx7.gb", "docboy/rendering/window_wx7.png"},
-            //                      F {"docboy/ppu/rendering/window_wx8.gb", "docboy/rendering/window_wx8.png"},
-            //                      F {"docboy/ppu/rendering/window_wx9.gb", "docboy/rendering/window_wx9.png"},
-            //                      F {"docboy/ppu/rendering/window_wx10.gb", "docboy/rendering/window_wx10.png"},
-            //                      F {"docboy/ppu/rendering/window_wx11.gb", "docboy/rendering/window_wx11.png"},
-            //                      F {"docboy/ppu/rendering/window_wx12.gb", "docboy/rendering/window_wx12.png"},
-            //                      F {"docboy/ppu/rendering/window_wx13.gb", "docboy/rendering/window_wx13.png"},
-            //                      F {"docboy/ppu/rendering/window_wx14.gb", "docboy/rendering/window_wx14.png"},
-            //                      F {"docboy/ppu/rendering/window_wx15.gb", "docboy/rendering/window_wx15.png"},
-            //                      F {"docboy/ppu/rendering/window_wx16.gb", "docboy/rendering/window_wx16.png"},
-        );
+            F {"docboy/ppu/rendering/window_wx0.gb", "docboy/window_wx0.png"},
+            F {"docboy/ppu/rendering/window_wx1.gb", "docboy/window_wx1.png"},
+            F {"docboy/ppu/rendering/window_wx2.gb", "docboy/window_wx2.png"},
+            F {"docboy/ppu/rendering/window_wx3.gb", "docboy/window_wx3.png"},
+            F {"docboy/ppu/rendering/window_wx4.gb", "docboy/window_wx4.png"},
+            F {"docboy/ppu/rendering/window_wx5.gb", "docboy/window_wx5.png"},
+            F {"docboy/ppu/rendering/window_wx6.gb", "docboy/window_wx6.png"},
+            F {"docboy/ppu/rendering/window_wx7.gb", "docboy/window_wx7.png"},
+            F {"docboy/ppu/rendering/window_wx8.gb", "docboy/window_wx8.png"},
+            F {"docboy/ppu/rendering/window_wx9.gb", "docboy/window_wx9.png"},
+            F {"docboy/ppu/rendering/window_wx10.gb", "docboy/window_wx10.png"},
+            F {"docboy/ppu/rendering/window_wx11.gb", "docboy/window_wx11.png"},
+            F {"docboy/ppu/rendering/window_wx12.gb", "docboy/window_wx12.png"},
+            F {"docboy/ppu/rendering/window_wx13.gb", "docboy/window_wx13.png"},
+            F {"docboy/ppu/rendering/window_wx14.gb", "docboy/window_wx14.png"},
+            F {"docboy/ppu/rendering/window_wx15.gb", "docboy/window_wx15.png"},
+            F {"docboy/ppu/rendering/window_wx16.gb", "docboy/window_wx16.png"},
+            F {"docboy/ppu/rendering/window_wx_change_round0.gb", "docboy/window_wx_change_round0.png"},
+            F {"docboy/ppu/rendering/window_wx_change_v1_round1.gb", "docboy/window_wx_change_v1_round1.png"},
+            F {"docboy/ppu/rendering/window_wx_change_v1_round2.gb", "docboy/window_wx_change_v1_round2.png"},
+            F {"docboy/ppu/rendering/window_wx_change_v2_round1.gb", "docboy/window_wx_change_v2_round1.png"},
+            F {"docboy/ppu/rendering/window_wx_change_v2_round2.gb", "docboy/window_wx_change_v2_round2.png"},
+            F {"docboy/ppu/rendering/window_wx_change_v3_round1.gb", "docboy/window_wx_change_v3_round1.png"},
+            F {"docboy/ppu/rendering/window_wx_change_v3_round2.gb", "docboy/window_wx_change_v3_round2.png"},
+            F {"docboy/ppu/rendering/window_wx_reenable_a.gb", "docboy/window_wx_reenable_a.png"},
+            F {"docboy/ppu/rendering/window_wx_reenable_b.gb", "docboy/window_wx_reenable_b.png"},
+            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_a.gb", "docboy/window_wx_reenable_retrigger_a.png"},
+            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_b.gb", "docboy/window_wx_reenable_retrigger_b.png"},
+            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_misaligned_a.gb",
+               "docboy/window_wx_reenable_retrigger_misaligned_a.png"},
+            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_misaligned_b.gb",
+               "docboy/window_wx_reenable_retrigger_misaligned_b.png"},
+            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_misaligned_redisable_a.gb",
+               "docboy/window_wx_reenable_retrigger_misaligned_redisable_a.png"},
+            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_misaligned_redisable_b.gb",
+               "docboy/window_wx_reenable_retrigger_misaligned_redisable_b.png"},
+            F {"docboy/ppu/rendering/window_wx_reset_round1.gb", "docboy/window_wx_reset_round1.png"},
+            F {"docboy/ppu/rendering/window_wx_reset_round2.gb", "docboy/window_wx_reset_round2.png"}, );
     }
 
     SECTION("timers") {

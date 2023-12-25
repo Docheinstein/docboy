@@ -63,7 +63,6 @@ private:
     void oamScanOdd();
     void oamScanDone();
 
-    template <bool bg>
     void pixelTransferDummy0();
     void pixelTransferDiscard0();
     void pixelTransfer0();
@@ -122,6 +121,8 @@ private:
 
     [[nodiscard]] bool isBgFifoReadyToBePopped() const;
     [[nodiscard]] bool isObjReadyToBeFetched() const;
+    [[nodiscard]] bool isWindowTriggering() const;
+    void eventuallySetupFetcherForWindow();
 
     void cacheBgWinFetch();
     void restoreBgWinFetch();
@@ -173,9 +174,11 @@ private:
     } oamScan;
 
     struct {
-        uint8_t SCXmod8 {};         // [0, 8)
-        uint8_t discardedPixels {}; // [0, 8)
-    } bgPixelTransfer;
+        struct {
+            uint8_t toDiscard {}; // [0, 8)
+            uint8_t discarded {}; // [0, 8)
+        } initialSCX;
+    } pixelTransfer;
 
     // Bg/Win Prefetcher
     struct {
@@ -191,8 +194,10 @@ private:
 
     // Window
     struct {
-        uint8_t WLY {};
-        bool shown {};
+        uint8_t WLY {UINT8_MAX}; // window line counter
+        uint8_t WX {};           // triggered video.WX - 7
+        bool active {};
+        IF_ASSERTS(uint8_t lineTriggers {});
     } w;
 
     // Obj Prefetcher
@@ -210,8 +215,6 @@ private:
     } psf;
 
     IF_DEBUGGER(uint64_t cycles {});
-
-    IF_ASSERTS(bool firstFetchWasBg {});
 };
 
 #endif // PPU_H
