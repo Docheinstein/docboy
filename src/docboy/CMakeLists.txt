@@ -59,6 +59,7 @@ target_sources(docboy PRIVATE
     memory/hram.h
     memory/memory.hpp
     memory/oam.h
+    memory/vram.cpp
     memory/vram.h
     memory/wram1.h
     memory/wram2.h

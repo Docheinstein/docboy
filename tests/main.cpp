@@ -888,13 +888,25 @@ TEST_CASE("emulation", "[emulation][.]") {
         }
     }
 
+    SECTION("boot") {
+        RUN_TEST_ROMS(S {"mooneye/boot_div-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/boot_hwio-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      S {"mooneye/boot_regs-dmgABC.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                      F {"docboy/boot/boot_div_phase_round1.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_div_phase_round2.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_ppu_phase_round1.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_ppu_phase_round2.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_stat_lyc_eq_ly_round1.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_stat_lyc_eq_ly_round2.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_vram.gb", "docboy/ok.png"}, );
+    }
+
     SECTION("oam") {
         RUN_TEST_ROMS(S {"mooneye/bits/mem_oam.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
     }
 
     SECTION("io") {
-        RUN_TEST_ROMS(S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/boot_hwio-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+        RUN_TEST_ROMS(S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}
 
         );
     }
@@ -907,7 +919,6 @@ TEST_CASE("emulation", "[emulation][.]") {
                       F {"blargg/mem_timing-2.gb", "blargg/mem_timing-2.png"},
                       S {"mooneye/instr/daa.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/bits/reg_f.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/boot_regs-dmgABC.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/add_sp_e_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/call_cc_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/call_cc_timing2.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -986,10 +997,6 @@ TEST_CASE("emulation", "[emulation][.]") {
             //                "mealybug/m3_wx_6_change.png", GREY_PALETTE},
 
             // docboy
-            F {"docboy/ppu/boot_ppu_phase_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/boot_ppu_phase_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/boot_stat_lyc_eq_ly_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/boot_stat_lyc_eq_ly_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_raises_vblank_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
@@ -1243,10 +1250,7 @@ TEST_CASE("emulation", "[emulation][.]") {
                       S {"mooneye/timers/tima_reload.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/timers/tima_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/timers/tma_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/boot_div-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/div_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      F {"docboy/timers/boot_div_phase_round1.gb", "docboy/ok.png"},
-                      F {"docboy/timers/boot_div_phase_round2.gb", "docboy/ok.png"},
                       F {"docboy/timers/div_timing_round1.gb", "docboy/ok.png"},
                       F {"docboy/timers/div_timing_round2.gb", "docboy/ok.png"},
                       F {"docboy/timers/timer_interrupt_flag_timing.gb", "docboy/ok.png"},
@@ -1352,8 +1356,8 @@ TEST_CASE("emulation", "[emulation][.]") {
         RUN_TEST_ROMS(
             F {"mealybug/m2_win_en_toggle.gb", "mealybug/m2_win_en_toggle.png", GREY_PALETTE},
             F {"mealybug/m3_bgp_change.gb", "mealybug/m3_bgp_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png",
+            F {"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png", GREY_PALETTE},
+            //                            F{"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png",
             //                GREY_PALETTE}, F{"mealybug/m3_lcdc_bg_map_change.gb",
             //                "mealybug/m3_lcdc_bg_map_change.png", GREY_PALETTE},
             //                F{"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png",

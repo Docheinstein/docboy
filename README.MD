@@ -295,7 +295,7 @@ Passing all the tests of the following test suites:
 | mooneye/timers/tma_write_reloading.gb         | :white_check_mark: |
 | mealybug/m2_win_en_toggle.gb                  | :white_check_mark: |
 | mealybug/m3_bgp_change.gb                     | :white_check_mark: |
-| mealybug/m3_bgp_change_sprites.gb             |        :x:         |
+| mealybug/m3_bgp_change_sprites.gb             | :white_check_mark: |
 | mealybug/m3_lcdc_bg_en_change2.gb             |        :x:         |
 | mealybug/m3_lcdc_bg_en_change.gb              |        :x:         |
 | mealybug/m3_lcdc_bg_map_change2.gb            |        :x:         |
