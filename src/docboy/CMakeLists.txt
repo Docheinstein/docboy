@@ -52,12 +52,14 @@ target_sources(docboy PRIVATE
     memory/fwd/bytefwd.h
     memory/fwd/hramfwd.h
     memory/fwd/memoryfwd.h
+    memory/fwd/randmemoryfwd.h
     memory/fwd/oamfwd.h
     memory/fwd/vramfwd.h
     memory/fwd/wram1fwd.h
     memory/fwd/wram2fwd.h
     memory/hram.h
     memory/memory.hpp
+    memory/randmemory.hpp
     memory/oam.h
     memory/vram.cpp
     memory/vram.h

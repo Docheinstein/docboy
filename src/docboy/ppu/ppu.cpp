@@ -672,6 +672,7 @@ void Ppu::resetFetcher() {
     objFifo.clear();
     isFetchingSprite = false;
     bwf.LX = 0;
+    bwf.interruptedFetch.hasData = false;
     w.active = false;
     IF_ASSERTS_OR_DEBUGGER(w.lineTriggers = 0);
     fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;

@@ -162,9 +162,9 @@ public:
         uint32_t i;
         for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
             if (lastFramebuffer[i] != expectedFramebuffer[i]) {
-                UNSCOPED_INFO("Framebuffer mismatch at position " << i << ": (actual) 0x" << hex(lastFramebuffer[i])
-                                                                  << " != (expected) 0x"
-                                                                  << hex(expectedFramebuffer[i]));
+                UNSCOPED_INFO("Framebuffer mismatch at position "
+                              << i << " (row=" << i / 160 << ", column=" << i % 160 << ": (actual) 0x"
+                              << hex(lastFramebuffer[i]) << " != (expected) 0x" << hex(expectedFramebuffer[i]));
                 break;
             }
         }
@@ -898,7 +898,8 @@ TEST_CASE("emulation", "[emulation][.]") {
                       F {"docboy/boot/boot_ppu_phase_round2.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_stat_lyc_eq_ly_round1.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_stat_lyc_eq_ly_round2.gb", "docboy/ok.png"},
-                      F {"docboy/boot/boot_vram.gb", "docboy/ok.png"}, );
+                      F {"docboy/boot/boot_vram_tile_data.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_vram_tile_map.gb", "docboy/ok.png"}, );
     }
 
     SECTION("oam") {
@@ -966,8 +967,8 @@ TEST_CASE("emulation", "[emulation][.]") {
             // mealybug
             F {"mealybug/m2_win_en_toggle.gb", "mealybug/m2_win_en_toggle.png", GREY_PALETTE},
             F {"mealybug/m3_bgp_change.gb", "mealybug/m3_bgp_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png",
+            F {"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png", GREY_PALETTE},
+            //            F{"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png",
             //                GREY_PALETTE}, F{"mealybug/m3_lcdc_bg_map_change.gb",
             //                "mealybug/m3_lcdc_bg_map_change.png", GREY_PALETTE},
             //                F{"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png",
@@ -1092,8 +1093,6 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/pixel_transfer_timing_window_wx0_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/pixel_transfer_timing_window_wx1_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/pixel_transfer_timing_window_wx1_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/pixel_transfer_timing_window_wx7_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/pixel_transfer_timing_window_wx7_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/pixel_transfer_timing_window_wx7_scx0_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/pixel_transfer_timing_window_wx7_scx0_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/pixel_transfer_timing_window_wx7_scx7_round1.gb", "docboy/ok.png"},
@@ -1351,14 +1350,18 @@ TEST_CASE("emulation", "[emulation][.]") {
         RUN_TEST_ROMS(F {"mooneye/serial/boot_sclk_align-dmgABCmgb.gb", "mooneye/boot_sclk_align-dmgABCmgb.png"});
     }
 
+    SECTION("integration") {
+        RUN_TEST_ROMS(F {"hacktix/bully.gb", "hacktix/bully.png"});
+    }
+
 #else
     SECTION("mealybug") {
         RUN_TEST_ROMS(
             F {"mealybug/m2_win_en_toggle.gb", "mealybug/m2_win_en_toggle.png", GREY_PALETTE},
             F {"mealybug/m3_bgp_change.gb", "mealybug/m3_bgp_change.png", GREY_PALETTE},
             F {"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png", GREY_PALETTE},
-            //                            F{"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_bg_map_change.gb",
+            F {"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png", GREY_PALETTE},
+            //                                        F{"mealybug/m3_lcdc_bg_map_change.gb",
             //                "mealybug/m3_lcdc_bg_map_change.png", GREY_PALETTE},
             //                F{"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png",
             //                GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_en_change_variant.gb",

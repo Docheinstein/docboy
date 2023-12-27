@@ -2,8 +2,8 @@
 #define OAMFWD_H
 
 #include "docboy/shared/specs.h"
-#include "memoryfwd.h"
+#include "randmemoryfwd.h"
 
-using Oam = Memory<Specs::MemoryLayout::OAM::START, Specs::MemoryLayout::OAM::END>;
+using Oam = RandomizedMemory<Specs::MemoryLayout::OAM::START, Specs::MemoryLayout::OAM::END>;
 
 #endif // OAMFWD_H

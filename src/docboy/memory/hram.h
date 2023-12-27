@@ -2,6 +2,6 @@
 #define HRAM_H
 
 #include "fwd/hramfwd.h"
-#include "memory.hpp"
+#include "randmemory.hpp"
 
 #endif // HRAM_H

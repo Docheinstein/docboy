@@ -188,11 +188,7 @@ Here's the debugger!
 
 ## Tests results
 
-Passing all the tests of the following test suites:
-* `blargg`
-* `docboy`
-* `dmg-acid2`
-* `mooneye`
+#### blargg
 
 | Test Rom                                      |       Result       |
 |-----------------------------------------------|:------------------:|
@@ -205,7 +201,26 @@ Passing all the tests of the following test suites:
 | blargg/instr_timing.gb                        | :white_check_mark: |
 | blargg/mem_timing-2.gb                        | :white_check_mark: |
 | blargg/mem_timing.gb                          | :white_check_mark: |
+
+
+#### dmg-acid2
+
+| Test Rom                                      |       Result       |
+|-----------------------------------------------|:------------------:|
 | dmg-acid2/dmg-acid2.gb                        | :white_check_mark: |
+
+
+#### hacktix
+
+| Test Rom                 |       Result       |
+|--------------------------|:------------------:|
+| hacktix/bully.gb         | :white_check_mark: |
+| hacktix/strikethrough.gb |        :x:         |
+
+#### mooneye
+
+| Test Rom                                      |       Result       |
+|-----------------------------------------------|:------------------:|
 | mooneye/add_sp_e_timing.gb                    | :white_check_mark: |
 | mooneye/bits/mem_oam.gb                       | :white_check_mark: |
 | mooneye/bits/reg_f.gb                         | :white_check_mark: |
@@ -293,6 +308,11 @@ Passing all the tests of the following test suites:
 | mooneye/timers/tima_write_reloading.gb        | :white_check_mark: |
 | mooneye/timers/tma_write_reloading.gb         | :white_check_mark: |
 | mooneye/timers/tma_write_reloading.gb         | :white_check_mark: |
+
+#### mealybug
+
+| Test Rom                                      |       Result       |
+|-----------------------------------------------|:------------------:|
 | mealybug/m2_win_en_toggle.gb                  | :white_check_mark: |
 | mealybug/m3_bgp_change.gb                     | :white_check_mark: |
 | mealybug/m3_bgp_change_sprites.gb             | :white_check_mark: |

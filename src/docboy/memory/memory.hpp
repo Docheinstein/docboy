@@ -2,12 +2,15 @@
 #define MEMORY_HPP
 
 #include "byte.hpp"
+#include "utils/asserts.h"
 #include "utils/parcel.h"
 #include <cstring>
 
 template <uint16_t Start, uint16_t End>
 class Memory {
 public:
+    static constexpr uint16_t Size = End - Start + 1;
+
 #ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
     Memory() {
         for (uint16_t i = 0; i < Size; i++) {
@@ -18,14 +21,9 @@ public:
     Memory() = default;
 #endif
 
-    Memory(const uint8_t* data, uint16_t length) :
+    Memory(const uint8_t* data_, uint16_t length) :
         Memory() {
-#ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
-        for (uint16_t i = 0; i < length; i++)
-            this->data[i] = data[i];
-#else
-        memcpy(this->data, data, length);
-#endif
+        setData(data_, length);
     }
 
     const byte& operator[](uint16_t index) const {
@@ -42,9 +40,19 @@ public:
         parcel.readBytes(data, Size * sizeof(byte));
     }
 
-private:
-    static constexpr uint16_t Size = End - Start + 1;
+protected:
+    void setData(const uint8_t* data_, uint16_t length) {
+        check(length <= Size);
 
+#ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
+        for (uint16_t i = 0; i < length; i++)
+            data[i] = data_[i];
+#else
+        memcpy(this->data, data, length);
+#endif
+    }
+
+private:
     byte data[Size] {};
 };
 

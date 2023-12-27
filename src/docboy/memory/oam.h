@@ -2,6 +2,6 @@
 #define OAM_H
 
 #include "fwd/oamfwd.h"
-#include "memory.hpp"
+#include "randmemory.hpp"
 
 #endif // OAM_H

@@ -24,6 +24,7 @@ target_sources(utils PRIVATE
     path.cpp
     path.h
     queue.hpp
+    random.hpp
     std.hpp
     strings.cpp
     strings.hpp

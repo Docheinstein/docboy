@@ -2,6 +2,6 @@
 #define WRAM2_H
 
 #include "fwd/wram2fwd.h"
-#include "memory.hpp"
+#include "randmemory.hpp"
 
 #endif // WRAM2_H

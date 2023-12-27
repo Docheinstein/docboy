@@ -2,6 +2,6 @@
 #define WRAM1_H
 
 #include "fwd/wram1fwd.h"
-#include "memory.hpp"
+#include "randmemory.hpp"
 
 #endif // WRAM1_H
