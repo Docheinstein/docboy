@@ -316,8 +316,6 @@ void Ppu::enterPixelTransfer() {
     resetFetcher();
 
     tickSelector = &Ppu::pixelTransferDummy0;
-    pixelTransfer.initialSCX.toDiscard = mod<TILE_WIDTH>(video.SCX);
-    pixelTransfer.initialSCX.discarded = 0;
 
     updateMode<PIXEL_TRANSFER>();
 
@@ -332,7 +330,18 @@ void Ppu::pixelTransferDummy0() {
 
     if (++dots == 83) {
         bgFifo.fill(DUMMY_TILE);
-        tickSelector = pixelTransfer.initialSCX.toDiscard ? &Ppu::pixelTransferDiscard0 : &Ppu::pixelTransfer0;
+
+        // Initial SCX is not read after the beginning of Pixel Transfer.
+        // It is read some T-cycles after: around here, after the first BG fetch.
+        // (Although I'm not sure about the precise T-Cycle timing).
+        // [mealybug/m3_scx_low_3_bits]
+        pixelTransfer.initialSCX.toDiscard = mod<TILE_WIDTH>(video.SCX);
+        if (pixelTransfer.initialSCX.toDiscard) {
+            pixelTransfer.initialSCX.discarded = 0;
+            tickSelector = &Ppu::pixelTransferDiscard0;
+        } else {
+            tickSelector = &Ppu::pixelTransfer0;
+        }
     }
 }
 
@@ -361,7 +370,8 @@ void Ppu::pixelTransferDiscard0() {
 
 void Ppu::pixelTransfer0() {
     check(LX < 8);
-    check(pixelTransfer.initialSCX.discarded == pixelTransfer.initialSCX.toDiscard);
+    check(pixelTransfer.initialSCX.toDiscard == 0 ||
+          pixelTransfer.initialSCX.discarded == pixelTransfer.initialSCX.toDiscard);
     check(oam.isAcquiredByMe());
     check(vram.isAcquiredByMe());
 
