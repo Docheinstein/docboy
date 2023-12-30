@@ -334,8 +334,8 @@ Here's the debugger!
 | mealybug/m3_lcdc_win_map_change.gb            |        :x:         |
 | mealybug/m3_obp0_change.gb                    |        :x:         |
 | mealybug/m3_scx_high_5_bits_change2.gb        |        :x:         |
-| mealybug/m3_scx_high_5_bits.gb                |        :x:         |
-| mealybug/m3_scx_low_3_bits.gb                 |        :x:         |
+| mealybug/m3_scx_high_5_bits.gb                | :white_check_mark: |
+| mealybug/m3_scx_low_3_bits.gb                 | :white_check_mark: |
 | mealybug/m3_scy_change2.gb                    |        :x:         |
 | mealybug/m3_scy_change.gb                     |        :x:         |
 | mealybug/m3_window_timing.gb                  |        :x:         |
