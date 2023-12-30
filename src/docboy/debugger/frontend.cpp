@@ -52,6 +52,7 @@ struct FrontendExamineCommand {
     std::optional<uint8_t> formatArg {};
     uint32_t length {};
     uint16_t address {};
+    bool raw {};
 };
 
 struct FrontendSearchBytesCommand {
@@ -67,6 +68,7 @@ struct FrontendDisplayCommand {
     std::optional<uint8_t> formatArg {};
     uint32_t length {};
     uint16_t address {};
+    bool raw {};
 };
 
 struct FrontendUndisplayCommand {};
@@ -266,15 +268,17 @@ static FrontendCommandInfo
                  cmd.n = !n.empty() ? std::stoi(n) : 10;
                  return cmd;
              }},
-            {std::regex(R"(x(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "x[/<length><format>] <addr>",
-             "Display memory content at <addr> (<format>: x, h[<cols>], b, d, i)",
+            {std::regex(R"(x(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "x[x][/<length><format>] <addr>",
+             "Display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)",
              [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
                  FrontendExamineCommand cmd {};
                  bool ok {true};
-                 const std::string& length = groups[0];
-                 const std::string& format = groups[1];
-                 const std::string& formatArg = groups[2];
-                 const std::string& address = groups[3];
+                 const std::string& raw = groups[0];
+                 const std::string& length = groups[1];
+                 const std::string& format = groups[2];
+                 const std::string& formatArg = groups[3];
+                 const std::string& address = groups[4];
+                 cmd.raw = !raw.empty();
                  cmd.length = length.empty() ? 1 : std::stoi(length);
                  cmd.format = MemoryOutputFormat(format.empty() ? 'x' : format[0]);
                  if (!formatArg.empty())
@@ -298,15 +302,18 @@ static FrontendCommandInfo
                  cmd.instruction = parse_hex_str(bytes, &ok);
                  return ok ? std::optional(cmd) : std::nullopt;
              }},
-            {std::regex(R"(display(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "display[/<length><format>] <addr>",
-             "Automatically display memory content content at <addr> (<format>: x, h[<cols>], b, d, i)",
+            {std::regex(R"(display(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"),
+             "display[x][/<length><format>] <addr>",
+             "Automatically display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)",
              [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
                  FrontendDisplayCommand cmd {};
                  bool ok {true};
-                 const std::string& length = groups[0];
-                 const std::string& format = groups[1];
-                 const std::string& formatArg = groups[2];
-                 const std::string& address = groups[3];
+                 const std::string& raw = groups[0];
+                 const std::string& length = groups[1];
+                 const std::string& format = groups[2];
+                 const std::string& formatArg = groups[3];
+                 const std::string& address = groups[4];
+                 cmd.raw = !raw.empty();
                  cmd.length = length.empty() ? 1 : std::stoi(length);
                  cmd.format = MemoryOutputFormat(format.empty() ? 'x' : format[0]);
                  if (!formatArg.empty())
@@ -503,7 +510,7 @@ DebuggerFrontend::handleCommand<FrontendAutoDisassembleCommand>(const FrontendAu
 // Examine
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendExamineCommand>(const FrontendExamineCommand& cmd) {
-    std::cout << dumpMemory(cmd.address, cmd.length, cmd.format, cmd.formatArg) << std::endl;
+    std::cout << dumpMemory(cmd.address, cmd.length, cmd.format, cmd.formatArg, cmd.raw) << std::endl;
     return std::nullopt;
 }
 
@@ -546,10 +553,11 @@ DebuggerFrontend::handleCommand<FrontendSearchInstructionsCommand>(const Fronten
 template <>
 std::optional<Command> DebuggerFrontend::handleCommand<FrontendDisplayCommand>(const FrontendDisplayCommand& cmd) {
     DisplayEntry d = {.id = static_cast<uint32_t>(displayEntries.size()),
-                      .format = cmd.format,
-                      .formatArg = cmd.formatArg,
-                      .length = cmd.length,
-                      .expression = DisplayEntry::Examine {.address = cmd.address}};
+                      .expression = DisplayEntry::Examine {.format = cmd.format,
+                                                           .formatArg = cmd.formatArg,
+                                                           .address = cmd.address,
+                                                           .length = cmd.length,
+                                                           .raw = cmd.raw}};
     displayEntries.push_back(d);
     std::cout << dumpDisplayEntry(d);
     reprintUI = true;
@@ -979,9 +987,24 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
           << flag(get_bit<Specs::Bits::Flags::H>(gb.cpu.AF)) << "    " << red("C") << " : "
           << flag(get_bit<Specs::Bits::Flags::C>(gb.cpu.AF)) << endl;
 
-        // Bus data
-        b << subheader("bus data", width) << endl;
-        b << yellow("Data") << "    :  " << bin(gb.cpu.busData) << " (" << hex(gb.cpu.busData) << ")" << endl;
+        // Read/Write
+        b << subheader("io", width) << endl;
+
+        b << yellow("State") << "   :  " <<
+            [this]() {
+                switch (gb.cpu.io.state) {
+                case Cpu::IO::State::Idle:
+                    return darkgray("Idle");
+                case Cpu::IO::State::Read:
+                    return green("Read");
+                case Cpu::IO::State::Write:
+                    return red("Write");
+                }
+                checkNoEntry();
+                return Text {};
+            }()
+          << endl;
+        b << yellow("Data") << "    :  " << bin(gb.cpu.io.data) << " (" << hex(gb.cpu.io.data) << ")" << endl;
 
         // Interrupts
         const bool IME = gb.cpu.IME == Cpu::ImeState::Enabled;
@@ -1154,7 +1177,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         b << subheader("lcd", width) << endl;
         b << yellow("X") << "                :  " << gb.lcd.x << endl;
-        b << yellow("Y") << "                :  " << gb.lcd.x << endl;
+        b << yellow("Y") << "                :  " << gb.lcd.y << endl;
         b << yellow("Last Pixels") << "      :  ";
         for (int32_t i = 0; i < 8; i++) {
             int32_t idx = gb.lcd.cursor - 8 + i;
@@ -1201,6 +1224,17 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 return e.y;
             }) << endl;
         }
+
+        // OAM Registers
+        b << subheader("oam registers", width) << endl;
+        b << yellow("OAM A") << "            :  " << hex(gb.ppu.registers.oam.a) << endl;
+        b << yellow("OAM B") << "            :  " << hex(gb.ppu.registers.oam.b) << endl;
+
+        // Pixel Transfer
+        b << subheader("pixel transfer", width) << endl;
+        b << yellow("SCX % 8") << "          :  " << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
+        b << yellow("Discarded Pixels") << " :  " << gb.ppu.pixelTransfer.initialSCX.discarded << "/"
+          << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
 
         // BG Fifo
         b << subheader("bg fifo", width) << endl;
@@ -1274,63 +1308,66 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         return b;
     };
 
-    // MMU
-    const auto makeMmuBlock = [&](uint32_t width) {
-        auto b {make_block(width)};
-
-        b << header("MMU", width) << endl;
-
-        const auto busLane = [this](const Mmu::BusLane& lane) {
-            Text t {};
-            if (lane.state == Mmu::BusLane::State::Read) {
-                t += yellow("Request") + "  :  " + green("Read") + "\n";
-                t += yellow("Address") + "  :  " + hex(lane.address) + "\n";
-                t += yellow("Data") + "     :  " + bin(backend.readMemory(lane.address)) + " (" +
-                     hex(backend.readMemory(lane.address)) + ")";
-            } else if (lane.state == Mmu::BusLane::State::Write) {
-                t += yellow("Request") + "  :  " + red("Write") + "\n";
-                t += yellow("Address") + "  :  " + hex(lane.address) + "\n";
-                t += yellow("Data") + "     :  " + bin(*lane.data) + " (" + hex(*lane.data) + ")";
-            } else {
-                t += yellow("Request") + "  :  " + darkgray("None");
-            }
-            return t;
-        };
-
-        b << subheader("cpu request", width) << endl;
-        b << busLane(gb.mmu.lanes[MmuDevice::Cpu]) << endl;
-
-        b << subheader("dma request", width) << endl;
-        b << busLane(gb.mmu.lanes[MmuDevice::Dma]) << endl;
-
-        return b;
-    };
-
     // Bus
     const auto makeBusBlock = [&](uint32_t width) {
         auto b {make_block(width)};
 
         b << header("BUS", width) << endl;
 
-        const auto acquirers = [&b](const auto& bus) {
-            Text t {};
-            t += yellow("Acquired By") + "  :  ";
-            t += (bus.template isAcquiredBy<AcquirableBusDevice::Dma>() ? Text {"DMA"} : darkgray("DMA")) += " ";
-            t += (bus.template isAcquiredBy<AcquirableBusDevice::Ppu>() ? "PPU" : darkgray("PPU"));
-            return t;
+        const auto busRequest = [](Device::Type dev, uint8_t requests) {
+            const uint8_t R = 2 * dev;
+            const uint8_t W = 2 * dev + 1;
+
+            if (test_bit(requests, W))
+                return red("Write");
+            if (test_bit(requests, R))
+                return green("Read");
+            return darkgray("Idle");
         };
 
-        b << subheader("ext bus", width) << endl;
-        // No info at the moment
+        const auto busRequests = [busRequest](uint8_t requests) {
+            return busRequest(Device::Cpu, requests).lpad(Text::Length {5}) + " | " +
+                   busRequest(Device::Dma, requests).lpad(Text::Length {5}) + " | " +
+                   busRequest(Device::Ppu, requests).lpad(Text::Length {5});
+        };
 
-        b << subheader("cpu bus", width) << endl;
-        // No info at the moment
+        const auto busAcquired = [](Device::Type dev, uint8_t acquirers) {
+            return test_bit(acquirers, dev) ? green("YES") : darkgray("NO");
+        };
 
-        b << subheader("vram bus", width) << endl;
-        b << acquirers(gb.vramBus) << endl;
+        const auto busAcquirers = [busAcquired](uint8_t acquirers) {
+            return " " + busAcquired(Device::Cpu, acquirers).lpad(Text::Length {3}) + "  |  " +
+                   busAcquired(Device::Dma, acquirers).lpad(Text::Length {3}) + "  |  " +
+                   busAcquired(Device::Ppu, acquirers).lpad(Text::Length {3});
+        };
 
-        b << subheader("oam bus", width) << endl;
-        b << acquirers(gb.oamBus) << endl;
+        const auto busAddress = [busRequest](uint16_t address, uint8_t requests) {
+            return requests ? hex(address) : darkgray(hex(address));
+        };
+
+        b << "                      " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("PPU")
+          << endl;
+        b << cyan("EXT Bus") << "      " << endl;
+        b << "  " << yellow("Request") << "   :       " << busRequests(gb.extBus.requests) << endl;
+        b << "  " << yellow("Address") << "   :  " << busAddress(gb.extBus.address, gb.extBus.requests) << endl;
+        b << endl;
+
+        b << cyan("CPU Bus") << "      " << endl;
+        b << "  " << yellow("Request") << "   :       " << busRequests(gb.cpuBus.requests) << endl;
+        b << "  " << yellow("Address") << "   :  " << busAddress(gb.cpuBus.address, gb.cpuBus.requests) << endl;
+        b << endl;
+
+        b << cyan("VRAM Bus") << "      " << endl;
+        b << "  " << yellow("Request") << "   :       " << busRequests(gb.vramBus.requests) << endl;
+        b << "  " << yellow("Acquired") << "  :       " << busAcquirers(gb.vramBus.acquirers) << endl;
+        b << "  " << yellow("Address") << "   :  " << busAddress(gb.vramBus.address, gb.vramBus.requests) << endl;
+        b << endl;
+
+        b << cyan("OAM Bus") << "      " << endl;
+        b << "  " << yellow("Request") << "   :       " << busRequests(gb.oamBus.requests) << endl;
+        b << "  " << yellow("Acquired") << "  :       " << busAcquirers(gb.oamBus.acquirers) << endl;
+        b << "  " << yellow("Address") << "   :  " << busAddress(gb.oamBus.address, gb.oamBus.requests) << endl;
+        b << endl;
 
         return b;
     };
@@ -1367,12 +1404,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
               << hex<uint16_t>(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << gb.dma.cursor << "/"
               << "159]" << endl;
         } else {
-            b << yellow("DMA Transfer") << " : " << darkgray("None") << endl;
+            b << yellow("DMA Transfer") << "  :  " << darkgray("None") << endl;
         }
-
-        // Bus data
-        b << subheader("bus data", width) << endl;
-        b << yellow("Data") << "         :  " << bin(gb.cpu.busData) << " (" << hex(gb.cpu.busData) << ")" << endl;
 
         return b;
     };
@@ -1695,10 +1728,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     c1->addNode(makeSpaceDivider());
     c1->addNode(makeCpuBlock(COLUMN_1_WIDTH));
 
-    static constexpr uint32_t COLUMN_2_WIDTH = 40;
+    static constexpr uint32_t COLUMN_2_WIDTH = 42;
     auto c2 {make_vertical_layout()};
-    c2->addNode(makeMmuBlock(COLUMN_2_WIDTH));
-    c2->addNode(makeSpaceDivider());
     c2->addNode(makeBusBlock(COLUMN_2_WIDTH));
     c2->addNode(makeSpaceDivider());
     c2->addNode(makeDmaBlock(COLUMN_2_WIDTH));
@@ -1751,25 +1782,27 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 }
 
 std::string DebuggerFrontend::dumpMemory(uint16_t from, uint32_t n, MemoryOutputFormat fmt,
-                                         std::optional<uint8_t> fmtArg) const {
+                                         std::optional<uint8_t> fmtArg, bool raw) const {
     std::string s;
+
+    const auto readMemoryFunc = raw ? &DebuggerBackend::readMemoryRaw : &DebuggerBackend::readMemory;
 
     if (fmt == MemoryOutputFormat::Hexadecimal) {
         for (uint32_t i = 0; i < n; i++)
-            s += hex(backend.readMemory(from + i)) + " ";
+            s += hex((backend.*readMemoryFunc)(from + i)) + " ";
     } else if (fmt == MemoryOutputFormat::Binary) {
         for (uint32_t i = 0; i < n; i++)
-            s += bin(backend.readMemory(from + i)) + " ";
+            s += bin((backend.*readMemoryFunc)(from + i)) + " ";
     } else if (fmt == MemoryOutputFormat::Decimal) {
         for (uint32_t i = 0; i < n; i++)
-            s += std::to_string(backend.readMemory(from + i)) + " ";
+            s += std::to_string((backend.*readMemoryFunc)(from + i)) + " ";
     } else if (fmt == MemoryOutputFormat::Instruction) {
-        backend.disassembleMultiple(from, n);
+        backend.disassembleMultiple(from, n, true);
         uint32_t i = 0;
         for (uint32_t address = from; address <= 0xFFFF && i < n;) {
             std::optional<DisassembledInstruction> disas = backend.getDisassembledInstruction(address);
             if (!disas)
-                fatal("Failed to disassemble at address" + std::to_string(address));
+                fatal("Failed to disassemble at address " + std::to_string(address));
 
             s += to_string(DisassembledInstructionReference {static_cast<uint16_t>(address), *disas}) +
                  ((i < n - 1) ? "\n" : "");
@@ -1779,7 +1812,7 @@ std::string DebuggerFrontend::dumpMemory(uint16_t from, uint32_t n, MemoryOutput
     } else if (fmt == MemoryOutputFormat::Hexdump) {
         std::vector<uint8_t> data;
         for (uint32_t i = 0; i < n; i++)
-            data.push_back(backend.readMemory(from + i));
+            data.push_back((backend.*readMemoryFunc)(from + i));
         uint8_t cols = fmtArg ? *fmtArg : 16;
         s += Hexdump().setBaseAddress(from).showAddresses(true).showAscii(false).setNumColumns(cols).hexdump(
             data.data(), data.size());
@@ -1792,9 +1825,9 @@ std::string DebuggerFrontend::dumpDisplayEntry(const DebuggerFrontend::DisplayEn
     if (std::holds_alternative<DisplayEntry::Examine>(d.expression)) {
         DisplayEntry::Examine dx = std::get<DisplayEntry::Examine>(d.expression);
         ss << d.id << ": "
-           << "x/" << d.length << static_cast<char>(d.format) << (d.formatArg ? std::to_string(*d.formatArg) : "")
-           << " " << hex(dx.address) << std::endl;
-        ss << dumpMemory(dx.address, d.length, d.format, d.formatArg);
+           << "x" << (dx.raw ? "x" : "") << "/" << dx.length << static_cast<char>(dx.format)
+           << (dx.formatArg ? std::to_string(*dx.formatArg) : "") << " " << hex(dx.address) << std::endl;
+        ss << dumpMemory(dx.address, dx.length, dx.format, dx.formatArg, dx.raw);
     }
     return ss.str();
 }

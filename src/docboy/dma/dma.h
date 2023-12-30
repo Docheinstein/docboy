@@ -2,9 +2,10 @@
 #define DMA_H
 
 #include "docboy/debugger/macros.h"
-#include "docboy/memory/fwd/oamfwd.h"
 #include "docboy/mmu/mmu.h"
 #include <cstdint>
+
+#include "docboy/bus/oambus.h"
 
 class OamBus;
 class Parcel;
@@ -13,14 +14,12 @@ class Dma {
     DEBUGGABLE_CLASS()
 
 public:
-    using OamBusView = AcquirableBusView<OamBus, AcquirableBusDevice::Dma>;
-
-    explicit Dma(MmuSocket<MmuDevice::Dma> mmu, OamBusView oamBus);
+    explicit Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oamBus);
 
     void startTransfer(uint16_t address);
 
-    void tickRead();
-    void tickWrite();
+    void tick_t1();
+    void tick_t3();
 
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
@@ -33,8 +32,8 @@ private:
         static constexpr Type None = 0;
     };
 
-    MmuView<MmuDevice::Dma> mmu;
-    OamBusView oam;
+    Mmu::View<Device::Dma> mmu;
+    OamBus::View<Device::Dma> oam;
 
     struct {
         RequestState::Type state {};
@@ -44,8 +43,6 @@ private:
     bool transferring {};
     uint16_t source {};
     uint8_t cursor {};
-
-    uint8_t busData {};
 };
 
 #endif // DMA_H

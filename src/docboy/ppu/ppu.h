@@ -22,10 +22,8 @@ class Ppu {
     DEBUGGABLE_CLASS()
 
 public:
-    using VramBusView = AcquirableBusView<VramBus, AcquirableBusDevice::Ppu>;
-    using OamBusView = AcquirableBusView<OamBus, AcquirableBusDevice::Ppu>;
-
-    Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBusView vramBus, OamBusView oamBus);
+    Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Device::Ppu> vramBus,
+        OamBus::View<Device::Ppu> oamBus);
 
     void tick();
 
@@ -127,11 +125,14 @@ private:
     void cacheBgWinFetch();
     void restoreBgWinFetch();
 
+    template <uint8_t Mode>
+    void readOamRegisters(uint16_t oamAddress);
+
     Lcd& lcd;
     VideoIO& video;
     InterruptsIO& interrupts;
-    VramBusView vram;
-    OamBusView oam;
+    VramBus::View<Device::Ppu> vram;
+    OamBus::View<Device::Ppu> oam;
 
     TickSelector tickSelector {IF_BOOTROM_ELSE(&Ppu::oamScanEven, &Ppu::vBlankLastLine)};
     FetcherTickSelector fetcherTickSelector {&Ppu::bgPrefetcherGetTile0};
@@ -164,17 +165,19 @@ private:
     } timings;
 #endif
 
-    // Scratchpads
+    struct {
+        struct {
+            uint8_t a {};
+            uint8_t b {};
+        } oam;
+    } registers;
 
     // Oam Scan
     struct {
         uint8_t count {}; // [0, 10]
-        struct {
-            uint8_t number {};
-            uint8_t y {};
-        } entry;
     } oamScan;
 
+    // Pixel Transfer
     struct {
         struct {
             uint8_t toDiscard {}; // [0, 8)

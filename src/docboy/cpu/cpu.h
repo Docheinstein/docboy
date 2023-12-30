@@ -13,14 +13,13 @@ class Cpu {
     DEBUGGABLE_CLASS()
 
 public:
-    Cpu(InterruptsIO& interrupts, MmuSocket<MmuDevice::Cpu> mmu);
+    Cpu(InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu);
 
     void tick();
-
-    void checkInterrupt_t0();
-    void checkInterrupt_t1();
-    void checkInterrupt_t2();
-    void checkInterrupt_t3();
+    void tick_t0();
+    void tick_t1();
+    void tick_t2();
+    void tick_t3();
 
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
@@ -83,6 +82,12 @@ private:
 
     void fetch();
     void fetchCB();
+
+    void read(uint16_t address);
+    void write(uint16_t address, uint8_t value);
+
+    void flushRead();
+    void flushWrite();
 
     template <Register8 r>
     [[nodiscard]] uint8_t readRegister8() const;
@@ -596,7 +601,7 @@ private:
     void SET_arr_m2();
 
     InterruptsIO& interrupts;
-    MmuView<MmuDevice::Cpu> mmu;
+    Mmu::View<Device::Cpu> mmu;
 
     Instruction instructions[256];
     Instruction instructionsCB[256];
@@ -633,7 +638,12 @@ private:
         IF_DEBUGGER(uint16_t address {});
     } instruction {};
 
-    uint8_t busData {};
+    struct IO {
+        enum class State : uint8_t { Idle = 0, Read = 1, Write = 2 };
+
+        State state {};
+        uint8_t data {};
+    } io;
 
     // scratchpad
     struct {

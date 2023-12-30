@@ -1,7 +1,7 @@
 #include "oambus.h"
 
 OamBus::OamBus(Oam& oam) :
-    AcquirableBus<OamBus>(),
+    VideoBus(),
     oam(oam) {
     /* 0xFE00 - 0xFE9F */
     for (uint16_t i = Specs::MemoryLayout::OAM::START; i <= Specs::MemoryLayout::OAM::END; i++) {
@@ -10,12 +10,9 @@ OamBus::OamBus(Oam& oam) :
 }
 
 uint8_t OamBus::readOam(uint16_t address) const {
-    if (!isAcquired())
-        return oam[address - Specs::MemoryLayout::OAM::START];
-    return 0xFF;
+    return oam[address - Specs::MemoryLayout::OAM::START];
 }
 
 void OamBus::writeOam(uint16_t address, uint8_t value) {
-    if (!isAcquired())
-        oam[address - Specs::MemoryLayout::OAM::START] = value;
+    oam[address - Specs::MemoryLayout::OAM::START] = value;
 }

@@ -16,7 +16,6 @@ class VideoIO;
 class BootIO;
 
 class CpuBus : public Bus<CpuBus> {
-    friend class Bus<CpuBus>;
 
 public:
     CpuBus(IF_BOOTROM(BootRom& bootRom COMMA) Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,

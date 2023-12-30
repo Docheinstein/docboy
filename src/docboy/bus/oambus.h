@@ -1,22 +1,34 @@
 #ifndef OAMBUS_H
 #define OAMBUS_H
 
-#include "acqbus.h"
 #include "docboy/memory/oam.h"
+#include "videobus.h"
 
-class OamBus : public AcquirableBus<OamBus> {
-    friend class Bus<OamBus>;
+class OamBus : public VideoBus<OamBus> {
 
 public:
+    struct ReadTwoResult {
+        uint8_t a;
+        uint8_t b;
+    };
+
+    template <Device::Type Dev>
+    class View : public VideoBus::View<Dev> {
+    public:
+        View(OamBus& bus) :
+            VideoBusView<OamBus, Dev>(bus) {
+        }
+
+        [[nodiscard]] ReadTwoResult readTwo(uint16_t address) const;
+    };
+
     explicit OamBus(Oam& oam);
 
-    const byte& operator[](uint16_t index) const {
-        return oam[index];
-    }
+    template <Device::Type Dev>
+    [[nodiscard]] uint8_t read(uint16_t oamAddress) const;
 
-    byte& operator[](uint16_t index) {
-        return oam[index];
-    }
+    template <Device::Type Dev>
+    [[nodiscard]] ReadTwoResult readTwo(uint16_t oamAddress) const;
 
 private:
     [[nodiscard]] uint8_t readOam(uint16_t address) const;
@@ -24,5 +36,7 @@ private:
 
     Oam& oam;
 };
+
+#include "oambus.tpp"
 
 #endif // OAMBUS_H

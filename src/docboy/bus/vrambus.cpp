@@ -1,7 +1,7 @@
 #include "vrambus.h"
 
 VramBus::VramBus(Vram& vram) :
-    AcquirableBus<VramBus>(),
+    VideoBus(),
     vram(vram) {
     /* 0x8000 - 0x9FFF */
     for (uint16_t i = Specs::MemoryLayout::VRAM::START; i <= Specs::MemoryLayout::VRAM::END; i++) {
@@ -10,12 +10,9 @@ VramBus::VramBus(Vram& vram) :
 }
 
 uint8_t VramBus::readVram(uint16_t address) const {
-    if (!isAcquired())
-        return vram[address - Specs::MemoryLayout::VRAM::START];
-    return 0xFF;
+    return vram[address - Specs::MemoryLayout::VRAM::START];
 }
 
 void VramBus::writeVram(uint16_t address, uint8_t value) {
-    if (!isAcquired())
-        vram[address - Specs::MemoryLayout::VRAM::START] = value;
+    vram[address - Specs::MemoryLayout::VRAM::START] = value;
 }

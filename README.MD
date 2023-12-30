@@ -212,10 +212,10 @@ Here's the debugger!
 
 #### hacktix
 
-| Test Rom                 |       Result       |
-|--------------------------|:------------------:|
-| hacktix/bully.gb         | :white_check_mark: |
-| hacktix/strikethrough.gb |        :x:         |
+| Test Rom                 |       Result        |
+|--------------------------|:-------------------:|
+| hacktix/bully.gb         | :white_check_mark:  |
+| hacktix/strikethrough.gb | :white_check_mark:  |
 
 #### mooneye
 

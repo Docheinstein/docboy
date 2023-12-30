@@ -1,5 +1,5 @@
 #include "cpubus.h"
-#include "docboy/bootrom/bootrom.h"
+#include "docboy/boot/boot.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/memory/hram.h"
@@ -7,6 +7,10 @@
 #include "docboy/serial/serial.h"
 #include "docboy/sound/sound.h"
 #include "docboy/timers/timers.h"
+
+#if ENABLE_BOOTROM
+#include "docboy/bootrom/bootrom.h"
+#endif
 
 CpuBus::CpuBus(IF_BOOTROM(BootRom& bootRom COMMA) Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
                InterruptsIO& interrupts, SoundIO& sound, VideoIO& video, BootIO& boot) :

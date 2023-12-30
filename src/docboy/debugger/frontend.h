@@ -32,13 +32,15 @@ public:
 private:
     struct DisplayEntry {
         uint32_t id {};
-        MemoryOutputFormat format {};
-        std::optional<uint8_t> formatArg {};
-        size_t length {};
 
         struct Examine {
+            MemoryOutputFormat format {};
+            std::optional<uint8_t> formatArg {};
             uint16_t address {};
+            size_t length {};
+            bool raw;
         };
+
         std::variant<Examine /*, ...*/> expression;
     };
 
@@ -48,7 +50,7 @@ private:
     void printUI(const ExecutionState& executionState) const;
 
     [[nodiscard]] std::string dumpMemory(uint16_t from, uint32_t n, MemoryOutputFormat fmt,
-                                         std::optional<uint8_t> fmtArg) const;
+                                         std::optional<uint8_t> fmtArg, bool raw) const;
     [[nodiscard]] std::string dumpDisplayEntry(const DisplayEntry& d) const;
 
     DebuggerBackend& backend;

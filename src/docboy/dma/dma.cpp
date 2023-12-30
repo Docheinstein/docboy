@@ -1,5 +1,4 @@
 #include "dma.h"
-#include "docboy/memory/memory.hpp"
 
 /* DMA request timing example.
  *
@@ -14,8 +13,8 @@
  * DMA |                   Transfer first byte
  */
 
-Dma::Dma(MmuSocket<MmuDevice::Dma> mmu, OamBusView oamBus) :
-    mmu(mmu.attach(&busData)),
+Dma::Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oamBus) :
+    mmu(mmu),
     oam(oamBus) {
 }
 
@@ -25,12 +24,26 @@ void Dma::startTransfer(uint16_t address) {
     // DMA source cannot exceed 0xDF00
     if (address >= 0xE000)
         reset_bit<13>(address);
+
     request.source = address;
 }
 
-void Dma::tickRead() {
+void Dma::tick_t1() {
+    if (transferring) {
+        // Complete read request and actually read source data
+        const uint8_t srcData = mmu.flushReadRequest();
+
+        // Actually write to OAM
+        oam.flushWriteRequest(srcData);
+
+        cursor++;
+    }
+}
+
+void Dma::tick_t3() {
     if (request.state != RequestState::None) {
         if (--request.state == RequestState::None) {
+            // Begin DMA transfer
             oam.acquire();
             transferring = true;
             source = request.source;
@@ -40,18 +53,20 @@ void Dma::tickRead() {
 
     if (transferring) {
         if (cursor < Specs::MemoryLayout::OAM::SIZE) {
-            mmu.requestRead(source + cursor);
-        } else {
-            transferring = false;
-            oam.release();
-        }
-    }
-}
+            // Start a read request for the source data
+            mmu.readRequest(source + cursor);
 
-void Dma::tickWrite() {
-    if (transferring) {
-        oam[cursor] = busData;
-        cursor++;
+            // Start a write request to the OAM bus.
+            // Note that the request is initiated here: this means that if the PPU
+            // will access OAM during the next t0 and t1, conflicts will happen
+            // (likely PPU will read from the address written by DMA now).
+            // [hacktix/strikethrough]
+            oam.writeRequest(Specs::MemoryLayout::OAM::START + cursor);
+        } else {
+            // DMA transfer completed: release OAM bus
+            oam.release();
+            transferring = false;
+        }
     }
 }
 
@@ -61,7 +76,6 @@ void Dma::saveState(Parcel& parcel) const {
     parcel.writeBool(transferring);
     parcel.writeUInt16(source);
     parcel.writeUInt8(cursor);
-    parcel.writeUInt8(busData);
 }
 
 void Dma::loadState(Parcel& parcel) {
@@ -70,5 +84,4 @@ void Dma::loadState(Parcel& parcel) {
     transferring = parcel.readBool();
     source = parcel.readUInt16();
     cursor = parcel.readUInt8();
-    busData = parcel.readUInt8();
 }

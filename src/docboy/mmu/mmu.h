@@ -17,72 +17,81 @@ class OamBus;
 class VramBus;
 class Parcel;
 
-struct MmuDevice {
-    using Type = uint8_t;
-    static constexpr Type Cpu = 0;
-    static constexpr Type Dma = 1;
-};
+template <Device::Type>
+class MmuView;
 
-class MmuIO;
-
-template <MmuDevice::Type>
-class MmuView {
-public:
-    explicit MmuView(MmuIO& mmu, uint8_t* latch);
-
-    void requestRead(uint16_t address);
-    void requestWrite(uint16_t address, uint8_t value);
-
-private:
-    MmuIO& mmu;
-    uint8_t* latch;
-};
-
-template <MmuDevice::Type d>
-class MmuSocket {
-public:
-    explicit MmuSocket(MmuIO& mmu, uint8_t*& latchRef);
-
-    MmuView<d> attach(uint8_t* latch);
-
-private:
-    MmuIO& mmu;
-    uint8_t*& latchRef;
-};
-
-class MmuIO {
+class Mmu {
     DEBUGGABLE_CLASS()
 
 public:
-    friend class MmuView<MmuDevice::Cpu>;
-    friend class MmuView<MmuDevice::Dma>;
+    template <Device::Type Dev>
+    using View = MmuView<Dev>;
 
-    using Device = MmuDevice;
+    Mmu(IF_BOOTROM(BootRom& bootRom COMMA) ExtBus& extBus, CpuBus& cpuBus, VramBus& vramBus, OamBus& oamBus);
 
-    MmuIO(IF_BOOTROM(BootRom& bootRom COMMA) ExtBus& extBus, CpuBus& cpuBus, VramBus& vramBus, OamBus& oamBus);
+    template <Device::Type>
+    void readRequest(uint16_t address);
 
-    template <MmuDevice::Type d>
-    MmuSocket<d> socket();
+    template <Device::Type>
+    uint8_t flushReadRequest();
+
+    template <Device::Type>
+    void writeRequest(uint16_t address);
+
+    template <Device::Type>
+    void flushWriteRequest(uint16_t value);
+
+    IF_BOOTROM(void lockBootRom());
 
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
 
-protected:
-    struct BusLane {
-        enum class State : uint8_t { None, Read, Write };
-        State state {State::None};
-        uint16_t address {};
-        uint8_t* data {};
-    };
-
+private:
     struct BusAccess {
         IBus* bus {};
-        uint8_t (*read)(const IBus*, uint16_t) {};
-        void (*write)(IBus*, uint16_t, uint8_t) {};
+
+        struct {
+            void (*readRequest)(IBus*, uint16_t) {};
+            uint8_t (*flushReadRequest)(IBus*) {};
+            void (*writeRequest)(IBus*, uint16_t) {};
+            void (*flushWriteRequest)(IBus*, uint8_t) {};
+
+#ifdef ENABLE_DEBUGGER
+            uint8_t (*readBus)(const IBus*, uint16_t) {};
+#endif
+        } vtable;
+
+        template <typename Bus, Device::Type Dev>
+        static void readRequest(IBus* bus, uint16_t address);
+
+        template <typename Bus, Device::Type Dev>
+        static uint8_t flushReadRequest(IBus* bus);
+
+        template <typename Bus, Device::Type Dev>
+        static void writeRequest(IBus* bus, uint16_t address);
+
+        template <typename Bus, Device::Type Dev>
+        static void flushWriteRequest(IBus* bus, uint8_t value);
+
+#ifdef ENABLE_DEBUGGER
+        template <typename Bus>
+        static uint8_t readBus(const IBus* bus, uint16_t address);
+#endif
+
+        void readRequest(uint16_t);
+        uint8_t flushReadRequest();
+        void writeRequest(uint16_t);
+        void flushWriteRequest(uint8_t);
+
+#ifdef ENABLE_DEBUGGER
+        [[nodiscard]] uint8_t readBus(uint16_t) const;
+#endif
     };
 
-    BusLane lanes[2] {};
-    BusAccess busAccessors[UINT16_MAX + 1] {};
+    static constexpr uint8_t NUM_DEVICES = 2;
+
+    template <Device::Type Dev, typename Bus>
+    static BusAccess makeAccessors(Bus* bus);
 
     IF_BOOTROM(BootRom& bootRom);
 
@@ -91,34 +100,24 @@ protected:
     VramBus& vramBus;
     OamBus& oamBus;
 
-private:
-    template <Device::Type>
-    void requestRead(uint16_t address);
-
-    template <Device::Type>
-    void requestWrite(uint16_t address);
-
-    [[nodiscard]] IBus* busAt(uint16_t address) const;
+    BusAccess* requests[NUM_DEVICES] {};
+    BusAccess busAccessors[NUM_DEVICES][UINT16_MAX + 1] {};
 };
 
-class Mmu : public MmuIO {
-    DEBUGGABLE_CLASS()
-
+template <Device::Type>
+class MmuView {
 public:
-    Mmu(IF_BOOTROM(BootRom& bootRom COMMA) ExtBus& extBus, CpuBus& cpuBus, VramBus& vramBus, OamBus& oamBus);
+    MmuView(Mmu& mmu);
 
-    void tick_t0();
-    void tick_t1();
-    void tick_t2();
-    void tick_t3();
-
-    IF_BOOTROM(void lockBootRom());
+    void readRequest(uint16_t address);
+    uint8_t flushReadRequest();
+    void writeRequest(uint16_t address);
+    void flushWriteRequest(uint16_t value);
 
 private:
-    void handleReadRequest(BusLane& lane);
-    void handleWriteRequest(BusLane& lane);
+    Mmu& mmu;
 };
 
-#include "mmu.hpp"
+#include "mmu.tpp"
 
 #endif // MMU_H

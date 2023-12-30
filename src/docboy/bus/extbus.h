@@ -9,8 +9,6 @@
 class CartridgeSlot;
 
 class ExtBus : public Bus<ExtBus> {
-    friend class Bus<ExtBus>;
-
 public:
     ExtBus(CartridgeSlot& cartridgeSlot, Wram1& wram1, Wram2& wram2);
 

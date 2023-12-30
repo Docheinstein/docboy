@@ -2,6 +2,7 @@
 #define BITS_HPP
 
 #include <type_traits>
+#include <utility>
 
 // ---------- TYPES ----------
 
@@ -104,6 +105,15 @@ template <uint8_t n, typename T>
 bool test_bit(T&& value) {
     static_assert(n < 8 * sizeof(T));
     return value & bit<n>;
+}
+
+template <uint8_t n, uint8_t... ns, typename T>
+bool test_bits_or(T&& value) {
+    if constexpr (sizeof...(ns) > 0) {
+        return test_bit<n>(std::forward<T>(value)) | test_bits_or<ns...>(std::forward<T>(value));
+    }
+
+    return test_bit<n>(std::forward<T>(value));
 }
 
 template <typename T>

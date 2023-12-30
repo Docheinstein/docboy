@@ -77,6 +77,7 @@ public:
     [[nodiscard]] std::vector<DisassembledInstructionReference> getDisassembledInstructions() const;
 
     [[nodiscard]] uint8_t readMemory(uint16_t addr);
+    [[nodiscard]] uint8_t readMemoryRaw(uint16_t addr);
 
     void proceed();
     void interrupt();

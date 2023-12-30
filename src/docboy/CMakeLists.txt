@@ -2,23 +2,23 @@ add_library(docboy STATIC)
 
 target_sources(docboy PRIVATE
     boot/boot.h
-    bootrom/bootrom.h
-    bootrom/factory.cpp
-    bootrom/factory.h
-    bootrom/fwd/bootromfwd.h
     bootrom/macros.h
-    bus/acqbus.h
     bus/bus.h
-    bus/bus.hpp
+    bus/bus.tpp
     bus/cpubus.cpp
     bus/cpubus.h
+    bus/device.h
     bus/extbus.cpp
     bus/extbus.h
     bus/fwd/busfwd.h
     bus/oambus.cpp
     bus/oambus.h
+    bus/oambus.tpp
+    bus/videobus.h
+    bus/videobus.tpp
     bus/vrambus.cpp
     bus/vrambus.h
+    bus/vrambus.tpp
     cartridge/cartridge.h
     cartridge/factory.cpp
     cartridge/factory.h
@@ -52,21 +52,22 @@ target_sources(docboy PRIVATE
     memory/fwd/bytefwd.h
     memory/fwd/hramfwd.h
     memory/fwd/memoryfwd.h
-    memory/fwd/randmemoryfwd.h
     memory/fwd/oamfwd.h
+    memory/fwd/randmemoryfwd.h
     memory/fwd/vramfwd.h
     memory/fwd/wram1fwd.h
     memory/fwd/wram2fwd.h
     memory/hram.h
     memory/memory.hpp
-    memory/randmemory.hpp
     memory/oam.h
+    memory/randmemory.hpp
     memory/vram.cpp
     memory/vram.h
     memory/wram1.h
     memory/wram2.h
+    mmu/mmu.cpp
     mmu/mmu.h
-    mmu/mmu.hpp
+    mmu/mmu.tpp
     ppu/pixelmap.h
     ppu/ppu.cpp
     ppu/ppu.h

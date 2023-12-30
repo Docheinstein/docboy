@@ -61,7 +61,7 @@ class Timers : public TimersIO {
 public:
     explicit Timers(InterruptsIO& interrupts);
 
-    void tick();
+    void tick_t3();
 };
 
 #endif // TIMERS_H

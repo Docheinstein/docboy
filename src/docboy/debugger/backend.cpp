@@ -282,6 +282,13 @@ uint8_t DebuggerBackend::readMemory(uint16_t addr) {
     return value;
 }
 
+uint8_t DebuggerBackend::readMemoryRaw(uint16_t addr) {
+    allowMemoryCallbacks = false;
+    uint8_t value = DebuggerHelpers::readMemoryRaw(core.gb, addr);
+    allowMemoryCallbacks = true;
+    return value;
+}
+
 std::optional<DisassembledInstruction> DebuggerBackend::doDisassemble(uint16_t addr) {
     uint32_t addressCursor = addr;
     uint8_t opcode = readMemory(addressCursor++);
@@ -503,7 +510,7 @@ void DebuggerBackend::handleCommand<FrameBackCommand, FrameBackCommandState>(con
 template <>
 void DebuggerBackend::handleCommand<ScanlineCommand, ScanlineCommandState>(const ScanlineCommand& cmd,
                                                                            ScanlineCommandState& state) {
-    bool isNewLine = core.gb.ppu.tickSelector == &Ppu::oamScanEven && core.gb.ppu.dots == 0;
+    bool isNewLine = core.gb.ppu.on && core.gb.ppu.tickSelector == &Ppu::oamScanEven && core.gb.ppu.dots == 0;
     if (isNewLine) {
         if (++state.counter >= cmd.count)
             pullCommand(ExecutionCompleted());

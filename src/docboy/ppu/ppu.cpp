@@ -47,7 +47,8 @@ static inline uint8_t resolveColor(const uint8_t colorIndex, const uint8_t palet
 
 static constexpr uint8_t DUMMY_TILE[8] {};
 
-Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBusView vramBus, OamBusView oamBus) :
+Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Device::Ppu> vramBus,
+         OamBus::View<Device::Ppu> oamBus) :
     lcd(lcd),
     video(video),
     interrupts(interrupts),
@@ -184,21 +185,21 @@ void Ppu::enterOamScan() {
 
     updateMode<OAM_SCAN>();
 
-    check(!vram.isAcquired());
+    check(!vram.isAcquiredByMe());
     oam.acquire();
 }
 
 void Ppu::oamScanEven() {
     check(dots % 2 == 0);
     check(oamScan.count < 10);
-    check(oam.isAcquired() || keep_bits<2>(video.STAT) == HBLANK /* oam bus is not acquired after turn on */ ||
+    check(oam.isAcquiredByMe() || keep_bits<2>(video.STAT) == HBLANK /* oam bus is not acquired after turn on */ ||
           dots == 76 /* oam bus seems released this cycle */);
 
     // Figure out oam number
-    oamScan.entry.number = dots / 2;
+    const uint8_t oamNumber = dots / 2;
 
-    // Read oam y
-    oamScan.entry.y = oam[OAM_ENTRY_BYTES * oamScan.entry.number + Specs::Bytes::OAM::Y];
+    // Read two bytes from OAM (Y and X)
+    readOamRegisters<OAM_SCAN>(OAM_ENTRY_BYTES * oamNumber);
 
     tickSelector = &Ppu::oamScanOdd;
 
@@ -208,7 +209,7 @@ void Ppu::oamScanEven() {
 void Ppu::oamScanOdd() {
     check(dots % 2 == 1);
     check(oamScan.count < 10);
-    check(oam.isAcquired() || keep_bits<2>(video.STAT) == HBLANK /* oam bus is not acquired after turn on */ ||
+    check(oam.isAcquiredByMe() || keep_bits<2>(video.STAT) == HBLANK /* oam bus is not acquired after turn on */ ||
           dots == 77 /* oam bus seems released this cycle */);
 
     // Read oam entry height
@@ -216,18 +217,18 @@ void Ppu::oamScanOdd() {
 
     // Check if the sprite is upon this scanline
     const uint8_t LY = video.LY;
-    const int32_t objY = oamScan.entry.y - TILE_DOUBLE_HEIGHT;
+    const uint8_t oamEntryY = registers.oam.a;
+    const int32_t objY = oamEntryY - TILE_DOUBLE_HEIGHT;
 
     if (objY <= LY && LY < objY + objHeight) {
-        // Read oam entry x
-        const uint8_t oamEntryX = oam[OAM_ENTRY_BYTES * oamScan.entry.number + Specs::Bytes::OAM::X];
+        const uint8_t oamEntryX = registers.oam.b;
 
         // Push oam entry
         if (oamEntryX < 168) {
             oamEntries[oamEntryX].emplaceBack(static_cast<uint8_t>(dots / 2),
-                                              oamScan.entry.y IF_ASSERTS_OR_DEBUGGER(COMMA oamEntryX));
+                                              oamEntryY IF_ASSERTS_OR_DEBUGGER(COMMA oamEntryX));
             IF_DEBUGGER(scanlineOamEntries.emplaceBack(static_cast<uint8_t>(dots / 2),
-                                                       oamScan.entry.y IF_ASSERTS_OR_DEBUGGER(COMMA oamEntryX)));
+                                                       oamEntryY IF_ASSERTS_OR_DEBUGGER(COMMA oamEntryX)));
             IF_ASSERTS(++oamEntriesCount);
         }
 
@@ -326,8 +327,8 @@ void Ppu::enterPixelTransfer() {
 
 void Ppu::pixelTransferDummy0() {
     check(LX == 0);
-    check(oam.isAcquired());
-    check(vram.isAcquired());
+    check(oam.isAcquiredByMe());
+    check(vram.isAcquiredByMe());
 
     if (++dots == 83) {
         bgFifo.fill(DUMMY_TILE);
@@ -339,8 +340,8 @@ void Ppu::pixelTransferDiscard0() {
     check(LX == 0);
     check(pixelTransfer.initialSCX.toDiscard < 8);
     check(pixelTransfer.initialSCX.discarded < pixelTransfer.initialSCX.toDiscard);
-    check(oam.isAcquired());
-    check(vram.isAcquired());
+    check(oam.isAcquiredByMe());
+    check(vram.isAcquiredByMe());
 
     // the first SCX % 8 of a background tile are simply discarded
     // note that LX is not incremented in this case:
@@ -361,8 +362,8 @@ void Ppu::pixelTransferDiscard0() {
 void Ppu::pixelTransfer0() {
     check(LX < 8);
     check(pixelTransfer.initialSCX.discarded == pixelTransfer.initialSCX.toDiscard);
-    check(oam.isAcquired());
-    check(vram.isAcquired());
+    check(oam.isAcquiredByMe());
+    check(vram.isAcquiredByMe());
 
     bool incLX = false;
 
@@ -391,8 +392,8 @@ void Ppu::pixelTransfer0() {
 
 void Ppu::pixelTransfer8() {
     check(LX >= 8);
-    check(oam.isAcquired());
-    check(vram.isAcquired());
+    check(oam.isAcquiredByMe());
+    check(vram.isAcquiredByMe());
 
     bool incLX = false;
 
@@ -559,8 +560,8 @@ void Ppu::enterVBlank() {
 
     interrupts.raiseInterrupt<InterruptsIO::InterruptType::VBlank>();
 
-    check(!vram.isAcquired());
-    check(!oam.isAcquired());
+    check(!vram.isAcquiredByMe());
+    check(!oam.isAcquiredByMe());
 }
 
 void Ppu::vBlank() {
@@ -604,10 +605,10 @@ void Ppu::enterNewFrame() {
     updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT));
 }
 
-template <uint8_t mode>
+template <uint8_t Mode>
 inline void Ppu::updateMode() {
-    check(mode <= 0b11);
-    video.STAT = ((uint8_t)video.STAT & 0b11111100) | mode;
+    check(Mode <= 0b11);
+    video.STAT = ((uint8_t)video.STAT & 0b11111100) | Mode;
 }
 
 inline void Ppu::increaseLX() {
@@ -718,7 +719,7 @@ void Ppu::bgPrefetcherGetTile1() {
 
     const uint16_t vTilemapAddr = (0x1800 | (test_bit<BG_TILE_MAP>(LCDC) << 10)); // 0x9800 or 0x9C00 (global)
     const uint16_t vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + bwf.tilemapX;
-    const uint8_t tileNumber = vram[vTilemapTileAddr];
+    const uint8_t tileNumber = vram.read(vTilemapTileAddr);
 
     const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(LCDC)
                                    ?
@@ -749,7 +750,7 @@ void Ppu::winPrefetcherGetTile1() {
 
     const uint16_t vTilemapAddr = (0x1800 | (test_bit<WIN_TILE_MAP>(LCDC) << 10)); // 0x9800 or 0x9C00 (global)
     const uint16_t vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + bwf.tilemapX;
-    const uint8_t tileNumber = vram[vTilemapTileAddr];
+    const uint8_t tileNumber = vram.read(vTilemapTileAddr);
 
     const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(LCDC)
                                    ?
@@ -769,15 +770,16 @@ void Ppu::winPrefetcherGetTile1() {
 void Ppu::objPrefetcherGetTile0() {
     check(isFetchingSprite);
 
-    of.tileNumber = oam[OAM_ENTRY_BYTES * of.entry.number + Specs::Bytes::OAM::TILE_NUMBER];
+    // Read two bytes from OAM (Tile Number and Attributes)
+    readOamRegisters<PIXEL_TRANSFER>(OAM_ENTRY_BYTES * of.entry.number + Specs::Bytes::OAM::TILE_NUMBER);
+    of.tileNumber = registers.oam.a;
+    of.attributes = registers.oam.b;
 
     fetcherTickSelector = &Ppu::objPrefetcherGetTile1;
 }
 
 void Ppu::objPrefetcherGetTile1() {
     check(isFetchingSprite);
-
-    of.attributes = oam[OAM_ENTRY_BYTES * of.entry.number + Specs::Bytes::OAM::ATTRIBUTES];
 
     const bool isDoubleHeight = test_bit<OBJ_SIZE>(video.LCDC);
     if (isDoubleHeight)
@@ -806,7 +808,7 @@ void Ppu::objPrefetcherGetTile1() {
 void Ppu::bgwinPixelSliceFetcherGetTileDataLow0() {
     check(!isFetchingSprite);
 
-    psf.tileDataLow = vram[psf.vTileDataAddress];
+    psf.tileDataLow = vram.read(psf.vTileDataAddress);
 
     fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataLow1;
 }
@@ -820,7 +822,7 @@ void Ppu::bgwinPixelSliceFetcherGetTileDataLow1() {
 void Ppu::bgwinPixelSliceFetcherGetTileDataHigh0() {
     check(!isFetchingSprite);
 
-    psf.tileDataHigh = vram[psf.vTileDataAddress + 1];
+    psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
 
     fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1;
 }
@@ -898,7 +900,7 @@ void Ppu::objPixelSliceFetcherGetTileDataLow0() {
     check(isFetchingSprite);
     check(bgFifo.isNotEmpty());
 
-    psf.tileDataLow = vram[psf.vTileDataAddress];
+    psf.tileDataLow = vram.read(psf.vTileDataAddress);
 
     fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataLow1;
 }
@@ -914,7 +916,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh0() {
     check(isFetchingSprite);
     check(bgFifo.isNotEmpty());
 
-    psf.tileDataHigh = vram[psf.vTileDataAddress + 1];
+    psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
 
     fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo;
 }
@@ -1003,6 +1005,29 @@ inline void Ppu::restoreBgWinFetch() {
     bwf.interruptedFetch.hasData = false;
 }
 
+template <uint8_t Mode>
+void Ppu::readOamRegisters(uint16_t oamAddress) {
+    static_assert(Mode == OAM_SCAN || Mode == PIXEL_TRANSFER);
+    check(oamAddress % 2 == 0);
+
+    if constexpr (Mode == OAM_SCAN) {
+        // PPU cannot access OAM while DMA transfer is in progress.
+        // Note that it does not read at all: therefore the oam registers
+        // will hold their old values in this case.
+        if (oam.isAcquiredBy<Device::Dma>())
+            return;
+    }
+
+    // We can read from OAM.
+    // Note that if DMA transfer is in progress conflicts can occur and
+    // we might end up reading from the OAM address the DMA is writing to.
+    // (but only if DMA writing request is pending, i.e. it is in t0 or t1)
+    // [hacktix/strikethrough]
+    const auto res = oam.readTwo(oamAddress);
+    registers.oam.a = res.a;
+    registers.oam.b = res.b;
+}
+
 void Ppu::saveState(Parcel& parcel) const {
     static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScanEven,
                                                     &Ppu::oamScanOdd,
@@ -1071,9 +1096,10 @@ void Ppu::saveState(Parcel& parcel) const {
 
     parcel.writeBool(isFetchingSprite);
 
+    parcel.writeUInt8(registers.oam.a);
+    parcel.writeUInt8(registers.oam.b);
+
     parcel.writeUInt8(oamScan.count);
-    parcel.writeUInt8(oamScan.entry.number);
-    parcel.writeUInt8(oamScan.entry.y);
 
     parcel.writeUInt8(pixelTransfer.initialSCX.toDiscard);
     parcel.writeUInt8(pixelTransfer.initialSCX.discarded);
@@ -1162,9 +1188,10 @@ void Ppu::loadState(Parcel& parcel) {
 
     isFetchingSprite = parcel.readBool();
 
+    registers.oam.a = parcel.readUInt8();
+    registers.oam.b = parcel.readUInt8();
+
     oamScan.count = parcel.readUInt8();
-    oamScan.entry.number = parcel.readUInt8();
-    oamScan.entry.y = parcel.readUInt8();
 
     pixelTransfer.initialSCX.toDiscard = parcel.readUInt8();
     pixelTransfer.initialSCX.discarded = parcel.readUInt8();

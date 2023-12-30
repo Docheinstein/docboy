@@ -60,10 +60,10 @@ public:
     VramBus vramBus {vram};
     OamBus oamBus {oam};
     Mmu mmu {IF_BOOTROM(*bootRom COMMA) extBus, cpuBus, vramBus, oamBus};
-    Dma dma {mmu.socket<MmuDevice::Dma>(), Dma::OamBusView {oamBus}};
-    Cpu cpu {interrupts, mmu.socket<MmuDevice::Cpu>()};
+    Dma dma {mmu, oamBus};
+    Cpu cpu {interrupts, mmu};
     Lcd lcd {};
-    Ppu ppu {lcd, video, interrupts, Ppu::VramBusView {vramBus}, Ppu::OamBusView {oamBus}};
+    Ppu ppu {lcd, video, interrupts, vramBus, oamBus};
 };
 
 #endif // GAMEBOY_H

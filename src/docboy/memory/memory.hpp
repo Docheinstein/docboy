@@ -48,7 +48,7 @@ protected:
         for (uint16_t i = 0; i < length; i++)
             data[i] = data_[i];
 #else
-        memcpy(this->data, data, length);
+        memcpy(this->data, data_, length);
 #endif
     }
 

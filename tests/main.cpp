@@ -1338,7 +1338,10 @@ TEST_CASE("emulation", "[emulation][.]") {
                       F {"docboy/dma/dma_timing_round1.gb", "docboy/ok.png"},
                       F {"docboy/dma/dma_timing_round2.gb", "docboy/ok.png"},
                       F {"docboy/dma/dma_transfer.gb", "docboy/ok.png"},
-                      F {"docboy/dma/dma_transfer_ff00.gb", "docboy/ok.png"}, );
+                      F {"docboy/dma/dma_transfer_ff00.gb", "docboy/ok.png"},
+                      F {"docboy/dma/rendering/dma_blocks_oam_scan.gb", "docboy/dma_blocks_oam_scan.png"},
+
+        );
     }
 
     SECTION("bus") {
@@ -1351,7 +1354,8 @@ TEST_CASE("emulation", "[emulation][.]") {
     }
 
     SECTION("integration") {
-        RUN_TEST_ROMS(F {"hacktix/bully.gb", "hacktix/bully.png"});
+        RUN_TEST_ROMS(F {"hacktix/bully.gb", "hacktix/bully.png"},
+                      F {"hacktix/strikethrough.gb", "hacktix/strikethrough.png"});
     }
 
 #else

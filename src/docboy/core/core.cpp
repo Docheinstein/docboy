@@ -32,33 +32,28 @@ Core::Core(GameBoy& gb) :
 }
 
 inline void Core::tick_t0() {
-    gb.cpu.tick();
+    gb.cpu.tick_t0();
     gb.ppu.tick();
-    gb.cpu.checkInterrupt_t0();
-    gb.mmu.tick_t0();
 }
 
 inline void Core::tick_t1() {
+    gb.cpu.tick_t1();
     gb.ppu.tick();
-    gb.cpu.checkInterrupt_t1();
-    gb.dma.tickWrite();
-    gb.mmu.tick_t1();
+    gb.dma.tick_t1();
 }
 
 inline void Core::tick_t2() {
+    gb.cpu.tick_t2();
     gb.ppu.tick();
-    gb.cpu.checkInterrupt_t2();
-    gb.mmu.tick_t2();
 }
 
 inline void Core::tick_t3() {
+    gb.cpu.tick_t3();
     if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3)
         gb.serialPort.tick();
-    gb.timers.tick();
-    gb.dma.tickRead();
+    gb.timers.tick_t3();
     gb.ppu.tick();
-    gb.cpu.checkInterrupt_t3();
-    gb.mmu.tick_t3();
+    gb.dma.tick_t3();
 }
 
 void Core::cycle() {

@@ -99,7 +99,7 @@ Timers::Timers(InterruptsIO& interrupts) :
     TimersIO(interrupts) {
 }
 
-void Timers::tick() {
+void Timers::tick_t3() {
     handlePendingTimaReload();
     setDIV(DIV + 4);
 }
