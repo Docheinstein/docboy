@@ -1091,8 +1091,9 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 gb.ppu.tickSelector == &Ppu::oamScanDone)
                 return "Oam Scan";
             if (gb.ppu.tickSelector == &Ppu::pixelTransferDummy0 ||
-                gb.ppu.tickSelector == &Ppu::pixelTransferDiscard0 || gb.ppu.tickSelector == &Ppu::pixelTransfer0 ||
-                gb.ppu.tickSelector == &Ppu::pixelTransfer8) {
+                gb.ppu.tickSelector == &Ppu::pixelTransferDiscard0 ||
+                gb.ppu.tickSelector == &Ppu::pixelTransferDiscard0WX0SCX7 ||
+                gb.ppu.tickSelector == &Ppu::pixelTransfer0 || gb.ppu.tickSelector == &Ppu::pixelTransfer8) {
 
                 Text t {"Pixel Transfer"};
 
@@ -1167,12 +1168,18 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("Last Stat IRQ") << "    :  " << gb.ppu.lastStatIrq << endl;
 
         // LCD
-        const auto colorIndex = [](uint16_t lcdColor) {
+        const auto pixelColor = [](uint16_t lcdColor) {
+            Text colors[4] {
+                color<154>("0"),
+                color<106>("1"),
+                color<64>("2"),
+                color<28>("3"),
+            };
             for (uint8_t i = 0; i < 4; i++) {
                 if (lcdColor == Lcd::RGB565_PALETTE[i])
-                    return hex(i);
+                    return colors[i];
             }
-            return hex((uint8_t)0); // allowed because framebuffer could be cleared by the debugger
+            return color<0>("[.]"); // allowed because framebuffer could be cleared by the debugger
         };
 
         b << subheader("lcd", width) << endl;
@@ -1182,7 +1189,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         for (int32_t i = 0; i < 8; i++) {
             int32_t idx = gb.lcd.cursor - 8 + i;
             if (idx >= 0) {
-                b << colorIndex(gb.lcd.pixels[idx]) << " ";
+                b << pixelColor(gb.lcd.pixels[idx]) << " ";
             }
         }
         b << endl;
@@ -1232,9 +1239,10 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         // Pixel Transfer
         b << subheader("pixel transfer", width) << endl;
-        b << yellow("SCX % 8") << "          :  " << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
-        b << yellow("Discarded Pixels") << " :  " << gb.ppu.pixelTransfer.initialSCX.discarded << "/"
+        b << yellow("Init SCX % 8") << "  :  " << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
+        b << yellow("SCX Disc. Pixels") << " :  " << gb.ppu.pixelTransfer.initialSCX.discarded << "/"
           << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
+        b << yellow("Disc. Pixels") << "     :  " << (gb.ppu.LX < 8 ? (Text(gb.ppu.LX) + "/8") : "8/8") << endl;
 
         // BG Fifo
         b << subheader("bg fifo", width) << endl;
@@ -1303,7 +1311,14 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("WLY") << "              :  " << (gb.ppu.w.WLY != UINT8_MAX ? gb.ppu.w.WLY : darkgray("None"))
           << endl;
         b << yellow("Active") << "           :  " << gb.ppu.w.active << endl;
-        b << yellow("WX") << "               :  " << (gb.ppu.w.lineTriggers ? gb.ppu.w.WX : darkgray("None")) << endl;
+        b << yellow("WX Triggers") << "      :  ";
+        for (uint8_t i = 0; i < gb.ppu.w.lineTriggers.size(); i++) {
+            b << Text {gb.ppu.w.lineTriggers[i]};
+            if (i < gb.ppu.w.lineTriggers.size() - 1)
+                b << " | ";
+            else
+                b << endl;
+        }
 
         return b;
     };

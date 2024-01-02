@@ -63,6 +63,7 @@ private:
 
     void pixelTransferDummy0();
     void pixelTransferDiscard0();
+    void pixelTransferDiscard0WX0SCX7();
     void pixelTransfer0();
     void pixelTransfer8();
 
@@ -120,7 +121,9 @@ private:
     [[nodiscard]] bool isBgFifoReadyToBePopped() const;
     [[nodiscard]] bool isObjReadyToBeFetched() const;
     [[nodiscard]] bool isWindowTriggering() const;
+
     void eventuallySetupFetcherForWindow();
+    void setupFetcherForWindow();
 
     void cacheBgWinFetch();
     void restoreBgWinFetch();
@@ -185,25 +188,32 @@ private:
         } initialSCX;
     } pixelTransfer;
 
+    // Window
+    struct {
+        uint8_t WLY {UINT8_MAX}; // window line counter
+        bool active {};
+
+#ifdef ASSERTS_OR_DEBUGGER_ENABLED
+        Vector<uint8_t, 20> lineTriggers {};
+#endif
+    } w;
+
     // Bg/Win Prefetcher
     struct {
         uint8_t LX {}; // [0, 256), advances 8 by 8
         uint8_t tilemapX {};
 
         struct {
+            bool hasData {};
             uint8_t tileDataLow {};
             uint8_t tileDataHigh {};
-            bool hasData {};
         } interruptedFetch {};
     } bwf;
 
-    // Window
+    // Window Prefetcher
     struct {
-        uint8_t WLY {UINT8_MAX}; // window line counter
-        uint8_t WX {};           // triggered video.WX - 7
-        bool active {};
-        IF_ASSERTS(uint8_t lineTriggers {});
-    } w;
+        uint8_t tilemapX {};
+    } wf;
 
     // Obj Prefetcher
     struct {

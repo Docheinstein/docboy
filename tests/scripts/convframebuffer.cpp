@@ -3,19 +3,30 @@
 #include <iostream>
 
 // usage: convframebuffer <in_file> <in_palette> <out_file> <out_palette>
+// usage: convframebuffer <in_file> <in_palette> <out_palette> // in place
 // palette: HexColor1,HexColor2,HexColor2,HexColor3
 
 int main(int argc, const char* argv[]) {
-    if (argc < 5) {
+    if (argc < 4) {
         std::cerr << "usage: convframebuffer <in_file> <in_palette> <out_file> <out_palette>" << std::endl;
+        std::cerr << "usage: convframebuffer <in_file> <in_palette> <out_palette>" << std::endl;
         exit(1);
     }
 
     // Read arguments
-    std::string inFile {argv[1]};
-    std::string inPaletteStr {argv[2]};
-    std::string outFile {argv[3]};
-    std::string outPaletteStr {argv[4]};
+    std::string inFile, inPaletteStr, outFile, outPaletteStr;
+
+    if (argc == 4) {
+        inFile = argv[1];
+        inPaletteStr = argv[2];
+        outFile = inFile;
+        outPaletteStr = argv[3];
+    } else {
+        inFile = argv[1];
+        inPaletteStr = argv[2];
+        outFile = argv[3];
+        outPaletteStr = argv[4];
+    }
 
     // Parse palettes arguments into string tokens
     std::vector<std::string> inPaletteTokens;

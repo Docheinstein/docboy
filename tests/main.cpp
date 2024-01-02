@@ -858,8 +858,13 @@ static bool run_with_params(const RunnerParams& p) {
     const auto [params] = TABLE(RunnerParams, ({__VA_ARGS__}));                                                        \
     REQUIRE(run_with_params(params))
 
+#define MEALYBUG_ONLY 0
+#define PPU_ONLY 0
+
 TEST_CASE("emulation", "[emulation][.]") {
-#if 1
+#if !MEALYBUG_ONLY
+
+#if !PPU_ONLY
     SECTION("mbc") {
         SECTION("mbc1") {
             RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -945,6 +950,9 @@ TEST_CASE("emulation", "[emulation][.]") {
         );
     }
 
+#endif
+
+#if PPU_ONLY
     SECTION("ppu") {
         RUN_TEST_ROMS(
             // dmg-acid2
@@ -988,11 +996,11 @@ TEST_CASE("emulation", "[emulation][.]") {
             //                GREY_PALETTE}, F{"mealybug/m3_obp0_change.gb", "mealybug/m3_obp0_change.png",
             //                GREY_PALETTE},
             F {"mealybug/m3_scx_high_5_bits.gb", "mealybug/m3_scx_high_5_bits.png", GREY_PALETTE},
-            // F{"mealybug/m3_scx_low_3_bits.gb", "mealybug/m3_scx_low_3_bits.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_scy_change.gb", "mealybug/m3_scy_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_window_timing.gb", "mealybug/m3_window_timing.png", GREY_PALETTE},
-            //                F{"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png",
+            F {"mealybug/m3_scx_low_3_bits.gb", "mealybug/m3_scx_low_3_bits.png", GREY_PALETTE},
+            // F{"mealybug/m3_scy_change.gb", "mealybug/m3_scy_change.png", GREY_PALETTE},
+            F {"mealybug/m3_window_timing.gb", "mealybug/m3_window_timing.png", GREY_PALETTE},
+            F {"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png", GREY_PALETTE},
+            // F{"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png",
             //                GREY_PALETTE}, F{"mealybug/m3_wx_4_change_sprites.gb",
             //                "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE}, F{"mealybug/m3_wx_5_change.gb",
             //                "mealybug/m3_wx_5_change.png", GREY_PALETTE}, F{"mealybug/m3_wx_6_change.gb",
@@ -1196,7 +1204,32 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/write_read_stat.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_vram_oam_scan.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_vram_pixel_transfer.gb", "docboy/ok.png"},
-            F {"docboy/ppu/rendering/window_wx0.gb", "docboy/window_wx0.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx8.gb", "docboy/window_bg_reprise_wx8.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx9.gb", "docboy/window_bg_reprise_wx9.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx10.gb", "docboy/window_bg_reprise_wx10.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx11.gb", "docboy/window_bg_reprise_wx11.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx12.gb", "docboy/window_bg_reprise_wx12.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx13.gb", "docboy/window_bg_reprise_wx13.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx14.gb", "docboy/window_bg_reprise_wx14.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx15.gb", "docboy/window_bg_reprise_wx15.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx16.gb", "docboy/window_bg_reprise_wx16.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx17.gb", "docboy/window_bg_reprise_wx17.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx18.gb", "docboy/window_bg_reprise_wx18.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx19.gb", "docboy/window_bg_reprise_wx19.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx20.gb", "docboy/window_bg_reprise_wx20.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx21.gb", "docboy/window_bg_reprise_wx21.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx22.gb", "docboy/window_bg_reprise_wx22.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx23.gb", "docboy/window_bg_reprise_wx23.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx24.gb", "docboy/window_bg_reprise_wx24.png"},
+            F {"docboy/ppu/rendering/window_bg_reprise_wx25.gb", "docboy/window_bg_reprise_wx25.png"},
+            F {"docboy/ppu/rendering/window_wx0_scx0.gb", "docboy/window_wx0_scx0.png"},
+            F {"docboy/ppu/rendering/window_wx0_scx1.gb", "docboy/window_wx0_scx1.png"},
+            F {"docboy/ppu/rendering/window_wx0_scx2.gb", "docboy/window_wx0_scx2.png"},
+            F {"docboy/ppu/rendering/window_wx0_scx3.gb", "docboy/window_wx0_scx3.png"},
+            F {"docboy/ppu/rendering/window_wx0_scx4.gb", "docboy/window_wx0_scx4.png"},
+            F {"docboy/ppu/rendering/window_wx0_scx5.gb", "docboy/window_wx0_scx5.png"},
+            F {"docboy/ppu/rendering/window_wx0_scx6.gb", "docboy/window_wx0_scx6.png"},
+            F {"docboy/ppu/rendering/window_wx0_scx7.gb", "docboy/window_wx0_scx7.png"},
             F {"docboy/ppu/rendering/window_wx1.gb", "docboy/window_wx1.png"},
             F {"docboy/ppu/rendering/window_wx2.gb", "docboy/window_wx2.png"},
             F {"docboy/ppu/rendering/window_wx3.gb", "docboy/window_wx3.png"},
@@ -1220,22 +1253,13 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/rendering/window_wx_change_v2_round2.gb", "docboy/window_wx_change_v2_round2.png"},
             F {"docboy/ppu/rendering/window_wx_change_v3_round1.gb", "docboy/window_wx_change_v3_round1.png"},
             F {"docboy/ppu/rendering/window_wx_change_v3_round2.gb", "docboy/window_wx_change_v3_round2.png"},
-            F {"docboy/ppu/rendering/window_wx_reenable_a.gb", "docboy/window_wx_reenable_a.png"},
-            F {"docboy/ppu/rendering/window_wx_reenable_b.gb", "docboy/window_wx_reenable_b.png"},
-            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_a.gb", "docboy/window_wx_reenable_retrigger_a.png"},
-            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_b.gb", "docboy/window_wx_reenable_retrigger_b.png"},
-            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_misaligned_a.gb",
-               "docboy/window_wx_reenable_retrigger_misaligned_a.png"},
-            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_misaligned_b.gb",
-               "docboy/window_wx_reenable_retrigger_misaligned_b.png"},
-            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_misaligned_redisable_a.gb",
-               "docboy/window_wx_reenable_retrigger_misaligned_redisable_a.png"},
-            F {"docboy/ppu/rendering/window_wx_reenable_retrigger_misaligned_redisable_b.gb",
-               "docboy/window_wx_reenable_retrigger_misaligned_redisable_b.png"},
             F {"docboy/ppu/rendering/window_wx_reset_round1.gb", "docboy/window_wx_reset_round1.png"},
             F {"docboy/ppu/rendering/window_wx_reset_round2.gb", "docboy/window_wx_reset_round2.png"}, );
     }
 
+#endif
+
+#if !PPU_ONLY
     SECTION("timers") {
         RUN_TEST_ROMS(S {"mooneye/timers/div_write.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/timers/rapid_toggle.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1359,41 +1383,42 @@ TEST_CASE("emulation", "[emulation][.]") {
                       F {"hacktix/strikethrough.gb", "hacktix/strikethrough.png"});
     }
 
+#endif
+
 #else
     SECTION("mealybug") {
-        RUN_TEST_ROMS(
-            F {"mealybug/m2_win_en_toggle.gb", "mealybug/m2_win_en_toggle.png", GREY_PALETTE},
-            F {"mealybug/m3_bgp_change.gb", "mealybug/m3_bgp_change.png", GREY_PALETTE},
-            F {"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png", GREY_PALETTE},
-            // F {"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png", GREY_PALETTE},
-            //                                        F{"mealybug/m3_lcdc_bg_map_change.gb",
-            //                "mealybug/m3_lcdc_bg_map_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_en_change_variant.gb",
-            //                "mealybug/m3_lcdc_obj_en_change_variant.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_obj_size_change.gb", "mealybug/m3_lcdc_obj_size_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_size_change_scx.gb",
-            //                "mealybug/m3_lcdc_obj_size_change_scx.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_tile_sel_change.gb", "mealybug/m3_lcdc_tile_sel_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_tile_sel_win_change.gb",
-            //                "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_win_en_change_multiple.gb",
-            //                "mealybug/m3_lcdc_win_en_change_multiple.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_win_en_change_multiple_wx.gb",
-            //                "mealybug/m3_lcdc_win_en_change_multiple_wx.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_win_map_change.gb", "mealybug/m3_lcdc_win_map_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_obp0_change.gb", "mealybug/m3_obp0_change.png",
-            //                GREY_PALETTE},
-            F {"mealybug/m3_scx_high_5_bits.gb", "mealybug/m3_scx_high_5_bits.png", GREY_PALETTE},
-            F {"mealybug/m3_scx_low_3_bits.gb", "mealybug/m3_scx_low_3_bits.png", GREY_PALETTE},
-            // F{"mealybug/m3_scy_change.gb", "mealybug/m3_scy_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_window_timing.gb", "mealybug/m3_window_timing.png", GREY_PALETTE},
-            //                F{"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_wx_4_change_sprites.gb",
-            //                "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE}, F{"mealybug/m3_wx_5_change.gb",
-            //                "mealybug/m3_wx_5_change.png", GREY_PALETTE}, F{"mealybug/m3_wx_6_change.gb",
-            //                "mealybug/m3_wx_6_change.png", GREY_PALETTE},
+        RUN_TEST_ROMS(F {"mealybug/m2_win_en_toggle.gb", "mealybug/m2_win_en_toggle.png", GREY_PALETTE},
+                      F {"mealybug/m3_bgp_change.gb", "mealybug/m3_bgp_change.png", GREY_PALETTE},
+                      F {"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png", GREY_PALETTE},
+                      // F {"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png", GREY_PALETTE},
+                      //                                        F{"mealybug/m3_lcdc_bg_map_change.gb",
+                      //                "mealybug/m3_lcdc_bg_map_change.png", GREY_PALETTE},
+                      //                F{"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png",
+                      //                GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_en_change_variant.gb",
+                      //                "mealybug/m3_lcdc_obj_en_change_variant.png", GREY_PALETTE},
+                      //                F{"mealybug/m3_lcdc_obj_size_change.gb", "mealybug/m3_lcdc_obj_size_change.png",
+                      //                GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_size_change_scx.gb",
+                      //                "mealybug/m3_lcdc_obj_size_change_scx.png", GREY_PALETTE},
+                      //                F{"mealybug/m3_lcdc_tile_sel_change.gb", "mealybug/m3_lcdc_tile_sel_change.png",
+                      //                GREY_PALETTE}, F{"mealybug/m3_lcdc_tile_sel_win_change.gb",
+                      //                "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
+                      //                F{"mealybug/m3_lcdc_win_en_change_multiple.gb",
+                      //                "mealybug/m3_lcdc_win_en_change_multiple.png", GREY_PALETTE},
+                      //                F{"mealybug/m3_lcdc_win_en_change_multiple_wx.gb",
+                      //                "mealybug/m3_lcdc_win_en_change_multiple_wx.png", GREY_PALETTE},
+                      //                F{"mealybug/m3_lcdc_win_map_change.gb", "mealybug/m3_lcdc_win_map_change.png",
+                      //                GREY_PALETTE}, F{"mealybug/m3_obp0_change.gb", "mealybug/m3_obp0_change.png",
+                      //                GREY_PALETTE},
+                      F {"mealybug/m3_scx_high_5_bits.gb", "mealybug/m3_scx_high_5_bits.png", GREY_PALETTE},
+                      F {"mealybug/m3_scx_low_3_bits.gb", "mealybug/m3_scx_low_3_bits.png", GREY_PALETTE},
+                      // F{"mealybug/m3_scy_change.gb", "mealybug/m3_scy_change.png", GREY_PALETTE},
+                      F {"mealybug/m3_window_timing.gb", "mealybug/m3_window_timing.png", GREY_PALETTE},
+                      F {"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png", GREY_PALETTE},
+                      // F{"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png", GREY_PALETTE},
+                      // F{"mealybug/m3_wx_4_change_sprites.gb",
+                      //                "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
+                      //                F{"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
+                      //                F{"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE},
         );
     }
 #endif

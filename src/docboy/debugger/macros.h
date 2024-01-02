@@ -13,12 +13,14 @@ class DebuggerBackend;
     friend class DebuggerHelpers;
 #define IF_DEBUGGER(statement) statement
 #define IF_ASSERTS_OR_DEBUGGER(statement) statement
+#define ASSERTS_OR_DEBUGGER_ENABLED
 #else
 #define DEBUGGABLE_CLASS()
 #define IF_DEBUGGER(statement)
 
 #ifdef ENABLE_ASSERTS
 #define IF_ASSERTS_OR_DEBUGGER(statement) statement
+#define ASSERTS_OR_DEBUGGER_ENABLED
 #else
 #define IF_ASSERTS_OR_DEBUGGER(statement)
 #endif // ENABLE_ASSERTS

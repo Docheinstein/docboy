@@ -18,7 +18,7 @@
  */
 template <typename T, uint8_t N>
 struct Vector {
-    static_assert(std::is_trivially_copyable_v<T>);
+    // static_assert(std::is_trivially_copyable_v<T>);
 
     [[nodiscard]] bool isEmpty() const {
         return cursor == 0;
