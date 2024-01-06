@@ -7,10 +7,11 @@
 #include <cstring>
 
 /*
- * Queue that supports only:
- * + fill()
+ * Queue that supports:
+ * + push_back()
  * + pop_front()
- *
+* + fill()
+
  *  0 1 2 3 4 5 6 7
  * | | | |x|x|x|x|x|
  *        ^          N = 8
@@ -42,6 +43,11 @@ struct FillQueue {
     void fill(const void* src) {
         memcpy(data, src, sizeof(data));
         cursor = 0;
+    }
+
+    void pushBack(T element) {
+        check(!isFull());
+        data[--cursor] = element;
     }
 
     T popFront() {

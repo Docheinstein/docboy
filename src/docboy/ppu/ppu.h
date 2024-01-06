@@ -120,7 +120,6 @@ private:
 
     [[nodiscard]] bool isBgFifoReadyToBePopped() const;
     [[nodiscard]] bool isObjReadyToBeFetched() const;
-    [[nodiscard]] bool isWindowTriggering() const;
 
     void eventuallySetupFetcherForWindow();
     void setupFetcherForWindow();
@@ -192,6 +191,8 @@ private:
     struct {
         uint8_t WLY {UINT8_MAX}; // window line counter
         bool active {};
+
+        bool glitch {}; // TODO: subject to changes: don't know if actually necessary
 
 #ifdef ASSERTS_OR_DEBUGGER_ENABLED
         Vector<uint8_t, 20> lineTriggers {};

@@ -1,4 +1,4 @@
-#include "argparser.h"
+#include "argumentum/argparser.h"
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/cartridge/factory.h"
 #include "docboy/core/core.h"
@@ -7,6 +7,7 @@
 #include "docboy/memory/memory.hpp"
 #include "extra/cartridge/header.h"
 #include "extra/serial/endpoints/console.h"
+#include "os.h"
 #include "utils/formatters.hpp"
 #include "utils/path.h"
 #include <chrono>
@@ -66,8 +67,18 @@ int main(int argc, char* argv[]) {
     if (!parser.parse_args(argc, argv, 1))
         return 1;
 
-    GameBoy gb {IF_BOOTROM(BootRomFactory().create(args.bootRom))};
-    Core core {gb};
+    const auto ensureExists = [](const std::string& path) {
+        if (!file_exists(path)) {
+            std::cerr << "ERROR: failed to load '" << path << "'" << std::endl;
+            exit(1);
+        }
+    };
+
+    IF_BOOTROM(ensureExists(args.bootRom));
+    ensureExists(args.rom);
+
+    std::unique_ptr<GameBoy> gb {std::make_unique<GameBoy>(IF_BOOTROM(BootRomFactory().create(args.bootRom)))};
+    Core core {*gb};
 
     path romPath {args.rom};
 

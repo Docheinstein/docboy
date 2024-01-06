@@ -1316,9 +1316,9 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             b << Text {gb.ppu.w.lineTriggers[i]};
             if (i < gb.ppu.w.lineTriggers.size() - 1)
                 b << " | ";
-            else
-                b << endl;
         }
+        b << endl;
+        b << yellow("Glitched") << "         :  " << gb.ppu.w.glitch << endl;
 
         return b;
     };
@@ -1610,10 +1610,12 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
                     if (entry.type == DisassembledInstructionEntry::Type::Current) {
                         auto [min, max] = instruction_duration(entry.instruction);
-                        if (min)
-                            t += "   " + lightgray("M" + std::to_string(gb.cpu.instruction.microop.counter + 1) + "/" +
-                                                   std::to_string(min) +
-                                                   (max != min ? (std::string(":") + std::to_string(+max)) : ""));
+                        if (min) {
+                            uint8_t microopCounter = gb.cpu.instruction.cycleMicroop;
+                            t +=
+                                "   " + lightgray("M" + std::to_string(microopCounter + 1) + "/" + std::to_string(min) +
+                                                  (max != min ? (std::string(":") + std::to_string(+max)) : ""));
+                        }
                     }
 
                     return t;

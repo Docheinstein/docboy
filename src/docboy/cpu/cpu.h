@@ -636,6 +636,7 @@ private:
         } microop;
 
         IF_DEBUGGER(uint16_t address {});
+        IF_DEBUGGER(uint8_t cycleMicroop {});
     } instruction {};
 
     struct IO {

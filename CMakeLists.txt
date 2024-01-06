@@ -9,6 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_DEVTOOLS "Build devtools" OFF)
 option(BUILD_NOGUI_FRONTEND "Build NoGUI frontend" OFF)
 option(BUILD_SDL_FRONTEND "Build SDL frontend" OFF)
 option(BUILD_LIBRETRO_CORE "Build libretro core" OFF)
@@ -62,3 +63,9 @@ add_subdirectory(src)
 if (BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
+
+if (BUILD_DEVTOOLS)
+    add_subdirectory(devtools)
+endif()
+

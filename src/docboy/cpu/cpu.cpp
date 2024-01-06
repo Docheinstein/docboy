@@ -562,6 +562,18 @@ void Cpu::tick_t2() {
 void Cpu::tick_t3() {
     checkInterrupt<2>();
     flushRead();
+
+#ifdef ENABLE_DEBUGGER
+    // Update instruction's debug information
+    if (!halted) {
+        if (fetcher.fetching) {
+            instruction.address = PC - 1;
+            instruction.cycleMicroop = fetcher.instructions == instructionsCB ? 1 : 0;
+        } else {
+            instruction.cycleMicroop++;
+        }
+    }
+#endif
 }
 
 void Cpu::tick() {
@@ -667,6 +679,7 @@ void Cpu::saveState(Parcel& parcel) const {
 
     parcel.writeUInt8(instruction.microop.counter);
     IF_DEBUGGER(parcel.writeUInt16(instruction.address));
+    IF_DEBUGGER(parcel.writeUInt8(instruction.cycleMicroop));
 
     parcel.writeUInt8((uint8_t)io.state);
     parcel.writeUInt8(io.data);
@@ -722,6 +735,7 @@ void Cpu::loadState(Parcel& parcel) {
 
     instruction.microop.counter = parcel.readUInt8();
     IF_DEBUGGER(instruction.address = parcel.readUInt16());
+    IF_DEBUGGER(instruction.cycleMicroop = parcel.readUInt8());
 
     io.state = (IO::State)parcel.readUInt8();
     io.data = parcel.readUInt8();
@@ -844,7 +858,6 @@ void Cpu::serveInterrupt() {
 }
 
 inline void Cpu::fetch() {
-    IF_DEBUGGER(instruction.address = PC);
     instruction.microop.counter = 0;
     fetcher.fetching = true;
     fetcher.instructions = instructions;
@@ -852,7 +865,6 @@ inline void Cpu::fetch() {
 }
 
 inline void Cpu::fetchCB() {
-    IF_DEBUGGER(instruction.address = PC);
     check(instruction.microop.counter == 1);
     fetcher.fetching = true;
     fetcher.instructions = instructionsCB;

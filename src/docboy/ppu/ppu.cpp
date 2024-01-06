@@ -384,13 +384,11 @@ void Ppu::pixelTransferDummy0() {
 
         if (pixelTransfer.initialSCX.toDiscard) {
             pixelTransfer.initialSCX.discarded = 0;
-            if (isWindowTriggering()) {
-                // When WX=0, the first dummy fetch is thrown away and
-                // the fetcher is configured to fetch a window.
-                // Moreover, when WX=0, the initial SCX affects the window as
-                // if it was a background.
-                setupFetcherForWindow();
 
+            eventuallySetupFetcherForWindow();
+
+            // TODO: handle pixelTransferDiscard0WX0SCX7 as a pixelTransferDiscard0 with SCX 6?
+            if (w.active) {
                 // When WX=0 and SCX=7, the pixel transfer timing seems to be
                 // expected one with SCX=7, but the initial shifting applied
                 // to the window is 6, not 7.
@@ -719,6 +717,9 @@ void Ppu::enterNewFrame() {
     // (reset to 255 so that it will go to 0 at the first window trigger).
     w.WLY = UINT8_MAX;
 
+    // Exit window glitch (TODO: not sure about the timing: is it here?)
+    w.glitch = false;
+
     enterOamScan();
 
     // Eventually raise OAM interrupt
@@ -758,18 +759,16 @@ inline bool Ppu::isObjReadyToBeFetched() const {
     return oamEntries[LX].isNotEmpty() && test_bit<OBJ_ENABLE>(video.LCDC);
 }
 
-bool Ppu::isWindowTriggering() const {
+inline void Ppu::eventuallySetupFetcherForWindow() {
     // The condition for which the window can be triggered are:
     // - current pixel transfer LX should match WX
     // - current LY should be greater than WY
     // - window should be enabled in LCDC
-    return LX == video.WX && video.LY >= video.WY && test_bit<WIN_ENABLE>(video.LCDC);
-}
-
-inline void Ppu::eventuallySetupFetcherForWindow() {
-    // Eventually reset the fetcher so that it fetches the window, if it is triggering now.
-    if (!w.active && isWindowTriggering())
+    if (!w.active && LX == video.WX && video.LY >= video.WY && test_bit<WIN_ENABLE>(video.LCDC)) {
+        // TODO: glitch is subject to changes: conditions are still not clear to me
+        w.glitch = true;
         setupFetcherForWindow();
+    }
 }
 
 inline void Ppu::setupFetcherForWindow() {
@@ -1010,6 +1009,16 @@ void Ppu::bgwinPixelSliceFetcherPush() {
     // otherwise wait in push state until bg fifo is emptied
     const bool canPushToBgFifo = bgFifo.isEmpty();
     if (canPushToBgFifo) {
+        // TODO: window glitch: still subject to changes
+        // If window is glitched (exact conditions still not clear) and this
+        // push stage is reached with LX == WX, than a 00 pixel is pushed
+        // into the bg fifo.
+        // Therefore, the push that was about to happen is postponed by 1 tick
+        if (w.glitch && LX == video.WX && LX > 8 /* TODO: not sure about this */) {
+            bgFifo.pushBack(BgPixel {0});
+            return;
+        }
+
         // push pixels into bg fifo
         bgFifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[psf.tileDataHigh << 8 | psf.tileDataLow]);
 
@@ -1244,6 +1253,7 @@ void Ppu::saveState(Parcel& parcel) const {
 
     parcel.writeUInt8(w.WLY);
     parcel.writeBool(w.active);
+    parcel.writeBool(w.glitch);
 
 #ifdef ASSERTS_OR_DEBUGGER_ENABLED
     parcel.writeUInt8(w.lineTriggers.size());
@@ -1343,6 +1353,7 @@ void Ppu::loadState(Parcel& parcel) {
 
     w.WLY = parcel.readUInt8();
     w.active = parcel.readBool();
+    w.glitch = parcel.readBool();
 
 #ifdef ASSERTS_OR_DEBUGGER_ENABLED
     uint8_t lineTriggers = parcel.readUInt8();

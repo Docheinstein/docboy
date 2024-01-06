@@ -20,4 +20,3 @@ if (NOT ENABLE_SERIAL)
 endif()
 
 add_subdirectory(testutils)
-add_subdirectory(scripts)
