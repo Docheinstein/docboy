@@ -340,7 +340,7 @@ Here's the debugger!
 | mealybug/m3_scy_change.gb                     |         :x:         |
 | mealybug/m3_window_timing.gb                  | :white_check_mark:  |
 | mealybug/m3_window_timing_wx_0.gb             | :white_check_mark:  |
-| mealybug/m3_wx_4_change.gb                    |         :x:         |
+| mealybug/m3_wx_4_change.gb                    | :white_check_mark:  |
 | mealybug/m3_wx_4_change_sprites.gb            |         :x:         |
 | mealybug/m3_wx_5_change.gb                    |         :x:         |
 | mealybug/m3_wx_6_change.gb                    |         :x:         |
