@@ -107,6 +107,8 @@ private:
     void tickFetcher();
     void resetFetcher();
 
+    void tickWindow();
+
     void enterOamScan();
     void enterPixelTransfer();
     void enterHBlank();
@@ -189,10 +191,10 @@ private:
 
     // Window
     struct {
+        bool activeForFrame {};
         uint8_t WLY {UINT8_MAX}; // window line counter
-        bool active {};
 
-        bool glitch {}; // TODO: subject to changes: don't know if actually necessary
+        bool active {}; // currently rendering window
 
 #ifdef ASSERTS_OR_DEBUGGER_ENABLED
         Vector<uint8_t, 20> lineTriggers {};

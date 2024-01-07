@@ -1308,6 +1308,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         // Window
         b << subheader("window", width) << endl;
+        b << yellow("Active for frame") << " :  " << gb.ppu.w.activeForFrame << endl;
         b << yellow("WLY") << "              :  " << (gb.ppu.w.WLY != UINT8_MAX ? gb.ppu.w.WLY : darkgray("None"))
           << endl;
         b << yellow("Active") << "           :  " << gb.ppu.w.active << endl;
@@ -1318,7 +1319,6 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 b << " | ";
         }
         b << endl;
-        b << yellow("Glitched") << "         :  " << gb.ppu.w.glitch << endl;
 
         return b;
     };

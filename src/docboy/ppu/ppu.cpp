@@ -88,6 +88,15 @@ static constexpr uint8_t DUMMY_TILE[8] {};
  *  Push               | +1
  */
 
+/*
+ *  Window 00 Pixel Glitch.
+ *
+ *  Given WX1, WX2:
+ *
+ *  Glitch Same Line   = 1 if (WX2 = WX1 + 8n)        ∃n € N
+ *  Glitch Next Lines  = 1 if (WX2 = 7 - SCX + 8n)    ∃n € N
+ */
+
 Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Device::Ppu> vramBus,
          OamBus::View<Device::Ppu> oamBus) :
     lcd(lcd),
@@ -125,6 +134,15 @@ void Ppu::tick() {
 
     // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt
     tickStat();
+
+    // Check for window activation (the state holds for entire frame).
+    // The activation conditions are checked every dot,
+    // (not only during pixel transfer or at LY == WX).
+    // This is also reflected in the fact that window glitches for
+    // the rest of the frame by pushing 00 pixels if WX == LX during the fetched
+    // push stage if at some point in the entire frame the condition
+    // WY = LY was satisfied.
+    tickWindow();
 
     check(dots < 456);
 
@@ -717,8 +735,8 @@ void Ppu::enterNewFrame() {
     // (reset to 255 so that it will go to 0 at the first window trigger).
     w.WLY = UINT8_MAX;
 
-    // Exit window glitch (TODO: not sure about the timing: is it here?)
-    w.glitch = false;
+    // Reset window activation state
+    w.activeForFrame = false;
 
     enterOamScan();
 
@@ -746,7 +764,7 @@ inline void Ppu::increaseLX() {
 
 inline bool Ppu::isBgFifoReadyToBePopped() const {
     // The condition for which the bg fifo can be popped are:
-    // - the bg fifo should not be empty
+    // - the bg fifo is not empty
     // - the fetcher is not fetching a sprite
     // - there are no more oam entries for this LX to be fetched or obj are disabled in LCDC
     return bgFifo.isNotEmpty() && !isFetchingSprite && (oamEntries[LX].isEmpty() || !test_bit<OBJ_ENABLE>(video.LCDC));
@@ -754,19 +772,17 @@ inline bool Ppu::isBgFifoReadyToBePopped() const {
 
 inline bool Ppu::isObjReadyToBeFetched() const {
     // The condition for which a obj fetch can be served are:
-    // - there should be at least a pending oam entry for the current LX
-    // - obj should be enabled in LCDC
+    // - there is at least a pending oam entry for the current LX
+    // - obj are enabled in LCDC
     return oamEntries[LX].isNotEmpty() && test_bit<OBJ_ENABLE>(video.LCDC);
 }
 
 inline void Ppu::eventuallySetupFetcherForWindow() {
     // The condition for which the window can be triggered are:
-    // - current pixel transfer LX should match WX
-    // - current LY should be greater than WY
-    // - window should be enabled in LCDC
-    if (!w.active && LX == video.WX && video.LY >= video.WY && test_bit<WIN_ENABLE>(video.LCDC)) {
-        // TODO: glitch is subject to changes: conditions are still not clear to me
-        w.glitch = true;
+    // - at some point in the frame LY was equal to WY
+    // - pixel transfer LX matches WX
+    // - window should is enabled LCDC
+    if (w.activeForFrame && !w.active && LX == video.WX && test_bit<WIN_ENABLE>(video.LCDC)) {
         setupFetcherForWindow();
     }
 }
@@ -806,6 +822,15 @@ void Ppu::resetFetcher() {
     bwf.interruptedFetch.hasData = false;
     wf.tilemapX = 0;
     fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;
+}
+
+inline void Ppu::tickWindow() {
+    // Window is considered active for the rest of the frame
+    // if at some point in it happens that window is enabled while LY matches WY.
+    // Note that this does not mean that window will always be rendered:
+    // the WX == LX condition will be checked again during pixel transfer
+    // (on the other hand WY is not checked again).
+    w.activeForFrame |= test_bit<WIN_ENABLE>(video.LCDC) && video.LY == video.WY;
 }
 
 inline void Ppu::tickFetcher() {
@@ -867,6 +892,7 @@ void Ppu::bgPrefetcherGetTile1() {
 
 void Ppu::winPrefetcherGetTile0() {
     check(!isFetchingSprite);
+    check(w.activeForFrame);
     check(w.active);
 
     // The window prefetcher has its own internal counter to determine the tile to fetch
@@ -877,6 +903,7 @@ void Ppu::winPrefetcherGetTile0() {
 
 void Ppu::winPrefetcherGetTile1() {
     check(!isFetchingSprite);
+    check(w.activeForFrame);
     check(w.active);
 
     const uint8_t LCDC = video.LCDC;
@@ -1009,12 +1036,11 @@ void Ppu::bgwinPixelSliceFetcherPush() {
     // otherwise wait in push state until bg fifo is emptied
     const bool canPushToBgFifo = bgFifo.isEmpty();
     if (canPushToBgFifo) {
-        // TODO: window glitch: still subject to changes
-        // If window is glitched (exact conditions still not clear) and this
-        // push stage is reached with LX == WX, than a 00 pixel is pushed
-        // into the bg fifo.
-        // Therefore, the push that was about to happen is postponed by 1 tick
-        if (w.glitch && LX == video.WX && LX > 8 /* TODO: not sure about this */) {
+        // If window activation conditions were met in the frame, then a
+        // glitch can occur: if this push stage happens when LX == WX,
+        // than a 00 pixel is pushed into the bg fifo instead of the fetched tile.
+        // Therefore, the push of the tile that was about to happen is postponed by 1 dot
+        if (w.activeForFrame && LX == video.WX && LX > 8 /* TODO: not sure about this */) {
             bgFifo.pushBack(BgPixel {0});
             return;
         }
@@ -1253,7 +1279,6 @@ void Ppu::saveState(Parcel& parcel) const {
 
     parcel.writeUInt8(w.WLY);
     parcel.writeBool(w.active);
-    parcel.writeBool(w.glitch);
 
 #ifdef ASSERTS_OR_DEBUGGER_ENABLED
     parcel.writeUInt8(w.lineTriggers.size());
@@ -1353,7 +1378,6 @@ void Ppu::loadState(Parcel& parcel) {
 
     w.WLY = parcel.readUInt8();
     w.active = parcel.readBool();
-    w.glitch = parcel.readBool();
 
 #ifdef ASSERTS_OR_DEBUGGER_ENABLED
     uint8_t lineTriggers = parcel.readUInt8();
