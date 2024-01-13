@@ -4,7 +4,7 @@
 #include "docboy/bootrom/macros.h"
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
-#include "docboy/debugger/macros.h"
+#include "docboy/shared//macros.h"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
 #include "utils/fillqueue.hpp"
@@ -68,6 +68,7 @@ private:
     void pixelTransfer8();
 
     void hBlank();
+    void hBlank453();
     void hBlank454();
     void hBlankLastLine();
     void hBlankLastLine454();

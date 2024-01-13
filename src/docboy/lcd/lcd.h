@@ -1,7 +1,7 @@
 #ifndef LCD_H
 #define LCD_H
 
-#include "docboy/debugger/macros.h"
+#include "docboy/shared//macros.h"
 #include "docboy/shared/specs.h"
 
 class Parcel;

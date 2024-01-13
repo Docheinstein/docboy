@@ -1110,8 +1110,9 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
                 return t;
             }
-            if (gb.ppu.tickSelector == &Ppu::hBlank || gb.ppu.tickSelector == &Ppu::hBlank454 ||
-                gb.ppu.tickSelector == &Ppu::hBlankLastLine || gb.ppu.tickSelector == &Ppu::hBlankLastLine454)
+            if (gb.ppu.tickSelector == &Ppu::hBlank || gb.ppu.tickSelector == &Ppu::hBlank453 ||
+                gb.ppu.tickSelector == &Ppu::hBlank454 || gb.ppu.tickSelector == &Ppu::hBlankLastLine ||
+                gb.ppu.tickSelector == &Ppu::hBlankLastLine454)
                 return "Horizontal Blank";
             if (gb.ppu.tickSelector == &Ppu::vBlank)
                 return "Vertical Blank";

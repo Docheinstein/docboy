@@ -1,9 +1,5 @@
-#ifndef DEBUGGERMACROS_H
-#define DEBUGGERMACROS_H
-
-// This file is included also if ENABLE_DEBUGGER is disabled.
-// It defines some macros that can be used to use the Debugger
-// with the rest of the code.
+#ifndef DOCBOYMACROS_H
+#define DOCBOYMACROS_H
 
 #ifdef ENABLE_DEBUGGER
 class DebuggerBackend;
@@ -27,4 +23,14 @@ class DebuggerBackend;
 
 #endif // ENABLE_DEBUGGER
 
-#endif // DEBUGGERMACROS_H
+#define TESTABLE_CLASS() friend class FramebufferRunner;
+
+#ifdef ENABLE_TESTS
+#define TESTABLE_CLASS() friend class FramebufferRunner;
+#define IF_TESTS(statement) statement
+#else
+#define TESTABLE_CLASS()
+#define IF_TESTS(statement)
+#endif
+
+#endif // DOCBOYMACROS_H

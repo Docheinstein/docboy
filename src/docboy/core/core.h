@@ -1,8 +1,8 @@
 #ifndef CORE_H
 #define CORE_H
 
-#include "docboy/debugger/macros.h"
 #include "docboy/gameboy/gameboy.h"
+#include "docboy/shared//macros.h"
 
 #ifdef ENABLE_DEBUGGER
 class DebuggerBackend;

@@ -2,8 +2,8 @@
 #define BUS_H
 
 #include "device.h"
-#include "docboy/debugger/macros.h"
 #include "docboy/memory/fwd/bytefwd.h"
+#include "docboy/shared//macros.h"
 
 class IBus {};
 

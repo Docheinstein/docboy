@@ -2,8 +2,8 @@
 #define CPU_H
 
 #include "docboy/bootrom/macros.h"
-#include "docboy/debugger/macros.h"
 #include "docboy/mmu/mmu.h"
+#include "docboy/shared//macros.h"
 #include <cstdint>
 
 class InterruptsIO;
@@ -11,6 +11,7 @@ class Parcel;
 
 class Cpu {
     DEBUGGABLE_CLASS()
+    TESTABLE_CLASS()
 
 public:
     Cpu(InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu);
@@ -635,6 +636,7 @@ private:
             uint8_t counter {};
         } microop;
 
+        IF_TESTS(uint8_t opcode {});
         IF_DEBUGGER(uint16_t address {});
         IF_DEBUGGER(uint8_t cycleMicroop {});
     } instruction {};

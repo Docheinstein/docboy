@@ -3,8 +3,8 @@
 
 #include "docboy/bootrom/macros.h"
 #include "docboy/bus/bus.h"
-#include "docboy/debugger/macros.h"
 #include "docboy/memory/fwd/bytefwd.h"
+#include "docboy/shared//macros.h"
 #include "utils/macros.h"
 
 #ifdef ENABLE_BOOTROM
@@ -22,6 +22,7 @@ class MmuView;
 
 class Mmu {
     DEBUGGABLE_CLASS()
+    TESTABLE_CLASS()
 
 public:
     template <Device::Type Dev>

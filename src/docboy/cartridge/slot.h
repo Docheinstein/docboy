@@ -2,7 +2,7 @@
 #define SLOT_H
 
 #include "cartridge.h"
-#include "docboy/debugger/macros.h"
+#include "docboy/shared//macros.h"
 #include "utils/asserts.h"
 #include <cstdint>
 #include <memory>

@@ -574,6 +574,12 @@ void Cpu::tick_t3() {
         }
     }
 #endif
+
+#ifdef ENABLE_TESTS
+    if (fetcher.fetching) {
+        instruction.opcode = io.data;
+    }
+#endif
 }
 
 void Cpu::tick() {
@@ -782,7 +788,7 @@ void Cpu::checkInterrupt() {
     static constexpr uint8_t INTERRUPTS_TIMINGS[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
         /*  0 : None */ {{U, U, U, U}, {U, U, U, U}},
         /*  1 : VBlank */ {{1, 1, U, U}, {1, U, U, U}},
-        /*  2 : STAT */ {{1, 1, 1, 2}, {2, 2, 2, 2}},
+        /*  2 : STAT */ {{1, 1, 2, 2}, {2, 2, 2, 2}},
         /*  3 : STAT + VBlank */ {{1, 1, 2, 2}, {1, 2, 2, 2}},
         /*  4 : Timer */ {{1, 1, U, 2}, {U, U, U, 3}},
         /*  5 : Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},

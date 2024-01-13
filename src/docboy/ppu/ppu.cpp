@@ -640,20 +640,30 @@ void Ppu::enterHBlank() {
 void Ppu::hBlank() {
     check(LX == 168);
     check(video.LY < 143);
-    if (++dots == 454) {
-        // LY is increased at dot 454
-        ++video.LY;
 
-        tickSelector = &Ppu::hBlank454;
-
+    if (++dots == 453) {
         // Eventually raise OAM interrupt
         updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT));
 
-        oam.acquire();
+        tickSelector = &Ppu::hBlank453;
     }
 }
 
+void Ppu::hBlank453() {
+    check(dots == 453);
+
+    ++dots;
+
+    ++video.LY;
+
+    tickSelector = &Ppu::hBlank454;
+
+    oam.acquire();
+}
+
 void Ppu::hBlank454() {
+    check(dots >= 454);
+
     if (++dots == 456) {
         dots = 0;
         enterOamScan();
@@ -1210,6 +1220,7 @@ void Ppu::saveState(Parcel& parcel) const {
                                                     &Ppu::pixelTransfer0,
                                                     &Ppu::pixelTransfer8,
                                                     &Ppu::hBlank,
+                                                    &Ppu::hBlank453,
                                                     &Ppu::hBlank454,
                                                     &Ppu::hBlankLastLine,
                                                     &Ppu::hBlankLastLine454,
@@ -1317,6 +1328,7 @@ void Ppu::loadState(Parcel& parcel) {
                                                     &Ppu::pixelTransfer0,
                                                     &Ppu::pixelTransfer8,
                                                     &Ppu::hBlank,
+                                                    &Ppu::hBlank453,
                                                     &Ppu::hBlank454,
                                                     &Ppu::hBlankLastLine,
                                                     &Ppu::hBlankLastLine454,

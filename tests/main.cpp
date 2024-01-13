@@ -47,8 +47,7 @@ static constexpr uint64_t DURATION_MEDIUM = 30'000'000;
 static constexpr uint64_t DURATION_SHORT = 5'000'000;
 static constexpr uint64_t DURATION_VERY_SHORT = 1'500'000;
 
-static constexpr uint64_t DEFAULT_DURATION = DURATION_VERY_LONG;
-// static constexpr uint64_t DEFAULT_DURATION = DURATION_SHORT;
+static constexpr uint64_t DEFAULT_DURATION = DURATION_LONG;
 
 template <typename RunnerImpl>
 class RunnerT {
@@ -69,6 +68,11 @@ public:
         return static_cast<RunnerImpl&>(*this);
     }
 
+    RunnerImpl& stopAtInstruction(std::optional<uint8_t> instr) {
+        stopAtInstruction_ = instr;
+        return static_cast<RunnerImpl&>(*this);
+    }
+
     bool run() {
 #if !ENABLE_DOCBOY_TEST_ROMS
         // Just skip the rom
@@ -81,7 +85,7 @@ public:
 
         bool hasEverChecked {false};
 
-        for (tick = core.ticks; tick <= maxTicks_; tick += 4) {
+        for (tick = core.ticks; tick <= maxTicks_ && canRun; tick += 4) {
             core.cycle();
             if (impl->shouldCheckExpectation()) {
                 hasEverChecked = true;
@@ -108,6 +112,9 @@ protected:
     uint64_t tick {};
     uint64_t maxTicks_ {UINT64_MAX};
     uint64_t checkIntervalTicks_ {UINT64_MAX};
+    std::optional<uint8_t> stopAtInstruction_ {};
+
+    bool canRun {true};
 };
 
 class Runner : public RunnerT<Runner> {
@@ -136,10 +143,21 @@ public:
     }
 
     bool shouldCheckExpectation() {
+        // Schedule a check for the next VBlank if we reached the required instruction
+        if (stopAtInstruction_) {
+            if (core.gb.cpu.instruction.opcode == *stopAtInstruction_) {
+                // Force check now
+                canRun = false;
+                return true;
+            }
+        }
+
+        // Schedule a check for the next VBlank if we have passed the check interval
         if (tick > 0 && tick % checkIntervalTicks_ == 0) {
             pendingCheck = true;
         }
 
+        // Check if we are in VBlank with a pending check
         if (pendingCheck && keep_bits<2>(core.gb.video.STAT) == 1) {
             pendingCheck = false;
             return true;
@@ -149,8 +167,6 @@ public:
     }
 
     bool checkExpectation() {
-        // Compare framebuffer only in VBlank
-        check(keep_bits<2>(core.gb.video.STAT) == 1);
         memcpy(lastFramebuffer, gb->lcd.getPixels(), FRAMEBUFFER_SIZE);
         if (!pixelColors.empty())
             convert_framebuffer_pixels(gb->lcd.getPixels(), Lcd::RGB565_PALETTE, lastFramebuffer, pixelColors.data());
@@ -794,27 +810,34 @@ TEST_CASE("state", "[state]") {
     }
 }
 
+struct MaxTicks {
+    uint64_t value;
+};
+struct StopAtInstruction {
+    uint8_t instruction;
+};
+using RunnerParam = std::variant<std::monostate, Palette, MaxTicks, StopAtInstruction>;
+
 struct FramebufferRunnerParams {
-    FramebufferRunnerParams(std::string&& rom, std::string&& expected, const Palette& palette_, uint64_t maxTicks_) :
+
+    FramebufferRunnerParams(std::string&& rom, std::string&& expected, RunnerParam param1 = std::monostate {}) :
         rom(std::move(rom)) {
         result = std::move(expected);
-        palette = palette_;
-        maxTicks = maxTicks_;
-    }
-    FramebufferRunnerParams(std::string&& rom, std::string&& expected, const Palette& palette_) :
-        FramebufferRunnerParams(std::move(rom), std::move(expected), palette_, DEFAULT_DURATION) {
-    }
-    FramebufferRunnerParams(std::string&& rom, std::string&& expected, uint64_t maxTicks_) :
-        FramebufferRunnerParams(std::move(rom), std::move(expected), DEFAULT_PALETTE, maxTicks_) {
-    }
-    FramebufferRunnerParams(std::string&& rom, std::string&& expected) :
-        FramebufferRunnerParams(std::move(rom), std::move(expected), DEFAULT_PALETTE, DEFAULT_DURATION) {
+
+        if (std::holds_alternative<Palette>(param1)) {
+            palette = std::get<Palette>(param1);
+        } else if (std::holds_alternative<MaxTicks>(param1)) {
+            maxTicks = std::get<MaxTicks>(param1).value;
+        } else if (std::holds_alternative<StopAtInstruction>(param1)) {
+            stopAtInstruction = std::get<StopAtInstruction>(param1).instruction;
+        }
     }
 
     std::string rom;
     std::string result;
-    Palette palette;
-    uint64_t maxTicks;
+    Palette palette {DEFAULT_PALETTE};
+    uint64_t maxTicks {DEFAULT_DURATION};
+    std::optional<uint8_t> stopAtInstruction {};
 };
 
 struct SerialRunnerParams {
@@ -841,6 +864,7 @@ static bool run_with_params(const RunnerParams& p) {
             .rom(TEST_ROMS_PATH + pf.rom)
             .maxTicks(pf.maxTicks)
             .checkIntervalTicks(DURATION_VERY_SHORT)
+            .stopAtInstruction(pf.stopAtInstruction)
             .expectFramebuffer(TEST_RESULTS_PATH + pf.result, pf.palette)
             .run();
     }
@@ -865,16 +889,18 @@ static bool run_with_params(const RunnerParams& p) {
     REQUIRE(run_with_params(params))
 
 #define ALL_TEST_ROMS 1
+#define PPU_ONLY_TEST_ROMS 0
 #define MEALYBUG_ONLY_TEST_ROMS 0
 #define WIP_ONLY_TEST_ROMS 0
 
 TEST_CASE("emulation", "[emulation][.]") {
-#if ALL_TEST_ROMS
+#if ALL_TEST_ROMS || PPU_ONLY_TEST_ROMS
 
+#if ALL_TEST_ROMS
     SECTION("cpu") {
-        RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png", DURATION_VERY_LONG},
+        RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png", MaxTicks {DURATION_VERY_LONG}},
                       F {"blargg/instr_timing.gb", "blargg/instr_timing.png"},
-                      F {"blargg/halt_bug.gb", "blargg/halt_bug.png"},
+                      F {"blargg/halt_bug.gb", "blargg/halt_bug.png", MaxTicks {DURATION_VERY_LONG}},
                       F {"blargg/mem_timing.gb", "blargg/mem_timing.png"},
                       F {"blargg/mem_timing-2.gb", "blargg/mem_timing-2.png"},
                       S {"mooneye/instr/daa.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -903,6 +929,7 @@ TEST_CASE("emulation", "[emulation][.]") {
 
         );
     }
+#endif
 
     SECTION("ppu") {
         RUN_TEST_ROMS(
@@ -952,8 +979,8 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"mealybug/m3_window_timing.gb", "mealybug/m3_window_timing.png", GREY_PALETTE},
             F {"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png", GREY_PALETTE},
             F {"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png", GREY_PALETTE},
-            // F{"mealybug/m3_wx_4_change_sprites.gb",
-            //                "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE}, F{"mealybug/m3_wx_5_change.gb",
+            F {"mealybug/m3_wx_4_change_sprites.gb", "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
+            // F{"mealybug/m3_wx_5_change.gb",
             //                "mealybug/m3_wx_5_change.png", GREY_PALETTE}, F{"mealybug/m3_wx_6_change.gb",
             //                "mealybug/m3_wx_6_change.png", GREY_PALETTE},
 
@@ -962,6 +989,8 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/hblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_raises_vblank_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/ly_154.gb", "docboy/ok.png"},
+            F {"docboy/ppu/lyc_stat_interrupt_flag_timing_from_boot_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/lyc_stat_interrupt_flag_timing_from_boot_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/lyc_stat_interrupt_flag_timing_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/lyc_stat_interrupt_flag_timing_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/ly_timing_scx0_round1.gb", "docboy/ok.png"},
@@ -1800,6 +1829,7 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/rendering/window_wx9.gb", "docboy/ppu/window_wx9.png"}, );
     }
 
+#if ALL_TEST_ROMS
     SECTION("mbc") {
         SECTION("mbc1") {
             RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1836,6 +1866,8 @@ TEST_CASE("emulation", "[emulation][.]") {
                       F {"docboy/boot/boot_div_phase_round2.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_ppu_phase_round1.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_ppu_phase_round2.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_ppu_phase_round3.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_ppu_phase_round4.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_stat_lyc_eq_ly_round1.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_stat_lyc_eq_ly_round2.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_vram_tile_data.gb", "docboy/ok.png"},
@@ -1904,9 +1936,11 @@ TEST_CASE("emulation", "[emulation][.]") {
                       F {"docboy/interrupts/stat_interrupt_timing_halted_scx5_round1.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_halted_scx5_round2.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_oam_v1_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_oam_v1_round2.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_oam_v2_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_oam_v1_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_oam_v2_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_oam_v2_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_oam_v3_round1.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_oam_v3_round2.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_scx0_round1.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_scx0_round2.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_scx1_round1.gb", "docboy/ok.png"},
@@ -1914,9 +1948,7 @@ TEST_CASE("emulation", "[emulation][.]") {
                       F {"docboy/interrupts/stat_interrupt_timing_scx2_round1.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_scx2_round2.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_scx3_round1.gb", "docboy/ok.png"},
-                      // Not sure about this one: it passes on some emulator but not on others,
-                      // It would be helpful to see the real result on DMG hardware.
-                      // F {"docboy/interrupts/stat_interrupt_timing_scx3_round2.gb", "docboy/ok.png"},
+                      F {"docboy/interrupts/stat_interrupt_timing_scx3_round2.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_scx4_round1.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_scx4_round2.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/stat_interrupt_timing_scx5_round1.gb", "docboy/ok.png"},
@@ -1971,9 +2003,211 @@ TEST_CASE("emulation", "[emulation][.]") {
     }
 
     SECTION("integration") {
-        RUN_TEST_ROMS(F {"hacktix/bully.gb", "hacktix/bully.png"},
-                      F {"hacktix/strikethrough.gb", "hacktix/strikethrough.png"});
+        RUN_TEST_ROMS(
+            F {"hacktix/bully.gb", "hacktix/bully.png"}, F {"hacktix/strikethrough.gb", "hacktix/strikethrough.png"},
+
+            // docboy
+            F {"docboy/integration/rendering/change_bgp_from_boot.gb", "docboy/integration/change_bgp_from_boot.png",
+               StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_ppu_reset.gb",
+               "docboy/integration/change_bgp_from_ppu_reset.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph0_scx0.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph0_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph0_scx1.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph0_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph0_scx2.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph0_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph0_scx3.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph0_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph0_scx4.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph0_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph0_scx5.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph0_scx5.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph0_scx6.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph0_scx6.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph0_scx7.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph0_scx7.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph0_scx8.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph0_scx8.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph1_scx0.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph1_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph1_scx1.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph1_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph1_scx2.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph1_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph1_scx3.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph1_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph1_scx4.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph1_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph1_scx5.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph1_scx5.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph1_scx6.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph1_scx6.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph1_scx7.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph1_scx7.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph1_scx8.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph1_scx8.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph2_scx0.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph2_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph2_scx1.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph2_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph2_scx2.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph2_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph2_scx3.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph2_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph2_scx4.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph2_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph2_scx5.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph2_scx5.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph2_scx6.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph2_scx6.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph2_scx7.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph2_scx7.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph2_scx8.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph2_scx8.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph3_scx0.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph3_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph3_scx1.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph3_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph3_scx2.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph3_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph3_scx3.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph3_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph3_scx4.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph3_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph3_scx5.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph3_scx5.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph3_scx6.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph3_scx6.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph3_scx7.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph3_scx7.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph3_scx8.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph3_scx8.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph4_scx0.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph4_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph4_scx1.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph4_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph4_scx2.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph4_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph4_scx3.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph4_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph4_scx4.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph4_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph4_scx5.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph4_scx5.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph4_scx6.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph4_scx6.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph4_scx7.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph4_scx7.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph4_scx8.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph4_scx8.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph5_scx0.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph5_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph5_scx1.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph5_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph5_scx2.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph5_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph5_scx3.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph5_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph5_scx4.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph5_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph5_scx5.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph5_scx5.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph5_scx6.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph5_scx6.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph5_scx7.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph5_scx7.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph5_scx8.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph5_scx8.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph6_scx0.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph6_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph6_scx1.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph6_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph6_scx2.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph6_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph6_scx3.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph6_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph6_scx4.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph6_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph6_scx5.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph6_scx5.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph6_scx6.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph6_scx6.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph6_scx7.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph6_scx7.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph6_scx8.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph6_scx8.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph7_scx0.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph7_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph7_scx1.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph7_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph7_scx2.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph7_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph7_scx3.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph7_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph7_scx4.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph7_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph7_scx5.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph7_scx5.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph7_scx6.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph7_scx6.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph7_scx7.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph7_scx7.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph7_scx8.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph7_scx8.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph8_scx0.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph8_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph8_scx1.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph8_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph8_scx2.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph8_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph8_scx3.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph8_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph8_scx4.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph8_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph8_scx5.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph8_scx5.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph8_scx6.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph8_scx6.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph8_scx7.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph8_scx7.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_read_stat_hblank_mode_ph8_scx8.gb",
+               "docboy/integration/change_bgp_from_read_stat_hblank_mode_ph8_scx8.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_halted_scx0.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_halted_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_halted_scx1.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_halted_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_halted_scx2.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_halted_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_halted_scx3.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_halted_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_halted_scx4.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_halted_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_scx0.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_scx0.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_scx1.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_scx1.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_scx2.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_scx2.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_scx3.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_scx3.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_hblank_interrupt_scx4.gb",
+               "docboy/integration/change_bgp_from_stat_hblank_interrupt_scx4.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_oam_interrupt.gb",
+               "docboy/integration/change_bgp_from_stat_oam_interrupt.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_oam_interrupt_halted.gb",
+               "docboy/integration/change_bgp_from_stat_oam_interrupt_halted.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_vblank_interrupt.gb",
+               "docboy/integration/change_bgp_from_stat_vblank_interrupt.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_stat_vblank_interrupt_halted.gb",
+               "docboy/integration/change_bgp_from_stat_vblank_interrupt_halted.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_vblank_interrupt.gb",
+               "docboy/integration/change_bgp_from_vblank_interrupt.png", StopAtInstruction {0x40}},
+            F {"docboy/integration/rendering/change_bgp_from_vblank_interrupt_halted.gb",
+               "docboy/integration/change_bgp_from_vblank_interrupt_halted.png", StopAtInstruction {0x40}}, );
     }
+#endif
+
 #endif
 
 #if MEALYBUG_ONLY_TEST_ROMS
@@ -2006,9 +2240,8 @@ TEST_CASE("emulation", "[emulation][.]") {
                       F {"mealybug/m3_window_timing.gb", "mealybug/m3_window_timing.png", GREY_PALETTE},
                       F {"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png", GREY_PALETTE},
                       F {"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png", GREY_PALETTE},
-                      // F{"mealybug/m3_wx_4_change_sprites.gb",
-                      //                "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
-                      //                F{"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
+                      F {"mealybug/m3_wx_4_change_sprites.gb", "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
+                      F {"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
                       //                F{"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE},
         );
     }
@@ -2017,7 +2250,9 @@ TEST_CASE("emulation", "[emulation][.]") {
 #if WIP_ONLY_TEST_ROMS
     SECTION("wip") {
         RUN_TEST_ROMS(
-
+            // F{"mealybug/m3_wx_4_change_sprites.gb", "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
+            // F{"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
+            //                F{"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE},
         );
     }
 #endif

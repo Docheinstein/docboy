@@ -2,8 +2,8 @@
 #define TIMERS_H
 
 #include "docboy/bootrom/macros.h"
-#include "docboy/debugger/macros.h"
 #include "docboy/memory/byte.hpp"
+#include "docboy/shared/macros.h"
 #include "docboy/shared/specs.h"
 #include "utils/parcel.h"
 

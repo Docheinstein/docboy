@@ -37,7 +37,6 @@ target_sources(docboy PRIVATE
     core/core.h
     cpu/cpu.cpp
     cpu/cpu.h
-    debugger/macros.h
     dma/dma.cpp
     dma/dma.h
     gameboy/gameboy.h
@@ -78,6 +77,7 @@ target_sources(docboy PRIVATE
     serial/port.cpp
     serial/port.h
     serial/serial.h
+    shared/macros.h
     shared/specs.h
     sound/sound.h
     timers/timers.cpp

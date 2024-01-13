@@ -1,8 +1,8 @@
 #ifndef DMA_H
 #define DMA_H
 
-#include "docboy/debugger/macros.h"
 #include "docboy/mmu/mmu.h"
+#include "docboy/shared//macros.h"
 #include <cstdint>
 
 #include "docboy/bus/oambus.h"
