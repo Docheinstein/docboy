@@ -888,9 +888,9 @@ static bool run_with_params(const RunnerParams& p) {
     const auto [params] = TABLE(RunnerParams, ({__VA_ARGS__}));                                                        \
     REQUIRE(run_with_params(params))
 
-#define ALL_TEST_ROMS 1
+#define ALL_TEST_ROMS 0
 #define PPU_ONLY_TEST_ROMS 0
-#define MEALYBUG_ONLY_TEST_ROMS 0
+#define MEALYBUG_ONLY_TEST_ROMS 1
 #define WIP_ONLY_TEST_ROMS 0
 
 TEST_CASE("emulation", "[emulation][.]") {
@@ -980,9 +980,8 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png", GREY_PALETTE},
             F {"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png", GREY_PALETTE},
             F {"mealybug/m3_wx_4_change_sprites.gb", "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
-            // F{"mealybug/m3_wx_5_change.gb",
-            //                "mealybug/m3_wx_5_change.png", GREY_PALETTE}, F{"mealybug/m3_wx_6_change.gb",
-            //                "mealybug/m3_wx_6_change.png", GREY_PALETTE},
+            F {"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
+            F {"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE},
 
             // docboy
             F {"docboy/ppu/hblank_raises_hblank_stat_interrupt.gb", "docboy/ok.png"},
@@ -2242,17 +2241,15 @@ TEST_CASE("emulation", "[emulation][.]") {
                       F {"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png", GREY_PALETTE},
                       F {"mealybug/m3_wx_4_change_sprites.gb", "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
                       F {"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
-                      //                F{"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE},
-        );
+                      F {"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE}, );
     }
 #endif
 
 #if WIP_ONLY_TEST_ROMS
     SECTION("wip") {
-        RUN_TEST_ROMS(
-            // F{"mealybug/m3_wx_4_change_sprites.gb", "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
-            // F{"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE},
+        RUN_TEST_ROMS(F {"mealybug/m3_wx_4_change_sprites.gb", "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
+                      // F{"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
+                      //                F{"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE},
         );
     }
 #endif

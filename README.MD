@@ -311,36 +311,36 @@ Here's the debugger!
 
 #### mealybug
 
-| Test Rom                                      |       Result        |
-|-----------------------------------------------|:-------------------:|
-| mealybug/m2_win_en_toggle.gb                  | :white_check_mark:  |
-| mealybug/m3_bgp_change.gb                     | :white_check_mark:  |
-| mealybug/m3_bgp_change_sprites.gb             | :white_check_mark:  |
-| mealybug/m3_lcdc_bg_en_change2.gb             |         :x:         |
-| mealybug/m3_lcdc_bg_en_change.gb              |         :x:         |
-| mealybug/m3_lcdc_bg_map_change2.gb            |         :x:         |
-| mealybug/m3_lcdc_bg_map_change.gb             |         :x:         |
-| mealybug/m3_lcdc_obj_en_change.gb             |         :x:         |
-| mealybug/m3_lcdc_obj_en_change_variant.gb     |         :x:         |
-| mealybug/m3_lcdc_obj_size_change.gb           |         :x:         |
-| mealybug/m3_lcdc_obj_size_change_scx.gb       |         :x:         |
-| mealybug/m3_lcdc_tile_sel_change2.gb          |         :x:         |
-| mealybug/m3_lcdc_tile_sel_change.gb           |         :x:         |
-| mealybug/m3_lcdc_tile_sel_win_change2.gb      |         :x:         |
-| mealybug/m3_lcdc_tile_sel_win_change.gb       |         :x:         |
-| mealybug/m3_lcdc_win_en_change_multiple.gb    |         :x:         |
-| mealybug/m3_lcdc_win_en_change_multiple_wx.gb |         :x:         |
-| mealybug/m3_lcdc_win_map_change2.gb           |         :x:         |
-| mealybug/m3_lcdc_win_map_change.gb            |         :x:         |
-| mealybug/m3_obp0_change.gb                    |         :x:         |
-| mealybug/m3_scx_high_5_bits_change2.gb        |         :x:         |
-| mealybug/m3_scx_high_5_bits.gb                | :white_check_mark:  |
-| mealybug/m3_scx_low_3_bits.gb                 | :white_check_mark:  |
-| mealybug/m3_scy_change2.gb                    |         :x:         |
-| mealybug/m3_scy_change.gb                     |         :x:         |
-| mealybug/m3_window_timing.gb                  | :white_check_mark:  |
-| mealybug/m3_window_timing_wx_0.gb             | :white_check_mark:  |
-| mealybug/m3_wx_4_change.gb                    | :white_check_mark:  |
-| mealybug/m3_wx_4_change_sprites.gb            | :white_check_mark:  |
-| mealybug/m3_wx_5_change.gb                    |         :x:         |
-| mealybug/m3_wx_6_change.gb                    |         :x:         |
+| Test Rom                                      |       Result       |
+|-----------------------------------------------|:------------------:|
+| mealybug/m2_win_en_toggle.gb                  | :white_check_mark: |
+| mealybug/m3_bgp_change.gb                     | :white_check_mark: |
+| mealybug/m3_bgp_change_sprites.gb             | :white_check_mark: |
+| mealybug/m3_lcdc_bg_en_change2.gb             |        :x:         |
+| mealybug/m3_lcdc_bg_en_change.gb              |        :x:         |
+| mealybug/m3_lcdc_bg_map_change2.gb            |        :x:         |
+| mealybug/m3_lcdc_bg_map_change.gb             |        :x:         |
+| mealybug/m3_lcdc_obj_en_change.gb             |        :x:         |
+| mealybug/m3_lcdc_obj_en_change_variant.gb     |        :x:         |
+| mealybug/m3_lcdc_obj_size_change.gb           |        :x:         |
+| mealybug/m3_lcdc_obj_size_change_scx.gb       |        :x:         |
+| mealybug/m3_lcdc_tile_sel_change2.gb          |        :x:         |
+| mealybug/m3_lcdc_tile_sel_change.gb           |        :x:         |
+| mealybug/m3_lcdc_tile_sel_win_change2.gb      |        :x:         |
+| mealybug/m3_lcdc_tile_sel_win_change.gb       |        :x:         |
+| mealybug/m3_lcdc_win_en_change_multiple.gb    |        :x:         |
+| mealybug/m3_lcdc_win_en_change_multiple_wx.gb |        :x:         |
+| mealybug/m3_lcdc_win_map_change2.gb           |        :x:         |
+| mealybug/m3_lcdc_win_map_change.gb            |        :x:         |
+| mealybug/m3_obp0_change.gb                    |        :x:         |
+| mealybug/m3_scx_high_5_bits_change2.gb        |        :x:         |
+| mealybug/m3_scx_high_5_bits.gb                | :white_check_mark: |
+| mealybug/m3_scx_low_3_bits.gb                 | :white_check_mark: |
+| mealybug/m3_scy_change2.gb                    |        :x:         |
+| mealybug/m3_scy_change.gb                     |        :x:         |
+| mealybug/m3_window_timing.gb                  | :white_check_mark: |
+| mealybug/m3_window_timing_wx_0.gb             | :white_check_mark: |
+| mealybug/m3_wx_4_change.gb                    | :white_check_mark: |
+| mealybug/m3_wx_4_change_sprites.gb            | :white_check_mark: |
+| mealybug/m3_wx_5_change.gb                    | :white_check_mark: |
+| mealybug/m3_wx_6_change.gb                    | :white_check_mark: |

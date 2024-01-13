@@ -130,7 +130,13 @@ void Ppu::tick() {
     // Therefore, we store the last BGP value here so that we can use (video.BGP | BGP)
     // for resolving BG color.
     // [mealybug/m3_bgp_change]
-    lastBGP = video.BGP;
+    BGP = video.BGP;
+
+    // It seems that there is 1 T-cycle delay between video.WX and the WX value the PPU sees.
+    // Therefore, we store the last WX here and we use it for the next T-cycle.
+    // (TODO: Still not sure about this)
+    // [mealybug/m3_wx_5_change]
+    WX = video.WX;
 
     // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt
     tickStat();
@@ -534,8 +540,8 @@ void Ppu::pixelTransfer8() {
             // There is 1 T-cycle delay between video.BGP and the BGP value the PPU sees.
             // During this T-Cycle, the PPU sees the last BGP ORed with the new BGP.
             // [mealybug/m3_bgp_change]
-            const uint8_t BGP = (uint8_t)video.BGP | lastBGP;
-            color = test_bit<BG_WIN_ENABLE>(video.LCDC) ? resolveColor(bgPixel.colorIndex, BGP) : 0;
+            const uint8_t bgp = (uint8_t)video.BGP | BGP;
+            color = test_bit<BG_WIN_ENABLE>(video.LCDC) ? resolveColor(bgPixel.colorIndex, bgp) : 0;
         }
 
         check(color < NUMBER_OF_COLORS);
@@ -792,7 +798,7 @@ inline void Ppu::eventuallySetupFetcherForWindow() {
     // - at some point in the frame LY was equal to WY
     // - pixel transfer LX matches WX
     // - window should is enabled LCDC
-    if (w.activeForFrame && !w.active && LX == video.WX && test_bit<WIN_ENABLE>(video.LCDC)) {
+    if (w.activeForFrame && !w.active && LX == WX && test_bit<WIN_ENABLE>(video.LCDC)) {
         setupFetcherForWindow();
     }
 }
@@ -806,7 +812,7 @@ inline void Ppu::setupFetcherForWindow() {
     // Increase the window line counter.
     ++w.WLY;
 
-    IF_ASSERTS_OR_DEBUGGER(w.lineTriggers.pushBack(video.WX));
+    IF_ASSERTS_OR_DEBUGGER(w.lineTriggers.pushBack(WX));
 
     // Reset the window tile counter.
     wf.tilemapX = 0;
@@ -1050,7 +1056,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
         // glitch can occur: if this push stage happens when LX == WX,
         // than a 00 pixel is pushed into the bg fifo instead of the fetched tile.
         // Therefore, the push of the tile that was about to happen is postponed by 1 dot
-        if (w.activeForFrame && LX == video.WX && LX > 8 /* TODO: not sure about this */) {
+        if (w.activeForFrame && LX == WX && LX > 8 /* TODO: not sure about this */) {
             bgFifo.pushBack(BgPixel {0});
             return;
         }
@@ -1265,7 +1271,8 @@ void Ppu::saveState(Parcel& parcel) const {
     parcel.writeBool(lastStatIrq);
     parcel.writeUInt16(dots);
     parcel.writeUInt8(LX);
-    parcel.writeUInt8(lastBGP);
+    parcel.writeUInt8(BGP);
+    parcel.writeUInt8(WX);
 
     parcel.writeBytes(bgFifo.data, sizeof(bgFifo.data));
     parcel.writeUInt8(bgFifo.cursor);
@@ -1365,7 +1372,8 @@ void Ppu::loadState(Parcel& parcel) {
     lastStatIrq = parcel.readBool();
     dots = parcel.readUInt16();
     LX = parcel.readUInt8();
-    lastBGP = parcel.readUInt8();
+    BGP = parcel.readUInt8();
+    WX = parcel.readUInt8();
 
     parcel.readBytes(bgFifo.data, sizeof(bgFifo.data));
     bgFifo.cursor = parcel.readUInt8();
