@@ -52,11 +52,16 @@ private:
         IF_ASSERTS_OR_DEBUGGER(uint8_t x);
     };
 
+    // PPU helpers
     void turnOn();
     void turnOff();
 
-    // PPU states
+    void tickStat();
+    void updateStatIrq(bool irq);
 
+    void tickWindow();
+
+    // PPU states
     void oamScanEven();
     void oamScanOdd();
     void oamScanDone();
@@ -78,43 +83,15 @@ private:
     void vBlankLastLine();
     void vBlankLastLine454();
 
-    // Fetcher states
-    void bgwinPrefetcherGetTile0();
-
-    void bgPrefetcherGetTile0();
-    void bgPrefetcherGetTile1();
-
-    void winPrefetcherGetTile0();
-    void winPrefetcherGetTile1();
-
-    void objPrefetcherGetTile0();
-    void objPrefetcherGetTile1();
-
-    void bgwinPixelSliceFetcherGetTileDataLow0();
-    void bgwinPixelSliceFetcherGetTileDataLow1();
-    void bgwinPixelSliceFetcherGetTileDataHigh0();
-    void bgwinPixelSliceFetcherGetTileDataHigh1();
-    void bgwinPixelSliceFetcherPush();
-
-    void objPixelSliceFetcherGetTileDataLow0();
-    void objPixelSliceFetcherGetTileDataLow1();
-    void objPixelSliceFetcherGetTileDataHigh0();
-    void objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo();
-
-    // Misc
-    void tickStat();
-    void updateStatIrq(bool irq);
-
-    void tickFetcher();
-    void resetFetcher();
-
-    void tickWindow();
-
+    // PPU states helpers
     void enterOamScan();
     void enterPixelTransfer();
     void enterHBlank();
     void enterVBlank();
     void enterNewFrame();
+
+    void tickFetcher();
+    void resetFetcher();
 
     template <uint8_t mode>
     void updateMode();
@@ -127,11 +104,43 @@ private:
     void eventuallySetupFetcherForWindow();
     void setupFetcherForWindow();
 
-    void cacheBgWinFetch();
-    void restoreBgWinFetch();
-
     template <uint8_t Mode>
     void readOamRegisters(uint16_t oamAddress);
+
+    // Fetcher states
+    void bgwinPrefetcherGetTile0();
+
+    void bgPrefetcherGetTile0();
+    void bgPrefetcherGetTile1();
+
+    void winPrefetcherGetTile0();
+    void winPrefetcherGetTile1();
+
+    void objPrefetcherGetTile0();
+    void objPrefetcherGetTile1();
+
+    void bgPixelSliceFetcherGetTileDataLow0();
+    void bgPixelSliceFetcherGetTileDataLow1();
+    void bgPixelSliceFetcherGetTileDataHigh0();
+
+    void winPixelSliceFetcherGetTileDataLow0();
+    void winPixelSliceFetcherGetTileDataLow1();
+    void winPixelSliceFetcherGetTileDataHigh0();
+
+    void bgwinPixelSliceFetcherGetTileDataHigh1();
+    void bgwinPixelSliceFetcherPush();
+
+    void objPixelSliceFetcherGetTileDataLow0();
+    void objPixelSliceFetcherGetTileDataLow1();
+    void objPixelSliceFetcherGetTileDataHigh0();
+    void objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo();
+
+    // Fetcher states helpers
+    void setupBgPixelSliceFetcherTileDataAddress();
+    void setupWinPixelSliceFetcherTileDataAddress();
+
+    void cacheBgWinFetch();
+    void restoreBgWinFetch();
 
     Lcd& lcd;
     VideoIO& video;
@@ -207,6 +216,7 @@ private:
     struct {
         uint8_t LX {}; // [0, 256), advances 8 by 8
         uint8_t tilemapX {};
+        uint8_t tilemapY {};
 
         struct {
             bool hasData {};

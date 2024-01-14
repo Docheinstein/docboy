@@ -1112,7 +1112,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }
             if (gb.ppu.tickSelector == &Ppu::hBlank || gb.ppu.tickSelector == &Ppu::hBlank453 ||
                 gb.ppu.tickSelector == &Ppu::hBlank454 || gb.ppu.tickSelector == &Ppu::hBlankLastLine ||
-                gb.ppu.tickSelector == &Ppu::hBlankLastLine454)
+                gb.ppu.tickSelector == &Ppu::hBlankLastLine454 || gb.ppu.tickSelector == &Ppu::hBlankLastLine455)
                 return "Horizontal Blank";
             if (gb.ppu.tickSelector == &Ppu::vBlank)
                 return "Vertical Blank";
@@ -1136,12 +1136,18 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     return "WIN Prefetcher GetTile0";
                 if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile1)
                     return "WIN Prefetcher GetTile1";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataLow0)
-                    return "BG/WIN PixelSliceFetcher GetTileDataLow0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataLow1)
-                    return "BG/WIN PixelSliceFetcher GetTileDataLow1";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0)
-                    return "BG/WIN PixelSliceFetcher GetTileDataHigh0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataLow0)
+                    return "BG PixelSliceFetcher GetTileDataLow0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataLow1)
+                    return "BG PixelSliceFetcher GetTileDataLow1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataHigh0)
+                    return "BG PixelSliceFetcher GetTileDataHigh0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPixelSliceFetcherGetTileDataLow0)
+                    return "WIN PixelSliceFetcher GetTileDataLow0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPixelSliceFetcherGetTileDataLow1)
+                    return "WIN PixelSliceFetcher GetTileDataLow1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPixelSliceFetcherGetTileDataHigh0)
+                    return "WIN PixelSliceFetcher GetTileDataHigh0";
                 if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1)
                     return "BG/WIN PixelSliceFetcher GetTileDataHigh1";
                 if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
@@ -1241,7 +1247,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         // Pixel Transfer
         b << subheader("pixel transfer", width) << endl;
-        b << yellow("Init SCX % 8") << "  :  " << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
+        b << yellow("Init SCX % 8") << "     :  " << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
         b << yellow("SCX Disc. Pixels") << " :  " << gb.ppu.pixelTransfer.initialSCX.discarded << "/"
           << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
         b << yellow("Disc. Pixels") << "     :  " << (gb.ppu.LX < 8 ? (Text(gb.ppu.LX) + "/8") : "8/8") << endl;
@@ -1286,6 +1292,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << subheader("bg/win prefetcher", width) << endl;
         b << yellow("LX") << "               :  " << gb.ppu.bwf.LX << endl;
         b << yellow("Tile Map X") << "       :  " << gb.ppu.bwf.tilemapX << endl;
+        b << yellow("Tile Map Y") << "       :  " << gb.ppu.bwf.tilemapY << endl;
         b << yellow("Cached Fetch") << "     :  "
           << (gb.ppu.bwf.interruptedFetch.hasData ? hex<uint16_t>(gb.ppu.bwf.interruptedFetch.tileDataHigh << 8 |
                                                                   gb.ppu.bwf.interruptedFetch.tileDataHigh)

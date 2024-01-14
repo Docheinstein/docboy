@@ -888,9 +888,9 @@ static bool run_with_params(const RunnerParams& p) {
     const auto [params] = TABLE(RunnerParams, ({__VA_ARGS__}));                                                        \
     REQUIRE(run_with_params(params))
 
-#define ALL_TEST_ROMS 0
+#define ALL_TEST_ROMS 1
 #define PPU_ONLY_TEST_ROMS 0
-#define MEALYBUG_ONLY_TEST_ROMS 1
+#define MEALYBUG_ONLY_TEST_ROMS 0
 #define WIP_ONLY_TEST_ROMS 0
 
 TEST_CASE("emulation", "[emulation][.]") {
@@ -975,7 +975,7 @@ TEST_CASE("emulation", "[emulation][.]") {
             //                GREY_PALETTE},
             F {"mealybug/m3_scx_high_5_bits.gb", "mealybug/m3_scx_high_5_bits.png", GREY_PALETTE},
             F {"mealybug/m3_scx_low_3_bits.gb", "mealybug/m3_scx_low_3_bits.png", GREY_PALETTE},
-            // F{"mealybug/m3_scy_change.gb", "mealybug/m3_scy_change.png", GREY_PALETTE},
+            F {"mealybug/m3_scy_change.gb", "mealybug/m3_scy_change.png", GREY_PALETTE},
             F {"mealybug/m3_window_timing.gb", "mealybug/m3_window_timing.png", GREY_PALETTE},
             F {"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png", GREY_PALETTE},
             F {"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png", GREY_PALETTE},
@@ -1187,6 +1187,38 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/write_vram_oam_scan.gb", "docboy/ok.png"},
             F {"docboy/ppu/write_vram_pixel_transfer.gb", "docboy/ok.png"},
 
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops21_sprite_x0.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops21_sprite_x0.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops21_sprite_x1.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops21_sprite_x1.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops21_sprite_x2.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops21_sprite_x2.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops21_sprite_x3.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops21_sprite_x3.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops21_sprite_x4.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops21_sprite_x4.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops21_sprite_x5.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops21_sprite_x5.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops21_sprite_x6.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops21_sprite_x6.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops21_sprite_x7.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops21_sprite_x7.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops22_sprite_x0.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops22_sprite_x0.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops22_sprite_x1.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops22_sprite_x1.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops22_sprite_x2.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops22_sprite_x2.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops22_sprite_x3.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops22_sprite_x3.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops22_sprite_x4.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops22_sprite_x4.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops22_sprite_x5.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops22_sprite_x5.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops22_sprite_x6.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops22_sprite_x6.png"},
+            F {"docboy/ppu/rendering/change_scy_during_pixel_transfer_nops22_sprite_x7.gb",
+               "docboy/ppu/change_scy_during_pixel_transfer_nops22_sprite_x7.png"},
             F {"docboy/ppu/rendering/window_bg_reprise_wx10.gb", "docboy/ppu/window_bg_reprise_wx10.png"},
             F {"docboy/ppu/rendering/window_bg_reprise_wx11.gb", "docboy/ppu/window_bg_reprise_wx11.png"},
             F {"docboy/ppu/rendering/window_bg_reprise_wx12.gb", "docboy/ppu/window_bg_reprise_wx12.png"},
@@ -1825,7 +1857,12 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/rendering/window_wx6.gb", "docboy/ppu/window_wx6.png"},
             F {"docboy/ppu/rendering/window_wx7.gb", "docboy/ppu/window_wx7.png"},
             F {"docboy/ppu/rendering/window_wx8.gb", "docboy/ppu/window_wx8.png"},
-            F {"docboy/ppu/rendering/window_wx9.gb", "docboy/ppu/window_wx9.png"}, );
+            F {"docboy/ppu/rendering/window_wx9.gb", "docboy/ppu/window_wx9.png"},
+
+            F {"docboy/ppu/rendering/mealybug_variations/m3_scy_change_no_sprites.gb",
+               "docboy/ppu/m3_scy_change_no_sprites.png"},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_scy_change_1_sprite.gb",
+               "docboy/ppu/m3_scy_change_1_sprite.png"}, );
     }
 
 #if ALL_TEST_ROMS
@@ -2235,7 +2272,7 @@ TEST_CASE("emulation", "[emulation][.]") {
                       //                GREY_PALETTE},
                       F {"mealybug/m3_scx_high_5_bits.gb", "mealybug/m3_scx_high_5_bits.png", GREY_PALETTE},
                       F {"mealybug/m3_scx_low_3_bits.gb", "mealybug/m3_scx_low_3_bits.png", GREY_PALETTE},
-                      // F{"mealybug/m3_scy_change.gb", "mealybug/m3_scy_change.png", GREY_PALETTE},
+                      F {"mealybug/m3_scy_change.gb", "mealybug/m3_scy_change.png", GREY_PALETTE},
                       F {"mealybug/m3_window_timing.gb", "mealybug/m3_window_timing.png", GREY_PALETTE},
                       F {"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png", GREY_PALETTE},
                       F {"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png", GREY_PALETTE},
@@ -2247,10 +2284,7 @@ TEST_CASE("emulation", "[emulation][.]") {
 
 #if WIP_ONLY_TEST_ROMS
     SECTION("wip") {
-        RUN_TEST_ROMS(F {"mealybug/m3_wx_4_change_sprites.gb", "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
-                      // F{"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
-                      //                F{"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE},
-        );
+        RUN_TEST_ROMS();
     }
 #endif
 }

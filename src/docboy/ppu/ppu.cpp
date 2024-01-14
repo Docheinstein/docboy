@@ -155,46 +155,7 @@ void Ppu::tick() {
     IF_DEBUGGER(++cycles);
 }
 
-inline void Ppu::tickStat() {
-    // STAT interrupt request is checked every dot (not only during modes or lines transitions).
-    // OAM Stat interrupt seems to be an exception to this rule:
-    // it is raised only as a consequence of a transition of mode, not always
-    // (e.g. manually writing STAT's OAM interrupt flag while in OAM does not raise a request).
-    // Note that the interrupt request is done only on raising edge
-    // [mooneye's stat_irq_blocking and stat_lyc_onoff].
-
-    const bool lycEqLy = video.LYC == video.LY;
-
-    const bool lycEqLyIrq =
-        test_bit<LYC_EQ_LY_INTERRUPT>(video.STAT) && lycEqLy && dots != 454 /* LYC_EQ_LY is always 0 at dot 454*/;
-
-    const uint8_t mode = keep_bits<2>(video.STAT);
-
-    const bool hblankIrq = test_bit<HBLANK_INTERRUPT>(video.STAT) && mode == HBLANK;
-
-    // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
-    const bool vblankIrq =
-        (test_bit<VBLANK_INTERRUPT>(video.STAT) || test_bit<OAM_INTERRUPT>(video.STAT)) && mode == VBLANK;
-
-    // Eventually raise STAT interrupt
-    updateStatIrq(lycEqLyIrq || hblankIrq || vblankIrq);
-
-    // Update STAT's LYC_EQ_LY
-    if (dots == 454 /* TODO: && keep_bits<2>(video.STAT) == HBLANK ?*/) {
-        // LYC_EQ_LY is always 0 at dot 454 [mooneye: lcdon_timing]
-        reset_bit<LYC_EQ_LY>(video.STAT);
-    } else {
-        // Update STAT's LYC=LY Flag according to the current comparison
-        set_bit<LYC_EQ_LY>(video.STAT, lycEqLy);
-    }
-}
-
-void Ppu::updateStatIrq(bool irq) {
-    // Raise STAT interrupt request only on rising edge
-    if (lastStatIrq < irq)
-        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
-    lastStatIrq = irq;
-}
+// ------- PPU helpers -------
 
 void Ppu::turnOn() {
     check(!on);
@@ -233,26 +194,57 @@ void Ppu::turnOff() {
     oam.release();
 }
 
-void Ppu::enterOamScan() {
-    checkCode({
-        for (uint32_t i = 0; i < array_size(oamEntries); i++) {
-            check(oamEntries[i].isEmpty());
-        }
-    });
-    IF_ASSERTS(oamEntriesCount = 0);
-    IF_DEBUGGER(scanlineOamEntries.clear());
+inline void Ppu::tickStat() {
+    // STAT interrupt request is checked every dot (not only during modes or lines transitions).
+    // OAM Stat interrupt seems to be an exception to this rule:
+    // it is raised only as a consequence of a transition of mode, not always
+    // (e.g. manually writing STAT's OAM interrupt flag while in OAM does not raise a request).
+    // Note that the interrupt request is done only on raising edge
+    // [mooneye's stat_irq_blocking and stat_lyc_onoff].
 
-    IF_DEBUGGER(timings.hBlank = 456 - (timings.oamScan + timings.pixelTransfer));
+    const bool lycEqLy = video.LYC == video.LY;
 
-    oamScan.count = 0;
+    const bool lycEqLyIrq =
+        test_bit<LYC_EQ_LY_INTERRUPT>(video.STAT) && lycEqLy && dots != 454 /* LYC_EQ_LY is always 0 at dot 454*/;
 
-    tickSelector = &Ppu::oamScanEven;
+    const uint8_t mode = keep_bits<2>(video.STAT);
 
-    updateMode<OAM_SCAN>();
+    const bool hblankIrq = test_bit<HBLANK_INTERRUPT>(video.STAT) && mode == HBLANK;
 
-    check(!vram.isAcquiredByMe());
-    oam.acquire();
+    // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
+    const bool vblankIrq =
+        (test_bit<VBLANK_INTERRUPT>(video.STAT) || test_bit<OAM_INTERRUPT>(video.STAT)) && mode == VBLANK;
+
+    // Eventually raise STAT interrupt
+    updateStatIrq(lycEqLyIrq || hblankIrq || vblankIrq);
+
+    // Update STAT's LYC_EQ_LY
+    if (dots == 454 /* TODO: && keep_bits<2>(video.STAT) == HBLANK ?*/) {
+        // LYC_EQ_LY is always 0 at dot 454 [mooneye: lcdon_timing]
+        reset_bit<LYC_EQ_LY>(video.STAT);
+    } else {
+        // Update STAT's LYC=LY Flag according to the current comparison
+        set_bit<LYC_EQ_LY>(video.STAT, lycEqLy);
+    }
 }
+
+inline void Ppu::updateStatIrq(bool irq) {
+    // Raise STAT interrupt request only on rising edge
+    if (lastStatIrq < irq)
+        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
+    lastStatIrq = irq;
+}
+
+inline void Ppu::tickWindow() {
+    // Window is considered active for the rest of the frame
+    // if at some point in it happens that window is enabled while LY matches WY.
+    // Note that this does not mean that window will always be rendered:
+    // the WX == LX condition will be checked again during pixel transfer
+    // (on the other hand WY is not checked again).
+    w.activeForFrame |= test_bit<WIN_ENABLE>(video.LCDC) && video.LY == video.WY;
+}
+
+// ------- PPU states ------
 
 void Ppu::oamScanEven() {
     check(dots % 2 == 0);
@@ -361,33 +353,6 @@ void Ppu::oamScanDone() {
     }
 }
 
-void Ppu::enterPixelTransfer() {
-    check(dots == 80);
-    check(video.LY < 144);
-
-    checkCode({
-        check(oamScan.count <= 10);
-        check(oamEntriesCount <= oamScan.count);
-
-        uint8_t count {};
-        for (uint32_t i = 0; i < array_size(oamEntries); i++) {
-            count += oamEntries[i].size();
-        }
-        check(count == oamEntriesCount);
-    });
-
-    IF_DEBUGGER(timings.oamScan = dots);
-
-    resetFetcher();
-
-    tickSelector = &Ppu::pixelTransferDummy0;
-
-    updateMode<PIXEL_TRANSFER>();
-
-    vram.acquire();
-    oam.acquire();
-}
-
 void Ppu::pixelTransferDummy0() {
     check(LX == 0);
     check(!w.active);
@@ -402,7 +367,7 @@ void Ppu::pixelTransferDummy0() {
 
         // Initial SCX is not read after the beginning of Pixel Transfer.
         // It is read some T-cycles after: around here, after the first BG fetch.
-        // (Although I'm not sure about the precise T-Cycle timing).
+        // (TODO: verify precise T-Cycle timing).
         // [mealybug/m3_scx_low_3_bits]
         pixelTransfer.initialSCX.toDiscard = mod<TILE_WIDTH>(video.SCX);
 
@@ -568,6 +533,146 @@ void Ppu::pixelTransfer8() {
     ++dots;
 }
 
+void Ppu::hBlank() {
+    check(LX == 168);
+    check(video.LY < 143);
+
+    if (++dots == 453) {
+        // Eventually raise OAM interrupt
+        updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT));
+
+        tickSelector = &Ppu::hBlank453;
+    }
+}
+
+void Ppu::hBlank453() {
+    check(dots == 453);
+
+    ++dots;
+
+    ++video.LY;
+
+    tickSelector = &Ppu::hBlank454;
+
+    oam.acquire();
+}
+
+void Ppu::hBlank454() {
+    check(dots >= 454);
+
+    if (++dots == 456) {
+        dots = 0;
+        enterOamScan();
+    }
+}
+
+void Ppu::hBlankLastLine() {
+    check(LX == 168);
+    check(video.LY == 143);
+    if (++dots == 454) {
+        // LY is increased here: at dot 454 (not 456)
+        ++video.LY;
+        tickSelector = &Ppu::hBlankLastLine454;
+    }
+}
+
+void Ppu::hBlankLastLine454() {
+    check(dots == 454);
+
+    ++dots;
+    tickSelector = &Ppu::hBlankLastLine455;
+
+    // VBlank mode is set at dot 455 (though I'm not sure about it)
+    updateMode<VBLANK>();
+}
+
+void Ppu::hBlankLastLine455() {
+    check(dots == 455);
+
+    dots = 0;
+    enterVBlank();
+}
+
+void Ppu::vBlank() {
+    check(video.LY >= 144 && video.LY < 154);
+    if (++dots == 456) {
+        dots = 0;
+        // LY never reaches 154: it is set to 0 instead (which lasts 2 scanlines).
+        video.LY = (video.LY + 1) % 153;
+        if (video.LY == 0) {
+            tickSelector = &Ppu::vBlankLastLine;
+        }
+    }
+}
+
+void Ppu::vBlankLastLine() {
+    check(video.LY == 0);
+    if (++dots == 454) {
+        // It seems that STAT's mode is reset the last cycle (to investigate)
+        updateMode<0>();
+        tickSelector = &Ppu::vBlankLastLine454;
+    }
+}
+
+void Ppu::vBlankLastLine454() {
+    check(video.LY == 0);
+    if (++dots == 456) {
+        dots = 0;
+        // end of vblank
+        enterNewFrame();
+    }
+}
+
+// ------- PPU states helpers ---------
+
+void Ppu::enterOamScan() {
+    checkCode({
+        for (uint32_t i = 0; i < array_size(oamEntries); i++) {
+            check(oamEntries[i].isEmpty());
+        }
+    });
+    IF_ASSERTS(oamEntriesCount = 0);
+    IF_DEBUGGER(scanlineOamEntries.clear());
+
+    IF_DEBUGGER(timings.hBlank = 456 - (timings.oamScan + timings.pixelTransfer));
+
+    oamScan.count = 0;
+
+    tickSelector = &Ppu::oamScanEven;
+
+    updateMode<OAM_SCAN>();
+
+    check(!vram.isAcquiredByMe());
+    oam.acquire();
+}
+
+void Ppu::enterPixelTransfer() {
+    check(dots == 80);
+    check(video.LY < 144);
+
+    checkCode({
+        check(oamScan.count <= 10);
+        check(oamEntriesCount <= oamScan.count);
+
+        uint8_t count {};
+        for (uint32_t i = 0; i < array_size(oamEntries); i++) {
+            count += oamEntries[i].size();
+        }
+        check(count == oamEntriesCount);
+    });
+
+    IF_DEBUGGER(timings.oamScan = dots);
+
+    resetFetcher();
+
+    tickSelector = &Ppu::pixelTransferDummy0;
+
+    updateMode<PIXEL_TRANSFER>();
+
+    vram.acquire();
+    oam.acquire();
+}
+
 void Ppu::enterHBlank() {
     check(LX == 168);
     check(video.LY < 144);
@@ -643,66 +748,6 @@ void Ppu::enterHBlank() {
     oam.release();
 }
 
-void Ppu::hBlank() {
-    check(LX == 168);
-    check(video.LY < 143);
-
-    if (++dots == 453) {
-        // Eventually raise OAM interrupt
-        updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT));
-
-        tickSelector = &Ppu::hBlank453;
-    }
-}
-
-void Ppu::hBlank453() {
-    check(dots == 453);
-
-    ++dots;
-
-    ++video.LY;
-
-    tickSelector = &Ppu::hBlank454;
-
-    oam.acquire();
-}
-
-void Ppu::hBlank454() {
-    check(dots >= 454);
-
-    if (++dots == 456) {
-        dots = 0;
-        enterOamScan();
-    }
-}
-
-void Ppu::hBlankLastLine() {
-    check(LX == 168);
-    check(video.LY == 143);
-    if (++dots == 454) {
-        // LY is increased here: at dot 454 (not 456)
-        ++video.LY;
-        tickSelector = &Ppu::hBlankLastLine454;
-    }
-}
-
-void Ppu::hBlankLastLine454() {
-    check(dots == 454);
-
-    ++dots;
-    tickSelector = &Ppu::hBlankLastLine455;
-
-    // VBlank mode is set at dot 455 (though I'm not sure about it)
-    updateMode<VBLANK>();
-}
-
-void Ppu::hBlankLastLine455() {
-    check(dots == 455);
-
-    dots = 0;
-    enterVBlank();
-}
-
 void Ppu::enterVBlank() {
     IF_DEBUGGER(timings.hBlank = 456 - timings.pixelTransfer);
 
@@ -714,36 +759,6 @@ void Ppu::enterVBlank() {
 
     check(!vram.isAcquiredByMe());
     check(!oam.isAcquiredByMe());
-}
-
-void Ppu::vBlank() {
-    check(video.LY >= 144 && video.LY < 154);
-    if (++dots == 456) {
-        dots = 0;
-        // LY never reaches 154: it is set to 0 instead (which lasts 2 scanlines).
-        video.LY = (video.LY + 1) % 153;
-        if (video.LY == 0) {
-            tickSelector = &Ppu::vBlankLastLine;
-        }
-    }
-}
-
-void Ppu::vBlankLastLine() {
-    check(video.LY == 0);
-    if (++dots == 454) {
-        // It seems that STAT's mode is reset the last cycle (to investigate)
-        updateMode<0>();
-        tickSelector = &Ppu::vBlankLastLine454;
-    }
-}
-
-void Ppu::vBlankLastLine454() {
-    check(video.LY == 0);
-    if (++dots == 456) {
-        dots = 0;
-        // end of vblank
-        enterNewFrame();
-    }
 }
 
 void Ppu::enterNewFrame() {
@@ -758,6 +773,23 @@ void Ppu::enterNewFrame() {
 
     // Eventually raise OAM interrupt
     updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT));
+}
+
+inline void Ppu::tickFetcher() {
+    (this->*(fetcherTickSelector))();
+}
+
+void Ppu::resetFetcher() {
+    LX = 0;
+    bgFifo.clear();
+    objFifo.clear();
+    isFetchingSprite = false;
+    w.active = false;
+    IF_ASSERTS_OR_DEBUGGER(w.lineTriggers.clear());
+    bwf.LX = 0;
+    bwf.interruptedFetch.hasData = false;
+    wf.tilemapX = 0;
+    fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;
 }
 
 template <uint8_t Mode>
@@ -827,31 +859,30 @@ inline void Ppu::setupFetcherForWindow() {
     fetcherTickSelector = &Ppu::winPrefetcherGetTile0;
 }
 
-void Ppu::resetFetcher() {
-    LX = 0;
-    bgFifo.clear();
-    objFifo.clear();
-    isFetchingSprite = false;
-    w.active = false;
-    IF_ASSERTS_OR_DEBUGGER(w.lineTriggers.clear());
-    bwf.LX = 0;
-    bwf.interruptedFetch.hasData = false;
-    wf.tilemapX = 0;
-    fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;
+template <uint8_t Mode>
+void Ppu::readOamRegisters(uint16_t oamAddress) {
+    static_assert(Mode == OAM_SCAN || Mode == PIXEL_TRANSFER);
+    check(oamAddress % 2 == 0);
+
+    if constexpr (Mode == OAM_SCAN) {
+        // PPU cannot access OAM while DMA transfer is in progress.
+        // Note that it does not read at all: therefore the oam registers
+        // will hold their old values in this case.
+        if (oam.isAcquiredBy<Device::Dma>())
+            return;
+    }
+
+    // We can read from OAM.
+    // Note that if DMA transfer is in progress conflicts can occur and
+    // we might end up reading from the OAM address the DMA is writing to.
+    // (but only if DMA writing request is pending, i.e. it is in t0 or t1)
+    // [hacktix/strikethrough]
+    const auto res = oam.readTwo(oamAddress);
+    registers.oam.a = res.a;
+    registers.oam.b = res.b;
 }
 
-inline void Ppu::tickWindow() {
-    // Window is considered active for the rest of the frame
-    // if at some point in it happens that window is enabled while LY matches WY.
-    // Note that this does not mean that window will always be rendered:
-    // the WX == LX condition will be checked again during pixel transfer
-    // (on the other hand WY is not checked again).
-    w.activeForFrame |= test_bit<WIN_ENABLE>(video.LCDC) && video.LY == video.WY;
-}
-
-inline void Ppu::tickFetcher() {
-    (this->*(fetcherTickSelector))();
-}
+// -------- Fetcher states ---------
 
 void Ppu::bgwinPrefetcherGetTile0() {
     check(!isFetchingSprite);
@@ -875,35 +906,14 @@ void Ppu::bgPrefetcherGetTile0() {
     check(!isFetchingSprite);
 
     bwf.tilemapX = mod<TILEMAP_WIDTH>((bwf.LX + video.SCX) / TILE_WIDTH);
+    bwf.tilemapY = mod<TILEMAP_HEIGHT>((video.LY + video.SCY) / TILE_HEIGHT);
 
     fetcherTickSelector = &Ppu::bgPrefetcherGetTile1;
 }
 
 void Ppu::bgPrefetcherGetTile1() {
     check(!isFetchingSprite);
-
-    const uint8_t SCY = video.SCY;
-    const uint8_t LY = video.LY;
-    const uint8_t LCDC = video.LCDC;
-    const uint8_t tilemapY = mod<TILEMAP_HEIGHT>((LY + SCY) / TILE_HEIGHT);
-
-    const uint16_t vTilemapAddr = (0x1800 | (test_bit<BG_TILE_MAP>(LCDC) << 10)); // 0x9800 or 0x9C00 (global)
-    const uint16_t vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + bwf.tilemapX;
-    const uint8_t tileNumber = vram.read(vTilemapTileAddr);
-
-    const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(LCDC)
-                                   ?
-                                   // unsigned addressing mode with 0x8000 as (global) base address
-                                   0x0000 + TILE_BYTES * tileNumber
-                                   :
-                                   // signed addressing mode with 0x9000 as (global) base address
-                                   0x1000 + TILE_BYTES * to_signed(tileNumber);
-
-    const uint8_t tileY = mod<TILE_HEIGHT>(LY + SCY);
-
-    psf.vTileDataAddress = vTileAddr + TILE_ROW_BYTES * tileY;
-
-    fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataLow0;
+    fetcherTickSelector = &Ppu::bgPixelSliceFetcherGetTileDataLow0;
 }
 
 void Ppu::winPrefetcherGetTile0() {
@@ -913,6 +923,7 @@ void Ppu::winPrefetcherGetTile0() {
 
     // The window prefetcher has its own internal counter to determine the tile to fetch
     bwf.tilemapX = wf.tilemapX++;
+    bwf.tilemapY = w.WLY / TILE_HEIGHT;
 
     fetcherTickSelector = &Ppu::winPrefetcherGetTile1;
 }
@@ -922,26 +933,10 @@ void Ppu::winPrefetcherGetTile1() {
     check(w.activeForFrame);
     check(w.active);
 
-    const uint8_t LCDC = video.LCDC;
-    const uint8_t tilemapY = (w.WLY) / TILE_HEIGHT;
+    // TODO: not sure about precise timing (e.g. changes to WLY?)
+    setupWinPixelSliceFetcherTileDataAddress();
 
-    const uint16_t vTilemapAddr = (0x1800 | (test_bit<WIN_TILE_MAP>(LCDC) << 10)); // 0x9800 or 0x9C00 (global)
-    const uint16_t vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + bwf.tilemapX;
-    const uint8_t tileNumber = vram.read(vTilemapTileAddr);
-
-    const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(LCDC)
-                                   ?
-                                   // unsigned addressing mode with 0x8000 as (global) base address
-                                   0x0000 + TILE_BYTES * tileNumber
-                                   :
-                                   // signed addressing mode with 0x9000 as (global) base address
-                                   0x1000 + TILE_BYTES * to_signed(tileNumber);
-
-    const uint8_t tileY = mod<TILE_WIDTH>(w.WLY);
-
-    psf.vTileDataAddress = vTileAddr + TILE_ROW_BYTES * tileY;
-
-    fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataLow0;
+    fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataLow0;
 }
 
 void Ppu::objPrefetcherGetTile0() {
@@ -982,21 +977,57 @@ void Ppu::objPrefetcherGetTile1() {
     fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataLow0;
 }
 
-void Ppu::bgwinPixelSliceFetcherGetTileDataLow0() {
+void Ppu::bgPixelSliceFetcherGetTileDataLow0() {
+    check(!isFetchingSprite);
+
+    // Note that BG fetcher reads again SCY even during the GetTileData phases.
+    // Therefore changes to SCY during these phases may have bitplane desync effects
+    // (e.g. read from a tile depending on a certain SCY
+    //  but from tile row given by another SCY).
+    // [mealybug/m3_scy_change]
+    setupBgPixelSliceFetcherTileDataAddress();
+
+    psf.tileDataLow = vram.read(psf.vTileDataAddress);
+
+    fetcherTickSelector = &Ppu::bgPixelSliceFetcherGetTileDataLow1;
+}
+
+void Ppu::bgPixelSliceFetcherGetTileDataLow1() {
+    check(!isFetchingSprite);
+
+    fetcherTickSelector = &Ppu::bgPixelSliceFetcherGetTileDataHigh0;
+}
+
+void Ppu::bgPixelSliceFetcherGetTileDataHigh0() {
+    check(!isFetchingSprite);
+
+    // Note that BG fetcher reads again SCY even during the GetTileData phases.
+    // Therefore changes to SCY during these phases may have bitplane desync effects
+    // (e.g. read from a tile depending on a certain SCY
+    //  but from tile row given by another SCY).
+    // [mealybug/m3_scy_change]
+    setupBgPixelSliceFetcherTileDataAddress();
+
+    psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
+
+    fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1;
+}
+
+void Ppu::winPixelSliceFetcherGetTileDataLow0() {
     check(!isFetchingSprite);
 
     psf.tileDataLow = vram.read(psf.vTileDataAddress);
 
-    fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataLow1;
+    fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataLow1;
 }
 
-void Ppu::bgwinPixelSliceFetcherGetTileDataLow1() {
+void Ppu::winPixelSliceFetcherGetTileDataLow1() {
     check(!isFetchingSprite);
 
-    fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0;
+    fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataHigh0;
 }
 
-void Ppu::bgwinPixelSliceFetcherGetTileDataHigh0() {
+void Ppu::winPixelSliceFetcherGetTileDataHigh0() {
     check(!isFetchingSprite);
 
     psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
@@ -1179,6 +1210,38 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     }
 }
 
+inline void Ppu::setupBgPixelSliceFetcherTileDataAddress() {
+    const uint16_t vTilemapAddr = test_bit<BG_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    const uint16_t vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * bwf.tilemapY) + bwf.tilemapX;
+    const uint8_t tileNumber = vram.read(vTilemapTileAddr);
+    const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(video.LCDC)
+                                   ?
+                                   // unsigned addressing mode with 0x8000 as (global) base address
+                                   0x0000 + TILE_BYTES * tileNumber
+                                   :
+                                   // signed addressing mode with 0x9000 as (global) base address
+                                   0x1000 + TILE_BYTES * to_signed(tileNumber);
+    const uint8_t tileY = mod<TILE_HEIGHT>(video.LY + video.SCY);
+
+    psf.vTileDataAddress = vTileAddr + TILE_ROW_BYTES * tileY;
+}
+
+inline void Ppu::setupWinPixelSliceFetcherTileDataAddress() {
+    const uint16_t vTilemapAddr = test_bit<WIN_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    const uint16_t vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * bwf.tilemapY) + bwf.tilemapX;
+    const uint8_t tileNumber = vram.read(vTilemapTileAddr);
+    const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(video.LCDC)
+                                   ?
+                                   // unsigned addressing mode with 0x8000 as (global) base address
+                                   0x0000 + TILE_BYTES * tileNumber
+                                   :
+                                   // signed addressing mode with 0x9000 as (global) base address
+                                   0x1000 + TILE_BYTES * to_signed(tileNumber);
+    const uint8_t tileY = mod<TILE_HEIGHT>(w.WLY);
+
+    psf.vTileDataAddress = vTileAddr + TILE_ROW_BYTES * tileY;
+}
+
 inline void Ppu::cacheBgWinFetch() {
     bwf.interruptedFetch.tileDataLow = psf.tileDataLow;
     bwf.interruptedFetch.tileDataHigh = psf.tileDataHigh;
@@ -1191,29 +1254,6 @@ inline void Ppu::restoreBgWinFetch() {
     psf.tileDataHigh = bwf.interruptedFetch.tileDataHigh;
     check(bwf.interruptedFetch.hasData);
     bwf.interruptedFetch.hasData = false;
-}
-
-template <uint8_t Mode>
-void Ppu::readOamRegisters(uint16_t oamAddress) {
-    static_assert(Mode == OAM_SCAN || Mode == PIXEL_TRANSFER);
-    check(oamAddress % 2 == 0);
-
-    if constexpr (Mode == OAM_SCAN) {
-        // PPU cannot access OAM while DMA transfer is in progress.
-        // Note that it does not read at all: therefore the oam registers
-        // will hold their old values in this case.
-        if (oam.isAcquiredBy<Device::Dma>())
-            return;
-    }
-
-    // We can read from OAM.
-    // Note that if DMA transfer is in progress conflicts can occur and
-    // we might end up reading from the OAM address the DMA is writing to.
-    // (but only if DMA writing request is pending, i.e. it is in t0 or t1)
-    // [hacktix/strikethrough]
-    const auto res = oam.readTwo(oamAddress);
-    registers.oam.a = res.a;
-    registers.oam.b = res.b;
 }
 
 void Ppu::saveState(Parcel& parcel) const {
@@ -1242,9 +1282,12 @@ void Ppu::saveState(Parcel& parcel) const {
         &Ppu::winPrefetcherGetTile1,
         &Ppu::objPrefetcherGetTile0,
         &Ppu::objPrefetcherGetTile1,
-        &Ppu::bgwinPixelSliceFetcherGetTileDataLow0,
-        &Ppu::bgwinPixelSliceFetcherGetTileDataLow1,
-        &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0,
+        &Ppu::bgPixelSliceFetcherGetTileDataLow0,
+        &Ppu::bgPixelSliceFetcherGetTileDataLow1,
+        &Ppu::bgPixelSliceFetcherGetTileDataHigh0,
+        &Ppu::winPixelSliceFetcherGetTileDataLow0,
+        &Ppu::winPixelSliceFetcherGetTileDataLow1,
+        &Ppu::winPixelSliceFetcherGetTileDataHigh0,
         &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1,
         &Ppu::bgwinPixelSliceFetcherPush,
         &Ppu::objPixelSliceFetcherGetTileDataLow0,
@@ -1350,9 +1393,12 @@ void Ppu::loadState(Parcel& parcel) {
         &Ppu::winPrefetcherGetTile1,
         &Ppu::objPrefetcherGetTile0,
         &Ppu::objPrefetcherGetTile1,
-        &Ppu::bgwinPixelSliceFetcherGetTileDataLow0,
-        &Ppu::bgwinPixelSliceFetcherGetTileDataLow1,
-        &Ppu::bgwinPixelSliceFetcherGetTileDataHigh0,
+        &Ppu::bgPixelSliceFetcherGetTileDataLow0,
+        &Ppu::bgPixelSliceFetcherGetTileDataLow1,
+        &Ppu::bgPixelSliceFetcherGetTileDataHigh0,
+        &Ppu::winPixelSliceFetcherGetTileDataLow0,
+        &Ppu::winPixelSliceFetcherGetTileDataLow1,
+        &Ppu::winPixelSliceFetcherGetTileDataHigh0,
         &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1,
         &Ppu::bgwinPixelSliceFetcherPush,
         &Ppu::objPixelSliceFetcherGetTileDataLow0,
