@@ -17,13 +17,16 @@ inline void Lcd::pushPixel(Lcd::Pixel pixel) {
     IF_DEBUGGER(y = (y + (x == 0)) % Specs::Display::HEIGHT);
 }
 
-inline const uint16_t *Lcd::getPixels() {
+inline const Lcd::PixelRgb565 *Lcd::getPixels() {
     return pixels;
 }
 
 
 #ifdef ENABLE_DEBUGGER
-inline void Lcd::clearPixels() {
-    memset(pixels, 0, sizeof(pixels));
+inline Lcd::PixelRgb565* Lcd::getMutablePixels() {
+    return pixels;
+}
+inline uint16_t Lcd::getCursor() const {
+    return cursor;
 }
 #endif

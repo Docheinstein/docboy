@@ -1293,6 +1293,10 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("LX") << "               :  " << gb.ppu.bwf.LX << endl;
         b << yellow("Tile Map X") << "       :  " << gb.ppu.bwf.tilemapX << endl;
         b << yellow("Tile Map Y") << "       :  " << gb.ppu.bwf.tilemapY << endl;
+        b << yellow("Tile Map Addr") << "    :  "
+          << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.vTilemapAddr) << endl;
+        b << yellow("Tile Base Addr") << ":  "
+          << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.vTilemapTileAddr) << endl;
         b << yellow("Cached Fetch") << "     :  "
           << (gb.ppu.bwf.interruptedFetch.hasData ? hex<uint16_t>(gb.ppu.bwf.interruptedFetch.tileDataHigh << 8 |
                                                                   gb.ppu.bwf.interruptedFetch.tileDataHigh)

@@ -133,12 +133,23 @@ int main(int argc, char* argv[]) {
         debugger.backend->attachFrontend(*debugger.frontend);
         DebuggerMemorySniffer::setObserver(&*debugger.backend);
 
-        debugger.frontend->setOnPullingCommandCallback([&window]() {
+        debugger.frontend->setOnPullingCommandCallback([&gb, &window]() {
+            // Cache the next pixel color
+            Lcd::PixelRgb565& nextPixel = gb->lcd.getMutablePixels()[gb->lcd.getCursor()];
+            const Lcd::PixelRgb565 nextPixelColor = nextPixel;
+
+            // Mark the current dot as a white pixel (useful for debug PPU)
+            nextPixel = 0xFFFF;
+
+            // Render framebuffer
             window.render();
+
+            // Restore original color
+            nextPixel = nextPixelColor;
         });
         debugger.frontend->setOnCommandPulledCallback([&window, &gb](const std::string& cmd) {
             if (cmd == "clear") {
-                gb->lcd.clearPixels();
+                memset(gb->lcd.getMutablePixels(), 0, sizeof(Lcd::PIXEL_BUFFER_SIZE));
                 window.clear();
                 return true;
             }

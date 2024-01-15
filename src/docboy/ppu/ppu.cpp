@@ -905,8 +905,21 @@ void Ppu::bgwinPrefetcherGetTile0() {
 void Ppu::bgPrefetcherGetTile0() {
     check(!isFetchingSprite);
 
-    bwf.tilemapX = mod<TILEMAP_WIDTH>((bwf.LX + video.SCX) / TILE_WIDTH);
-    bwf.tilemapY = mod<TILEMAP_HEIGHT>((video.LY + video.SCY) / TILE_HEIGHT);
+    // The prefetcher computes at this phase only the tile base address.
+    // based on the tilemap X and Y coordinate and the tile map to use.
+    // [mealybug/m3_lcdc_win_map_change].
+    // The real tile address that depends on the tile Y can be affected by
+    // successive SCY write that might happen during the fetcher's GetTile phases.
+    // [mealybug/m3_scy_change].
+    const uint8_t tilemapX = mod<TILEMAP_WIDTH>((bwf.LX + video.SCX) / TILE_WIDTH);
+    const uint8_t tilemapY = mod<TILEMAP_HEIGHT>((video.LY + video.SCY) / TILE_HEIGHT);
+    ;
+    const uint16_t vTilemapAddr = test_bit<BG_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    bwf.vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + tilemapX;
+
+    IF_DEBUGGER(bwf.tilemapX = tilemapX);
+    IF_DEBUGGER(bwf.tilemapY = tilemapY);
+    IF_DEBUGGER(bwf.vTilemapAddr = vTilemapAddr);
 
     fetcherTickSelector = &Ppu::bgPrefetcherGetTile1;
 }
@@ -922,8 +935,17 @@ void Ppu::winPrefetcherGetTile0() {
     check(w.active);
 
     // The window prefetcher has its own internal counter to determine the tile to fetch
-    bwf.tilemapX = wf.tilemapX++;
-    bwf.tilemapY = w.WLY / TILE_HEIGHT;
+    const uint8_t tilemapX = wf.tilemapX++;
+    const uint8_t tilemapY = w.WLY / TILE_HEIGHT;
+    const uint16_t vTilemapAddr = test_bit<WIN_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    bwf.vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + tilemapX;
+
+    // TODO: not sure about precise timing (e.g. changes to WLY?)
+    setupWinPixelSliceFetcherTileDataAddress();
+
+    IF_DEBUGGER(bwf.tilemapX = tilemapX);
+    IF_DEBUGGER(bwf.tilemapY = tilemapY);
+    IF_DEBUGGER(bwf.vTilemapAddr = vTilemapAddr);
 
     fetcherTickSelector = &Ppu::winPrefetcherGetTile1;
 }
@@ -932,9 +954,6 @@ void Ppu::winPrefetcherGetTile1() {
     check(!isFetchingSprite);
     check(w.activeForFrame);
     check(w.active);
-
-    // TODO: not sure about precise timing (e.g. changes to WLY?)
-    setupWinPixelSliceFetcherTileDataAddress();
 
     fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataLow0;
 }
@@ -983,7 +1002,7 @@ void Ppu::bgPixelSliceFetcherGetTileDataLow0() {
     // Note that BG fetcher reads again SCY even during the GetTileData phases.
     // Therefore changes to SCY during these phases may have bitplane desync effects
     // (e.g. read from a tile depending on a certain SCY
-    //  but from tile row given by another SCY).
+    //  but from a tile row given by another SCY).
     // [mealybug/m3_scy_change]
     setupBgPixelSliceFetcherTileDataAddress();
 
@@ -1004,7 +1023,7 @@ void Ppu::bgPixelSliceFetcherGetTileDataHigh0() {
     // Note that BG fetcher reads again SCY even during the GetTileData phases.
     // Therefore changes to SCY during these phases may have bitplane desync effects
     // (e.g. read from a tile depending on a certain SCY
-    //  but from tile row given by another SCY).
+    //  but from a tile row given by another SCY).
     // [mealybug/m3_scy_change]
     setupBgPixelSliceFetcherTileDataAddress();
 
@@ -1211,9 +1230,10 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
 }
 
 inline void Ppu::setupBgPixelSliceFetcherTileDataAddress() {
-    const uint16_t vTilemapAddr = test_bit<BG_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
-    const uint16_t vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * bwf.tilemapY) + bwf.tilemapX;
-    const uint8_t tileNumber = vram.read(vTilemapTileAddr);
+    // TODO: is this read here or before at prefetcher?
+    const uint8_t tileNumber = vram.read(bwf.vTilemapTileAddr);
+
+    // TODO: is this read here or before at prefetcher?
     const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(video.LCDC)
                                    ?
                                    // unsigned addressing mode with 0x8000 as (global) base address
@@ -1227,9 +1247,10 @@ inline void Ppu::setupBgPixelSliceFetcherTileDataAddress() {
 }
 
 inline void Ppu::setupWinPixelSliceFetcherTileDataAddress() {
-    const uint16_t vTilemapAddr = test_bit<WIN_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
-    const uint16_t vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * bwf.tilemapY) + bwf.tilemapX;
-    const uint8_t tileNumber = vram.read(vTilemapTileAddr);
+    // TODO: is this read here or before at prefetcher?
+    const uint8_t tileNumber = vram.read(bwf.vTilemapTileAddr);
+
+    // TODO: is this read here or before at prefetcher?
     const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(video.LCDC)
                                    ?
                                    // unsigned addressing mode with 0x8000 as (global) base address
@@ -1348,7 +1369,10 @@ void Ppu::saveState(Parcel& parcel) const {
 #endif
 
     parcel.writeUInt8(bwf.LX);
-    parcel.writeUInt8(bwf.tilemapX);
+    parcel.writeUInt8(bwf.vTilemapTileAddr);
+    IF_DEBUGGER(parcel.writeUInt8(bwf.tilemapX));
+    IF_DEBUGGER(parcel.writeUInt8(bwf.tilemapY));
+    IF_DEBUGGER(parcel.writeUInt8(bwf.vTilemapAddr));
     parcel.writeBool(bwf.interruptedFetch.hasData);
     parcel.writeUInt8(bwf.interruptedFetch.tileDataLow);
     parcel.writeUInt8(bwf.interruptedFetch.tileDataHigh);
@@ -1452,7 +1476,10 @@ void Ppu::loadState(Parcel& parcel) {
 #endif
 
     bwf.LX = parcel.readUInt8();
-    bwf.tilemapX = parcel.readUInt8();
+    bwf.vTilemapTileAddr = parcel.readUInt8();
+    IF_DEBUGGER(bwf.tilemapX = parcel.readUInt8());
+    IF_DEBUGGER(bwf.tilemapY = parcel.readUInt8());
+    IF_DEBUGGER(bwf.vTilemapAddr = parcel.readUInt8());
     bwf.interruptedFetch.hasData = parcel.readBool();
     bwf.interruptedFetch.tileDataLow = parcel.readUInt8();
     bwf.interruptedFetch.tileDataHigh = parcel.readUInt8();

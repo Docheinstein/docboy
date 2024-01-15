@@ -215,8 +215,11 @@ private:
     // Bg/Win Prefetcher
     struct {
         uint8_t LX {}; // [0, 256), advances 8 by 8
-        uint8_t tilemapX {};
-        uint8_t tilemapY {};
+        uint16_t vTilemapTileAddr {};
+
+        IF_DEBUGGER(uint8_t tilemapX {});
+        IF_DEBUGGER(uint8_t tilemapY {});
+        IF_DEBUGGER(uint8_t vTilemapAddr {});
 
         struct {
             bool hasData {};
