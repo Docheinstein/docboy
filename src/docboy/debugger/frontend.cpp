@@ -1100,9 +1100,9 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 std::string blockReason;
                 if (gb.ppu.isFetchingSprite)
                     blockReason = "fetching sprite";
-                if (gb.ppu.oamEntries[gb.ppu.LX].isNotEmpty())
+                else if (gb.ppu.oamEntries[gb.ppu.LX].isNotEmpty())
                     blockReason = "pending sprite hit";
-                if (gb.ppu.bgFifo.isEmpty())
+                else if (gb.ppu.bgFifo.isEmpty())
                     blockReason = "empty bg fifo";
 
                 if (!blockReason.empty())
@@ -1295,7 +1295,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("Tile Map Y") << "       :  " << gb.ppu.bwf.tilemapY << endl;
         b << yellow("Tile Map Addr") << "    :  "
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.vTilemapAddr) << endl;
-        b << yellow("Tile Base Addr") << ":  "
+        b << yellow("Tile Base Addr") << "   :  "
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.vTilemapTileAddr) << endl;
         b << yellow("Cached Fetch") << "     :  "
           << (gb.ppu.bwf.interruptedFetch.hasData ? hex<uint16_t>(gb.ppu.bwf.interruptedFetch.tileDataHigh << 8 |

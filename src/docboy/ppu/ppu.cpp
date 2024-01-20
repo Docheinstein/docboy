@@ -1115,6 +1115,10 @@ void Ppu::bgwinPixelSliceFetcherPush() {
         bgFifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[psf.tileDataHigh << 8 | psf.tileDataLow]);
 
         fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;
+
+        // Sprite fetches are ignored just after a window tile push.
+        if (w.active)
+            return;
     }
 
     // if there is a pending obj hit, discard the fetched bg pixels
