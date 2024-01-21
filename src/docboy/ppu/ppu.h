@@ -101,7 +101,7 @@ private:
     [[nodiscard]] bool isBgFifoReadyToBePopped() const;
     [[nodiscard]] bool isObjReadyToBeFetched() const;
 
-    void eventuallySetupFetcherForWindow();
+    void checkWindowActivation();
     void setupFetcherForWindow();
 
     template <uint8_t Mode>
@@ -115,6 +115,9 @@ private:
 
     void winPrefetcherGetTile0();
     void winPrefetcherGetTile1();
+
+    void winPrefetcherJustActivatedGetTile0();
+    void winPrefetcherJustActivatedGetTile1();
 
     void objPrefetcherGetTile0();
     void objPrefetcherGetTile1();
@@ -136,7 +139,9 @@ private:
     void objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo();
 
     // Fetcher states helpers
+    void setupBgPixelSliceFetcherTilemapTileAddress();
     void setupBgPixelSliceFetcherTileDataAddress();
+    void setupWinPixelSliceFetcherTilemapTileAddress();
     void setupWinPixelSliceFetcherTileDataAddress();
 
     void cacheBgWinFetch();
@@ -231,6 +236,10 @@ private:
     // Window Prefetcher
     struct {
         uint8_t tilemapX {};
+        struct {
+            uint8_t tilemapX {};
+            uint8_t tilemapY {};
+        } tmp;
     } wf;
 
     // Obj Prefetcher

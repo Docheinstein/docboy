@@ -374,7 +374,7 @@ void Ppu::pixelTransferDummy0() {
         if (pixelTransfer.initialSCX.toDiscard) {
             pixelTransfer.initialSCX.discarded = 0;
 
-            eventuallySetupFetcherForWindow();
+            checkWindowActivation();
 
             // TODO: handle pixelTransferDiscard0WX0SCX7 as a pixelTransferDiscard0 with SCX 6?
             if (w.active) {
@@ -461,7 +461,7 @@ void Ppu::pixelTransfer0() {
         if (LX + 1 == 8)
             tickSelector = &Ppu::pixelTransfer8;
 
-        eventuallySetupFetcherForWindow();
+        checkWindowActivation();
     }
 
     tickFetcher();
@@ -522,7 +522,7 @@ void Ppu::pixelTransfer8() {
             return;
         }
 
-        eventuallySetupFetcherForWindow();
+        checkWindowActivation();
     }
 
     tickFetcher();
@@ -799,11 +799,10 @@ inline void Ppu::updateMode() {
 }
 
 inline void Ppu::increaseLX() {
-    // Clear oam entries of current LX (it might contain OBJs not served).
-    // While doing so update oamEntriesCount so that it will contain
-    // the real oam entries count.
     check(oamEntriesCount >= oamEntries[LX].size());
-    IF_ASSERTS(oamEntriesCount -= oamEntries[LX].size());
+    IF_ASSERTS(oamEntriesCount -= oamEntries[LX].size()); // update with the real served oam entries count.
+
+    // Clear oam entries of current LX (it might contain OBJs not served).
     oamEntries[LX].clear();
 
     // Increase LX.
@@ -825,7 +824,7 @@ inline bool Ppu::isObjReadyToBeFetched() const {
     return oamEntries[LX].isNotEmpty() && test_bit<OBJ_ENABLE>(video.LCDC);
 }
 
-inline void Ppu::eventuallySetupFetcherForWindow() {
+inline void Ppu::checkWindowActivation() {
     // The condition for which the window can be triggered are:
     // - at some point in the frame LY was equal to WY
     // - pixel transfer LX matches WX
@@ -856,7 +855,7 @@ inline void Ppu::setupFetcherForWindow() {
     bgFifo.clear();
 
     // Setup the fetcher to fetch a window tile
-    fetcherTickSelector = &Ppu::winPrefetcherGetTile0;
+    fetcherTickSelector = &Ppu::winPrefetcherJustActivatedGetTile0;
 }
 
 template <uint8_t Mode>
@@ -907,19 +906,11 @@ void Ppu::bgPrefetcherGetTile0() {
 
     // The prefetcher computes at this phase only the tile base address.
     // based on the tilemap X and Y coordinate and the tile map to use.
-    // [mealybug/m3_lcdc_win_map_change].
+    // [mealybug/m3_lcdc_bg_map_change].
     // The real tile address that depends on the tile Y can be affected by
     // successive SCY write that might happen during the fetcher's GetTile phases.
     // [mealybug/m3_scy_change].
-    const uint8_t tilemapX = mod<TILEMAP_WIDTH>((bwf.LX + video.SCX) / TILE_WIDTH);
-    const uint8_t tilemapY = mod<TILEMAP_HEIGHT>((video.LY + video.SCY) / TILE_HEIGHT);
-    ;
-    const uint16_t vTilemapAddr = test_bit<BG_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
-    bwf.vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + tilemapX;
-
-    IF_DEBUGGER(bwf.tilemapX = tilemapX);
-    IF_DEBUGGER(bwf.tilemapY = tilemapY);
-    IF_DEBUGGER(bwf.vTilemapAddr = vTilemapAddr);
+    setupBgPixelSliceFetcherTilemapTileAddress();
 
     fetcherTickSelector = &Ppu::bgPrefetcherGetTile1;
 }
@@ -934,18 +925,14 @@ void Ppu::winPrefetcherGetTile0() {
     check(w.activeForFrame);
     check(w.active);
 
-    // The window prefetcher has its own internal counter to determine the tile to fetch
-    const uint8_t tilemapX = wf.tilemapX++;
-    const uint8_t tilemapY = w.WLY / TILE_HEIGHT;
-    const uint16_t vTilemapAddr = test_bit<WIN_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
-    bwf.vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + tilemapX;
+    // The prefetcher computes at this phase only the tile base address.
+    // based on the tilemap X and Y coordinate and the tile map to use.
+    // [mealybug/m3_lcdc_win_map_change].
+    setupWinPixelSliceFetcherTilemapTileAddress();
 
-    // TODO: not sure about precise timing (e.g. changes to WLY?)
+    // TODO: not sure about precise timing (e.g. changes to WLY?).
+    //       Is this here or at winPrefetcherGetTile1?
     setupWinPixelSliceFetcherTileDataAddress();
-
-    IF_DEBUGGER(bwf.tilemapX = tilemapX);
-    IF_DEBUGGER(bwf.tilemapY = tilemapY);
-    IF_DEBUGGER(bwf.vTilemapAddr = vTilemapAddr);
 
     fetcherTickSelector = &Ppu::winPrefetcherGetTile1;
 }
@@ -954,6 +941,31 @@ void Ppu::winPrefetcherGetTile1() {
     check(!isFetchingSprite);
     check(w.activeForFrame);
     check(w.active);
+
+    fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataLow0;
+}
+
+void Ppu::winPrefetcherJustActivatedGetTile0() {
+    check(!isFetchingSprite);
+    check(w.activeForFrame);
+    check(w.active);
+
+    // It seems that the tilemap to use is not read from LCDC in GetTile0 the same
+    // t-cycle the window is activated, as it happens for other window fetches,
+    // but the phase after (GetTile1)
+    // (TODO: still not sure about this: investigate further).
+    // [mealybug/m3_lcdc_win_map_change].
+
+    fetcherTickSelector = &Ppu::winPrefetcherJustActivatedGetTile1;
+}
+
+void Ppu::winPrefetcherJustActivatedGetTile1() {
+    check(!isFetchingSprite);
+    check(w.activeForFrame);
+    check(w.active);
+
+    setupWinPixelSliceFetcherTilemapTileAddress();
+    setupWinPixelSliceFetcherTileDataAddress();
 
     fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataLow0;
 }
@@ -1233,6 +1245,18 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     }
 }
 
+inline void Ppu::setupBgPixelSliceFetcherTilemapTileAddress() {
+    const uint8_t tilemapX = mod<TILEMAP_WIDTH>((bwf.LX + video.SCX) / TILE_WIDTH);
+    const uint8_t tilemapY = mod<TILEMAP_HEIGHT>((video.LY + video.SCY) / TILE_HEIGHT);
+
+    const uint16_t vTilemapAddr = test_bit<BG_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    bwf.vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + tilemapX;
+
+    IF_DEBUGGER(bwf.tilemapX = tilemapX);
+    IF_DEBUGGER(bwf.tilemapY = tilemapY);
+    IF_DEBUGGER(bwf.vTilemapAddr = vTilemapAddr);
+}
+
 inline void Ppu::setupBgPixelSliceFetcherTileDataAddress() {
     // TODO: is this read here or before at prefetcher?
     const uint8_t tileNumber = vram.read(bwf.vTilemapTileAddr);
@@ -1248,6 +1272,18 @@ inline void Ppu::setupBgPixelSliceFetcherTileDataAddress() {
     const uint8_t tileY = mod<TILE_HEIGHT>(video.LY + video.SCY);
 
     psf.vTileDataAddress = vTileAddr + TILE_ROW_BYTES * tileY;
+}
+
+inline void Ppu::setupWinPixelSliceFetcherTilemapTileAddress() {
+    // The window prefetcher has its own internal counter to determine the tile to fetch
+    const uint8_t tilemapX = wf.tilemapX++;
+    const uint8_t tilemapY = w.WLY / TILE_HEIGHT;
+    const uint16_t vTilemapAddr = test_bit<WIN_TILE_MAP>(video.LCDC) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    bwf.vTilemapTileAddr = vTilemapAddr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemapY) + tilemapX;
+
+    IF_DEBUGGER(bwf.tilemapX = tilemapX);
+    IF_DEBUGGER(bwf.tilemapY = tilemapY);
+    IF_DEBUGGER(bwf.vTilemapAddr = vTilemapAddr);
 }
 
 inline void Ppu::setupWinPixelSliceFetcherTileDataAddress() {

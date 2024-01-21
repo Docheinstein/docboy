@@ -326,7 +326,7 @@ Here's the debugger!
 | mealybug/m3_lcdc_tile_sel_win_change.gb       |        :x:         |
 | mealybug/m3_lcdc_win_en_change_multiple.gb    |        :x:         |
 | mealybug/m3_lcdc_win_en_change_multiple_wx.gb |        :x:         |
-| mealybug/m3_lcdc_win_map_change.gb            |        :x:         |
+| mealybug/m3_lcdc_win_map_change.gb            | :white_check_mark: |
 | mealybug/m3_obp0_change.gb                    | :white_check_mark: |
 | mealybug/m3_scx_high_5_bits.gb                | :white_check_mark: |
 | mealybug/m3_scx_low_3_bits.gb                 | :white_check_mark: |
