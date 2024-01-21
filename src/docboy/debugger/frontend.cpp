@@ -1136,6 +1136,10 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     return "WIN Prefetcher GetTile0";
                 if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile1)
                     return "WIN Prefetcher GetTile1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherJustActivatedGetTile0)
+                    return "WIN Prefetcher GetTile0 (Trigger)";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherJustActivatedGetTile1)
+                    return "WIN Prefetcher GetTile1 (Trigger)";
                 if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataLow0)
                     return "BG PixelSliceFetcher GetTileDataLow0";
                 if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataLow1)

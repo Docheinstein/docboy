@@ -348,7 +348,7 @@ void Ppu::oamScanDone() {
     }
     // End of oddities
 
-    if (dots == 80) {
+    else if (dots == 80) {
         enterPixelTransfer();
     }
 }
@@ -1341,6 +1341,8 @@ void Ppu::saveState(Parcel& parcel) const {
         &Ppu::bgPrefetcherGetTile1,
         &Ppu::winPrefetcherGetTile0,
         &Ppu::winPrefetcherGetTile1,
+        &Ppu::winPrefetcherJustActivatedGetTile0,
+        &Ppu::winPrefetcherJustActivatedGetTile1,
         &Ppu::objPrefetcherGetTile0,
         &Ppu::objPrefetcherGetTile1,
         &Ppu::bgPixelSliceFetcherGetTileDataLow0,
@@ -1455,6 +1457,8 @@ void Ppu::loadState(Parcel& parcel) {
         &Ppu::bgPrefetcherGetTile1,
         &Ppu::winPrefetcherGetTile0,
         &Ppu::winPrefetcherGetTile1,
+        &Ppu::winPrefetcherJustActivatedGetTile0,
+        &Ppu::winPrefetcherJustActivatedGetTile1,
         &Ppu::objPrefetcherGetTile0,
         &Ppu::objPrefetcherGetTile1,
         &Ppu::bgPixelSliceFetcherGetTileDataLow0,
