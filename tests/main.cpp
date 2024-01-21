@@ -888,10 +888,10 @@ static bool run_with_params(const RunnerParams& p) {
     const auto [params] = TABLE(RunnerParams, ({__VA_ARGS__}));                                                        \
     REQUIRE(run_with_params(params))
 
-#define ALL_TEST_ROMS 1
+#define ALL_TEST_ROMS 0
 #define PPU_ONLY_TEST_ROMS 0
 #define MEALYBUG_ONLY_TEST_ROMS 0
-#define WIP_ONLY_TEST_ROMS 0
+#define WIP_ONLY_TEST_ROMS 1
 
 TEST_CASE("emulation", "[emulation][.]") {
 #if ALL_TEST_ROMS || PPU_ONLY_TEST_ROMS
@@ -966,8 +966,8 @@ TEST_CASE("emulation", "[emulation][.]") {
             //                F{"mealybug/m3_lcdc_tile_sel_change.gb", "mealybug/m3_lcdc_tile_sel_change.png",
             //                GREY_PALETTE}, F{"mealybug/m3_lcdc_tile_sel_win_change.gb",
             //                "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_win_en_change_multiple.gb",
-            //                "mealybug/m3_lcdc_win_en_change_multiple.png", GREY_PALETTE},
+            F {"mealybug/m3_lcdc_win_en_change_multiple.gb", "mealybug/m3_lcdc_win_en_change_multiple.png",
+               GREY_PALETTE},
             //                F{"mealybug/m3_lcdc_win_en_change_multiple_wx.gb",
             //                "mealybug/m3_lcdc_win_en_change_multiple_wx.png", GREY_PALETTE},
             F {"mealybug/m3_lcdc_win_map_change.gb", "mealybug/m3_lcdc_win_map_change.png", GREY_PALETTE},
@@ -2393,22 +2393,17 @@ TEST_CASE("emulation", "[emulation][.]") {
     SECTION("wip") {
         RUN_TEST_ROMS(
             // F {"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png", GREY_PALETTE},
-            F {"mealybug/m3_lcdc_bg_map_change.gb", "mealybug/m3_lcdc_bg_map_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_en_change_variant.gb",
+            // F{"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png", GREY_PALETTE},
+            // F{"mealybug/m3_lcdc_obj_en_change_variant.gb",
             //                "mealybug/m3_lcdc_obj_en_change_variant.png", GREY_PALETTE},
             //                F{"mealybug/m3_lcdc_obj_size_change.gb", "mealybug/m3_lcdc_obj_size_change.png",
             //                GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_size_change_scx.gb",
             //                "mealybug/m3_lcdc_obj_size_change_scx.png", GREY_PALETTE},
             //                F{"mealybug/m3_lcdc_tile_sel_change.gb", "mealybug/m3_lcdc_tile_sel_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_tile_sel_win_change.gb",
-            //                "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_win_en_change_multiple.gb",
-            //                "mealybug/m3_lcdc_win_en_change_multiple.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_win_en_change_multiple_wx.gb",
-            //                "mealybug/m3_lcdc_win_en_change_multiple_wx.png", GREY_PALETTE},
-            F {"mealybug/m3_lcdc_win_map_change.gb", "mealybug/m3_lcdc_win_map_change.png", GREY_PALETTE},
-
+            //                GREY_PALETTE},
+            // F{"mealybug/m3_lcdc_tile_sel_win_change.gb", "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
+            // F{"mealybug/m3_lcdc_win_en_change_multiple_wx.gb", "mealybug/m3_lcdc_win_en_change_multiple_wx.png",
+            // GREY_PALETTE},
         );
     }
 #endif
