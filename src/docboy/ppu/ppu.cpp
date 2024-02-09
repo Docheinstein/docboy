@@ -963,10 +963,6 @@ void Ppu::winPrefetcherGetTile0() {
         // [mealybug/m3_lcdc_win_map_change].
         setupWinPixelSliceFetcherTilemapTileAddress();
 
-        // TODO: not sure about precise timing.
-        // Is this here or at winPrefetcherGetTile1? (try with changes to WLY).
-        setupWinPixelSliceFetcherTileDataAddress();
-
         fetcherTickSelector = &Ppu::winPrefetcherGetTile1;
     }
 
@@ -1034,11 +1030,12 @@ void Ppu::objPrefetcherGetTile1() {
 void Ppu::bgPixelSliceFetcherGetTileDataLow0() {
     check(!isFetchingSprite);
 
-    // Note that BG fetcher reads again SCY even during the GetTileData phases.
-    // Therefore changes to SCY during these phases may have bitplane desync effects
-    // (e.g. read from a tile depending on a certain SCY
-    //  but from a tile row given by another SCY).
-    // [mealybug/m3_scy_change]
+    // Note that fetcher determinate the tile data address to read both in
+    // GetTileDataLow and GetTileDataHight just before access it from VRAM.
+    // Therefore changes to SCY or BG_WIN_TILE_DATA during these phases may
+    // have bitplane desync effects
+    // (e.g. read the low byte from a tile and the high byte from a different one).
+    // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
     setupBgPixelSliceFetcherTileDataAddress();
 
     psf.tileDataLow = vram.read(psf.vTileDataAddress);
@@ -1055,11 +1052,12 @@ void Ppu::bgPixelSliceFetcherGetTileDataLow1() {
 void Ppu::bgPixelSliceFetcherGetTileDataHigh0() {
     check(!isFetchingSprite);
 
-    // Note that BG fetcher reads again SCY even during the GetTileData phases.
-    // Therefore changes to SCY during these phases may have bitplane desync effects
-    // (e.g. read from a tile depending on a certain SCY
-    //  but from a tile row given by another SCY).
-    // [mealybug/m3_scy_change]
+    // Note that fetcher determinate the tile data address to read both in
+    // GetTileDataLow and GetTileDataHight just before access it from VRAM.
+    // Therefore changes to SCY or BG_WIN_TILE_DATA during these phases may
+    // have bitplane desync effects
+    // (e.g. read the low byte from a tile and the high byte from a different one).
+    // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
     setupBgPixelSliceFetcherTileDataAddress();
 
     psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
@@ -1075,6 +1073,14 @@ void Ppu::winPixelSliceFetcherGetTileDataLow0() {
         bgPixelSliceFetcherGetTileDataLow0();
         return;
     }
+
+    // Note that fetcher determinate the tile data address to read both in
+    // GetTileDataLow and GetTileDataHight just before access it from VRAM.
+    // Therefore changes to (WY or?) BG_WIN_TILE_DATA during these phases may
+    // have bitplane desync effects
+    // (e.g. read the low byte from a tile and the high byte from a different one).
+    // [mealybug/m3_lcdc_tile_sel_win_change]
+    setupWinPixelSliceFetcherTileDataAddress();
 
     psf.tileDataLow = vram.read(psf.vTileDataAddress);
 
@@ -1101,6 +1107,14 @@ void Ppu::winPixelSliceFetcherGetTileDataHigh0() {
         bgPixelSliceFetcherGetTileDataHigh0();
         return;
     }
+
+    // Note that fetcher determinate the tile data address to read both in
+    // GetTileDataLow and GetTileDataHight just before access it from VRAM.
+    // Therefore changes to (WY or?) BG_WIN_TILE_DATA during these phases may
+    // have bitplane desync effects
+    // (e.g. read the low byte from a tile and the high byte from a different one).
+    // [mealybug/m3_lcdc_tile_sel_win_change]
+    setupWinPixelSliceFetcherTileDataAddress();
 
     psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
 
