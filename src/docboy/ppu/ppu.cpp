@@ -138,6 +138,12 @@ void Ppu::tick() {
     // [mealybug/m3_wx_5_change]
     WX = video.WX;
 
+    // This is actually just needed for checkWindowActivation(), because it
+    // seems that the t-cycle LCDC.WIN_ENABLE is turned on (and it was off),
+    // window is activated also for LX == WX + 1, not only for LX == WX.
+    // [mealybug/m3_lcdc_win_en_change_multiple_wx]
+    lastLCDC = video.LCDC;
+
     // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt
     tickStat();
 
@@ -785,6 +791,7 @@ void Ppu::resetFetcher() {
     objFifo.clear();
     isFetchingSprite = false;
     w.active = false;
+    w.justActivated = false;
     IF_ASSERTS_OR_DEBUGGER(w.lineTriggers.clear());
     bwf.LX = 0;
     bwf.interruptedFetch.hasData = false;
@@ -827,9 +834,15 @@ inline bool Ppu::isObjReadyToBeFetched() const {
 inline void Ppu::checkWindowActivation() {
     // The condition for which the window can be triggered are:
     // - at some point in the frame LY was equal to WY
-    // - pixel transfer LX matches WX
     // - window should is enabled LCDC
-    if (w.activeForFrame && !w.active && LX == WX && test_bit<WIN_ENABLE>(video.LCDC)) {
+    // - pixel transfer LX matches WX
+    //     furthermore, it seems that if LCDC.WIN_ENABLE was off and
+    //     is turned on while LX == WX + 1, window is activated
+    //     (even if it would be late by 1-cycle to be activated).
+    //     [mealybug/m3_lcdc_win_en_change_multiple_wx]
+    if (w.activeForFrame && !w.active && test_bit<WIN_ENABLE>(video.LCDC) &&
+        (LX == WX /* standard case */ ||
+         (LX == WX + 1 && !test_bit<WIN_ENABLE>(lastLCDC) /* window just enabled case */))) {
         setupFetcherForWindow();
     }
 }
@@ -839,6 +852,7 @@ inline void Ppu::setupFetcherForWindow() {
 
     // Activate window.
     w.active = true;
+    w.justActivated = true;
 
     // Increase the window line counter.
     ++w.WLY;
@@ -848,14 +862,11 @@ inline void Ppu::setupFetcherForWindow() {
     // Reset the window tile counter.
     wf.tilemapX = 0;
 
-    // It seems that a window trigger shifts back the bg prefetcher by one tile.
-    bwf.LX -= TILE_WIDTH;
-
     // Throw away the pixels in the BG fifo.
     bgFifo.clear();
 
-    // Setup the fetcher to fetch a window tile
-    fetcherTickSelector = &Ppu::winPrefetcherJustActivatedGetTile0;
+    // Setup the fetcher to fetch a window tile.
+    fetcherTickSelector = &Ppu::winPrefetcherActivating;
 }
 
 template <uint8_t Mode>
@@ -920,21 +931,52 @@ void Ppu::bgPrefetcherGetTile1() {
     fetcherTickSelector = &Ppu::bgPixelSliceFetcherGetTileDataLow0;
 }
 
+void Ppu::winPrefetcherActivating() {
+    check(!isFetchingSprite);
+    check(w.activeForFrame);
+    check(w.active);
+    check(w.justActivated);
+    check(test_bit<WIN_ENABLE>(video.LCDC));
+
+    // It seems that the t-cycle the window is activated is just wasted and the
+    // fetcher does not advance (this is deduced by the fact that the rom's expected
+    // behavior of the t-cycles of this first window fetch matches the normal
+    // window states only if such nop t-cycle is inserted after the window activation).
+    // Note that the timing added by the window fetch is still 6 dots: therefore
+    // is likely that the first window tile is pushed with the GetTile1 fetcher
+    // phase and does not waste an additional t-cycle in Push.
+    // [mealybug/m3_lcdc_win_map_change, mealybug/m3_lcdc_win_en_change_multiple_wx],
+    fetcherTickSelector = &Ppu::winPrefetcherGetTile0;
+}
+
 void Ppu::winPrefetcherGetTile0() {
     check(!isFetchingSprite);
     check(w.activeForFrame);
     check(w.active);
 
-    // The prefetcher computes at this phase only the tile base address.
-    // based on the tilemap X and Y coordinate and the tile map to use.
-    // [mealybug/m3_lcdc_win_map_change].
-    setupWinPixelSliceFetcherTilemapTileAddress();
+    // If the window is turned off, the fetcher switches back to the BG fetcher.
+    if (!test_bit<WIN_ENABLE>(video.LCDC)) {
+        bgPrefetcherGetTile0();
+    } else {
+        // The prefetcher computes at this phase only the tile base address.
+        // based on the tilemap X and Y coordinate and the tile map to use.
+        // [mealybug/m3_lcdc_win_map_change].
+        setupWinPixelSliceFetcherTilemapTileAddress();
 
-    // TODO: not sure about precise timing (e.g. changes to WLY?).
-    //       Is this here or at winPrefetcherGetTile1?
-    setupWinPixelSliceFetcherTileDataAddress();
+        // TODO: not sure about precise timing.
+        // Is this here or at winPrefetcherGetTile1? (try with changes to WLY).
+        setupWinPixelSliceFetcherTileDataAddress();
 
-    fetcherTickSelector = &Ppu::winPrefetcherGetTile1;
+        fetcherTickSelector = &Ppu::winPrefetcherGetTile1;
+    }
+
+    if (w.justActivated) {
+        // The window activation shifts back the BG prefetcher by one tile.
+        // Note that this happens here (not when the window is triggered),
+        // therefore there is a 1 t-cycle window opportunity to show
+        // the same tile twice if window is disabled just after it is activated.
+        bwf.LX -= TILE_WIDTH;
+    }
 }
 
 void Ppu::winPrefetcherGetTile1() {
@@ -942,30 +984,11 @@ void Ppu::winPrefetcherGetTile1() {
     check(w.activeForFrame);
     check(w.active);
 
-    fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataLow0;
-}
-
-void Ppu::winPrefetcherJustActivatedGetTile0() {
-    check(!isFetchingSprite);
-    check(w.activeForFrame);
-    check(w.active);
-
-    // It seems that the tilemap to use is not read from LCDC in GetTile0 the same
-    // t-cycle the window is activated, as it happens for other window fetches,
-    // but the phase after (GetTile1)
-    // (TODO: still not sure about this: investigate further).
-    // [mealybug/m3_lcdc_win_map_change].
-
-    fetcherTickSelector = &Ppu::winPrefetcherJustActivatedGetTile1;
-}
-
-void Ppu::winPrefetcherJustActivatedGetTile1() {
-    check(!isFetchingSprite);
-    check(w.activeForFrame);
-    check(w.active);
-
-    setupWinPixelSliceFetcherTilemapTileAddress();
-    setupWinPixelSliceFetcherTileDataAddress();
+    // If the window is turned off, the fetcher switches back to the BG fetcher.
+    if (!test_bit<WIN_ENABLE>(video.LCDC)) {
+        bgPrefetcherGetTile1();
+        return;
+    }
 
     fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataLow0;
 }
@@ -1047,6 +1070,12 @@ void Ppu::bgPixelSliceFetcherGetTileDataHigh0() {
 void Ppu::winPixelSliceFetcherGetTileDataLow0() {
     check(!isFetchingSprite);
 
+    // If the window is turned off, the fetcher switches back to the BG fetcher.
+    if (!test_bit<WIN_ENABLE>(video.LCDC)) {
+        bgPixelSliceFetcherGetTileDataLow0();
+        return;
+    }
+
     psf.tileDataLow = vram.read(psf.vTileDataAddress);
 
     fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataLow1;
@@ -1055,11 +1084,23 @@ void Ppu::winPixelSliceFetcherGetTileDataLow0() {
 void Ppu::winPixelSliceFetcherGetTileDataLow1() {
     check(!isFetchingSprite);
 
+    // If the window is turned off, the fetcher switches back to the BG fetcher.
+    if (!test_bit<WIN_ENABLE>(video.LCDC)) {
+        bgPixelSliceFetcherGetTileDataLow1();
+        return;
+    }
+
     fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataHigh0;
 }
 
 void Ppu::winPixelSliceFetcherGetTileDataHigh0() {
     check(!isFetchingSprite);
+
+    // If the window is turned off, the fetcher switches back to the BG fetcher.
+    if (!test_bit<WIN_ENABLE>(video.LCDC)) {
+        bgPixelSliceFetcherGetTileDataHigh0();
+        return;
+    }
 
     psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
 
@@ -1090,7 +1131,16 @@ void Ppu::bgwinPixelSliceFetcherGetTileDataHigh1() {
         return;
     }
 
-    fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherPush;
+    if (w.justActivated) {
+        // The fetcher immediately pushes the window tile if the window
+        // has just been activated (i.e. this is the first window fetch).
+        check(bgFifo.isEmpty());
+        bgwinPixelSliceFetcherPush();
+        w.justActivated = false;
+    } else {
+        // Standard case.
+        fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherPush;
+    }
 }
 
 void Ppu::bgwinPixelSliceFetcherPush() {
@@ -1339,10 +1389,9 @@ void Ppu::saveState(Parcel& parcel) const {
         &Ppu::bgwinPrefetcherGetTile0,
         &Ppu::bgPrefetcherGetTile0,
         &Ppu::bgPrefetcherGetTile1,
+        &Ppu::winPrefetcherActivating,
         &Ppu::winPrefetcherGetTile0,
         &Ppu::winPrefetcherGetTile1,
-        &Ppu::winPrefetcherJustActivatedGetTile0,
-        &Ppu::winPrefetcherJustActivatedGetTile1,
         &Ppu::objPrefetcherGetTile0,
         &Ppu::objPrefetcherGetTile1,
         &Ppu::bgPixelSliceFetcherGetTileDataLow0,
@@ -1455,10 +1504,9 @@ void Ppu::loadState(Parcel& parcel) {
         &Ppu::bgwinPrefetcherGetTile0,
         &Ppu::bgPrefetcherGetTile0,
         &Ppu::bgPrefetcherGetTile1,
+        &Ppu::winPrefetcherActivating,
         &Ppu::winPrefetcherGetTile0,
         &Ppu::winPrefetcherGetTile1,
-        &Ppu::winPrefetcherJustActivatedGetTile0,
-        &Ppu::winPrefetcherJustActivatedGetTile1,
         &Ppu::objPrefetcherGetTile0,
         &Ppu::objPrefetcherGetTile1,
         &Ppu::bgPixelSliceFetcherGetTileDataLow0,

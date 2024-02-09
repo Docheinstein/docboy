@@ -113,11 +113,9 @@ private:
     void bgPrefetcherGetTile0();
     void bgPrefetcherGetTile1();
 
+    void winPrefetcherActivating();
     void winPrefetcherGetTile0();
     void winPrefetcherGetTile1();
-
-    void winPrefetcherJustActivatedGetTile0();
-    void winPrefetcherJustActivatedGetTile1();
 
     void objPrefetcherGetTile0();
     void objPrefetcherGetTile1();
@@ -165,6 +163,7 @@ private:
 
     uint8_t BGP {IF_BOOTROM_ELSE(0, 0xFC)}; // video.BGP delayed by 1 t-cycle (~)
     uint8_t WX {};                          // video.WX delayed by 1 t-cycle
+    uint8_t lastLCDC {};                    // video.LCDC delayed by 1 t-cycle
 
     FillQueue<BgPixel, 8> bgFifo {};
     Queue<ObjPixel, 8> objFifo {};
@@ -210,7 +209,8 @@ private:
         bool activeForFrame {};
         uint8_t WLY {UINT8_MAX}; // window line counter
 
-        bool active {}; // currently rendering window
+        bool active {};        // currently rendering window
+        bool justActivated {}; // first fetch of this window streak
 
 #ifdef ASSERTS_OR_DEBUGGER_ENABLED
         Vector<uint8_t, 20> lineTriggers {};
@@ -236,10 +236,6 @@ private:
     // Window Prefetcher
     struct {
         uint8_t tilemapX {};
-        struct {
-            uint8_t tilemapX {};
-            uint8_t tilemapY {};
-        } tmp;
     } wf;
 
     // Obj Prefetcher
