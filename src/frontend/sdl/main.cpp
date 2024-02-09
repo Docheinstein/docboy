@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
 
         debugger.frontend->setOnPullingCommandCallback([&gb, &window]() {
             // Cache the next pixel color
-            Lcd::PixelRgb565& nextPixel = gb->lcd.getMutablePixels()[gb->lcd.getCursor()];
+            Lcd::PixelRgb565& nextPixel = gb->lcd.getPixels()[gb->lcd.getCursor()];
             const Lcd::PixelRgb565 nextPixelColor = nextPixel;
 
             // Mark the current dot as a white pixel (useful for debug PPU)
@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
         });
         debugger.frontend->setOnCommandPulledCallback([&window, &gb](const std::string& cmd) {
             if (cmd == "clear") {
-                memset(gb->lcd.getMutablePixels(), 0, sizeof(Lcd::PIXEL_BUFFER_SIZE));
+                memset(gb->lcd.getPixels(), 0, Lcd::PIXEL_BUFFER_SIZE);
                 window.clear();
                 return true;
             }

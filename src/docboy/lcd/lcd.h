@@ -27,9 +27,9 @@ public:
 
     void pushPixel(Pixel pixel);
 
-    [[nodiscard]] const PixelRgb565* getPixels();
+    [[nodiscard]] const PixelRgb565* getPixels() const;
 
-    IF_DEBUGGER(PixelRgb565* getMutablePixels());
+    IF_DEBUGGER(PixelRgb565* getPixels());
     IF_DEBUGGER(uint16_t getCursor() const);
 
     void saveState(Parcel& parcel) const;

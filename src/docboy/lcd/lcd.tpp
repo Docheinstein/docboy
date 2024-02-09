@@ -17,13 +17,13 @@ inline void Lcd::pushPixel(Lcd::Pixel pixel) {
     IF_DEBUGGER(y = (y + (x == 0)) % Specs::Display::HEIGHT);
 }
 
-inline const Lcd::PixelRgb565 *Lcd::getPixels() {
+inline const Lcd::PixelRgb565 *Lcd::getPixels() const {
     return pixels;
 }
 
 
 #ifdef ENABLE_DEBUGGER
-inline Lcd::PixelRgb565* Lcd::getMutablePixels() {
+inline Lcd::PixelRgb565* Lcd::getPixels() {
     return pixels;
 }
 inline uint16_t Lcd::getCursor() const {

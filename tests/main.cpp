@@ -2577,7 +2577,7 @@ TEST_CASE("emulation", "[emulation][.]") {
             // GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_size_change_scx.gb",   "mealybug/m3_lcdc_obj_size_change_scx.png",
             // GREY_PALETTE},
             F {"mealybug/m3_lcdc_tile_sel_change.gb", "mealybug/m3_lcdc_tile_sel_change.png", GREY_PALETTE},
-            // F{"mealybug/m3_lcdc_tile_sel_win_change.gb",  "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
+            F {"mealybug/m3_lcdc_tile_sel_win_change.gb", "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
             F {"mealybug/m3_lcdc_win_en_change_multiple.gb", "mealybug/m3_lcdc_win_en_change_multiple.png",
                GREY_PALETTE},
             F {"mealybug/m3_lcdc_win_en_change_multiple_wx.gb", "mealybug/m3_lcdc_win_en_change_multiple_wx.png",
