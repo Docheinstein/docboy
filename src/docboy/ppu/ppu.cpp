@@ -138,10 +138,12 @@ void Ppu::tick() {
     // [mealybug/m3_wx_5_change]
     WX = video.WX;
 
-    // This is actually just needed for checkWindowActivation(), because it
-    // seems that the t-cycle LCDC.WIN_ENABLE is turned on (and it was off),
-    // window is activated also for LX == WX + 1, not only for LX == WX.
-    // [mealybug/m3_lcdc_win_en_change_multiple_wx]
+    // This is needed for:
+    // 1) LCDC.WIN_ENABLE, because it seems that the t-cycle window is turned on
+    //    (and it was off), window is activated also for LX == WX + 1, not only for LX == WX.
+    //    [mealybug/m3_lcdc_win_en_change_multiple_wx]
+    // 2) LCDC.BG_WIN_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
+    //    [mealybug/m3_lcdc_bg_en_change]
     lastLCDC = video.LCDC;
 
     // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt
@@ -512,7 +514,13 @@ void Ppu::pixelTransfer8() {
             // During this T-Cycle, the PPU sees the last BGP ORed with the new BGP.
             // [mealybug/m3_bgp_change]
             const uint8_t bgp = (uint8_t)video.BGP | BGP;
-            color = test_bit<BG_WIN_ENABLE>(video.LCDC) ? resolveColor(bgPixel.colorIndex, bgp) : 0;
+
+            // It seems that there is a 1 T-cycle delay between the value LCDC.BG_WIN_ENABLE,
+            // and the value the PPU sees. LX == 8 seems to be an expection.
+            // [mealybug/m3_lcdc_bg_en_change]
+            const uint8_t lcdc = LX == 8 ? video.LCDC : lastLCDC;
+
+            color = test_bit<BG_WIN_ENABLE>(lcdc) ? resolveColor(bgPixel.colorIndex, bgp) : 0;
         }
 
         check(color < NUMBER_OF_COLORS);

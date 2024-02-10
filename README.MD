@@ -316,7 +316,7 @@ Here's the debugger!
 | mealybug/m2_win_en_toggle.gb                  | :white_check_mark: |
 | mealybug/m3_bgp_change.gb                     | :white_check_mark: |
 | mealybug/m3_bgp_change_sprites.gb             | :white_check_mark: |
-| mealybug/m3_lcdc_bg_en_change.gb              |        :x:         |
+| mealybug/m3_lcdc_bg_en_change.gb              | :white_check_mark: |
 | mealybug/m3_lcdc_bg_map_change.gb             | :white_check_mark: |
 | mealybug/m3_lcdc_obj_en_change.gb             |        :x:         |
 | mealybug/m3_lcdc_obj_en_change_variant.gb     |        :x:         |
