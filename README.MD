@@ -318,8 +318,8 @@ Here's the debugger!
 | mealybug/m3_bgp_change_sprites.gb             | :white_check_mark: |
 | mealybug/m3_lcdc_bg_en_change.gb              | :white_check_mark: |
 | mealybug/m3_lcdc_bg_map_change.gb             | :white_check_mark: |
-| mealybug/m3_lcdc_obj_en_change.gb             |        :x:         |
-| mealybug/m3_lcdc_obj_en_change_variant.gb     |        :x:         |
+| mealybug/m3_lcdc_obj_en_change.gb             | :white_check_mark: |
+| mealybug/m3_lcdc_obj_en_change_variant.gb     | :white_check_mark: |
 | mealybug/m3_lcdc_obj_size_change.gb           |        :x:         |
 | mealybug/m3_lcdc_obj_size_change_scx.gb       |        :x:         |
 | mealybug/m3_lcdc_tile_sel_change.gb           | :white_check_mark: |

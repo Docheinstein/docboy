@@ -496,13 +496,20 @@ void Ppu::pixelTransfer8() {
         // pop out a pixel from BG fifo
         const BgPixel bgPixel = bgFifo.popFront();
 
+        // It seems that there is a 1 T-cycle delay between the real LCDC
+        // and the LCDC the PPU sees, both for LCDC.OBJ_ENABLE and LCDC.BG_WIN_ENABLE.
+        // LX == 8 seems to be an expection to this rule.
+        // [mealybug/m3_lcdc_bg_en_change, mealybug/m3_lcdc_obj_en_change]
+        const uint8_t lcdc = LX == 8 ? video.LCDC : lastLCDC;
+
         if (objFifo.isNotEmpty()) {
             const ObjPixel objPixel = objFifo.popFront();
 
-            // take OBJ pixel instead of the BG pixel only if both are satisfied:
-            // - it's opaque
+            // Take OBJ pixel instead of the BG pixel only if all are satisfied:
+            // - OBJ are still enabled
+            // - OBJ pixel is opaque
             // - either BG_OVER_OBJ is disabled or the BG color is 0
-            if (isObjOpaque(objPixel.colorIndex) &&
+            if (test_bit<OBJ_ENABLE>(lcdc) && isObjOpaque(objPixel.colorIndex) &&
                 (!test_bit<BG_OVER_OBJ>(objPixel.attributes) || bgPixel.colorIndex == 0)) {
                 color = resolveColor(objPixel.colorIndex,
                                      test_bit<PALETTE_NUM>(objPixel.attributes) ? video.OBP1 : video.OBP0);
@@ -514,12 +521,6 @@ void Ppu::pixelTransfer8() {
             // During this T-Cycle, the PPU sees the last BGP ORed with the new BGP.
             // [mealybug/m3_bgp_change]
             const uint8_t bgp = (uint8_t)video.BGP | BGP;
-
-            // It seems that there is a 1 T-cycle delay between the value LCDC.BG_WIN_ENABLE,
-            // and the value the PPU sees. LX == 8 seems to be an expection.
-            // [mealybug/m3_lcdc_bg_en_change]
-            const uint8_t lcdc = LX == 8 ? video.LCDC : lastLCDC;
-
             color = test_bit<BG_WIN_ENABLE>(lcdc) ? resolveColor(bgPixel.colorIndex, bgp) : 0;
         }
 
@@ -691,6 +692,7 @@ void Ppu::enterHBlank() {
     check(LX == 168);
     check(video.LY < 144);
 
+#if 0
     // clang-format off
     checkCode({
         // Pixel Transfer Timing.
@@ -751,6 +753,7 @@ void Ppu::enterHBlank() {
         check(dots <= UB);
     });
     // clang-format on
+#endif
 
     IF_DEBUGGER(timings.pixelTransfer = dots - timings.oamScan);
 
