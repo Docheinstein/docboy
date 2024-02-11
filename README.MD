@@ -188,6 +188,7 @@ Here's the debugger!
 
 ## Tests results
 
+
 #### blargg
 
 | Test Rom                                      |       Result       |
@@ -320,8 +321,8 @@ Here's the debugger!
 | mealybug/m3_lcdc_bg_map_change.gb             | :white_check_mark: |
 | mealybug/m3_lcdc_obj_en_change.gb             | :white_check_mark: |
 | mealybug/m3_lcdc_obj_en_change_variant.gb     | :white_check_mark: |
-| mealybug/m3_lcdc_obj_size_change.gb           |        :x:         |
-| mealybug/m3_lcdc_obj_size_change_scx.gb       |        :x:         |
+| mealybug/m3_lcdc_obj_size_change.gb           | :white_check_mark: |
+| mealybug/m3_lcdc_obj_size_change_scx.gb       | :white_check_mark: |
 | mealybug/m3_lcdc_tile_sel_change.gb           | :white_check_mark: |
 | mealybug/m3_lcdc_tile_sel_win_change.gb       | :white_check_mark: |
 | mealybug/m3_lcdc_win_en_change_multiple.gb    | :white_check_mark: |
