@@ -2,7 +2,11 @@ find_package(Catch2 REQUIRED)
 
 add_executable(docboy-tests)
 
-target_sources(docboy-tests PRIVATE main.cpp)
+target_sources(docboy-tests PRIVATE
+        emutests.hpp
+        main.cpp
+        unittests.hpp
+)
 
 target_link_libraries(docboy-tests PRIVATE docboy utils testutils extra Catch2::Catch2)
 

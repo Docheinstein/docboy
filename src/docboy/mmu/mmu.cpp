@@ -8,11 +8,13 @@
 #include "utils/arrays.h"
 #include "utils/parcel.h"
 
-static constexpr uint8_t STATE_NO_REQUEST = 0;
-static constexpr uint8_t STATE_REQUEST_EXT_BUS = 1;
-static constexpr uint8_t STATE_REQUEST_CPU_BUS = 2;
-static constexpr uint8_t STATE_REQUEST_VRAM_BUS = 3;
-static constexpr uint8_t STATE_REQUEST_OAM_BUS = 4;
+namespace {
+constexpr uint8_t STATE_NO_REQUEST = 0;
+constexpr uint8_t STATE_REQUEST_EXT_BUS = 1;
+constexpr uint8_t STATE_REQUEST_CPU_BUS = 2;
+constexpr uint8_t STATE_REQUEST_VRAM_BUS = 3;
+constexpr uint8_t STATE_REQUEST_OAM_BUS = 4;
+} // namespace
 
 Mmu::Mmu(IF_BOOTROM(BootRom& bootRom COMMA) ExtBus& extBus, CpuBus& cpuBus, VramBus& vramBus, OamBus& oamBus) :
     IF_BOOTROM(bootRom(bootRom) COMMA) extBus(extBus),

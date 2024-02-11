@@ -3,9 +3,6 @@
 
 #include <cstdint>
 
-static constexpr uint32_t ROM_BANK_SIZE = 16 << 10;
-static constexpr uint32_t RAM_BANK_SIZE = 8 << 10;
-
 class Parcel;
 
 class ICartridge {

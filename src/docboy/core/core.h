@@ -37,9 +37,9 @@ public:
     [[nodiscard]] uint32_t getRamSaveSize() const;
 
     // Save/Load State
-    void saveState(void* data);
+    void saveState(void* data) const;
     void loadState(const void* data);
-    [[nodiscard]] uint32_t getStateSaveSize() const;
+    [[nodiscard]] uint32_t getStateSize() const;
 
     IF_DEBUGGER(void attachDebugger(DebuggerBackend& debugger));
     IF_DEBUGGER(void detachDebugger());
@@ -52,12 +52,12 @@ public:
     IF_DEBUGGER(DebuggerBackend* debugger {});
 
 private:
-    void tick_t0();
-    void tick_t1();
-    void tick_t2();
-    void tick_t3();
+    void tick_t0() const;
+    void tick_t1() const;
+    void tick_t2() const;
+    void tick_t3() const;
 
-    Parcel parcelizeState() const;
+    [[nodiscard]] Parcel parcelizeState() const;
     void unparcelizeState(Parcel&& parcel);
 
     void saveState(Parcel& parcel) const;

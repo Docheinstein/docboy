@@ -3,10 +3,9 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
-static constexpr uint32_t FRAMEBUFFER_NUM_PIXELS = 160 * 144;
-static constexpr uint32_t FRAMEBUFFER_SIZE = sizeof(uint16_t) * FRAMEBUFFER_NUM_PIXELS;
+constexpr uint32_t FRAMEBUFFER_NUM_PIXELS = 160 * 144;
+constexpr uint32_t FRAMEBUFFER_SIZE = sizeof(uint16_t) * FRAMEBUFFER_NUM_PIXELS;
 
 void load_png(const std::string& filename, void* buffer, int format = -1, uint32_t* size = nullptr);
 void save_png(const std::string& filename, void* buffer, int width, int height);

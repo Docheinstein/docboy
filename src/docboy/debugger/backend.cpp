@@ -6,7 +6,9 @@
 #include "utils/std.hpp"
 #include <algorithm>
 
-static constexpr uint32_t MAX_HISTORY_SIZE = 600; // ~10 sec
+namespace {
+constexpr uint32_t MAX_HISTORY_SIZE = 600; // ~10 sec
+}
 
 DebuggerBackend::DebuggerBackend(Core& core) :
     core(core) {
@@ -41,7 +43,7 @@ void DebuggerBackend::onTick(uint64_t tick) {
 
         // Save state and push it to the history
         std::vector<uint8_t> state;
-        state.resize(core.getStateSaveSize());
+        state.resize(core.getStateSize());
         core.saveState(state.data());
 
         history.push_back(std::move(state));

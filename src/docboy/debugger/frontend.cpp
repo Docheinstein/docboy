@@ -22,6 +22,7 @@
 #include <regex>
 #include <utility>
 
+namespace {
 struct FrontendBreakpointCommand {
     uint16_t address {};
 };
@@ -150,7 +151,7 @@ enum TraceFlag : uint32_t {
 };
 
 template <typename T>
-static T parse_hex(const std::string& s, bool* ok) {
+T parse_hex(const std::string& s, bool* ok) {
     const char* cs = s.c_str();
     char* endPtr;
     T result = std::strtol(cs, &endPtr, 16);
@@ -163,7 +164,7 @@ static T parse_hex(const std::string& s, bool* ok) {
     return result;
 }
 
-static std::vector<uint8_t> parse_hex_str(const std::string& s, bool* ok) {
+std::vector<uint8_t> parse_hex_str(const std::string& s, bool* ok) {
     const std::string ss = (s.size() % 2 == 0) ? s : ("0" + s);
     std::vector<uint8_t> result {};
     for (uint32_t i = 0; i < ss.size() && (!ok || (*ok)); i += 2) {
@@ -172,13 +173,13 @@ static std::vector<uint8_t> parse_hex_str(const std::string& s, bool* ok) {
     return result;
 }
 
-static uint16_t address_str_to_addr(const std::string& s, bool* ok) {
+uint16_t address_str_to_addr(const std::string& s, bool* ok) {
     if (std::optional<uint16_t> addr = mnemonic_to_address(s))
         return *addr;
     return parse_hex<uint16_t>(s, ok);
 }
 
-static FrontendCommandInfo
+FrontendCommandInfo
     FRONTEND_COMMANDS[] =
         {
             {std::regex(R"(b\s+(\w+))"), "b <addr>", "Set breakpoint at <addr>",
@@ -410,7 +411,7 @@ static FrontendCommandInfo
              }},
 };
 
-static std::optional<FrontendCommand> parse_cmdline(const std::string& s) {
+std::optional<FrontendCommand> parse_cmdline(const std::string& s) {
     for (const auto& command : FRONTEND_COMMANDS) {
         std::smatch match;
         if (std::regex_match(s, match, command.regex)) {
@@ -422,13 +423,13 @@ static std::optional<FrontendCommand> parse_cmdline(const std::string& s) {
     return std::nullopt;
 }
 
-static volatile sig_atomic_t sigint_trigger = 0;
+volatile sig_atomic_t sigint_trigger = 0;
 
-static void sigint_handler(int signum) {
+void sigint_handler(int signum) {
     sigint_trigger = 1;
 }
 
-static void attach_sigint_handler() {
+void attach_sigint_handler() {
     struct sigaction sa {};
     sa.sa_handler = sigint_handler;
     sigemptyset(&sa.sa_mask);
@@ -436,16 +437,17 @@ static void attach_sigint_handler() {
     sigaction(SIGINT, &sa, nullptr);
 }
 
-static void detach_sigint_handler() {
+void detach_sigint_handler() {
     sigaction(SIGINT, nullptr, nullptr);
 }
 
-static std::string to_string(const DisassembledInstructionReference& instr) {
+std::string to_string(const DisassembledInstructionReference& instr) {
     std::stringstream ss;
     ss << hex(instr.address) << "  :  " << std::left << std::setw(9) << hex(instr.instruction) << "   " << std::left
        << std::setw(23) << instruction_mnemonic(instr.instruction, instr.address);
     return ss.str();
 }
+} // namespace
 
 DebuggerFrontend::DebuggerFrontend(DebuggerBackend& backend) :
     backend(backend),
@@ -1078,14 +1080,21 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         return b;
     };
 
+    const auto makePpuHeader = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << header("PPU", width) << endl;
+        return b;
+    };
+
     // PPU
-    const auto makePpuBlock = [&](uint32_t width) {
+    const auto makePpuBlockPart1 = [&](uint32_t width) {
         auto b {make_block(width)};
 
-        b << header("PPU", width) << endl;
+        b << subheader("general", width) << endl;
 
         b << yellow("On") << "               :  " << gb.ppu.on << endl;
         b << yellow("Cycle") << "            :  " << gb.ppu.cycles << endl;
+        b << yellow("Dots") << "             :  " << gb.ppu.dots << endl;
         b << yellow("Mode") << "             :  " << [this]() -> Text {
             if (gb.ppu.tickSelector == &Ppu::oamScanEven || gb.ppu.tickSelector == &Ppu::oamScanOdd ||
                 gb.ppu.tickSelector == &Ppu::oamScanDone)
@@ -1123,58 +1132,6 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             return "Unknown";
         }() << endl;
 
-        b << yellow("Dots") << "             :  " << gb.ppu.dots << endl;
-        b << yellow("FetcherMode") << "      :  " <<
-            [this]() {
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPrefetcherGetTile0)
-                    return "BG/WIN GetTile0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgPrefetcherGetTile0)
-                    return "BG Prefetcher GetTile0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgPrefetcherGetTile1)
-                    return "BG Prefetcher GetTile1";
-                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherActivating)
-                    return "WIN Prefetcher Activating";
-                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile0)
-                    return "WIN Prefetcher GetTile0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile1)
-                    return "WIN Prefetcher GetTile1";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataLow0)
-                    return "BG PixelSliceFetcher GetTileDataLow0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataLow1)
-                    return "BG PixelSliceFetcher GetTileDataLow1";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataHigh0)
-                    return "BG PixelSliceFetcher GetTileDataHigh0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::winPixelSliceFetcherGetTileDataLow0)
-                    return "WIN PixelSliceFetcher GetTileDataLow0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::winPixelSliceFetcherGetTileDataLow1)
-                    return "WIN PixelSliceFetcher GetTileDataLow1";
-                if (gb.ppu.fetcherTickSelector == &Ppu::winPixelSliceFetcherGetTileDataHigh0)
-                    return "WIN PixelSliceFetcher GetTileDataHigh0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1)
-                    return "BG/WIN PixelSliceFetcher GetTileDataHigh1";
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
-                    return "BG/WIN PixelSliceFetcher Push";
-                if (gb.ppu.fetcherTickSelector == &Ppu::objPrefetcherGetTile0)
-                    return "OBJ Prefetcher GetTile0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::objPrefetcherGetTile1)
-                    return "OBJ Prefetcher GetTile1";
-                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow0)
-                    return "OBJ PixelSliceFetcher GetTileDataLow0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow1)
-                    return "OBJ PixelSliceFetcher GetTileDataLow1";
-                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh0)
-                    return "OBJ PixelSliceFetcher GetTileDataHigh0";
-                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
-                    return "OBJ PixelSliceFetcher GetTileDataHigh1AndMerge";
-
-                checkNoEntry();
-                return "Unknown";
-            }()
-          << endl;
-
-        b << yellow("LX") << "               :  " << gb.ppu.LX << endl;
-        b << yellow("BGP") << "              :  " << gb.ppu.BGP << endl;
-        b << yellow("WX") << "               :  " << gb.ppu.WX << endl;
         b << yellow("Last Stat IRQ") << "    :  " << gb.ppu.lastStatIrq << endl;
 
         // LCD
@@ -1203,6 +1160,118 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }
         }
         b << endl;
+
+        // BG Fifo
+        b << subheader("bg fifo", width) << endl;
+
+        uint8_t bgPixels[8];
+        for (uint8_t i = 0; i < gb.ppu.bgFifo.size(); i++) {
+            bgPixels[i] = gb.ppu.bgFifo[i].colorIndex;
+        }
+        b << yellow("BG Fifo Pixels") << "   :  " << hex(bgPixels, gb.ppu.bgFifo.size()) << endl;
+
+        // OBJ Fifo
+        uint8_t objPixels[8];
+        uint8_t objAttrs[8];
+        uint8_t objNumbers[8];
+        uint8_t objXs[8];
+
+        for (uint8_t i = 0; i < gb.ppu.objFifo.size(); i++) {
+            const Ppu::ObjPixel& p = gb.ppu.objFifo[i];
+            objPixels[i] = p.colorIndex;
+            objAttrs[i] = p.attributes;
+            objNumbers[i] = p.number;
+            objXs[i] = p.x;
+        }
+
+        b << subheader("obj fifo", width) << endl;
+
+        b << yellow("OBJ Fifo Pixels") << "  :  " << hex(objPixels, gb.ppu.objFifo.size()) << endl;
+        b << yellow("OBJ Fifo Number") << "  :  " << hex(objNumbers, gb.ppu.objFifo.size()) << endl;
+        b << yellow("OBJ Fifo Attrs.") << "  :  " << hex(objAttrs, gb.ppu.objFifo.size()) << endl;
+        b << yellow("OBJ Fifo X") << "       :  " << hex(objXs, gb.ppu.objFifo.size()) << endl;
+
+        // Window
+        b << subheader("window", width) << endl;
+        b << yellow("Active for frame") << " :  " << gb.ppu.w.activeForFrame << endl;
+        b << yellow("WLY") << "              :  " << (gb.ppu.w.WLY != UINT8_MAX ? gb.ppu.w.WLY : darkgray("None"))
+          << endl;
+        b << yellow("Active") << "           :  " << gb.ppu.w.active << endl;
+        b << yellow("WX Triggers") << "      :  ";
+        for (uint8_t i = 0; i < gb.ppu.w.lineTriggers.size(); i++) {
+            b << Text {gb.ppu.w.lineTriggers[i]};
+            if (i < gb.ppu.w.lineTriggers.size() - 1)
+                b << " | ";
+        }
+        b << endl;
+
+        // OAM Registers
+        b << subheader("oam registers", width) << endl;
+        b << yellow("OAM A") << "            :  " << hex(gb.ppu.registers.oam.a) << endl;
+        b << yellow("OAM B") << "            :  " << hex(gb.ppu.registers.oam.b) << endl;
+
+        return b;
+    };
+
+    const auto makePpuBlockPart2 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        // Pixel Transfer
+        b << subheader("pixel transfer", width) << endl;
+
+        b << yellow("Fetcher Mode") << "     :  " <<
+            [this]() {
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPrefetcherGetTile0)
+                    return "BG/WIN Tile0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPrefetcherGetTile0)
+                    return "BG Tile0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPrefetcherGetTile1)
+                    return "BG Tile1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherActivating)
+                    return "WIN Activating";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile0)
+                    return "WIN Tile0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPrefetcherGetTile1)
+                    return "WIN Tile1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataLow0)
+                    return "BG Low0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataLow1)
+                    return "BG Low1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgPixelSliceFetcherGetTileDataHigh0)
+                    return "BG High0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPixelSliceFetcherGetTileDataLow0)
+                    return "WIN Low0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPixelSliceFetcherGetTileDataLow1)
+                    return "WIN Low1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::winPixelSliceFetcherGetTileDataHigh0)
+                    return "WIN High0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1)
+                    return "BG/WIN High1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
+                    return "BG/WIN Push";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPrefetcherGetTile0)
+                    return "OBJ Tile0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPrefetcherGetTile1)
+                    return "OBJ Tile1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow0)
+                    return "OBJ Low0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataLow1)
+                    return "OBJ Low1";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh0)
+                    return "OBJ High0";
+                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
+                    return "OBJ High1 & Merge";
+
+                checkNoEntry();
+                return "Unknown";
+            }()
+          << endl;
+
+        b << yellow("LX") << "               :  " << gb.ppu.LX << endl;
+        b << yellow("SCX % 8 Initial") << "  :  " << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
+        b << yellow("SCX % 8 Discard") << "  :  " << gb.ppu.pixelTransfer.initialSCX.discarded << "/"
+          << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
+        b << yellow("LX 0->8 Discard") << "  :  " << (gb.ppu.LX < 8 ? (Text(gb.ppu.LX) + "/8") : "8/8") << endl;
 
         // OAM Scanline entries
         const auto& oamEntries = gb.ppu.scanlineOamEntries;
@@ -1242,54 +1311,6 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }) << endl;
         }
 
-        // OAM Registers
-        b << subheader("oam registers", width) << endl;
-        b << yellow("OAM A") << "            :  " << hex(gb.ppu.registers.oam.a) << endl;
-        b << yellow("OAM B") << "            :  " << hex(gb.ppu.registers.oam.b) << endl;
-
-        // Pixel Transfer
-        b << subheader("pixel transfer", width) << endl;
-        b << yellow("Init SCX % 8") << "     :  " << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
-        b << yellow("SCX Disc. Pixels") << " :  " << gb.ppu.pixelTransfer.initialSCX.discarded << "/"
-          << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
-        b << yellow("Disc. Pixels") << "     :  " << (gb.ppu.LX < 8 ? (Text(gb.ppu.LX) + "/8") : "8/8") << endl;
-
-        // BG Fifo
-        b << subheader("bg fifo", width) << endl;
-
-        uint8_t bgPixels[8];
-        for (uint8_t i = 0; i < gb.ppu.bgFifo.size(); i++) {
-            bgPixels[i] = gb.ppu.bgFifo[i].colorIndex;
-        }
-        b << yellow("BG Fifo Pixels") << "   :  " << hex(bgPixels, gb.ppu.bgFifo.size()) << endl;
-
-        // OBJ Fifo
-        uint8_t objPixels[8];
-        uint8_t objAttrs[8];
-        uint8_t objNumbers[8];
-        uint8_t objXs[8];
-
-        for (uint8_t i = 0; i < gb.ppu.objFifo.size(); i++) {
-            const Ppu::ObjPixel& p = gb.ppu.objFifo[i];
-            objPixels[i] = p.colorIndex;
-            objAttrs[i] = p.attributes;
-            objNumbers[i] = p.number;
-            objXs[i] = p.x;
-        }
-
-        b << subheader("obj fifo", width) << endl;
-
-        b << yellow("OBJ Fifo Pixels") << "  :  " << hex(objPixels, gb.ppu.objFifo.size()) << endl;
-        b << yellow("OBJ Fifo Number") << "  :  " << hex(objNumbers, gb.ppu.objFifo.size()) << endl;
-        b << yellow("OBJ Fifo Attrs.") << "  :  " << hex(objAttrs, gb.ppu.objFifo.size()) << endl;
-        b << yellow("OBJ Fifo X") << "       :  " << hex(objXs, gb.ppu.objFifo.size()) << endl;
-
-        // OBJ Prefetcher
-        b << subheader("obj prefetcher", width) << endl;
-        b << yellow("OAM Number") << "       :  " << gb.ppu.of.entry.number << endl;
-        b << yellow("Tile Number") << "      :  " << gb.ppu.of.tileNumber << endl;
-        b << yellow("OBJ Attributes") << "   :  " << gb.ppu.of.attributes << endl;
-
         // BG/WIN Prefetcher
         b << subheader("bg/win prefetcher", width) << endl;
         b << yellow("LX") << "               :  " << gb.ppu.bwf.LX << endl;
@@ -1301,38 +1322,29 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.vTilemapTileAddr) << endl;
         b << yellow("Cached Fetch") << "     :  "
           << (gb.ppu.bwf.interruptedFetch.hasData ? hex<uint16_t>(gb.ppu.bwf.interruptedFetch.tileDataHigh << 8 |
-                                                                  gb.ppu.bwf.interruptedFetch.tileDataHigh)
+                                                                  gb.ppu.bwf.interruptedFetch.tileDataLow)
                                                   : darkgray("None"))
           << endl;
+
+        // OBJ Prefetcher
+        b << subheader("obj prefetcher", width) << endl;
+        b << yellow("OAM Number") << "       :  " << gb.ppu.of.entry.number << endl;
+        b << yellow("Tile Number") << "      :  " << gb.ppu.of.tileNumber << endl;
+        b << yellow("OBJ Attributes") << "   :  " << gb.ppu.of.attributes << endl;
 
         // Pixel Slice Fetcher
         b << subheader("pixel slice fetcher", width) << endl;
         b << yellow("Tile Data Addr.") << "  :  "
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.psf.vTileDataAddress) << endl;
         b << yellow("Tile Data") << "        :  "
-          << hex<uint16_t>(gb.ppu.psf.tileDataHigh << 8 | gb.ppu.psf.tileDataHigh) << endl;
-        b << yellow("Tile Data Ready") << "  :  " <<
-            [this]() {
-                if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
-                    return green("Ready to push");
-                if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
-                    return green("Ready to merge");
-                return darkgray("Not ready");
-            }()
-          << endl;
-
-        // Window
-        b << subheader("window", width) << endl;
-        b << yellow("Active for frame") << " :  " << gb.ppu.w.activeForFrame << endl;
-        b << yellow("WLY") << "              :  " << (gb.ppu.w.WLY != UINT8_MAX ? gb.ppu.w.WLY : darkgray("None"))
-          << endl;
-        b << yellow("Active") << "           :  " << gb.ppu.w.active << endl;
-        b << yellow("WX Triggers") << "      :  ";
-        for (uint8_t i = 0; i < gb.ppu.w.lineTriggers.size(); i++) {
-            b << Text {gb.ppu.w.lineTriggers[i]};
-            if (i < gb.ppu.w.lineTriggers.size() - 1)
-                b << " | ";
-        }
+          << hex<uint16_t>(gb.ppu.psf.tileDataHigh << 8 | gb.ppu.psf.tileDataLow) << endl;
+        b << yellow("Tile Data Ready") << "  :  " << [this]() {
+            if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
+                return green("Ready to push");
+            if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
+                return green("Ready to merge");
+            return darkgray("Not ready");
+        }();
         b << endl;
 
         return b;
@@ -1768,13 +1780,22 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     c2->addNode(makeSpaceDivider());
     c2->addNode(makeTimersBlock(COLUMN_2_WIDTH));
 
-    static constexpr uint32_t COLUMN_3_WIDTH = 66;
-    auto c3 {make_vertical_layout()};
-    c3->addNode(makeIoBlock(COLUMN_3_WIDTH));
+    static constexpr uint32_t COLUMN_3_PART_1_WIDTH = 48;
+    static constexpr uint32_t COLUMN_3_PART_2_WIDTH = 37;
+    static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_PART_1_WIDTH + COLUMN_3_PART_2_WIDTH + 1;
 
-    static constexpr uint32_t COLUMN_4_WIDTH = 70;
+    auto c3r2 {make_horizontal_layout()};
+    c3r2->addNode(makePpuBlockPart1(COLUMN_3_PART_1_WIDTH));
+    c3r2->addNode(makeSpaceDivider());
+    c3r2->addNode(makePpuBlockPart2(COLUMN_3_PART_2_WIDTH));
+
+    auto c3 {make_vertical_layout()};
+    c3->addNode(makePpuHeader(COLUMN_3_WIDTH));
+    c3->addNode(std::move(c3r2));
+
+    static constexpr uint32_t COLUMN_4_WIDTH = 66;
     auto c4 {make_vertical_layout()};
-    c4->addNode(makePpuBlock(COLUMN_4_WIDTH));
+    c4->addNode(makeIoBlock(COLUMN_4_WIDTH));
 
     static constexpr uint32_t FULL_WIDTH = COLUMN_1_WIDTH + COLUMN_2_WIDTH + COLUMN_3_WIDTH + COLUMN_4_WIDTH;
 

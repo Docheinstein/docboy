@@ -7,9 +7,11 @@
 #include "utils/casts.hpp"
 #include "utils/formatters.hpp"
 
-static constexpr uint8_t STATE_INSTRUCTION_FLAG_NORMAL = 0;
-static constexpr uint8_t STATE_INSTRUCTION_FLAG_CB = 1;
-static constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
+namespace {
+constexpr uint8_t STATE_INSTRUCTION_FLAG_NORMAL = 0;
+constexpr uint8_t STATE_INSTRUCTION_FLAG_CB = 1;
+constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
+} // namespace
 
 Cpu::Cpu(InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu) :
     interrupts(interrupts),

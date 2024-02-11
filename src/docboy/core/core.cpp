@@ -19,35 +19,37 @@
 #define RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN() (void)(0)
 #endif
 
-static constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
+namespace {
+constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
 
 // TODO: deduce SERIAL_TICKS_OFFSET also for bootrom version when sure about bootrom timing
-static constexpr uint64_t SERIAL_PHASE_OFFSET = (SERIAL_PERIOD - 48); // deduced from boot_sclk_align-dmgABCmgb.gb
+constexpr uint64_t SERIAL_PHASE_OFFSET = SERIAL_PERIOD - 48; // deduced from mooneye/boot_sclk_align-dmgABCmgb.gb
 
-static constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
-static uint32_t STATE_SAVE_SIZE = STATE_SAVE_SIZE_UNKNOWN;
+constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
+uint32_t stateSize = STATE_SAVE_SIZE_UNKNOWN;
+} // namespace
 
 Core::Core(GameBoy& gb) :
     gb(gb) {
 }
 
-inline void Core::tick_t0() {
+inline void Core::tick_t0() const {
     gb.cpu.tick_t0();
     gb.ppu.tick();
 }
 
-inline void Core::tick_t1() {
+inline void Core::tick_t1() const {
     gb.cpu.tick_t1();
     gb.ppu.tick();
     gb.dma.tick_t1();
 }
 
-inline void Core::tick_t2() {
+inline void Core::tick_t2() const {
     gb.cpu.tick_t2();
     gb.ppu.tick();
 }
 
-inline void Core::tick_t3() {
+inline void Core::tick_t3() const {
     gb.cpu.tick_t3();
     if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3)
         gb.serialPort.tick();
@@ -122,19 +124,22 @@ void Core::loadRam(const void* data) const {
     memcpy(gb.cartridgeSlot.cartridge->getRamSaveData(), data, getRamSaveSize());
 }
 
-uint32_t Core::getStateSaveSize() const {
-    if (STATE_SAVE_SIZE == STATE_SAVE_SIZE_UNKNOWN)
-        parcelizeState();
-    check(STATE_SAVE_SIZE != STATE_SAVE_SIZE_UNKNOWN);
-    return STATE_SAVE_SIZE;
+uint32_t Core::getStateSize() const {
+    if (stateSize == STATE_SAVE_SIZE_UNKNOWN) {
+        const Parcel p = parcelizeState();
+        stateSize = p.getSize();
+    }
+
+    check(stateSize != STATE_SAVE_SIZE_UNKNOWN);
+    return stateSize;
 }
 
-void Core::saveState(void* data) {
-    memcpy(data, parcelizeState().getData(), getStateSaveSize());
+void Core::saveState(void* data) const {
+    memcpy(data, parcelizeState().getData(), getStateSize());
 }
 
 void Core::loadState(const void* data) {
-    unparcelizeState(Parcel {data, getStateSaveSize()});
+    unparcelizeState(Parcel {data, getStateSize()});
 }
 
 Parcel Core::parcelizeState() const {
@@ -161,8 +166,6 @@ Parcel Core::parcelizeState() const {
     gb.lcd.saveState(p);
     gb.dma.saveState(p);
     gb.mmu.saveState(p);
-
-    STATE_SAVE_SIZE = p.getSize();
 
     return p;
 }

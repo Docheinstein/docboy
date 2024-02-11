@@ -8,14 +8,16 @@
 #include "utils/formatters.hpp"
 #include "utils/io.h"
 
-static constexpr bool Battery = true;
-static constexpr bool NoBattery = false;
+namespace {
+constexpr bool Battery = true;
+constexpr bool NoBattery = false;
 
-static constexpr bool Timer = true;
-static constexpr bool NoTimer = false;
+constexpr bool Timer = true;
+constexpr bool NoTimer = false;
 
-static constexpr uint32_t KB = 1 << 10;
-static constexpr uint32_t MB = 1 << 20;
+constexpr uint32_t KB = 1 << 10;
+constexpr uint32_t MB = 1 << 20;
+} // namespace
 
 std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename) const {
     bool ok;

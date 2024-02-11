@@ -276,7 +276,7 @@ int main(int argc, char* argv[]) {
     };
 
     const auto writeState = [&core](const std::string& path) {
-        std::vector<uint8_t> data(core.getStateSaveSize());
+        std::vector<uint8_t> data(core.getStateSize());
         core.saveState(data.data());
 
         bool ok;
@@ -291,7 +291,7 @@ int main(int argc, char* argv[]) {
         if (!ok)
             return false;
 
-        if (data.size() != core.getStateSaveSize())
+        if (data.size() != core.getStateSize())
             return false;
 
         core.loadState(data.data());
