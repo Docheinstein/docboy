@@ -137,6 +137,7 @@ private:
     void objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo();
 
     // Fetcher states helpers
+    void setupObjPixelSliceFetcherTileDataAddress();
     void setupBgPixelSliceFetcherTilemapTileAddress();
     void setupBgPixelSliceFetcherTileDataAddress();
     void setupWinPixelSliceFetcherTilemapTileAddress();

@@ -1014,27 +1014,6 @@ void Ppu::objPrefetcherGetTile0() {
 void Ppu::objPrefetcherGetTile1() {
     check(isFetchingSprite);
 
-    const bool isDoubleHeight = test_bit<OBJ_SIZE>(video.LCDC);
-    if (isDoubleHeight)
-        // bit 0 of tile number is ignored for 8x16 obj
-        reset_bit<0>(of.tileNumber);
-
-    const uint16_t vTileAddr = TILE_BYTES * of.tileNumber;
-
-    const int32_t objY = of.entry.y - TILE_DOUBLE_HEIGHT;
-    check(video.LY >= objY);
-
-    uint8_t tileY = video.LY - objY;
-    check(tileY < (TILE_HEIGHT << isDoubleHeight));
-
-    if (test_bit<Y_FLIP>(of.attributes)) {
-        // take the opposite row if Y_FLIP flag is set
-        const uint8_t objHeight = TILE_HEIGHT << isDoubleHeight;
-        tileY = objHeight - tileY - 1;
-    }
-
-    psf.vTileDataAddress = vTileAddr + TILE_ROW_BYTES * tileY;
-
     fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataLow0;
 }
 
@@ -1042,7 +1021,7 @@ void Ppu::bgPixelSliceFetcherGetTileDataLow0() {
     check(!isFetchingSprite);
 
     // Note that fetcher determinate the tile data address to read both in
-    // GetTileDataLow and GetTileDataHight just before access it from VRAM.
+    // GetTileDataLow and GetTileDataHigh just before access it from VRAM.
     // Therefore changes to SCY or BG_WIN_TILE_DATA during these phases may
     // have bitplane desync effects
     // (e.g. read the low byte from a tile and the high byte from a different one).
@@ -1064,7 +1043,7 @@ void Ppu::bgPixelSliceFetcherGetTileDataHigh0() {
     check(!isFetchingSprite);
 
     // Note that fetcher determinate the tile data address to read both in
-    // GetTileDataLow and GetTileDataHight just before access it from VRAM.
+    // GetTileDataLow and GetTiledataHigh just before access it from VRAM.
     // Therefore changes to SCY or BG_WIN_TILE_DATA during these phases may
     // have bitplane desync effects
     // (e.g. read the low byte from a tile and the high byte from a different one).
@@ -1086,7 +1065,7 @@ void Ppu::winPixelSliceFetcherGetTileDataLow0() {
     }
 
     // Note that fetcher determinate the tile data address to read both in
-    // GetTileDataLow and GetTileDataHight just before access it from VRAM.
+    // GetTileDataLow and GetTiledataHigh just before access it from VRAM.
     // Therefore changes to (WY or?) BG_WIN_TILE_DATA during these phases may
     // have bitplane desync effects
     // (e.g. read the low byte from a tile and the high byte from a different one).
@@ -1120,7 +1099,7 @@ void Ppu::winPixelSliceFetcherGetTileDataHigh0() {
     }
 
     // Note that fetcher determinate the tile data address to read both in
-    // GetTileDataLow and GetTileDataHight just before access it from VRAM.
+    // GetTileDataLow and GetTiledataHigh just before access it from VRAM.
     // Therefore changes to (WY or?) BG_WIN_TILE_DATA during these phases may
     // have bitplane desync effects
     // (e.g. read the low byte from a tile and the high byte from a different one).
@@ -1229,14 +1208,22 @@ void Ppu::objPixelSliceFetcherGetTileDataLow0() {
     check(isFetchingSprite);
     check(bgFifo.isNotEmpty());
 
-    psf.tileDataLow = vram.read(psf.vTileDataAddress);
-
     fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataLow1;
 }
 
 void Ppu::objPixelSliceFetcherGetTileDataLow1() {
     check(isFetchingSprite);
     check(bgFifo.isNotEmpty());
+
+    // Note that fetcher determinate the tile data address to read both in
+    // GetTileDataLow and GetTileDataHigh just before access it from VRAM.
+    // Therefore changes to OBJ_SIZE during these phases may have bitplane
+    // desync effects.
+    // (e.g. read the low byte from a tile and the high byte from a different one).
+    // [mealybug/m3_lcdc_obj_size_change, mealybug/m3_lcdc_obj_size_change_scx]
+    setupObjPixelSliceFetcherTileDataAddress();
+
+    psf.tileDataLow = vram.read(psf.vTileDataAddress);
 
     fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataHigh0;
 }
@@ -1245,8 +1232,6 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh0() {
     check(isFetchingSprite);
     check(bgFifo.isNotEmpty());
 
-    psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
-
     fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo;
 }
 
@@ -1254,6 +1239,16 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     check(isFetchingSprite);
     check(of.entry.x == LX);
     check(bgFifo.isNotEmpty());
+
+    // Note that fetcher determinate the tile data address to read both in
+    // GetTileDataLow and GetTileDataHigh just before access it from VRAM.
+    // Therefore changes to OBJ_SIZE during these phases may have bitplane
+    // desync effects.
+    // (e.g. read the low byte from a tile and the high byte from a different one).
+    // [mealybug/m3_lcdc_obj_size_change, mealybug/m3_lcdc_obj_size_change_scx]
+    setupObjPixelSliceFetcherTileDataAddress();
+
+    psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
 
     PixelColorIndex objPixelsColors[8];
     const uint8_t(*pixelsMapPtr)[8] =
@@ -1320,6 +1315,27 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     }
 }
 
+inline void Ppu::setupObjPixelSliceFetcherTileDataAddress() {
+    const bool isDoubleHeight = test_bit<OBJ_SIZE>(video.LCDC);
+    const uint8_t heightMask = isDoubleHeight ? 0xF : 0x7;
+
+    const uint8_t objY = of.entry.y - TILE_DOUBLE_HEIGHT;
+
+    // The OBJ tileY is always mapped within the range [0:objHeight).
+    uint8_t tileY = (video.LY - objY) & heightMask;
+
+    if (test_bit<Y_FLIP>(of.attributes))
+        // Take the opposite row within objHeight.
+        tileY ^= heightMask;
+
+    // Last bit is ignored for 8x16 OBJs.
+    const uint8_t tileNumber = (isDoubleHeight ? (of.tileNumber & 0xFE) : of.tileNumber);
+
+    const uint16_t vTileAddr = TILE_BYTES * tileNumber;
+
+    psf.vTileDataAddress = vTileAddr + TILE_ROW_BYTES * tileY;
+}
+
 inline void Ppu::setupBgPixelSliceFetcherTilemapTileAddress() {
     const uint8_t tilemapX = mod<TILEMAP_WIDTH>((bwf.LX + video.SCX) / TILE_WIDTH);
     const uint8_t tilemapY = mod<TILEMAP_HEIGHT>((video.LY + video.SCY) / TILE_HEIGHT);
@@ -1333,10 +1349,8 @@ inline void Ppu::setupBgPixelSliceFetcherTilemapTileAddress() {
 }
 
 inline void Ppu::setupBgPixelSliceFetcherTileDataAddress() {
-    // TODO: is this read here or before at prefetcher?
     const uint8_t tileNumber = vram.read(bwf.vTilemapTileAddr);
 
-    // TODO: is this read here or before at prefetcher?
     const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(video.LCDC)
                                    ?
                                    // unsigned addressing mode with 0x8000 as (global) base address
@@ -1362,10 +1376,8 @@ inline void Ppu::setupWinPixelSliceFetcherTilemapTileAddress() {
 }
 
 inline void Ppu::setupWinPixelSliceFetcherTileDataAddress() {
-    // TODO: is this read here or before at prefetcher?
     const uint8_t tileNumber = vram.read(bwf.vTilemapTileAddr);
 
-    // TODO: is this read here or before at prefetcher?
     const uint16_t vTileAddr = test_bit<BG_WIN_TILE_DATA>(video.LCDC)
                                    ?
                                    // unsigned addressing mode with 0x8000 as (global) base address

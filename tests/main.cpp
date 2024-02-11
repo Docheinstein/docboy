@@ -890,7 +890,6 @@ static bool run_with_params(const RunnerParams& p) {
 
 #define ALL_TEST_ROMS 1
 #define PPU_ONLY_TEST_ROMS 0
-#define MEALYBUG_ONLY_TEST_ROMS 0
 #define WIP_ONLY_TEST_ROMS 0
 
 TEST_CASE("emulation", "[emulation][.]") {
@@ -958,9 +957,8 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"mealybug/m3_lcdc_bg_map_change.gb", "mealybug/m3_lcdc_bg_map_change.png", GREY_PALETTE},
             F {"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png", GREY_PALETTE},
             F {"mealybug/m3_lcdc_obj_en_change_variant.gb", "mealybug/m3_lcdc_obj_en_change_variant.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_obj_size_change.gb", "mealybug/m3_lcdc_obj_size_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_size_change_scx.gb",
-            //                "mealybug/m3_lcdc_obj_size_change_scx.png", GREY_PALETTE},
+            F {"mealybug/m3_lcdc_obj_size_change.gb", "mealybug/m3_lcdc_obj_size_change.png", GREY_PALETTE},
+            F {"mealybug/m3_lcdc_obj_size_change_scx.gb", "mealybug/m3_lcdc_obj_size_change_scx.png", GREY_PALETTE},
             F {"mealybug/m3_lcdc_tile_sel_change.gb", "mealybug/m3_lcdc_tile_sel_change.png", GREY_PALETTE},
             F {"mealybug/m3_lcdc_tile_sel_win_change.gb", "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
             F {"mealybug/m3_lcdc_win_en_change_multiple.gb", "mealybug/m3_lcdc_win_en_change_multiple.png",
@@ -2127,6 +2125,46 @@ TEST_CASE("emulation", "[emulation][.]") {
             F {"docboy/ppu/rendering/window_wx8.gb", "docboy/ppu/window_wx8.png"},
             F {"docboy/ppu/rendering/window_wx9.gb", "docboy/ppu/window_wx9.png"},
 
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_0_round1.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_0_round1.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_0_round2.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_0_round2.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_0b_round1.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_0b_round1.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_0b_round2.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_0b_round2.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_0c_round1.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_0c_round1.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_0c_round2.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_0c_round2.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_1_round1.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_1_round1.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_1_round2.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_1_round2.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_2_round1.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_2_round1.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_2_round2.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_2_round2.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xa.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xa.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xb.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xb.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xc_round1.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xc_round1.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xc_round2.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xc_round2.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xd_round1.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xd_round1.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xd_round2.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xd_round2.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xd_round3.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xd_round3.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xd_round4.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xd_round4.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xe_round1.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xe_round1.png", GREY_PALETTE},
+            F {"docboy/ppu/rendering/mealybug_variations/m3_lcdc_obj_size_change_xe_round2.gb",
+               "docboy/ppu/m3_lcdc_obj_size_change_xe_round2.png", GREY_PALETTE},
             F {"docboy/ppu/rendering/mealybug_variations/m3_scy_change_no_sprites.gb",
                "docboy/ppu/m3_scy_change_no_sprites.png"},
             F {"docboy/ppu/rendering/mealybug_variations/m3_scy_change_1_sprite.gb",
@@ -2560,52 +2598,10 @@ TEST_CASE("emulation", "[emulation][.]") {
 
 #endif
 
-#if MEALYBUG_ONLY_TEST_ROMS
-    SECTION("mealybug") {
-        RUN_TEST_ROMS(
-            F {"mealybug/m2_win_en_toggle.gb", "mealybug/m2_win_en_toggle.png", GREY_PALETTE},
-            F {"mealybug/m3_bgp_change.gb", "mealybug/m3_bgp_change.png", GREY_PALETTE},
-            F {"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png", GREY_PALETTE},
-            F {"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png", GREY_PALETTE},
-            F {"mealybug/m3_lcdc_bg_map_change.gb", "mealybug/m3_lcdc_bg_map_change.png", GREY_PALETTE},
-            F {"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png", GREY_PALETTE},
-            F {"mealybug/m3_lcdc_obj_en_change_variant.gb", "mealybug/m3_lcdc_obj_en_change_variant.png", GREY_PALETTE},
-            // F{"mealybug/m3_lcdc_obj_size_change.gb", "mealybug/m3_lcdc_obj_size_change.png",
-            // GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_size_change_scx.gb",   "mealybug/m3_lcdc_obj_size_change_scx.png",
-            // GREY_PALETTE},
-            F {"mealybug/m3_lcdc_tile_sel_change.gb", "mealybug/m3_lcdc_tile_sel_change.png", GREY_PALETTE},
-            F {"mealybug/m3_lcdc_tile_sel_win_change.gb", "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
-            F {"mealybug/m3_lcdc_win_en_change_multiple.gb", "mealybug/m3_lcdc_win_en_change_multiple.png",
-               GREY_PALETTE},
-            F {"mealybug/m3_lcdc_win_en_change_multiple_wx.gb", "mealybug/m3_lcdc_win_en_change_multiple_wx.png",
-               GREY_PALETTE},
-            F {"mealybug/m3_lcdc_win_map_change.gb", "mealybug/m3_lcdc_win_map_change.png", GREY_PALETTE},
-            F {"mealybug/m3_obp0_change.gb", "mealybug/m3_obp0_change.png", GREY_PALETTE},
-            F {"mealybug/m3_scx_high_5_bits.gb", "mealybug/m3_scx_high_5_bits.png", GREY_PALETTE},
-            F {"mealybug/m3_scx_low_3_bits.gb", "mealybug/m3_scx_low_3_bits.png", GREY_PALETTE},
-            F {"mealybug/m3_scy_change.gb", "mealybug/m3_scy_change.png", GREY_PALETTE},
-            F {"mealybug/m3_window_timing.gb", "mealybug/m3_window_timing.png", GREY_PALETTE},
-            F {"mealybug/m3_window_timing_wx_0.gb", "mealybug/m3_window_timing_wx_0.png", GREY_PALETTE},
-            F {"mealybug/m3_wx_4_change.gb", "mealybug/m3_wx_4_change.png", GREY_PALETTE},
-            F {"mealybug/m3_wx_4_change_sprites.gb", "mealybug/m3_wx_4_change_sprites.png", GREY_PALETTE},
-            F {"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
-            F {"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE}, );
-    }
-#endif
-
 #if WIP_ONLY_TEST_ROMS
     SECTION("wip") {
         RUN_TEST_ROMS(
-            // F {"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png", GREY_PALETTE},
-            // F{"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png", GREY_PALETTE},
-            // F{"mealybug/m3_lcdc_obj_en_change_variant.gb",
-            //                "mealybug/m3_lcdc_obj_en_change_variant.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_obj_size_change.gb", "mealybug/m3_lcdc_obj_size_change.png",
-            //                GREY_PALETTE}, F{"mealybug/m3_lcdc_obj_size_change_scx.gb",
-            //                "mealybug/m3_lcdc_obj_size_change_scx.png", GREY_PALETTE},
-            //                F{"mealybug/m3_lcdc_tile_sel_change.gb", "mealybug/m3_lcdc_tile_sel_change.png",
-            //                GREY_PALETTE},
-            // F{"mealybug/m3_lcdc_tile_sel_win_change.gb", "mealybug/m3_lcdc_tile_sel_win_change.png", GREY_PALETTE},
+
         );
     }
 #endif
