@@ -19,83 +19,79 @@ using namespace Specs::Bits::OAM::Attributes;
 
 using namespace Specs::Ppu::Modes;
 
-static constexpr uint8_t TILE_WIDTH = 8;
-static constexpr uint8_t TILE_HEIGHT = 8;
-static constexpr uint8_t TILE_DOUBLE_HEIGHT = 16;
-static constexpr uint8_t TILE_BYTES = 16;
-static constexpr uint8_t TILE_ROW_BYTES = 2;
+namespace {
+constexpr uint8_t TILE_WIDTH = 8;
+constexpr uint8_t TILE_HEIGHT = 8;
+constexpr uint8_t TILE_DOUBLE_HEIGHT = 16;
+constexpr uint8_t TILE_BYTES = 16;
+constexpr uint8_t TILE_ROW_BYTES = 2;
 
-static constexpr uint8_t TILEMAP_WIDTH = 32;
-static constexpr uint8_t TILEMAP_HEIGHT = 32;
-static constexpr uint8_t TILEMAP_CELL_BYTES = 1;
+constexpr uint8_t TILEMAP_WIDTH = 32;
+constexpr uint8_t TILEMAP_HEIGHT = 32;
+constexpr uint8_t TILEMAP_CELL_BYTES = 1;
 
-static constexpr uint8_t OAM_ENTRY_BYTES = 4;
+constexpr uint8_t OAM_ENTRY_BYTES = 4;
 
-static constexpr uint8_t OBJ_COLOR_INDEX_TRANSPARENT = 0;
+constexpr uint8_t OBJ_COLOR_INDEX_TRANSPARENT = 0;
 
-static constexpr uint8_t NUMBER_OF_COLORS = 4;
-static constexpr uint8_t BITS_PER_PIXEL = 2;
+constexpr uint8_t NUMBER_OF_COLORS = 4;
+constexpr uint8_t BITS_PER_PIXEL = 2;
 
-static inline bool isObjOpaque(const uint8_t colorIndex) {
+constexpr uint8_t DUMMY_PIXEL = 0xFF;
+constexpr uint8_t DUMMY_TILE[8] {DUMMY_PIXEL, DUMMY_PIXEL, DUMMY_PIXEL, DUMMY_PIXEL,
+                                 DUMMY_PIXEL, DUMMY_PIXEL, DUMMY_PIXEL, DUMMY_PIXEL};
+
+inline bool isObjOpaque(const uint8_t colorIndex) {
     return colorIndex != OBJ_COLOR_INDEX_TRANSPARENT;
 }
 
-static inline bool isObjTransparent(const uint8_t colorIndex) {
+inline bool isObjTransparent(const uint8_t colorIndex) {
     return colorIndex == OBJ_COLOR_INDEX_TRANSPARENT;
 }
 
-static inline uint8_t resolveColor(const uint8_t colorIndex, const uint8_t palette) {
+inline uint8_t resolveColor(const uint8_t colorIndex, const uint8_t palette) {
     check(colorIndex < NUMBER_OF_COLORS);
     return keep_bits<BITS_PER_PIXEL>(palette >> (BITS_PER_PIXEL * colorIndex));
 }
+} // namespace
 
-static constexpr uint8_t DUMMY_TILE[8] {};
+const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {&Ppu::oamScanEven,
+                                                 &Ppu::oamScanOdd,
+                                                 &Ppu::oamScanDone,
+                                                 &Ppu::pixelTransferDummy0,
+                                                 &Ppu::pixelTransferDiscard0,
+                                                 &Ppu::pixelTransferDiscard0WX0SCX7,
+                                                 &Ppu::pixelTransfer0,
+                                                 &Ppu::pixelTransfer8,
+                                                 &Ppu::hBlank,
+                                                 &Ppu::hBlank453,
+                                                 &Ppu::hBlank454,
+                                                 &Ppu::hBlankLastLine,
+                                                 &Ppu::hBlankLastLine454,
+                                                 &Ppu::vBlank,
+                                                 &Ppu::vBlankLastLine};
 
-// Some random notes //
-
-/*
- *  Pixel Transfer Window Timing.
- *
- *   WX | SCX |   LX=1   |   LX=8      | Actual SCX discard
- *   -------------------------------------------------------
- *          (no window case)
- *  inf |  0  |   X      |  Y = X + 7  | 0
- *
- *       (window WX=0 window case)
- *    0 |  0  |   X      |  Y + 6      | 0
- *    0 |  1  |   X + 8  |  Y + 8      | 1
- *    0 |  2  |   X + 9  |  Y + 9      | 2
- *    0 |  3  |   X + 10 |  Y + 10     | 3
- *    0 |  4  |   X + 11 |  Y + 11     | 4
- *    0 |  5  |   X + 12 |  Y + 12     | 5
- *    0 |  6  |   X + 13 |  Y + 13     | 6
- *    0 |  7  |   X + 14 |  Y + 14     | 6 (not 7)
- *
- *    Probably X = 84, Y = 91.
- */
-
-/*
- *  Window Abort BG Reprise.
- *
- *  BG Phase           |  BG tilemap X
- *  ----------------------------------
- *  GetTile 0          | +0
- *  GetTile 1          | +0
- *  GetTileDataLow 0   | +0
- *  GetTileDataLow 1   | +0
- *  GetTileDataHigh 0  | +0
- *  GetTileDataHigh 1  | +0
- *  Push               | +1
- */
-
-/*
- *  Window 00 Pixel Glitch.
- *
- *  Given WX1, WX2:
- *
- *  Glitch Same Line   = 1 if (WX2 = WX1 + 8n)        ∃n € N
- *  Glitch Next Lines  = 1 if (WX2 = 7 - SCX + 8n)    ∃n € N
- */
+const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
+    &Ppu::bgwinPrefetcherGetTile0,
+    &Ppu::bgPrefetcherGetTile0,
+    &Ppu::bgPrefetcherGetTile1,
+    &Ppu::bgPixelSliceFetcherGetTileDataLow0,
+    &Ppu::bgPixelSliceFetcherGetTileDataLow1,
+    &Ppu::bgPixelSliceFetcherGetTileDataHigh0,
+    &Ppu::winPrefetcherActivating,
+    &Ppu::winPrefetcherGetTile0,
+    &Ppu::winPrefetcherGetTile1,
+    &Ppu::winPixelSliceFetcherGetTileDataLow0,
+    &Ppu::winPixelSliceFetcherGetTileDataLow1,
+    &Ppu::winPixelSliceFetcherGetTileDataHigh0,
+    &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1,
+    &Ppu::bgwinPixelSliceFetcherPush,
+    &Ppu::objPrefetcherGetTile0,
+    &Ppu::objPrefetcherGetTile1,
+    &Ppu::objPixelSliceFetcherGetTileDataLow0,
+    &Ppu::objPixelSliceFetcherGetTileDataLow1,
+    &Ppu::objPixelSliceFetcherGetTileDataHigh0,
+    &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo};
 
 Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Device::Ppu> vramBus,
          OamBus::View<Device::Ppu> oamBus) :
@@ -184,13 +180,14 @@ void Ppu::turnOff() {
     video.LY = 0;
     lcd.reset();
 
-    // clear oam entries eventually still there
+    // Clear oam entries eventually still there
     for (uint32_t i = 0; i < array_size(oamEntries); i++)
         oamEntries[i].clear();
 
     resetFetcher();
 
     IF_ASSERTS(oamEntriesCount = 0);
+    IF_ASSERTS(oamEntriesNotServedCount = 0);
     IF_DEBUGGER(scanlineOamEntries.clear());
 
     tickSelector = &Ppu::oamScanEven;
@@ -302,25 +299,7 @@ void Ppu::oamScanOdd() {
 
     ++dots;
 
-    // Start of oddities
-    if (dots == 76) {
-        // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
-        // [mooneye: lcdon_write_timing]
-        if (keep_bits<2>(video.STAT) != HBLANK) {
-            oam.release();
-        }
-    } else if (dots == 78) {
-        if (keep_bits<2>(video.STAT) != HBLANK) {
-            // OAM bus is re-acquired this cycle
-            // [mooneye: lcdon_write_timing]
-            oam.acquire();
-
-            // VRAM bus is acquired one cycle before STAT is updated
-            // [mooneye: lcdon_timing]
-            vram.acquire();
-        }
-    }
-    // End of oddities
+    handleOamScanBusesOddities();
 
     if (dots == 80) {
         enterPixelTransfer();
@@ -336,27 +315,9 @@ void Ppu::oamScanDone() {
 
     ++dots;
 
-    // Start of oddities
-    if (dots == 76) {
-        // OAM bus seems to be released (writes to OAM works normally) just for this cycle
-        // [mooneye: lcdon_write_timing]
-        if (keep_bits<2>(video.STAT) != HBLANK) {
-            oam.release();
-        }
-    } else if (dots == 78) {
-        if (keep_bits<2>(video.STAT) != HBLANK) {
-            // OAM bus is re-acquired this cycle
-            // [mooneye: lcdon_write_timing]
-            oam.acquire();
+    handleOamScanBusesOddities();
 
-            // VRAM bus is acquired one cycle before STAT is updated
-            // [mooneye: lcdon_timing]
-            vram.acquire();
-        }
-    }
-    // End of oddities
-
-    else if (dots == 80) {
+    if (dots == 80) {
         enterPixelTransfer();
     }
 }
@@ -382,18 +343,14 @@ void Ppu::pixelTransferDummy0() {
         if (pixelTransfer.initialSCX.toDiscard) {
             pixelTransfer.initialSCX.discarded = 0;
 
+            // When SCX % 8 is > 0, window can be activated immediately before BG.
             checkWindowActivation();
 
-            // TODO: handle pixelTransferDiscard0WX0SCX7 as a pixelTransferDiscard0 with SCX 6?
-            if (w.active) {
-                // When WX=0 and SCX=7, the pixel transfer timing seems to be
-                // expected one with SCX=7, but the initial shifting applied
-                // to the window is 6, not 7.
-                tickSelector = video.SCX == 7 ? &Ppu::pixelTransferDiscard0WX0SCX7 : &Ppu::pixelTransferDiscard0;
-            } else {
-                // Standard case
-                tickSelector = &Ppu::pixelTransferDiscard0;
-            }
+            // When WX=0 and SCX=7, the pixel transfer timing seems to be
+            // expected one with SCX=7, but the initial shifting applied
+            // to the window is 6, not 7.
+            tickSelector = w.active && pixelTransfer.initialSCX.toDiscard == 7 ? &Ppu::pixelTransferDiscard0WX0SCX7
+                                                                               : &Ppu::pixelTransferDiscard0;
         } else {
             tickSelector = &Ppu::pixelTransfer0;
         }
@@ -407,14 +364,13 @@ void Ppu::pixelTransferDiscard0() {
     check(oam.isAcquiredByMe());
     check(vram.isAcquiredByMe());
 
-    // the first SCX % 8 of a background tile are simply discarded
-    // note that LX is not incremented in this case:
-    // this let the obj align with the bg
+    // The first SCX % 8 of a background/window tile are simply discarded.
+    // Note that LX is not incremented in this case: this let the OBJ align with the BG.
     if (isBgFifoReadyToBePopped()) {
         bgFifo.popFront();
 
         if (++pixelTransfer.initialSCX.discarded == pixelTransfer.initialSCX.toDiscard)
-            // all the SCX % 8 pixels have been discard
+            // All the SCX % 8 pixels have been discard
             tickSelector = &Ppu::pixelTransfer0;
     }
 
@@ -424,28 +380,19 @@ void Ppu::pixelTransferDiscard0() {
 }
 
 void Ppu::pixelTransferDiscard0WX0SCX7() {
-    check(LX == 0);
     check(pixelTransfer.initialSCX.toDiscard == 7);
-    check(pixelTransfer.initialSCX.discarded < pixelTransfer.initialSCX.toDiscard);
     check(w.active);
-    check(oam.isAcquiredByMe());
-    check(vram.isAcquiredByMe());
 
-    if (isBgFifoReadyToBePopped()) {
+    pixelTransferDiscard0();
+
+    if (pixelTransfer.initialSCX.discarded == 1) {
         // When WX=0 and SCX=7, the pixel transfer timing seems to be
         // expected one with SCX=7, but the initial shifting applied
-        // to the window is 6, not 7.
-        // Therefore we skip a pop of the bg fifo for the last shift.
-        if (++pixelTransfer.initialSCX.discarded == pixelTransfer.initialSCX.toDiscard)
-            // all the SCX % 8 pixels have been discard
-            tickSelector = &Ppu::pixelTransfer0;
-        else
-            bgFifo.popFront();
+        // to the window is 6, not 7, therefore we just push a dummy pixel once
+        // to fix this and proceed with the standard pixelTransferDiscard0 state.
+        bgFifo.pushBack({DUMMY_PIXEL});
+        tickSelector = &Ppu::pixelTransferDiscard0;
     }
-
-    tickFetcher();
-
-    ++dots;
 }
 
 void Ppu::pixelTransfer0() {
@@ -457,7 +404,7 @@ void Ppu::pixelTransfer0() {
 
     bool incLX = false;
 
-    // for LX € [0, 8) just pop the pixels but do not push them to LCD
+    // For LX € [0, 8) just pop the pixels but do not push them to LCD
     if (isBgFifoReadyToBePopped()) {
         bgFifo.popFront();
 
@@ -487,13 +434,13 @@ void Ppu::pixelTransfer8() {
 
     bool incLX = false;
 
-    // push a new pixel to the lcd if if the bg fifo contains
+    // Push a new pixel to the LCD if if the BG fifo contains
     // some pixels and it's not blocked by a sprite fetch
     if (isBgFifoReadyToBePopped()) {
         static constexpr uint8_t NO_COLOR = 4;
         uint8_t color {NO_COLOR};
 
-        // pop out a pixel from BG fifo
+        // Pop out a pixel from BG fifo
         const BgPixel bgPixel = bgFifo.popFront();
 
         // It seems that there is a 1 T-cycle delay between the real LCDC
@@ -526,7 +473,7 @@ void Ppu::pixelTransfer8() {
 
         check(color < NUMBER_OF_COLORS);
 
-        lcd.pushPixel(static_cast<Lcd::Pixel>(color));
+        lcd.pushPixel(color);
 
         incLX = true;
 
@@ -647,6 +594,7 @@ void Ppu::enterOamScan() {
         }
     });
     IF_ASSERTS(oamEntriesCount = 0);
+    IF_ASSERTS(oamEntriesNotServedCount = 0);
     IF_DEBUGGER(scanlineOamEntries.clear());
 
     IF_DEBUGGER(timings.hBlank = 456 - (timings.oamScan + timings.pixelTransfer));
@@ -692,7 +640,6 @@ void Ppu::enterHBlank() {
     check(LX == 168);
     check(video.LY < 144);
 
-#if 0
     // clang-format off
     checkCode({
         // Pixel Transfer Timing.
@@ -739,21 +686,22 @@ void Ppu::enterHBlank() {
         }
         LB += windowTriggeredAtWx0 && pixelTransfer.initialSCX.toDiscard > 0;
 
+        const uint8_t oamEntriesServedCount = oamEntriesCount - oamEntriesNotServedCount;
+
         // 7) Sprite fetch
-        LB += 6 * oamEntriesCount;
+        LB += 6 * oamEntriesServedCount /* use served count for LB */;
 
         uint16_t UB = LB;
 
         // A precise Upper Bound is difficult to predict due to sprite timing,
         // I'll let test roms verify this precisely.
         // 7) Sprite fetch
-        UB += (11 - 6 /* already considered in LB */) * oamEntriesCount;
+        UB += (11 - 6 /* already considered in LB */) * oamEntriesCount /* use total count for UB */;
 
         check(dots >= LB);
         check(dots <= UB);
     });
     // clang-format on
-#endif
 
     IF_DEBUGGER(timings.pixelTransfer = dots - timings.oamScan);
 
@@ -818,7 +766,8 @@ inline void Ppu::updateMode() {
 
 inline void Ppu::increaseLX() {
     check(oamEntriesCount >= oamEntries[LX].size());
-    IF_ASSERTS(oamEntriesCount -= oamEntries[LX].size()); // update with the real served oam entries count.
+    IF_ASSERTS(oamEntriesNotServedCount += oamEntries[LX].size()); // update with the real served oam entries count.
+    check(oamEntriesNotServedCount <= oamEntriesCount);
 
     // Clear oam entries of current LX (it might contain OBJs not served).
     oamEntries[LX].clear();
@@ -880,6 +829,26 @@ inline void Ppu::setupFetcherForWindow() {
     fetcherTickSelector = &Ppu::winPrefetcherActivating;
 }
 
+inline void Ppu::handleOamScanBusesOddities() {
+    if (dots == 76) {
+        // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
+        // [mooneye: lcdon_write_timing]
+        if (keep_bits<2>(video.STAT) != HBLANK) {
+            oam.release();
+        }
+    } else if (dots == 78) {
+        if (keep_bits<2>(video.STAT) != HBLANK) {
+            // OAM bus is re-acquired this cycle
+            // [mooneye: lcdon_write_timing]
+            oam.acquire();
+
+            // VRAM bus is acquired one cycle before STAT is updated
+            // [mooneye: lcdon_timing]
+            vram.acquire();
+        }
+    }
+}
+
 template <uint8_t Mode>
 void Ppu::readOamRegisters(uint16_t oamAddress) {
     static_assert(Mode == OAM_SCAN || Mode == PIXEL_TRANSFER);
@@ -904,6 +873,8 @@ void Ppu::readOamRegisters(uint16_t oamAddress) {
 }
 
 // -------- Fetcher states ---------
+
+// ----------- bg / win ------------
 
 void Ppu::bgwinPrefetcherGetTile0() {
     check(!isFetchingSprite);
@@ -941,6 +912,90 @@ void Ppu::bgPrefetcherGetTile1() {
     check(!isFetchingSprite);
     fetcherTickSelector = &Ppu::bgPixelSliceFetcherGetTileDataLow0;
 }
+
+void Ppu::bgPixelSliceFetcherGetTileDataLow0() {
+    check(!isFetchingSprite);
+
+    // Note that fetcher determinate the tile data address to read both in
+    // GetTileDataLow and GetTileDataHigh just before access it from VRAM.
+    // Therefore changes to SCY or BG_WIN_TILE_DATA during these phases may
+    // have bitplane desync effects
+    // (e.g. read the low byte from a tile and the high byte from a different one).
+    // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
+    setupBgPixelSliceFetcherTileDataAddress();
+
+    psf.tileDataLow = vram.read(psf.vTileDataAddress);
+
+    fetcherTickSelector = &Ppu::bgPixelSliceFetcherGetTileDataLow1;
+}
+
+void Ppu::bgPixelSliceFetcherGetTileDataLow1() {
+    check(!isFetchingSprite);
+
+    fetcherTickSelector = &Ppu::bgPixelSliceFetcherGetTileDataHigh0;
+}
+
+void Ppu::bgPixelSliceFetcherGetTileDataHigh0() {
+    check(!isFetchingSprite);
+
+    // Note that fetcher determinate the tile data address to read both in
+    // GetTileDataLow and GetTiledataHigh just before access it from VRAM.
+    // Therefore changes to SCY or BG_WIN_TILE_DATA during these phases may
+    // have bitplane desync effects
+    // (e.g. read the low byte from a tile and the high byte from a different one).
+    // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
+    setupBgPixelSliceFetcherTileDataAddress();
+
+    psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
+
+    fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1;
+}
+
+// Some random notes about window //
+
+/*
+ *  Pixel Transfer Window Timing.
+ *
+ *   WX | SCX |   LX=1   |   LX=8      | Actual SCX discard
+ *   -------------------------------------------------------
+ *          (no window case)
+ *  inf |  0  |   X      |  Y = X + 7  | 0
+ *
+ *       (window WX=0 window case)
+ *    0 |  0  |   X      |  Y + 6      | 0
+ *    0 |  1  |   X + 8  |  Y + 8      | 1
+ *    0 |  2  |   X + 9  |  Y + 9      | 2
+ *    0 |  3  |   X + 10 |  Y + 10     | 3
+ *    0 |  4  |   X + 11 |  Y + 11     | 4
+ *    0 |  5  |   X + 12 |  Y + 12     | 5
+ *    0 |  6  |   X + 13 |  Y + 13     | 6
+ *    0 |  7  |   X + 14 |  Y + 14     | 6 (not 7)
+ *
+ *    Probably X = 84, Y = 91.
+ */
+
+/*
+ *  Window Abort BG Reprise.
+ *
+ *  BG Phase           |  BG tilemap X
+ *  ----------------------------------
+ *  GetTile 0          | +0
+ *  GetTile 1          | +0
+ *  GetTileDataLow 0   | +0
+ *  GetTileDataLow 1   | +0
+ *  GetTileDataHigh 0  | +0
+ *  GetTileDataHigh 1  | +0
+ *  Push               | +1
+ */
+
+/*
+ *  Window 00 Pixel Glitch.
+ *
+ *  Given WX1, WX2:
+ *
+ *  Glitch Same Line   = 1 if (WX2 = WX1 + 8n)        ∃n € N
+ *  Glitch Next Lines  = 1 if (WX2 = 7 - SCX + 8n)    ∃n € N
+ */
 
 void Ppu::winPrefetcherActivating() {
     check(!isFetchingSprite);
@@ -998,61 +1053,6 @@ void Ppu::winPrefetcherGetTile1() {
     }
 
     fetcherTickSelector = &Ppu::winPixelSliceFetcherGetTileDataLow0;
-}
-
-void Ppu::objPrefetcherGetTile0() {
-    check(isFetchingSprite);
-
-    // Read two bytes from OAM (Tile Number and Attributes)
-    readOamRegisters<PIXEL_TRANSFER>(OAM_ENTRY_BYTES * of.entry.number + Specs::Bytes::OAM::TILE_NUMBER);
-    of.tileNumber = registers.oam.a;
-    of.attributes = registers.oam.b;
-
-    fetcherTickSelector = &Ppu::objPrefetcherGetTile1;
-}
-
-void Ppu::objPrefetcherGetTile1() {
-    check(isFetchingSprite);
-
-    fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataLow0;
-}
-
-void Ppu::bgPixelSliceFetcherGetTileDataLow0() {
-    check(!isFetchingSprite);
-
-    // Note that fetcher determinate the tile data address to read both in
-    // GetTileDataLow and GetTileDataHigh just before access it from VRAM.
-    // Therefore changes to SCY or BG_WIN_TILE_DATA during these phases may
-    // have bitplane desync effects
-    // (e.g. read the low byte from a tile and the high byte from a different one).
-    // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
-    setupBgPixelSliceFetcherTileDataAddress();
-
-    psf.tileDataLow = vram.read(psf.vTileDataAddress);
-
-    fetcherTickSelector = &Ppu::bgPixelSliceFetcherGetTileDataLow1;
-}
-
-void Ppu::bgPixelSliceFetcherGetTileDataLow1() {
-    check(!isFetchingSprite);
-
-    fetcherTickSelector = &Ppu::bgPixelSliceFetcherGetTileDataHigh0;
-}
-
-void Ppu::bgPixelSliceFetcherGetTileDataHigh0() {
-    check(!isFetchingSprite);
-
-    // Note that fetcher determinate the tile data address to read both in
-    // GetTileDataLow and GetTiledataHigh just before access it from VRAM.
-    // Therefore changes to SCY or BG_WIN_TILE_DATA during these phases may
-    // have bitplane desync effects
-    // (e.g. read the low byte from a tile and the high byte from a different one).
-    // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
-    setupBgPixelSliceFetcherTileDataAddress();
-
-    psf.tileDataHigh = vram.read(psf.vTileDataAddress + 1);
-
-    fetcherTickSelector = &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1;
 }
 
 void Ppu::winPixelSliceFetcherGetTileDataLow0() {
@@ -1120,11 +1120,11 @@ void Ppu::bgwinPixelSliceFetcherGetTileDataHigh1() {
     // fetcher reaches the push stage (or a sprite aborts it)
     bwf.LX += TILE_WIDTH; // automatically handle mod 8 by overflowing
 
-    // if there is a pending obj hit (and the bg fifo is not empty),
+    // If there is a pending obj hit (and the bg fifo is not empty),
     // discard the fetched bg pixels and restart the obj prefetcher with the obj hit
     // note: the first obj prefetcher tick should overlap this tick, not the push one
     if (isObjReadyToBeFetched() && bgFifo.isNotEmpty()) {
-        // the bg/win tile fetched is not thrown away: instead it is
+        // The bg/win tile fetched is not thrown away: instead it is
         // cached so that the fetcher can start with it after the sprite
         // has been merged into obj fifo
         cacheBgWinFetch();
@@ -1164,7 +1164,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
      *        1         |           1              | push to bg fifo and start obj prefetcher (tick now)
      */
 
-    // the pixels can be pushed only if the bg fifo is empty,
+    // The pixels can be pushed only if the bg fifo is empty,
     // otherwise wait in push state until bg fifo is emptied
     const bool canPushToBgFifo = bgFifo.isEmpty();
     if (canPushToBgFifo) {
@@ -1177,7 +1177,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
             return;
         }
 
-        // push pixels into bg fifo
+        // Push pixels into bg fifo
         bgFifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[psf.tileDataHigh << 8 | psf.tileDataLow]);
 
         fetcherTickSelector = &Ppu::bgwinPrefetcherGetTile0;
@@ -1187,14 +1187,14 @@ void Ppu::bgwinPixelSliceFetcherPush() {
             return;
     }
 
-    // if there is a pending obj hit, discard the fetched bg pixels
-    // and restart the obj prefetcher with the obj hit
-    // note: the first obj prefetcher tick overlap this tick
+    // If there is a pending obj hit, discard the fetched bg pixels
+    // and restart the obj prefetcher with the obj hit.
+    // Note: the first obj prefetcher tick overlap this tick.
     if (isObjReadyToBeFetched()) {
         if (!canPushToBgFifo) {
-            // the bg/win tile fetched is not thrown away: instead it is
+            // The bg/win tile fetched is not thrown away: instead it is
             // cached so that the fetcher can start with it after the sprite
-            // has been merged into obj fifo
+            // has been merged into obj fifo.
             cacheBgWinFetch();
         }
 
@@ -1202,6 +1202,25 @@ void Ppu::bgwinPixelSliceFetcherPush() {
         of.entry = oamEntries[LX].popBack();
         objPrefetcherGetTile0();
     }
+}
+
+// ------------- obj ---------------
+
+void Ppu::objPrefetcherGetTile0() {
+    check(isFetchingSprite);
+
+    // Read two bytes from OAM (Tile Number and Attributes)
+    readOamRegisters<PIXEL_TRANSFER>(OAM_ENTRY_BYTES * of.entry.number + Specs::Bytes::OAM::TILE_NUMBER);
+    of.tileNumber = registers.oam.a;
+    of.attributes = registers.oam.b;
+
+    fetcherTickSelector = &Ppu::objPrefetcherGetTile1;
+}
+
+void Ppu::objPrefetcherGetTile1() {
+    check(isFetchingSprite);
+
+    fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataLow0;
 }
 
 void Ppu::objPixelSliceFetcherGetTileDataLow0() {
@@ -1261,7 +1280,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
             .colorIndex = objPixelsColors[i], .attributes = of.attributes, .number = of.entry.number, .x = LX};
     }
 
-    // handle sprite-to-sprite conflicts by merging the new obj pixels with
+    // Handle sprite-to-sprite conflicts by merging the new obj pixels with
     // the pixels already in the obj fifo
     // "The smaller the X coordinate, the higher the priority."
     // "When X coordinates are identical, the object located first in OAM has higher priority."
@@ -1269,7 +1288,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     const uint8_t objFifoSize = objFifo.size();
     uint8_t i = 0;
 
-    // handle conflict between the new and the old obj pixels
+    // Handle conflict between the new and the old obj pixels
     while (i < objFifoSize) {
         const ObjPixel& fifoObjPixel = objFifo[i];
         const ObjPixel& objPixel = objPixels[i];
@@ -1289,7 +1308,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
         ++i;
     }
 
-    // push the remaining obj pixels
+    // Push the remaining obj pixels
     while (i < 8) {
         objFifo.pushBack(objPixels[i++]);
     }
@@ -1297,12 +1316,12 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     check(objFifo.isFull());
 
     if (isObjReadyToBeFetched()) {
-        // still oam entries hit to be served for this x: setup the fetcher
+        // Still oam entries hit to be served for this x: setup the fetcher
         // for another obj fetch
         of.entry = oamEntries[LX].popBack();
         fetcherTickSelector = &Ppu::objPrefetcherGetTile0;
     } else {
-        // no more oam entries to serve for this x: setup to fetcher with
+        // No more oam entries to serve for this x: setup to fetcher with
         // the cached tile data that has been interrupted by this obj fetch
         isFetchingSprite = false;
 
@@ -1314,6 +1333,8 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
         }
     }
 }
+
+// ------- Fetcher states helpers ---------
 
 inline void Ppu::setupObjPixelSliceFetcherTileDataAddress() {
     const bool isDoubleHeight = test_bit<OBJ_SIZE>(video.LCDC);
@@ -1405,45 +1426,6 @@ inline void Ppu::restoreBgWinFetch() {
 }
 
 void Ppu::saveState(Parcel& parcel) const {
-    static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScanEven,
-                                                    &Ppu::oamScanOdd,
-                                                    &Ppu::oamScanDone,
-                                                    &Ppu::pixelTransferDummy0,
-                                                    &Ppu::pixelTransferDiscard0,
-                                                    &Ppu::pixelTransferDiscard0WX0SCX7,
-                                                    &Ppu::pixelTransfer0,
-                                                    &Ppu::pixelTransfer8,
-                                                    &Ppu::hBlank,
-                                                    &Ppu::hBlank453,
-                                                    &Ppu::hBlank454,
-                                                    &Ppu::hBlankLastLine,
-                                                    &Ppu::hBlankLastLine454,
-                                                    &Ppu::vBlank,
-                                                    &Ppu::vBlankLastLine,
-                                                    &Ppu::vBlankLastLine454};
-
-    static constexpr TickSelector FETCHER_TICK_SELECTORS[] {
-        &Ppu::bgwinPrefetcherGetTile0,
-        &Ppu::bgPrefetcherGetTile0,
-        &Ppu::bgPrefetcherGetTile1,
-        &Ppu::winPrefetcherActivating,
-        &Ppu::winPrefetcherGetTile0,
-        &Ppu::winPrefetcherGetTile1,
-        &Ppu::objPrefetcherGetTile0,
-        &Ppu::objPrefetcherGetTile1,
-        &Ppu::bgPixelSliceFetcherGetTileDataLow0,
-        &Ppu::bgPixelSliceFetcherGetTileDataLow1,
-        &Ppu::bgPixelSliceFetcherGetTileDataHigh0,
-        &Ppu::winPixelSliceFetcherGetTileDataLow0,
-        &Ppu::winPixelSliceFetcherGetTileDataLow1,
-        &Ppu::winPixelSliceFetcherGetTileDataHigh0,
-        &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1,
-        &Ppu::bgwinPixelSliceFetcherPush,
-        &Ppu::objPixelSliceFetcherGetTileDataLow0,
-        &Ppu::objPixelSliceFetcherGetTileDataLow1,
-        &Ppu::objPixelSliceFetcherGetTileDataHigh0,
-        &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo};
-
     {
         uint8_t i = 0;
 
@@ -1476,6 +1458,7 @@ void Ppu::saveState(Parcel& parcel) const {
 
     parcel.writeBytes(oamEntries, sizeof(oamEntries));
     IF_ASSERTS(parcel.writeUInt8(oamEntriesCount));
+    IF_ASSERTS(parcel.writeUInt8(oamEntriesNotServedCount));
 
     parcel.writeBool(isFetchingSprite);
 
@@ -1489,6 +1472,7 @@ void Ppu::saveState(Parcel& parcel) const {
 
     parcel.writeUInt8(w.WLY);
     parcel.writeBool(w.active);
+    parcel.writeBool(w.justActivated);
 
 #ifdef ASSERTS_OR_DEBUGGER_ENABLED
     parcel.writeUInt8(w.lineTriggers.size());
@@ -1521,44 +1505,6 @@ void Ppu::saveState(Parcel& parcel) const {
 }
 
 void Ppu::loadState(Parcel& parcel) {
-    static constexpr TickSelector TICK_SELECTORS[] {&Ppu::oamScanEven,
-                                                    &Ppu::oamScanOdd,
-                                                    &Ppu::oamScanDone,
-                                                    &Ppu::pixelTransferDummy0,
-                                                    &Ppu::pixelTransferDiscard0,
-                                                    &Ppu::pixelTransferDiscard0WX0SCX7,
-                                                    &Ppu::pixelTransfer0,
-                                                    &Ppu::pixelTransfer8,
-                                                    &Ppu::hBlank,
-                                                    &Ppu::hBlank453,
-                                                    &Ppu::hBlank454,
-                                                    &Ppu::hBlankLastLine,
-                                                    &Ppu::hBlankLastLine454,
-                                                    &Ppu::vBlank,
-                                                    &Ppu::vBlankLastLine};
-
-    static constexpr TickSelector FETCHER_TICK_SELECTORS[] {
-        &Ppu::bgwinPrefetcherGetTile0,
-        &Ppu::bgPrefetcherGetTile0,
-        &Ppu::bgPrefetcherGetTile1,
-        &Ppu::winPrefetcherActivating,
-        &Ppu::winPrefetcherGetTile0,
-        &Ppu::winPrefetcherGetTile1,
-        &Ppu::objPrefetcherGetTile0,
-        &Ppu::objPrefetcherGetTile1,
-        &Ppu::bgPixelSliceFetcherGetTileDataLow0,
-        &Ppu::bgPixelSliceFetcherGetTileDataLow1,
-        &Ppu::bgPixelSliceFetcherGetTileDataHigh0,
-        &Ppu::winPixelSliceFetcherGetTileDataLow0,
-        &Ppu::winPixelSliceFetcherGetTileDataLow1,
-        &Ppu::winPixelSliceFetcherGetTileDataHigh0,
-        &Ppu::bgwinPixelSliceFetcherGetTileDataHigh1,
-        &Ppu::bgwinPixelSliceFetcherPush,
-        &Ppu::objPixelSliceFetcherGetTileDataLow0,
-        &Ppu::objPixelSliceFetcherGetTileDataLow1,
-        &Ppu::objPixelSliceFetcherGetTileDataHigh0,
-        &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo};
-
     const uint8_t tickSelectorNumber = parcel.readUInt8();
     check(tickSelectorNumber < array_size(TICK_SELECTORS));
     tickSelector = TICK_SELECTORS[tickSelectorNumber];
@@ -1584,6 +1530,7 @@ void Ppu::loadState(Parcel& parcel) {
 
     parcel.readBytes(oamEntries, sizeof(oamEntries));
     IF_ASSERTS(oamEntriesCount = parcel.readUInt8());
+    IF_ASSERTS(oamEntriesNotServedCount = parcel.readUInt8());
 
     isFetchingSprite = parcel.readBool();
 
@@ -1597,6 +1544,7 @@ void Ppu::loadState(Parcel& parcel) {
 
     w.WLY = parcel.readUInt8();
     w.active = parcel.readBool();
+    w.justActivated = parcel.readBool();
 
 #ifdef ASSERTS_OR_DEBUGGER_ENABLED
     uint8_t lineTriggers = parcel.readUInt8();

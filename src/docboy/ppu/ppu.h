@@ -104,6 +104,8 @@ private:
     void checkWindowActivation();
     void setupFetcherForWindow();
 
+    void handleOamScanBusesOddities();
+
     template <uint8_t Mode>
     void readOamRegisters(uint16_t oamAddress);
 
@@ -112,18 +114,13 @@ private:
 
     void bgPrefetcherGetTile0();
     void bgPrefetcherGetTile1();
-
-    void winPrefetcherActivating();
-    void winPrefetcherGetTile0();
-    void winPrefetcherGetTile1();
-
-    void objPrefetcherGetTile0();
-    void objPrefetcherGetTile1();
-
     void bgPixelSliceFetcherGetTileDataLow0();
     void bgPixelSliceFetcherGetTileDataLow1();
     void bgPixelSliceFetcherGetTileDataHigh0();
 
+    void winPrefetcherActivating();
+    void winPrefetcherGetTile0();
+    void winPrefetcherGetTile1();
     void winPixelSliceFetcherGetTileDataLow0();
     void winPixelSliceFetcherGetTileDataLow1();
     void winPixelSliceFetcherGetTileDataHigh0();
@@ -131,6 +128,8 @@ private:
     void bgwinPixelSliceFetcherGetTileDataHigh1();
     void bgwinPixelSliceFetcherPush();
 
+    void objPrefetcherGetTile0();
+    void objPrefetcherGetTile1();
     void objPixelSliceFetcherGetTileDataLow0();
     void objPixelSliceFetcherGetTileDataLow1();
     void objPixelSliceFetcherGetTileDataHigh0();
@@ -145,6 +144,9 @@ private:
 
     void cacheBgWinFetch();
     void restoreBgWinFetch();
+
+    static const TickSelector TICK_SELECTORS[];
+    static const FetcherTickSelector FETCHER_TICK_SELECTORS[];
 
     Lcd& lcd;
     VideoIO& video;
@@ -162,15 +164,16 @@ private:
     uint16_t dots {IF_BOOTROM_ELSE(0, 395)}; // [0, 456)
     uint8_t LX {};                           // LX=X+8, therefore [0, 168)
 
-    uint8_t BGP {IF_BOOTROM_ELSE(0, 0xFC)}; // video.BGP delayed by 1 t-cycle (~)
-    uint8_t WX {};                          // video.WX delayed by 1 t-cycle
-    uint8_t lastLCDC {};                    // video.LCDC delayed by 1 t-cycle
+    uint8_t BGP {IF_BOOTROM_ELSE(0, 0xFC)};         // video.BGP delayed by 1 t-cycle
+    uint8_t WX {};                                  // video.WX delayed by 1 t-cycle
+    uint8_t lastLCDC {IF_BOOTROM_ELSE(0x80, 0x85)}; // video.LCDC delayed by 1 t-cycle
 
     FillQueue<BgPixel, 8> bgFifo {};
     Queue<ObjPixel, 8> objFifo {};
 
     Vector<OamScanEntry, 10> oamEntries[168] {};
     IF_ASSERTS(uint8_t oamEntriesCount {});
+    IF_ASSERTS(uint8_t oamEntriesNotServedCount {});
 #ifdef ENABLE_DEBUGGER
     Vector<OamScanEntry, 10> scanlineOamEntries {}; // not cleared after oam scan
 #endif
@@ -207,7 +210,7 @@ private:
 
     // Window
     struct {
-        bool activeForFrame {};
+        bool activeForFrame {};  // window activated for the frame
         uint8_t WLY {UINT8_MAX}; // window line counter
 
         bool active {};        // currently rendering window
