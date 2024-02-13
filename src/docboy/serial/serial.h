@@ -2,16 +2,13 @@
 #define SERIAL_H
 
 #include "docboy/memory/byte.hpp"
-#include "utils/parcel.h"
-
-#ifdef ENABLE_DEBUGGER
 #include "docboy/shared/specs.h"
-#endif
+#include "utils/parcel.h"
 
 class SerialIO {
 public:
-    BYTE(SB, Specs::Registers::Serial::SB);
-    BYTE(SC, Specs::Registers::Serial::SC, 0b01111110);
+    byte SB {make_byte(Specs::Registers::Serial::SB)};
+    byte SC {make_byte(Specs::Registers::Serial::SC, 0b01111110)};
 
     void saveState(Parcel& parcel) const {
         parcel.writeUInt8(SB);

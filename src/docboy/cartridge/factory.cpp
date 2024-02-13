@@ -26,7 +26,7 @@ std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename
     if (!ok)
         fatal("failed to read file");
 
-    if (data.size() < Specs::Cartridge::Header::MemoryLayout::START)
+    if (data.size() < Specs::Cartridge::Header::MemoryLayout::SIZE)
         fatal("rom size is too small");
 
     const uint8_t mbc = data[Specs::Cartridge::Header::MemoryLayout::TYPE];

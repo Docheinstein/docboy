@@ -46,8 +46,8 @@ public:
         IE = parcel.readUInt8();
     }
 
-    BYTE(IF, Specs::Registers::Interrupts::IF, 0b11100001);
-    BYTE(IE, Specs::Registers::Interrupts::IE);
+    byte IF {make_byte(Specs::Registers::Interrupts::IF, 0b11100001)};
+    byte IE {make_byte(Specs::Registers::Interrupts::IE)};
 };
 
 #endif // INTERRUPTS_H

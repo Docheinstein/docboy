@@ -32,7 +32,7 @@ public:
         BOOT = parcel.readUInt8();
     }
 
-    BYTE(BOOT, Specs::Registers::Boot::BOOT, IF_BOOTROM_ELSE(0b11111110, 0b11111111));
+    byte BOOT {make_byte(Specs::Registers::Boot::BOOT, IF_BOOTROM_ELSE(0b11111110, 0b11111111))};
 
 private:
     IF_BOOTROM(BootLock bootLock);

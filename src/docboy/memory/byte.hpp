@@ -4,19 +4,19 @@
 #include "fwd/bytefwd.h"
 
 #ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
-#include "utils/bits.hpp"
+struct byte {
+    static constexpr uint32_t INVALID_MEMORY_ADDRESS = UINT32_MAX;
 
-class byte {
-public:
     byte() = default;
-    explicit byte(uint16_t address, uint8_t initialValue = 0);
+    constexpr explicit byte(uint16_t address, uint8_t initialValue = 0) :
+        address {address},
+        data {initialValue} {
+    }
 
     byte(const byte& b) = delete;
     byte(byte&& b) = delete;
     byte& operator=(const byte& b) = delete;
     byte& operator=(byte&& b) = delete;
-
-    void setMemoryAddress(uint16_t addr);
 
     byte& operator=(uint8_t value);
     operator uint8_t() const;
@@ -32,12 +32,17 @@ public:
     uint8_t operator|(const byte& other) const;
     uint8_t operator&(const byte& other) const;
 
-private:
-    static constexpr uint32_t INVALID_MEMORY_ADDRESS = UINT32_MAX;
-
     uint32_t address {INVALID_MEMORY_ADDRESS};
     uint8_t data {};
 };
 
+constexpr byte make_byte(const uint16_t address, const uint8_t initialValue = 0) {
+    return byte {address, initialValue};
+}
+
+#else
+constexpr inline byte make_byte(const uint16_t address, const uint8_t initialValue = 0) {
+    return initialValue;
+}
 #endif
 #endif // BYTE_HPP

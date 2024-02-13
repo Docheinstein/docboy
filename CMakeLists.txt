@@ -29,15 +29,24 @@ endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if (NOT BUILD_NOGUI_FRONTEND AND NOT BUILD_SDL_FRONTEND AND NOT BUILD_LIBRETRO_CORE AND NOT BUILD_LIBRETRO_CORE_ANDROID)
-    message(FATAL_ERROR
-            "Please specify at least a frontend to build.\n"
-            "Possible options are:\n"
-            "> BUILD_NOGUI_FRONTEND\n"
-            "> BUILD_SDL_FRONTEND\n"
-            "> BUILD_LIBRETRO_CORE\n"
-            "> BUILD_LIBRETRO_CORE_ANDROID"
-    )
+    set(BUILD_SDL_FRONTEND ON)
 endif ()
+
+if (BUILD_NOGUI_FRONTEND)
+    message(STATUS "Frontend: NoGUI")
+endif()
+
+if (BUILD_SDL_FRONTEND)
+    message(STATUS "Frontend: SDL")
+endif()
+
+if (BUILD_LIBRETRO_CORE)
+    message(STATUS "Frontend: libretro core")
+endif()
+
+if (BUILD_LIBRETRO_CORE)
+    message(STATUS "Frontend: libretro core (Android)")
+endif()
 
 if (BUILD_LIBRETRO_CORE_ANDROID)
     add_subdirectory(src/frontend/libretro/android)

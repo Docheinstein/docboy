@@ -14,7 +14,7 @@ public:
 #ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
     Memory() {
         for (uint16_t i = 0; i < Size; i++) {
-            data[i].setMemoryAddress(Start + i);
+            data[i].address = Start + i;
         }
     }
 #else

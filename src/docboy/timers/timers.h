@@ -34,9 +34,9 @@ public:
     void writeTAC(uint8_t value);
 
     uint16_t DIV {IF_NOT_BOOTROM(0xABCC)};
-    BYTE(TIMA, Specs::Registers::Timers::TIMA);
-    BYTE(TMA, Specs::Registers::Timers::TMA);
-    BYTE(TAC, Specs::Registers::Timers::TAC, 0b11111000);
+    byte TIMA {make_byte(Specs::Registers::Timers::TIMA)};
+    byte TMA {make_byte(Specs::Registers::Timers::TMA)};
+    byte TAC {make_byte(Specs::Registers::Timers::TAC, 0b11111000)};
 
 protected:
     struct TimaReloadState {

@@ -55,18 +55,18 @@ public:
         WX = parcel.readUInt8();
     }
 
-    BYTE(LCDC, Specs::Registers::Video::LCDC, IF_BOOTROM_ELSE(0, 0x91));
-    BYTE(STAT, Specs::Registers::Video::STAT, IF_BOOTROM_ELSE(0x80, 0x85));
-    BYTE(SCY, Specs::Registers::Video::SCY);
-    BYTE(SCX, Specs::Registers::Video::SCX);
-    BYTE(LY, Specs::Registers::Video::LY);
-    BYTE(LYC, Specs::Registers::Video::LYC);
-    BYTE(DMA, Specs::Registers::Video::DMA);
-    BYTE(BGP, Specs::Registers::Video::BGP, IF_BOOTROM_ELSE(0, 0xFC));
-    BYTE(OBP0, Specs::Registers::Video::OBP0);
-    BYTE(OBP1, Specs::Registers::Video::OBP1);
-    BYTE(WY, Specs::Registers::Video::WY);
-    BYTE(WX, Specs::Registers::Video::WX);
+    byte LCDC {make_byte(make_byte(Specs::Registers::Video::LCDC, IF_BOOTROM_ELSE(0, 0x91)))};
+    byte STAT {make_byte(Specs::Registers::Video::STAT, IF_BOOTROM_ELSE(0x80, 0x85))};
+    byte SCY {make_byte(Specs::Registers::Video::SCY)};
+    byte SCX {make_byte(Specs::Registers::Video::SCX)};
+    byte LY {make_byte(Specs::Registers::Video::LY)};
+    byte LYC {make_byte(Specs::Registers::Video::LYC)};
+    byte DMA {make_byte(Specs::Registers::Video::DMA)};
+    byte BGP {make_byte(Specs::Registers::Video::BGP, IF_BOOTROM_ELSE(0, 0xFC))};
+    byte OBP0 {make_byte(Specs::Registers::Video::OBP0)};
+    byte OBP1 {make_byte(Specs::Registers::Video::OBP1)};
+    byte WY {make_byte(Specs::Registers::Video::WY)};
+    byte WX {make_byte(Specs::Registers::Video::WX)};
 
 private:
     Dma& dma;

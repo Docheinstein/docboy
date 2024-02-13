@@ -2,16 +2,6 @@
 #include "byte.hpp"
 #include "docboy/debugger/memsniffer.h"
 #include "utils/asserts.h"
-#include <iostream>
-
-byte::byte(uint16_t memoryAddress, uint8_t initialValue) :
-    data(initialValue) {
-    setMemoryAddress(memoryAddress);
-}
-
-void byte::setMemoryAddress(uint16_t addr) {
-    address = addr;
-}
 
 byte& byte::operator=(uint8_t value) {
     check(address != INVALID_MEMORY_ADDRESS);
