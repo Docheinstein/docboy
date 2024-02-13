@@ -123,8 +123,6 @@ uint32_t Mbc3<RomSize, RamSize, Battery, Timer>::getRamSaveSize() const {
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::loadState(Parcel& parcel) {
-    parcel.readBytes(rom, sizeof(rom));
-    parcel.readBytes(ram, sizeof(ram));
     ramAndTimerEnabled = parcel.readBool();
     romBankSelector = parcel.readUInt8();
     ramBankSelector_rtcRegisterSelector = parcel.readUInt8();
@@ -134,12 +132,14 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::loadState(Parcel& parcel) {
     rtcRegisters.hours = parcel.readUInt8();
     rtcRegisters.day.low = parcel.readUInt8();
     rtcRegisters.day.high = parcel.readUInt8();
+    parcel.readBytes(rom, RomSize);
+    if constexpr (Ram) {
+        parcel.readBytes(ram, RamSize);
+    }
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::saveState(Parcel& parcel) const {
-    parcel.writeBytes(rom, sizeof(rom));
-    parcel.writeBytes(ram, sizeof(ram));
     parcel.writeBool(ramAndTimerEnabled);
     parcel.writeUInt8(romBankSelector);
     parcel.writeUInt8(ramBankSelector_rtcRegisterSelector);
@@ -149,4 +149,8 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::saveState(Parcel& parcel) const {
     parcel.writeUInt8(rtcRegisters.hours);
     parcel.writeUInt8(rtcRegisters.day.low);
     parcel.writeUInt8(rtcRegisters.day.high);
+    parcel.writeBytes(rom, RomSize);
+    if constexpr (Ram) {
+        parcel.writeBytes(ram, RamSize);
+    }
 }

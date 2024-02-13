@@ -23,12 +23,12 @@ public:
 private:
     static constexpr bool Ram = RamSize > 0;
 
-    uint8_t rom[RomSize] {};
-    uint8_t ram[RamSize] {};
-
     bool ramEnabled {};
     uint16_t romBankSelector {0b1};
     uint8_t ramBankSelector {};
+
+    uint8_t rom[RomSize] {};
+    uint8_t ram[RamSize] {};
 };
 
 #include "mbc5.tpp"

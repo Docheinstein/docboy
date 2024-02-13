@@ -143,20 +143,24 @@ uint32_t Mbc1<RomSize, RamSize, Battery>::getRamSaveSize() const {
 
 template<uint32_t RomSize, uint32_t RamSize, bool Battery>
 void Mbc1<RomSize, RamSize, Battery>::saveState(Parcel &parcel) const {
-    parcel.writeBytes(rom, sizeof(rom));
-    parcel.writeBytes(ram, sizeof(ram));
     parcel.writeBool(ramEnabled);
     parcel.writeUInt8(romBankSelector);
     parcel.writeUInt8(upperRomBankSelector_ramBankSelector);
     parcel.writeUInt8(bankingMode);
+    parcel.writeBytes(rom, RomSize);
+    if constexpr (Ram) {
+        parcel.writeBytes(ram, RamSize);
+    }
 }
 
 template<uint32_t RomSize, uint32_t RamSize, bool Battery>
 void Mbc1<RomSize, RamSize, Battery>::loadState(Parcel &parcel) {
-    parcel.readBytes(rom, sizeof(rom));
-    parcel.readBytes(ram, sizeof(ram));
     ramEnabled = parcel.readBool();
     romBankSelector = parcel.readUInt8();
     upperRomBankSelector_ramBankSelector = parcel.readUInt8();
     bankingMode = parcel.readUInt8();
+    parcel.readBytes(rom, RomSize);
+    if constexpr (Ram) {
+        parcel.readBytes(ram, RamSize);
+    }
 }

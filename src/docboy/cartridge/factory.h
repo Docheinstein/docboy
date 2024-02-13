@@ -3,6 +3,7 @@
 
 #include "cartridge.h"
 #include <memory>
+#include <string>
 #include <vector>
 
 class CartridgeFactory {

@@ -22,6 +22,7 @@ public:
 
 private:
     static constexpr uint16_t RomSize = 0x8000;
+    static constexpr bool Ram = RamSize > 0;
 
     uint8_t rom[RomSize] {};
     uint8_t ram[RamSize] {};

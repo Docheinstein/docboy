@@ -24,33 +24,55 @@ void NoMbc<RamSize>::writeRom(uint16_t address, uint8_t value) {
 
 template <uint32_t RamSize>
 uint8_t NoMbc<RamSize>::readRam(uint16_t address) const {
-    WARN("NoMbc: read at address " + hex(address) + " is ignored");
-    return 0xFF;
+    check(address >= 0xA000 && address < 0xC000);
+
+    if constexpr (Ram) {
+        return ram[keep_bits<13>(address)];
+    } else {
+        WARN("NoMbc: read at address " + hex(address) + " is ignored");
+        return 0xFF;
+    }
 }
 
 template <uint32_t RamSize>
 void NoMbc<RamSize>::writeRam(uint16_t address, uint8_t value) {
-    WARN("NoMbc: write at address " + hex(address) + " is ignored");
+    check(address >= 0xA000 && address < 0xC000);
+
+    if constexpr (Ram) {
+        ram[keep_bits<13>(address)] = value;
+    } else {
+        WARN("NoMbc: write at address " + hex(address) + " is ignored");
+    }
 }
 
 template <uint32_t RamSize>
 uint8_t* NoMbc<RamSize>::getRamSaveData() {
+    if constexpr (Ram) {
+        return ram;
+    }
     return nullptr;
 }
 
 template <uint32_t RamSize>
 uint32_t NoMbc<RamSize>::getRamSaveSize() const {
+    if constexpr (Ram) {
+        return RamSize;
+    }
     return 0;
 }
 
 template <uint32_t RamSize>
 void NoMbc<RamSize>::saveState(Parcel& parcel) const {
-    parcel.writeBytes(rom, sizeof(rom));
-    parcel.writeBytes(ram, sizeof(ram));
+    parcel.writeBytes(rom, RomSize);
+    if constexpr (Ram) {
+        parcel.writeBytes(ram, RamSize);
+    }
 }
 
 template <uint32_t RamSize>
 void NoMbc<RamSize>::loadState(Parcel& parcel) {
-    parcel.readBytes(rom, sizeof(rom));
-    parcel.readBytes(ram, sizeof(ram));
+    parcel.readBytes(rom, RomSize);
+    if constexpr (Ram) {
+        parcel.readBytes(ram, RamSize);
+    }
 }

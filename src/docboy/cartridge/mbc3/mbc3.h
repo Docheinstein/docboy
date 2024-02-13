@@ -23,9 +23,6 @@ public:
 private:
     static constexpr bool Ram = RamSize > 0;
 
-    uint8_t rom[RomSize] {};
-    uint8_t ram[RamSize] {};
-
     bool ramAndTimerEnabled {};
     uint8_t romBankSelector {0b1}; // TODO: correct?
     uint8_t ramBankSelector_rtcRegisterSelector {};
@@ -42,6 +39,9 @@ private:
     } rtcRegisters {};
 
     uint8_t* const rtcRegistersMap[5];
+
+    uint8_t rom[RomSize] {};
+    uint8_t ram[RamSize] {};
 };
 
 #include "mbc3.tpp"
