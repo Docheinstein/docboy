@@ -1,0 +1,4 @@
+[submodule "external/tui"]
+	path = external/tui
+	url = https://github.com/Docheinstein/tui
+	branch = master
