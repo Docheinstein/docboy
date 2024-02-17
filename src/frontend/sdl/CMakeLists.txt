@@ -14,7 +14,7 @@ target_sources(docboy-sdl PRIVATE
 find_package(SDL2 REQUIRED)
 
 target_include_directories(docboy-sdl PRIVATE ${SDL2_INCLUDE_DIR})
-target_link_libraries(docboy-sdl PRIVATE docboy utils extra argumentum ${SDL2_LIBRARY})
+target_link_libraries(docboy-sdl PRIVATE docboy utils extra args ${SDL2_LIBRARY})
 
 # SDL2_Image
 find_package(SDL2_IMAGE)

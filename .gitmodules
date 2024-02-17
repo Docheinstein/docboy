@@ -2,3 +2,7 @@
 	path = external/tui
 	url = https://github.com/Docheinstein/tui
 	branch = master
+[submodule "external/args"]
+	path = external/args
+	url = https://github.com/Docheinstein/args
+	branch = master

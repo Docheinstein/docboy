@@ -1,2 +1,2 @@
-add_subdirectory(argumentum)
+add_subdirectory(args)
 add_subdirectory(tui)
