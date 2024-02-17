@@ -3,13 +3,13 @@
 #include "docboy/core/core.h"
 #include "extra/cartridge/header.h"
 #include "extra/serial/endpoints/console.h"
-#include "os.h"
 #include "utils/formatters.hpp"
 #include "utils/io.h"
 #include "utils/mathematics.h"
+#include "utils/os.h"
 #include "utils/path.h"
 #include "window.h"
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <chrono>
 #include <iostream>
 #include <map>
@@ -318,10 +318,10 @@ int main(int argc, char* argv[]) {
         // handle input
         while (SDL_PollEvent(&e) != 0) {
             switch (e.type) {
-            case SDL_QUIT:
+            case SDL_EVENT_QUIT:
                 quit = true;
                 break;
-            case SDL_KEYDOWN: {
+            case SDL_EVENT_KEY_DOWN: {
                 switch (e.key.keysym.sym) {
                 case SDLK_F1:
                     if (writeState(statePath))
@@ -367,7 +367,7 @@ int main(int argc, char* argv[]) {
                 }
                 break;
             }
-            case SDL_KEYUP: {
+            case SDL_EVENT_KEY_UP: {
                 handleInput(e.key.keysym.sym, Joypad::KeyState::Released);
                 break;
             }

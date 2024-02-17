@@ -7,8 +7,8 @@
 #include "docboy/memory/memory.hpp"
 #include "extra/cartridge/header.h"
 #include "extra/serial/endpoints/console.h"
-#include "os.h"
 #include "utils/formatters.hpp"
+#include "utils/os.h"
 #include "utils/path.h"
 #include <chrono>
 #include <iostream>

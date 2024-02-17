@@ -1,10 +1,11 @@
 #ifndef UNITTESTS_H
 #define UNITTESTS_H
 
-#include "casts.hpp"
-#include "memory.h"
 #include "testutils/catch.h"
 #include "testutils/runners.hpp"
+#include "utils/casts.hpp"
+#include "utils/mathematics.h"
+#include "utils/memory.h"
 
 TEST_CASE("bits", "[bits]") {
     SECTION("test bit") {

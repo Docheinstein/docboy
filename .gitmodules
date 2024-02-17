@@ -6,3 +6,11 @@
 	path = external/args
 	url = https://github.com/Docheinstein/args
 	branch = master
+[submodule "external/SDL"]
+	path = external/SDL
+	url = https://github.com/libsdl-org/SDL/
+	branch = main
+[submodule "external/SDL_image"]
+	path = external/SDL_image
+	url = https://github.com/libsdl-org/SDL_image
+	branch = main

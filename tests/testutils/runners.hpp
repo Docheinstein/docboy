@@ -11,10 +11,10 @@
 #include "docboy/core/core.h"
 #include "docboy/gameboy/gameboy.h"
 #include "extra/serial/endpoints/buffer.h"
-#include "formatters.hpp"
 #include "img.h"
-#include "os.h"
-#include "path.h"
+#include "utils/formatters.hpp"
+#include "utils/os.h"
+#include "utils/path.h"
 
 using Palette = std::vector<uint16_t>;
 

@@ -4,19 +4,16 @@
 #include "utils/exceptions.hpp"
 #include "utils/log.h"
 #include "utils/std.hpp"
-#include <SDL.h>
+#include <SDL3/SDL.h>
+#include <chrono>
 #include <string>
 
-#ifdef SDL2_IMAGE
-#include <SDL_image.h>
-#include <chrono>
-
-#endif
+#include <SDL3_image/SDL_image.h>
 
 Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
     framebuffer(framebuffer),
-    width(static_cast<int>(scaling * Specs::Display::WIDTH)),
-    height(static_cast<int>(scaling * Specs::Display::HEIGHT)),
+    width(scaling * Specs::Display::WIDTH),
+    height(scaling * Specs::Display::HEIGHT),
     scaling(scaling) {
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -25,11 +22,17 @@ Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
     const int winX = static_cast<int>(x == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : x);
     const int winY = static_cast<int>(y == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : y);
 
-    window = SDL_CreateWindow("DocBoy", winX, winY, width, height, SDL_WINDOW_SHOWN);
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "DocBoy");
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, winX);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, winY);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
+    window = SDL_CreateWindowWithProperties(props);
     if (!window)
         fatal("SDL_CreateWindow error: " + SDL_GetError());
 
-    renderer = SDL_CreateRenderer(window, -1, 0);
+    renderer = SDL_CreateRenderer(window, nullptr, 0);
     if (!renderer)
         fatal("SDL_CreateRenderer error: " + SDL_GetError());
 
@@ -38,9 +41,6 @@ Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
                                 Specs::Display::HEIGHT);
     if (!texture)
         fatal("SDL_CreateTexture error: " + SDL_GetError());
-
-    // TODO: don't know but setting these in SDL_CreateWindow does not work
-    //    SDL_SetWindowPosition(window, winX, winY);
 }
 
 Window::~Window() {
@@ -86,7 +86,7 @@ void Window::removeText(uint64_t guid) {
 
 void Window::drawFramebuffer() {
     SDL_Rect srcrect {0, 0, Specs::Display::WIDTH, Specs::Display::HEIGHT};
-    SDL_Rect dstrect {0, 0, width, height};
+    SDL_FRect dstrect {0, 0, width, height};
 
     void* texturePixels;
     int pitch;
@@ -95,7 +95,7 @@ void Window::drawFramebuffer() {
     memcpy(texturePixels, framebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t));
     SDL_UnlockTexture(texture);
 
-    SDL_RenderCopy(renderer, texture, nullptr, &dstrect);
+    SDL_RenderTexture(renderer, texture, nullptr, &dstrect);
 }
 
 void Window::drawTexts() {
@@ -129,36 +129,31 @@ void Window::drawText(const Window::Text& text) {
         glyph_to_rgba(char_to_glyph(text.string[i]), text.color, textureBuffer, i, stringLength);
     SDL_UnlockTexture(textTexture);
 
-    SDL_Rect textDstRect {
-        static_cast<int>(scaling * static_cast<float>(text.x)),
-        static_cast<int>(scaling * static_cast<float>(text.y)),
-        static_cast<int>(scaling * static_cast<float>(textWidth)),
-        static_cast<int>(scaling * static_cast<float>(textHeight)),
+    SDL_FRect textDstRect {
+        scaling * static_cast<float>(text.x),
+        scaling * static_cast<float>(text.y),
+        scaling * static_cast<float>(textWidth),
+        scaling * static_cast<float>(textHeight),
     };
 
-    SDL_RenderCopy(renderer, textTexture, nullptr, &textDstRect);
+    SDL_RenderTexture(renderer, textTexture, nullptr, &textDstRect);
     SDL_DestroyTexture(textTexture);
 }
 
 bool Window::screenshot(const std::string& filename) const {
-#ifdef SDL2_IMAGE
-    SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormatFrom(
-        (void*)framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, SDL_BITSPERPIXEL(SDL_PIXELFORMAT_RGB565),
-        Specs::Display::WIDTH * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGB565), SDL_PIXELFORMAT_RGB565);
+    SDL_Surface* surface = SDL_CreateSurfaceFrom((void*)framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT,
+                                                 Specs::Display::WIDTH * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGB565),
+                                                 SDL_PIXELFORMAT_RGB565);
 
     if (!surface)
         fatal("SDL_CreateRGBSurfaceWithFormatFrom error: " + SDL_GetError());
 
     int result = IMG_SavePNG(surface, filename.c_str());
 
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
 
     if (result != 0)
         WARN("SDL_SaveBMP error: " + SDL_GetError());
 
     return result == 0;
-#else
-    WARN("Unsupported");
-    return false;
-#endif
 }

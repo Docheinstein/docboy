@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_RUNNER
 
-#include <SDL.h>
-#include <SDL_image.h>
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 
 // ---- begin test cases ----
 

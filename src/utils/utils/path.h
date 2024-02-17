@@ -1,9 +1,7 @@
 #ifndef PATH_H
 #define PATH_H
 
-#include <cstdint>
 #include <string>
-#include <sys/stat.h>
 #include <vector>
 
 class path {

@@ -1,5 +1,5 @@
 #include "img.h"
-#include "hexdump.hpp"
+#include "utils/hexdump.hpp"
 #include <SDL_image.h>
 #include <SDL_surface.h>
 #include <iostream>

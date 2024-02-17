@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-template <template <typename...> class Container, typename T>
+template <template <typename V, typename Allocator = std::allocator<V>> class Container, typename T>
 const T& pop(Container<T>& container) {
     check(!container.empty());
     const auto& value = container.back();
@@ -11,7 +11,7 @@ const T& pop(Container<T>& container) {
     return value;
 }
 
-template <template <typename...> class Container, typename T>
+template <template <typename V, typename Allocator = std::allocator<V>> class Container, typename T>
 const T& pop_front(Container<T>& container) {
     check(!container.empty());
     const auto& value = container.front();
@@ -19,12 +19,12 @@ const T& pop_front(Container<T>& container) {
     return value;
 }
 
-template <template <typename...> class Container, typename T, typename Predicate>
+template <template <typename V, typename Allocator = std::allocator<V>> class Container, typename T, typename Predicate>
 void erase_if(Container<T>& container, Predicate predicate) {
     container.erase(std::remove_if(container.begin(), container.end(), predicate), container.end());
 }
 
-template <template <typename...> class Container, typename T>
+template <template <typename V, typename Allocator = std::allocator<V>> class Container, typename T>
 bool contains(const Container<T>& container, const T& value) {
     return container.find(value) != container.end();
 }

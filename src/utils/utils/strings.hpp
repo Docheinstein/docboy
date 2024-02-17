@@ -27,9 +27,8 @@ void split(const std::string& s, It inserter, char ch) {
         return c == ch;
     });
 }
-
-template <typename SepType>
-std::string join(const std::vector<std::string>& container, SepType sep) {
+template <typename Container, typename SepType>
+std::string join(const Container& container, SepType sep) {
     std::string ss;
     for (auto it = container.begin(); it != container.end(); it++) {
         ss += *it;

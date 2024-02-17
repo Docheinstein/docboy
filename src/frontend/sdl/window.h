@@ -57,8 +57,8 @@ private:
     SDL_Renderer* renderer;
     SDL_Texture* texture;
 
-    int width;
-    int height;
+    float width;
+    float height;
     float scaling;
 };
 
