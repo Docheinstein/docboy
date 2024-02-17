@@ -58,7 +58,7 @@ include(CheckIncludeFile)
 add_compile_options(-fPIC -Wall)
 
 if (MSVC)
-    add_compile_definitions(/Zc:__cplusplus /Zc:preprocessor /bigobj)
+    add_compile_options(/Zc:__cplusplus /Zc:preprocessor /bigobj)
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
