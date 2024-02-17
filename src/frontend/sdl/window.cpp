@@ -8,7 +8,9 @@
 #include <chrono>
 #include <string>
 
+#ifdef SDL_IMAGE
 #include <SDL3_image/SDL_image.h>
+#endif
 
 Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
     framebuffer(framebuffer),
@@ -141,6 +143,7 @@ void Window::drawText(const Window::Text& text) {
 }
 
 bool Window::screenshot(const std::string& filename) const {
+#ifdef SDL_IMAGE
     SDL_Surface* surface = SDL_CreateSurfaceFrom((void*)framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT,
                                                  Specs::Display::WIDTH * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGB565),
                                                  SDL_PIXELFORMAT_RGB565);
@@ -156,4 +159,8 @@ bool Window::screenshot(const std::string& filename) const {
         WARN("SDL_SaveBMP error: " + SDL_GetError());
 
     return result == 0;
+#else
+    WARN("Screenshot not supported: compile with SDL_Image.")
+    return false;
+#endif
 }
