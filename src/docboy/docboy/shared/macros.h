@@ -23,8 +23,6 @@ class DebuggerBackend;
 
 #endif // ENABLE_DEBUGGER
 
-#define TESTABLE_CLASS() friend class FramebufferRunner;
-
 #ifdef ENABLE_TESTS
 #define TESTABLE_CLASS() friend class FramebufferRunner;
 #define IF_TESTS(statement) statement

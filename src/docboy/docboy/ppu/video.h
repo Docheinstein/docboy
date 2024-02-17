@@ -55,7 +55,7 @@ public:
         WX = parcel.readUInt8();
     }
 
-    byte LCDC {make_byte(make_byte(Specs::Registers::Video::LCDC, IF_BOOTROM_ELSE(0, 0x91)))};
+    byte LCDC {make_byte(Specs::Registers::Video::LCDC, IF_BOOTROM_ELSE(0, 0x91))};
     byte STAT {make_byte(Specs::Registers::Video::STAT, IF_BOOTROM_ELSE(0x80, 0x85))};
     byte SCY {make_byte(Specs::Registers::Video::SCY)};
     byte SCX {make_byte(Specs::Registers::Video::SCX)};

@@ -1,7 +1,7 @@
 #include "img.h"
 #include "utils/hexdump.hpp"
-#include <SDL_image.h>
-#include <SDL_surface.h>
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <iostream>
 
 void load_png(const std::string& filename, void* buffer, int format, uint32_t* size) {
@@ -10,7 +10,7 @@ void load_png(const std::string& filename, void* buffer, int format, uint32_t* s
         goto error;
 
     if (format != -1) {
-        SDL_Surface* convertedSurface = SDL_ConvertSurfaceFormat(surface, format, 0);
+        SDL_Surface* convertedSurface = SDL_ConvertSurfaceFormat(surface, format);
         if (!convertedSurface)
             goto error;
         surface = convertedSurface;
@@ -28,20 +28,19 @@ error:
 
 cleanup:
     if (surface)
-        SDL_FreeSurface(surface);
+        SDL_DestroySurface(surface);
 }
 
 bool save_png(const std::string& filename, const uint16_t* buffer, int width, int height) {
-    SDL_Surface* surface =
-        SDL_CreateRGBSurfaceWithFormatFrom((void*)buffer, width, height, SDL_BITSPERPIXEL(SDL_PIXELFORMAT_RGB565),
-                                           width * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGB565), SDL_PIXELFORMAT_RGB565);
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(
+        (void*)buffer, width, height, width * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGB565), SDL_PIXELFORMAT_RGB565);
 
     int result = -1;
     if (surface) {
         result = IMG_SavePNG(surface, filename.c_str());
     }
 
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
 
     return result == 0;
 }
