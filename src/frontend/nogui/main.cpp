@@ -1,4 +1,4 @@
-#include "argumentum/argparser.h"
+#include "args/args.h"
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/cartridge/factory.h"
 #include "docboy/core/core.h"
@@ -54,17 +54,15 @@ int main(int argc, char* argv[]) {
         IF_DEBUGGER(bool debugger {});
     } args;
 
-    argumentum::argument_parser parser {};
-    auto params = parser.params();
-    IF_BOOTROM(params.add_parameter(args.bootRom, "boot-rom").help("Boot ROM"));
-    params.add_parameter(args.rom, "rom").help("ROM");
-    params.add_parameter(args.ticksToRun, "--ticks", "-t").nargs(1).default_value(UINT64_MAX).help("Ticks to run");
-    params.add_parameter(args.serial, "--serial", "-s").help("Display serial console");
-    params.add_parameter(args.scaling, "--scaling", "-z").nargs(1).default_value(1).help("Scaling factor");
-    params.add_parameter(args.dumpCartridgeInfo, "--cartridge-info", "-i").help("Dump cartridge info and quit");
-    IF_DEBUGGER(params.add_parameter(args.debugger, "--debugger", "-d").help("Attach debugger"));
+    Args::Parser parser {};
+    IF_BOOTROM(parser.addArgument(args.bootRom, "boot-rom").help("Boot ROM"));
+    parser.addArgument(args.rom, "rom").help("ROM");
+    parser.addArgument(args.serial, "--serial", "-s").help("Display serial console");
+    parser.addArgument(args.scaling, "--scaling", "-z").help("Scaling factor");
+    parser.addArgument(args.dumpCartridgeInfo, "--cartridge-info", "-i").help("Dump cartridge info and quit");
+    IF_DEBUGGER(parser.addArgument(args.debugger, "--debugger", "-d").help("Attach debugger"));
 
-    if (!parser.parse_args(argc, argv, 1))
+    if (!parser.parse(argc, argv, 1))
         return 1;
 
     const auto ensureExists = [](const std::string& path) {
