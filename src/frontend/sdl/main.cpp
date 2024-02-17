@@ -6,6 +6,7 @@
 #include "os.h"
 #include "utils/formatters.hpp"
 #include "utils/io.h"
+#include "utils/mathematics.h"
 #include "utils/path.h"
 #include "window.h"
 #include <SDL.h>

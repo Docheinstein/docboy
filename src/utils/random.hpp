@@ -19,7 +19,7 @@ public:
 private:
     std::mt19937 device;
     std::default_random_engine engine;
-    std::uniform_int_distribution<T> distribution;
+    std::uniform_int_distribution<T> distribution {min, max};
 };
 
 #endif // RANDOM_HPP

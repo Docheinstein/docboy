@@ -85,8 +85,8 @@ void Window::removeText(uint64_t guid) {
 }
 
 void Window::drawFramebuffer() {
-    SDL_Rect srcrect {.x = 0, .y = 0, .w = Specs::Display::WIDTH, .h = Specs::Display::HEIGHT};
-    SDL_Rect dstrect {.x = 0, .y = 0, .w = width, .h = height};
+    SDL_Rect srcrect {0, 0, Specs::Display::WIDTH, Specs::Display::HEIGHT};
+    SDL_Rect dstrect {0, 0, width, height};
 
     void* texturePixels;
     int pitch;
@@ -130,10 +130,10 @@ void Window::drawText(const Window::Text& text) {
     SDL_UnlockTexture(textTexture);
 
     SDL_Rect textDstRect {
-        .x = static_cast<int>(scaling * static_cast<float>(text.x)),
-        .y = static_cast<int>(scaling * static_cast<float>(text.y)),
-        .w = static_cast<int>(scaling * static_cast<float>(textWidth)),
-        .h = static_cast<int>(scaling * static_cast<float>(textHeight)),
+        static_cast<int>(scaling * static_cast<float>(text.x)),
+        static_cast<int>(scaling * static_cast<float>(text.y)),
+        static_cast<int>(scaling * static_cast<float>(textWidth)),
+        static_cast<int>(scaling * static_cast<float>(textHeight)),
     };
 
     SDL_RenderCopy(renderer, textTexture, nullptr, &textDstRect);
@@ -159,5 +159,6 @@ bool Window::screenshot(const std::string& filename) const {
     return result == 0;
 #else
     WARN("Unsupported");
+    return false;
 #endif
 }

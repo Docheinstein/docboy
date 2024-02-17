@@ -285,8 +285,9 @@ bool CartridgeHeader::isHeaderChecksumValid() const {
 }
 
 std::string CartridgeHeader::titleAsString() const {
-    char titleString[title.size() + 1];
-    memcpy(titleString, title.data(), title.size());
+    std::string titleString {};
+    titleString.resize(title.size() + 1);
+    memcpy(titleString.data(), title.data(), title.size());
     titleString[title.size()] = '\0';
     return titleString;
 }

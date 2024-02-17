@@ -1,6 +1,6 @@
 #include "core.h"
 #include "docboy/cartridge/factory.h"
-#include "utils/math.h"
+#include "utils/mathematics.h"
 #include <iostream>
 
 #ifdef ENABLE_DEBUGGER

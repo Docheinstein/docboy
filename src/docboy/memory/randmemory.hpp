@@ -10,7 +10,8 @@ public:
     RandomizedMemory() {
         static constexpr uint16_t size = Memory<Start, End>::Size;
 
-        RandomNumberGenerator<uint8_t> rng /* use constant seed to be deterministic */;
+        // NOTE: uint8_t is not supported in Windows: simulate it
+        RandomNumberGenerator<uint32_t, 0, 255> rng /* use constant seed to be deterministic */;
 
         std::vector<uint8_t> data(size);
         for (uint16_t i = 0; i < size; i++) {

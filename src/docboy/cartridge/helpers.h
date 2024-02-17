@@ -2,7 +2,7 @@
 #define CARTRIDGEHELPERS_H
 
 #include "utils/bits.hpp"
-#include "utils/math.h"
+#include "utils/mathematics.h"
 
 template <uint32_t m>
 auto masked(uint32_t n) {

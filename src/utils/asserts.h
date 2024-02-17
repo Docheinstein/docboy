@@ -1,5 +1,5 @@
-#ifndef assertS_H
-#define assertS_H
+#ifndef ASSERTS_H
+#define ASSERTS_H
 
 #include "exceptions.hpp"
 
@@ -23,4 +23,4 @@
 #define IF_ASSERTS_ELSE(t, f) f
 #endif
 
-#endif // assertS_H
+#endif // ASSERTS_H

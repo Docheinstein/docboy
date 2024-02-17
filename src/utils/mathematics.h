@@ -1,5 +1,5 @@
-#ifndef MATH_H
-#define MATH_H
+#ifndef MATHEMATICS_H
+#define MATHEMATICS_H
 
 #include "bits.hpp"
 #include <cstdint>
@@ -45,4 +45,4 @@ static double pow2(T n) {
     return (n < 0) ? (1.0 / (1 << -n)) : (1 << n);
 }
 
-#endif // MATH_H
+#endif // MATHEMATICS_H

@@ -2,6 +2,12 @@
 #include "exceptions.hpp"
 #include "os.h"
 #include "strings.hpp"
+#include <iostream>
+#include <iterator>
+
+#ifdef WINDOWS
+#include "Windows.h"
+#endif
 
 path::path(const std::string& path) {
     check(!path.empty(), "cannot build an empty path");
@@ -71,7 +77,7 @@ path temp_directory_path() {
 #else // Windows
     CHAR temp_path_buf[MAX_PATH];
     if (GetTempPath(MAX_PATH, temp_path_buf) == 0) {
-        THROW(std::runtime_error("failed to obtain a temporary directory"));
+        fatal("failed to obtain a temporary directory");
     }
     temp_path = temp_path_buf;
 

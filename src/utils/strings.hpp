@@ -4,6 +4,7 @@
 #include "asserts.h"
 #include <algorithm>
 #include <string>
+#include <vector>
 
 template <typename It, typename Pred = decltype(isspace)>
 void split(const std::string& s, It inserter, Pred predicate = isspace) {
@@ -27,8 +28,8 @@ void split(const std::string& s, It inserter, char ch) {
     });
 }
 
-template <template <typename...> class Container, typename SepType>
-std::string join(const Container<std::string>& container, SepType sep) {
+template <typename SepType>
+std::string join(const std::vector<std::string>& container, SepType sep) {
     std::string ss;
     for (auto it = container.begin(); it != container.end(); it++) {
         ss += *it;

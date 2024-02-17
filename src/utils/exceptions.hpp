@@ -1,11 +1,17 @@
 #ifndef EXCEPTIONS_HPP
 #define EXCEPTIONS_HPP
 
+#ifdef __FILE_NAME__
+#define FILENAME __FILE_NAME__
+#else
+#define FILENAME __FILE__
+#endif
+
 #if __cpp_exceptions
 #include <stdexcept>
 #include <string>
 #define fatal(message) throw std::runtime_error(std::string() + message)
-#define fatalx(message) fatal(__FILE_NAME__ + "@" + __func__ + ":" + std::to_string(__LINE__) + "   " + message)
+#define fatalx(message) fatal(FILENAME + "@" + __func__ + ":" + std::to_string(__LINE__) + "   " + message)
 #else
 #include <cstdlib>
 #include <iostream>
@@ -16,8 +22,7 @@
     } while (0)
 #define fatalx(message)                                                                                                \
     do {                                                                                                               \
-        std::cerr << __FILE_NAME__ << "@" << __func__ << ":" << std::to_string(__LINE__) << "   " << message           \
-                  << std::endl;                                                                                        \
+        std::cerr << FILENAME << "@" << __func__ << ":" << std::to_string(__LINE__) << "   " << message << std::endl;  \
         abort();                                                                                                       \
     } while (0)
 #define noentry()                                                                                                      \

@@ -53,6 +53,7 @@ int main(int argc, char* argv[]) {
         bool dumpCartridgeInfo {};
         IF_DEBUGGER(bool debugger {});
     } args;
+    check(1 > 2);
 
     Args::Parser parser {};
     IF_BOOTROM(parser.addArgument(args.bootRom, "boot-rom").help("Boot ROM"));

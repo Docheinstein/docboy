@@ -10,7 +10,7 @@
 #include "pixelmap.h"
 #include "utils/casts.hpp"
 #include "utils/macros.h"
-#include "utils/math.h"
+#include "utils/mathematics.h"
 #include "utils/traits.h"
 
 using namespace Specs::Bits::Video::LCDC;
@@ -1276,8 +1276,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
 
     ObjPixel objPixels[8];
     for (uint8_t i = 0; i < 8; i++) {
-        objPixels[i] = {
-            .colorIndex = objPixelsColors[i], .attributes = of.attributes, .number = of.entry.number, .x = LX};
+        objPixels[i] = {objPixelsColors[i], of.attributes, of.entry.number, LX};
     }
 
     // Handle sprite-to-sprite conflicts by merging the new obj pixels with

@@ -2,7 +2,7 @@
 #include "utils/exceptions.hpp"
 #include "utils/bits.hpp"
 #include "utils/parcel.h"
-#include "utils/math.h"
+#include "utils/mathematics.h"
 #include "utils/asserts.h"
 #include "utils/arrays.h"
 #include "docboy/cartridge/helpers.h"
@@ -35,7 +35,8 @@
 
 template<uint32_t RomSize, uint32_t RamSize, bool Battery>
 Mbc1<RomSize, RamSize, Battery>::Mbc1(const uint8_t *data, uint32_t length) {
-    check(length <= array_size(rom), "Mbc1: actual ROM size (" + std::to_string(length) + ") exceeds nominal ROM size (" +  std::to_string(array_size(rom)) + ")");
+    std::string s = "Mbc1: actual ROM size (" + std::to_string(length) + ") exceeds nominal ROM size (" +  std::to_string(array_size(rom)) + ")";
+    check(length <= array_size(rom), s);
     memcpy(rom, data, length);
 }
 

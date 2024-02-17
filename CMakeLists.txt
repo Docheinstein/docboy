@@ -57,6 +57,10 @@ include(CheckIncludeFile)
 
 add_compile_options(-fPIC -Wall)
 
+if (MSVC)
+    add_compile_definitions(/Zc:__cplusplus /Zc:preprocessor /bigobj)
+endif ()
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(ENABLE_ASSERTS)
 endif()
@@ -64,6 +68,10 @@ endif()
 check_include_file("unistd.h" HAS_UNISTD)
 if (HAS_UNISTD)
     add_compile_definitions(POSIX)
+endif()
+
+if (WIN32)
+    add_compile_definitions(WINDOWS)
 endif()
 
 if (BUILD_TESTS)
