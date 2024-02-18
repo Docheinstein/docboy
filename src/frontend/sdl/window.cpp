@@ -41,6 +41,8 @@ Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
     // TODO: figure out byte order
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, Specs::Display::WIDTH,
                                 Specs::Display::HEIGHT);
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+
     if (!texture)
         fatal("SDL_CreateTexture error: " + SDL_GetError());
 }
@@ -121,6 +123,7 @@ void Window::drawText(const Window::Text& text) {
 
     SDL_Texture* textTexture =
         SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, textWidth, textHeight);
+    SDL_SetTextureScaleMode(textTexture, SDL_SCALEMODE_NEAREST);
     SDL_SetTextureBlendMode(textTexture, SDL_BLENDMODE_BLEND);
 
     uint32_t* textureBuffer;
