@@ -1,5 +1,3 @@
-#include "mmu.h"
-
 template <Device::Type Dev>
 MmuView<Dev>::MmuView(Mmu& mmu) :
     mmu(mmu) {
