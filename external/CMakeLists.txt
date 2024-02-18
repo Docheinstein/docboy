@@ -19,4 +19,9 @@ set(SDL_SENSOR OFF)
 add_subdirectory(SDL)
 
 # SDL_image
-add_subdirectory(SDL_image)
+
+# SDL_Image with its dependencies it's a mess to build on Windows.
+# Disable it since we lose just the screenshot as a feature.
+if (NOT WINDOWS)
+    add_subdirectory(SDL_image)
+endif()
