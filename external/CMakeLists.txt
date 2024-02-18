@@ -22,6 +22,6 @@ add_subdirectory(SDL)
 
 # SDL_Image with its dependencies it's a mess to build on Windows.
 # Disable it since we lose just the screenshot as a feature.
-if (NOT WINDOWS)
+if (NOT WIN32)
     add_subdirectory(SDL_image)
 endif()
