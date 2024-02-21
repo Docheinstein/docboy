@@ -1,4 +1,4 @@
-#include "testutils/img.h"
+#include "testutils/framebuffers.h"
 #include <iostream>
 
 // usage: dumpframebuffer <in_file>
@@ -8,7 +8,7 @@ int main(int argc, const char* argv[]) {
         exit(1);
     }
 
-    dump_png_framebuffer(argv[1]);
+    dump_framebuffer_png(argv[1]);
 
     return 0;
 }

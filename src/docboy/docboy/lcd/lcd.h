@@ -1,6 +1,8 @@
 #ifndef LCD_H
 #define LCD_H
 
+#include <array>
+
 #include "docboy/shared//macros.h"
 #include "docboy/shared/specs.h"
 
@@ -10,13 +12,14 @@ class Lcd {
     DEBUGGABLE_CLASS()
 
 public:
+    using Palette = std::array<uint16_t, 4>;
     using Pixel = uint8_t;
     using PixelRgb565 = uint16_t;
 
     static constexpr uint16_t PIXEL_COUNT = Specs::Display::WIDTH * Specs::Display::HEIGHT;
     static constexpr uint32_t PIXEL_BUFFER_SIZE = PIXEL_COUNT * sizeof(PixelRgb565);
 
-    static constexpr uint16_t RGB565_PALETTE[4] {
+    static constexpr Palette RGB565_PALETTE {
         0x84A0, // Lightest Green
         0x4B40, // Light Green
         0x2AA0, // Dark Green

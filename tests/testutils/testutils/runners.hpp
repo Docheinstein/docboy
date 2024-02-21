@@ -11,15 +11,12 @@
 #include "docboy/core/core.h"
 #include "docboy/gameboy/gameboy.h"
 #include "extra/serial/endpoints/buffer.h"
-#include "img.h"
+#include "framebuffers.h"
 #include "utils/formatters.hpp"
 #include "utils/os.h"
 #include "utils/path.h"
 
-using Palette = std::vector<uint16_t>;
-
-const Palette DEFAULT_PALETTE {};
-const Palette GREY_PALETTE {0xFFFF, 0xAD55, 0x52AA, 0x0000}; // {0xFF, 0xAA, 0x55, 0x00} in RGB565
+constexpr Lcd::Palette GREY_PALETTE {0xFFFF, 0xAD55, 0x52AA, 0x0000}; // {0xFF, 0xAA, 0x55, 0x00} in RGB565
 
 constexpr uint64_t DURATION_VERY_LONG = 250'000'000;
 constexpr uint64_t DURATION_LONG = 100'000'000;
@@ -106,9 +103,10 @@ public:
 
 class FramebufferRunner : public Runner<FramebufferRunner> {
 public:
-    FramebufferRunner& expectFramebuffer(const std::string& filename, const Palette& colors) {
-        load_png(filename, expectedFramebuffer, SDL_PIXELFORMAT_RGB565);
-        pixelColors = colors;
+    FramebufferRunner& expectFramebuffer(const std::string& filename, const std::optional<Lcd::Palette>& palette_) {
+        load_framebuffer_png(filename, expectedFramebuffer);
+        if (palette_)
+            convert_framebuffer_with_palette(expectedFramebuffer, *palette_, expectedFramebuffer, Lcd::RGB565_PALETTE);
         return *this;
     }
 
@@ -141,8 +139,6 @@ public:
 
     bool checkExpectation() {
         memcpy(lastFramebuffer, gb->lcd.getPixels(), FRAMEBUFFER_SIZE);
-        if (!pixelColors.empty())
-            convert_framebuffer_pixels(gb->lcd.getPixels(), Lcd::RGB565_PALETTE, lastFramebuffer, pixelColors.data());
         return are_framebuffer_equals(lastFramebuffer, expectedFramebuffer);
     }
 
@@ -168,15 +164,14 @@ public:
 
         const auto pathActual = (tmpPath / path {path {romName}.filename() + "-actual.png"}).string();
         const auto pathExpected = (tmpPath / path {path {romName}.filename() + "-expected.png"}).string();
-        save_framebuffer_as_png(pathActual, lastFramebuffer);
-        save_framebuffer_as_png(pathExpected, expectedFramebuffer);
+        save_framebuffer_png(pathActual, lastFramebuffer);
+        save_framebuffer_png(pathExpected, expectedFramebuffer);
         UNSCOPED_INFO("You can find the PNGs of the framebuffers at " << pathActual << " and " << pathExpected);
     }
 
 private:
     uint16_t lastFramebuffer[FRAMEBUFFER_NUM_PIXELS] {};
     uint16_t expectedFramebuffer[FRAMEBUFFER_NUM_PIXELS] {};
-    Palette pixelColors {};
     bool pendingCheck {};
 };
 
@@ -220,7 +215,7 @@ struct MaxTicks {
 struct StopAtInstruction {
     uint8_t instruction;
 };
-using RunnerParam = std::variant<std::monostate, Palette, MaxTicks, StopAtInstruction>;
+using RunnerParam = std::variant<std::monostate, Lcd::Palette, MaxTicks, StopAtInstruction>;
 
 struct FramebufferRunnerParams {
 
@@ -228,8 +223,8 @@ struct FramebufferRunnerParams {
         rom(std::move(rom)) {
         result = std::move(expected);
 
-        if (std::holds_alternative<Palette>(param1)) {
-            palette = std::get<Palette>(param1);
+        if (std::holds_alternative<Lcd::Palette>(param1)) {
+            palette = std::get<Lcd::Palette>(param1);
         } else if (std::holds_alternative<MaxTicks>(param1)) {
             maxTicks = std::get<MaxTicks>(param1).value;
         } else if (std::holds_alternative<StopAtInstruction>(param1)) {
@@ -239,7 +234,7 @@ struct FramebufferRunnerParams {
 
     std::string rom;
     std::string result;
-    Palette palette {DEFAULT_PALETTE};
+    std::optional<Lcd::Palette> palette {};
     uint64_t maxTicks {DEFAULT_DURATION};
     std::optional<uint8_t> stopAtInstruction {};
 };

@@ -1,16 +1,15 @@
 #include "window.h"
 #include "docboy/shared/specs.h"
+#include "extra/img/imgmanip.h"
+#include "extra/png/iopng.h"
 #include "glyphs.h"
+#include "png.h"
 #include "utils/exceptions.hpp"
-#include "utils/log.h"
 #include "utils/std.hpp"
 #include <SDL3/SDL.h>
 #include <chrono>
+#include <iostream>
 #include <string>
-
-#ifdef SDL_IMAGE
-#include <SDL3_image/SDL_image.h>
-#endif
 
 Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
     framebuffer(framebuffer),
@@ -28,8 +27,8 @@ Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "DocBoy");
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, winX);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, winY);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
+    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
+    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
     window = SDL_CreateWindowWithProperties(props);
     if (!window)
         fatal("SDL_CreateWindow error: " + SDL_GetError());
@@ -38,7 +37,6 @@ Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
     if (!renderer)
         fatal("SDL_CreateRenderer error: " + SDL_GetError());
 
-    // TODO: figure out byte order
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING, Specs::Display::WIDTH,
                                 Specs::Display::HEIGHT);
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
@@ -146,24 +144,8 @@ void Window::drawText(const Window::Text& text) {
 }
 
 bool Window::screenshot(const std::string& filename) const {
-#ifdef SDL_IMAGE
-    SDL_Surface* surface = SDL_CreateSurfaceFrom((void*)framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT,
-                                                 Specs::Display::WIDTH * SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGB565),
-                                                 SDL_PIXELFORMAT_RGB565);
-
-    if (!surface)
-        fatal("SDL_CreateRGBSurfaceWithFormatFrom error: " + SDL_GetError());
-
-    int result = IMG_SavePNG(surface, filename.c_str());
-
-    SDL_DestroySurface(surface);
-
-    if (result != 0)
-        WARN("SDL_SaveBMP error: " + SDL_GetError());
-
-    return result == 0;
-#else
-    WARN("Screenshot not supported: compile with SDL_Image.")
-    return false;
-#endif
+    auto buffer_rgb888 = create_image_buffer(Specs::Display::WIDTH, Specs::Display::HEIGHT, ImageFormat::RGB888);
+    convert_image(ImageFormat::RGB565, framebuffer, ImageFormat::RGB888, buffer_rgb888.data(), Specs::Display::WIDTH,
+                  Specs::Display::HEIGHT);
+    return save_png_rgb888(filename, buffer_rgb888.data(), Specs::Display::WIDTH, Specs::Display::HEIGHT);
 }

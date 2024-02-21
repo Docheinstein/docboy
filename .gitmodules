@@ -10,7 +10,7 @@
 	path = external/SDL
 	url = https://github.com/libsdl-org/SDL/
 	branch = main
-[submodule "external/SDL_image"]
-	path = external/SDL_image
-	url = https://github.com/libsdl-org/SDL_image
-	branch = main
+[submodule "external/libpng"]
+	path = external/libpng
+	url = https://github.com/pnggroup/libpng
+	branch = master

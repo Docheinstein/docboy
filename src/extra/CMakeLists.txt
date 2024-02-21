@@ -3,6 +3,10 @@ add_library(extra STATIC EXCLUDE_FROM_ALL)
 target_sources(extra PRIVATE
     extra/cartridge/header.h
     extra/cartridge/header.cpp
+    extra/png/iopng.h
+    extra/png/iopng.cpp
+    extra/img/imgmanip.h
+    extra/img/imgmanip.cpp
 )
 
 if (ENABLE_SERIAL)
@@ -14,6 +18,6 @@ if (ENABLE_SERIAL)
     )
 endif ()
 
-target_link_libraries(extra PRIVATE utils docboy)
+target_link_libraries(extra PRIVATE utils docboy png_static)
 
 target_include_directories(extra PUBLIC .)

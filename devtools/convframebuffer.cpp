@@ -1,6 +1,7 @@
-#include "strings.hpp"
-#include "testutils/img.h"
+#include "testutils/framebuffers.h"
+#include "utils/strings.hpp"
 #include <iostream>
+#include <vector>
 
 // usage: convframebuffer <in_file> <in_palette> <out_file> <out_palette>
 // usage: convframebuffer <in_file> <in_palette> <out_palette> // in place
@@ -59,14 +60,14 @@ int main(int argc, const char* argv[]) {
 
     // Read input file
     uint16_t inBuffer[FRAMEBUFFER_NUM_PIXELS];
-    load_png_framebuffer(inFile, inBuffer);
+    load_framebuffer_png(inFile, inBuffer);
 
     // Convert framebuffer
     uint16_t outBuffer[FRAMEBUFFER_NUM_PIXELS];
-    convert_framebuffer_pixels(inBuffer, inPalette.data(), outBuffer, outPalette.data());
+    convert_framebuffer_with_palette(inBuffer, inPalette.data(), outBuffer, outPalette.data());
 
     // Save framebuffer to output file
-    save_framebuffer_as_png(outFile, outBuffer);
+    save_framebuffer_png(outFile, outBuffer);
 
     return 0;
 }

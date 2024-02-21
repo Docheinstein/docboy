@@ -1,6 +1,6 @@
-#include "formatters.hpp"
-#include "strings.hpp"
-#include "testutils/img.h"
+#include "testutils/framebuffers.h"
+#include "utils/formatters.hpp"
+#include "utils/strings.hpp"
 #include <iostream>
 
 // usage: convframebuffer <in_file> <in_palette> <out_file> <out_palette>
@@ -17,10 +17,10 @@ int main(int argc, const char* argv[]) {
 
     // Read files
     uint16_t inBuffer1[FRAMEBUFFER_NUM_PIXELS];
-    load_png_framebuffer(inFile1, inBuffer1);
+    load_framebuffer_png(inFile1, inBuffer1);
 
     uint16_t inBuffer2[FRAMEBUFFER_NUM_PIXELS];
-    load_png_framebuffer(inFile2, inBuffer2);
+    load_framebuffer_png(inFile2, inBuffer2);
 
     uint32_t i;
     for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {

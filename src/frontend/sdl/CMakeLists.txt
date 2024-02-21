@@ -9,11 +9,4 @@ target_sources(docboy-sdl PRIVATE
         window.cpp
 )
 
-target_link_libraries(docboy-sdl PRIVATE docboy utils extra args SDL3-static)
-
-# SDL_Image with its dependencies it's a mess to build on Windows.
-# Disable it since we lose just the screenshot as a feature.
-if (NOT WIN32)
-    target_compile_definitions(docboy-sdl PRIVATE SDL_IMAGE)
-    target_link_libraries(docboy-sdl PRIVATE SDL3_image-static)
-endif ()
+target_link_libraries(docboy-sdl PRIVATE docboy utils extra args SDL3-static png_static)
