@@ -26,10 +26,15 @@ struct ImageFormatDescription {
 constexpr ImageFormatDescription RGB888_DESCRIPTION {3, {0, 0, 0}, {16, 8, 0}, {0xFF0000, 0x00FF00, 0x00FF}};
 constexpr ImageFormatDescription RGB565_DESCRIPTION {2, {3, 2, 3}, {11, 5, 0}, {0xF800, 0x07E0, 0x001F}};
 
-ImageFormatDescription get_image_format_description(const ImageFormat fmt) {
-    static constexpr ImageFormatDescription IMAGE_FORMAT_DESCRIPTIONS[] = {RGB888_DESCRIPTION, RGB565_DESCRIPTION};
+constexpr ImageFormatDescription IMAGE_FORMAT_DESCRIPTIONS[] = {RGB888_DESCRIPTION, RGB565_DESCRIPTION};
 
+constexpr ImageFormatDescription get_image_format_description_p(ImageFormat fmt) {
     return IMAGE_FORMAT_DESCRIPTIONS[static_cast<uint8_t>(fmt)];
+}
+
+template <ImageFormat Fmt>
+constexpr ImageFormatDescription get_image_format_description() {
+    return IMAGE_FORMAT_DESCRIPTIONS[static_cast<uint8_t>(Fmt)];
 }
 
 uint8_t expand_pixel_byte(const uint8_t loss, const uint8_t value) {
@@ -92,30 +97,62 @@ void get_rgb_from_pixel_with_format(const uint32_t pixel, uint8_t& r, uint8_t& g
     b = expand_pixel_byte(fmt.loss.b, (pixel & fmt.mask.b) >> fmt.shift.b);
 }
 
-void rgb565_to_rgb888_pixel_converter(const void* src, void* dst, uint32_t index) {
-    uint32_t p;
-    memcpy(&p, static_cast<const uint16_t*>(src) + index, RGB565_DESCRIPTION.bytesPerPixel);
-    uint8_t* pOut = static_cast<uint8_t*>(dst) + index * RGB888_DESCRIPTION.bytesPerPixel;
-    get_rgb_from_pixel_with_format(p, *(pOut + 0), *(pOut + 1), *(pOut + 2), RGB565_DESCRIPTION);
+template <ImageFormat SrcFormat>
+void to_rgb888_pixel_converter(const void* src, void* dst, uint32_t index) {
+    constexpr ImageFormatDescription srcFmt = get_image_format_description<SrcFormat>();
+    uint32_t pSrc;
+    memcpy(&pSrc, static_cast<const uint8_t*>(src) + index * srcFmt.bytesPerPixel, srcFmt.bytesPerPixel);
+    uint8_t* pDst = static_cast<uint8_t*>(dst) + index * RGB888_DESCRIPTION.bytesPerPixel;
+    get_rgb_from_pixel_with_format(pSrc, *(pDst + 0), *(pDst + 1), *(pDst + 2), srcFmt);
 }
 
-void rgb888_to_rgb565_pixel_converter(const void* src, void* dst, uint32_t index) {
-    const uint8_t* p = static_cast<const uint8_t*>(src) + index * RGB888_DESCRIPTION.bytesPerPixel;
-    uint16_t* pOut = static_cast<uint16_t*>(dst) + index;
-    *pOut = map_rgb_to_pixel_with_format(p[0], p[1], p[2], RGB565_DESCRIPTION);
+template <ImageFormat DstFormat, typename DstType>
+void from_rgb888_pixel_converter(const void* src, void* dst, uint32_t index) {
+    constexpr ImageFormatDescription dstFmt = get_image_format_description<DstFormat>();
+    const uint8_t* pSrc = static_cast<const uint8_t*>(src) + index * RGB888_DESCRIPTION.bytesPerPixel;
+    DstType* pDst = static_cast<DstType*>(dst) + index;
+    *pDst = map_rgb_to_pixel_with_format(pSrc[0], pSrc[1], pSrc[2], dstFmt);
 }
 
-void nop_pixel_converter(const void* src, void* dst, uint32_t index) {
+template <ImageFormat DstFormat>
+void from_rgb888_pixel_converter(const void* src, void* dst, uint32_t index) {
+    constexpr ImageFormatDescription dstFmt = get_image_format_description<DstFormat>();
+    if constexpr (dstFmt.bytesPerPixel == 1)
+        from_rgb888_pixel_converter<DstFormat, uint8_t>(src, dst, index);
+    else if constexpr (dstFmt.bytesPerPixel == 2)
+        from_rgb888_pixel_converter<DstFormat, uint16_t>(src, dst, index);
+    else if constexpr (dstFmt.bytesPerPixel == 4)
+        from_rgb888_pixel_converter<DstFormat, uint32_t>(src, dst, index);
+    else
+        static_assert(static_cast<uint32_t>(DstFormat) == UINT32_MAX); // always false
+}
+
+template <ImageFormat Format>
+void identity_pixel_converter(const void* src, void* dst, uint32_t index) {
+    constexpr ImageFormatDescription fmt = get_image_format_description<Format>();
+    const uint8_t* pSrc = static_cast<const uint8_t*>(src) + index * fmt.bytesPerPixel;
+    uint8_t* pDst = static_cast<uint8_t*>(dst) + index * fmt.bytesPerPixel;
+    memcpy(pDst, pSrc, fmt.bytesPerPixel);
 }
 
 using pixel_converter = void (*)(const void* /* src */, void* /* dst */, uint32_t /* index */);
 
 pixel_converter create_pixel_converter(ImageFormat from, ImageFormat to) {
-    if (from == ImageFormat::RGB565 && to == ImageFormat::RGB888)
-        return rgb565_to_rgb888_pixel_converter;
-    if (from == ImageFormat::RGB888 && to == ImageFormat::RGB565)
-        return rgb888_to_rgb565_pixel_converter;
-    return nop_pixel_converter;
+    if (from == ImageFormat::RGB888) {
+        if (to == ImageFormat::RGB565)
+            return from_rgb888_pixel_converter<ImageFormat::RGB565>;
+    }
+    if (to == ImageFormat::RGB888) {
+        if (from == ImageFormat::RGB565)
+            return to_rgb888_pixel_converter<ImageFormat::RGB565>;
+    }
+    if (from == to) {
+        if (from == ImageFormat::RGB888)
+            return identity_pixel_converter<ImageFormat::RGB888>;
+        if (from == ImageFormat::RGB565)
+            return identity_pixel_converter<ImageFormat::RGB565>;
+    }
+    abort();
 }
 } // namespace
 
@@ -128,6 +165,6 @@ void convert_image(ImageFormat from, const void* src, ImageFormat to, void* dst,
 
 std::vector<uint8_t> create_image_buffer(uint32_t width, uint32_t height, ImageFormat fmt) {
     std::vector<uint8_t> buf {};
-    buf.resize(width * height * get_image_format_description(fmt).bytesPerPixel);
+    buf.resize(width * height * get_image_format_description_p(fmt).bytesPerPixel);
     return buf;
 }
