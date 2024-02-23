@@ -5,6 +5,10 @@ add_subdirectory(args)
 add_subdirectory(tui)
 
 # libpng
+set(PNG_SHARED OFF CACHE BOOL "Build libpng as a shared library")
+set(PNG_STATIC ON CACHE BOOL "Build libpng as a static library")
+set(PNG_TESTS OFF CACHE BOOL "Build the libpng tests")
+set(PNG_TOOLS OFF CACHE BOOL "Build the libpng tools")
 add_subdirectory(libpng)
 
 # SDL
