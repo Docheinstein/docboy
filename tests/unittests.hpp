@@ -528,7 +528,7 @@ TEST_CASE("state", "[state]") {
 
         {
             SimpleRunner runner;
-            runner.rom("tests/roms/blargg/cpu_instrs.gb").maxTicks(10'000).run();
+            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").maxTicks(10'000).run();
             data1.resize(runner.core.getStateSize());
             runner.core.saveState(data1.data());
         }
@@ -537,7 +537,7 @@ TEST_CASE("state", "[state]") {
 
         {
             SimpleRunner runner;
-            runner.rom("tests/roms/blargg/cpu_instrs.gb");
+            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
             runner.core.loadState(data1.data());
             runner.core.saveState(data2.data());
         }
@@ -551,7 +551,7 @@ TEST_CASE("state", "[state]") {
 
         {
             SimpleRunner runner;
-            runner.rom("tests/roms/blargg/cpu_instrs.gb");
+            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
 
             runner.maxTicks(1'000'000).run();
             data1.resize(runner.core.getStateSize());
@@ -565,7 +565,7 @@ TEST_CASE("state", "[state]") {
 
         {
             SimpleRunner runner;
-            runner.rom("tests/roms/blargg/cpu_instrs.gb");
+            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
 
             runner.core.loadState(data1.data());
             runner.maxTicks(2'000'000).run();

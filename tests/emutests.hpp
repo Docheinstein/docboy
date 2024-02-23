@@ -12,8 +12,8 @@ using F = FramebufferRunnerParams;
 using S = SerialRunnerParams;
 using RunnerParams = std::variant<F, S>;
 
-const std::string TEST_ROMS_PATH = "tests/roms/";
-const std::string TEST_RESULTS_PATH = "tests/results/";
+const std::string TEST_ROMS_PATH = TESTS_ROOT_FOLDER "/roms/";
+const std::string TEST_RESULTS_PATH = TESTS_ROOT_FOLDER "/results/";
 
 bool run_with_params(const RunnerParams& p) {
     if (std::holds_alternative<FramebufferRunnerParams>(p)) {
@@ -47,7 +47,7 @@ bool run_with_params(const RunnerParams& p) {
     const auto [params] = TABLE(RunnerParams, ({__VA_ARGS__}));                                                        \
     REQUIRE(run_with_params(params))
 
-TEST_CASE("emulation", "[emulation][.]") {
+TEST_CASE("emulation", "[emulation]") {
 #if ALL_TEST_ROMS || PPU_ONLY_TEST_ROMS
 
 #if ALL_TEST_ROMS

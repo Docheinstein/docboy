@@ -78,6 +78,7 @@ if (WIN32)
 endif()
 
 if (BUILD_TESTS)
+    enable_testing()
     add_compile_definitions(ENABLE_TESTS)
     add_subdirectory(tests)
 endif()
