@@ -12,5 +12,9 @@
 	branch = main
 [submodule "external/libpng"]
 	path = external/libpng
-	url = https://github.com/pnggroup/libpng
+	url = https://github.com/Docheinstein/libpng
+	branch = master
+[submodule "external/zlib"]
+	path = external/zlib
+	url = https://github.com/madler/zlib
 	branch = master
