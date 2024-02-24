@@ -37,8 +37,10 @@ jobs:
 
     steps:
 
-    # Checkout.
+    # Checkout and update submodules recursively.
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
 
     # Configure project.
     - name: Configure CMake
