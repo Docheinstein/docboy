@@ -186,10 +186,7 @@ const std::vector<Breakpoint>& DebuggerBackend::getBreakpoints() const {
 uint32_t DebuggerBackend::addWatchpoint(Watchpoint::Type type, uint16_t from, uint16_t to,
                                         std::optional<Watchpoint::Condition> cond) {
     const uint32_t id = nextPointId++;
-    const Watchpoint w {id,
-                        type,
-                        {.from = from, .to = to},
-                        {.enabled = static_cast<bool>(cond), .condition = cond ? *cond : Watchpoint::Condition()}};
+    const Watchpoint w {id, type, {from, to}, {static_cast<bool>(cond), cond ? *cond : Watchpoint::Condition()}};
     watchpoints.push_back(w);
     return id;
 }
