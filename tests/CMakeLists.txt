@@ -1,7 +1,5 @@
 include(CTest)
 
-find_package(Catch2 REQUIRED)
-
 add_executable(docboy-tests)
 
 add_test(NAME docboy-tests COMMAND docboy-tests)

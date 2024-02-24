@@ -40,3 +40,8 @@ set(SDL_POWER OFF)
 set(SDL_SENSOR OFF)
 
 add_subdirectory(SDL)
+
+# Catch2
+if (BUILD_TESTS)
+    add_subdirectory(catch2)
+endif()
