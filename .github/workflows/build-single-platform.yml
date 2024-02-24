@@ -35,7 +35,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ inputs.cpp_compiler }}
           -DCMAKE_C_COMPILER=${{ inputs.c_compiler }}
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
-          -DENABLE_TESTS=${{ inputs.run_tests }}
+          -DBUILD_TESTS=${{ inputs.run_tests }}
           -DENABLE_SERIAL=${{ inputs.run_tests }}
           -S ${{ github.workspace }}
 
