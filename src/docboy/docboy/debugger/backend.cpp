@@ -164,8 +164,8 @@ bool DebuggerBackend::isAskingToShutdown() const {
 }
 
 uint32_t DebuggerBackend::addBreakpoint(uint16_t addr) {
-    uint32_t id = nextPointId++;
-    Breakpoint b {.id = id, .address = addr};
+    const uint32_t id = nextPointId++;
+    const Breakpoint b {id, addr};
     breakpoints.push_back(b);
     return id;
 }
@@ -185,11 +185,11 @@ const std::vector<Breakpoint>& DebuggerBackend::getBreakpoints() const {
 
 uint32_t DebuggerBackend::addWatchpoint(Watchpoint::Type type, uint16_t from, uint16_t to,
                                         std::optional<Watchpoint::Condition> cond) {
-    uint32_t id = nextPointId++;
-    Watchpoint w {.id = id,
-                  .type = type,
-                  .address = {.from = from, .to = to},
-                  .condition = {.enabled = (bool)cond, .condition = cond ? *cond : Watchpoint::Condition()}};
+    const uint32_t id = nextPointId++;
+    const Watchpoint w {id,
+                        type,
+                        {.from = from, .to = to},
+                        {.enabled = static_cast<bool>(cond), .condition = cond ? *cond : Watchpoint::Condition()}};
     watchpoints.push_back(w);
     return id;
 }
@@ -358,13 +358,13 @@ void DebuggerBackend::initializeCommandState() {
 // Tick
 template <>
 void DebuggerBackend::initializeCommandState<TickCommand>(const TickCommand& cmd) {
-    commandState = TickCommandState {.target = core.ticks + cmd.count};
+    commandState = TickCommandState {core.ticks + cmd.count};
 }
 
 // Dot
 template <>
 void DebuggerBackend::initializeCommandState<DotCommand>(const DotCommand& cmd) {
-    commandState = DotCommandState {.target = core.gb.ppu.cycles + cmd.count};
+    commandState = DotCommandState {core.gb.ppu.cycles + cmd.count};
 }
 
 // Step
@@ -382,31 +382,31 @@ void DebuggerBackend::initializeCommandState<MicroStepCommand>(const MicroStepCo
 // Next
 template <>
 void DebuggerBackend::initializeCommandState<NextCommand>(const NextCommand& cmd) {
-    commandState = NextCommandState {.counter = 0, .stackLevel = core.gb.cpu.SP};
+    commandState = NextCommandState {0, core.gb.cpu.SP};
 }
 
 // MicroNext
 template <>
 void DebuggerBackend::initializeCommandState<MicroNextCommand>(const MicroNextCommand& cmd) {
-    commandState = MicroNextCommandState {.counter = 0, .stackLevel = core.gb.cpu.SP};
+    commandState = MicroNextCommandState {0, core.gb.cpu.SP};
 }
 
 // Frame
 template <>
 void DebuggerBackend::initializeCommandState<FrameCommand>(const FrameCommand& cmd) {
-    commandState = FrameCommandState {.counter = 0};
+    commandState = FrameCommandState {};
 }
 
 // FrameBack
 template <>
 void DebuggerBackend::initializeCommandState<FrameBackCommand>(const FrameBackCommand& cmd) {
-    commandState = FrameBackCommandState {.counter = 0};
+    commandState = FrameBackCommandState {};
 }
 
 // Scanline
 template <>
 void DebuggerBackend::initializeCommandState<ScanlineCommand>(const ScanlineCommand& cmd) {
-    commandState = ScanlineCommandState {.counter = 0};
+    commandState = ScanlineCommandState {};
 }
 
 // Continue
