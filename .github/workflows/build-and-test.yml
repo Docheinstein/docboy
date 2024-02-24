@@ -1,0 +1,31 @@
+name: Build and test
+
+on: push
+
+jobs:
+  # Build with the following 3 configurations:
+  # 1. Linux, Release, gcc compiler    [also run tests]
+  # 2. Linux, Release, clang compiler
+  # 3. Windows, Release, cl compiler
+  build-linux-gcc:
+    uses: ./.github/workflows/build-single-platform.yml
+    with:
+      os: ubuntu-latest
+      c_compiler: gcc
+      cpp_compiler: g++
+      build_type: Release
+      run_tests: true
+#  build-linux-clang:
+#    uses: ./.github/workflows/build-single-platform.yml
+#    with:
+#      os: ubuntu-latest
+#      c_compiler: clang
+#      cpp_compiler: clang++
+#      build_type: Release
+#  build-windows-cl:
+#    uses: ./.github/workflows/build-single-platform.yml
+#    with:
+#      os: windows-latest
+#      c_compiler: cl
+#      cpp_compiler: cl
+#      build_type: Release

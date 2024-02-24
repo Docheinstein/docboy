@@ -13,16 +13,14 @@ on:
       build_type:
         required: true
         type: string
-    outputs:
-      runner:
-        value: ${{ jobs.build.outputs.runner }}
+      run_tests:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
     runs-on: ${{ inputs.os }}
-
-    outputs:
-      runner: ${{ runner.name }}
 
     steps:
       # Checkout and update submodules recursively.
@@ -42,3 +40,9 @@ jobs:
       # Build project.
       - name: Build
         run: cmake --build ${{ github.workspace }}/build --config ${{ inputs.build_type }}
+
+      # Run tests (eventually).
+      - name: Run Tests
+        if: ${{ inputs.run_tests }}
+        run: ctest --build-config ${{ inputs.build_type }}
+
