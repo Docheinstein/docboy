@@ -13,7 +13,8 @@ on:
       build_type:
         required: true
         type: string
-
+    outputs:
+      runner: ${{ runner.name }}
 
 jobs:
   build:

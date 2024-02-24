@@ -31,9 +31,9 @@ jobs:
 
   # Run all tests (with linux-gcc build).
   test:
-    runs-on: ubuntu-latest
-
     needs: build-linux-gcc
+
+    runs-on: ${{ needs.build-linux-gcc.outputs.runner }}
 
     steps:
     # Run tests.
