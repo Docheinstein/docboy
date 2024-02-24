@@ -45,4 +45,5 @@ jobs:
       - name: Run Tests
         if: ${{ inputs.run_tests }}
         run: ctest --build-config ${{ inputs.build_type }}
+        working-directory: ${{ github.workspace }}/build
 
