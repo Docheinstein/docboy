@@ -6,6 +6,7 @@ add_subdirectory(tui)
 
 # zlib
 set(ZLIB_BUILD_EXAMPLES OFF)
+set(SKIP_INSTALL_ALL ON)
 add_subdirectory(zlib)
 
 # Explicitly set ZLIB::ZLIB as an alias for zlibstatic so that libpng will use this.
@@ -23,7 +24,6 @@ set(PNG_SHARED OFF CACHE BOOL "Build libpng as a shared library")
 set(PNG_STATIC ON CACHE BOOL "Build libpng as a static library")
 set(PNG_TESTS OFF CACHE BOOL "Build the libpng tests")
 set(PNG_TOOLS OFF CACHE BOOL "Build the libpng tools")
-set(SKIP_INSTALL_ALL ON)
 add_subdirectory(libpng)
 
 # SDL
