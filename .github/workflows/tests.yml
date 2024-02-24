@@ -1,0 +1,14 @@
+name: Tests
+
+on: push
+
+jobs:
+  # Build for linux and run tests.
+  build-linux-gcc:
+    uses: ./.github/workflows/build-single-platform.yml
+    with:
+      os: ubuntu-latest
+      c_compiler: gcc
+      cpp_compiler: g++
+      build_type: Release
+      run_tests: true

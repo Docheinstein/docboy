@@ -1,3 +1,6 @@
+![Tests](https://github.com/Docheinstein/docboy/actions/workflows/build-all-platforms/badge.svg)
+![Build](https://github.com/Docheinstein/docboy/actions/workflows/tests.yml/badge.svg)
+
 # DocBoy
 
 GameBoy emulator written in C++17.
