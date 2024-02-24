@@ -15,11 +15,14 @@ on:
         type: string
     outputs:
       runner:
-        value: ${{ runner.name }}
+        value: ${{ jobs.build.outputs.runner }}
 
 jobs:
   build:
     runs-on: ${{ inputs.os }}
+
+    outputs:
+      runner: ${{ runner.name }}
 
     steps:
       # Checkout and update submodules recursively.
