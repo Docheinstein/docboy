@@ -7,15 +7,17 @@ add_subdirectory(tui)
 # zlib
 set(ZLIB_BUILD_EXAMPLES OFF)
 add_subdirectory(zlib)
-add_library(ZLIB::ZLIB ALIAS zlibstatic) # libpng uses ZLIB::ZLIB
+
+# Explicitly set ZLIB::ZLIB as an alias for zlibstatic so that libpng will use this.
+add_library(ZLIB::ZLIB ALIAS zlibstatic)
 
 # libpng
-check_include_file("pnglibconf.h" HAS_PNGLIBCONF_H)
-if (NOT HAS_PNGLIBCONF_H)
-    # Copy prebuilt pnglibconf.h into libpng source directory if not available system-wise
-      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libpng/scripts/pnglibconf.h.prebuilt
-                 ${CMAKE_CURRENT_SOURCE_DIR}/libpng/pnglibconf.h)
-endif()
+# Copy prebuilt pnglibconf.h into libpng source directory.
+# We must to do so even if it is available system wise because we want to
+# statically link the zlib library we have built; otherwise the libpng might
+# complain because of zlib's version mismatch.
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libpng/scripts/pnglibconf.h.prebuilt
+           ${CMAKE_CURRENT_SOURCE_DIR}/libpng/pnglibconf.h)
 
 set(PNG_SHARED OFF CACHE BOOL "Build libpng as a shared library")
 set(PNG_STATIC ON CACHE BOOL "Build libpng as a static library")
