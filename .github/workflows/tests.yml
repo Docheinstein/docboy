@@ -4,7 +4,7 @@ on: push
 
 jobs:
   # Build for linux and run tests.
-  build-linux-gcc:
+  build-linux-gcc-and-test:
     uses: ./.github/workflows/build-single-platform.yml
     with:
       os: ubuntu-latest
