@@ -14,7 +14,8 @@ on:
         required: true
         type: string
     outputs:
-      runner: ${{ runner.name }}
+      runner:
+        value: ${{ runner.name }}
 
 jobs:
   build:
