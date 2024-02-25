@@ -19,12 +19,14 @@ public:
     static constexpr uint16_t PIXEL_COUNT = Specs::Display::WIDTH * Specs::Display::HEIGHT;
     static constexpr uint32_t PIXEL_BUFFER_SIZE = PIXEL_COUNT * sizeof(PixelRgb565);
 
-    static constexpr Palette RGB565_PALETTE {
+    static constexpr Palette DEFAULT_PALETTE {
         0x84A0, // Lightest Green
         0x4B40, // Light Green
         0x2AA0, // Dark Green
         0x1200, // Darkest Green
     };
+
+    explicit Lcd(const Palette& palette = DEFAULT_PALETTE);
 
     void reset();
 
@@ -39,6 +41,8 @@ public:
     void loadState(Parcel& parcel);
 
 private:
+    Palette palette {};
+
     PixelRgb565 pixels[PIXEL_COUNT] {};
     uint16_t cursor {};
 

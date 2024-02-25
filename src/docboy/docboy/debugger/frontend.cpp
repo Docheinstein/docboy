@@ -1151,7 +1151,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("Last Stat IRQ") << "    :  " << gb.ppu.lastStatIrq << endl;
 
         // LCD
-        const auto pixelColor = [](uint16_t lcdColor) {
+        const auto pixelColor = [this](uint16_t lcdColor) {
             Text colors[4] {
                 color<154>("0"),
                 color<106>("1"),
@@ -1159,7 +1159,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 color<28>("3"),
             };
             for (uint8_t i = 0; i < 4; i++) {
-                if (lcdColor == Lcd::RGB565_PALETTE[i])
+                if (lcdColor == gb.lcd.palette[i])
                     return colors[i];
             }
             return color<0>("[.]"); // allowed because framebuffer could be cleared by the debugger

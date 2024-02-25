@@ -3,6 +3,9 @@ add_library(extra STATIC EXCLUDE_FROM_ALL)
 target_sources(extra PRIVATE
     extra/cartridge/header.h
     extra/cartridge/header.cpp
+    extra/config/parser.h
+    extra/config/parser.tpp
+    extra/config/parser.cpp
     extra/png/iopng.h
     extra/png/iopng.cpp
     extra/img/imgmanip.h

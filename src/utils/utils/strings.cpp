@@ -37,3 +37,7 @@ std::string rpad(const std::string& s, std::size_t length, char ch) {
     const std::size_t inLength = s.length();
     return inLength < length ? s + std::string(length - inLength, ch) : s;
 }
+
+bool starts_with(const std::string& heystack, const std::string& needle) {
+    return heystack.find(needle) == 0;
+}

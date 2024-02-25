@@ -35,10 +35,15 @@
 class GameBoy {
 public:
 #ifdef ENABLE_BOOTROM
-    explicit GameBoy(std::unique_ptr<BootRom>&& bootRom = nullptr) :
-        bootRom(std::move(bootRom)) {
+    explicit GameBoy(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE, std::unique_ptr<BootRom>&& bootRom = nullptr) :
+        lcd {palette},
+        bootRom {std::move(bootRom)} {
     }
 #endif
+
+    explicit GameBoy(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE) :
+        lcd {palette} {
+    }
 
     Vram vram {};
     Wram1 wram1 {};

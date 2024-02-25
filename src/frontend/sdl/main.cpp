@@ -2,6 +2,7 @@
 #include "docboy/cartridge/factory.h"
 #include "docboy/core/core.h"
 #include "extra/cartridge/header.h"
+#include "extra/config/parser.h"
 #include "extra/serial/endpoints/console.h"
 #include "utils/formatters.hpp"
 #include "utils/io.h"
@@ -24,20 +25,21 @@
 #include "docboy/debugger/memsniffer.h"
 #endif
 
-static constexpr uint64_t OVERLAY_TEXT_GUID = 1;
-static constexpr uint64_t FPS_TEXT_GUID = 2;
-static constexpr uint64_t SPEED_TEXT_GUID = 3;
+namespace {
+constexpr uint64_t OVERLAY_TEXT_GUID = 1;
+constexpr uint64_t FPS_TEXT_GUID = 2;
+constexpr uint64_t SPEED_TEXT_GUID = 3;
 
-static constexpr std::chrono::nanoseconds DEFAULT_REFRESH_PERIOD {1000000000LU * Specs::Ppu::DOTS_PER_FRAME /
-                                                                  Specs::Frequencies::CLOCK};
+constexpr std::chrono::nanoseconds DEFAULT_REFRESH_PERIOD {1000000000LU * Specs::Ppu::DOTS_PER_FRAME /
+                                                           Specs::Frequencies::CLOCK};
 
-static const std::map<SDL_Keycode, Joypad::Key> SDL_KEYS_TO_JOYPAD_KEYS = {
+const std::map<SDL_Keycode, Joypad::Key> SDL_KEYS_TO_JOYPAD_KEYS = {
     {SDLK_RETURN, Joypad::Key::Start}, {SDLK_TAB, Joypad::Key::Select}, {SDLK_z, Joypad::Key::A},
     {SDLK_x, Joypad::Key::B},          {SDLK_UP, Joypad::Key::Up},      {SDLK_RIGHT, Joypad::Key::Right},
     {SDLK_DOWN, Joypad::Key::Down},    {SDLK_LEFT, Joypad::Key::Left},
 };
 
-static void dump_cartridge_info(const ICartridge& cartridge) {
+void dump_cartridge_info(const ICartridge& cartridge) {
     const auto header = CartridgeHeader::parse(cartridge);
     std::cout << "Title             :  " << header.titleAsString() << "\n";
     std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     (" << header.cartridgeTypeDescription()
@@ -55,38 +57,87 @@ static void dump_cartridge_info(const ICartridge& cartridge) {
     std::cout << "Header checksum   :  " << hex(header.header_checksum) << "\n";
 }
 
+std::optional<uint16_t> hex_string_to_uint16_t(const std::string& s) {
+    const char* cstr = s.c_str();
+    char* endptr {};
+    errno = 0;
+
+    uint16_t val = std::strtol(cstr, &endptr, 16);
+
+    if (errno || endptr == cstr || *endptr != '\0') {
+        return std::nullopt;
+    }
+
+    return val;
+}
+
+void ensureFileExists(const std::string& path) {
+    if (!file_exists(path)) {
+        std::cerr << "ERROR: failed to load '" << path << "'" << std::endl;
+        exit(1);
+    }
+}
+} // namespace
+
 int main(int argc, char* argv[]) {
+    // Parse command line arguments
     struct {
         std::string rom;
         IF_BOOTROM(std::string bootRom);
+        std::string config {};
         bool serial {};
         float scaling {1.0};
         bool dumpCartridgeInfo {};
         IF_DEBUGGER(bool debugger {});
     } args;
 
-    Args::Parser parser {};
-    IF_BOOTROM(parser.addArgument(args.bootRom, "boot-rom").help("Boot ROM"));
-    parser.addArgument(args.rom, "rom").help("ROM");
-    parser.addArgument(args.serial, "--serial", "-s").help("Display serial console");
-    parser.addArgument(args.scaling, "--scaling", "-z").help("Scaling factor");
-    parser.addArgument(args.dumpCartridgeInfo, "--cartridge-info", "-i").help("Dump cartridge info and quit");
-    IF_DEBUGGER(parser.addArgument(args.debugger, "--debugger", "-d").help("Attach debugger"));
+    Args::Parser argsParser {};
+    IF_BOOTROM(argsParser.addArgument(args.bootRom, "boot-rom").help("Boot ROM"));
+    argsParser.addArgument(args.rom, "rom").help("ROM");
+    argsParser.addArgument(args.config, "--config", "-c").help("Read configuration file");
+    argsParser.addArgument(args.serial, "--serial", "-s").help("Display serial console");
+    argsParser.addArgument(args.scaling, "--scaling", "-z").help("Scaling factor");
+    argsParser.addArgument(args.dumpCartridgeInfo, "--cartridge-info", "-i").help("Dump cartridge info and quit");
+    IF_DEBUGGER(argsParser.addArgument(args.debugger, "--debugger", "-d").help("Attach debugger"));
 
-    if (!parser.parse(argc, argv, 1))
+    if (!argsParser.parse(argc, argv, 1))
         return 1;
 
-    const auto ensureExists = [](const std::string& path) {
-        if (!file_exists(path)) {
-            std::cerr << "ERROR: failed to load '" << path << "'" << std::endl;
-            exit(1);
+    struct {
+        Lcd::Palette palette {Lcd::DEFAULT_PALETTE};
+    } cfg {};
+
+    if (!args.config.empty()) {
+        // Parse configuration file
+
+        ensureFileExists(args.config);
+
+        ConfigParser cfgParser;
+        cfgParser.addCommentPrefix("#");
+        cfgParser.addOption("palette_color_0", cfg.palette[0], hex_string_to_uint16_t);
+        cfgParser.addOption("palette_color_1", cfg.palette[1], hex_string_to_uint16_t);
+        cfgParser.addOption("palette_color_2", cfg.palette[2], hex_string_to_uint16_t);
+        cfgParser.addOption("palette_color_3", cfg.palette[3], hex_string_to_uint16_t);
+
+        if (const auto result = cfgParser.parse(args.config); !result) {
+            switch (result.outcome) {
+            case ConfigParser::Result::Outcome::ErrorReadFailed:
+                std::cerr << "ERROR: failed to read configuratiom file '" << args.config << "'" << std::endl;
+                break;
+            case ConfigParser::Result::Outcome::ErrorParseFailed:
+                std::cerr << "ERROR: failed to parse configuratiom file '" << args.config << "': error at line "
+                          << result.lastReadLine << std::endl;
+                break;
+            default:;
+            }
+            return 2;
         }
-    };
+    }
 
-    IF_BOOTROM(ensureExists(args.bootRom));
-    ensureExists(args.rom);
+    IF_BOOTROM(ensureFileExists(args.bootRom));
+    ensureFileExists(args.rom);
 
-    std::unique_ptr<GameBoy> gb {std::make_unique<GameBoy>(IF_BOOTROM(BootRomFactory().create(args.bootRom)))};
+    auto gb {std::make_unique<GameBoy>(cfg.palette IF_BOOTROM(COMMA BootRomFactory().create(args.bootRom)))};
     Core core {*gb};
 
     path romPath {args.rom};
