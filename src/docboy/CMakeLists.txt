@@ -85,7 +85,7 @@ target_sources(docboy PRIVATE
 )
 
 if (ENABLE_BOOTROM)
-    target_compile_definitions(docboy PUBLIC ENABLE_BOOTROM)
+    target_compile_definitions(docboy PRIVATE ENABLE_BOOTROM)
 
     target_sources(docboy PRIVATE
         docboy/boot/lock.h
@@ -99,8 +99,8 @@ endif ()
 
 
 if (ENABLE_DEBUGGER)
-    target_compile_definitions(docboy PUBLIC ENABLE_DEBUGGER)
-    target_compile_definitions(docboy PUBLIC ENABLE_DEBUGGER_MEMORY_SNIFFER)
+    target_compile_definitions(docboy PRIVATE ENABLE_DEBUGGER)
+    target_compile_definitions(docboy PRIVATE ENABLE_DEBUGGER_MEMORY_SNIFFER)
 
     if (NOT WIN32)
         # Fallback to ASCII characters for Windows
@@ -125,7 +125,7 @@ if (ENABLE_DEBUGGER)
 endif ()
 
 if (ENABLE_SERIAL)
-    target_compile_definitions(docboy PUBLIC ENABLE_SERIAL)
+    target_compile_definitions(docboy PRIVATE ENABLE_SERIAL)
 endif ()
 
 target_link_libraries(docboy PRIVATE utils)

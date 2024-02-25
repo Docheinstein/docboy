@@ -422,10 +422,14 @@ std::optional<FrontendCommand> parse_cmdline(const std::string& s) {
 volatile sig_atomic_t sigint_trigger = 0;
 
 void sigint_handler(int signum) {
+#ifndef POSIX
+    signal(SIGINT, sigint_handler);
+#endif
+
     sigint_trigger = 1;
 }
 
-#if POSIX
+#ifdef POSIX
 void attach_sigint_handler() {
     struct sigaction sa {};
     sa.sa_handler = sigint_handler;
