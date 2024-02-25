@@ -33,7 +33,7 @@ jobs:
 
   # Wait for all the builds, then bundle them and create a new release.
   deploy:
-    needs: [build-linux, build-windows]
+    needs: [build-docboy-sdl-linux, build-docboy-sdl-windows]
     runs-on: ubuntu-latest
     steps:
       # Download Linux build.
