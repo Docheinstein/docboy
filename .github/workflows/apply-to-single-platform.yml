@@ -17,6 +17,17 @@ on:
         required: false
         type: boolean
         default: false
+      upload_artifact:
+        required: false
+        type: boolean
+        default: false
+      artifact_name:
+        required: false
+        type: string
+        default: ${{ inputs.os }}-${{ inputs.build_type }}-${{ inputs.c_compiler }}
+      artifact_path:
+        required: false
+        type: string
 
 jobs:
   build:
@@ -43,9 +54,15 @@ jobs:
       - name: Build
         run: cmake --build ${{ github.workspace }}/build --config ${{ inputs.build_type }}
 
-      # Run tests (eventually).
+      # Run tests [optional]
       - name: Run Tests
         if: ${{ inputs.run_tests }}
         run: ctest --build-config ${{ inputs.build_type }}
         working-directory: ${{ github.workspace }}/build
 
+      # Upload artifact [optional]
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.upload_artifact }}
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.artifact_path }}

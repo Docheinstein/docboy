@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version"
+        required: true
+
+jobs:
+  # Build for all the platforms.
+  build-linux:
+    uses: ./.github/workflows/apply-to-single-platform.yml
+    with:
+      os: ubuntu-latest
+      c_compiler: gcc
+      cpp_compiler: g++
+      build_type: Release
+      upload_artifact: true
+      artifact_name: docboy-sdl-linux
+      artifact_path: build/docboy-sdl
+
+  build-windows:
+    uses: ./.github/workflows/apply-to-single-platform.yml
+    with:
+      os: windows-latest
+      c_compiler: cl
+      cpp_compiler: cl
+      build_type: Release
+      upload_artifact: true
+      artifact_name: docboy-sdl-windows
+      artifact_path: build/docboy-sdl.exe
+
+  # Wait for all the builds, then bundle them and create a new release.
+  deploy:
+    needs: [build-linux-gcc, build-linux-clang, build-windows-cl]
+    runs-on: ubuntu-latest
+    steps:
+      # Download builds.
+      - name: Download docboy-sdl-linux
+        uses: actions/download-artifact@v4
+        with:
+          name: docboy-sdl-linux
+          path: docboy-linux/docboy-sdl
+
+      - name: Download docboy-sdl-linux
+        uses: actions/download-artifact@v4
+        with:
+          name: docboy-sdl-windows
+          path: docboy-windows/docboy-sdl.exe
+
+      - name: Display structure of downloaded files
+        run: ls -laR
+
+      # Create release.
+      - uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
+          files: |
+            docboy-linux
+            docboy-windows
