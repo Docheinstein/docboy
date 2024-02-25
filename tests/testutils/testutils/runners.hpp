@@ -106,7 +106,7 @@ public:
     FramebufferRunner& expectFramebuffer(const std::string& filename, const std::optional<Lcd::Palette>& palette_) {
         load_framebuffer_png(filename, expectedFramebuffer);
         if (palette_)
-            convert_framebuffer_with_palette(expectedFramebuffer, *palette_, expectedFramebuffer, Lcd::RGB565_PALETTE);
+            convert_framebuffer_with_palette(expectedFramebuffer, *palette_, expectedFramebuffer, Lcd::DEFAULT_PALETTE);
         return *this;
     }
 

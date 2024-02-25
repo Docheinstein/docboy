@@ -5,6 +5,7 @@
 #include <functional>
 #include <map>
 #include <string>
+#include <vector>
 
 class ConfigParser {
 public:
