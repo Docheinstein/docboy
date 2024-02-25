@@ -44,6 +44,17 @@ jobs:
           name: docboy-sdl-linux
           path: docboy-linux
 
+      - name: PWD1
+        run: pwd
+
+      - name: Package docboy-sdl-linux
+        run: |
+          cd docboy-linux
+          zip -r ../docboy-linux.zip .
+
+      - name: PWD2
+        run: pwd
+
 #      - name: Download docboy-sdl-windows
 #        uses: actions/download-artifact@v4
 #        with:
@@ -68,4 +79,4 @@ jobs:
           prerelease: false
           automatic_release_tag: ${{ inputs.version }}
           files: |
-            docboy-linux
+            docboy-linux.zip
