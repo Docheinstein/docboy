@@ -33,7 +33,7 @@ jobs:
 
   # Wait for all the builds, then bundle them and create a new release.
   deploy:
-    needs: [build-linux-gcc, build-linux-clang, build-windows-cl]
+    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
       # Download builds.
