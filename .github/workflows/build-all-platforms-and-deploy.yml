@@ -20,20 +20,21 @@ jobs:
       artifact_name: docboy-sdl-linux
       artifact_path: build/docboy-sdl
 
-  build-windows:
-    uses: ./.github/workflows/apply-to-single-platform.yml
-    with:
-      os: windows-latest
-      c_compiler: cl
-      cpp_compiler: cl
-      build_type: Release
-      upload_artifact: true
-      artifact_name: docboy-sdl-windows
-      artifact_path: build\Release\docboy-sdl.exe
+#  build-windows:
+#    uses: ./.github/workflows/apply-to-single-platform.yml
+#    with:
+#      os: windows-latest
+#      c_compiler: cl
+#      cpp_compiler: cl
+#      build_type: Release
+#      upload_artifact: true
+#      artifact_name: docboy-sdl-windows
+#      artifact_path: build\Release\docboy-sdl.exe
 
   # Wait for all the builds, then bundle them and create a new release.
   deploy:
-    needs: [build-linux, build-windows]
+    needs: [build-linux]
+#    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
       # Download builds.
@@ -41,21 +42,30 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: docboy-sdl-linux
-          path: docboy-linux/docboy-sdl
+          path: docboy-linux
 
-      - name: Download docboy-sdl-windows
-        uses: actions/download-artifact@v4
-        with:
-          name: docboy-sdl-windows
-          path: docboy-windows/docboy-sdl.exe
+#      - name: Download docboy-sdl-windows
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: docboy-sdl-windows
+#          path: docboy-windows/docboy-sdl.exe
 
       - name: Display structure of downloaded files
         run: ls -laR
 
-      # Create release.
-      - uses: softprops/action-gh-release@v1
+#      # Create release.
+#      - uses: softprops/action-gh-release@v1
+#        with:
+#          tag_name: ${{ inputs.version }}
+#          files: |
+#            docboy-linux
+##            docboy-windows
+
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          tag_name: ${{ inputs.version }}
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          automatic_release_tag: ${{ inputs.version }}
           files: |
             docboy-linux
-            docboy-windows
