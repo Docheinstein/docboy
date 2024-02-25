@@ -16,8 +16,8 @@
 	branch = master
 [submodule "external/zlib"]
 	path = external/zlib
-	url = https://github.com/madler/zlib
-	branch = master
+	url = https://github.com/Docheinstein/zlib
+	branch = develop
 [submodule "external/catch2"]
 	path = external/catch2
 	url = https://github.com/catchorg/Catch2.git

@@ -7,6 +7,7 @@ add_subdirectory(tui)
 # zlib
 set(ZLIB_BUILD_EXAMPLES OFF)
 set(SKIP_INSTALL_ALL ON)
+set(RENAME_ZCONF OFF)
 add_subdirectory(zlib)
 
 # Explicitly set ZLIB::ZLIB as an alias for zlibstatic so that libpng will use this.
