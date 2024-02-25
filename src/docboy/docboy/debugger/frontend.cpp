@@ -453,6 +453,16 @@ std::string to_string(const DisassembledInstructionReference& instr) {
        << std::setw(23) << instruction_mnemonic(instr.instruction, instr.address);
     return ss.str();
 }
+
+#ifdef TERM_SUPPORTS_UNICODE
+constexpr const char* PIPE = "|";
+constexpr const char* DASH = "—";
+constexpr const char* DOT = "•";
+#else
+constexpr const char* PIPE = "|";
+constexpr const char* DASH = "-";
+constexpr const char* DOT = "*";
+#endif
 } // namespace
 
 DebuggerFrontend::DebuggerFrontend(DebuggerBackend& backend) :
@@ -888,7 +898,7 @@ void DebuggerFrontend::setOnCommandPulledCallback(std::function<bool(const std::
 void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     using namespace Tui;
 
-    const auto title = [](const Text& text, uint8_t width, const std::string& sep = "—") {
+    const auto title = [](const Text& text, uint8_t width, const std::string& sep = DASH) {
         check(width >= text.size());
         Text t {text.size() > 0 ? (" " + text + " ") : text};
 
@@ -924,11 +934,11 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     };
 
     const auto makeHorizontalLineDivider = []() {
-        return make_divider(Text {} + "  " + Token {"│", 1} + "  ");
+        return make_divider(Text {} + "  " + Token {PIPE, 1} + "  ");
     };
 
     const auto makeVerticalLineDivider = []() {
-        return make_divider(Text {Token {"—", 1}});
+        return make_divider(Text {Token {DASH, 1}});
     };
 
     const auto makeSpaceDivider = []() {
@@ -1621,7 +1631,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 const auto disassembleEntry = [this](const DisassembledInstructionEntry& entry) {
                     Text t {};
                     if (backend.getBreakpoint(entry.address))
-                        t += red(Text {Token {"•", 1}});
+                        t += red(Text {Token {DOT, 1}});
                     else
                         t += " ";
                     t += " ";

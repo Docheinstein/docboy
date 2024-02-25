@@ -102,6 +102,11 @@ if (ENABLE_DEBUGGER)
     target_compile_definitions(docboy PUBLIC ENABLE_DEBUGGER)
     target_compile_definitions(docboy PUBLIC ENABLE_DEBUGGER_MEMORY_SNIFFER)
 
+    if (NOT WIN32)
+        # Fallback to ASCII characters for Windows
+        target_compile_definitions(docboy PRIVATE TERM_SUPPORTS_UNICODE)
+    endif()
+
     target_sources(docboy PRIVATE
             docboy/debugger/backend.cpp
             docboy/debugger/backend.h
