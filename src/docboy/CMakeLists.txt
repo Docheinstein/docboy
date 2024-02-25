@@ -99,8 +99,8 @@ endif ()
 
 
 if (ENABLE_DEBUGGER)
-    target_compile_definitions(docboy PRIVATE ENABLE_DEBUGGER)
-    target_compile_definitions(docboy PRIVATE ENABLE_DEBUGGER_MEMORY_SNIFFER)
+    target_compile_definitions(docboy PUBLIC ENABLE_DEBUGGER)
+    target_compile_definitions(docboy PUBLIC ENABLE_DEBUGGER_MEMORY_SNIFFER)
 
     if (NOT WIN32)
         # Fallback to ASCII characters for Windows
