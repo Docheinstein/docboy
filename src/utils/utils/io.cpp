@@ -6,7 +6,7 @@
 std::vector<uint8_t> read_file(const std::string& filename, bool* ok) {
     std::vector<uint8_t> out;
 
-    std::ifstream ifs(filename);
+    std::ifstream ifs(filename, std::ios::in | std::ios::binary);
     if (!ifs) {
         if (ok)
             *ok = false;
@@ -38,7 +38,7 @@ std::vector<uint8_t> read_file(const std::string& filename, bool* ok) {
 }
 
 void write_file(const std::string& filename, const void* data, size_t length, bool* ok) {
-    std::ofstream ofs(filename);
+    std::ofstream ofs(filename, std::ios::out | std::ios::binary);
     if (!ofs) {
         if (ok)
             *ok = false;
