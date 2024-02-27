@@ -32,8 +32,7 @@ std::vector<uint8_t> read_file(const std::string& filename, bool* ok) {
     }
 
     if (ok)
-        *ok = true;
-
+        *ok = ifs.good();
     return out;
 }
 
