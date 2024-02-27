@@ -113,7 +113,7 @@ struct FrontendFrameBackCommand {
 struct FrontendContinueCommand {};
 
 struct FrontendTraceCommand {
-    std::optional<uint8_t> level {};
+    std::optional<uint32_t> level {};
 };
 
 struct FrontendDumpDisassembleCommand {};
@@ -138,15 +138,16 @@ struct FrontendCommandInfo {
 };
 
 enum TraceFlag : uint32_t {
-    TraceFlagInstruction = 1,
+    TraceFlagInstruction = 1 << 0,
     TraceFlagRegisters = 1 << 1,
     TraceFlagInterrupts = 1 << 2,
     TraceFlagTimers = 1 << 3,
-    TraceFlagStack = 1 << 4,
-    TraceFlagDma = 1 << 5,
-    TraceFlagPpu = 1 << 6,
-    TraceMCycle = 1 << 7,
-    TraceTCycle = 1 << 8,
+    TraceFlagDma = 1 << 4,
+    TraceFlagStack = 1 << 5,
+    TraceFlagMemory = 1 << 6,
+    TraceFlagPpu = 1 << 7,
+    TraceMCycle = 1 << 8,
+    TraceTCycle = 1 << 9,
     MaxTrace = (TraceTCycle << 1) - 1,
 };
 
@@ -657,7 +658,19 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendTraceCommand>(con
         trace = *cmd.level;
     else
         trace = trace ? 0 : MaxTrace;
-    std::cout << "Trace: " << +static_cast<uint8_t>(trace) << std::endl;
+
+    std::cout << "Trace          : " << trace << std::endl;
+    std::cout << "> Instructions : " << (static_cast<bool>(trace & TraceFlagInstruction) ? "ON" : "OFF") << std::endl;
+    std::cout << "> Registers    : " << (static_cast<bool>(trace & TraceFlagRegisters) ? "ON" : "OFF") << std::endl;
+    std::cout << "> Interrupts   : " << (static_cast<bool>(trace & TraceFlagInterrupts) ? "ON" : "OFF") << std::endl;
+    std::cout << "> Timers       : " << (static_cast<bool>(trace & TraceFlagTimers) ? "ON" : "OFF") << std::endl;
+    std::cout << "> DMA          : " << (static_cast<bool>(trace & TraceFlagDma) ? "ON" : "OFF") << std::endl;
+    std::cout << "> Stack        : " << (static_cast<bool>(trace & TraceFlagStack) ? "ON" : "OFF") << std::endl;
+    std::cout << "> Memory       : " << (static_cast<bool>(trace & TraceFlagMemory) ? "ON" : "OFF") << std::endl;
+    std::cout << "> PPU          : " << (static_cast<bool>(trace & TraceFlagPpu) ? "ON" : "OFF") << std::endl;
+    std::cout << "> M-Cycles     : " << (static_cast<bool>(trace & TraceMCycle) ? "ON" : "OFF") << std::endl;
+    std::cout << "> T-Cycles     : " << (static_cast<bool>(trace & TraceTCycle) ? "ON" : "OFF") << std::endl;
+
     return std::nullopt;
 }
 
@@ -818,7 +831,7 @@ void DebuggerFrontend::onTick(uint64_t tick) {
         const bool isMcycle = tick % 4 == 0;
         const bool isNewInstruction = cpu.instruction.microop.counter == 0;
 
-        if (!(tTrace || (mTrace && isMcycle) || isNewInstruction)) {
+        if (!(tTrace || (isMcycle && mTrace) || (isMcycle && isNewInstruction))) {
             // do not trace
             return;
         }
@@ -856,23 +869,29 @@ void DebuggerFrontend::onTick(uint64_t tick) {
                       << " IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF) << "  ";
         }
 
-        if (trace & TraceFlagStack) {
-            std::cerr << "SP[" << hex((uint16_t)(cpu.SP + 1)) << "]:" << hex(backend.readMemory(cpu.SP + 1)) << " "
-                      << "SP[" << hex(cpu.SP) << "]:" << hex(backend.readMemory(cpu.SP)) << " "
-                      << "SP[" << hex((uint16_t)(cpu.SP - 1)) << "]:" << hex(backend.readMemory(cpu.SP - 1)) << "  ";
-        }
-
         if (trace & TraceFlagDma) {
             std::cerr << "DMA:" << std::setw(3) << (gb.dma.transferring ? std::to_string(gb.dma.cursor) : "OFF")
                       << "  ";
         }
 
         if (trace & TraceFlagTimers) {
-            std::cerr << "DIc16:" << hex(gb.timers.DIV)
+            std::cerr << "DIV16:" << hex(gb.timers.DIV)
                       << " DIV:" << hex(backend.readMemory(Specs::Registers::Timers::DIV))
                       << " TIMA:" << hex(backend.readMemory(Specs::Registers::Timers::TIMA))
                       << " TMA:" << hex(backend.readMemory(Specs::Registers::Timers::TMA))
                       << " TAC:" << hex(backend.readMemory(Specs::Registers::Timers::TAC)) << "  ";
+        }
+
+        if (trace & TraceFlagStack) {
+            std::cerr << "[SP+1]:" << hex(backend.readMemory(cpu.SP + 1)) << " "
+                      << "[SP]:" << hex(backend.readMemory(cpu.SP)) << " "
+                      << "[SP-1]:" << hex(backend.readMemory(cpu.SP - 1)) << "  ";
+        }
+
+        if (trace & TraceFlagMemory) {
+            std::cerr << "[BC]:" << hex(backend.readMemory(cpu.BC)) << " "
+                      << "[DE]:" << hex(backend.readMemory(cpu.DE)) << " "
+                      << "[HL]:" << hex(backend.readMemory(cpu.HL)) << "  ";
         }
 
         if (trace & TraceFlagPpu) {
