@@ -8,7 +8,12 @@
 
 namespace {
 constexpr uint32_t MAX_HISTORY_SIZE = 600; // ~10 sec
+constexpr uint32_t MAX_CALLSTACK_SIZE = 8192;
+
+uint32_t hash_combine(uint32_t h1, uint32_t h2) {
+    return h1 + h2 * 0xdeece66d;
 }
+} // namespace
 
 DebuggerBackend::DebuggerBackend(Core& core) :
     core(core) {
@@ -52,11 +57,38 @@ void DebuggerBackend::onTick(uint64_t tick) {
 
     bool isMCycle = (tick % 4) == 0;
 
-    // Check breakpoints
+    // Handle new CPU instruction (check breakpoints, call stack, ...)
     if (isMCycle) {
         if (!DebuggerHelpers::isInIsr(cpu) && cpu.instruction.microop.counter == 0) {
+            if (lastInstruction) {
+                const uint8_t lastOpcode = lastInstruction->instruction[0];
+                // Check whether PC is changed due to a CALL
+                if (lastOpcode == 0xC4 || lastOpcode == 0xCC || lastOpcode == 0xCD || lastOpcode == 0xD4 ||
+                    lastOpcode == 0xDC) {
+                    check(lastInstruction->instruction.size() == 3);
+                    const uint16_t lastCallTargetPC =
+                        concat(lastInstruction->instruction[2], lastInstruction->instruction[1]);
+                    if (cpu.instruction.address == lastCallTargetPC) {
+                        // We are at PC given by the last CALL instruction: push a call stack entry
+                        check(callStack.size() < MAX_CALLSTACK_SIZE);
+                        callStack.emplace_back(*lastInstruction);
+                    }
+                }
+                // Check whether PC is changed due to a RET
+                else if (!callStack.empty() && (lastOpcode == 0xC0 || lastOpcode == 0xC8 || lastOpcode == 0xC9 ||
+                                                lastOpcode == 0xD0 || lastOpcode == 0xD8 || lastOpcode == 0xD9)) {
+                    const auto& lastCall = callStack.back();
+                    if (cpu.instruction.address == lastCall.address + 3) {
+                        // We are at PC of the last CALL instruction: pop a call stack entry
+                        callStack.pop_back();
+                    }
+                }
+            }
+
             // Disassemble the current instruction
-            disassemble(cpu.instruction.address, 1);
+            lastInstruction = disassemble(cpu.instruction.address, true);
+
+            // Check breakpoints
             auto b = getBreakpoint(cpu.instruction.address);
             if (b) {
                 // A breakpoint has been triggered: pull command again
@@ -157,6 +189,10 @@ void DebuggerBackend::onMemoryWrite(uint16_t address, uint8_t oldValue, uint8_t 
             watchpointHit->newValue = newValue;
         }
     }
+
+    // Update the memory hash after a change so that we don't
+    // have to recompute it from scratch each time.
+    memoryHash = hash_combine(memoryHash, hash_combine(address, newValue));
 }
 
 bool DebuggerBackend::isAskingToShutdown() const {
@@ -343,6 +379,32 @@ const Core& DebuggerBackend::getCore() const {
 void DebuggerBackend::proceed() {
     command = ContinueCommand();
     initializeCommandState<ContinueCommand>();
+}
+
+const std::vector<DisassembledInstructionReference>& DebuggerBackend::getCallStack() const {
+    return callStack;
+}
+
+uint32_t DebuggerBackend::computeStateHash() const {
+    const auto& gb = core.gb;
+
+    uint32_t h {};
+    h = hash_combine(h, core.ticks);
+    h = hash_combine(h, gb.cpu.AF);
+    h = hash_combine(h, gb.cpu.BC);
+    h = hash_combine(h, gb.cpu.DE);
+    h = hash_combine(h, gb.cpu.HL);
+    h = hash_combine(h, gb.cpu.PC);
+    h = hash_combine(h, gb.cpu.SP);
+    h = hash_combine(h, gb.interrupts.IE);
+    h = hash_combine(h, gb.interrupts.IF);
+    h = hash_combine(h, gb.timers.DIV);
+    h = hash_combine(h, gb.timers.TIMA);
+    h = hash_combine(h, gb.timers.TMA);
+    h = hash_combine(h, gb.timers.TAC);
+    h = hash_combine(h, memoryHash);
+
+    return h;
 }
 
 // ===================== COMMANDS STATE INITIALIZATION =========================

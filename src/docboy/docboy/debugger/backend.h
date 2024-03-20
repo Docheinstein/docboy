@@ -76,6 +76,10 @@ public:
     [[nodiscard]] std::optional<DisassembledInstruction> getDisassembledInstruction(uint16_t addr) const;
     [[nodiscard]] std::vector<DisassembledInstructionReference> getDisassembledInstructions() const;
 
+    const std::vector<DisassembledInstructionReference>& getCallStack() const;
+
+    uint32_t computeStateHash() const;
+
     [[nodiscard]] uint8_t readMemory(uint16_t addr);
     [[nodiscard]] uint8_t readMemoryRaw(uint16_t addr);
 
@@ -121,6 +125,11 @@ private:
     bool allowMemoryCallbacks {true};
 
     std::deque<std::vector<uint8_t>> history;
+
+    std::optional<DisassembledInstructionReference> lastInstruction;
+    std::vector<DisassembledInstructionReference> callStack;
+
+    uint32_t memoryHash {};
 };
 
 #endif // BACKEND_H

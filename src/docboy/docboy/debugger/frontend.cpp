@@ -116,6 +116,8 @@ struct FrontendTraceCommand {
     std::optional<uint32_t> level {};
 };
 
+struct FrontendChecksumCommand {};
+
 struct FrontendDumpDisassembleCommand {};
 
 struct FrontendHelpCommand {};
@@ -127,7 +129,7 @@ using FrontendCommand =
                  FrontendSearchInstructionsCommand, FrontendDisplayCommand, FrontendUndisplayCommand,
                  FrontendTickCommand, FrontendDotCommand, FrontendStepCommand, FrontendMicroStepCommand,
                  FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand, FrontendScanlineCommand,
-                 FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand,
+                 FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand, FrontendChecksumCommand,
                  FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
@@ -146,9 +148,10 @@ enum TraceFlag : uint32_t {
     TraceFlagStack = 1 << 5,
     TraceFlagMemory = 1 << 6,
     TraceFlagPpu = 1 << 7,
-    TraceMCycle = 1 << 8,
-    TraceTCycle = 1 << 9,
-    MaxTrace = (TraceTCycle << 1) - 1,
+    TraceFlagHash = 1 << 8,
+    TraceFlagMCycle = 1 << 9,
+    TraceFlagTCycle = 1 << 10,
+    MaxTraceFlag = (TraceFlagTCycle << 1) - 1,
 };
 
 template <typename T>
@@ -657,19 +660,31 @@ std::optional<Command> DebuggerFrontend::handleCommand<FrontendTraceCommand>(con
     if (cmd.level)
         trace = *cmd.level;
     else
-        trace = trace ? 0 : MaxTrace;
+        trace = trace ? 0 : MaxTraceFlag;
 
-    std::cout << "Trace          : " << trace << std::endl;
-    std::cout << "> Instructions : " << (static_cast<bool>(trace & TraceFlagInstruction) ? "ON" : "OFF") << std::endl;
-    std::cout << "> Registers    : " << (static_cast<bool>(trace & TraceFlagRegisters) ? "ON" : "OFF") << std::endl;
-    std::cout << "> Interrupts   : " << (static_cast<bool>(trace & TraceFlagInterrupts) ? "ON" : "OFF") << std::endl;
-    std::cout << "> Timers       : " << (static_cast<bool>(trace & TraceFlagTimers) ? "ON" : "OFF") << std::endl;
-    std::cout << "> DMA          : " << (static_cast<bool>(trace & TraceFlagDma) ? "ON" : "OFF") << std::endl;
-    std::cout << "> Stack        : " << (static_cast<bool>(trace & TraceFlagStack) ? "ON" : "OFF") << std::endl;
-    std::cout << "> Memory       : " << (static_cast<bool>(trace & TraceFlagMemory) ? "ON" : "OFF") << std::endl;
-    std::cout << "> PPU          : " << (static_cast<bool>(trace & TraceFlagPpu) ? "ON" : "OFF") << std::endl;
-    std::cout << "> M-Cycles     : " << (static_cast<bool>(trace & TraceMCycle) ? "ON" : "OFF") << std::endl;
-    std::cout << "> T-Cycles     : " << (static_cast<bool>(trace & TraceTCycle) ? "ON" : "OFF") << std::endl;
+    std::cout << "Trace          :     | " << trace << std::endl;
+    std::cout << "> Instructions : " << (static_cast<bool>(trace & TraceFlagInstruction) ? "ON " : "OFF") << " | "
+              << TraceFlagInstruction << std::endl;
+    std::cout << "> Registers    : " << (static_cast<bool>(trace & TraceFlagRegisters) ? "ON " : "OFF") << " | "
+              << TraceFlagRegisters << std::endl;
+    std::cout << "> Interrupts   : " << (static_cast<bool>(trace & TraceFlagInterrupts) ? "ON " : "OFF") << " | "
+              << TraceFlagInterrupts << std::endl;
+    std::cout << "> Timers       : " << (static_cast<bool>(trace & TraceFlagTimers) ? "ON " : "OFF") << " | "
+              << TraceFlagTimers << std::endl;
+    std::cout << "> DMA          : " << (static_cast<bool>(trace & TraceFlagDma) ? "ON " : "OFF") << " | "
+              << TraceFlagDma << std::endl;
+    std::cout << "> Stack        : " << (static_cast<bool>(trace & TraceFlagStack) ? "ON " : "OFF") << " | "
+              << TraceFlagStack << std::endl;
+    std::cout << "> Memory       : " << (static_cast<bool>(trace & TraceFlagMemory) ? "ON " : "OFF") << " | "
+              << TraceFlagMemory << std::endl;
+    std::cout << "> PPU          : " << (static_cast<bool>(trace & TraceFlagPpu) ? "ON " : "OFF") << " | "
+              << TraceFlagPpu << std::endl;
+    std::cout << "> Hash         : " << (static_cast<bool>(trace & TraceFlagHash) ? "ON " : "OFF") << " | "
+              << TraceFlagHash << std::endl;
+    std::cout << "> M-Cycles     : " << (static_cast<bool>(trace & TraceFlagMCycle) ? "ON " : "OFF") << " | "
+              << TraceFlagMCycle << std::endl;
+    std::cout << "> T-Cycles     : " << (static_cast<bool>(trace & TraceFlagTCycle) ? "ON " : "OFF") << " | "
+              << TraceFlagTCycle << std::endl;
 
     return std::nullopt;
 }
@@ -826,8 +841,8 @@ void DebuggerFrontend::onTick(uint64_t tick) {
     if (trace) {
         const Cpu& cpu = gb.cpu;
 
-        const bool mTrace = (trace & TraceMCycle) || (trace & TraceTCycle);
-        const bool tTrace = (trace & TraceTCycle);
+        const bool mTrace = (trace & TraceFlagMCycle) || (trace & TraceFlagTCycle);
+        const bool tTrace = (trace & TraceFlagTCycle);
         const bool isMcycle = tick % 4 == 0;
         const bool isNewInstruction = cpu.instruction.microop.counter == 0;
 
@@ -836,7 +851,7 @@ void DebuggerFrontend::onTick(uint64_t tick) {
             return;
         }
 
-        std::cerr << std::left << std::setw(12) << "[" + std::to_string(tick) + "] " << (isMcycle ? "* " : "  ");
+        std::cerr << std::left << std::setw(12) << "[" + std::to_string(tick) + "] ";
 
         if (trace & TraceFlagInstruction) {
             std::string instrStr;
@@ -897,6 +912,10 @@ void DebuggerFrontend::onTick(uint64_t tick) {
         if (trace & TraceFlagPpu) {
             const Ppu& ppu = gb.ppu;
             std::cerr << "Mode:" << +keep_bits<2>(gb.video.STAT) << " Dots:" << std::setw(12) << ppu.dots << "  ";
+        }
+
+        if (trace & TraceFlagHash) {
+            std::cerr << "Hash:" << hex(static_cast<uint16_t>(backend.computeStateHash())) << "  ";
         }
 
         std::cerr << std::endl;
@@ -986,6 +1005,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }
         }
         b << endl;
+
+        b << yellow("Hash") << "     :  " << hex(static_cast<uint16_t>(backend.computeStateHash())) << endl;
 
         return b;
     };
@@ -1150,7 +1171,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     blockReason = "empty bg fifo";
 
                 if (!blockReason.empty())
-                    t += yellow(" [blocked: " + blockReason + "]");
+                    t += yellow(" [" + blockReason + "]");
 
                 return t;
             }
@@ -1245,6 +1266,44 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("OAM A") << "            :  " << hex(gb.ppu.registers.oam.a) << endl;
         b << yellow("OAM B") << "            :  " << hex(gb.ppu.registers.oam.b) << endl;
 
+        // OAM Scanline entries
+        const auto& oamEntries = gb.ppu.scanlineOamEntries;
+        b << subheader("oam scanline entries", width) << endl;
+
+        const auto oamEntriesInfo = [](const auto& v, uint8_t (*fn)(const Ppu::OamScanEntry&)) {
+            Text t {};
+            for (uint8_t i = 0; i < v.size(); i++) {
+                t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
+            }
+            return t;
+        };
+
+        b << yellow("OAM Number") << "       :  " << oamEntriesInfo(oamEntries, [](const Ppu::OamScanEntry& e) {
+            return e.number;
+        }) << endl;
+        b << yellow("OAM X") << "            :  " << oamEntriesInfo(oamEntries, [](const Ppu::OamScanEntry& e) {
+            return e.x;
+        }) << endl;
+        b << yellow("OAM Y") << "            :  " << oamEntriesInfo(oamEntries, [](const Ppu::OamScanEntry& e) {
+            return e.y;
+        }) << endl;
+
+        if (gb.ppu.LX < array_size(gb.ppu.oamEntries)) {
+            const auto& oamEntriesHit = gb.ppu.oamEntries[gb.ppu.LX];
+            // OAM Hit
+            b << subheader("oam hit", width) << endl;
+
+            b << yellow("OAM Number") << "       :  " << oamEntriesInfo(oamEntriesHit, [](const Ppu::OamScanEntry& e) {
+                return e.number;
+            }) << endl;
+            b << yellow("OAM X") << "            :  " << oamEntriesInfo(oamEntriesHit, [](const Ppu::OamScanEntry& e) {
+                return e.x;
+            }) << endl;
+            b << yellow("OAM Y") << "            :  " << oamEntriesInfo(oamEntriesHit, [](const Ppu::OamScanEntry& e) {
+                return e.y;
+            }) << endl;
+        }
+
         return b;
     };
 
@@ -1307,44 +1366,6 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("SCX % 8 Discard") << "  :  " << gb.ppu.pixelTransfer.initialSCX.discarded << "/"
           << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
         b << yellow("LX 0->8 Discard") << "  :  " << (gb.ppu.LX < 8 ? (Text(gb.ppu.LX) + "/8") : "8/8") << endl;
-
-        // OAM Scanline entries
-        const auto& oamEntries = gb.ppu.scanlineOamEntries;
-        b << subheader("oam scanline entries", width) << endl;
-
-        const auto oamEntriesInfo = [](const auto& v, uint8_t (*fn)(const Ppu::OamScanEntry&)) {
-            Text t {};
-            for (uint8_t i = 0; i < v.size(); i++) {
-                t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
-            }
-            return t;
-        };
-
-        b << yellow("OAM Number") << "       :  " << oamEntriesInfo(oamEntries, [](const Ppu::OamScanEntry& e) {
-            return e.number;
-        }) << endl;
-        b << yellow("OAM X") << "            :  " << oamEntriesInfo(oamEntries, [](const Ppu::OamScanEntry& e) {
-            return e.x;
-        }) << endl;
-        b << yellow("OAM Y") << "            :  " << oamEntriesInfo(oamEntries, [](const Ppu::OamScanEntry& e) {
-            return e.y;
-        }) << endl;
-
-        if (gb.ppu.LX < array_size(gb.ppu.oamEntries)) {
-            const auto& oamEntriesHit = gb.ppu.oamEntries[gb.ppu.LX];
-            // OAM Hit
-            b << subheader("oam hit", width) << endl;
-
-            b << yellow("OAM Number") << "       :  " << oamEntriesInfo(oamEntriesHit, [](const Ppu::OamScanEntry& e) {
-                return e.number;
-            }) << endl;
-            b << yellow("OAM X") << "            :  " << oamEntriesInfo(oamEntriesHit, [](const Ppu::OamScanEntry& e) {
-                return e.x;
-            }) << endl;
-            b << yellow("OAM Y") << "            :  " << oamEntriesInfo(oamEntriesHit, [](const Ppu::OamScanEntry& e) {
-                return e.y;
-            }) << endl;
-        }
 
         // BG/WIN Prefetcher
         b << subheader("bg/win prefetcher", width) << endl;
@@ -1698,6 +1719,20 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         return b;
     };
 
+    // Call Stack
+    const auto makeCallStackBlock = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("CALL STACK", width) << endl;
+
+        const auto& callstack = backend.getCallStack();
+        for (const auto& entry : callstack) {
+            b << to_string(entry) << endl;
+        }
+
+        return b;
+    };
+
     // Breakpoints
     const auto makeBreakpointsBlock = [&](uint32_t width) {
         auto b {make_block(width)};
@@ -1815,7 +1850,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     c2->addNode(makeSpaceDivider());
     c2->addNode(makeTimersBlock(COLUMN_2_WIDTH));
 
-    static constexpr uint32_t COLUMN_3_PART_1_WIDTH = 48;
+    static constexpr uint32_t COLUMN_3_PART_1_WIDTH = 52;
     static constexpr uint32_t COLUMN_3_PART_2_WIDTH = 37;
     static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_PART_1_WIDTH + COLUMN_3_PART_2_WIDTH + 1;
 
@@ -1844,12 +1879,16 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     r1->addNode(std::move(c4));
 
     static constexpr uint32_t CODE_WIDTH = 56;
+    static constexpr uint32_t CALL_STACK_WIDTH = 36;
     static constexpr uint32_t BREAKPOINTS_WIDTH = 50;
     static constexpr uint32_t WATCHPOINTS_WIDTH = 30;
-    static constexpr uint32_t DISPLAY_WIDTH = FULL_WIDTH - CODE_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH;
+    static constexpr uint32_t DISPLAY_WIDTH =
+        FULL_WIDTH - CODE_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH;
 
     auto r2 {make_horizontal_layout()};
     r2->addNode(makeCodeBlock(CODE_WIDTH));
+    r2->addNode(makeHorizontalLineDivider());
+    r2->addNode(makeCallStackBlock(CALL_STACK_WIDTH));
     r2->addNode(makeHorizontalLineDivider());
     r2->addNode(makeBreakpointsBlock(BREAKPOINTS_WIDTH));
     r2->addNode(makeHorizontalLineDivider());

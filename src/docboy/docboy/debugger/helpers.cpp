@@ -60,7 +60,7 @@ uint8_t DebuggerHelpers::readMemoryRaw(const GameBoy& gb, uint16_t address) {
 
     /* 0xFEA0 - 0xFEFF */
     if (address <= Specs::MemoryLayout::NOT_USABLE::END)
-        return gb.cpuBus.readBus(address);
+        return gb.oamBus.readBus(address);
 
     /* 0xFF00 - 0xFFFF */
     if (address <= Specs::MemoryLayout::IO::END)
