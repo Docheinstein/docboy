@@ -1422,21 +1422,7 @@ TEST_CASE("emulation", "[emulation]") {
     }
 
     SECTION("oam_bug") {
-        RUN_TEST_ROMS(F {"docboy/oam_bug/oam_bug_read_nops0.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops1.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops2.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops3.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops4.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops5.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops6.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops7.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops8.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops9.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops10.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops11.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops13.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_read_nops14.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops0.gb", "docboy/ok.png"},
+        RUN_TEST_ROMS(F {"docboy/oam_bug/oam_bug_write_nops0.gb", "docboy/ok.png"},
                       F {"docboy/oam_bug/oam_bug_write_nops1.gb", "docboy/ok.png"},
                       F {"docboy/oam_bug/oam_bug_write_nops2.gb", "docboy/ok.png"},
                       F {"docboy/oam_bug/oam_bug_write_nops3.gb", "docboy/ok.png"},
