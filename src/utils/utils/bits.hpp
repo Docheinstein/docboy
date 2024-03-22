@@ -188,6 +188,11 @@ template <uint8_t n, typename T>
     return value & bitmask_off<n>;
 }
 
+template <typename T>
+T least_significant_bit(T n) {
+    return n & -n;
+}
+
 // ---------- OPERATIONS ----------
 
 template <uint8_t b, typename T1, typename T2>

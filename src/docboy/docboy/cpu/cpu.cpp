@@ -870,14 +870,16 @@ inline void Cpu::fetch() {
     instruction.microop.counter = 0;
     fetcher.fetching = true;
     fetcher.instructions = instructions;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 inline void Cpu::fetchCB() {
     check(instruction.microop.counter == 1);
     fetcher.fetching = true;
     fetcher.instructions = instructionsCB;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 inline void Cpu::read(uint16_t address) {
@@ -923,13 +925,13 @@ uint8_t Cpu::readRegister8() const {
         return get_byte<1>(HL);
     if constexpr (r == Register8::L)
         return get_byte<0>(HL);
-    if constexpr (r == Register8::SP_S)
+    if constexpr (r == Register8::SP_H)
         return get_byte<1>(SP);
-    if constexpr (r == Register8::SP_P)
+    if constexpr (r == Register8::SP_L)
         return get_byte<0>(SP);
-    if constexpr (r == Register8::PC_P)
+    if constexpr (r == Register8::PC_H)
         return get_byte<1>(PC);
-    if constexpr (r == Register8::PC_C)
+    if constexpr (r == Register8::PC_L)
         return get_byte<0>(PC);
 }
 
@@ -951,13 +953,13 @@ void Cpu::writeRegister8(uint8_t value) {
         set_byte<1>(HL, value);
     else if constexpr (r == Register8::L)
         set_byte<0>(HL, value);
-    else if constexpr (r == Register8::SP_S)
+    else if constexpr (r == Register8::SP_H)
         set_byte<1>(SP, value);
-    else if constexpr (r == Register8::SP_P)
+    else if constexpr (r == Register8::SP_L)
         set_byte<0>(SP, value);
-    else if constexpr (r == Register8::PC_P)
+    else if constexpr (r == Register8::PC_H)
         set_byte<1>(PC, value);
-    else if constexpr (r == Register8::PC_C)
+    else if constexpr (r == Register8::PC_L)
         set_byte<0>(PC, value);
 }
 
@@ -1011,15 +1013,14 @@ uint16_t& Cpu::getRegister16() {
 
 template <Cpu::Flag f>
 [[nodiscard]] bool Cpu::testFlag() const {
-    if constexpr (f == Flag::Z) {
+    if constexpr (f == Flag::Z)
         return get_bit<Specs::Bits::Flags::Z>(AF);
-    } else if constexpr (f == Flag::N) {
+    else if constexpr (f == Flag::N)
         return get_bit<Specs::Bits::Flags::N>(AF);
-    } else if constexpr (f == Flag::H) {
+    else if constexpr (f == Flag::H)
         return get_bit<Specs::Bits::Flags::H>(AF);
-    } else if constexpr (f == Flag::C) {
+    else if constexpr (f == Flag::C)
         return get_bit<Specs::Bits::Flags::C>(AF);
-    }
 }
 
 template <Cpu::Flag f, bool y>
@@ -1029,41 +1030,38 @@ template <Cpu::Flag f, bool y>
 
 template <Cpu::Flag f>
 void Cpu::setFlag() {
-    if constexpr (f == Flag::Z) {
+    if constexpr (f == Flag::Z)
         set_bit<Specs::Bits::Flags::Z>(AF);
-    } else if constexpr (f == Flag::N) {
+    else if constexpr (f == Flag::N)
         set_bit<Specs::Bits::Flags::N>(AF);
-    } else if constexpr (f == Flag::H) {
+    else if constexpr (f == Flag::H)
         set_bit<Specs::Bits::Flags::H>(AF);
-    } else if constexpr (f == Flag::C) {
+    else if constexpr (f == Flag::C)
         set_bit<Specs::Bits::Flags::C>(AF);
-    }
 }
 
 template <Cpu::Flag f>
 void Cpu::setFlag(bool value) {
-    if constexpr (f == Flag::Z) {
+    if constexpr (f == Flag::Z)
         set_bit<Specs::Bits::Flags::Z>(AF, value);
-    } else if constexpr (f == Flag::N) {
+    else if constexpr (f == Flag::N)
         set_bit<Specs::Bits::Flags::N>(AF, value);
-    } else if constexpr (f == Flag::H) {
+    else if constexpr (f == Flag::H)
         set_bit<Specs::Bits::Flags::H>(AF, value);
-    } else if constexpr (f == Flag::C) {
+    else if constexpr (f == Flag::C)
         set_bit<Specs::Bits::Flags::C>(AF, value);
-    }
 }
 
 template <Cpu::Flag f>
 void Cpu::resetFlag() {
-    if constexpr (f == Flag::Z) {
+    if constexpr (f == Flag::Z)
         reset_bit<Specs::Bits::Flags::Z>(AF);
-    } else if constexpr (f == Flag::N) {
+    else if constexpr (f == Flag::N)
         reset_bit<Specs::Bits::Flags::N>(AF);
-    } else if constexpr (f == Flag::H) {
+    else if constexpr (f == Flag::H)
         reset_bit<Specs::Bits::Flags::H>(AF);
-    } else if constexpr (f == Flag::C) {
+    else if constexpr (f == Flag::C)
         reset_bit<Specs::Bits::Flags::C>(AF);
-    }
 }
 
 // ============================= INSTRUCTIONS ==================================
@@ -1074,41 +1072,36 @@ void Cpu::invalidMicroOperation() { // NOLINT(readability-make-member-function-c
 
 void Cpu::ISR_m0() {
     check(interrupt.state == InterruptState::Serving);
-
-    uu = PC - 1 /* -1 because of prefetch */;
-    write(--SP, get_byte<1>(uu));
+    idu.decrement(PC);
 }
 
 void Cpu::ISR_m1() {
-    // The reads of IE must happen after the high byte of PC has been pushed
-    u = interrupts.IE;
+    idu.decrement(SP);
 }
 
 void Cpu::ISR_m2() {
-    // The reads of IF must happen after the high byte of PC has been pushed
-    u2 = interrupts.IF;
+    write(SP, readRegister8<Register8::PC_H>());
+    idu.decrement(SP);
 }
 
 void Cpu::ISR_m3() {
-    const uint8_t IE_and_IF = u & u2;
+    write(SP, readRegister8<Register8::PC_L>());
 
-    // There is an opportunity to cancel the interrupt and jump to address 0x0000
-    // if the flag in IF/IE has been reset between the trigger of the interrupt
-    // and this moment (reference not found, copied from other emu)
-    uint16_t nextPC = 0x0000;
+    static constexpr uint16_t IRQ_LOOKUP[] {
+        0x0000, 0x0040, 0x0048, 0x0000, 0x0050, 0x0000, 0x0000, 0x0000, 0x0058,
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0060,
+    };
 
-    for (uint8_t b = 0; b <= 4; b++) {
-        if (test_bit(IE_and_IF, b)) {
-            reset_bit(interrupts.IF, b);
-            nextPC = 0x40 + 8 * b;
-            break;
-        }
-    }
+    // The reads of IE and IF happens after the high byte of PC has been pushed.
+    // Note that there is an opportunity to cancel the interrupt and jump to address
+    // 0x0000 if the flag in IF/IE has been reset since the trigger of the interrupt.
 
-    PC = nextPC;
+    uint8_t lsb = least_significant_bit(interrupts.IE & interrupts.IF);
+    check(lsb <= 16);
 
-    // The push of the low byte of PC must happen after the IE/IF flags have been read
-    write(--SP, get_byte<0>(uu));
+    interrupts.IF = interrupts.IF ^ lsb;
+
+    PC = IRQ_LOOKUP[lsb];
 }
 
 void Cpu::ISR_m4() {
@@ -1155,13 +1148,15 @@ void Cpu::EI_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::LD_rr_uu_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::LD_rr_uu_m1() {
     lsb = io.data;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register16 rr>
@@ -1174,7 +1169,8 @@ void Cpu::LD_rr_uu_m2() {
 
 template <Cpu::Register16 rr>
 void Cpu::LD_arr_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register16 rr>
@@ -1217,7 +1213,8 @@ void Cpu::LD_arri_r_m1() {
 
 template <Cpu::Register8 r>
 void Cpu::LD_r_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register8 r>
@@ -1230,13 +1227,15 @@ void Cpu::LD_r_u_m1() {
 
 template <Cpu::Register16 rr>
 void Cpu::LD_ann_rr_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::LD_ann_rr_m1() {
     lsb = io.data;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register16 rr>
@@ -1296,7 +1295,8 @@ void Cpu::LD_r_r_m0() {
 
 template <Cpu::Register8 r>
 void Cpu::LDH_an_r_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register8 r>
@@ -1313,7 +1313,8 @@ void Cpu::LDH_an_r_m2() {
 
 template <Cpu::Register8 r>
 void Cpu::LDH_r_an_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register8 r>
@@ -1356,13 +1357,15 @@ void Cpu::LDH_r_ar_m1() {
 
 template <Cpu::Register8 r>
 void Cpu::LD_ann_r_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register8 r>
 void Cpu::LD_ann_r_m1() {
     lsb = io.data;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register8 r>
@@ -1379,13 +1382,15 @@ void Cpu::LD_ann_r_m3() {
 
 template <Cpu::Register8 r>
 void Cpu::LD_r_ann_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register8 r>
 void Cpu::LD_r_ann_m1() {
     lsb = io.data;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register8 r>
@@ -1404,7 +1409,6 @@ void Cpu::LD_r_ann_m3() {
 template <Cpu::Register16 rr1, Cpu::Register16 rr2>
 void Cpu::LD_rr_rr_m0() {
     writeRegister16<rr1>(readRegister16<rr2>());
-    // TODO: i guess this should be split in the two 8bit registers between m1 and m2
 }
 
 template <Cpu::Register16 rr1, Cpu::Register16 rr2>
@@ -1416,7 +1420,8 @@ void Cpu::LD_rr_rr_m1() {
 
 template <Cpu::Register16 rr1, Cpu::Register16 rr2>
 void Cpu::LD_rr_rrs_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register16 rr1, Cpu::Register16 rr2>
@@ -1565,7 +1570,8 @@ void Cpu::ADD_arr_m1() {
 // C6 | ADD A,d8
 
 void Cpu::ADD_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::ADD_u_m1() {
@@ -1616,7 +1622,8 @@ void Cpu::ADC_arr_m1() {
 // CE | ADC A,d8
 
 void Cpu::ADC_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::ADC_u_m1() {
@@ -1650,12 +1657,12 @@ void Cpu::ADD_rr_rr_m1() {
 
 template <Cpu::Register16 rr>
 void Cpu::ADD_rr_s_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::ADD_rr_s_m1() {
-    // TODO: is it ok to carry bit 3 and 7?
     auto [result, h, c] = sum_carry<3, 7>(readRegister16<rr>(), to_signed(io.data));
     writeRegister16<rr>(result);
     resetFlag<(Flag::Z)>();
@@ -1708,7 +1715,8 @@ void Cpu::SUB_arr_m1() {
 // D6 | SUB A,d8
 
 void Cpu::SUB_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::SUB_u_m1() {
@@ -1759,7 +1767,8 @@ void Cpu::SBC_arr_m1() {
 // D6 | SBC A,d8
 
 void Cpu::SBC_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::SBC_u_m1() {
@@ -1807,7 +1816,8 @@ void Cpu::AND_arr_m1() {
 // E6 | AND d8
 
 void Cpu::AND_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::AND_u_m1() {
@@ -1854,7 +1864,8 @@ void Cpu::OR_arr_m1() {
 // F6 | OR d8
 
 void Cpu::OR_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::OR_u_m1() {
@@ -1899,7 +1910,8 @@ void Cpu::XOR_arr_m1() {
 // EE | XOR d8
 
 void Cpu::XOR_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::XOR_u_m1() {
@@ -1940,7 +1952,8 @@ void Cpu::CP_arr_m1() {
 // FE | CP d8
 
 void Cpu::CP_u_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::CP_u_m1() {
@@ -2066,7 +2079,8 @@ void Cpu::RRA_m0() {
 // e.g. 18 | JR r8
 
 void Cpu::JR_s_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::JR_s_m1() {
@@ -2082,7 +2096,8 @@ void Cpu::JR_s_m2() {
 
 template <Cpu::Flag f, bool y>
 void Cpu::JR_c_s_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Flag f, bool y>
@@ -2102,12 +2117,14 @@ void Cpu::JR_c_s_m2() {
 // e.g. C3 | JP a16
 
 void Cpu::JP_uu_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::JP_uu_m1() {
     lsb = io.data;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::JP_uu_m2() {
@@ -2131,13 +2148,15 @@ void Cpu::JP_rr_m0() {
 
 template <Cpu::Flag f, bool y>
 void Cpu::JP_c_uu_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::JP_c_uu_m1() {
     lsb = io.data;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Flag f, bool y>
@@ -2157,29 +2176,32 @@ void Cpu::JP_c_uu_m3() {
 // CD | CALL a16
 
 void Cpu::CALL_uu_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::CALL_uu_m1() {
     lsb = io.data;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::CALL_uu_m2() {
     msb = io.data;
-    // internal delay
+    idu.decrement(SP);
 }
 
 void Cpu::CALL_uu_m3() {
-    write(--SP, readRegister8<Register8::PC_P>());
+    write(SP, readRegister8<Register8::PC_H>());
+    idu.decrement(SP);
 }
 
 void Cpu::CALL_uu_m4() {
-    write(--SP, readRegister8<Register8::PC_C>());
+    write(SP, readRegister8<Register8::PC_L>());
+    PC = concat(msb, lsb);
 }
 
 void Cpu::CALL_uu_m5() {
-    PC = concat(msb, lsb);
     fetch();
 }
 
@@ -2187,38 +2209,40 @@ void Cpu::CALL_uu_m5() {
 
 template <Cpu::Flag f, bool y>
 void Cpu::CALL_c_uu_m0() {
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::CALL_c_uu_m1() {
     lsb = io.data;
-    read(PC++);
+    read(PC);
+    idu.increment(PC);
 }
 template <Cpu::Flag f, bool y>
 void Cpu::CALL_c_uu_m2() {
     if (!checkFlag<f, y>()) {
         fetch();
     } else {
-        // else: internal delay
         msb = io.data;
+        idu.decrement(SP);
     }
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::CALL_c_uu_m3() {
-    // TODO: here or next cycle?
-    write(--SP, readRegister8<Register8::PC_P>());
+    write(SP, readRegister8<Register8::PC_H>());
+    idu.decrement(SP);
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::CALL_c_uu_m4() {
-    write(--SP, readRegister8<Register8::PC_C>());
+    write(SP, readRegister8<Register8::PC_L>());
+    PC = concat(msb, lsb);
 }
 
 template <Cpu::Flag f, bool y>
 void Cpu::CALL_c_uu_m5() {
-    PC = concat(msb, lsb);
     fetch();
 }
 
@@ -2226,34 +2250,37 @@ void Cpu::CALL_c_uu_m5() {
 
 template <uint8_t n>
 void Cpu::RST_m0() {
-    // internal delay
+    idu.decrement(SP);
 }
 
 template <uint8_t n>
 void Cpu::RST_m1() {
-    write(--SP, readRegister8<Register8::PC_P>());
+    write(SP, readRegister8<Register8::PC_H>());
+    idu.decrement(SP);
 }
 
 template <uint8_t n>
 void Cpu::RST_m2() {
-    write(--SP, readRegister8<Register8::PC_C>());
+    write(SP, readRegister8<Register8::PC_L>());
+    PC = n;
 }
 
 template <uint8_t n>
 void Cpu::RST_m3() {
-    PC = concat(0x00, n);
     fetch();
 }
 
 // C9 | RET
 
 void Cpu::RET_uu_m0() {
-    read(SP++);
+    read(SP);
+    idu.increment(SP);
 }
 
 void Cpu::RET_uu_m1() {
     lsb = io.data;
-    read(SP++);
+    read(SP);
+    idu.increment(SP);
 }
 
 void Cpu::RET_uu_m2() {
@@ -2267,12 +2294,14 @@ void Cpu::RET_uu_m3() {
 // D9 | RETI
 
 void Cpu::RETI_uu_m0() {
-    read(SP++);
+    read(SP);
+    idu.increment(SP);
 }
 
 void Cpu::RETI_uu_m1() {
     lsb = io.data;
-    read(SP++);
+    read(SP);
+    idu.increment(SP);
 }
 
 void Cpu::RETI_uu_m2() {
@@ -2292,9 +2321,9 @@ void Cpu::RET_c_uu_m0() {
 
 template <Cpu::Flag f, bool y>
 void Cpu::RET_c_uu_m1() {
-    // TODO: really bad but don't know why this lasts 2 m cycle if false
     if (checkFlag<f, y>()) {
-        read(SP++);
+        read(SP);
+        idu.increment(SP);
     } else {
         fetch();
     }
@@ -2303,7 +2332,8 @@ void Cpu::RET_c_uu_m1() {
 template <Cpu::Flag f, bool y>
 void Cpu::RET_c_uu_m2() {
     lsb = io.data;
-    read(SP++);
+    read(SP);
+    idu.increment(SP);
 }
 
 template <Cpu::Flag f, bool y>

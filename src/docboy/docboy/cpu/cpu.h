@@ -36,10 +36,10 @@ private:
         F,
         H,
         L,
-        SP_S,
-        SP_P,
-        PC_P,
-        PC_C,
+        SP_H,
+        SP_L,
+        PC_H,
+        PC_L,
     };
 
     enum class Register16 : uint8_t {
