@@ -4,8 +4,6 @@
 #include "testutils/catch.h"
 #include "testutils/runners.hpp"
 
-#define ALL_TEST_ROMS 1
-#define PPU_ONLY_TEST_ROMS 0
 #define WIP_ONLY_TEST_ROMS 0
 
 using F = FramebufferRunnerParams;
@@ -48,9 +46,7 @@ bool run_with_params(const RunnerParams& p) {
     REQUIRE(run_with_params(params))
 
 TEST_CASE("emulation", "[emulation]") {
-#if ALL_TEST_ROMS || PPU_ONLY_TEST_ROMS
-
-#if ALL_TEST_ROMS
+#if !WIP_ONLY_TEST_ROMS
     SECTION("cpu") {
         RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png", MaxTicks {DURATION_VERY_LONG}},
                       F {"blargg/instr_timing.gb", "blargg/instr_timing.png"},
@@ -83,7 +79,6 @@ TEST_CASE("emulation", "[emulation]") {
 
         );
     }
-#endif
 
     SECTION("ppu") {
         RUN_TEST_ROMS(
@@ -326,6 +321,12 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/ppu/turn_off_ly2_lyc1_stat.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_off_ly2_lyc2_stat.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_off_mode_0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_ly0_sprites_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_ly0_sprites_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_ly1_sprites_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_ly1_sprites_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_ly1_sprites_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_on_ly1_sprites_round4.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_on_read_oam_ly0_round0.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_on_read_oam_ly0_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_on_read_oam_ly0_round2.gb", "docboy/ok.png"},
@@ -1372,7 +1373,6 @@ TEST_CASE("emulation", "[emulation]") {
                "docboy/ppu/m3_lcdc_win_map_change_10_sprites.png"}, );
     }
 
-#if ALL_TEST_ROMS
     SECTION("mbc") {
         SECTION("mbc1") {
             RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1419,6 +1419,45 @@ TEST_CASE("emulation", "[emulation]") {
 
     SECTION("oam") {
         RUN_TEST_ROMS(S {"mooneye/bits/mem_oam.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
+    }
+
+    SECTION("oam_bug") {
+        RUN_TEST_ROMS(F {"docboy/oam_bug/oam_bug_read_nops0.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops1.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops2.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops3.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops4.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops5.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops6.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops7.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops8.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops9.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops10.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops11.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops13.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_read_nops14.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops0.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops1.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops2.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops3.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops4.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops5.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops6.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops7.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops8.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops9.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops10.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops11.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops13.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops14.gb", "docboy/ok.png"},
+
+                      F {"blargg/oam_bug/1-lcd_sync.gb", "blargg/oam_bug/1-lcd_sync.png"},
+                      F {"blargg/oam_bug/2-causes.gb", "blargg/oam_bug/2-causes.png"},
+                      F {"blargg/oam_bug/3-non_causes.gb", "blargg/oam_bug/3-non_causes.png"},
+                      F {"blargg/oam_bug/4-scanline_timing.gb", "blargg/oam_bug/4-scanline_timing.png"},
+                      F {"blargg/oam_bug/5-timing_bug.gb", "blargg/oam_bug/5-timing_bug.png"},
+                      F {"blargg/oam_bug/6-timing_no_bug.gb", "blargg/oam_bug/6-timing_no_bug.png"},
+                      F {"blargg/oam_bug/8-instr_effect.gb", "blargg/oam_bug/8-instr_effect.png"}, );
     }
 
     SECTION("io") {
@@ -1749,16 +1788,13 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/integration/rendering/change_bgp_from_vblank_interrupt_halted.gb",
                "docboy/integration/change_bgp_from_vblank_interrupt_halted.png", StopAtInstruction {0x40}}, );
     }
-#endif
-
-#endif
-
-#if WIP_ONLY_TEST_ROMS
+#else
     SECTION("wip") {
         RUN_TEST_ROMS(
 
         );
     }
+
 #endif
 }
 

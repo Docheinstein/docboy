@@ -1153,7 +1153,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         b << yellow("Dots") << "             :  " << gb.ppu.dots << endl;
         b << yellow("Mode") << "             :  " << [this]() -> Text {
             if (gb.ppu.tickSelector == &Ppu::oamScanEven || gb.ppu.tickSelector == &Ppu::oamScanOdd ||
-                gb.ppu.tickSelector == &Ppu::oamScanDone)
+                gb.ppu.tickSelector == &Ppu::oamScanDone || gb.ppu.tickSelector == &Ppu::oamScanAfterTurnOn)
                 return "Oam Scan";
             if (gb.ppu.tickSelector == &Ppu::pixelTransferDummy0 ||
                 gb.ppu.tickSelector == &Ppu::pixelTransferDiscard0 ||
@@ -1166,7 +1166,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 if (gb.ppu.isFetchingSprite)
                     blockReason = "fetching sprite";
                 else if (gb.ppu.oamEntries[gb.ppu.LX].isNotEmpty())
-                    blockReason = "pending sprite hit";
+                    blockReason = "sprite hit";
                 else if (gb.ppu.bgFifo.isEmpty())
                     blockReason = "empty bg fifo";
 

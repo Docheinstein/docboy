@@ -37,8 +37,6 @@ bool save_png_rgb888(const std::string& filename, const void* buffer, uint32_t w
                  PNG_FILTER_TYPE_DEFAULT);
     png_write_info(png, info);
 
-    std::cout << "png_get_rowbytes=" << png_get_rowbytes(png, info);
-
     rowPointers = new png_byte*[height];
 
     for (uint32_t y = 0; y < height; y++) {

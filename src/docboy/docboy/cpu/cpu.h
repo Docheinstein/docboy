@@ -6,6 +6,7 @@
 #include "docboy/shared//macros.h"
 #include <cstdint>
 
+class Idu;
 class InterruptsIO;
 class Parcel;
 
@@ -14,7 +15,7 @@ class Cpu {
     TESTABLE_CLASS()
 
 public:
-    Cpu(InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu);
+    Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu);
 
     void tick();
     void tick_t0();
@@ -101,6 +102,9 @@ private:
 
     template <Register16 rr>
     void writeRegister16(uint16_t value);
+
+    template <Register16 rr>
+    [[nodiscard]] uint16_t& getRegister16();
 
     template <Flag f>
     [[nodiscard]] bool testFlag() const;
@@ -601,6 +605,7 @@ private:
     template <uint8_t n, Register16 r>
     void SET_arr_m2();
 
+    Idu& idu;
     InterruptsIO& interrupts;
     Mmu::View<Device::Cpu> mmu;
 
@@ -642,7 +647,11 @@ private:
     } instruction {};
 
     struct IO {
-        enum class State : uint8_t { Idle = 0, Read = 1, Write = 2 };
+        enum class State : uint8_t {
+            Idle = 0,
+            Read = 1,
+            Write = 2,
+        };
 
         State state {};
         uint8_t data {};

@@ -110,7 +110,16 @@ bool test_bit(T&& value) {
 template <uint8_t n, uint8_t... ns, typename T>
 bool test_bits_or(T&& value) {
     if constexpr (sizeof...(ns) > 0) {
-        return test_bit<n>(std::forward<T>(value)) | test_bits_or<ns...>(std::forward<T>(value));
+        return test_bit<n>(std::forward<T>(value)) || test_bits_or<ns...>(std::forward<T>(value));
+    }
+
+    return test_bit<n>(std::forward<T>(value));
+}
+
+template <uint8_t n, uint8_t... ns, typename T>
+bool test_bits_and(T&& value) {
+    if constexpr (sizeof...(ns) > 0) {
+        return test_bit<n>(std::forward<T>(value)) && test_bits_or<ns...>(std::forward<T>(value));
     }
 
     return test_bit<n>(std::forward<T>(value));

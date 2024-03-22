@@ -37,6 +37,7 @@ target_sources(docboy PRIVATE
     docboy/core/core.h
     docboy/cpu/cpu.cpp
     docboy/cpu/cpu.h
+    docboy/cpu/idu.hpp
     docboy/dma/dma.cpp
     docboy/dma/dma.h
     docboy/gameboy/gameboy.h

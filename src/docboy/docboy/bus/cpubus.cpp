@@ -27,11 +27,6 @@ CpuBus::CpuBus(IF_BOOTROM(BootRom& bootRom COMMA) Hram& hram, JoypadIO& joypad, 
     }
 #endif
 
-    /* 0xFEA0 - 0xFEFF */
-    for (uint16_t i = Specs::MemoryLayout::NOT_USABLE::START; i <= Specs::MemoryLayout::NOT_USABLE::END; i++) {
-        memoryAccessors[i] = FF;
-    }
-
     /* FF00 */ memoryAccessors[Specs::Registers::Joypad::P1] = {&CpuBus::readP1, &CpuBus::writeP1};
     /* FF01 */ memoryAccessors[Specs::Registers::Serial::SB] = &io.serial.SB;
     /* FF02 */ memoryAccessors[Specs::Registers::Serial::SC] = {&io.serial.SC, &CpuBus::writeSC};

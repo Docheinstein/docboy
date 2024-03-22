@@ -7,7 +7,7 @@
 class OamBus : public VideoBus<OamBus> {
 
 public:
-    struct ReadTwoResult {
+    struct Word {
         uint8_t a;
         uint8_t b;
     };
@@ -19,23 +19,40 @@ public:
             VideoBusView<OamBus, Dev>(bus) {
         }
 
-        [[nodiscard]] ReadTwoResult readTwo(uint16_t address) const;
+        void readWordRequest(uint16_t addr);
+        Word flushReadWordRequest();
     };
 
     explicit OamBus(Oam& oam);
 
     template <Device::Type Dev>
-    [[nodiscard]] uint8_t read(uint16_t oamAddress) const;
+    void clearWriteRequest();
 
     template <Device::Type Dev>
-    [[nodiscard]] ReadTwoResult readTwo(uint16_t oamAddress) const;
+    void readWordRequest(uint16_t addr);
+
+    template <Device::Type Dev>
+    Word flushReadWordRequest();
 
 private:
     [[nodiscard]] uint8_t readOam(uint16_t address) const;
     void writeOam(uint16_t address, uint8_t value);
 
+    [[nodiscard]] uint8_t readFF(uint16_t address) const;
+    void writeNop(uint16_t address, uint8_t value);
+
     Oam& oam;
 };
+
+template <Device::Type Dev>
+void OamBus::View<Dev>::readWordRequest(uint16_t addr) {
+    this->bus.template readWordRequest<Dev>(addr);
+}
+
+template <Device::Type Dev>
+OamBus::Word OamBus::View<Dev>::flushReadWordRequest() {
+    return this->bus.template flushReadWordRequest<Dev>();
+}
 
 #include "oambus.tpp"
 

@@ -194,17 +194,24 @@ Here's the debugger!
 
 #### blargg
 
-| Test Rom                                      |       Result       |
-|-----------------------------------------------|:------------------:|
-| blargg/cpu_instrs.gb                          | :white_check_mark: |
-| blargg/cpu_instrs.gb                          | :white_check_mark: |
-| blargg/cpu_instrs.gb                          | :white_check_mark: |
-| blargg/cpu_instrs.gb                          | :white_check_mark: |
-| blargg/cpu_instrs.gb                          | :white_check_mark: |
-| blargg/halt_bug.gb                            | :white_check_mark: |
-| blargg/instr_timing.gb                        | :white_check_mark: |
-| blargg/mem_timing-2.gb                        | :white_check_mark: |
-| blargg/mem_timing.gb                          | :white_check_mark: |
+| Test Rom                            |       Result       |
+|-------------------------------------|:------------------:|
+| blargg/cpu_instrs.gb                | :white_check_mark: |
+| blargg/cpu_instrs.gb                | :white_check_mark: |
+| blargg/cpu_instrs.gb                | :white_check_mark: |
+| blargg/cpu_instrs.gb                | :white_check_mark: |
+| blargg/cpu_instrs.gb                | :white_check_mark: |
+| blargg/halt_bug.gb                  | :white_check_mark: |
+| blargg/instr_timing.gb              | :white_check_mark: |
+| blargg/mem_timing-2.gb              | :white_check_mark: |
+| blargg/mem_timing.gb                | :white_check_mark: |
+| blargg/oam_bug/1-lcd_sync.gb        | :white_check_mark: |
+| blargg/oam_bug/2-causes.gb          | :white_check_mark: |
+| blargg/oam_bug/3-non_causes.gb      | :white_check_mark: |
+| blargg/oam_bug/4-scanline_timing.gb | :white_check_mark: |
+| blargg/oam_bug/5-timing_bug.gb      | :white_check_mark: |
+| blargg/oam_bug/6-timing_no_bug.gb   | :white_check_mark: |
+| blargg/oam_bug/8-instr_effect.gb    | :white_check_mark: |
 
 
 #### dmg-acid2

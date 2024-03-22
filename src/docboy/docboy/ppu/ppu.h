@@ -65,6 +65,7 @@ private:
     void oamScanEven();
     void oamScanOdd();
     void oamScanDone();
+    void oamScanAfterTurnOn();
 
     void pixelTransferDummy0();
     void pixelTransferDiscard0();
@@ -105,9 +106,6 @@ private:
     void setupFetcherForWindow();
 
     void handleOamScanBusesOddities();
-
-    template <uint8_t Mode>
-    void readOamRegisters(uint16_t oamAddress);
 
     // Fetcher states
     void bgwinPrefetcherGetTile0();
@@ -189,10 +187,7 @@ private:
 #endif
 
     struct {
-        struct {
-            uint8_t a {};
-            uint8_t b {};
-        } oam;
+        OamBus::Word oam;
     } registers;
 
     // Oam Scan

@@ -4,9 +4,12 @@
 template<typename Impl>
 template<Device::Type Dev>
 uint8_t VideoBus<Impl>::flushReadRequest() {
+    check(test_bit<Bus<Impl>::template R<Dev>>(this->requests));
+
     if constexpr (Dev == Device::Cpu) {
         if (isAcquired()) {
             // CPU reads FF while bus is acquired either by PPU or DMA.
+            reset_bit<Bus<Impl>::template R<Dev>>(this->requests);
             return 0xFF;
         }
     }
@@ -17,10 +20,14 @@ uint8_t VideoBus<Impl>::flushReadRequest() {
 template<typename Impl>
 template<Device::Type Dev>
 void VideoBus<Impl>::flushWriteRequest(uint8_t value) {
+    check(test_bit<Bus<Impl>::template W<Dev>>(this->requests));
+
     if constexpr (Dev == Device::Cpu) {
-        if (isAcquired())
+        if (isAcquired()) {
             // CPU fails to write while bus is acquired either by PPU or DMA.
-                return;
+            reset_bit<Bus<Impl>::template W<Dev>>(this->requests);
+            return;
+        }
     }
 
     return Bus<Impl>::template flushWriteRequest<Dev>(value);

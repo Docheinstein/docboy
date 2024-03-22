@@ -15,6 +15,7 @@
 #include "docboy/bus/vrambus.h"
 #include "docboy/cartridge/slot.h"
 #include "docboy/cpu/cpu.h"
+#include "docboy/cpu/idu.hpp"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/lcd/lcd.h"
@@ -66,7 +67,8 @@ public:
     OamBus oamBus {oam};
     Mmu mmu {IF_BOOTROM(*bootRom COMMA) extBus, cpuBus, vramBus, oamBus};
     Dma dma {mmu, oamBus};
-    Cpu cpu {interrupts, mmu};
+    Idu idu {oamBus};
+    Cpu cpu {idu, interrupts, mmu};
     Lcd lcd {};
     Ppu ppu {lcd, video, interrupts, vramBus, oamBus};
 };

@@ -1,7 +1,7 @@
 #include "cpu.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/mmu/mmu.h"
-#include "docboy/serial/port.h"
+#include "idu.hpp"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
 #include "utils/casts.hpp"
@@ -11,9 +11,11 @@ namespace {
 constexpr uint8_t STATE_INSTRUCTION_FLAG_NORMAL = 0;
 constexpr uint8_t STATE_INSTRUCTION_FLAG_CB = 1;
 constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
+constexpr uint8_t STATE_INSTRUCTION_FLAG_NONE = 255;
 } // namespace
 
-Cpu::Cpu(InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu) :
+Cpu::Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu) :
+    idu(idu),
     interrupts(interrupts),
     mmu(mmu),
     // clang-format off
@@ -555,6 +557,7 @@ void Cpu::tick_t0() {
 void Cpu::tick_t1() {
     checkInterrupt<0>();
     flushWrite();
+    idu.tick_t1();
 }
 
 void Cpu::tick_t2() {
@@ -667,7 +670,7 @@ void Cpu::saveState(Parcel& parcel) const {
     } else if (fetcher.instructions == instructionsCB) {
         parcel.writeUInt8(STATE_INSTRUCTION_FLAG_CB);
     } else {
-        checkNoEntry();
+        parcel.writeUInt8(STATE_INSTRUCTION_FLAG_NONE);
     }
 
     if (static_cast<size_t>(instruction.microop.selector - &instructions[0][0]) <
@@ -725,8 +728,6 @@ void Cpu::loadState(Parcel& parcel) {
         fetcher.instructions = instructions;
     } else if (instructionsFlag == STATE_INSTRUCTION_FLAG_CB) {
         fetcher.instructions = instructionsCB;
-    } else {
-        checkNoEntry();
     }
 
     const uint8_t instructionFlag = parcel.readUInt8();
@@ -906,94 +907,106 @@ inline void Cpu::flushWrite() {
 
 template <Cpu::Register8 r>
 uint8_t Cpu::readRegister8() const {
-    if constexpr (r == Register8::A) {
+    if constexpr (r == Register8::A)
         return get_byte<1>(AF);
-    } else if constexpr (r == Register8::B) {
+    if constexpr (r == Register8::B)
         return get_byte<1>(BC);
-    } else if constexpr (r == Register8::C) {
+    if constexpr (r == Register8::C)
         return get_byte<0>(BC);
-    } else if constexpr (r == Register8::D) {
+    if constexpr (r == Register8::D)
         return get_byte<1>(DE);
-    } else if constexpr (r == Register8::E) {
+    if constexpr (r == Register8::E)
         return get_byte<0>(DE);
-    } else if constexpr (r == Register8::F) {
+    if constexpr (r == Register8::F)
         return get_byte<0>(AF) & 0xF0; // last four bits hardwired to 0
-    } else if constexpr (r == Register8::H) {
+    if constexpr (r == Register8::H)
         return get_byte<1>(HL);
-    } else if constexpr (r == Register8::L) {
+    if constexpr (r == Register8::L)
         return get_byte<0>(HL);
-    } else if constexpr (r == Register8::SP_S) {
+    if constexpr (r == Register8::SP_S)
         return get_byte<1>(SP);
-    } else if constexpr (r == Register8::SP_P) {
+    if constexpr (r == Register8::SP_P)
         return get_byte<0>(SP);
-    } else if constexpr (r == Register8::PC_P) {
+    if constexpr (r == Register8::PC_P)
         return get_byte<1>(PC);
-    } else if constexpr (r == Register8::PC_C) {
+    if constexpr (r == Register8::PC_C)
         return get_byte<0>(PC);
-    }
 }
 
 template <Cpu::Register8 r>
 void Cpu::writeRegister8(uint8_t value) {
-    if constexpr (r == Register8::A) {
+    if constexpr (r == Register8::A)
         set_byte<1>(AF, value);
-    } else if constexpr (r == Register8::B) {
+    else if constexpr (r == Register8::B)
         set_byte<1>(BC, value);
-    } else if constexpr (r == Register8::C) {
+    else if constexpr (r == Register8::C)
         set_byte<0>(BC, value);
-    } else if constexpr (r == Register8::D) {
+    else if constexpr (r == Register8::D)
         set_byte<1>(DE, value);
-    } else if constexpr (r == Register8::E) {
+    else if constexpr (r == Register8::E)
         set_byte<0>(DE, value);
-    } else if constexpr (r == Register8::F) {
+    else if constexpr (r == Register8::F)
         set_byte<0>(AF, value & 0xF0);
-    } else if constexpr (r == Register8::H) {
+    else if constexpr (r == Register8::H)
         set_byte<1>(HL, value);
-    } else if constexpr (r == Register8::L) {
+    else if constexpr (r == Register8::L)
         set_byte<0>(HL, value);
-    } else if constexpr (r == Register8::SP_S) {
+    else if constexpr (r == Register8::SP_S)
         set_byte<1>(SP, value);
-    } else if constexpr (r == Register8::SP_P) {
+    else if constexpr (r == Register8::SP_P)
         set_byte<0>(SP, value);
-    } else if constexpr (r == Register8::PC_P) {
+    else if constexpr (r == Register8::PC_P)
         set_byte<1>(PC, value);
-    } else if constexpr (r == Register8::PC_C) {
+    else if constexpr (r == Register8::PC_C)
         set_byte<0>(PC, value);
-    }
 }
 
 template <Cpu::Register16 rr>
 uint16_t Cpu::readRegister16() const {
-    if constexpr (rr == Register16::AF) {
+    if constexpr (rr == Register16::AF)
         return AF & 0xFFF0;
-    } else if constexpr (rr == Register16::BC) {
+    if constexpr (rr == Register16::BC)
         return BC;
-    } else if constexpr (rr == Register16::DE) {
+    if constexpr (rr == Register16::DE)
         return DE;
-    } else if constexpr (rr == Register16::HL) {
+    if constexpr (rr == Register16::HL)
         return HL;
-    } else if constexpr (rr == Register16::PC) {
+    if constexpr (rr == Register16::PC)
         return PC;
-    } else if constexpr (rr == Register16::SP) {
+    if constexpr (rr == Register16::SP)
         return SP;
-    }
 }
 
 template <Cpu::Register16 rr>
 void Cpu::writeRegister16(uint16_t value) {
-    if constexpr (rr == Register16::AF) {
+    if constexpr (rr == Register16::AF)
         AF = value & 0xFFF0;
-    } else if constexpr (rr == Register16::BC) {
+    else if constexpr (rr == Register16::BC)
         BC = value;
-    } else if constexpr (rr == Register16::DE) {
+    else if constexpr (rr == Register16::DE)
         DE = value;
-    } else if constexpr (rr == Register16::HL) {
+    else if constexpr (rr == Register16::HL)
         HL = value;
-    } else if constexpr (rr == Register16::PC) {
+    else if constexpr (rr == Register16::PC)
         PC = value;
-    } else if constexpr (rr == Register16::SP) {
+    else if constexpr (rr == Register16::SP)
         SP = value;
-    }
+}
+
+template <Cpu::Register16 rr>
+uint16_t& Cpu::getRegister16() {
+    if constexpr (rr == Register16::AF)
+        return AF;
+    if constexpr (rr == Register16::BC)
+        return BC;
+    if constexpr (rr == Register16::DE)
+        return DE;
+    if constexpr (rr == Register16::HL)
+        return HL;
+    if constexpr (rr == Register16::PC)
+        return PC;
+    if constexpr (rr == Register16::SP)
+        return SP;
 }
 
 template <Cpu::Flag f>
@@ -1190,8 +1203,9 @@ void Cpu::LD_arr_r_m1() {
 
 template <Cpu::Register16 rr, Cpu::Register8 r, int8_t inc>
 void Cpu::LD_arri_r_m0() {
-    write(readRegister16<rr>(), readRegister8<r>());
-    writeRegister16<rr>(readRegister16<rr>() + inc);
+    uint16_t& r16 = getRegister16<rr>();
+    write(r16, readRegister8<r>());
+    idu.increment<inc>(r16);
 }
 
 template <Cpu::Register16 rr, Cpu::Register8 r, int8_t inc>
@@ -1259,13 +1273,14 @@ void Cpu::LD_r_arr_m1() {
 
 template <Cpu::Register8 r, Cpu::Register16 rr, int8_t inc>
 void Cpu::LD_r_arri_m0() {
-    read(readRegister16<rr>());
+    uint16_t& r16 = getRegister16<rr>();
+    read(r16);
+    idu.increment<inc>(r16);
 }
 
 template <Cpu::Register8 r, Cpu::Register16 rr, int8_t inc>
 void Cpu::LD_r_arri_m1() {
     writeRegister8<r>(io.data);
-    writeRegister16<rr>(readRegister16<rr>() + inc);
     fetch();
 }
 
@@ -1439,10 +1454,7 @@ void Cpu::INC_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::INC_rr_m0() {
-    uint16_t tmp = readRegister16<rr>();
-    uint32_t result = tmp + 1;
-    writeRegister16<rr>(result);
-    // TODO: no flags?
+    idu.increment(getRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
@@ -1489,10 +1501,7 @@ void Cpu::DEC_r_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::DEC_rr_m0() {
-    uint16_t tmp = readRegister16<rr>();
-    uint32_t result = tmp - 1;
-    writeRegister16<rr>(result);
-    // TODO: no flags?
+    idu.decrement(getRegister16<rr>());
 }
 
 template <Cpu::Register16 rr>
@@ -2312,16 +2321,18 @@ void Cpu::RET_c_uu_m4() {
 template <Cpu::Register16 rr>
 void Cpu::PUSH_rr_m0() {
     uu = readRegister16<rr>();
+    idu.decrement(SP);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::PUSH_rr_m1() {
-    write(--SP, get_byte<1>(uu));
+    write(SP, get_byte<1>(uu));
+    idu.decrement(SP);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::PUSH_rr_m2() {
-    write(--SP, get_byte<0>(uu));
+    write(SP, get_byte<0>(uu));
 }
 
 template <Cpu::Register16 rr>
@@ -2333,13 +2344,16 @@ void Cpu::PUSH_rr_m3() {
 
 template <Cpu::Register16 rr>
 void Cpu::POP_rr_m0() {
-    read(SP++);
+    read(SP);
+    idu.increment(SP);
 }
 
 template <Cpu::Register16 rr>
 void Cpu::POP_rr_m1() {
     lsb = io.data;
-    read(SP++);
+    read(SP);
+    idu.increment(SP);
+    // TODO: figure out if this m-cycle counts as read + inc or as read only for the OAM bug
 }
 
 template <Cpu::Register16 rr>

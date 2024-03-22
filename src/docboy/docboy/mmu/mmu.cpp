@@ -76,7 +76,7 @@ Mmu::Mmu(IF_BOOTROM(BootRom& bootRom COMMA) ExtBus& extBus, CpuBus& cpuBus, Vram
 
     /* 0xFEA0 - 0xFEFF */
     for (uint16_t i = Specs::MemoryLayout::NOT_USABLE::START; i <= Specs::MemoryLayout::NOT_USABLE::END; i++) {
-        makeAccessorsForDevices(i, &cpuBus);
+        makeAccessorsForDevices(i, &oamBus);
     }
 
     /* 0xFF00 - 0xFFFF */

@@ -89,7 +89,7 @@ private:
 #endif
     };
 
-    static constexpr uint8_t NUM_DEVICES = 2;
+    static constexpr uint8_t NUM_DEVICES = 3;
 
     template <Device::Type Dev, typename Bus>
     static BusAccess makeAccessors(Bus* bus);

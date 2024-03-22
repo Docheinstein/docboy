@@ -58,6 +58,7 @@ inline uint8_t resolveColor(const uint8_t colorIndex, const uint8_t palette) {
 const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {&Ppu::oamScanEven,
                                                  &Ppu::oamScanOdd,
                                                  &Ppu::oamScanDone,
+                                                 &Ppu::oamScanAfterTurnOn,
                                                  &Ppu::pixelTransferDummy0,
                                                  &Ppu::pixelTransferDiscard0,
                                                  &Ppu::pixelTransferDiscard0WX0SCX7,
@@ -167,8 +168,6 @@ void Ppu::turnOn() {
 
     on = true;
 
-    // OAM bus is not acquired even if the PPU will proceed with OAM scan from here.
-
     // STAT's LYC_EQ_LY is updated properly (but interrupt is not raised)
     set_bit<LYC_EQ_LY>(video.STAT, video.LY == video.LYC);
 }
@@ -190,7 +189,10 @@ void Ppu::turnOff() {
     IF_ASSERTS(oamEntriesNotServedCount = 0);
     IF_DEBUGGER(scanlineOamEntries.clear());
 
-    tickSelector = &Ppu::oamScanEven;
+    // The first line after PPU is turn on behaves differently.
+    // STAT's mode remains in HBLANK, OAM Bus is not acquired and
+    // OAM Scan does not check for any sprite.
+    tickSelector = &Ppu::oamScanAfterTurnOn;
 
     // STAT's mode goes to HBLANK, even if the PPU will start with OAM scan
     updateMode<HBLANK>();
@@ -254,14 +256,15 @@ inline void Ppu::tickWindow() {
 void Ppu::oamScanEven() {
     check(dots % 2 == 0);
     check(oamScan.count < 10);
-    check(oam.isAcquiredByMe() || keep_bits<2>(video.STAT) == HBLANK /* oam bus is not acquired after turn on */ ||
-          dots == 76 /* oam bus seems released this cycle */);
+    check(oam.isAcquiredByMe() || dots == 76 /* oam bus seems released this cycle */);
 
-    // Figure out oam number
-    const uint8_t oamNumber = dots / 2;
-
-    // Read two bytes from OAM (Y and X)
-    readOamRegisters<OAM_SCAN>(OAM_ENTRY_BYTES * oamNumber);
+    // Read two bytes from OAM (Y and X).
+    // Note that PPU cannot access OAM while DMA transfer is in progress;
+    // in that case it does not read at all and the oam registers
+    // will hold their old values.
+    if (!oam.isAcquiredBy<Device::Dma>()) {
+        registers.oam = oam.flushReadWordRequest();
+    }
 
     tickSelector = &Ppu::oamScanOdd;
 
@@ -271,8 +274,7 @@ void Ppu::oamScanEven() {
 void Ppu::oamScanOdd() {
     check(dots % 2 == 1);
     check(oamScan.count < 10);
-    check(oam.isAcquiredByMe() || keep_bits<2>(video.STAT) == HBLANK /* oam bus is not acquired after turn on */ ||
-          dots == 77 /* oam bus seems released this cycle */);
+    check(oam.isAcquiredByMe() || dots == 77 /* oam bus seems released this cycle */);
 
     // Read oam entry height
     const uint8_t objHeight = TILE_WIDTH << test_bit<OBJ_SIZE>(video.LCDC);
@@ -306,7 +308,17 @@ void Ppu::oamScanOdd() {
     } else {
         // Check if there is room for other oam entries in this scanline
         // if that's not the case, complete oam scan now
-        tickSelector = (oamScan.count == 10) ? &Ppu::oamScanDone : &Ppu::oamScanEven;
+        if (oamScan.count == 10) {
+            tickSelector = &Ppu::oamScanDone;
+        } else {
+            // Submit a read request for the next OAM entry of the next T-cycle.
+            // This is necessary to properly emulate OAM Bug on DMG, since CPU issues
+            // write requests at T0 and flushes them at T1, but PPU OAM Scan Even
+            // would occur at T1 only after CPU write request are flushed
+            // (and that would make impossible to be aware of CPU writes).
+            oam.readWordRequest(Specs::MemoryLayout::OAM::START + OAM_ENTRY_BYTES * dots / 2);
+            tickSelector = &Ppu::oamScanEven;
+        }
     }
 }
 
@@ -316,6 +328,18 @@ void Ppu::oamScanDone() {
     ++dots;
 
     handleOamScanBusesOddities();
+
+    if (dots == 80) {
+        enterPixelTransfer();
+    }
+}
+
+void Ppu::oamScanAfterTurnOn() {
+    check(!oam.isAcquiredByMe());
+    check(keep_bits<2>(video.STAT) == HBLANK);
+
+    // First OAM Scan after PPU turn on does nothing.
+    ++dots;
 
     if (dots == 80) {
         enterPixelTransfer();
@@ -607,6 +631,9 @@ void Ppu::enterOamScan() {
 
     check(!vram.isAcquiredByMe());
     oam.acquire();
+
+    // Submit a read request for the first OAM entry of the next T-cycle.
+    oam.readWordRequest(Specs::MemoryLayout::OAM::START);
 }
 
 void Ppu::enterPixelTransfer() {
@@ -830,46 +857,21 @@ inline void Ppu::setupFetcherForWindow() {
 }
 
 inline void Ppu::handleOamScanBusesOddities() {
+    check(keep_bits<2>(video.STAT) == OAM_SCAN);
+
     if (dots == 76) {
         // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
         // [mooneye: lcdon_write_timing]
-        if (keep_bits<2>(video.STAT) != HBLANK) {
-            oam.release();
-        }
+        oam.release();
     } else if (dots == 78) {
-        if (keep_bits<2>(video.STAT) != HBLANK) {
-            // OAM bus is re-acquired this cycle
-            // [mooneye: lcdon_write_timing]
-            oam.acquire();
+        // OAM bus is re-acquired this cycle
+        // [mooneye: lcdon_write_timing]
+        oam.acquire();
 
-            // VRAM bus is acquired one cycle before STAT is updated
-            // [mooneye: lcdon_timing]
-            vram.acquire();
-        }
+        // VRAM bus is acquired one cycle before STAT is updated
+        // [mooneye: lcdon_timing]
+        vram.acquire();
     }
-}
-
-template <uint8_t Mode>
-void Ppu::readOamRegisters(uint16_t oamAddress) {
-    static_assert(Mode == OAM_SCAN || Mode == PIXEL_TRANSFER);
-    check(oamAddress % 2 == 0);
-
-    if constexpr (Mode == OAM_SCAN) {
-        // PPU cannot access OAM while DMA transfer is in progress.
-        // Note that it does not read at all: therefore the oam registers
-        // will hold their old values in this case.
-        if (oam.isAcquiredBy<Device::Dma>())
-            return;
-    }
-
-    // We can read from OAM.
-    // Note that if DMA transfer is in progress conflicts can occur and
-    // we might end up reading from the OAM address the DMA is writing to.
-    // (but only if DMA writing request is pending, i.e. it is in t0 or t1)
-    // [hacktix/strikethrough]
-    const auto res = oam.readTwo(oamAddress);
-    registers.oam.a = res.a;
-    registers.oam.b = res.b;
 }
 
 // -------- Fetcher states ---------
@@ -1209,16 +1211,27 @@ void Ppu::bgwinPixelSliceFetcherPush() {
 void Ppu::objPrefetcherGetTile0() {
     check(isFetchingSprite);
 
-    // Read two bytes from OAM (Tile Number and Attributes)
-    readOamRegisters<PIXEL_TRANSFER>(OAM_ENTRY_BYTES * of.entry.number + Specs::Bytes::OAM::TILE_NUMBER);
-    of.tileNumber = registers.oam.a;
-    of.attributes = registers.oam.b;
+    // Read two bytes from OAM (Tile Number and Attributes).
+    // Note that if DMA transfer is in progress conflicts can occur and
+    // we might end up reading from the OAM address the DMA is writing to
+    // (but only if DMA writing request is pending, i.e. it is in T0 or T1).
+    // [hacktix/strikethrough]
+
+    // TODO: figure out exact timing of read request and read flush for obj prefetcher.
+    oam.readWordRequest(Specs::MemoryLayout::OAM::START + OAM_ENTRY_BYTES * of.entry.number +
+                        Specs::Bytes::OAM::TILE_NUMBER);
 
     fetcherTickSelector = &Ppu::objPrefetcherGetTile1;
 }
 
 void Ppu::objPrefetcherGetTile1() {
     check(isFetchingSprite);
+
+    // TODO: figure out exact timing of read request and read flush for obj prefetcher.
+    registers.oam = oam.flushReadWordRequest();
+
+    of.tileNumber = registers.oam.a;
+    of.attributes = registers.oam.b;
 
     fetcherTickSelector = &Ppu::objPixelSliceFetcherGetTileDataLow0;
 }
