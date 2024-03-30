@@ -76,8 +76,14 @@ TEST_CASE("emulation", "[emulation]") {
                       S {"mooneye/halt_ime0_nointr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/halt_ime1_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/halt_ime1_timing2-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-
-        );
+                      F {"samesuite/interrupt/ei_delay_halt.gb", "samesuite/interrupt/ei_delay_halt.png"},
+                      F {"little-things-gb/double-halt-cancel.gb", "little-things-gb/double-halt-cancel.png"},
+                      F {"docboy/cpu/cb_interrupt.gb", "docboy/ok.png"},
+                      F {"docboy/cpu/halt_ime0_interrupt0.gb", "docboy/ok.png"},
+                      F {"docboy/cpu/halt_ime0_interrupt1.gb", "docboy/ok.png"},
+                      F {"docboy/cpu/halt_ime1_interrupt0.gb", "docboy/ok.png"},
+                      F {"docboy/cpu/halt_ime1_interrupt0_ret.gb", "docboy/ok.png"},
+                      F {"docboy/cpu/halt_ime1_interrupt1_ret.gb", "docboy/ok.png"}, );
     }
 
     SECTION("ppu") {
@@ -1480,7 +1486,6 @@ TEST_CASE("emulation", "[emulation]") {
                       S {"mooneye/if_ie_registers.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/intr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       S {"mooneye/rapid_di_ei.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      F {"samesuite/interrupt/ei_delay_halt.gb", "samesuite/interrupt/ei_delay_halt.png"},
                       F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
                       F {"docboy/interrupts/joypad_interrupt_timing_manual_round1.gb", "docboy/ok.png"},

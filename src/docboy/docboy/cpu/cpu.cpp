@@ -618,12 +618,6 @@ void Cpu::tick() {
         return;
     }
 
-    // Eventually handle halt bug: PC will be read twice
-    if (haltBug) {
-        haltBug = false;
-        --PC;
-    }
-
     // Eventually fetch a new instruction
     if (fetcher.fetching) {
         fetcher.fetching = false;
@@ -658,7 +652,6 @@ void Cpu::saveState(Parcel& parcel) const {
     parcel.writeUInt8((uint8_t)IME);
 
     parcel.writeBool(halted);
-    parcel.writeBool(haltBug);
 
     parcel.writeUInt8((uint8_t)interrupt.state);
     parcel.writeUInt8(interrupt.remainingTicks);
@@ -716,7 +709,6 @@ void Cpu::loadState(Parcel& parcel) {
     IME = (ImeState)(parcel.readUInt8());
 
     halted = parcel.readBool();
-    haltBug = parcel.readBool();
 
     interrupt.state = (InterruptState)parcel.readUInt8();
     interrupt.remainingTicks = parcel.readUInt8();
@@ -1123,13 +1115,22 @@ void Cpu::HALT_m0() {
     check(!halted);
     check(interrupt.state != InterruptState::Serving);
 
-    if (getPendingInterrupts()) {
-        haltBug = IME != ImeState::Enabled;
-    } else {
-        halted = true;
-    }
+    const bool hasPendingInterrupts = getPendingInterrupts();
 
-    fetch();
+    // HALT is entered only if there's no pending interrupt.
+    halted = !hasPendingInterrupts;
+
+    // Fetch (eventually without PC increment, read below).
+    instruction.microop.counter = 0;
+    fetcher.fetching = true;
+    fetcher.instructions = instructions;
+    read(PC);
+
+    // Handle Halt bug.
+    // PC is not incremented if there's a pending interrupt while IME is disabled.
+    if (!hasPendingInterrupts || IME == ImeState::Enabled) {
+        idu.increment(PC);
+    }
 }
 
 void Cpu::DI_m0() {
