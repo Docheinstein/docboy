@@ -66,6 +66,7 @@ private:
 
     enum class ImeState : uint8_t {
         Disabled,
+        Requested,
         Pending,
         Enabled,
     };

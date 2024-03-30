@@ -880,7 +880,10 @@ void DebuggerFrontend::onTick(uint64_t tick) {
         if (trace & TraceFlagInterrupts) {
             const InterruptsIO& interrupts = gb.interrupts;
             std::cerr << "IME:"
-                      << (cpu.IME == Cpu::ImeState::Enabled ? "1" : (cpu.IME == Cpu::ImeState::Pending ? "!" : "0"))
+                      << (cpu.IME == Cpu::ImeState::Enabled
+                              ? "1"
+                              : ((cpu.IME == Cpu::ImeState::Pending || cpu.IME == Cpu::ImeState::Requested) ? "!"
+                                                                                                            : "0"))
                       << " IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF) << "  ";
         }
 
@@ -1099,6 +1102,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 switch (gb.cpu.IME) {
                 case Cpu::ImeState::Enabled:
                     return cyan("ON");
+                case Cpu::ImeState::Requested:
+                    return yellow("Requested");
                 case Cpu::ImeState::Pending:
                     return yellow("Pending");
                 case Cpu::ImeState::Disabled:

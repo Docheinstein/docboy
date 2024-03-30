@@ -588,11 +588,6 @@ void Cpu::tick_t3() {
 }
 
 void Cpu::tick() {
-    // Eventually enable IME if it has been requested (by EI instruction) the cycle before
-    if (IME == ImeState::Pending) {
-        IME = ImeState::Enabled;
-    }
-
     // Eventually handle pending interrupt
     if (interrupt.state == InterruptState::Pending) {
         // Decrease the remaining ticks for the pending interrupt
@@ -643,6 +638,11 @@ void Cpu::tick() {
 
     // Execute current micro operation
     (this->*microop)();
+
+    // Eventually advance IME state.
+    if (IME > ImeState::Disabled && IME < ImeState::Enabled) {
+        IME = static_cast<ImeState>(static_cast<uint8_t>(IME) + 1);
+    }
 
     IF_DEBUGGER(++cycles);
 }
@@ -1139,7 +1139,7 @@ void Cpu::DI_m0() {
 
 void Cpu::EI_m0() {
     if (IME == ImeState::Disabled) {
-        IME = ImeState::Pending;
+        IME = ImeState::Requested;
     }
     fetch();
 }
