@@ -30,6 +30,7 @@
 #include "docboy/ppu/video.h"
 #include "docboy/serial/port.h"
 #include "docboy/sound/sound.h"
+#include "docboy/stop/stopcontroller.h"
 #include "docboy/timers/timers.h"
 #include "utils/macros.h"
 
@@ -45,6 +46,8 @@ public:
     explicit GameBoy(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE) :
         lcd {palette} {
     }
+
+    bool stopped {};
 
     Vram vram {};
     Wram1 wram1 {};
@@ -68,9 +71,11 @@ public:
     Mmu mmu {IF_BOOTROM(*bootRom COMMA) extBus, cpuBus, vramBus, oamBus};
     Dma dma {mmu, oamBus};
     Idu idu {oamBus};
-    Cpu cpu {idu, interrupts, mmu};
+    Cpu cpu {idu, interrupts, mmu, joypad, stopController};
     Lcd lcd {};
     Ppu ppu {lcd, video, interrupts, vramBus, oamBus};
+
+    StopController stopController {stopped, joypad, timers, lcd};
 };
 
 #endif // GAMEBOY_H

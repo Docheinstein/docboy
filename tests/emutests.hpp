@@ -17,12 +17,14 @@ bool run_with_params(const RunnerParams& p) {
     if (std::holds_alternative<FramebufferRunnerParams>(p)) {
         const auto pf = std::get<FramebufferRunnerParams>(p);
         INFO("=== " << TEST_ROMS_PATH + pf.rom << " ===");
-        return FramebufferRunner()
+        return FramebufferRunner(pf.palette.value_or(Lcd::DEFAULT_PALETTE))
             .rom(TEST_ROMS_PATH + pf.rom)
             .maxTicks(pf.maxTicks)
             .checkIntervalTicks(DURATION_VERY_SHORT)
             .stopAtInstruction(pf.stopAtInstruction)
-            .expectFramebuffer(TEST_RESULTS_PATH + pf.result, pf.palette)
+            .expectFramebuffer(TEST_RESULTS_PATH + pf.result)
+            .forceCheck(pf.forceCheck)
+            .scheduleInputs(pf.inputs)
             .run();
     }
 
@@ -83,7 +85,18 @@ TEST_CASE("emulation", "[emulation]") {
                       F {"docboy/cpu/halt_ime0_interrupt1.gb", "docboy/ok.png"},
                       F {"docboy/cpu/halt_ime1_interrupt0.gb", "docboy/ok.png"},
                       F {"docboy/cpu/halt_ime1_interrupt0_ret.gb", "docboy/ok.png"},
-                      F {"docboy/cpu/halt_ime1_interrupt1_ret.gb", "docboy/ok.png"}, );
+                      F {"docboy/cpu/halt_ime1_interrupt1_ret.gb", "docboy/ok.png"},
+                      F {"daid/stop_instr.gb", "daid/stop_instr.png", GREY_PALETTE, ForceCheck {}},
+                      F {"docboy/cpu/stop_joypad0_interrupt0.gb", "docboy/ok.png",
+                         Inputs {{200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/cpu/stop_joypad0_interrupt1.gb", "docboy/ok.png",
+                         Inputs {{200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/cpu/stop_joypad1_interrupt0.gb", "docboy/ok.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/cpu/stop_joypad1_interrupt1.gb", "docboy/ok.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+
+        );
     }
 
     SECTION("ppu") {
@@ -1481,66 +1494,69 @@ TEST_CASE("emulation", "[emulation]") {
     }
 
     SECTION("interrupts") {
-        RUN_TEST_ROMS(S {"mooneye/interrupts/ie_push.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/ei_sequence.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/if_ie_registers.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/intr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/rapid_di_ei.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/joypad_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/joypad_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/serial_interrupt_timing_halted_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/serial_interrupt_timing_halted_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/serial_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/serial_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/serial_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/serial_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/serial_interrupt_timing_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/serial_interrupt_timing_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx0_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx0_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx1_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx1_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx2_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx2_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx3_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx4_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx4_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx5_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_halted_scx5_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_oam_v1_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_oam_v1_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_oam_v2_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_oam_v2_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_oam_v3_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_oam_v3_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx0_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx0_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx1_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx1_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx2_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx2_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx3_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx3_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx4_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx4_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx5_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/stat_interrupt_timing_scx5_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/timer_interrupt_timing_halted_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/timer_interrupt_timing_halted_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/timer_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/timer_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/timer_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/timer_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/timer_interrupt_timing_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/timer_interrupt_timing_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/vblank_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/vblank_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/vblank_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/vblank_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/vblank_interrupt_timing_round1.gb", "docboy/ok.png"},
-                      F {"docboy/interrupts/vblank_interrupt_timing_round2.gb", "docboy/ok.png"}, );
+        RUN_TEST_ROMS(
+            S {"mooneye/interrupts/ie_push.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ei_sequence.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/if_ie_registers.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/intr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/rapid_di_ei.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/joypad_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/joypad_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/serial_interrupt_timing_halted_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/serial_interrupt_timing_halted_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/serial_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/serial_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/serial_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/serial_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/serial_interrupt_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/serial_interrupt_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx0_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx0_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx1_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx1_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx2_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx2_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx3_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx4_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx4_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx5_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_halted_scx5_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_oam_v1_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_oam_v1_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_oam_v2_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_oam_v2_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_oam_v3_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_oam_v3_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx0_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx0_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx1_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx1_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx2_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx2_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx3_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx3_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx4_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx4_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx5_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_interrupt_timing_scx5_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/timer_interrupt_timing_halted_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/timer_interrupt_timing_halted_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/timer_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/timer_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/timer_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/timer_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/timer_interrupt_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/timer_interrupt_timing_round2.gb", "docboy/ok.png"},
+            //                      F {"docboy/interrupts/vblank_interrupt_timing_halted_round1.gb", "docboy/ok.png"},
+            //                      F {"docboy/interrupts/vblank_interrupt_timing_halted_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/vblank_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/vblank_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/vblank_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/vblank_interrupt_timing_manual_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/vblank_interrupt_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/vblank_interrupt_timing_round2.gb", "docboy/ok.png"}, );
     }
 
     SECTION("dma") {
@@ -1574,6 +1590,51 @@ TEST_CASE("emulation", "[emulation]") {
 
     SECTION("serial") {
         RUN_TEST_ROMS(F {"mooneye/serial/boot_sclk_align-dmgABCmgb.gb", "mooneye/boot_sclk_align-dmgABCmgb.png"});
+    }
+
+    SECTION("joypad") {
+        RUN_TEST_ROMS(F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png"},
+                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_a.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_b.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::B}}},
+                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_select.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Select}}},
+                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_start.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Start}}},
+                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::A},
+                                 {4, Joypad::KeyState::Released, Joypad::Key::A}}},
+                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::B},
+                                 {4, Joypad::KeyState::Released, Joypad::Key::B}}},
+                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Select},
+                                 {4, Joypad::KeyState::Released, Joypad::Key::Select}}},
+                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Start},
+                                 {4, Joypad::KeyState::Released, Joypad::Key::Start}}},
+                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png"},
+                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_right.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Right}}},
+                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_left.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Left}}},
+                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_up.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_down.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Down}}},
+                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Right},
+                                 {4, Joypad::KeyState::Released, Joypad::Key::Right}}},
+                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Left},
+                                 {4, Joypad::KeyState::Released, Joypad::Key::Left}}},
+                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up},
+                                 {4, Joypad::KeyState::Released, Joypad::Key::Up}}},
+                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
+                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Down},
+                                 {4, Joypad::KeyState::Released, Joypad::Key::Down}}}, );
     }
 
     SECTION("integration") {
@@ -1782,9 +1843,7 @@ TEST_CASE("emulation", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS(
-
-        );
+        RUN_TEST_ROMS()
     }
 
 #endif

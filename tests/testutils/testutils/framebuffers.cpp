@@ -21,7 +21,7 @@ bool save_framebuffer_png(const std::string& filename, const uint16_t* buffer) {
     return save_png_rgb888(filename, buffer_rgb888.data(), Specs::Display::WIDTH, Specs::Display::HEIGHT);
 }
 
-uint16_t convert_pixel_with_palette(uint16_t p, const Lcd::Palette& inPalette, const Lcd::Palette& outPalette) {
+uint16_t convert_pixel_with_palette(uint16_t p, const Palette& inPalette, const Palette& outPalette) {
     for (uint8_t c = 0; c < 4; c++)
         if (p == inPalette[c])
             return outPalette[c];
@@ -29,8 +29,8 @@ uint16_t convert_pixel_with_palette(uint16_t p, const Lcd::Palette& inPalette, c
     return p;
 }
 
-void convert_framebuffer_with_palette(const uint16_t* in, const Lcd::Palette& inPalette, uint16_t* out,
-                                      const Lcd::Palette& outPalette) {
+void convert_framebuffer_with_palette(const uint16_t* in, const Palette& inPalette, uint16_t* out,
+                                      const Palette& outPalette) {
     for (uint32_t i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
         out[i] = convert_pixel_with_palette(in[i], inPalette, outPalette);
     }

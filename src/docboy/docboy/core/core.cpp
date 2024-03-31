@@ -20,12 +20,15 @@
 #endif
 
 namespace {
+constexpr uint16_t LCD_VBLANK_CYCLES = 16416;
+
 constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
 
 // TODO: deduce SERIAL_TICKS_OFFSET also for bootrom version when sure about bootrom timing
 constexpr uint64_t SERIAL_PHASE_OFFSET = SERIAL_PERIOD - 48; // deduced from mooneye/boot_sclk_align-dmgABCmgb.gb
 
 constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
+
 uint32_t stateSize = STATE_SAVE_SIZE_UNKNOWN;
 } // namespace
 
@@ -56,9 +59,10 @@ inline void Core::tick_t3() const {
     gb.timers.tick_t3();
     gb.ppu.tick();
     gb.dma.tick_t3();
+    gb.stopController.tick();
 }
 
-void Core::cycle() {
+void Core::cycle_() {
     check(mod<4>(ticks) == 0);
 
     TICK_DEBUGGER(ticks);
@@ -82,16 +86,60 @@ void Core::cycle() {
     ++ticks;
 }
 
+void Core::cycle() {
+    if (gb.stopped) {
+        // Just handle joypad input in STOP mode: all the components are idle.
+        TICK_DEBUGGER(ticks);
+        gb.stopController.handleStopMode();
+        return;
+    }
+
+    cycle_();
+}
+
 void Core::frame() {
-    byte& LY = gb.video.LY;
-    if (LY >= 144) {
-        while (LY != 0) {
-            cycle();
+    if (gb.stopped) {
+        // Just handle joypad input in STOP mode: all the components are idle.
+        TICK_DEBUGGER(ticks);
+        gb.stopController.handleStopMode();
+        return;
+    }
+
+    // If LCD is disabled we risk to never reach VBlank (which would stall the UI and prevent inputs).
+    // Therefore, proceed for the cycles needed to render an entire frame and quit
+    // if the LCD is still disabled even after that.
+    if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC)) {
+        for (uint16_t c = 0; c < LCD_VBLANK_CYCLES; c++) {
+            cycle_();
+            check(keep_bits<2>(gb.video.STAT) != Specs::Ppu::Modes::VBLANK);
+
+            if (gb.stopped)
+                return;
             RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
         }
+
+        // LCD still disabled: quit.
+        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC))
+            return;
     }
-    while (LY < 144) {
-        cycle();
+
+    check(test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC));
+
+    // Eventually go out of current VBlank.
+    while (keep_bits<2>(gb.video.STAT) == Specs::Ppu::Modes::VBLANK) {
+        cycle_();
+        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC) || gb.stopped)
+            return;
+        RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+    }
+
+    check(keep_bits<2>(gb.video.STAT) != Specs::Ppu::Modes::VBLANK);
+
+    // Proceed until next VBlank.
+    while (keep_bits<2>(gb.video.STAT) != Specs::Ppu::Modes::VBLANK) {
+        cycle_();
+        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC) || gb.stopped)
+            return;
         RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
     }
 }
@@ -166,6 +214,7 @@ Parcel Core::parcelizeState() const {
     gb.lcd.saveState(p);
     gb.dma.saveState(p);
     gb.mmu.saveState(p);
+    gb.stopController.saveState(p);
 
     return p;
 }
@@ -192,6 +241,8 @@ void Core::unparcelizeState(Parcel&& p) {
     gb.lcd.loadState(p);
     gb.dma.loadState(p);
     gb.mmu.loadState(p);
+    gb.stopController.loadState(p);
+
     check(p.getRemainingSize() == 0);
 }
 

@@ -1542,9 +1542,9 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             [this]() {
                 switch (gb.timers.timaState) {
                 case TimersIO::TimaReloadState::Pending:
-                    return yellow("[pending TMA reload]");
+                    return yellow(" [pending TMA reload]");
                 case TimersIO::TimaReloadState::Reload:
-                    return yellow("[TMA reload]");
+                    return yellow(" [TMA reload]");
                 default:
                     return Text {};
                 }
@@ -1847,7 +1847,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     c1->addNode(makeSpaceDivider());
     c1->addNode(makeCpuBlock(COLUMN_1_WIDTH));
 
-    static constexpr uint32_t COLUMN_2_WIDTH = 42;
+    static constexpr uint32_t COLUMN_2_WIDTH = 48;
     auto c2 {make_vertical_layout()};
     c2->addNode(makeBusBlock(COLUMN_2_WIDTH));
     c2->addNode(makeSpaceDivider());

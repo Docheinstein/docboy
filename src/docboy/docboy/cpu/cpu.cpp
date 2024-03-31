@@ -1,6 +1,8 @@
 #include "cpu.h"
 #include "docboy/interrupts/interrupts.h"
+#include "docboy/joypad/joypad.h"
 #include "docboy/mmu/mmu.h"
+#include "docboy/stop/stopcontroller.h"
 #include "idu.hpp"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
@@ -14,10 +16,13 @@ constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
 constexpr uint8_t STATE_INSTRUCTION_FLAG_NONE = 255;
 } // namespace
 
-Cpu::Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu) :
+Cpu::Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu, JoypadIO& joypad,
+         StopController& stopController) :
     idu(idu),
     interrupts(interrupts),
     mmu(mmu),
+    joypad(joypad),
+    stopController(stopController),
     // clang-format off
     instructions {
         /* 00 */ { &Cpu::NOP_m0 },
@@ -546,7 +551,7 @@ Cpu::Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu) :
     },
     ISR { &Cpu::ISR_m0, &Cpu::ISR_m1, &Cpu::ISR_m2, &Cpu::ISR_m3, &Cpu::ISR_m4 } // clang-format on
 {
-    instruction.microop.selector = instructions[0]; // start with NOP
+    instruction.microop.selector = NOP;
 }
 
 void Cpu::tick_t0() {
@@ -1107,8 +1112,38 @@ void Cpu::NOP_m0() {
 }
 
 void Cpu::STOP_m0() {
-    // TODO: what to do here?
-    fetch();
+    // STOP behavior on DMG varies accordingly to the table below.
+    //
+    //   Joypad | Interrupts  ||  Mode  |   DIV   |  Instr. Length
+    // ----------------------------------------------------------------
+    //     0    |      0      ||  STOP  |  Reset  |       2
+    //     0    |      1      ||  STOP  |  Reset  |       1
+    //     1    |      0      ||  HALT  |  -----  |       2
+    //     1    |      1      ||  ----  |  ------ |       1
+
+    bool hasJoypadInput = keep_bits<4>(joypad.readP1()) == bitmask<4>;
+    bool hasPendingInterrupts = getPendingInterrupts();
+
+    if (hasJoypadInput) {
+        stopController.stop();
+    } else {
+        halted = !hasPendingInterrupts;
+    }
+
+    instruction.microop.counter = 0;
+
+    // TODO: not sure about what happens in the hardware internally.
+    if (hasPendingInterrupts) {
+        // Standard fetch.
+        fetcher.fetching = true;
+    } else {
+        // This effectively makes STOP use one more byte
+        // as it resumes with a NOP that fetches again.
+        instruction.microop.selector = NOP;
+    }
+
+    read(PC);
+    idu.increment(PC);
 }
 
 void Cpu::HALT_m0() {

@@ -8,6 +8,8 @@
 
 class Idu;
 class InterruptsIO;
+class JoypadIO;
+class StopController;
 class Parcel;
 
 class Cpu {
@@ -15,7 +17,8 @@ class Cpu {
     TESTABLE_CLASS()
 
 public:
-    Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu);
+    Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu, JoypadIO& joypad,
+        StopController& stopController);
 
     void tick();
     void tick_t0();
@@ -609,10 +612,14 @@ private:
     Idu& idu;
     InterruptsIO& interrupts;
     Mmu::View<Device::Cpu> mmu;
+    JoypadIO& joypad;
+    StopController& stopController;
 
     Instruction instructions[256];
     Instruction instructionsCB[256];
     Instruction ISR;
+
+    Instruction& NOP {instructions[0]};
 
     uint16_t AF {IF_NOT_BOOTROM(0x01B0)};
     uint16_t BC {IF_NOT_BOOTROM(0x0013)};
@@ -624,7 +631,6 @@ private:
     ImeState IME {ImeState::Disabled};
 
     bool halted {};
-    bool haltBug {};
 
     struct {
         InterruptState state {InterruptState::None};

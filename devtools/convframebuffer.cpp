@@ -64,7 +64,7 @@ int main(int argc, const char* argv[]) {
 
     // Convert framebuffer
     uint16_t outBuffer[FRAMEBUFFER_NUM_PIXELS];
-    convert_framebuffer_with_palette(inBuffer, inPalette.data(), outBuffer, outPalette.data());
+    convert_framebuffer_with_palette(inBuffer, inPalette, outBuffer, outPalette);
 
     // Save framebuffer to output file
     save_framebuffer_png(outFile, outBuffer);

@@ -228,6 +228,28 @@ Here's the debugger!
 | hacktix/bully.gb         | :white_check_mark:  |
 | hacktix/strikethrough.gb | :white_check_mark:  |
 
+
+#### samesuite
+
+| Test Rom                   |       Result        |
+|----------------------------|:-------------------:|
+| samesuite/ei_delay_halt.gb | :white_check_mark:  |
+
+
+#### daid
+
+| Test Rom                 |       Result        |
+|--------------------------|:-------------------:|
+| daid/stop_instr.gb       | :white_check_mark:  |
+
+
+#### little-things-gb
+
+| Test Rom                               |       Result        |
+|----------------------------------------|:-------------------:|
+| little-things-gb/double-halt-cancel.gb | :white_check_mark:  |
+
+
 #### mooneye
 
 | Test Rom                                      |       Result       |

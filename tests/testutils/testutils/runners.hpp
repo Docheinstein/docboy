@@ -28,6 +28,17 @@ constexpr uint64_t DEFAULT_DURATION = DURATION_LONG;
 template <typename RunnerImpl>
 class Runner {
 public:
+    struct JoypadInput {
+        uint64_t ticks {};
+        Joypad::KeyState state {};
+        Joypad::Key key {};
+    };
+
+    explicit Runner(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE) :
+        gb {std::make_unique<GameBoy>(palette)},
+        core {*gb} {
+    }
+
     RunnerImpl& rom(const std::string& filename) {
         romName = filename;
         core.loadRom(filename);
@@ -49,6 +60,16 @@ public:
         return static_cast<RunnerImpl&>(*this);
     }
 
+    RunnerImpl& forceCheck(bool force) {
+        forceCheck_ = force;
+        return static_cast<RunnerImpl&>(*this);
+    }
+
+    RunnerImpl& scheduleInputs(std::vector<JoypadInput> inputs) {
+        inputs_ = std::move(inputs);
+        return static_cast<RunnerImpl&>(*this);
+    }
+
     bool run() {
         auto* impl = static_cast<RunnerImpl*>(this);
         impl->onRun();
@@ -56,7 +77,21 @@ public:
         bool hasEverChecked {false};
 
         for (tick = core.ticks; tick <= maxTicks_ && canRun; tick += 4) {
+            // Eventually submit scheduled Joypad input.
+            if (!inputs_.empty()) {
+                for (auto it = inputs_.begin(); it != inputs_.end(); it++) {
+                    if (tick >= it->ticks) {
+                        core.setKey(it->key, it->state);
+                        inputs_.erase(it);
+                        break;
+                    }
+                }
+            }
+
+            // Advance emulation.
             core.cycle();
+
+            // Check expectation.
             if (impl->shouldCheckExpectation()) {
                 hasEverChecked = true;
                 if (impl->checkExpectation()) {
@@ -67,22 +102,25 @@ public:
 
         if (hasEverChecked) {
             impl->onExpectationFailed();
-        } else if (impl->shouldCheckExpectation()) {
+        } else if (impl->shouldEverCheckExpectation()) {
             UNSCOPED_INFO("Expectation never checked!");
         }
 
         return false;
     }
 
-    std::unique_ptr<GameBoy> gb {std::make_unique<GameBoy>()};
-    Core core {*gb};
+    std::unique_ptr<GameBoy> gb {};
+    Core core;
 
 protected:
-    std::string romName; // debug
+    std::string romName;
     uint64_t tick {};
     uint64_t maxTicks_ {UINT64_MAX};
     uint64_t checkIntervalTicks_ {UINT64_MAX};
     std::optional<uint8_t> stopAtInstruction_ {};
+    bool forceCheck_ {};
+
+    std::vector<JoypadInput> inputs_ {};
 
     bool canRun {true};
 };
@@ -90,6 +128,9 @@ protected:
 class SimpleRunner : public Runner<SimpleRunner> {
 public:
     void onRun() {
+    }
+    bool shouldEverCheckExpectation() {
+        return false;
     }
     bool shouldCheckExpectation() {
         return false;
@@ -103,20 +144,26 @@ public:
 
 class FramebufferRunner : public Runner<FramebufferRunner> {
 public:
-    FramebufferRunner& expectFramebuffer(const std::string& filename, const std::optional<Lcd::Palette>& palette_) {
+    FramebufferRunner(const Lcd::Palette& palette) :
+        Runner<FramebufferRunner>(palette) {
+    }
+
+    FramebufferRunner& expectFramebuffer(const std::string& filename) {
         load_framebuffer_png(filename, expectedFramebuffer);
-        if (palette_)
-            convert_framebuffer_with_palette(expectedFramebuffer, *palette_, expectedFramebuffer, Lcd::DEFAULT_PALETTE);
         return *this;
     }
 
     void onRun() {
     }
 
+    bool shouldEverCheckExpectation() {
+        return true;
+    }
+
     bool shouldCheckExpectation() {
         // Schedule a check for the next VBlank if we reached the required instruction
         if (stopAtInstruction_) {
-            if (core.gb.cpu.instruction.opcode == *stopAtInstruction_) {
+            if (gb->cpu.instruction.opcode == *stopAtInstruction_) {
                 // Force check now
                 canRun = false;
                 return true;
@@ -125,12 +172,17 @@ public:
 
         // Schedule a check for the next VBlank if we have passed the check interval
         if (tick > 0 && tick % checkIntervalTicks_ == 0) {
-            pendingCheck = true;
+            if (forceCheck_) {
+                // Force check even if outside VBlank.
+                return true;
+            } else {
+                pendingCheckNextVBlank = true;
+            }
         }
 
         // Check if we are in VBlank with a pending check
-        if (pendingCheck && keep_bits<2>(core.gb.video.STAT) == 1) {
-            pendingCheck = false;
+        if (pendingCheckNextVBlank && keep_bits<2>(gb->video.STAT) == Specs::Ppu::Modes::VBLANK) {
+            pendingCheckNextVBlank = false;
             return true;
         }
 
@@ -172,7 +224,7 @@ public:
 private:
     uint16_t lastFramebuffer[FRAMEBUFFER_NUM_PIXELS] {};
     uint16_t expectedFramebuffer[FRAMEBUFFER_NUM_PIXELS] {};
-    bool pendingCheck {};
+    bool pendingCheckNextVBlank {};
 };
 
 class SerialRunner : public Runner<SerialRunner> {
@@ -185,6 +237,10 @@ public:
     void onRun() {
         serialLink.plug1.attach(serialBuffer);
         core.attachSerialLink(serialLink.plug2);
+    }
+
+    bool shouldEverCheckExpectation() {
+        return true;
     }
 
     bool shouldCheckExpectation() {
@@ -215,21 +271,35 @@ struct MaxTicks {
 struct StopAtInstruction {
     uint8_t instruction;
 };
-using RunnerParam = std::variant<std::monostate, Lcd::Palette, MaxTicks, StopAtInstruction>;
+struct ForceCheck {};
+
+using Inputs = std::vector<FramebufferRunner::JoypadInput>;
 
 struct FramebufferRunnerParams {
+    using Param = std::variant<std::monostate, Lcd::Palette, MaxTicks, StopAtInstruction, ForceCheck,
+                               std::vector<FramebufferRunner::JoypadInput>>;
 
-    FramebufferRunnerParams(std::string&& rom, std::string&& expected, RunnerParam param1 = std::monostate {}) :
+    FramebufferRunnerParams(std::string&& rom, std::string&& expected, Param param1 = std::monostate {},
+                            Param param2 = std::monostate {}) :
         rom(std::move(rom)) {
         result = std::move(expected);
 
-        if (std::holds_alternative<Lcd::Palette>(param1)) {
-            palette = std::get<Lcd::Palette>(param1);
-        } else if (std::holds_alternative<MaxTicks>(param1)) {
-            maxTicks = std::get<MaxTicks>(param1).value;
-        } else if (std::holds_alternative<StopAtInstruction>(param1)) {
-            stopAtInstruction = std::get<StopAtInstruction>(param1).instruction;
-        }
+        auto parseParam = [this](Param& param) {
+            if (std::holds_alternative<Lcd::Palette>(param)) {
+                palette = std::get<Lcd::Palette>(param);
+            } else if (std::holds_alternative<MaxTicks>(param)) {
+                maxTicks = std::get<MaxTicks>(param).value;
+            } else if (std::holds_alternative<StopAtInstruction>(param)) {
+                stopAtInstruction = std::get<StopAtInstruction>(param).instruction;
+            } else if (std::holds_alternative<ForceCheck>(param)) {
+                forceCheck = true;
+            } else if (std::holds_alternative<std::vector<FramebufferRunner::JoypadInput>>(param)) {
+                inputs = std::get<std::vector<FramebufferRunner::JoypadInput>>(param);
+            }
+        };
+
+        parseParam(param1);
+        parseParam(param2);
     }
 
     std::string rom;
@@ -237,6 +307,8 @@ struct FramebufferRunnerParams {
     std::optional<Lcd::Palette> palette {};
     uint64_t maxTicks {DEFAULT_DURATION};
     std::optional<uint8_t> stopAtInstruction {};
+    bool forceCheck {};
+    std::vector<FramebufferRunner::JoypadInput> inputs {};
 };
 
 struct SerialRunnerParams {

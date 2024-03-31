@@ -57,6 +57,8 @@ private:
     void tick_t2() const;
     void tick_t3() const;
 
+    void cycle_();
+
     [[nodiscard]] Parcel parcelizeState() const;
     void unparcelizeState(Parcel&& parcel);
 
