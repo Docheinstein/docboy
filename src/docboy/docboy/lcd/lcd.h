@@ -58,10 +58,10 @@ public:
     }
 
 #ifdef ENABLE_DEBUGGER
-    Lcd::PixelRgb565* Lcd::getPixels() {
+    Lcd::PixelRgb565* getPixels() {
         return pixels;
     }
-    uint16_t Lcd::getCursor() const {
+    [[nodiscard]] uint16_t getCursor() const {
         return cursor;
     }
 #endif
