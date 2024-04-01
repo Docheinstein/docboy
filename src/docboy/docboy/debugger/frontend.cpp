@@ -1181,12 +1181,14 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 return t;
             }
             if (gb.ppu.tickSelector == &Ppu::hBlank || gb.ppu.tickSelector == &Ppu::hBlank453 ||
-                gb.ppu.tickSelector == &Ppu::hBlank454 || gb.ppu.tickSelector == &Ppu::hBlankLastLine ||
-                gb.ppu.tickSelector == &Ppu::hBlankLastLine454 || gb.ppu.tickSelector == &Ppu::hBlankLastLine455)
+                gb.ppu.tickSelector == &Ppu::hBlank454 || gb.ppu.tickSelector == &Ppu::hBlank455 ||
+                gb.ppu.tickSelector == &Ppu::hBlankLastLine || gb.ppu.tickSelector == &Ppu::hBlankLastLine454 ||
+                gb.ppu.tickSelector == &Ppu::hBlankLastLine455)
                 return "Horizontal Blank";
-            if (gb.ppu.tickSelector == &Ppu::vBlank)
+            if (gb.ppu.tickSelector == &Ppu::vBlank || gb.ppu.tickSelector == &Ppu::vBlank454)
                 return "Vertical Blank";
-            if (gb.ppu.tickSelector == &Ppu::vBlankLastLine || gb.ppu.tickSelector == &Ppu::vBlankLastLine454)
+            if (gb.ppu.tickSelector == &Ppu::vBlankLastLine || gb.ppu.tickSelector == &Ppu::vBlankLastLine2 ||
+                gb.ppu.tickSelector == &Ppu::vBlankLastLine7 || gb.ppu.tickSelector == &Ppu::vBlankLastLine454)
                 return "Vertical Blank (Last Line)";
 
             checkNoEntry();
@@ -1194,6 +1196,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         }() << endl;
 
         b << yellow("Last Stat IRQ") << "    :  " << gb.ppu.lastStatIrq << endl;
+        b << yellow("LYC_EQ_LY Enabled") << "     :  " << gb.ppu.enableLycEqLyIrq << endl;
 
         // LCD
         const auto pixelColor = [this](uint16_t lcdColor) {
@@ -1318,7 +1321,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         // Pixel Transfer
         b << subheader("pixel transfer", width) << endl;
 
-        b << yellow("Fetcher Mode") << "     :  " <<
+        b << yellow("Fetcher Mode") << "        :  " <<
             [this]() {
                 if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPrefetcherGetTile0)
                     return "BG/WIN Tile0";
@@ -1366,22 +1369,22 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }()
           << endl;
 
-        b << yellow("LX") << "               :  " << gb.ppu.LX << endl;
-        b << yellow("SCX % 8 Initial") << "  :  " << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
-        b << yellow("SCX % 8 Discard") << "  :  " << gb.ppu.pixelTransfer.initialSCX.discarded << "/"
+        b << yellow("LX") << "                  :  " << gb.ppu.LX << endl;
+        b << yellow("SCX % 8 Initial") << "     :  " << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
+        b << yellow("SCX % 8 Discard") << "     :  " << gb.ppu.pixelTransfer.initialSCX.discarded << "/"
           << gb.ppu.pixelTransfer.initialSCX.toDiscard << endl;
-        b << yellow("LX 0->8 Discard") << "  :  " << (gb.ppu.LX < 8 ? (Text(gb.ppu.LX) + "/8") : "8/8") << endl;
+        b << yellow("LX 0->8 Discard") << "     :  " << (gb.ppu.LX < 8 ? (Text(gb.ppu.LX) + "/8") : "8/8") << endl;
 
         // BG/WIN Prefetcher
         b << subheader("bg/win prefetcher", width) << endl;
-        b << yellow("LX") << "               :  " << gb.ppu.bwf.LX << endl;
-        b << yellow("Tile Map X") << "       :  " << gb.ppu.bwf.tilemapX << endl;
-        b << yellow("Tile Map Y") << "       :  " << gb.ppu.bwf.tilemapY << endl;
-        b << yellow("Tile Map Addr") << "    :  "
+        b << yellow("LX") << "                  :  " << gb.ppu.bwf.LX << endl;
+        b << yellow("Tile Map X") << "          :  " << gb.ppu.bwf.tilemapX << endl;
+        b << yellow("Tile Map Y") << "          :  " << gb.ppu.bwf.tilemapY << endl;
+        b << yellow("Tile Map Addr.") << "      :  "
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.vTilemapAddr) << endl;
-        b << yellow("Tile Base Addr") << "   :  "
+        b << yellow("Tile Map Tile Addr.") << " :  "
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.vTilemapTileAddr) << endl;
-        b << yellow("Cached Fetch") << "     :  "
+        b << yellow("Cached Fetch") << "        :  "
           << (gb.ppu.bwf.interruptedFetch.hasData ? hex<uint16_t>(gb.ppu.bwf.interruptedFetch.tileDataHigh << 8 |
                                                                   gb.ppu.bwf.interruptedFetch.tileDataLow)
                                                   : darkgray("None"))
@@ -1389,17 +1392,17 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         // OBJ Prefetcher
         b << subheader("obj prefetcher", width) << endl;
-        b << yellow("OAM Number") << "       :  " << gb.ppu.of.entry.number << endl;
-        b << yellow("Tile Number") << "      :  " << gb.ppu.of.tileNumber << endl;
-        b << yellow("OBJ Attributes") << "   :  " << gb.ppu.of.attributes << endl;
+        b << yellow("OAM Number") << "          :  " << gb.ppu.of.entry.number << endl;
+        b << yellow("Tile Number") << "         :  " << gb.ppu.of.tileNumber << endl;
+        b << yellow("OBJ Attributes") << "      :  " << gb.ppu.of.attributes << endl;
 
         // Pixel Slice Fetcher
         b << subheader("pixel slice fetcher", width) << endl;
-        b << yellow("Tile Data Addr.") << "  :  "
+        b << yellow("Tile Data Addr.") << "     :  "
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.psf.vTileDataAddress) << endl;
-        b << yellow("Tile Data") << "        :  "
+        b << yellow("Tile Data") << "           :  "
           << hex<uint16_t>(gb.ppu.psf.tileDataHigh << 8 | gb.ppu.psf.tileDataLow) << endl;
-        b << yellow("Tile Data Ready") << "  :  " << [this]() {
+        b << yellow("Tile Data Ready") << "     :  " << [this]() {
             if (gb.ppu.fetcherTickSelector == &Ppu::bgwinPixelSliceFetcherPush)
                 return green("Ready to push");
             if (gb.ppu.fetcherTickSelector == &Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo)
@@ -1856,7 +1859,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     c2->addNode(makeTimersBlock(COLUMN_2_WIDTH));
 
     static constexpr uint32_t COLUMN_3_PART_1_WIDTH = 52;
-    static constexpr uint32_t COLUMN_3_PART_2_WIDTH = 37;
+    static constexpr uint32_t COLUMN_3_PART_2_WIDTH = 40;
     static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_PART_1_WIDTH + COLUMN_3_PART_2_WIDTH + 1;
 
     auto c3r2 {make_horizontal_layout()};

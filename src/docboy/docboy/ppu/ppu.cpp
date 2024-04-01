@@ -1,6 +1,5 @@
 #include "ppu.h"
 
-#include <iomanip>
 #include <iostream>
 
 #include "docboy/interrupts/interrupts.h"
@@ -55,22 +54,30 @@ inline uint8_t resolveColor(const uint8_t colorIndex, const uint8_t palette) {
 }
 } // namespace
 
-const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {&Ppu::oamScanEven,
-                                                 &Ppu::oamScanOdd,
-                                                 &Ppu::oamScanDone,
-                                                 &Ppu::oamScanAfterTurnOn,
-                                                 &Ppu::pixelTransferDummy0,
-                                                 &Ppu::pixelTransferDiscard0,
-                                                 &Ppu::pixelTransferDiscard0WX0SCX7,
-                                                 &Ppu::pixelTransfer0,
-                                                 &Ppu::pixelTransfer8,
-                                                 &Ppu::hBlank,
-                                                 &Ppu::hBlank453,
-                                                 &Ppu::hBlank454,
-                                                 &Ppu::hBlankLastLine,
-                                                 &Ppu::hBlankLastLine454,
-                                                 &Ppu::vBlank,
-                                                 &Ppu::vBlankLastLine};
+const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
+    &Ppu::oamScanEven,
+    &Ppu::oamScanOdd,
+    &Ppu::oamScanDone,
+    &Ppu::oamScanAfterTurnOn,
+    &Ppu::pixelTransferDummy0,
+    &Ppu::pixelTransferDiscard0,
+    &Ppu::pixelTransferDiscard0WX0SCX7,
+    &Ppu::pixelTransfer0,
+    &Ppu::pixelTransfer8,
+    &Ppu::hBlank,
+    &Ppu::hBlank453,
+    &Ppu::hBlank454,
+    &Ppu::hBlank455,
+    &Ppu::hBlankLastLine,
+    &Ppu::hBlankLastLine454,
+    &Ppu::hBlankLastLine455,
+    &Ppu::vBlank,
+    &Ppu::vBlank454,
+    &Ppu::vBlankLastLine,
+    &Ppu::vBlankLastLine2,
+    &Ppu::vBlankLastLine7,
+    &Ppu::vBlankLastLine454,
+};
 
 const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
     &Ppu::bgwinPrefetcherGetTile0,
@@ -169,7 +176,7 @@ void Ppu::turnOn() {
     on = true;
 
     // STAT's LYC_EQ_LY is updated properly (but interrupt is not raised)
-    set_bit<LYC_EQ_LY>(video.STAT, video.LY == video.LYC);
+    set_bit<LYC_EQ_LY>(video.STAT, isLYCEqLY());
 }
 
 void Ppu::turnOff() {
@@ -201,18 +208,24 @@ void Ppu::turnOff() {
     oam.release();
 }
 
+inline bool Ppu::isLYCEqLY() const {
+    // In addition to the condition (video.LYC == video.LY), LYC_EQ_LY IRQ might be disabled for several reasons.
+    // Remarkably:
+    // * LYC_EQ_LY is always 0 at dot 454
+    // * The last scanline (LY = 153 = 0) the LY values differs from what LYC_EQ_LY reads and from the related IRQ.
+    // [mooneye/lcdon_timing, daid/ppu_scanline_bgp]
+    return (video.LYC == video.LY) && enableLycEqLyIrq;
+}
+
 inline void Ppu::tickStat() {
     // STAT interrupt request is checked every dot (not only during modes or lines transitions).
     // OAM Stat interrupt seems to be an exception to this rule:
     // it is raised only as a consequence of a transition of mode, not always
     // (e.g. manually writing STAT's OAM interrupt flag while in OAM does not raise a request).
     // Note that the interrupt request is done only on raising edge
-    // [mooneye's stat_irq_blocking and stat_lyc_onoff].
-
-    const bool lycEqLy = video.LYC == video.LY;
-
-    const bool lycEqLyIrq =
-        test_bit<LYC_EQ_LY_INTERRUPT>(video.STAT) && lycEqLy && dots != 454 /* LYC_EQ_LY is always 0 at dot 454*/;
+    // [mooneye/stat_irq_blocking, mooneye/stat_lyc_onoff].
+    const bool lycEqLy = isLYCEqLY();
+    const bool lycEqLyIrq = test_bit<LYC_EQ_LY_INTERRUPT>(video.STAT) && lycEqLy;
 
     const uint8_t mode = keep_bits<2>(video.STAT);
 
@@ -222,17 +235,11 @@ inline void Ppu::tickStat() {
     const bool vblankIrq =
         (test_bit<VBLANK_INTERRUPT>(video.STAT) || test_bit<OAM_INTERRUPT>(video.STAT)) && mode == VBLANK;
 
-    // Eventually raise STAT interrupt
+    // Eventually raise STAT interrupt.
     updateStatIrq(lycEqLyIrq || hblankIrq || vblankIrq);
 
-    // Update STAT's LYC_EQ_LY
-    if (dots == 454 /* TODO: && keep_bits<2>(video.STAT) == HBLANK ?*/) {
-        // LYC_EQ_LY is always 0 at dot 454 [mooneye: lcdon_timing]
-        reset_bit<LYC_EQ_LY>(video.STAT);
-    } else {
-        // Update STAT's LYC=LY Flag according to the current comparison
-        set_bit<LYC_EQ_LY>(video.STAT, lycEqLy);
-    }
+    // Update STAT's LYC=LY Flag according to the current comparison
+    set_bit<LYC_EQ_LY>(video.STAT, lycEqLy);
 }
 
 inline void Ppu::updateStatIrq(bool irq) {
@@ -240,6 +247,14 @@ inline void Ppu::updateStatIrq(bool irq) {
     if (lastStatIrq < irq)
         interrupts.raiseInterrupt<InterruptsIO::InterruptType::Stat>();
     lastStatIrq = irq;
+}
+
+void Ppu::updateStatIrqForOamMode() {
+    // OAM mode interrupt is not checked every dot: it is checked only here during mode transition.
+    // Furthermore, it seems that having a pending LYC_EQ_LY signal high prevents the STAT IRQ to go low.
+    // [daid/ppu_scanline_bgp]
+    bool lycEqLyIrq = test_bit<LYC_EQ_LY_INTERRUPT>(video.STAT) && isLYCEqLY();
+    updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT) || lycEqLyIrq);
 }
 
 inline void Ppu::tickWindow() {
@@ -525,7 +540,7 @@ void Ppu::hBlank() {
 
     if (++dots == 453) {
         // Eventually raise OAM interrupt
-        updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT));
+        updateStatIrqForOamMode();
 
         tickSelector = &Ppu::hBlank453;
     }
@@ -538,26 +553,43 @@ void Ppu::hBlank453() {
 
     ++video.LY;
 
+    // LYC_EQ_LY IRQ is disabled for dot 454.
+    enableLycEqLyIrq = false;
+
     tickSelector = &Ppu::hBlank454;
 
     oam.acquire();
 }
 
 void Ppu::hBlank454() {
-    check(dots >= 454);
+    check(dots == 454);
 
-    if (++dots == 456) {
-        dots = 0;
-        enterOamScan();
-    }
+    ++dots;
+
+    // Enable LYC_EQ_LY IRQ again.
+    check(!enableLycEqLyIrq);
+    enableLycEqLyIrq = true;
+
+    tickSelector = &Ppu::hBlank455;
+}
+
+void Ppu::hBlank455() {
+    check(dots == 455);
+
+    dots = 0;
+
+    enterOamScan();
 }
 
 void Ppu::hBlankLastLine() {
     check(LX == 168);
     check(video.LY == 143);
     if (++dots == 454) {
-        // LY is increased here: at dot 454 (not 456)
         ++video.LY;
+
+        // LYC_EQ_LY IRQ is disabled for dot 454.
+        enableLycEqLyIrq = false;
+
         tickSelector = &Ppu::hBlankLastLine454;
     }
 }
@@ -566,6 +598,11 @@ void Ppu::hBlankLastLine454() {
     check(dots == 454);
 
     ++dots;
+
+    // Enable LYC_EQ_LY IRQ again.
+    check(!enableLycEqLyIrq);
+    enableLycEqLyIrq = true;
+
     tickSelector = &Ppu::hBlankLastLine455;
 
     // VBlank mode is set at dot 455 (though I'm not sure about it)
@@ -581,27 +618,65 @@ void Ppu::hBlankLastLine455() {
 
 void Ppu::vBlank() {
     check(video.LY >= 144 && video.LY < 154);
+    if (++dots == 454) {
+        ++video.LY;
+
+        // LYC_EQ_LY IRQ is disabled for dot 454.
+        enableLycEqLyIrq = false;
+
+        tickSelector = &Ppu::vBlank454;
+    }
+}
+
+void Ppu::vBlank454() {
+    check(dots >= 454);
+
     if (++dots == 456) {
         dots = 0;
-        // LY never reaches 154: it is set to 0 instead (which lasts 2 scanlines).
-        video.LY = (video.LY + 1) % 153;
-        if (video.LY == 0) {
-            tickSelector = &Ppu::vBlankLastLine;
-        }
+        tickSelector = video.LY == 153 ? &Ppu::vBlankLastLine : &Ppu::vBlank;
     }
 }
 
 void Ppu::vBlankLastLine() {
+    check(video.LY == 153);
+
+    if (++dots == 2) {
+        // LY is reset to 0
+        video.LY = 0;
+
+        // Altough LY is set to 0, LYC_EQ_LY IRQ is disabled (i.e. does not trigger for LY=0).
+        enableLycEqLyIrq = false;
+
+        tickSelector = &Ppu::vBlankLastLine2;
+    }
+}
+
+void Ppu::vBlankLastLine2() {
     check(video.LY == 0);
+    check(dots >= 2);
+
+    if (++dots == 7) {
+        // Enable LYC_EQ_LY IRQ again.
+        enableLycEqLyIrq = true;
+        tickSelector = &Ppu::vBlankLastLine7;
+    }
+}
+
+void Ppu::vBlankLastLine7() {
+    check(video.LY == 0);
+    check(dots >= 7);
+
     if (++dots == 454) {
         // It seems that STAT's mode is reset the last cycle (to investigate)
-        updateMode<0>();
+        updateMode<HBLANK>();
         tickSelector = &Ppu::vBlankLastLine454;
     }
 }
 
 void Ppu::vBlankLastLine454() {
     check(video.LY == 0);
+    check(dots >= 454);
+
     if (++dots == 456) {
         dots = 0;
         // end of vblank
@@ -764,7 +839,7 @@ void Ppu::enterNewFrame() {
     enterOamScan();
 
     // Eventually raise OAM interrupt
-    updateStatIrq(test_bit<OAM_INTERRUPT>(video.STAT));
+    updateStatIrqForOamMode();
 }
 
 inline void Ppu::tickFetcher() {
@@ -861,15 +936,15 @@ inline void Ppu::handleOamScanBusesOddities() {
 
     if (dots == 76) {
         // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
-        // [mooneye: lcdon_write_timing]
+        // [mooneye/lcdon_write_timing]
         oam.release();
     } else if (dots == 78) {
         // OAM bus is re-acquired this cycle
-        // [mooneye: lcdon_write_timing]
+        // [mooneye/lcdon_write_timing]
         oam.acquire();
 
         // VRAM bus is acquired one cycle before STAT is updated
-        // [mooneye: lcdon_timing]
+        // [mooneye/lcdon_timing]
         vram.acquire();
     }
 }
@@ -1455,6 +1530,7 @@ void Ppu::saveState(Parcel& parcel) const {
 
     parcel.writeBool(on);
     parcel.writeBool(lastStatIrq);
+    parcel.writeBool(enableLycEqLyIrq);
     parcel.writeUInt16(dots);
     parcel.writeUInt8(LX);
     parcel.writeUInt8(BGP);
@@ -1527,6 +1603,7 @@ void Ppu::loadState(Parcel& parcel) {
 
     on = parcel.readBool();
     lastStatIrq = parcel.readBool();
+    enableLycEqLyIrq = parcel.readBool();
     dots = parcel.readUInt16();
     LX = parcel.readUInt8();
     BGP = parcel.readUInt8();

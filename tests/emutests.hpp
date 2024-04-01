@@ -146,11 +146,22 @@ TEST_CASE("emulation", "[emulation]") {
             F {"mealybug/m3_wx_5_change.gb", "mealybug/m3_wx_5_change.png", GREY_PALETTE},
             F {"mealybug/m3_wx_6_change.gb", "mealybug/m3_wx_6_change.png", GREY_PALETTE},
 
+            // daid
+            F {"daid/ppu_scanline_bgp.gb", "daid/ppu_scanline_bgp.png", GREY_PALETTE},
+
             // docboy
             F {"docboy/ppu/hblank_raises_hblank_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_raises_oam_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_raises_vblank_stat_interrupt.gb", "docboy/ok.png"},
             F {"docboy/ppu/ly_154.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_154_lyc_eq_ly_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_154_lyc_eq_ly_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_154_lyc_eq_ly_timing_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_154_lyc_eq_ly_timing_round4.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_154_lyc_eq_ly_timing_round5.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_154_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_154_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_154_timing_round3.gb", "docboy/ok.png"},
             F {"docboy/ppu/lyc_stat_interrupt_flag_timing_from_boot_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/lyc_stat_interrupt_flag_timing_from_boot_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/lyc_stat_interrupt_flag_timing_round1.gb", "docboy/ok.png"},
@@ -1541,6 +1552,9 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/interrupts/stat_interrupt_timing_scx4_round2.gb", "docboy/ok.png"},
             F {"docboy/interrupts/stat_interrupt_timing_scx5_round1.gb", "docboy/ok.png"},
             F {"docboy/interrupts/stat_interrupt_timing_scx5_round2.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_lyc_interrupt_vblank.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_lyc_interrupt_vblank_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/stat_lyc_interrupt_vblank_timing_round2.gb", "docboy/ok.png"},
             F {"docboy/interrupts/timer_interrupt_timing_halted_round1.gb", "docboy/ok.png"},
             F {"docboy/interrupts/timer_interrupt_timing_halted_round2.gb", "docboy/ok.png"},
             F {"docboy/interrupts/timer_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
@@ -1843,7 +1857,9 @@ TEST_CASE("emulation", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS()
+        RUN_TEST_ROMS(
+
+        );
     }
 
 #endif

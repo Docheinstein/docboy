@@ -56,6 +56,8 @@ private:
     void turnOn();
     void turnOff();
 
+    bool isLYCEqLY() const;
+
     void tickStat();
     void updateStatIrq(bool irq);
 
@@ -76,12 +78,16 @@ private:
     void hBlank();
     void hBlank453();
     void hBlank454();
+    void hBlank455();
     void hBlankLastLine();
     void hBlankLastLine454();
     void hBlankLastLine455();
 
     void vBlank();
+    void vBlank454();
     void vBlankLastLine();
+    void vBlankLastLine2();
+    void vBlankLastLine7();
     void vBlankLastLine454();
 
     // PPU states helpers
@@ -96,6 +102,8 @@ private:
 
     template <uint8_t mode>
     void updateMode();
+
+    void updateStatIrqForOamMode();
 
     void increaseLX();
 
@@ -152,12 +160,13 @@ private:
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;
 
-    TickSelector tickSelector {IF_BOOTROM_ELSE(&Ppu::oamScanEven, &Ppu::vBlankLastLine)};
+    TickSelector tickSelector {IF_BOOTROM_ELSE(&Ppu::oamScanEven, &Ppu::vBlankLastLine7)};
     FetcherTickSelector fetcherTickSelector {&Ppu::bgPrefetcherGetTile0};
 
-    bool on {};
+    bool on {true};
 
     bool lastStatIrq {};
+    bool enableLycEqLyIrq {true};
 
     uint16_t dots {IF_BOOTROM_ELSE(0, 395)}; // [0, 456)
     uint8_t LX {};                           // LX=X+8, therefore [0, 168)
