@@ -25,6 +25,8 @@ target_sources(docboy PRIVATE
         docboy/cartridge/helpers.h
         docboy/cartridge/mbc1/mbc1.h
         docboy/cartridge/mbc1/mbc1.tpp
+        docboy/cartridge/mbc2/mbc2.h
+        docboy/cartridge/mbc2/mbc2.tpp
         docboy/cartridge/mbc3/mbc3.h
         docboy/cartridge/mbc3/mbc3.tpp
         docboy/cartridge/mbc5/mbc5.h
@@ -127,7 +129,7 @@ if (ENABLE_DEBUGGER)
 endif ()
 
 if (ENABLE_SERIAL)
-    target_compile_definitions(docboy PRIVATE ENABLE_SERIAL)
+    target_compile_definitions(docboy PUBLIC ENABLE_SERIAL)
 endif ()
 
 target_link_libraries(docboy PRIVATE utils)

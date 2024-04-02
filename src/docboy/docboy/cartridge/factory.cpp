@@ -1,5 +1,6 @@
 #include "factory.h"
 #include "docboy/cartridge/mbc1/mbc1.h"
+#include "docboy/cartridge/mbc2/mbc2.h"
 #include "docboy/cartridge/mbc3/mbc3.h"
 #include "docboy/cartridge/mbc5/mbc5.h"
 #include "docboy/cartridge/nombc/nombc.h"
@@ -83,6 +84,22 @@ std::unique_ptr<ICartridge> createMbc1(const std::vector<uint8_t>& data, uint8_t
     }
 
     fatal("Mbc1: unexpected data in cartridge header: rom=" + std::to_string(rom) + ", ram=" + std::to_string(ram));
+}
+
+template <bool Battery>
+std::unique_ptr<ICartridge> createMbc2(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
+    if (ram == Specs::Cartridge::Header::Ram::NONE) {
+        if (rom == Specs::Cartridge::Header::Rom::KB_32)
+            return std::make_unique<Mbc2<32 * KB, Battery>>(data.data(), data.size());
+        if (rom == Specs::Cartridge::Header::Rom::KB_64)
+            return std::make_unique<Mbc2<64 * KB, Battery>>(data.data(), data.size());
+        if (rom == Specs::Cartridge::Header::Rom::KB_128)
+            return std::make_unique<Mbc2<128 * KB, Battery>>(data.data(), data.size());
+        if (rom == Specs::Cartridge::Header::Rom::KB_256)
+            return std::make_unique<Mbc2<256 * KB, Battery>>(data.data(), data.size());
+    }
+
+    fatal("Mbc2: unexpected data in cartridge header: rom=" + std::to_string(rom) + ", ram=" + std::to_string(ram));
 }
 
 template <bool Battery, bool Timer>
@@ -270,6 +287,10 @@ std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename
         return createMbc1<NoBattery>(data, rom, ram);
     case 0x03:
         return createMbc1<Battery>(data, rom, ram);
+    case 0x05:
+        return createMbc2<NoBattery>(data, rom, ram);
+    case 0x06:
+        return createMbc2<Battery>(data, rom, ram);
     case 0x0F:
     case 0x10:
         return createMbc3<Battery, Timer>(data, rom, ram);

@@ -95,7 +95,9 @@ int main(int argc, char* argv[]) {
     IF_BOOTROM(argsParser.addArgument(args.bootRom, "boot-rom").help("Boot ROM"));
     argsParser.addArgument(args.rom, "rom").help("ROM");
     argsParser.addArgument(args.config, "--config", "-c").help("Read configuration file");
+#ifdef ENABLE_SERIAL
     argsParser.addArgument(args.serial, "--serial", "-s").help("Display serial console");
+#endif
     argsParser.addArgument(args.scaling, "--scaling", "-z").help("Scaling factor");
     argsParser.addArgument(args.dumpCartridgeInfo, "--cartridge-info", "-i").help("Dump cartridge info and quit");
     IF_DEBUGGER(argsParser.addArgument(args.debugger, "--debugger", "-d").help("Attach debugger"));

@@ -1419,6 +1419,16 @@ TEST_CASE("emulation", "[emulation]") {
                           S {"mooneye/mbc/mbc1/rom_16Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
         }
 
+        SECTION("mbc2") {
+            RUN_TEST_ROMS(F {"mooneye/mbc/mbc2/bits_ramg.gb", "mooneye/ok.png", MaxTicks {300'000'000}},
+                          F {"mooneye/mbc/mbc2/bits_romb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc2/bits_unused.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc2/ram.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc2/rom_1Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc2/rom_2Mb.gb", "mooneye/ok.png"},
+                          F {"mooneye/mbc/mbc2/rom_512kb.gb", "mooneye/ok.png"});
+        }
+
         SECTION("mbc5") {
             RUN_TEST_ROMS(S {"mooneye/mbc/mbc5/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                           S {"mooneye/mbc/mbc5/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},

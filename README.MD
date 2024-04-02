@@ -3,22 +3,22 @@
 
 # DocBoy
 
-GameBoy emulator written in C++17.
+GameBoy (DMG) emulator written in C++17.
 
 Can be used either with the standalone SDL frontend or as a libretro core (e.g. with RetroArch).
 
-This is not the first nor the last of the GB emulator, but the aim of DocBoy is to find a good balance between:
+DocBoy is a accuracy-focused GB emulator that tries to find a good spot between:
 1. Emulation accuracy
 2. Speed and efficiency
-3. Easy enough to understand
+3. Code clarity
 
 **Bonus**: a good CLI debugger (in the style of GDB).
 
 ### Features
 
-* CPU: m-cycle accurate
-* PPU: t-cycle accurate (implements Pixel FIFO)
-* Cartridges: NoMBC, MBC1, MBC3, MBC5
+* CPU: M-cycle accurate
+* PPU: T-cycle accurate (implements Pixel FIFO)
+* Cartridges: NoMBC, MBC1, MBC2, MBC3, MBC5
 * CLI debugger: supports breakpoints, watchpoints, disassembler, step by step execution (by instruction, m-cycle or by t-cycle), rewind, memory viewer, interrupts viewer, IO viewer
 * Serial Link (with the possibility to print the serial output to console)
 * Bootroom support
@@ -29,12 +29,9 @@ This is not the first nor the last of the GB emulator, but the aim of DocBoy is 
 * Save state / Load state
 
 ### TODO
-* Cartridges: MBC2
 * Sound
 * GBC (add colors support)
-* Tests: add more test roms
-* Platforms: Windows, macOs
-* Benchmarks and optimization
+* RTC
 
 ## Build
 
@@ -238,9 +235,10 @@ Here's the debugger!
 
 #### daid
 
-| Test Rom                 |       Result        |
-|--------------------------|:-------------------:|
-| daid/stop_instr.gb       | :white_check_mark:  |
+| Test Rom                   |       Result        |
+|----------------------------|:-------------------:|
+| daid/stop_instr.gb         | :white_check_mark:  |
+| daid/ppu_scanline_bgp.gb   | :white_check_mark:  |
 
 
 #### little-things-gb
@@ -252,95 +250,102 @@ Here's the debugger!
 
 #### mooneye
 
-| Test Rom                                      |       Result       |
-|-----------------------------------------------|:------------------:|
-| mooneye/add_sp_e_timing.gb                    | :white_check_mark: |
-| mooneye/bits/mem_oam.gb                       | :white_check_mark: |
-| mooneye/bits/reg_f.gb                         | :white_check_mark: |
-| mooneye/bits/unused_hwio-GS.gb                | :white_check_mark: |
-| mooneye/boot_div-dmgABCmgb.gb                 | :white_check_mark: |
-| mooneye/boot_hwio-dmgABCmgb.gb                | :white_check_mark: |
-| mooneye/boot_regs-dmgABC.gb                   | :white_check_mark: |
-| mooneye/call_cc_timing2.gb                    | :white_check_mark: |
-| mooneye/call_cc_timing.gb                     | :white_check_mark: |
-| mooneye/call_timing2.gb                       | :white_check_mark: |
-| mooneye/call_timing.gb                        | :white_check_mark: |
-| mooneye/di_timing-GS.gb                       | :white_check_mark: |
-| mooneye/div_timing.gb                         | :white_check_mark: |
-| mooneye/ei_sequence.gb                        | :white_check_mark: |
-| mooneye/ei_timing.gb                          | :white_check_mark: |
-| mooneye/halt_ime0_ei.gb                       | :white_check_mark: |
-| mooneye/halt_ime0_nointr_timing.gb            | :white_check_mark: |
-| mooneye/halt_ime1_timing2-GS.gb               | :white_check_mark: |
-| mooneye/halt_ime1_timing.gb                   | :white_check_mark: |
-| mooneye/if_ie_registers.gb                    | :white_check_mark: |
-| mooneye/instr/daa.gb                          | :white_check_mark: |
-| mooneye/interrupts/ie_push.gb                 | :white_check_mark: |
-| mooneye/intr_timing.gb                        | :white_check_mark: |
-| mooneye/jp_cc_timing.gb                       | :white_check_mark: |
-| mooneye/jp_timing.gb                          | :white_check_mark: |
-| mooneye/ld_hl_sp_e_timing.gb                  | :white_check_mark: |
-| mooneye/mbc/mbc1/bits_bank1.gb                | :white_check_mark: |
-| mooneye/mbc/mbc1/bits_bank2.gb                | :white_check_mark: |
-| mooneye/mbc/mbc1/bits_mode.gb                 | :white_check_mark: |
-| mooneye/mbc/mbc1/bits_ramg.gb                 | :white_check_mark: |
-| mooneye/mbc/mbc1/ram_256kb.gb                 | :white_check_mark: |
-| mooneye/mbc/mbc1/ram_64kb.gb                  | :white_check_mark: |
-| mooneye/mbc/mbc1/rom_16Mb.gb                  | :white_check_mark: |
-| mooneye/mbc/mbc1/rom_1Mb.gb                   | :white_check_mark: |
-| mooneye/mbc/mbc1/rom_2Mb.gb                   | :white_check_mark: |
-| mooneye/mbc/mbc1/rom_4Mb.gb                   | :white_check_mark: |
-| mooneye/mbc/mbc1/rom_512kb.gb                 | :white_check_mark: |
-| mooneye/mbc/mbc1/rom_8Mb.gb                   | :white_check_mark: |
-| mooneye/mbc/mbc5/rom_16Mb.gb                  | :white_check_mark: |
-| mooneye/mbc/mbc5/rom_1Mb.gb                   | :white_check_mark: |
-| mooneye/mbc/mbc5/rom_2Mb.gb                   | :white_check_mark: |
-| mooneye/mbc/mbc5/rom_32Mb.gb                  | :white_check_mark: |
-| mooneye/mbc/mbc5/rom_4Mb.gb                   | :white_check_mark: |
-| mooneye/mbc/mbc5/rom_512kb.gb                 | :white_check_mark: |
-| mooneye/mbc/mbc5/rom_64Mb.gb                  | :white_check_mark: |
-| mooneye/mbc/mbc5/rom_8Mb.gb                   | :white_check_mark: |
-| mooneye/oam_dma/basic.gb                      | :white_check_mark: |
-| mooneye/oam_dma/reg_read.gb                   | :white_check_mark: |
-| mooneye/oam_dma_restart.gb                    | :white_check_mark: |
-| mooneye/oam_dma/sources-GS.gb                 | :white_check_mark: |
-| mooneye/oam_dma_start.gb                      | :white_check_mark: |
-| mooneye/oam_dma_timing.gb                     | :white_check_mark: |
-| mooneye/pop_timing.gb                         | :white_check_mark: |
-| mooneye/ppu/hblank_ly_scx_timing-GS.gb        | :white_check_mark: |
-| mooneye/ppu/intr_1_2_timing-GS.gb             | :white_check_mark: |
-| mooneye/ppu/intr_2_0_timing.gb                | :white_check_mark: |
-| mooneye/ppu/intr_2_mode0_timing.gb            | :white_check_mark: |
-| mooneye/ppu/intr_2_mode0_timing_sprites.gb    | :white_check_mark: |
-| mooneye/ppu/intr_2_mode3_timing.gb            | :white_check_mark: |
-| mooneye/ppu/intr_2_oam_ok_timing.gb           | :white_check_mark: |
-| mooneye/ppu/lcdon_timing-GS.gb                | :white_check_mark: |
-| mooneye/ppu/lcdon_write_timing-GS.gb          | :white_check_mark: |
-| mooneye/ppu/stat_irq_blocking.gb              | :white_check_mark: |
-| mooneye/ppu/stat_lyc_onoff.gb                 | :white_check_mark: |
-| mooneye/ppu/vblank_stat_intr-GS.gb            | :white_check_mark: |
-| mooneye/push_timing.gb                        | :white_check_mark: |
-| mooneye/rapid_di_ei.gb                        | :white_check_mark: |
-| mooneye/ret_cc_timing.gb                      | :white_check_mark: |
-| mooneye/reti_intr_timing.gb                   | :white_check_mark: |
-| mooneye/reti_timing.gb                        | :white_check_mark: |
-| mooneye/ret_timing.gb                         | :white_check_mark: |
-| mooneye/rst_timing.gb                         | :white_check_mark: |
-| mooneye/serial/boot_sclk_align-dmgABCmgb.gb   | :white_check_mark: |
-| mooneye/timers/div_write.gb                   | :white_check_mark: |
-| mooneye/timers/rapid_toggle.gb                | :white_check_mark: |
-| mooneye/timers/tim00_div_trigger.gb           | :white_check_mark: |
-| mooneye/timers/tim00.gb                       | :white_check_mark: |
-| mooneye/timers/tim01_div_trigger.gb           | :white_check_mark: |
-| mooneye/timers/tim01.gb                       | :white_check_mark: |
-| mooneye/timers/tim10_div_trigger.gb           | :white_check_mark: |
-| mooneye/timers/tim10.gb                       | :white_check_mark: |
-| mooneye/timers/tim11_div_trigger.gb           | :white_check_mark: |
-| mooneye/timers/tim11.gb                       | :white_check_mark: |
-| mooneye/timers/tima_reload.gb                 | :white_check_mark: |
-| mooneye/timers/tima_write_reloading.gb        | :white_check_mark: |
-| mooneye/timers/tma_write_reloading.gb         | :white_check_mark: |
-| mooneye/timers/tma_write_reloading.gb         | :white_check_mark: |
+| Test Rom                                    |       Result       |
+|---------------------------------------------|:------------------:|
+| mooneye/add_sp_e_timing.gb                  | :white_check_mark: |
+| mooneye/bits/mem_oam.gb                     | :white_check_mark: |
+| mooneye/bits/reg_f.gb                       | :white_check_mark: |
+| mooneye/bits/unused_hwio-GS.gb              | :white_check_mark: |
+| mooneye/boot_div-dmgABCmgb.gb               | :white_check_mark: |
+| mooneye/boot_hwio-dmgABCmgb.gb              | :white_check_mark: |
+| mooneye/boot_regs-dmgABC.gb                 | :white_check_mark: |
+| mooneye/call_cc_timing2.gb                  | :white_check_mark: |
+| mooneye/call_cc_timing.gb                   | :white_check_mark: |
+| mooneye/call_timing2.gb                     | :white_check_mark: |
+| mooneye/call_timing.gb                      | :white_check_mark: |
+| mooneye/di_timing-GS.gb                     | :white_check_mark: |
+| mooneye/div_timing.gb                       | :white_check_mark: |
+| mooneye/ei_sequence.gb                      | :white_check_mark: |
+| mooneye/ei_timing.gb                        | :white_check_mark: |
+| mooneye/halt_ime0_ei.gb                     | :white_check_mark: |
+| mooneye/halt_ime0_nointr_timing.gb          | :white_check_mark: |
+| mooneye/halt_ime1_timing2-GS.gb             | :white_check_mark: |
+| mooneye/halt_ime1_timing.gb                 | :white_check_mark: |
+| mooneye/if_ie_registers.gb                  | :white_check_mark: |
+| mooneye/instr/daa.gb                        | :white_check_mark: |
+| mooneye/interrupts/ie_push.gb               | :white_check_mark: |
+| mooneye/intr_timing.gb                      | :white_check_mark: |
+| mooneye/jp_cc_timing.gb                     | :white_check_mark: |
+| mooneye/jp_timing.gb                        | :white_check_mark: |
+| mooneye/ld_hl_sp_e_timing.gb                | :white_check_mark: |
+| mooneye/mbc/mbc1/bits_bank1.gb              | :white_check_mark: |
+| mooneye/mbc/mbc1/bits_bank2.gb              | :white_check_mark: |
+| mooneye/mbc/mbc1/bits_mode.gb               | :white_check_mark: |
+| mooneye/mbc/mbc1/bits_ramg.gb               | :white_check_mark: |
+| mooneye/mbc/mbc1/ram_256kb.gb               | :white_check_mark: |
+| mooneye/mbc/mbc1/ram_64kb.gb                | :white_check_mark: |
+| mooneye/mbc/mbc1/rom_16Mb.gb                | :white_check_mark: |
+| mooneye/mbc/mbc1/rom_1Mb.gb                 | :white_check_mark: |
+| mooneye/mbc/mbc1/rom_2Mb.gb                 | :white_check_mark: |
+| mooneye/mbc/mbc1/rom_4Mb.gb                 | :white_check_mark: |
+| mooneye/mbc/mbc1/rom_512kb.gb               | :white_check_mark: |
+| mooneye/mbc/mbc1/rom_8Mb.gb                 | :white_check_mark: |
+| mooneye/mbc/mbc2/bits_ramg.gb               | :white_check_mark: |
+| mooneye/mbc/mbc2/bits_romb.gb               | :white_check_mark: |
+| mooneye/mbc/mbc2/bits_unused.gb             | :white_check_mark: |
+| mooneye/mbc/mbc2/ram.gb                     | :white_check_mark: |
+| mooneye/mbc/mbc2/rom_1Mb.gb                 | :white_check_mark: |
+| mooneye/mbc/mbc2/rom_2Mb.gb                 | :white_check_mark: |
+| mooneye/mbc/mbc2/rom_512kb.gb               | :white_check_mark: |
+| mooneye/mbc/mbc5/rom_16Mb.gb                | :white_check_mark: |
+| mooneye/mbc/mbc5/rom_1Mb.gb                 | :white_check_mark: |
+| mooneye/mbc/mbc5/rom_2Mb.gb                 | :white_check_mark: |
+| mooneye/mbc/mbc5/rom_32Mb.gb                | :white_check_mark: |
+| mooneye/mbc/mbc5/rom_4Mb.gb                 | :white_check_mark: |
+| mooneye/mbc/mbc5/rom_512kb.gb               | :white_check_mark: |
+| mooneye/mbc/mbc5/rom_64Mb.gb                | :white_check_mark: |
+| mooneye/mbc/mbc5/rom_8Mb.gb                 | :white_check_mark: |
+| mooneye/oam_dma/basic.gb                    | :white_check_mark: |
+| mooneye/oam_dma/reg_read.gb                 | :white_check_mark: |
+| mooneye/oam_dma_restart.gb                  | :white_check_mark: |
+| mooneye/oam_dma/sources-GS.gb               | :white_check_mark: |
+| mooneye/oam_dma_start.gb                    | :white_check_mark: |
+| mooneye/oam_dma_timing.gb                   | :white_check_mark: |
+| mooneye/pop_timing.gb                       | :white_check_mark: |
+| mooneye/ppu/hblank_ly_scx_timing-GS.gb      | :white_check_mark: |
+| mooneye/ppu/intr_1_2_timing-GS.gb           | :white_check_mark: |
+| mooneye/ppu/intr_2_0_timing.gb              | :white_check_mark: |
+| mooneye/ppu/intr_2_mode0_timing.gb          | :white_check_mark: |
+| mooneye/ppu/intr_2_mode0_timing_sprites.gb  | :white_check_mark: |
+| mooneye/ppu/intr_2_mode3_timing.gb          | :white_check_mark: |
+| mooneye/ppu/intr_2_oam_ok_timing.gb         | :white_check_mark: |
+| mooneye/ppu/lcdon_timing-GS.gb              | :white_check_mark: |
+| mooneye/ppu/lcdon_write_timing-GS.gb        | :white_check_mark: |
+| mooneye/ppu/stat_irq_blocking.gb            | :white_check_mark: |
+| mooneye/ppu/stat_lyc_onoff.gb               | :white_check_mark: |
+| mooneye/ppu/vblank_stat_intr-GS.gb          | :white_check_mark: |
+| mooneye/push_timing.gb                      | :white_check_mark: |
+| mooneye/rapid_di_ei.gb                      | :white_check_mark: |
+| mooneye/ret_cc_timing.gb                    | :white_check_mark: |
+| mooneye/reti_intr_timing.gb                 | :white_check_mark: |
+| mooneye/reti_timing.gb                      | :white_check_mark: |
+| mooneye/ret_timing.gb                       | :white_check_mark: |
+| mooneye/rst_timing.gb                       | :white_check_mark: |
+| mooneye/serial/boot_sclk_align-dmgABCmgb.gb | :white_check_mark: |
+| mooneye/timers/div_write.gb                 | :white_check_mark: |
+| mooneye/timers/rapid_toggle.gb              | :white_check_mark: |
+| mooneye/timers/tim00_div_trigger.gb         | :white_check_mark: |
+| mooneye/timers/tim00.gb                     | :white_check_mark: |
+| mooneye/timers/tim01_div_trigger.gb         | :white_check_mark: |
+| mooneye/timers/tim01.gb                     | :white_check_mark: |
+| mooneye/timers/tim10_div_trigger.gb         | :white_check_mark: |
+| mooneye/timers/tim10.gb                     | :white_check_mark: |
+| mooneye/timers/tim11_div_trigger.gb         | :white_check_mark: |
+| mooneye/timers/tim11.gb                     | :white_check_mark: |
+| mooneye/timers/tima_reload.gb               | :white_check_mark: |
+| mooneye/timers/tima_write_reloading.gb      | :white_check_mark: |
+| mooneye/timers/tma_write_reloading.gb       | :white_check_mark: |
+| mooneye/timers/tma_write_reloading.gb       | :white_check_mark: |
 
 #### mealybug
 
