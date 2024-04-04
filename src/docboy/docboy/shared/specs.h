@@ -313,6 +313,26 @@ namespace Cartridge {
             constexpr uint16_t HEADER_CHECKSUM = 0x14D;
         } // namespace MemoryLayout
 
+        namespace Mbc {
+            constexpr uint32_t NO_MBC = 0x00;
+            constexpr uint32_t MBC1 = 0x01;
+            constexpr uint32_t MBC1_RAM = 0x02;
+            constexpr uint32_t MBC1_RAM_BATTERY = 0x03;
+            constexpr uint32_t MBC2 = 0x05;
+            constexpr uint32_t MBC2_BATTERY = 0x06;
+            constexpr uint32_t MBC3_TIMER_BATTERY = 0x0F;
+            constexpr uint32_t MBC3_TIMER_RAM_BATTERY = 0x10;
+            constexpr uint32_t MBC3 = 0x11;
+            constexpr uint32_t MBC3_RAM = 0x12;
+            constexpr uint32_t MBC3_RAM_BATTERY = 0x13;
+            constexpr uint32_t MBC5 = 0x19;
+            constexpr uint32_t MBC5_RAM = 0x1A;
+            constexpr uint32_t MBC5_RAM_BATTERY = 0x1B;
+            constexpr uint32_t MBC5_RUMBLE = 0x1C;
+            constexpr uint32_t MBC5_RUMBLE_RAM = 0x1D;
+            constexpr uint32_t MBC5_RUMBLE_RAM_BATTERY = 0x1E;
+        } // namespace Mbc
+
         namespace Rom {
             constexpr uint32_t KB_32 = 0x0;
             constexpr uint32_t KB_64 = 0x1;

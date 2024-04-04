@@ -1,14 +1,15 @@
 #include "nombc.h"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
+#include "utils/bits.hpp"
 #include "utils/log.h"
 #include "utils/parcel.h"
-#include <cstring>
 #include <cstring>
 
 template <uint32_t RamSize>
 NoMbc<RamSize>::NoMbc(const uint8_t* data, uint32_t length) {
-    check(length <= array_size(rom), "NoMbc: actual ROM size (" + std::to_string(length) + ") exceeds nominal ROM size (" +  std::to_string(array_size(rom)) + ")");
+    check(length <= array_size(rom), "NoMbc: actual ROM size (" + std::to_string(length) +
+                                         ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 }
 

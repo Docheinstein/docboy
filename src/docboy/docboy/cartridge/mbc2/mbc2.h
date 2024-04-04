@@ -2,10 +2,13 @@
 #define MBC2_H
 
 #include "docboy/cartridge/cartridge.h"
+#include "docboy/shared/macros.h"
 
 template <uint32_t RomSize, bool Battery>
 class Mbc2 final : public ICartridge {
 public:
+    DEBUGGABLE_CLASS()
+
     Mbc2(const uint8_t* data, uint32_t length);
 
     [[nodiscard]] uint8_t readRom(uint16_t address) const override;

@@ -2,10 +2,13 @@
 #define MBC5_H
 
 #include "docboy/cartridge/cartridge.h"
+#include "docboy/shared/macros.h"
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 class Mbc5 final : public ICartridge {
 public:
+    DEBUGGABLE_CLASS()
+
     Mbc5(const uint8_t* data, uint32_t length);
 
     [[nodiscard]] uint8_t readRom(uint16_t address) const override;
