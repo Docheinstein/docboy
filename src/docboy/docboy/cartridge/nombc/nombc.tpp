@@ -62,6 +62,18 @@ uint32_t NoMbc<RamSize>::getRamSaveSize() const {
     return 0;
 }
 
+#ifdef ENABLE_DEBUGGER
+template <uint32_t RamSize>
+uint8_t *NoMbc<RamSize>::getRomData() {
+    return rom;
+}
+
+template <uint32_t RamSize>
+uint32_t NoMbc<RamSize>::getRomSize() const {
+    return RomSize;
+}
+#endif
+
 template <uint32_t RamSize>
 void NoMbc<RamSize>::saveState(Parcel& parcel) const {
     parcel.writeBytes(rom, RomSize);

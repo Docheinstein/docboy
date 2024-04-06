@@ -2,7 +2,6 @@
 #define MBC5_H
 
 #include "docboy/cartridge/cartridge.h"
-#include "docboy/shared/macros.h"
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 class Mbc5 final : public ICartridge {
@@ -19,6 +18,9 @@ public:
 
     [[nodiscard]] uint8_t* getRamSaveData() override;
     [[nodiscard]] uint32_t getRamSaveSize() const override;
+
+    IF_DEBUGGER(uint8_t* getRomData() override);
+    IF_DEBUGGER(uint32_t getRomSize() const override);
 
     void saveState(Parcel& parcel) const override;
     void loadState(Parcel& parcel) override;

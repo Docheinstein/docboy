@@ -17,6 +17,9 @@ public:
     [[nodiscard]] uint8_t* getRamSaveData() override;
     [[nodiscard]] uint32_t getRamSaveSize() const override;
 
+    IF_DEBUGGER(uint8_t* getRomData() override);
+    IF_DEBUGGER(uint32_t getRomSize() const override);
+
     void saveState(Parcel& parcel) const override;
     void loadState(Parcel& parcel) override;
 

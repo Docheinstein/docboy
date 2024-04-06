@@ -128,6 +128,18 @@ uint32_t Mbc5<RomSize, RamSize, Battery>::getRamSaveSize() const {
     return 0;
 }
 
+#ifdef ENABLE_DEBUGGER
+template<uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint8_t *Mbc5<RomSize, RamSize, Battery>::getRomData() {
+    return rom;
+}
+
+template<uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint32_t Mbc5<RomSize, RamSize, Battery>::getRomSize() const {
+    return RomSize;
+}
+#endif
+
 
 template<uint32_t RomSize, uint32_t RamSize, bool Battery>
 void Mbc5<RomSize, RamSize, Battery>::saveState(Parcel &parcel) const {

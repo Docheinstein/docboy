@@ -58,6 +58,8 @@ public:
 
     [[nodiscard]] bool isAskingToShutdown() const;
 
+    [[nodiscard]] const CartridgeInfo& getCartridgeInfo();
+
     uint32_t addBreakpoint(uint16_t addr);
     [[nodiscard]] std::optional<Breakpoint> getBreakpoint(uint16_t addr) const;
     [[nodiscard]] const std::vector<Breakpoint>& getBreakpoints() const;
@@ -76,9 +78,9 @@ public:
     [[nodiscard]] std::optional<DisassembledInstruction> getDisassembledInstruction(uint16_t addr) const;
     [[nodiscard]] std::vector<DisassembledInstructionReference> getDisassembledInstructions() const;
 
-    const std::vector<DisassembledInstructionReference>& getCallStack() const;
+    [[nodiscard]] const std::vector<DisassembledInstructionReference>& getCallStack() const;
 
-    uint32_t computeStateHash() const;
+    [[nodiscard]] uint32_t computeStateHash() const;
 
     [[nodiscard]] uint8_t readMemory(uint16_t addr);
     [[nodiscard]] uint8_t readMemoryRaw(uint16_t addr);
@@ -113,6 +115,8 @@ private:
 
     bool run {true};
     bool interrupted {};
+
+    CartridgeInfo cartridgeInfo {};
 
     std::vector<Breakpoint> breakpoints;
     std::vector<Watchpoint> watchpoints;

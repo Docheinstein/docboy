@@ -282,6 +282,7 @@ Here's the debugger!
 | mooneye/mbc/mbc1/bits_bank2.gb              | :white_check_mark: |
 | mooneye/mbc/mbc1/bits_mode.gb               | :white_check_mark: |
 | mooneye/mbc/mbc1/bits_ramg.gb               | :white_check_mark: |
+| mooneye/mbc/mbc1/multicart_rom_8Mb.gb       | :white_check_mark: |
 | mooneye/mbc/mbc1/ram_256kb.gb               | :white_check_mark: |
 | mooneye/mbc/mbc1/ram_64kb.gb                | :white_check_mark: |
 | mooneye/mbc/mbc1/rom_16Mb.gb                | :white_check_mark: |

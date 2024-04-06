@@ -1,5 +1,6 @@
 #include "factory.h"
 #include "docboy/cartridge/mbc1/mbc1.h"
+#include "docboy/cartridge/mbc1/mbc1m.h"
 #include "docboy/cartridge/mbc2/mbc2.h"
 #include "docboy/cartridge/mbc3/mbc3.h"
 #include "docboy/cartridge/mbc5/mbc5.h"
@@ -20,6 +21,26 @@ constexpr uint32_t KB = 1 << 10;
 constexpr uint32_t MB = 1 << 20;
 
 using namespace Specs::Cartridge::Header;
+
+bool isMbc1M(const std::vector<uint8_t>& data) {
+    // MBC1M can't be distinguished from MBC1 only from the header.
+    // The heuristic for distinguish it is the presence of (at least two)
+    // NINTENDO LOGO at the beginning of each game's bank.
+    if (data.size() < 0x100000 ||
+        (data[MemoryLayout::TYPE] != Mbc::MBC1 && data[MemoryLayout::TYPE] != Mbc::MBC1_RAM &&
+         data[MemoryLayout::TYPE] != Mbc::MBC1_RAM_BATTERY) ||
+        data[MemoryLayout::ROM_SIZE] != Rom::MB_1)
+        return false;
+
+    // Count the occurrences of Nintendo Logo.
+    uint8_t numLogo {};
+    for (uint8_t i = 0; i < 4; i++) {
+        numLogo +=
+            memcmp(data.data() + (0x40000 * i) + MemoryLayout::LOGO::START, NINTENDO_LOGO, sizeof(NINTENDO_LOGO)) == 0;
+    }
+
+    return numLogo > 1;
+}
 
 std::unique_ptr<ICartridge> createNoMbc(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
     if (rom == Rom::KB_32) {
@@ -70,12 +91,22 @@ std::unique_ptr<ICartridge> createMbc1(const std::vector<uint8_t>& data, uint8_t
         if (ram == Ram::KB_32)
             return std::make_unique<Mbc1<512 * KB, 32 * KB, Battery>>(data.data(), data.size());
     } else if (rom == Rom::MB_1) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc1<1 * MB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc1<1 * MB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc1<1 * MB, 32 * KB, Battery>>(data.data(), data.size());
+        // All the known MBC1M are 1 MB.
+        if (isMbc1M(data)) {
+            if (ram == Ram::NONE)
+                return std::make_unique<Mbc1M<1 * MB, 0, Battery>>(data.data(), data.size());
+            if (ram == Ram::KB_8)
+                return std::make_unique<Mbc1M<1 * MB, 8 * KB, Battery>>(data.data(), data.size());
+            if (ram == Ram::KB_32)
+                return std::make_unique<Mbc1M<1 * MB, 32 * KB, Battery>>(data.data(), data.size());
+        } else {
+            if (ram == Ram::NONE)
+                return std::make_unique<Mbc1<1 * MB, 0, Battery>>(data.data(), data.size());
+            if (ram == Ram::KB_8)
+                return std::make_unique<Mbc1<1 * MB, 8 * KB, Battery>>(data.data(), data.size());
+            if (ram == Ram::KB_32)
+                return std::make_unique<Mbc1<1 * MB, 32 * KB, Battery>>(data.data(), data.size());
+        }
     } else if (rom == Rom::MB_2) {
         if (ram == Ram::NONE)
             return std::make_unique<Mbc1<2 * MB, 0, Battery>>(data.data(), data.size());

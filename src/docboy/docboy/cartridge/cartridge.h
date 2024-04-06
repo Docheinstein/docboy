@@ -1,6 +1,7 @@
 #ifndef CARTRIDGE_H
 #define CARTRIDGE_H
 
+#include "docboy/shared/macros.h"
 #include <cstdint>
 
 class Parcel;
@@ -17,6 +18,9 @@ public:
 
     [[nodiscard]] virtual uint8_t* getRamSaveData() = 0;
     [[nodiscard]] virtual uint32_t getRamSaveSize() const = 0;
+
+    IF_DEBUGGER(virtual uint8_t* getRomData() = 0);
+    IF_DEBUGGER(virtual uint32_t getRomSize() const = 0);
 
     virtual void saveState(Parcel& parcel) const = 0;
     virtual void loadState(Parcel& parcel) = 0;

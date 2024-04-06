@@ -25,6 +25,7 @@ target_sources(docboy PRIVATE
         docboy/cartridge/helpers.h
         docboy/cartridge/mbc1/mbc1.h
         docboy/cartridge/mbc1/mbc1.tpp
+        docboy/cartridge/mbc1/mbc1m.h
         docboy/cartridge/mbc2/mbc2.h
         docboy/cartridge/mbc2/mbc2.tpp
         docboy/cartridge/mbc3/mbc3.h

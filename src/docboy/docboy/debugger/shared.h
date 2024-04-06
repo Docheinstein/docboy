@@ -96,6 +96,13 @@ struct DisassembledInstructionReference {
     DisassembledInstruction instruction;
 };
 
+struct CartridgeInfo {
+    uint8_t mbc {};
+    uint8_t rom {};
+    uint8_t ram {};
+    bool multicart {};
+};
+
 struct ExecutionCompleted {};
 struct ExecutionInterrupted {};
 struct ExecutionBreakpointHit {

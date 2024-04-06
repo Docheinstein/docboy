@@ -1,6 +1,7 @@
 #include "frontend.h"
 #include "backend.h"
 #include "docboy/cartridge/mbc1/mbc1.h"
+#include "docboy/cartridge/mbc1/mbc1m.h"
 #include "docboy/cartridge/mbc2/mbc2.h"
 #include "docboy/cartridge/mbc3/mbc3.h"
 #include "docboy/cartridge/mbc5/mbc5.h"
@@ -1148,14 +1149,17 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
     // MBC
     const auto makeCartridgeBlock = [&](uint32_t width) {
-        const auto& cartridge = *gb.cartridgeSlot.cartridge;
-        uint8_t mbc = cartridge.readRom(Specs::Cartridge::Header::MemoryLayout::TYPE);
-        uint8_t rom = cartridge.readRom(Specs::Cartridge::Header::MemoryLayout::ROM_SIZE);
-        uint8_t ram = cartridge.readRom(Specs::Cartridge::Header::MemoryLayout::RAM_SIZE);
-
         using namespace Specs::Cartridge::Header;
         constexpr uint32_t KB = 1 << 10;
         constexpr uint32_t MB = 1 << 20;
+
+        const auto& cartridge = *gb.cartridgeSlot.cartridge;
+
+        const auto& info = backend.getCartridgeInfo();
+        const auto mbc = info.mbc;
+        const auto rom = info.rom;
+        const auto ram = info.ram;
+        const auto multicart = info.multicart;
 
         auto b {make_block(width)};
 
@@ -1282,12 +1286,22 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     else if (ram == Ram::KB_32)
                         mbc1(static_cast<const Mbc1<512 * KB, 32 * KB, true>&>(cartridge));
                 } else if (rom == Rom::MB_1) {
-                    if (ram == Ram::NONE)
-                        mbc1(static_cast<const Mbc1<1 * MB, 0, true>&>(cartridge));
-                    else if (ram == Ram::KB_8)
-                        mbc1(static_cast<const Mbc1<1 * MB, 8 * KB, true>&>(cartridge));
-                    else if (ram == Ram::KB_32)
-                        mbc1(static_cast<const Mbc1<1 * MB, 32 * KB, true>&>(cartridge));
+                    // All the known MBC1M are 1 MB.
+                    if (multicart) {
+                        if (ram == Ram::NONE)
+                            mbc1(static_cast<const Mbc1M<1 * MB, 0, true>&>(cartridge));
+                        else if (ram == Ram::KB_8)
+                            mbc1(static_cast<const Mbc1M<1 * MB, 8 * KB, true>&>(cartridge));
+                        else if (ram == Ram::KB_32)
+                            mbc1(static_cast<const Mbc1M<1 * MB, 32 * KB, true>&>(cartridge));
+                    } else {
+                        if (ram == Ram::NONE)
+                            mbc1(static_cast<const Mbc1<1 * MB, 0, true>&>(cartridge));
+                        else if (ram == Ram::KB_8)
+                            mbc1(static_cast<const Mbc1<1 * MB, 8 * KB, true>&>(cartridge));
+                        else if (ram == Ram::KB_32)
+                            mbc1(static_cast<const Mbc1<1 * MB, 32 * KB, true>&>(cartridge));
+                    }
                 } else if (rom == Rom::MB_2) {
                     if (ram == Ram::NONE)
                         mbc1(static_cast<const Mbc1<2 * MB, 0, true>&>(cartridge));
@@ -1333,12 +1347,22 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     else if (ram == Ram::KB_32)
                         mbc1(static_cast<const Mbc1<512 * KB, 32 * KB, false>&>(cartridge));
                 } else if (rom == Rom::MB_1) {
-                    if (ram == Ram::NONE)
-                        mbc1(static_cast<const Mbc1<1 * MB, 0, false>&>(cartridge));
-                    else if (ram == Ram::KB_8)
-                        mbc1(static_cast<const Mbc1<1 * MB, 8 * KB, false>&>(cartridge));
-                    else if (ram == Ram::KB_32)
-                        mbc1(static_cast<const Mbc1<1 * MB, 32 * KB, false>&>(cartridge));
+                    // All the known MBC1M are 1 MB.
+                    if (multicart) {
+                        if (ram == Ram::NONE)
+                            mbc1(static_cast<const Mbc1M<1 * MB, 0, false>&>(cartridge));
+                        else if (ram == Ram::KB_8)
+                            mbc1(static_cast<const Mbc1M<1 * MB, 8 * KB, false>&>(cartridge));
+                        else if (ram == Ram::KB_32)
+                            mbc1(static_cast<const Mbc1M<1 * MB, 32 * KB, false>&>(cartridge));
+                    } else {
+                        if (ram == Ram::NONE)
+                            mbc1(static_cast<const Mbc1M<1 * MB, 0, false>&>(cartridge));
+                        else if (ram == Ram::KB_8)
+                            mbc1(static_cast<const Mbc1<1 * MB, 8 * KB, false>&>(cartridge));
+                        else if (ram == Ram::KB_32)
+                            mbc1(static_cast<const Mbc1<1 * MB, 32 * KB, false>&>(cartridge));
+                    }
                 } else if (rom == Rom::MB_2) {
                     if (ram == Ram::NONE)
                         mbc1(static_cast<const Mbc1<2 * MB, 0, false>&>(cartridge));

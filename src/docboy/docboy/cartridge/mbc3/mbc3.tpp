@@ -121,6 +121,18 @@ uint32_t Mbc3<RomSize, RamSize, Battery, Timer>::getRamSaveSize() const {
     return 0;
 }
 
+#ifdef ENABLE_DEBUGGER
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+uint8_t *Mbc3<RomSize, RamSize, Battery, Timer>::getRomData() {
+    return rom;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+uint32_t Mbc3<RomSize, RamSize, Battery, Timer>::getRomSize() const {
+    return RomSize;
+}
+#endif
+
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::loadState(Parcel& parcel) {
     ramAndTimerEnabled = parcel.readBool();

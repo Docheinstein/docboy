@@ -108,6 +108,17 @@ uint32_t Mbc2<RomSize, Battery>::getRamSaveSize() const {
     return 0;
 }
 
+#ifdef ENABLE_DEBUGGER
+template<uint32_t RomSize, bool Battery>
+uint8_t *Mbc2<RomSize, Battery>::getRomData() {
+    return rom;
+}
+
+template<uint32_t RomSize, bool Battery>
+uint32_t Mbc2<RomSize, Battery>::getRomSize() const {
+    return RomSize;
+}
+#endif
 
 template<uint32_t RomSize, bool Battery>
 void Mbc2<RomSize, Battery>::saveState(Parcel &parcel) const {
