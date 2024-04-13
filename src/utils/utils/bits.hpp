@@ -1,6 +1,7 @@
 #ifndef BITS_HPP
 #define BITS_HPP
 
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 
@@ -96,6 +97,15 @@ std::decay_t<T> get_bit(T&& value) {
     return value & bit<n>;
 }
 
+template <uint8_t n, uint8_t... ns, typename T>
+[[nodiscard]] std::decay_t<T> get_bits(T&& value) {
+    if constexpr (sizeof...(ns) > 0) {
+        return get_bit<n>(std::forward<T>(value)) | get_bits<ns...>(std::forward<T>(value));
+    }
+
+    return get_bit<n>(std::forward<T>(value));
+}
+
 template <typename T>
 bool test_bit(T&& value, uint8_t n) {
     return value & bit_(n);
@@ -158,6 +168,11 @@ void reset_bit(T&& dest) {
 template <typename T>
 void reset_bit(T&& dest, uint8_t n) {
     dest &= ~(1 << n);
+}
+
+template <uint8_t n, typename T>
+void toggle_bit(T&& dest) {
+    dest ^= bit<n>;
 }
 
 template <uint8_t n, typename T, bool y>

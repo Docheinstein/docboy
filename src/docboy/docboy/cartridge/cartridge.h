@@ -16,6 +16,11 @@ public:
     [[nodiscard]] virtual uint8_t readRam(uint16_t address) const = 0;
     virtual void writeRam(uint16_t address, uint8_t value) = 0;
 
+    [[nodiscard]] bool needTick() const {
+        return needTicks;
+    }
+    virtual void tick() {};
+
     [[nodiscard]] virtual uint8_t* getRamSaveData() = 0;
     [[nodiscard]] virtual uint32_t getRamSaveSize() const = 0;
 
@@ -24,6 +29,9 @@ public:
 
     virtual void saveState(Parcel& parcel) const = 0;
     virtual void loadState(Parcel& parcel) = 0;
+
+protected:
+    bool needTicks {};
 };
 
 #endif // CARTRIDGE_H

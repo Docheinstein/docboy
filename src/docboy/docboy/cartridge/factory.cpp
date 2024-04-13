@@ -140,6 +140,8 @@ std::unique_ptr<ICartridge> createMbc3(const std::vector<uint8_t>& data, uint8_t
     if (rom == Rom::KB_32) {
         if (ram == Ram::NONE)
             return std::make_unique<Mbc3<32 * KB, 0, Battery, Timer>>(data.data(), data.size());
+        if (ram == Ram::KB_2) // cpp/ramg-mbc3-test.gb
+            return std::make_unique<Mbc3<32 * KB, 2 * KB, Battery, Timer>>(data.data(), data.size());
         if (ram == Ram::KB_8)
             return std::make_unique<Mbc3<32 * KB, 8 * KB, Battery, Timer>>(data.data(), data.size());
         if (ram == Ram::KB_32)

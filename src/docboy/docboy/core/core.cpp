@@ -60,6 +60,7 @@ inline void Core::tick_t3() const {
     gb.ppu.tick();
     gb.dma.tick_t3();
     gb.stopController.tick();
+    gb.cartridgeSlot.tick();
 }
 
 void Core::cycle_() {

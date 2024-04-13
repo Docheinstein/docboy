@@ -642,9 +642,8 @@ void Cpu::tick() {
     if (instruction.microop.counter == 0 && IME > ImeState::Disabled && IME < ImeState::Enabled) {
         IME = static_cast<ImeState>(static_cast<uint8_t>(IME) + 1);
     }
-}
 
-IF_DEBUGGER(++cycles);
+    IF_DEBUGGER(++cycles);
 }
 
 void Cpu::saveState(Parcel& parcel) const {

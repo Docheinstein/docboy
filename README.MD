@@ -24,6 +24,7 @@ DocBoy is a accuracy-focused GB emulator that tries to find a good spot between:
 * Bootroom support
 * Joypad
 * DMA
+* RTC
 * Multiple buses (EXT, CPU, OAM, VRAM) and MMU (for precise read/write conflicts handling)
 * Save / Load (RAM)
 * Save state / Load state
@@ -31,7 +32,6 @@ DocBoy is a accuracy-focused GB emulator that tries to find a good spot between:
 ### TODO
 * Sound
 * GBC (add colors support)
-* RTC
 
 ## Build
 
@@ -247,6 +247,23 @@ Here's the debugger!
 |----------------------------------------|:-------------------:|
 | little-things-gb/double-halt-cancel.gb | :white_check_mark:  |
 
+
+#### aaaaaa123456789
+
+| Test Rom                      |       Result        |
+|-------------------------------|:-------------------:|
+| aaaaaa123456789/rtc3test-1.gb | :white_check_mark:  |
+| aaaaaa123456789/rtc3test-2.gb | :white_check_mark:  |
+| aaaaaa123456789/rtc3test-3.gb | :white_check_mark:  |
+
+
+#### cpp
+
+| Test Rom                    |       Result        |
+|-----------------------------|:-------------------:|
+| cpp/latch-rtc-test          | :white_check_mark:  |
+| cpp/ramg-mbc3-test          | :white_check_mark:  |
+| cpp/rtc-invalid-banks-test  | :white_check_mark:  |
 
 #### mooneye
 

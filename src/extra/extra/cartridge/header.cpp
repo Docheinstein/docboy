@@ -261,11 +261,9 @@ static const std::map<uint8_t, std::string> ROM_SIZE_DESCRIPTION_MAP = {
     {0x52, "1.1 MiB (72 banks)"}, {0x53, "1.2 MiB (80 banks)"}, {0x54, "1.5 MiB (96 banks)"},
 };
 
-static const std::map<uint8_t, std::string> RAM_SIZE_DESCRIPTION_MAP = {{0x00, "No RAM"},
-                                                                        {0x02, "8 KiB (1 banks)"},
-                                                                        {0x03, "32 KiB (4 banks)"},
-                                                                        {0x04, "128 KiB (16 banks)"},
-                                                                        {0x05, "64 KiB (8 banks)"}};
+static const std::map<uint8_t, std::string> RAM_SIZE_DESCRIPTION_MAP = {
+    {0x00, "No RAM"},           {0x01, "2 KiB (unofficial)"}, {0x02, "8 KiB (1 banks)"},
+    {0x03, "32 KiB (4 banks)"}, {0x04, "128 KiB (16 banks)"}, {0x05, "64 KiB (8 banks)"}};
 
 bool CartridgeHeader::isNintendoLogoValid() const {
     return memcmp(nintendo_logo.data(), Specs::Cartridge::Header::NINTENDO_LOGO,

@@ -34,6 +34,7 @@ target_sources(docboy PRIVATE
         docboy/cartridge/mbc5/mbc5.tpp
         docboy/cartridge/nombc/nombc.h
         docboy/cartridge/nombc/nombc.tpp
+        docboy/cartridge/rtc/rtc.h
         docboy/cartridge/slot.cpp
         docboy/cartridge/slot.h
         docboy/core/core.cpp

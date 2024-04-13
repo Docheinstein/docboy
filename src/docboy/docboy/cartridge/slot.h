@@ -41,6 +41,11 @@ public:
     }
 #endif
 
+    void tick() const {
+        if (cartridge->needTick())
+            cartridge->tick();
+    }
+
     std::unique_ptr<ICartridge> cartridge {};
 };
 #endif // SLOT_H

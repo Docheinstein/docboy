@@ -5,7 +5,6 @@ target_sources(utils PRIVATE
     utils/asserts.h
     utils/bits.hpp
     utils/casts.hpp
-    utils/chrono.hpp
     utils/exceptions.hpp
     utils/fillqueue.hpp
     utils/formatters.hpp

@@ -2,6 +2,7 @@
 #define MBC3_H
 
 #include "docboy/cartridge/cartridge.h"
+#include "docboy/cartridge/rtc/rtc.h"
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 class Mbc3 final : public ICartridge {
@@ -16,6 +17,8 @@ public:
     [[nodiscard]] uint8_t readRam(uint16_t address) const override;
     void writeRam(uint16_t address, uint8_t value) override;
 
+    void tick() override;
+
     [[nodiscard]] uint8_t* getRamSaveData() override;
     [[nodiscard]] uint32_t getRamSaveSize() const override;
 
@@ -28,25 +31,19 @@ public:
 private:
     static constexpr bool Ram = RamSize > 0;
 
-    bool ramAndTimerEnabled {};
-    uint8_t romBankSelector {0b1}; // TODO: correct?
+    bool ramEnabled {};
+    uint8_t romBankSelector {0b1};
     uint8_t ramBankSelector_rtcRegisterSelector {};
-    uint8_t latchClockData {};
-
-    struct {
-        uint8_t seconds;
-        uint8_t minutes;
-        uint8_t hours;
-        struct {
-            uint8_t low;
-            uint8_t high;
-        } day;
-    } rtcRegisters {};
-
-    uint8_t* const rtcRegistersMap[5];
 
     uint8_t rom[RomSize] {};
     uint8_t ram[RamSize] {};
+
+    struct {
+        Rtc real {};
+        RtcRegisters latched {};
+    } rtc;
+
+    uint8_t* const rtcRealMap[5];
 };
 
 #include "mbc3.tpp"

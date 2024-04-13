@@ -1165,7 +1165,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         b << header("CARTRIDGE", width) << endl;
 
-        b << yellow("Type") << "                         :  " << [mbc]() -> Text {
+        b << yellow("Type") << "                        :  " << [mbc]() -> Text {
             switch (mbc) {
             case Mbc::NO_MBC:
                 return "No MBC";
@@ -1194,7 +1194,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             return {};
         }() << endl;
 
-        b << yellow("ROM") << "                          :  " << [rom]() -> Text {
+        b << yellow("ROM") << "                         :  " << [rom]() -> Text {
             switch (rom) {
             case Rom::KB_32:
                 return "32 KB";
@@ -1219,10 +1219,12 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             return {};
         }() << endl;
 
-        b << yellow("RAM") << "                          :  " << [ram]() -> Text {
+        b << yellow("RAM") << "                         :  " << [ram]() -> Text {
             switch (ram) {
             case Ram::NONE:
                 return "None";
+            case Ram::KB_2:
+                return "2 KB (unofficial)";
             case Ram::KB_8:
                 return "8 KB";
             case Ram::KB_32:
@@ -1374,8 +1376,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }
         } else if (mbc == Mbc::MBC2 || mbc == Mbc::MBC2_BATTERY) {
             const auto mbc2 = [&b](auto&& cart) {
-                b << yellow("Ram Enabled") << "                  :  " << cart.ramEnabled << endl;
-                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.romBankSelector) << endl;
+                b << yellow("Ram Enabled") << "                 :  " << cart.ramEnabled << endl;
+                b << yellow("Rom Bank Selector") << "           :  " << hex(cart.romBankSelector) << endl;
             };
 
             if (mbc == Mbc::MBC2_BATTERY) {
@@ -1403,13 +1405,30 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }
         } else if (mbc == Mbc::MBC3_TIMER_BATTERY || mbc == Mbc::MBC3_TIMER_RAM_BATTERY || mbc == Mbc::MBC3 ||
                    mbc == Mbc::MBC3_RAM || mbc == Mbc::MBC3_RAM_BATTERY) {
-            const auto mbc3 = [&b](auto&& cart) {
-                b << yellow("Ram/Timer Enabled") << "            :  " << cart.ramAndTimerEnabled << endl;
-                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.romBankSelector) << endl;
-                b << yellow("Ram Bank/RTC Reg Selector") << "    :  " << hex(cart.ramBankSelector_rtcRegisterSelector)
+            const auto mbc3 = [&b, mbc, subheader, width](auto&& cart) {
+                b << yellow("Ram/RTC Enabled") << "             :  " << cart.ramEnabled << endl;
+                b << yellow("Rom Bank Selector") << "           :  " << hex(cart.romBankSelector) << endl;
+                b << yellow("Ram Bank/RTC Reg. Selector") << "  :  " << hex(cart.ramBankSelector_rtcRegisterSelector)
                   << endl;
-                b << yellow("Latch Clock Data") << "             :  " << hex(cart.latchClockData) << endl;
-                // TODO: RTC stuff
+
+                if (mbc == Mbc::MBC3_TIMER_BATTERY || mbc == Mbc::MBC3_TIMER_RAM_BATTERY) {
+                    b << subheader("rtc", width) << endl;
+                    b << "                               " << magenta("Latch") << "  |   " << magenta("Real") << endl;
+                    b << yellow("Seconds") << "                     :   "
+                      << hex((uint8_t)keep_bits<6>(cart.rtc.latched.seconds)) << "    |    "
+                      << hex((uint8_t)keep_bits<6>(cart.rtc.real.seconds)) << endl;
+                    b << yellow("Minutes") << "                     :   "
+                      << hex((uint8_t)keep_bits<6>(cart.rtc.latched.minutes)) << "    |    "
+                      << hex((uint8_t)keep_bits<6>(cart.rtc.real.minutes)) << endl;
+                    b << yellow("Hours") << "                       :   "
+                      << hex((uint8_t)keep_bits<5>(cart.rtc.latched.hours)) << "    |    "
+                      << hex((uint8_t)keep_bits<5>(cart.rtc.real.hours)) << endl;
+                    b << yellow("Days Low") << "                    :   " << hex(cart.rtc.latched.days.low)
+                      << "    |    " << hex(cart.rtc.real.days.low) << endl;
+                    b << yellow("Days High") << "                   :   "
+                      << hex((uint8_t)get_bits<7, 6, 0>(cart.rtc.latched.days.high)) << "    |    "
+                      << hex((uint8_t)get_bits<7, 6, 0>(cart.rtc.real.days.high)) << endl;
+                }
             };
 
             if (mbc == Mbc::MBC3_TIMER_BATTERY || mbc == Mbc::MBC3_TIMER_RAM_BATTERY) {
@@ -1417,153 +1436,155 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<32 * KB, 0, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<32 * KB, 8, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<32 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<32 * KB, 32, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<32 * KB, 32 * KB, true, true>&>(cartridge));
                 } else if (rom == Rom::KB_64) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<64 * KB, 0, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<64 * KB, 8, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<64 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<64 * KB, 32, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<64 * KB, 32 * KB, true, true>&>(cartridge));
                 } else if (rom == Rom::KB_128) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<128 * KB, 0, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<128 * KB, 8, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<128 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<128 * KB, 32, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<128 * KB, 32 * KB, true, true>&>(cartridge));
                 } else if (rom == Rom::KB_256) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<256 * KB, 0, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<256 * KB, 8, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<256 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<256 * KB, 32, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<256 * KB, 32 * KB, true, true>&>(cartridge));
                 } else if (rom == Rom::KB_512) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<512 * KB, 0, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<512 * KB, 8, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<512 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<512 * KB, 32, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<512 * KB, 32 * KB, true, true>&>(cartridge));
                 } else if (rom == Rom::MB_1) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<1 * MB, 0, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<1 * MB, 8, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<1 * MB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<1 * MB, 32, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<1 * MB, 32 * KB, true, true>&>(cartridge));
                 } else if (rom == Rom::MB_2) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<2 * MB, 0, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<2 * MB, 8, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<2 * MB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<2 * MB, 32, true, true>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<2 * MB, 32 * KB, true, true>&>(cartridge));
                 }
             } else if (mbc == Mbc::MBC3 || mbc == Mbc::MBC3_RAM) {
                 if (rom == Rom::KB_32) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<32 * KB, 0, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<32 * KB, 8, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<32 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<32 * KB, 32, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<32 * KB, 32 * KB, false, false>&>(cartridge));
                 } else if (rom == Rom::KB_64) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<64 * KB, 0, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<64 * KB, 8, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<64 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<64 * KB, 32, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<64 * KB, 32 * KB, false, false>&>(cartridge));
                 } else if (rom == Rom::KB_128) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<128 * KB, 0, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<128 * KB, 8, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<128 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<128 * KB, 32, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<128 * KB, 32 * KB, false, false>&>(cartridge));
                 } else if (rom == Rom::KB_256) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<256 * KB, 0, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<256 * KB, 8, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<256 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<256 * KB, 32, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<256 * KB, 32 * KB, false, false>&>(cartridge));
                 } else if (rom == Rom::KB_512) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<512 * KB, 0, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<512 * KB, 8, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<512 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<512 * KB, 32, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<512 * KB, 32 * KB, false, false>&>(cartridge));
                 } else if (rom == Rom::MB_1) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<1 * MB, 0, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<1 * MB, 8, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<1 * MB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<1 * MB, 32, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<1 * MB, 32 * KB, false, false>&>(cartridge));
                 } else if (rom == Rom::MB_2) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<2 * MB, 0, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<2 * MB, 8, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<2 * MB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<2 * MB, 32, false, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<2 * MB, 32 * KB, false, false>&>(cartridge));
                 }
-            } else if (mbc == Mbc::MBC3 || mbc == Mbc::MBC3_RAM) {
+            } else if (mbc == Mbc::MBC3_RAM_BATTERY) {
                 if (rom == Rom::KB_32) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<32 * KB, 0, true, false>&>(cartridge));
+                    else if (ram == Ram::KB_2) // cpp/ramg-mbc3-test.gb
+                        mbc3(static_cast<const Mbc3<32 * KB, 2 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<32 * KB, 8, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<32 * KB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<32 * KB, 32, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<32 * KB, 32 * KB, true, false>&>(cartridge));
                 } else if (rom == Rom::KB_64) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<64 * KB, 0, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<64 * KB, 8, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<64 * KB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<64 * KB, 32, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<64 * KB, 32 * KB, true, false>&>(cartridge));
                 } else if (rom == Rom::KB_128) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<128 * KB, 0, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<128 * KB, 8, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<128 * KB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<128 * KB, 32, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<128 * KB, 32 * KB, true, false>&>(cartridge));
                 } else if (rom == Rom::KB_256) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<256 * KB, 0, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<256 * KB, 8, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<256 * KB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<256 * KB, 32, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<256 * KB, 32 * KB, true, false>&>(cartridge));
                 } else if (rom == Rom::KB_512) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<512 * KB, 0, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<512 * KB, 8, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<512 * KB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<512 * KB, 32, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<512 * KB, 32 * KB, true, false>&>(cartridge));
                 } else if (rom == Rom::MB_1) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<1 * MB, 0, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<1 * MB, 8, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<1 * MB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<1 * MB, 32, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<1 * MB, 32 * KB, true, false>&>(cartridge));
                 } else if (rom == Rom::MB_2) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<2 * MB, 0, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
-                        mbc3(static_cast<const Mbc3<2 * MB, 8, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<2 * MB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
-                        mbc3(static_cast<const Mbc3<2 * MB, 32, true, false>&>(cartridge));
+                        mbc3(static_cast<const Mbc3<2 * MB, 32 * KB, true, false>&>(cartridge));
                 }
             }
         } else if (mbc == Mbc::MBC5 || mbc == Mbc::MBC5_RAM || mbc == Mbc::MBC5_RUMBLE || mbc == Mbc::MBC5_RUMBLE_RAM ||
@@ -1838,7 +1859,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         }() << endl;
 
         b << yellow("Last Stat IRQ") << "    :  " << gb.ppu.lastStatIrq << endl;
-        b << yellow("LYC_EQ_LY Enabled") << "     :  " << gb.ppu.enableLycEqLyIrq << endl;
+        b << yellow("LYC_EQ_LY En.") << "    :  " << gb.ppu.enableLycEqLyIrq << endl;
 
         // LCD
         const auto pixelColor = [this](uint16_t lcdColor) {
@@ -2093,7 +2114,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             return requests ? hex(address) : darkgray(hex(address));
         };
 
-        b << "                      " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("PPU")
+        b << "                     " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("PPU")
           << endl;
         b << cyan("EXT Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << busRequests(gb.extBus.requests) << endl;
@@ -2494,7 +2515,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     c1->addNode(makeSpaceDivider());
     c1->addNode(makeTimersBlock(COLUMN_1_WIDTH));
 
-    static constexpr uint32_t COLUMN_2_WIDTH = 48;
+    static constexpr uint32_t COLUMN_2_WIDTH = 49;
     auto c2 {make_vertical_layout()};
     c2->addNode(makeCartridgeBlock(COLUMN_2_WIDTH));
     c2->addNode(makeSpaceDivider());

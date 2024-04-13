@@ -1,22 +1,24 @@
+#include "utils/arrays.h"
 #include "utils/bits.hpp"
-#include "utils/chrono.hpp"
 #include "utils/exceptions.hpp"
 #include "utils/formatters.hpp"
-#include "utils/arrays.h"
 #include <cstring>
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 Mbc3<RomSize, RamSize, Battery, Timer>::Mbc3(const uint8_t* data, uint32_t length) :
-    rtcRegistersMap {
-        /* 08 */ &rtcRegisters.seconds,
-        /* 09 */ &rtcRegisters.minutes,
-        /* 0A */ &rtcRegisters.hours,
-        /* 0B */ &rtcRegisters.day.low,
-        /* 0C */ &rtcRegisters.day.high,
+    rtcRealMap {
+        /* 08 */ &rtc.real.seconds,
+        /* 09 */ &rtc.real.minutes,
+        /* 0A */ &rtc.real.hours,
+        /* 0B */ &rtc.real.days.low,
+        /* 0C */ &rtc.real.days.high,
     } {
     check(length <= array_size(rom), "Mbc3: actual ROM size (" + std::to_string(length) +
                                          ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
+
+    // Use the GB clock as RTC timing source for having precise timing.
+    needTicks = Timer;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
@@ -40,7 +42,7 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::writeRom(uint16_t address, uint8_t 
     if (address < 0x4000) {
         // 0000 - 0x1FFF
         if (address < 0x2000) {
-            ramAndTimerEnabled = keep_bits<4>(value) == 0xA;
+            ramEnabled = keep_bits<4>(value) == 0xA;
             return;
         }
         // 0x2000 - 0x3FFF
@@ -56,15 +58,9 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::writeRom(uint16_t address, uint8_t 
     }
 
     // 0x6000 - 0x7FFF
-    if (latchClockData == 0x0 && value == 0x1) {
-        // TODO: this is wrong
-        const auto datetime = get_current_datetime();
-        rtcRegisters.seconds = datetime.tm_sec;
-        rtcRegisters.minutes = datetime.tm_min;
-        rtcRegisters.hours = datetime.tm_hour;
-        rtcRegisters.day.low = datetime.tm_yday;
+    if constexpr (Timer) {
+        rtc.latched = rtc.real;
     }
-    latchClockData = value;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
@@ -72,16 +68,30 @@ uint8_t Mbc3<RomSize, RamSize, Battery, Timer>::readRam(uint16_t address) const 
     check(address >= 0xA000 && address < 0xC000);
 
     // 0xA000 - 0xBFFF
-    if (ramBankSelector_rtcRegisterSelector < 0x4) {
-        if constexpr (Ram) {
-            if (ramAndTimerEnabled) {
+    if (ramEnabled) {
+        if (ramBankSelector_rtcRegisterSelector < 0x4) {
+            if constexpr (Ram) {
                 uint32_t ramAddress = (ramBankSelector_rtcRegisterSelector << 13) | keep_bits<13>(address);
                 ramAddress = masked<RamSize>(ramAddress);
                 return ram[ramAddress];
             }
+        } else if (ramBankSelector_rtcRegisterSelector >= 0x08 && ramBankSelector_rtcRegisterSelector <= 0x0C) {
+            if constexpr (Timer) {
+                switch (ramBankSelector_rtcRegisterSelector) {
+                case 0x08:
+                    return keep_bits<6>(rtc.latched.seconds);
+                case 0x09:
+                    return keep_bits<6>(rtc.latched.minutes);
+                case 0x0A:
+                    return keep_bits<5>(rtc.latched.hours);
+                case 0x0B:
+                    return rtc.latched.days.low;
+                default:
+                    check(ramBankSelector_rtcRegisterSelector == 0x0C);
+                    return get_bits<7, 6, 0>(rtc.latched.days.high);
+                }
+            }
         }
-    } else if (ramBankSelector_rtcRegisterSelector >= 0x08 && ramBankSelector_rtcRegisterSelector <= 0x0C) {
-        return *rtcRegistersMap[keep_bits<3>(ramBankSelector_rtcRegisterSelector)];
     }
 
     return 0xFF;
@@ -92,16 +102,22 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::writeRam(uint16_t address, uint8_t 
     check(address >= 0xA000 && address < 0xC000);
 
     // 0xA000 - 0xBFFF
-    if (ramBankSelector_rtcRegisterSelector < 0x4) {
-        if constexpr (Ram) {
-            if (ramAndTimerEnabled) {
+    if (ramEnabled) {
+        if (ramBankSelector_rtcRegisterSelector < 0x4) {
+            if constexpr (Ram) {
                 uint32_t ramAddress = (ramBankSelector_rtcRegisterSelector << 13) | keep_bits<13>(address);
                 ramAddress = masked<RamSize>(ramAddress);
                 ram[ramAddress] = value;
             }
+        } else if (ramBankSelector_rtcRegisterSelector >= 0x08 && ramBankSelector_rtcRegisterSelector <= 0x0C) {
+            if constexpr (Timer) {
+                const uint8_t rtcReg = keep_bits<3>(ramBankSelector_rtcRegisterSelector);
+                *rtcRealMap[rtcReg] = value;
+                if (rtcReg == 0)
+                    // Writing to RTC seconds register resets RTC internal cycle counter.
+                    rtc.real.cycles = 0;
+            }
         }
-    } else if (ramBankSelector_rtcRegisterSelector >= 0x08 && ramBankSelector_rtcRegisterSelector <= 0x0C) {
-        *rtcRegistersMap[keep_bits<3>(ramBankSelector_rtcRegisterSelector)] = value;
     }
 }
 
@@ -121,9 +137,16 @@ uint32_t Mbc3<RomSize, RamSize, Battery, Timer>::getRamSaveSize() const {
     return 0;
 }
 
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+void Mbc3<RomSize, RamSize, Battery, Timer>::tick() {
+    if constexpr (Timer) {
+        rtc.real.tick();
+    }
+}
+
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
-uint8_t *Mbc3<RomSize, RamSize, Battery, Timer>::getRomData() {
+uint8_t* Mbc3<RomSize, RamSize, Battery, Timer>::getRomData() {
     return rom;
 }
 
@@ -135,15 +158,20 @@ uint32_t Mbc3<RomSize, RamSize, Battery, Timer>::getRomSize() const {
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::loadState(Parcel& parcel) {
-    ramAndTimerEnabled = parcel.readBool();
+    ramEnabled = parcel.readBool();
     romBankSelector = parcel.readUInt8();
     ramBankSelector_rtcRegisterSelector = parcel.readUInt8();
-    latchClockData = parcel.readUInt8();
-    rtcRegisters.seconds = parcel.readUInt8();
-    rtcRegisters.minutes = parcel.readUInt8();
-    rtcRegisters.hours = parcel.readUInt8();
-    rtcRegisters.day.low = parcel.readUInt8();
-    rtcRegisters.day.high = parcel.readUInt8();
+    rtc.real.cycles = parcel.readUInt32();
+    rtc.real.seconds = parcel.readUInt8();
+    rtc.real.minutes = parcel.readUInt8();
+    rtc.real.hours = parcel.readUInt8();
+    rtc.real.days.low = parcel.readUInt8();
+    rtc.real.days.high = parcel.readUInt8();
+    rtc.latched.seconds = parcel.readUInt8();
+    rtc.latched.minutes = parcel.readUInt8();
+    rtc.latched.hours = parcel.readUInt8();
+    rtc.latched.days.low = parcel.readUInt8();
+    rtc.latched.days.high = parcel.readUInt8();
     parcel.readBytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.readBytes(ram, RamSize);
@@ -152,15 +180,20 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::loadState(Parcel& parcel) {
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::saveState(Parcel& parcel) const {
-    parcel.writeBool(ramAndTimerEnabled);
+    parcel.writeBool(ramEnabled);
     parcel.writeUInt8(romBankSelector);
     parcel.writeUInt8(ramBankSelector_rtcRegisterSelector);
-    parcel.writeUInt8(latchClockData);
-    parcel.writeUInt8(rtcRegisters.seconds);
-    parcel.writeUInt8(rtcRegisters.minutes);
-    parcel.writeUInt8(rtcRegisters.hours);
-    parcel.writeUInt8(rtcRegisters.day.low);
-    parcel.writeUInt8(rtcRegisters.day.high);
+    parcel.writeUInt32(rtc.real.cycles);
+    parcel.writeUInt8(rtc.real.seconds);
+    parcel.writeUInt8(rtc.real.minutes);
+    parcel.writeUInt8(rtc.real.hours);
+    parcel.writeUInt8(rtc.real.days.low);
+    parcel.writeUInt8(rtc.real.days.high);
+    parcel.writeUInt8(rtc.latched.seconds);
+    parcel.writeUInt8(rtc.latched.minutes);
+    parcel.writeUInt8(rtc.latched.hours);
+    parcel.writeUInt8(rtc.latched.days.low);
+    parcel.writeUInt8(rtc.latched.days.high);
     parcel.writeBytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.writeBytes(ram, RamSize);

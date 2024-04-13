@@ -58,6 +58,27 @@ TEST_CASE("bits", "[bits]") {
         REQUIRE(B == 0b0110);
     }
 
+    SECTION("toggle bit") {
+        uint8_t B = 0b0000;
+        toggle_bit<0>(B);
+        REQUIRE(B == 0b0001);
+
+        toggle_bit<0>(B);
+        REQUIRE(B == 0b0000);
+
+        toggle_bit<2>(B);
+        REQUIRE(B == 0b0100);
+
+        toggle_bit<1>(B);
+        REQUIRE(B == 0b0110);
+
+        toggle_bit<0>(B);
+        REQUIRE(B == 0b0111);
+
+        toggle_bit<2>(B);
+        REQUIRE(B == 0b0011);
+    }
+
     SECTION("get and set byte") {
         uint16_t AF = 0;
         REQUIRE(get_byte<0>(AF) == 0);

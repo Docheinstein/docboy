@@ -264,6 +264,13 @@ namespace Bits {
         } // namespace SC
     }     // namespace Serial
 
+    namespace Rtc {
+        namespace DH {
+            constexpr uint8_t DAY_OVERFLOW = 7;
+            constexpr uint8_t STOPPED = 6;
+            constexpr uint8_t DAY = 0;
+        } // namespace DH
+    }     // namespace Rtc
 } // namespace Bits
 
 namespace Bytes {
@@ -347,6 +354,7 @@ namespace Cartridge {
 
         namespace Ram {
             constexpr uint32_t NONE = 0x0;
+            constexpr uint32_t KB_2 = 0x1; // unofficial
             constexpr uint32_t KB_8 = 0x2;
             constexpr uint32_t KB_32 = 0x3;
             constexpr uint32_t KB_128 = 0x4;

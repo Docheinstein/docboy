@@ -1430,6 +1430,46 @@ TEST_CASE("emulation", "[emulation]") {
                           F {"mooneye/mbc/mbc2/rom_512kb.gb", "mooneye/ok.png"});
         }
 
+        SECTION("mbc3") {
+            RUN_TEST_ROMS(
+                F {"aaaaaa123456789/rtc3test-1.gb", "aaaaaa123456789/rtc3test-1.png"},
+                F {"aaaaaa123456789/rtc3test-2.gb", "aaaaaa123456789/rtc3test-2.png"},
+                F {"aaaaaa123456789/rtc3test-3.gb", "aaaaaa123456789/rtc3test-3.png", MaxTicks {DURATION_VERY_LONG}},
+
+                F {"cpp/latch-rtc-test.gb", "cpp/latch-rtc-test.png", GREY_PALETTE},
+                F {"cpp/ramg-mbc3-test.gb", "cpp/ramg-mbc3-test.png", GREY_PALETTE},
+                F {"cpp/rtc-invalid-banks-test.gb", "cpp/rtc-invalid-banks-test.png", GREY_PALETTE},
+
+                F {"docboy/mbc/mbc3/no_rtc.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_default_enabled.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_latch01.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_latch02.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_latch10.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_latch11.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_tick_disabled.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_tick_disabled_after.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_latch_read.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_latch_read_stopped.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_disabled_stopped_latch0.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_disabled_stopped_latch1.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_disabled_stopped_latch01.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_disabled_stopped_latch010.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_disabled_latch0.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_disabled_latch1.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_disabled_latch01.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_disabled_latch010.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_stopped_latch0.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_stopped_latch1.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_stopped_latch01.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_stopped_latch010.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_latch0.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_latch1.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_latch01.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_latch010.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_out_of_range.gb", "docboy/ok.png"},
+                F {"docboy/mbc/mbc3/rtc_write_read_out_of_range_unused_bits.gb", "docboy/ok.png"}, );
+        }
+
         SECTION("mbc5") {
             RUN_TEST_ROMS(S {"mooneye/mbc/mbc5/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                           S {"mooneye/mbc/mbc5/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1522,6 +1562,7 @@ TEST_CASE("emulation", "[emulation]") {
             S {"mooneye/if_ie_registers.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             S {"mooneye/intr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
             S {"mooneye/rapid_di_ei.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            F {"docboy/interrupts/ei_timing.gb", "docboy/ok.png"},
             F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round1.gb", "docboy/ok.png"},
             F {"docboy/interrupts/joypad_interrupt_timing_manual_ei_round2.gb", "docboy/ok.png"},
             F {"docboy/interrupts/joypad_interrupt_timing_manual_round1.gb", "docboy/ok.png"},
