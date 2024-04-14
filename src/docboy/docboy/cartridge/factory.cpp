@@ -5,6 +5,7 @@
 #include "docboy/cartridge/mbc3/mbc3.h"
 #include "docboy/cartridge/mbc5/mbc5.h"
 #include "docboy/cartridge/nombc/nombc.h"
+#include "docboy/cartridge/romram/romram.h"
 #include "docboy/shared/specs.h"
 #include "utils/exceptions.hpp"
 #include "utils/formatters.hpp"
@@ -46,6 +47,10 @@ namespace Info {
                                       Rom::MB_2, Rom::MB_4, Rom::MB_8>();
         constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_8, Ram::KB_32, Ram::KB_64, Ram::KB_128>();
     } // namespace Mbc5
+    namespace RomRam {
+        constexpr uint16_t Rom = bits<Rom::KB_32>();
+        constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_2, Ram::KB_8, Ram::KB_32>();
+    } // namespace RomRam
 } // namespace Info
 
 template <uint32_t RomSize, uint32_t RamSize>
@@ -83,6 +88,12 @@ using Mbc5_Battery = Mbc5<RomSize, RamSize, Battery>;
 
 template <uint32_t RomSize, uint32_t RamSize>
 using Mbc5_NoBattery = Mbc5<RomSize, RamSize, NoBattery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using RomRam_Battery = RomRam<RomSize, RamSize, Battery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using RomRam_NoBattery = RomRam<RomSize, RamSize, NoBattery>;
 
 bool isMbc1M(const std::vector<uint8_t>& data) {
     // MBC1M can't be distinguished from MBC1 only from the header.
@@ -199,6 +210,10 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
         return create<Mbc2_NoBattery, Info::Mbc2::Rom, Info::Mbc2::Ram>(data, rom, ram);
     case Mbc::MBC2_BATTERY:
         return create<Mbc2_Battery, Info::Mbc2::Rom, Info::Mbc2::Ram>(data, rom, ram);
+    case Mbc::ROM_RAM:
+        return create<RomRam_Battery, Info::RomRam::Rom, Info::RomRam::Ram>(data, rom, ram);
+    case Mbc::ROM_RAM_BATTERY:
+        return create<RomRam_NoBattery, Info::RomRam::Rom, Info::RomRam::Ram>(data, rom, ram);
     case Mbc::MBC3_TIMER_BATTERY:
     case Mbc::MBC3_TIMER_RAM_BATTERY:
         return create<Mbc3_Battery_Timer, Info::Mbc3::Rom, Info::Mbc3::Ram>(data, rom, ram);

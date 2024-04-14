@@ -327,6 +327,8 @@ namespace Cartridge {
             constexpr uint32_t MBC1_RAM_BATTERY = 0x03;
             constexpr uint32_t MBC2 = 0x05;
             constexpr uint32_t MBC2_BATTERY = 0x06;
+            constexpr uint32_t ROM_RAM = 0x08;
+            constexpr uint32_t ROM_RAM_BATTERY = 0x09;
             constexpr uint32_t MBC3_TIMER_BATTERY = 0x0F;
             constexpr uint32_t MBC3_TIMER_RAM_BATTERY = 0x10;
             constexpr uint32_t MBC3 = 0x11;
