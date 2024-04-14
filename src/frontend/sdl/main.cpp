@@ -23,6 +23,7 @@
 #include "docboy/debugger/backend.h"
 #include "docboy/debugger/frontend.h"
 #include "docboy/debugger/memsniffer.h"
+#include "utils/strings.hpp"
 #endif
 
 namespace {
@@ -57,7 +58,7 @@ void dump_cartridge_info(const ICartridge& cartridge) {
     std::cout << "Header checksum   :  " << hex(header.header_checksum) << "\n";
 }
 
-std::optional<uint16_t> hex_string_to_uint16_t(const std::string& s) {
+std::optional<uint16_t> hex_string_to_uint16(const std::string& s) {
     const char* cstr = s.c_str();
     char* endptr {};
     errno = 0;
@@ -69,6 +70,28 @@ std::optional<uint16_t> hex_string_to_uint16_t(const std::string& s) {
     }
 
     return val;
+}
+
+template <uint8_t Size>
+std::optional<std::array<uint16_t, Size>> parse_hex_string_array(const std::string& s) {
+    std::vector<std::string> tokens;
+    split(s, std::back_inserter(tokens), [](char ch) {
+        return ch == ',';
+    });
+
+    if (tokens.size() != Size)
+        return std::nullopt;
+
+    std::array<uint16_t, Size> ret {};
+
+    for (uint32_t i = 0; i < Size; i++) {
+        if (auto u = hex_string_to_uint16(tokens[i]))
+            ret[i] = *u;
+        else
+            return std::nullopt;
+    }
+
+    return ret;
 }
 
 void ensureFileExists(const std::string& path) {
@@ -116,10 +139,7 @@ int main(int argc, char* argv[]) {
 
         ConfigParser cfgParser;
         cfgParser.addCommentPrefix("#");
-        cfgParser.addOption("palette_color_0", cfg.palette[0], hex_string_to_uint16_t);
-        cfgParser.addOption("palette_color_1", cfg.palette[1], hex_string_to_uint16_t);
-        cfgParser.addOption("palette_color_2", cfg.palette[2], hex_string_to_uint16_t);
-        cfgParser.addOption("palette_color_3", cfg.palette[3], hex_string_to_uint16_t);
+        cfgParser.addOption("dmg_palette", cfg.palette, parse_hex_string_array<4>);
 
         if (const auto result = cfgParser.parse(args.config); !result) {
             switch (result.outcome) {
