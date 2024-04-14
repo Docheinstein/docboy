@@ -9,6 +9,7 @@
 #include "utils/mathematics.h"
 #include "utils/os.h"
 #include "utils/path.h"
+#include "utils/strings.hpp"
 #include "window.h"
 #include <SDL3/SDL.h>
 #include <chrono>
@@ -23,7 +24,6 @@
 #include "docboy/debugger/backend.h"
 #include "docboy/debugger/frontend.h"
 #include "docboy/debugger/memsniffer.h"
-#include "utils/strings.hpp"
 #endif
 
 namespace {
