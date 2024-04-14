@@ -86,6 +86,15 @@ void set_nibble(T& dest, uint8_t value) {
 
 // ---------- BITS ----------
 
+template <uint8_t n, uint8_t... ns>
+constexpr auto bits() {
+    if constexpr (sizeof...(ns) > 0) {
+        return bit<n> | bits<ns...>();
+    }
+
+    return bit<n>;
+}
+
 template <typename T>
 std::decay_t<T> get_bit(T&& value, uint8_t n) {
     return value & bit_(n);
@@ -114,6 +123,12 @@ bool test_bit(T&& value, uint8_t n) {
 template <uint8_t n, typename T>
 bool test_bit(T&& value) {
     static_assert(n < 8 * sizeof(T));
+    return value & bit<n>;
+}
+
+template <uint64_t value, uint8_t n>
+constexpr bool test_bit() {
+    static_assert(n < 64);
     return value & bit<n>;
 }
 

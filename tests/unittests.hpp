@@ -189,6 +189,13 @@ TEST_CASE("bits", "[bits]") {
         REQUIRE(bit<15> == (1 << 15));
     }
 
+    SECTION("bits") {
+        REQUIRE(bits<0, 1>() == 0b11);
+        REQUIRE(bits<0, 2>() == 0b101);
+        REQUIRE(bits<2, 3>() == 0b1100);
+        REQUIRE(bits<2, 2>() == 0b0100);
+    }
+
     SECTION("sum_carry") {
         sum_carry_result<uint8_t> result {};
 

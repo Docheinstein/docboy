@@ -22,6 +22,68 @@ constexpr uint32_t MB = 1 << 20;
 
 using namespace Specs::Cartridge::Header;
 
+namespace Info {
+    namespace NoMbc {
+        constexpr uint16_t Rom = bits<Rom::KB_32>();
+        constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_8>();
+    } // namespace NoMbc
+    namespace Mbc1 {
+        constexpr uint16_t Rom =
+            bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1, Rom::MB_2>();
+        constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_8, Ram::KB_32>();
+    } // namespace Mbc1
+    namespace Mbc2 {
+        constexpr uint16_t Rom = bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256>();
+        constexpr uint16_t Ram = bits<Ram::NONE>();
+    } // namespace Mbc2
+    namespace Mbc3 {
+        constexpr uint16_t Rom =
+            bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1, Rom::MB_2>();
+        constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_2, Ram::KB_8, Ram::KB_32>();
+    } // namespace Mbc3
+    namespace Mbc5 {
+        constexpr uint16_t Rom = bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1,
+                                      Rom::MB_2, Rom::MB_4, Rom::MB_8>();
+        constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_8, Ram::KB_32, Ram::KB_64, Ram::KB_128>();
+    } // namespace Mbc5
+} // namespace Info
+
+template <uint32_t RomSize, uint32_t RamSize>
+using NoMbc_ = NoMbc<RamSize>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc1_Battery = Mbc1<RomSize, RamSize, Battery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc1_NoBattery = Mbc1<RomSize, RamSize, NoBattery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc1M_Battery = Mbc1M<RomSize, RamSize, Battery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc1M_NoBattery = Mbc1M<RomSize, RamSize, NoBattery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc2_Battery = Mbc2<RomSize, Battery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc2_NoBattery = Mbc2<RomSize, NoBattery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc3_NoBattery_NoTimer = Mbc3<RomSize, RamSize, NoBattery, NoTimer>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc3_Battery_NoTimer = Mbc3<RomSize, RamSize, Battery, NoTimer>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc3_Battery_Timer = Mbc3<RomSize, RamSize, Battery, Timer>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc5_Battery = Mbc5<RomSize, RamSize, Battery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc5_NoBattery = Mbc5<RomSize, RamSize, NoBattery>;
+
 bool isMbc1M(const std::vector<uint8_t>& data) {
     // MBC1M can't be distinguished from MBC1 only from the header.
     // The heuristic for distinguish it is the presence of (at least two)
@@ -42,261 +104,120 @@ bool isMbc1M(const std::vector<uint8_t>& data) {
     return numLogo > 1;
 }
 
-std::unique_ptr<ICartridge> createNoMbc(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
-    if (rom == Rom::KB_32) {
-        if (ram == Ram::KB_8)
-            return std::make_unique<NoMbc<8 * KB>>(data.data(), data.size());
-        if (ram == Ram::NONE)
-            return std::make_unique<NoMbc<0>>(data.data(), data.size());
-    }
-
-    fatal("NoMbc: unexpected data in cartridge header: rom=" + std::to_string(rom) + ", ram=" + std::to_string(ram));
+template <template <uint32_t, uint32_t> typename T, uint32_t RomSize, uint32_t RamSize>
+std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data) {
+    return std::make_unique<T<RomSize, RamSize>>(data.data(), data.size());
 }
 
-template <bool Battery>
-std::unique_ptr<ICartridge> createMbc1(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
-    if (rom == Rom::KB_32) {
+template <template <uint32_t, uint32_t> typename T, uint32_t RomSize, uint16_t SupportedRamSize>
+std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t ram) {
+    if constexpr (test_bit<SupportedRamSize, Ram::NONE>()) {
         if (ram == Ram::NONE)
-            return std::make_unique<Mbc1<32 * KB, 0, Battery>>(data.data(), data.size());
+            return create<T, RomSize, 0>(data);
+    }
+    if constexpr (test_bit<SupportedRamSize, Ram::KB_2>()) {
+        if (ram == Ram::KB_2)
+            return create<T, RomSize, 2 * KB>(data);
+    }
+    if constexpr (test_bit<SupportedRamSize, Ram::KB_8>()) {
         if (ram == Ram::KB_8)
-            return std::make_unique<Mbc1<32 * KB, 8 * KB, Battery>>(data.data(), data.size());
+            return create<T, RomSize, 8 * KB>(data);
+    }
+    if constexpr (test_bit<SupportedRamSize, Ram::KB_32>()) {
         if (ram == Ram::KB_32)
-            return std::make_unique<Mbc1<32 * KB, 32 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::KB_64) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc1<64 * KB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc1<64 * KB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc1<64 * KB, 32 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::KB_128) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc1<128 * KB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc1<128 * KB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc1<128 * KB, 32 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::KB_256) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc1<256 * KB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc1<256 * KB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc1<256 * KB, 32 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::KB_512) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc1<512 * KB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc1<512 * KB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc1<512 * KB, 32 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::MB_1) {
-        // All the known MBC1M are 1 MB.
-        if (isMbc1M(data)) {
-            if (ram == Ram::NONE)
-                return std::make_unique<Mbc1M<1 * MB, 0, Battery>>(data.data(), data.size());
-            if (ram == Ram::KB_8)
-                return std::make_unique<Mbc1M<1 * MB, 8 * KB, Battery>>(data.data(), data.size());
-            if (ram == Ram::KB_32)
-                return std::make_unique<Mbc1M<1 * MB, 32 * KB, Battery>>(data.data(), data.size());
-        } else {
-            if (ram == Ram::NONE)
-                return std::make_unique<Mbc1<1 * MB, 0, Battery>>(data.data(), data.size());
-            if (ram == Ram::KB_8)
-                return std::make_unique<Mbc1<1 * MB, 8 * KB, Battery>>(data.data(), data.size());
-            if (ram == Ram::KB_32)
-                return std::make_unique<Mbc1<1 * MB, 32 * KB, Battery>>(data.data(), data.size());
-        }
-    } else if (rom == Rom::MB_2) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc1<2 * MB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc1<2 * MB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc1<2 * MB, 32 * KB, Battery>>(data.data(), data.size());
+            return create<T, RomSize, 32 * KB>(data);
+    }
+    if constexpr (test_bit<SupportedRamSize, Ram::KB_128>()) {
+        if (ram == Ram::KB_128)
+            return create<T, RomSize, 128 * KB>(data);
+    }
+    if constexpr (test_bit<SupportedRamSize, Ram::KB_64>()) {
+        if (ram == Ram::KB_64)
+            return create<T, RomSize, 64 * KB>(data);
     }
 
-    fatal("Mbc1: unexpected data in cartridge header: rom=" + std::to_string(rom) + ", ram=" + std::to_string(ram));
+    return nullptr;
 }
 
-template <bool Battery>
-std::unique_ptr<ICartridge> createMbc2(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
-    if (ram == Ram::NONE) {
+template <template <uint32_t, uint32_t> typename T, uint16_t SupportedRomSize, uint16_t SupportedRamSize>
+std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
+    if constexpr (test_bit<SupportedRomSize, Rom::KB_32>()) {
         if (rom == Rom::KB_32)
-            return std::make_unique<Mbc2<32 * KB, Battery>>(data.data(), data.size());
+            return create<T, 32 * KB, SupportedRamSize>(data, ram);
+    }
+    if constexpr (test_bit<SupportedRomSize, Rom::KB_64>()) {
         if (rom == Rom::KB_64)
-            return std::make_unique<Mbc2<64 * KB, Battery>>(data.data(), data.size());
+            return create<T, 64 * KB, SupportedRamSize>(data, ram);
+    }
+    if constexpr (test_bit<SupportedRomSize, Rom::KB_128>()) {
         if (rom == Rom::KB_128)
-            return std::make_unique<Mbc2<128 * KB, Battery>>(data.data(), data.size());
+            return create<T, 128 * KB, SupportedRamSize>(data, ram);
+    }
+    if constexpr (test_bit<SupportedRomSize, Rom::KB_256>()) {
         if (rom == Rom::KB_256)
-            return std::make_unique<Mbc2<256 * KB, Battery>>(data.data(), data.size());
+            return create<T, 256 * KB, SupportedRamSize>(data, ram);
     }
-
-    fatal("Mbc2: unexpected data in cartridge header: rom=" + std::to_string(rom) + ", ram=" + std::to_string(ram));
+    if constexpr (test_bit<SupportedRomSize, Rom::KB_512>()) {
+        if (rom == Rom::KB_512)
+            return create<T, 512 * KB, SupportedRamSize>(data, ram);
+    }
+    if constexpr (test_bit<SupportedRomSize, Rom::MB_1>()) {
+        if (rom == Rom::MB_1)
+            return create<T, 1 * MB, SupportedRamSize>(data, ram);
+    }
+    if constexpr (test_bit<SupportedRomSize, Rom::MB_2>()) {
+        if (rom == Rom::MB_2)
+            return create<T, 2 * MB, SupportedRamSize>(data, ram);
+    }
+    if constexpr (test_bit<SupportedRomSize, Rom::MB_4>()) {
+        if (rom == Rom::MB_4)
+            return create<T, 4 * MB, SupportedRamSize>(data, ram);
+    }
+    if constexpr (test_bit<SupportedRomSize, Rom::MB_4>()) {
+        if (rom == Rom::MB_8)
+            return create<T, 8 * MB, SupportedRamSize>(data, ram);
+    }
+    return nullptr;
 }
 
-template <bool Battery, bool Timer>
-std::unique_ptr<ICartridge> createMbc3(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
-    if (rom == Rom::KB_32) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc3<32 * KB, 0, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_2) // cpp/ramg-mbc3-test.gb
-            return std::make_unique<Mbc3<32 * KB, 2 * KB, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc3<32 * KB, 8 * KB, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc3<32 * KB, 32 * KB, Battery, Timer>>(data.data(), data.size());
-    } else if (rom == Rom::KB_64) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc3<64 * KB, 0, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc3<64 * KB, 8 * KB, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc3<64 * KB, 32 * KB, Battery, Timer>>(data.data(), data.size());
-    } else if (rom == Rom::KB_128) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc3<128 * KB, 0, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc3<128 * KB, 8 * KB, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc3<128 * KB, 32 * KB, Battery, Timer>>(data.data(), data.size());
-    } else if (rom == Rom::KB_256) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc3<256 * KB, 0, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc3<256 * KB, 8 * KB, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc3<256 * KB, 32 * KB, Battery, Timer>>(data.data(), data.size());
-    } else if (rom == Rom::KB_512) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc3<512 * KB, 0, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc3<512 * KB, 8 * KB, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc3<512 * KB, 32 * KB, Battery, Timer>>(data.data(), data.size());
-    } else if (rom == Rom::MB_1) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc3<1 * MB, 0, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc3<1 * MB, 8 * KB, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc3<1 * MB, 32 * KB, Battery, Timer>>(data.data(), data.size());
-    } else if (rom == Rom::MB_2) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc3<2 * MB, 0, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc3<2 * MB, 8 * KB, Battery, Timer>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc3<2 * MB, 32 * KB, Battery, Timer>>(data.data(), data.size());
+std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc, uint8_t rom, uint8_t ram) {
+    switch (mbc) {
+    case Mbc::NO_MBC:
+        return create<NoMbc_, Info::NoMbc::Rom, Info::NoMbc::Ram>(data, rom, ram);
+    case Mbc::MBC1:
+    case Mbc::MBC1_RAM:
+        if (isMbc1M(data))
+            return create<Mbc1M_NoBattery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
+        else
+            return create<Mbc1_NoBattery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
+    case Mbc::MBC1_RAM_BATTERY:
+        if (isMbc1M(data))
+            return create<Mbc1M_Battery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
+        else
+            return create<Mbc1_Battery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
+    case Mbc::MBC2:
+        return create<Mbc2_NoBattery, Info::Mbc2::Rom, Info::Mbc2::Ram>(data, rom, ram);
+    case Mbc::MBC2_BATTERY:
+        return create<Mbc2_Battery, Info::Mbc2::Rom, Info::Mbc2::Ram>(data, rom, ram);
+    case Mbc::MBC3_TIMER_BATTERY:
+    case Mbc::MBC3_TIMER_RAM_BATTERY:
+        return create<Mbc3_Battery_Timer, Info::Mbc3::Rom, Info::Mbc3::Ram>(data, rom, ram);
+    case Mbc::MBC3:
+    case Mbc::MBC3_RAM:
+        return create<Mbc3_NoBattery_NoTimer, Info::Mbc3::Rom, Info::Mbc3::Ram>(data, rom, ram);
+    case Mbc::MBC3_RAM_BATTERY:
+        return create<Mbc3_Battery_NoTimer, Info::Mbc3::Rom, Info::Mbc3::Ram>(data, rom, ram);
+    case Mbc::MBC5:
+    case Mbc::MBC5_RAM:
+    case Mbc::MBC5_RUMBLE:
+    case Mbc::MBC5_RUMBLE_RAM:
+        return create<Mbc5_Battery, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
+    case Mbc::MBC5_RAM_BATTERY:
+    case Mbc::MBC5_RUMBLE_RAM_BATTERY:
+        return create<Mbc5_NoBattery, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
+    default:
+        fatal("unknown MBC type: 0x" + hex(mbc));
     }
-
-    fatal("Mbc3: unexpected data in cartridge header: rom=" + std::to_string(rom) + ", ram=" + std::to_string(ram));
-}
-
-template <bool Battery>
-std::unique_ptr<ICartridge> createMbc5(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
-    if (rom == Rom::KB_32) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc5<32 * KB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc5<32 * KB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc5<32 * KB, 32 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_64)
-            return std::make_unique<Mbc5<32 * KB, 64 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_128)
-            return std::make_unique<Mbc5<32 * KB, 128 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::KB_64) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc5<64 * KB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc5<64 * KB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc5<64 * KB, 32 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_64)
-            return std::make_unique<Mbc5<64 * KB, 64 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_128)
-            return std::make_unique<Mbc5<64 * KB, 128 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::KB_128) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc5<128 * KB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc5<128 * KB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc5<128 * KB, 32 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_64)
-            return std::make_unique<Mbc5<128 * KB, 64 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_128)
-            return std::make_unique<Mbc5<128 * KB, 128 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::KB_256) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc5<256 * KB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc5<256 * KB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc5<256 * KB, 32 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_64)
-            return std::make_unique<Mbc5<256 * KB, 64 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_128)
-            return std::make_unique<Mbc5<256 * KB, 128 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::KB_512) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc5<512 * KB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc5<512 * KB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc5<512 * KB, 32 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_64)
-            return std::make_unique<Mbc5<512 * KB, 64 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_128)
-            return std::make_unique<Mbc5<512 * KB, 128 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::MB_1) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc5<1 * MB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc5<1 * MB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc5<1 * MB, 32 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_64)
-            return std::make_unique<Mbc5<1 * MB, 64 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_128)
-            return std::make_unique<Mbc5<1 * MB, 128 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::MB_2) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc5<2 * MB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc5<2 * MB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc5<2 * MB, 32 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_64)
-            return std::make_unique<Mbc5<2 * MB, 64 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_128)
-            return std::make_unique<Mbc5<2 * MB, 128 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::MB_4) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc5<4 * MB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc5<4 * MB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc5<4 * MB, 32 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_64)
-            return std::make_unique<Mbc5<4 * MB, 64 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_128)
-            return std::make_unique<Mbc5<4 * MB, 128 * KB, Battery>>(data.data(), data.size());
-    } else if (rom == Rom::MB_8) {
-        if (ram == Ram::NONE)
-            return std::make_unique<Mbc5<8 * MB, 0, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_8)
-            return std::make_unique<Mbc5<8 * MB, 8 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_32)
-            return std::make_unique<Mbc5<8 * MB, 32 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_64)
-            return std::make_unique<Mbc5<8 * MB, 64 * KB, Battery>>(data.data(), data.size());
-        if (ram == Ram::KB_128)
-            return std::make_unique<Mbc5<8 * MB, 128 * KB, Battery>>(data.data(), data.size());
-    }
-
-    fatal("Mbc5: unexpected data in cartridge header: rom=" + std::to_string(rom) + ", ram=" + std::to_string(ram));
 }
 } // namespace
 
@@ -314,37 +235,10 @@ std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename
     const uint8_t rom = data[MemoryLayout::ROM_SIZE];
     const uint8_t ram = data[MemoryLayout::RAM_SIZE];
 
-    using namespace Mbc;
+    auto cartridge = ::create(data, mbc, rom, ram);
 
-    switch (mbc) {
-    case NO_MBC:
-        return createNoMbc(data, rom, ram);
-    case MBC1:
-    case MBC1_RAM:
-        return createMbc1<NoBattery>(data, rom, ram);
-    case MBC1_RAM_BATTERY:
-        return createMbc1<Battery>(data, rom, ram);
-    case MBC2:
-        return createMbc2<NoBattery>(data, rom, ram);
-    case MBC2_BATTERY:
-        return createMbc2<Battery>(data, rom, ram);
-    case MBC3_TIMER_BATTERY:
-    case MBC3_TIMER_RAM_BATTERY:
-        return createMbc3<Battery, Timer>(data, rom, ram);
-    case MBC3:
-    case MBC3_RAM:
-        return createMbc3<NoBattery, NoTimer>(data, rom, ram);
-    case MBC3_RAM_BATTERY:
-        return createMbc3<Battery, NoTimer>(data, rom, ram);
-    case MBC5:
-    case MBC5_RAM:
-    case MBC5_RUMBLE:
-    case MBC5_RUMBLE_RAM:
-        return createMbc5<NoBattery>(data, rom, ram);
-    case MBC5_RAM_BATTERY:
-    case MBC5_RUMBLE_RAM_BATTERY:
-        return createMbc5<Battery>(data, rom, ram);
-    default:
-        fatal("unknown MBC type: 0x" + hex(mbc));
-    }
+    if (!cartridge)
+        fatal("unexpected cartridge specs: ROM=" + std::to_string(rom) + ", RAM=" + std::to_string(ram));
+
+    return cartridge;
 }

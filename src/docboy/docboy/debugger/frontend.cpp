@@ -1435,6 +1435,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 if (rom == Rom::KB_32) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<32 * KB, 0, true, true>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<32 * KB, 2 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<32 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1442,6 +1444,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_64) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<64 * KB, 0, true, true>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<64 * KB, 2 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<64 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1449,6 +1453,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_128) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<128 * KB, 0, true, true>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<128 * KB, 2 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<128 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1456,6 +1462,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_256) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<256 * KB, 0, true, true>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<256 * KB, 2 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<256 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1463,6 +1471,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_512) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<512 * KB, 0, true, true>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<512 * KB, 2 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<512 * KB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1470,6 +1480,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::MB_1) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<1 * MB, 0, true, true>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<1 * MB, 2 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<1 * MB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1477,6 +1489,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::MB_2) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<2 * MB, 0, true, true>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<2 * MB, 2 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<2 * MB, 8 * KB, true, true>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1486,6 +1500,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 if (rom == Rom::KB_32) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<32 * KB, 0, false, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<32 * KB, 2 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<32 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1493,6 +1509,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_64) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<64 * KB, 0, false, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<64 * KB, 2 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<64 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1500,6 +1518,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_128) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<128 * KB, 0, false, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<128 * KB, 2 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<128 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1507,6 +1527,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_256) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<256 * KB, 0, false, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<256 * KB, 2 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<256 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1514,6 +1536,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_512) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<512 * KB, 0, false, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<512 * KB, 2 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<512 * KB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1521,6 +1545,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::MB_1) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<1 * MB, 0, false, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<1 * MB, 2 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<1 * MB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1528,6 +1554,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::MB_2) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<2 * MB, 0, false, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<2 * MB, 2 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<2 * MB, 8 * KB, false, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1537,7 +1565,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 if (rom == Rom::KB_32) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<32 * KB, 0, true, false>&>(cartridge));
-                    else if (ram == Ram::KB_2) // cpp/ramg-mbc3-test.gb
+                    else if (ram == Ram::KB_2)
                         mbc3(static_cast<const Mbc3<32 * KB, 2 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<32 * KB, 8 * KB, true, false>&>(cartridge));
@@ -1546,6 +1574,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_64) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<64 * KB, 0, true, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<64 * KB, 2 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<64 * KB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1553,6 +1583,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_128) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<128 * KB, 0, true, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<128 * KB, 2 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<128 * KB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1560,6 +1592,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_256) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<256 * KB, 0, true, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<256 * KB, 2 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<256 * KB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1567,6 +1601,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::KB_512) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<512 * KB, 0, true, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<512 * KB, 2 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<512 * KB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1574,6 +1610,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::MB_1) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<1 * MB, 0, true, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<1 * MB, 2 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<1 * MB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)
@@ -1581,6 +1619,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
                 } else if (rom == Rom::MB_2) {
                     if (ram == Ram::NONE)
                         mbc3(static_cast<const Mbc3<2 * MB, 0, true, false>&>(cartridge));
+                    else if (ram == Ram::KB_2)
+                        mbc3(static_cast<const Mbc3<2 * MB, 2 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_8)
                         mbc3(static_cast<const Mbc3<2 * MB, 8 * KB, true, false>&>(cartridge));
                     else if (ram == Ram::KB_32)

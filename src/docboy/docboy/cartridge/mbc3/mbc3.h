@@ -35,15 +35,15 @@ private:
     uint8_t romBankSelector {0b1};
     uint8_t ramBankSelector_rtcRegisterSelector {};
 
-    uint8_t rom[RomSize] {};
-    uint8_t ram[RamSize] {};
-
     struct {
         Rtc real {};
         RtcRegisters latched {};
     } rtc;
 
     uint8_t* const rtcRealMap[5];
+
+    uint8_t rom[RomSize] {};
+    uint8_t ram[RamSize] {};
 };
 
 #include "mbc3.tpp"
