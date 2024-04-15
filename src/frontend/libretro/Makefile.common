@@ -1,20 +1,27 @@
 SOURCES_CXX := \
-    $(SOURCE_DIR)/docboy/cartridge/factory.cpp \
-    $(SOURCE_DIR)/docboy/core/core.cpp \
-    $(SOURCE_DIR)/docboy/cpu/cpu.cpp \
-    $(SOURCE_DIR)/docboy/dma/dma.cpp \
-    $(SOURCE_DIR)/docboy/joypad/joypad.cpp \
-    $(SOURCE_DIR)/docboy/lcd/lcd.cpp \
-    $(SOURCE_DIR)/docboy/memory/byte.cpp \
-    $(SOURCE_DIR)/docboy/mmu/mmu.cpp \
-    $(SOURCE_DIR)/docboy/ppu/ppu.cpp \
-    $(SOURCE_DIR)/docboy/serial/link.cpp \
-    $(SOURCE_DIR)/docboy/serial/port.cpp \
-    $(SOURCE_DIR)/docboy/timers/timers.cpp \
+    $(SOURCE_DIR)/docboy/docboy/bus/cpubus.cpp \
+    $(SOURCE_DIR)/docboy/docboy/bus/extbus.cpp \
+    $(SOURCE_DIR)/docboy/docboy/bus/oambus.cpp \
+    $(SOURCE_DIR)/docboy/docboy/bus/vrambus.cpp \
+    $(SOURCE_DIR)/docboy/docboy/cartridge/factory.cpp \
+    $(SOURCE_DIR)/docboy/docboy/cartridge/slot.cpp \
+    $(SOURCE_DIR)/docboy/docboy/core/core.cpp \
+    $(SOURCE_DIR)/docboy/docboy/cpu/cpu.cpp \
+    $(SOURCE_DIR)/docboy/docboy/dma/dma.cpp \
+    $(SOURCE_DIR)/docboy/docboy/joypad/joypad.cpp \
+    $(SOURCE_DIR)/docboy/docboy/lcd/lcd.cpp \
+    $(SOURCE_DIR)/docboy/docboy/memory/byte.cpp \
+    $(SOURCE_DIR)/docboy/docboy/memory/vram.cpp \
+    $(SOURCE_DIR)/docboy/docboy/mmu/mmu.cpp \
+    $(SOURCE_DIR)/docboy/docboy/stop/stopcontroller.cpp \
+    $(SOURCE_DIR)/docboy/docboy/ppu/ppu.cpp \
+    $(SOURCE_DIR)/docboy/docboy/serial/link.cpp \
+    $(SOURCE_DIR)/docboy/docboy/serial/port.cpp \
+    $(SOURCE_DIR)/docboy/docboy/timers/timers.cpp \
     $(SOURCE_DIR)/frontend/libretro/libretro.cpp \
-    $(SOURCE_DIR)/utils/io.cpp \
-    $(SOURCE_DIR)/utils/memory.cpp \
-    $(SOURCE_DIR)/utils/os.cpp \
-    $(SOURCE_DIR)/utils/parcel.cpp \
-    $(SOURCE_DIR)/utils/path.cpp \
-    $(SOURCE_DIR)/utils/strings.cpp
+    $(SOURCE_DIR)/utils/utils/io.cpp \
+    $(SOURCE_DIR)/utils/utils/memory.cpp \
+    $(SOURCE_DIR)/utils/utils/os.cpp \
+    $(SOURCE_DIR)/utils/utils/parcel.cpp \
+    $(SOURCE_DIR)/utils/utils/path.cpp \
+    $(SOURCE_DIR)/utils/utils/strings.cpp

@@ -37,16 +37,26 @@ DocBoy is a accuracy-focused GB emulator that tries to find a good spot between:
 
 DocBoy is compiled as a static library which can be used by a _frontend_.
 
-These are the cmake options for the available frontends.
+These are the CMake options for the available frontends.
 
 * `BUILD_NOGUI_FRONTEND`
-* `BUILD_SDL_FRONTEND`
+* `BUILD_SDL_FRONTEND` (default)
 * `BUILD_LIBRETRO_CORE`
 * `BUILD_LIBRETRO_CORE_ANDROID`
 
 You have to enable at least one of them.
 
-For example, to build libretro core in Release mode.
+**SDL**
+
+```
+mkdir build
+cd build
+cmake ..
+make -j 8
+```
+
+
+**Libretro Core**
 
 ```
 mkdir build
@@ -58,10 +68,9 @@ make -j 8
 
 **Android**
 
-To build the libretro core for Android you have to
 1. Install [NDK](https://developer.android.com/ndk/guides).
-2. Enable the cmake's option `BUILD_LIBRETRO_CORE_ANDROID`.
-3. Set the cmake's option `NDK_PATH` to your NDK path (the folder should contain the `ndk-path` executable).
+2. Enable the CMake option `BUILD_LIBRETRO_CORE_ANDROID`.
+3. Set the CMake option `NDK_PATH` to your NDK path (the folder should contain the `ndk-path` executable).
 
 That is:
 ```
@@ -71,27 +80,28 @@ cmake .. -DBUILD_LIBRETRO_CORE_ANDROID=ON -DNDK_PATH=/opt/AndroidSdk/ndk/25.2.95
 make
 ```
 
-_Note_: use just `make` instead of `make -j`; it does not work with NDK build.
+_Note_: use just `make` instead of `make -j`; the latter does not work with NDK build.
 
 ## Usage
 
-#### SDL frontend
+#### SDL Frontend
 
 ```build/docboy-sdl <rom>```
 
 ```
-usage: [--boot-rom BOOT-ROM] [--serial] [--scaling SCALING] [--cartridge-info]
-       [--debugger] [--help] rom
+usage: rom [--config CONFIG] [--serial] [--scaling SCALING] [--cartridge-info]
+       [--debugger] [--help]
 
 positional arguments:
-  rom                       ROM
+  rom                    ROM
 
 optional arguments:
-  -s, --serial              Display serial console
-  -z, --scaling SCALING     Scaling factor
-  -i, --cartridge-info      Dump cartridge info and quit
-  -d, --debugger            Attach debugger
-  -h, --help                Display this help message and exit.
+  -c, --config CONFIG    Read configuration file
+  -s, --serial           Display serial console
+  -z, --scaling SCALING  Scaling factor
+  -i, --cartridge-info   Dump cartridge info and quit
+  -d, --debugger         Attach debugger
+  -h, --help             Display this help message and quit
 ```
 
 **Controls**
@@ -115,7 +125,7 @@ optional arguments:
 | Down   | GameBoy DOWN             |
 | Left   | GameBoy LEFT             |
 
-#### libretro frontend
+#### Retroarch (Libretro Frontend)
 
 Using retroarch, you can use the libretro core as follows.
 
@@ -123,49 +133,48 @@ Using retroarch, you can use the libretro core as follows.
 
 ## Debugging
 
-DocBoy offers a debugger that's really useful to see what's going on.
+DocBoy offers a CLI debugger that's really useful to see what's going on.
 
-To build with the debugger enable the cmake's `ENABLE_DEBUGGER` option.
+To build with the debugger, enable the CMake `ENABLE_DEBUGGER` option.
 
 ```
 mkdir build
 cd build
-cmake .. -DBUILD_SDL_FRONTEND=ON -DENABLE_DEBUGGER=ON
+cmake .. -DENABLE_DEBUGGER=ON
 make -j 8
 ```
 
-Use the `-d` option to run with the debugger already attached.
+Use the `-d` option to run with the debugger already attached from the beginning, or press the key `d` to attach/detach the debugger at any time.
 
 **Commands**
 
 With `help` you can list the commands:
 ```
-b <addr>                          : Set breakpoint at <addr>
-w[/r|a] <start>,<end> [<cond>]    : Set watchpoint from <start> to <end>
-w[/r|a] <addr> [<cond>]           : Set watchpoint at <addr>
-del <num>                         : Delete breakpoint or watchpoint <num>
-ad <num>                          : Automatically disassemble next <n> instructions (default = 10)
-d [<n>]                           : Disassemble next <n> instructions (default = 10)
-d <start>,<end>                   : Disassemble instructions from address <start> to <end>
-x[/<length><format>] <addr>       : Display memory content at <addr> (<format>: x, h[<cols>], b, d, i)
-/b <bytes>                        : Search for <bytes>
-/i <bytes>                        : Search for instructions matching <bytes>
-display[/<length><format>] <addr> : Automatically display memory content content at <addr> (<format>: x, h[<cols>], b, d, i)
-undisplay                         : Undisplay expressions set with display
-t [<count>]                       : Continue running for <count> clock ticks (default = 1)
-. [<count>]                       : Continue running for <count> PPU dots (default = 1)
-s [<count>]                       : Continue running for <count> instructions (default = 1)
-si [<count>]                      : Continue running for <count> micro-operations (default = 1)
-n [<count>]                       : Continue running for <count> instructions at the same stack level (default = 1)
-ni [<count>]                      : Continue running for <count> micro-operations at the same stack level (default = 1)
-f [<count>]                       : Continue running for <count> frames (default = 1)
-fb [<count>]                      : Step back by <count> frames (default = 1, max = 600)
-l [<count>]                       : Continue running for <count> lines (default = 1)
-c                                 : Continue
-trace [<level>]                   : Set the trace level or toggle it (output on stderr)
-dump                              : Dump the disassemble (output on stderr)
-h                                 : Display help
-q                                 : Quit
+help
+b <addr>                             : Set breakpoint at <addr>
+w[/r|a] <start>,<end> [<cond>]       : Set watchpoint from <start> to <end>
+w[/r|a] <addr> [<cond>]              : Set watchpoint at <addr>
+del <num>                            : Delete breakpoint or watchpoint <num>
+ad <num>                             : Automatically disassemble next <n> instructions (default = 10)
+x[x][/<length><format>] <addr>       : Display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)
+/b <bytes>                           : Search for <bytes>
+/i <bytes>                           : Search for instructions matching <bytes>
+display[x][/<length><format>] <addr> : Automatically display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)
+undisplay                            : Undisplay expressions set with display
+t [<count>]                          : Continue running for <count> clock ticks (default = 1)
+. [<count>]                          : Continue running for <count> PPU dots (default = 1)
+s [<count>]                          : Continue running for <count> instructions (default = 1)
+si [<count>]                         : Continue running for <count> micro-operations (default = 1)
+n [<count>]                          : Continue running for <count> instructions at the same stack level (default = 1)
+ni [<count>]                         : Continue running for <count> micro-operations at the same stack level (default = 1)
+f [<count>]                          : Continue running for <count> frames (default = 1)
+fb [<count>]                         : Step back by <count> frames (default = 1, max = 600)
+l [<count>]                          : Continue running for <count> lines (default = 1)
+c                                    : Continue
+trace [<level>]                      : Set the trace level or toggle it (output on stderr)
+dump                                 : Dump the disassemble (output on stderr)
+h                                    : Display help
+q                                    : Quit
 ```
 
 Here's the debugger!

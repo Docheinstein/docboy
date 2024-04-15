@@ -168,7 +168,7 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info* info, 
 }
 
 size_t retro_serialize_size(void) {
-    return core.getStateSaveSize();
+    return core.getStateSize();
 }
 
 bool retro_serialize(void* data, size_t size) {
