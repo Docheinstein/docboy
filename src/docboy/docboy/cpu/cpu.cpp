@@ -1150,10 +1150,8 @@ void Cpu::HALT_m0() {
     check(!halted);
     check(interrupt.state != InterruptState::Serving);
 
-    const bool hasPendingInterrupts = getPendingInterrupts();
-
     // HALT is entered only if there's no pending interrupt.
-    halted = !hasPendingInterrupts;
+    halted = !getPendingInterrupts();
 
     // Fetch (eventually without PC increment, read below).
     instruction.microop.counter = 0;
@@ -1161,9 +1159,10 @@ void Cpu::HALT_m0() {
     fetcher.instructions = instructions;
     read(PC);
 
-    // Handle Halt bug.
-    // PC is not incremented if there's a pending interrupt while IME is disabled.
-    if (!hasPendingInterrupts || IME == ImeState::Enabled) {
+    // Handle HALT bug.
+    // PC is not incremented if there's a pending interrupt (i.e. halt is not entered).
+    // Despite what some documentation says, this seems to happen regardless IME state.
+    if (halted) {
         idu.increment(PC);
     }
 }
