@@ -949,34 +949,34 @@ void DebuggerFrontend::setOnCommandPulledCallback(std::function<bool(const std::
 void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
     using namespace Tui;
 
-    const auto title = [](const Text& text, uint8_t width, const std::string& sep = DASH) {
+    const auto title = [](const Text& text, uint16_t width, const std::string& sep = DASH) {
         check(width >= text.size());
         Text t {text.size() > 0 ? (" " + text + " ") : text};
 
         Token sepToken {sep, true};
 
-        const uint8_t w1 = (width - t.size()) / 2;
+        const uint16_t w1 = (width - t.size()) / 2;
         Text pre;
-        for (uint8_t i = 0; i < w1; i++)
+        for (uint16_t i = 0; i < w1; i++)
             pre += sepToken;
 
-        const uint8_t w2 = width - t.size() - w1;
+        const uint16_t w2 = width - t.size() - w1;
         Text post;
-        for (uint8_t i = 0; i < w2; i++)
+        for (uint16_t i = 0; i < w2; i++)
             post += sepToken;
 
         return darkgray(std::move(pre)) + t + darkgray(std::move(post));
     };
 
-    const auto header = [title](const char* c, uint8_t width) {
+    const auto header = [title](const char* c, uint16_t width) {
         return title(bold(lightcyan(c)), width);
     };
 
-    const auto subheader = [title](const char* c, uint8_t width) {
+    const auto subheader = [title](const char* c, uint16_t width) {
         return title(cyan(c), width);
     };
 
-    const auto hr = [title](uint8_t width) {
+    const auto hr = [title](uint16_t width) {
         return title("", width);
     };
 
@@ -2227,8 +2227,21 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         auto b {make_block(width)};
 
         b << header("TIMERS", width) << endl;
+        b << yellow("TMA reload") << " :  " << [this]() -> Text {
+            switch (gb.timers.timaState) {
+            case TimersIO::TimaReloadState::None:
+                return darkgray("None");
+            case TimersIO::TimaReloadState::Pending:
+                return green("Pending");
+            case TimersIO::TimaReloadState::Reload:
+                return green("Reloading");
+            default:
+                return Text {};
+            }
+        }() << endl;
+        b << hr(width) << endl;
 
-        b << red("DIV (16)") << "  :  " << [this]() -> Text {
+        b << red("DIV (16)") << "   :  " << [this]() -> Text {
             uint8_t div = gb.timers.DIV;
             Text t {};
             uint8_t highlightBit = Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(gb.timers.TAC)];
@@ -2246,21 +2259,10 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             return Text {bin(value)} + "          (" + hex(value) + ")";
         };
 
-        b << red("DIV") << "       :  " << timer(backend.readMemory(Specs::Registers::Timers::DIV)) << endl;
-        b << red("TIMA") << "      :  " << timer(backend.readMemory(Specs::Registers::Timers::TIMA)) <<
-            [this]() {
-                switch (gb.timers.timaState) {
-                case TimersIO::TimaReloadState::Pending:
-                    return yellow(" [pending TMA reload]");
-                case TimersIO::TimaReloadState::Reload:
-                    return yellow(" [TMA reload]");
-                default:
-                    return Text {};
-                }
-            }()
-          << endl;
-        b << red("TMA") << "       :  " << timer(backend.readMemory(Specs::Registers::Timers::TMA)) << endl;
-        b << red("TAC") << "       :  " << timer(backend.readMemory(Specs::Registers::Timers::TAC)) << endl;
+        b << red("DIV") << "        :  " << timer(backend.readMemory(Specs::Registers::Timers::DIV)) << endl;
+        b << red("TIMA") << "       :  " << timer(backend.readMemory(Specs::Registers::Timers::TIMA)) << endl;
+        b << red("TMA") << "        :  " << timer(backend.readMemory(Specs::Registers::Timers::TMA)) << endl;
+        b << red("TAC") << "        :  " << timer(backend.readMemory(Specs::Registers::Timers::TAC)) << endl;
 
         return b;
     };
@@ -2550,7 +2552,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         return b;
     };
 
-    static constexpr uint32_t COLUMN_1_WIDTH = 40;
+    static constexpr uint32_t COLUMN_1_WIDTH = 48;
     auto c1 {make_vertical_layout()};
     c1->addNode(makeGameboyBlock(COLUMN_1_WIDTH));
     c1->addNode(makeSpaceDivider());
