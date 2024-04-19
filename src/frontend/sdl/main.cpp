@@ -27,9 +27,12 @@
 #endif
 
 namespace {
-constexpr uint64_t OVERLAY_TEXT_GUID = 1;
-constexpr uint64_t FPS_TEXT_GUID = 2;
-constexpr uint64_t SPEED_TEXT_GUID = 3;
+namespace TextGuids {
+    constexpr uint64_t DROP_ROM = 1;
+    constexpr uint64_t OVERLAY = 2;
+    constexpr uint64_t FPS = 3;
+    constexpr uint64_t SPEED = 4;
+} // namespace TextGuids
 
 constexpr std::chrono::nanoseconds DEFAULT_REFRESH_PERIOD {1000000000LU * Specs::Ppu::DOTS_PER_FRAME /
                                                            Specs::Frequencies::CLOCK};
@@ -116,7 +119,7 @@ int main(int argc, char* argv[]) {
 
     Args::Parser argsParser {};
     IF_BOOTROM(argsParser.addArgument(args.bootRom, "boot-rom").help("Boot ROM"));
-    argsParser.addArgument(args.rom, "rom").help("ROM");
+    argsParser.addArgument(args.rom, "rom").required(false).help("ROM");
     argsParser.addArgument(args.config, "--config", "-c").help("Read configuration file");
 #ifdef ENABLE_SERIAL
     argsParser.addArgument(args.serial, "--serial", "-s").help("Display serial console");
@@ -144,10 +147,10 @@ int main(int argc, char* argv[]) {
         if (const auto result = cfgParser.parse(args.config); !result) {
             switch (result.outcome) {
             case ConfigParser::Result::Outcome::ErrorReadFailed:
-                std::cerr << "ERROR: failed to read configuratiom file '" << args.config << "'" << std::endl;
+                std::cerr << "ERROR: failed to read configuration file '" << args.config << "'" << std::endl;
                 break;
             case ConfigParser::Result::Outcome::ErrorParseFailed:
-                std::cerr << "ERROR: failed to parse configuratiom file '" << args.config << "': error at line "
+                std::cerr << "ERROR: failed to parse configuration file '" << args.config << "': error at line "
                           << result.lastReadLine << std::endl;
                 break;
             default:;
@@ -157,20 +160,49 @@ int main(int argc, char* argv[]) {
     }
 
     IF_BOOTROM(ensureFileExists(args.bootRom));
-    ensureFileExists(args.rom);
 
     auto gb {std::make_unique<GameBoy>(cfg.palette IF_BOOTROM(COMMA BootRomFactory().create(args.bootRom)))};
-    Core core {*gb};
+    Window window {gb->lcd.getPixels(), 100, 100, args.scaling};
+
+    // Wait for ROM if it is not given as parameter.
+    if (args.rom.empty()) {
+        window.addText("Drop a GB ROM", 27, 66, 0xFFFFFFFF, Window::TEXT_DURATION_PERSISTENT, TextGuids::DROP_ROM);
+
+        SDL_Event e;
+        do {
+            // Handle input
+            while (SDL_PollEvent(&e) != 0) {
+                switch (e.type) {
+                case SDL_EVENT_QUIT:
+                    return 0;
+                case SDL_EVENT_DROP_FILE:
+                    // File dropped: use it as ROM.
+                    args.rom = e.drop.data;
+                    break;
+                }
+            }
+
+            // Render
+            window.render();
+        } while (args.rom.empty());
+
+        window.removeText(TextGuids::DROP_ROM);
+
+        ensureFileExists(args.rom);
+    }
 
     path romPath {args.rom};
 
+    // Build the ROM cartridge.
     std::unique_ptr<ICartridge> cartridge {CartridgeFactory().create(romPath.string())};
 
     if (args.dumpCartridgeInfo) {
+        // Just dump cartridge info and quit.
         dump_cartridge_info(*cartridge);
         return 0;
     }
 
+    Core core {*gb};
     core.loadRom(std::move(cartridge));
 
 #ifdef ENABLE_SERIAL
@@ -183,8 +215,6 @@ int main(int argc, char* argv[]) {
         core.attachSerialLink(serialLink->plug2);
     }
 #endif
-
-    Window window {gb->lcd.getPixels(), 100, 100, args.scaling};
 
 #ifdef ENABLE_DEBUGGER
     struct {
@@ -262,18 +292,18 @@ int main(int argc, char* argv[]) {
 
     const auto drawOverlay = [&](const std::string& str) {
         window.addText(str, 4, Window::WINDOW_HEIGHT - Window::TEXT_LETTER_HEIGHT - 4, 0xFFFFFFFF, 2000,
-                       OVERLAY_TEXT_GUID);
+                       TextGuids::OVERLAY);
     };
 
     const auto drawFPS = [&window, &fps]() {
         std::string fpsString = std::to_string(fps);
         window.addText(fpsString,
                        static_cast<int>(Window::WINDOW_WIDTH - 4 - fpsString.size() * Window::TEXT_LETTER_WIDTH), 4,
-                       0xFFFFFFFF, Window::TEXT_DURATION_PERSISTENT, FPS_TEXT_GUID);
+                       0xFFFFFFFF, Window::TEXT_DURATION_PERSISTENT, TextGuids::FPS);
     };
 
     const auto hideFPS = [&window]() {
-        window.removeText(FPS_TEXT_GUID);
+        window.removeText(TextGuids::FPS);
     };
 
     const auto handleInput = [&core](SDL_Keycode key, Joypad::KeyState keyState) {
@@ -307,9 +337,9 @@ int main(int argc, char* argv[]) {
     const auto drawSpeed = [&]() {
         if (speedLevel != 0)
             window.addText((speedLevel > 0 ? "x" : "/") + std::to_string((uint32_t)(pow2(abs(speedLevel)))), 4, 4,
-                           0xFFFFFFFF, Window::TEXT_DURATION_PERSISTENT, SPEED_TEXT_GUID);
+                           0xFFFFFFFF, Window::TEXT_DURATION_PERSISTENT, TextGuids::SPEED);
         else
-            window.removeText(SPEED_TEXT_GUID);
+            window.removeText(TextGuids::SPEED);
     };
 
     const auto screenshotPNG = [&window](const std::string& path) {
