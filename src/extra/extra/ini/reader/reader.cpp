@@ -1,11 +1,9 @@
-#include "parser.h"
-
-#include <iterator>
+#include "reader.h"
 
 #include "utils/io.h"
 #include "utils/strings.hpp"
 
-ConfigParser::Result ConfigParser::parse(const std::string& filename) {
+IniReader::Result IniReader::parse(const std::string& filename) {
     // Read all file's lines
     bool ok;
     std::vector<std::string> lines = read_file_lines(filename, &ok);
@@ -46,7 +44,7 @@ ConfigParser::Result ConfigParser::parse(const std::string& filename) {
             const std::string& key = tokens[0];
             const std::string& value = tokens[1];
 
-            if (const auto it = options.find(key); it != options.end()) {
+            if (const auto it = properties.find(key); it != properties.end()) {
                 if (!parsers[key](value, it->second)) {
                     // Failed to parse option
                     return {Result::Outcome::ErrorParseFailed, lineIndex};
@@ -59,12 +57,12 @@ ConfigParser::Result ConfigParser::parse(const std::string& filename) {
     return {Result::Outcome::Success, lineIndex};
 }
 
-void ConfigParser::addCommentPrefix(const std::string& prefix) {
+void IniReader::addCommentPrefix(const std::string& prefix) {
     commentPrefixes.push_back(prefix);
 }
 
-void ConfigParser::addOption(const std::string& name, std::string& option) {
-    addOption(name, option, [](const std::string& s) {
+void IniReader::addProperty(const std::string& name, std::string& option) {
+    addProperty(name, option, [](const std::string& s) {
         return s;
     });
 }

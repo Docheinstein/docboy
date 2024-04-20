@@ -1,8 +1,8 @@
 #include <optional>
 
 template<typename T, typename P>
-void ConfigParser::addOption(const std::string &name, T &option, P&& parser) {
-    options.emplace(name, &option);
+void IniReader::addProperty(const std::string &name, T &option, P&& parser) {
+    properties.emplace(name, &option);
 
     // clang-format off
     parsers.emplace(name, std::function<bool(const std::string&, void*)> {

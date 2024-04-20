@@ -21,8 +21,14 @@ public:
     static constexpr uint64_t TEXT_LETTER_HEIGHT = 8;
     static constexpr std::optional<uint64_t> TEXT_DURATION_PERSISTENT = std::nullopt;
 
-    explicit Window(const uint16_t* framebuffer, int x = WINDOW_POSITION_UNDEFINED, int y = WINDOW_POSITION_UNDEFINED,
-                    float scaling = 1.0);
+    struct Geometry {
+        int x {};
+        int y {};
+        float scaling {};
+    };
+    static constexpr Geometry DEFAULT_GEOMETRY = {WINDOW_POSITION_UNDEFINED, WINDOW_POSITION_UNDEFINED, 1.0};
+
+    explicit Window(const uint16_t* framebuffer, const Geometry& geometry = DEFAULT_GEOMETRY);
     ~Window();
 
     void render();
@@ -34,6 +40,8 @@ public:
     void removeText(uint64_t guid);
 
     bool screenshot(const std::string& filename) const;
+
+    [[nodiscard]] Geometry getGeometry() const;
 
 private:
     struct Text {

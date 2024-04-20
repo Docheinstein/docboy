@@ -3,9 +3,11 @@ add_library(extra STATIC EXCLUDE_FROM_ALL)
 target_sources(extra PRIVATE
     extra/cartridge/header.h
     extra/cartridge/header.cpp
-    extra/config/parser.h
-    extra/config/parser.tpp
-    extra/config/parser.cpp
+    extra/ini/reader/reader.h
+    extra/ini/reader/reader.tpp
+    extra/ini/reader/reader.cpp
+    extra/ini/writer/writer.cpp
+    extra/ini/writer/writer.h
     extra/png/iopng.h
     extra/png/iopng.cpp
     extra/img/imgmanip.h

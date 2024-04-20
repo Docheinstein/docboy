@@ -2,7 +2,8 @@
 #include "docboy/cartridge/factory.h"
 #include "docboy/core/core.h"
 #include "extra/cartridge/header.h"
-#include "extra/config/parser.h"
+#include "extra/ini/reader/reader.h"
+#include "extra/ini/writer/writer.h"
 #include "extra/serial/endpoints/console.h"
 #include "utils/formatters.hpp"
 #include "utils/io.h"
@@ -59,6 +60,36 @@ void dump_cartridge_info(const ICartridge& cartridge) {
     std::cout << "Destination Code  :  " << hex(header.destination_code) << "\n";
     std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";
     std::cout << "Header checksum   :  " << hex(header.header_checksum) << "\n";
+}
+
+template <typename T>
+std::optional<T> string_to_integer(const std::string& s) {
+    const char* cstr = s.c_str();
+    char* endptr {};
+    errno = 0;
+
+    T val = std::strtol(cstr, &endptr, 10);
+
+    if (errno || endptr == cstr || *endptr != '\0') {
+        return std::nullopt;
+    }
+
+    return val;
+}
+
+template <typename T>
+std::optional<T> string_to_float(const std::string& s) {
+    const char* cstr = s.c_str();
+    char* endptr {};
+    errno = 0;
+
+    T val = std::strtof(cstr, &endptr);
+
+    if (errno || endptr == cstr || *endptr != '\0') {
+        return std::nullopt;
+    }
+
+    return val;
 }
 
 std::optional<uint16_t> hex_string_to_uint16(const std::string& s) {
@@ -131,38 +162,73 @@ int main(int argc, char* argv[]) {
     if (!argsParser.parse(argc, argv, 1))
         return 1;
 
-    struct {
+    struct Preferences {
         Lcd::Palette palette {Lcd::DEFAULT_PALETTE};
-    } cfg {};
+        int32_t x {};
+        int32_t y {};
+        float scaling {};
+    } prefs {};
 
-    if (!args.config.empty()) {
-        // Parse configuration file
+    prefs.scaling = args.scaling;
 
-        ensureFileExists(args.config);
+    const auto readPreferences = [](const std::string& path, Preferences& p) {
+        IniReader iniReader;
+        iniReader.addCommentPrefix("#");
+        iniReader.addProperty("dmg_palette", p.palette, parse_hex_string_array<4>);
+        iniReader.addProperty("x", p.x, string_to_integer<int32_t>);
+        iniReader.addProperty("y", p.y, string_to_integer<int32_t>);
+        iniReader.addProperty("scaling", p.scaling, string_to_float<float>);
 
-        ConfigParser cfgParser;
-        cfgParser.addCommentPrefix("#");
-        cfgParser.addOption("dmg_palette", cfg.palette, parse_hex_string_array<4>);
-
-        if (const auto result = cfgParser.parse(args.config); !result) {
+        if (const auto result = iniReader.parse(path); !result) {
             switch (result.outcome) {
-            case ConfigParser::Result::Outcome::ErrorReadFailed:
-                std::cerr << "ERROR: failed to read configuration file '" << args.config << "'" << std::endl;
+            case IniReader::Result::Outcome::ErrorReadFailed:
+                std::cerr << "ERROR: failed to read '" << path << "'" << std::endl;
                 break;
-            case ConfigParser::Result::Outcome::ErrorParseFailed:
-                std::cerr << "ERROR: failed to parse configuration file '" << args.config << "': error at line "
-                          << result.lastReadLine << std::endl;
+            case IniReader::Result::Outcome::ErrorParseFailed:
+                std::cerr << "ERROR: failed to parse  '" << path << "': error at line " << result.lastReadLine
+                          << std::endl;
                 break;
             default:;
             }
-            return 2;
+            exit(2);
         }
+    };
+
+    const auto writePreferences = [](const std::string& path, const Preferences& p) {
+        std::map<std::string, std::string> properties;
+
+        properties.emplace("dmg_palette", join(p.palette, ",", [](uint16_t val) {
+                               return hex(val);
+                           }));
+        properties.emplace("x", std::to_string(p.x));
+        properties.emplace("y", std::to_string(p.y));
+        properties.emplace("scaling", std::to_string(p.scaling));
+
+        IniWriter iniWriter;
+        if (!iniWriter.write(properties, path)) {
+            std::cerr << "WARN: failed to write '" << path << "'" << std::endl;
+        }
+    };
+
+    // Eventually load preferences
+    char* prefPathCStr = SDL_GetPrefPath("", "DocBoy");
+    std::string prefPath = (path(prefPathCStr) / "prefs.ini").string();
+    free(prefPathCStr);
+
+    if (file_exists(prefPath)) {
+        readPreferences(prefPath, prefs);
+    }
+
+    // Eventually load configuration file (override preferences)
+    if (!args.config.empty()) {
+        ensureFileExists(args.config);
+        readPreferences(args.config, prefs);
     }
 
     IF_BOOTROM(ensureFileExists(args.bootRom));
 
-    auto gb {std::make_unique<GameBoy>(cfg.palette IF_BOOTROM(COMMA BootRomFactory().create(args.bootRom)))};
-    Window window {gb->lcd.getPixels(), 100, 100, args.scaling};
+    auto gb {std::make_unique<GameBoy>(prefs.palette IF_BOOTROM(COMMA BootRomFactory().create(args.bootRom)))};
+    Window window {gb->lcd.getPixels(), {prefs.x, prefs.y, prefs.scaling}};
 
     // Wait for ROM if it is not given as parameter.
     if (args.rom.empty()) {
@@ -487,8 +553,16 @@ int main(int argc, char* argv[]) {
         updateFPS();
     }
 
-    // write ram state
+    // Write ram state
     writeSave(savePath);
+
+    // Write preferences
+    Window::Geometry geometry = window.getGeometry();
+    prefs.x = geometry.x;
+    prefs.y = geometry.y;
+    prefs.scaling = geometry.scaling;
+
+    writePreferences(prefPath, prefs);
 
 #ifdef ENABLE_SERIAL
     if (serialConsole) {

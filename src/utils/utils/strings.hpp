@@ -39,6 +39,17 @@ std::string join(const Container& container, SepType sep) {
     return ss;
 }
 
+template <typename Container, typename SepType, typename Transform>
+std::string join(const Container& container, SepType sep, Transform&& transform) {
+    std::string ss;
+    for (auto it = container.begin(); it != container.end(); it++) {
+        ss += transform(*it);
+        if (it + 1 != container.end())
+            ss += sep;
+    }
+    return ss;
+}
+
 std::string trim(const std::string& s);
 
 bool equals_ignore_case(const std::string& s1, const std::string& s2);

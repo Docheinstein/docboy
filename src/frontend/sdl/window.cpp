@@ -11,17 +11,17 @@
 #include <iostream>
 #include <string>
 
-Window::Window(const uint16_t* framebuffer, int x, int y, float scaling) :
+Window::Window(const uint16_t* framebuffer, const Geometry& geometry) :
     framebuffer(framebuffer),
-    width(scaling * Specs::Display::WIDTH),
-    height(scaling * Specs::Display::HEIGHT),
-    scaling(scaling) {
+    width(geometry.scaling * Specs::Display::WIDTH),
+    height(geometry.scaling * Specs::Display::HEIGHT),
+    scaling(geometry.scaling) {
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
         fatal("SDL_Init error: " + SDL_GetError());
 
-    const int winX = static_cast<int>(x == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : x);
-    const int winY = static_cast<int>(y == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : y);
+    const int winX = static_cast<int>(geometry.x == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : geometry.x);
+    const int winY = static_cast<int>(geometry.y == WINDOW_POSITION_UNDEFINED ? SDL_WINDOWPOS_UNDEFINED : geometry.y);
 
     SDL_PropertiesID props = SDL_CreateProperties();
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "DocBoy");
@@ -148,4 +148,9 @@ bool Window::screenshot(const std::string& filename) const {
     convert_image(ImageFormat::RGB565, framebuffer, ImageFormat::RGB888, buffer_rgb888.data(), Specs::Display::WIDTH,
                   Specs::Display::HEIGHT);
     return save_png_rgb888(filename, buffer_rgb888.data(), Specs::Display::WIDTH, Specs::Display::HEIGHT);
+}
+Window::Geometry Window::getGeometry() const {
+    int x, y;
+    SDL_GetWindowPosition(window, &x, &y);
+    return {x, y, scaling};
 }
