@@ -30,6 +30,8 @@ public:
     virtual void saveState(Parcel& parcel) const = 0;
     virtual void loadState(Parcel& parcel) = 0;
 
+    virtual void reset() = 0;
+
 protected:
     bool needTicks {};
 };

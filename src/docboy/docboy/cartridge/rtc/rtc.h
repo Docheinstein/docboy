@@ -13,6 +13,14 @@ struct RtcRegisters {
         uint8_t low {};
         uint8_t high {};
     } days {};
+
+    void reset() {
+        seconds = 0;
+        minutes = 0;
+        hours = 0;
+        days.low = 0;
+        days.high = 0;
+    }
 };
 
 struct Rtc : RtcRegisters {

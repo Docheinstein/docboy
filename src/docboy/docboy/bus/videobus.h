@@ -36,6 +36,8 @@ public:
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
 
+    void reset();
+
 private:
     uint8_t acquirers {};
 };

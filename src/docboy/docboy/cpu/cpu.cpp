@@ -551,7 +551,6 @@ Cpu::Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu, JoypadI
     },
     ISR { &Cpu::ISR_m0, &Cpu::ISR_m1, &Cpu::ISR_m2, &Cpu::ISR_m3, &Cpu::ISR_m4 } // clang-format on
 {
-    instruction.microop.selector = NOP;
 }
 
 void Cpu::tick_t0() {
@@ -754,6 +753,43 @@ void Cpu::loadState(Parcel& parcel) {
     addr = parcel.readUInt16();
 
     IF_DEBUGGER(cycles = parcel.readUInt64());
+}
+
+void Cpu::reset() {
+    AF = IF_BOOTROM_ELSE(0, 0x01B0);
+    BC = IF_BOOTROM_ELSE(0, 0x0013);
+    DE = IF_BOOTROM_ELSE(0, 0x00D8);
+    HL = IF_BOOTROM_ELSE(0, 0x014D);
+    PC = IF_BOOTROM_ELSE(0, 0x0100);
+    SP = IF_BOOTROM_ELSE(0, 0xFFFE);
+
+    IME = ImeState::Disabled;
+    halted = false;
+    interrupt.state = InterruptState::None;
+    interrupt.remainingTicks = 0;
+
+    fetcher.fetching = false;
+    fetcher.instructions = nullptr;
+
+    instruction.microop.selector = NOP;
+    instruction.microop.counter = 0;
+
+    IF_TESTS(instruction.opcode = 0);
+    IF_DEBUGGER(instruction.address = 0);
+    IF_DEBUGGER(instruction.cycleMicroop = 0);
+
+    io.state = IO::State::Idle;
+    io.data = 0;
+
+    b = false;
+    u = 0;
+    u2 = 0;
+    lsb = 0;
+    msb = 0;
+    uu = 0;
+    addr = 0;
+
+    IF_DEBUGGER(cycles = 0);
 }
 
 template <uint8_t t>

@@ -116,7 +116,7 @@ private:
     bool run {true};
     bool interrupted {};
 
-    CartridgeInfo cartridgeInfo {};
+    std::optional<CartridgeInfo> cartridgeInfo {};
 
     std::vector<Breakpoint> breakpoints;
     std::vector<Watchpoint> watchpoints;

@@ -45,6 +45,25 @@ void Bus<Impl>::flushWriteRequest(uint8_t value) {
 }
 
 template <typename Impl>
+void Bus<Impl>::loadState(Parcel& parcel) {
+    requests = parcel.readUInt8();
+    address = parcel.readUInt16();
+}
+
+template <typename Impl>
+void Bus<Impl>::saveState(Parcel& parcel) const {
+    parcel.writeUInt8(requests);
+    parcel.writeUInt16(address);
+}
+
+
+template <typename Impl>
+void Bus<Impl>::reset() {
+    requests = 0;
+    address = 0;
+}
+
+template <typename Impl>
 uint8_t Bus<Impl>::readBus(uint16_t address) const {
     const typename MemoryAccess::Read& readAccess = memoryAccessors[address].read;
     check(readAccess.trivial || readAccess.nonTrivial);

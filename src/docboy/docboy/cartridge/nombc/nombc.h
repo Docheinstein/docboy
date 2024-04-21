@@ -23,6 +23,8 @@ public:
     void saveState(Parcel& parcel) const override;
     void loadState(Parcel& parcel) override;
 
+    void reset() override;
+
 private:
     static constexpr uint16_t RomSize = 0x8000;
     static constexpr bool Ram = RamSize > 0;

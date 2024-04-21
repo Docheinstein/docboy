@@ -38,8 +38,8 @@ class GameBoy {
 public:
 #ifdef ENABLE_BOOTROM
     explicit GameBoy(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE, std::unique_ptr<BootRom>&& bootRom = nullptr) :
-        lcd {palette},
-        bootRom {std::move(bootRom)} {
+        bootRom {std::move(bootRom)},
+        lcd {palette} {
     }
 #endif
 

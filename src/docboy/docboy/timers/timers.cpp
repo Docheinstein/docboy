@@ -37,6 +37,16 @@ void TimersIO::loadState(Parcel& parcel) {
     lastDivBitAndTacEnable = parcel.readBool();
 }
 
+void TimersIO::reset() {
+    DIV = IF_BOOTROM_ELSE(0, 0xABCC);
+    TIMA = 0;
+    TMA = 0;
+    TAC = 0b11111000;
+
+    timaState = TimaReloadState::None;
+    lastDivBitAndTacEnable = false;
+}
+
 void TimersIO::writeDIV(uint8_t value) {
     IF_DEBUGGER(uint8_t oldValue = readDIV());
     setDIV(0);

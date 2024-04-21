@@ -58,12 +58,20 @@ bool VideoBus<Impl>::isAcquiredBy() const {
 
 template<typename Impl>
 void VideoBus<Impl>::saveState(Parcel &parcel) const {
+    Bus<Impl>::saveState(parcel);
     parcel.writeUInt8(acquirers);
 }
 
 template<typename Impl>
 void VideoBus<Impl>::loadState(Parcel &parcel) {
+    Bus<Impl>::loadState(parcel);
     acquirers = parcel.readUInt8();
+}
+
+template <typename Impl>
+void VideoBus<Impl>::reset() {
+    Bus<Impl>::reset();
+    acquirers = 0;
 }
 
 template<typename Bus, Device::Type Dev>

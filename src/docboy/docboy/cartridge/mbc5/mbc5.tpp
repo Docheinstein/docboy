@@ -162,3 +162,12 @@ void Mbc5<RomSize, RamSize, Battery>::loadState(Parcel &parcel) {
         parcel.readBytes(ram, RamSize);
     }
 }
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+void Mbc5<RomSize, RamSize, Battery>::reset() {
+    ramEnabled = false;
+    romBankSelector = 0b1;
+    ramBankSelector = 0;
+
+    memset(ram, 0, RamSize);
+}

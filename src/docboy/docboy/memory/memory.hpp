@@ -11,15 +11,13 @@ class Memory {
 public:
     static constexpr uint16_t Size = End - Start + 1;
 
-#ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
     Memory() {
+#ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
         for (uint16_t i = 0; i < Size; i++) {
             data[i].address = Start + i;
         }
-    }
-#else
-    Memory() = default;
 #endif
+    }
 
     Memory(const uint8_t* data_, uint16_t length) :
         Memory() {
@@ -52,7 +50,6 @@ protected:
 #endif
     }
 
-private:
     byte data[Size] {};
 };
 

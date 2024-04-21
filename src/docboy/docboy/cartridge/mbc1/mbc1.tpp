@@ -185,3 +185,13 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::loadState(Parcel& par
         parcel.readBytes(ram, RamSize);
     }
 }
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
+void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::reset() {
+    ramEnabled = false;
+    romBankSelector = 0b1;
+    upperRomBankSelector_ramBankSelector = 0;
+    bankingMode = 0;
+
+    memset(ram, 0, RamSize);
+}

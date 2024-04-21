@@ -199,3 +199,15 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::saveState(Parcel& parcel) const {
         parcel.writeBytes(ram, RamSize);
     }
 }
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+void Mbc3<RomSize, RamSize, Battery, Timer>::reset() {
+    ramEnabled = false;
+    romBankSelector = 0b1;
+    ramBankSelector_rtcRegisterSelector = 0;
+
+    rtc.real.reset();
+    rtc.latched.reset();
+
+    memset(ram, 0, RamSize);
+}

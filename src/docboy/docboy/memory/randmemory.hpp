@@ -7,7 +7,7 @@
 template <uint16_t Start, uint16_t End>
 class RandomizedMemory : public Memory<Start, End> {
 public:
-    RandomizedMemory() {
+    void reset() {
         static constexpr uint16_t size = Memory<Start, End>::Size;
 
         // NOTE: uint8_t is not supported in Windows: simulate it

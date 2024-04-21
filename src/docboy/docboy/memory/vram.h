@@ -6,7 +6,7 @@
 
 class Vram : public Memory<Specs::MemoryLayout::VRAM::START, Specs::MemoryLayout::VRAM::END> {
 public:
-    Vram();
+    void reset();
 };
 
 #endif // VRAM_H

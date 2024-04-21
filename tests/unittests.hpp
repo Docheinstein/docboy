@@ -604,4 +604,41 @@ TEST_CASE("state", "[state]") {
     }
 }
 
+#include "utils/io.h"
+
+TEST_CASE("reset", "[reset]") {
+    SECTION("Reset: Round 1") {
+        std::vector<uint8_t> data1;
+
+        SimpleRunner runner;
+        runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
+
+        data1.resize(runner.core.getStateSize());
+        runner.core.saveState(data1.data());
+
+        std::vector<uint8_t> data2(data1.size());
+        runner.core.reset();
+        runner.core.saveState(data2.data());
+
+        REQUIRE(memcmp(data1.data(), data2.data(), data1.size()) == 0);
+    }
+
+    SECTION("Reset: Round 2") {
+        std::vector<uint8_t> data1;
+
+        SimpleRunner runner;
+        runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").maxTicks(10'000).run();
+        data1.resize(runner.core.getStateSize());
+        runner.core.saveState(data1.data());
+
+        std::vector<uint8_t> data2(data1.size());
+        runner.core.reset();
+        runner.run();
+
+        runner.core.saveState(data2.data());
+
+        REQUIRE(memcmp(data1.data(), data2.data(), data1.size()) == 0);
+    }
+}
+
 #endif // UNITTESTS_H

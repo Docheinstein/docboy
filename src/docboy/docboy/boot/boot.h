@@ -5,6 +5,7 @@
 #include "docboy/memory/byte.hpp"
 #include "docboy/shared/specs.h"
 #include "lock.h"
+#include "utils/bits.hpp"
 #include "utils/parcel.h"
 
 class BootIO {
@@ -32,7 +33,11 @@ public:
         BOOT = parcel.readUInt8();
     }
 
-    byte BOOT {make_byte(Specs::Registers::Boot::BOOT, IF_BOOTROM_ELSE(0b11111110, 0b11111111))};
+    void reset() {
+        BOOT = IF_BOOTROM_ELSE(0b11111110, 0b11111111);
+    }
+
+    byte BOOT {make_byte(Specs::Registers::Boot::BOOT)};
 
 private:
     IF_BOOTROM(BootLock bootLock);

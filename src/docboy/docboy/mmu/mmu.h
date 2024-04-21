@@ -47,6 +47,8 @@ public:
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
 
+    void reset();
+
 private:
     struct BusAccess {
         IBus* bus {};
@@ -94,6 +96,9 @@ private:
     template <Device::Type Dev, typename Bus>
     static BusAccess makeAccessors(Bus* bus);
 
+    template <typename Bus>
+    void initAccessors(uint16_t address, Bus* bus);
+
     IF_BOOTROM(BootRom& bootRom);
 
     ExtBus& extBus;
@@ -103,6 +108,8 @@ private:
 
     BusAccess* requests[NUM_DEVICES] {};
     BusAccess busAccessors[NUM_DEVICES][UINT16_MAX + 1] {};
+
+    IF_BOOTROM(bool bootRomLocked {});
 };
 
 template <Device::Type>

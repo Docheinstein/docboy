@@ -17,38 +17,6 @@ uint32_t hash_combine(uint32_t h1, uint32_t h2) {
 
 DebuggerBackend::DebuggerBackend(Core& core) :
     core(core) {
-
-    // Deduce cartridge info.
-    {
-        const uint8_t* romData = core.gb.cartridgeSlot.cartridge->getRomData();
-        const uint32_t romSize = core.gb.cartridgeSlot.cartridge->getRomSize();
-
-        using namespace Specs::Cartridge::Header;
-
-        if (romSize < MemoryLayout::SIZE)
-            fatal("unexpected rom size");
-
-        cartridgeInfo.mbc = romData[MemoryLayout::TYPE];
-        cartridgeInfo.rom = romData[MemoryLayout::ROM_SIZE];
-        cartridgeInfo.ram = romData[MemoryLayout::RAM_SIZE];
-        cartridgeInfo.multicart = false;
-
-        // All the known multicart are MBC1 of 1 MB.
-        if (romSize >= 0x100000 &&
-            (cartridgeInfo.mbc == Mbc::MBC1 || cartridgeInfo.mbc == Mbc::MBC1_RAM ||
-             cartridgeInfo.mbc == Mbc::MBC1_RAM_BATTERY) &&
-            cartridgeInfo.rom == Rom::MB_1) {
-
-            // Count the occurrences of Nintendo Logo.
-            uint8_t numLogo {};
-            for (uint8_t i = 0; i < 4; i++) {
-                numLogo += memcmp(romData + (0x40000 * i) + MemoryLayout::LOGO::START, NINTENDO_LOGO,
-                                  sizeof(NINTENDO_LOGO)) == 0;
-            }
-
-            cartridgeInfo.multicart = numLogo > 1;
-        }
-    }
 }
 
 void DebuggerBackend::attachFrontend(DebuggerFrontend& frontend_) {
@@ -232,7 +200,42 @@ bool DebuggerBackend::isAskingToShutdown() const {
 }
 
 const CartridgeInfo& DebuggerBackend::getCartridgeInfo() {
-    return cartridgeInfo;
+    if (!cartridgeInfo) {
+        cartridgeInfo = CartridgeInfo {};
+        check(core.gb.cartridgeSlot.cartridge);
+
+        // Deduce cartridge info.
+        const uint8_t* romData = core.gb.cartridgeSlot.cartridge->getRomData();
+        const uint32_t romSize = core.gb.cartridgeSlot.cartridge->getRomSize();
+
+        using namespace Specs::Cartridge::Header;
+
+        if (romSize < MemoryLayout::SIZE)
+            fatal("unexpected rom size");
+
+        cartridgeInfo->mbc = romData[MemoryLayout::TYPE];
+        cartridgeInfo->rom = romData[MemoryLayout::ROM_SIZE];
+        cartridgeInfo->ram = romData[MemoryLayout::RAM_SIZE];
+        cartridgeInfo->multicart = false;
+
+        // All the known multicart are MBC1 of 1 MB.
+        if (romSize >= 0x100000 &&
+            (cartridgeInfo->mbc == Mbc::MBC1 || cartridgeInfo->mbc == Mbc::MBC1_RAM ||
+             cartridgeInfo->mbc == Mbc::MBC1_RAM_BATTERY) &&
+            cartridgeInfo->rom == Rom::MB_1) {
+
+            // Count the occurrences of Nintendo Logo.
+            uint8_t numLogo {};
+            for (uint8_t i = 0; i < 4; i++) {
+                numLogo += memcmp(romData + (0x40000 * i) + MemoryLayout::LOGO::START, NINTENDO_LOGO,
+                                  sizeof(NINTENDO_LOGO)) == 0;
+            }
+
+            cartridgeInfo->multicart = numLogo > 1;
+        }
+    }
+
+    return *cartridgeInfo;
 }
 
 uint32_t DebuggerBackend::addBreakpoint(uint16_t addr) {

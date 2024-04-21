@@ -85,3 +85,10 @@ void Dma::loadState(Parcel& parcel) {
     source = parcel.readUInt16();
     cursor = parcel.readUInt8();
 }
+void Dma::reset() {
+    request.state = RequestState::None;
+    request.source = 0;
+    transferring = false;
+    source = 0;
+    cursor = 0;
+}

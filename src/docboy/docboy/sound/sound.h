@@ -110,27 +110,67 @@ public:
         WAVEF = parcel.readUInt8();
     }
 
-    byte NR10 {make_byte(Specs::Registers::Sound::NR10, 0b10000000)};
-    byte NR11 {make_byte(Specs::Registers::Sound::NR11, IF_BOOTROM_ELSE(0, 0b10111111))};
-    byte NR12 {make_byte(Specs::Registers::Sound::NR12, IF_BOOTROM_ELSE(0, 0b11110011))};
-    byte NR13 {make_byte(Specs::Registers::Sound::NR13, IF_BOOTROM_ELSE(0, 0b11111111))};
-    byte NR14 {make_byte(Specs::Registers::Sound::NR14, 0b10111111)}; // TODO: B8 or BF?
-    byte NR21 {make_byte(Specs::Registers::Sound::NR21, IF_BOOTROM_ELSE(0, 0b00111111))};
+    void reset() {
+        NR10 = 0b10000000;
+        NR11 = IF_BOOTROM_ELSE(0, 0b10111111);
+        NR12 = IF_BOOTROM_ELSE(0, 0b11110011);
+        NR13 = IF_BOOTROM_ELSE(0, 0b11111111);
+        NR14 = 0b10111111; // TODO: B8 or BF?
+        NR21 = IF_BOOTROM_ELSE(0, 0b00111111);
+        NR22 = 0;
+        NR23 = IF_BOOTROM_ELSE(0, 0b11111111);
+        NR24 = 0b10111111; // TODO: B8 or BF?
+        NR30 = 0b01111111;
+        NR31 = IF_BOOTROM_ELSE(0, 0b11111111);
+        NR32 = 0b10011111;
+        NR33 = IF_BOOTROM_ELSE(0, 0b11111111);
+        NR34 = 0b10111111; // TODO: B8 or BF?
+        NR41 = IF_BOOTROM_ELSE(0, 0b11111111);
+        NR42 = 0;
+        NR43 = 0;
+        NR44 = 0b10111111; // TODO: B8 or BF?
+        NR50 = IF_BOOTROM_ELSE(0, 0b01110111);
+        NR51 = IF_BOOTROM_ELSE(0, 0b11110011);
+        NR52 = IF_BOOTROM_ELSE(0, 0b11110001);
+        WAVE0 = 0;
+        WAVE1 = 0;
+        WAVE2 = 0;
+        WAVE3 = 0;
+        WAVE4 = 0;
+        WAVE5 = 0;
+        WAVE6 = 0;
+        WAVE7 = 0;
+        WAVE8 = 0;
+        WAVE9 = 0;
+        WAVEA = 0;
+        WAVEB = 0;
+        WAVEC = 0;
+        WAVED = 0;
+        WAVEE = 0;
+        WAVEF = 0;
+    };
+
+    byte NR10 {make_byte(Specs::Registers::Sound::NR10)};
+    byte NR11 {make_byte(Specs::Registers::Sound::NR11)};
+    byte NR12 {make_byte(Specs::Registers::Sound::NR12)};
+    byte NR13 {make_byte(Specs::Registers::Sound::NR13)};
+    byte NR14 {make_byte(Specs::Registers::Sound::NR14)};
+    byte NR21 {make_byte(Specs::Registers::Sound::NR21)};
     byte NR22 {make_byte(Specs::Registers::Sound::NR22)};
-    byte NR23 {make_byte(Specs::Registers::Sound::NR23, IF_BOOTROM_ELSE(0, 0b11111111))};
-    byte NR24 {make_byte(Specs::Registers::Sound::NR24, 0b10111111)}; // TODO: B8 or BF?
-    byte NR30 {make_byte(Specs::Registers::Sound::NR30, 0b01111111)};
-    byte NR31 {make_byte(Specs::Registers::Sound::NR31, IF_BOOTROM_ELSE(0, 0b11111111))};
-    byte NR32 {make_byte(Specs::Registers::Sound::NR32, 0b10011111)};
-    byte NR33 {make_byte(Specs::Registers::Sound::NR33, IF_BOOTROM_ELSE(0, 0b11111111))};
-    byte NR34 {make_byte(Specs::Registers::Sound::NR34, 0b10111111)}; // TODO: B8 or BF?
-    byte NR41 {make_byte(Specs::Registers::Sound::NR41, IF_BOOTROM_ELSE(0, 0b11111111))};
+    byte NR23 {make_byte(Specs::Registers::Sound::NR23)};
+    byte NR24 {make_byte(Specs::Registers::Sound::NR24)};
+    byte NR30 {make_byte(Specs::Registers::Sound::NR30)};
+    byte NR31 {make_byte(Specs::Registers::Sound::NR31)};
+    byte NR32 {make_byte(Specs::Registers::Sound::NR32)};
+    byte NR33 {make_byte(Specs::Registers::Sound::NR33)};
+    byte NR34 {make_byte(Specs::Registers::Sound::NR34)};
+    byte NR41 {make_byte(Specs::Registers::Sound::NR41)};
     byte NR42 {make_byte(Specs::Registers::Sound::NR42)};
     byte NR43 {make_byte(Specs::Registers::Sound::NR43)};
-    byte NR44 {make_byte(Specs::Registers::Sound::NR44, 0b10111111)}; // TODO: B8 or BF?
-    byte NR50 {make_byte(Specs::Registers::Sound::NR50, IF_BOOTROM_ELSE(0, 0b01110111))};
-    byte NR51 {make_byte(Specs::Registers::Sound::NR51, IF_BOOTROM_ELSE(0, 0b11110011))};
-    byte NR52 {make_byte(Specs::Registers::Sound::NR52, IF_BOOTROM_ELSE(0, 0b11110001))};
+    byte NR44 {make_byte(Specs::Registers::Sound::NR44)};
+    byte NR50 {make_byte(Specs::Registers::Sound::NR50)};
+    byte NR51 {make_byte(Specs::Registers::Sound::NR51)};
+    byte NR52 {make_byte(Specs::Registers::Sound::NR52)};
     byte WAVE0 {make_byte(Specs::Registers::Sound::WAVE0)};
     byte WAVE1 {make_byte(Specs::Registers::Sound::WAVE1)};
     byte WAVE2 {make_byte(Specs::Registers::Sound::WAVE2)};

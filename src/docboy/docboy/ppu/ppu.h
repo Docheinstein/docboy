@@ -30,6 +30,8 @@ public:
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
 
+    void reset();
+
 private:
     using TickSelector = void (Ppu::*)();
     using FetcherTickSelector = void (Ppu::*)();
@@ -160,7 +162,7 @@ private:
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;
 
-    TickSelector tickSelector {IF_BOOTROM_ELSE(&Ppu::oamScanEven, &Ppu::vBlankLastLine7)};
+    TickSelector tickSelector {};
     FetcherTickSelector fetcherTickSelector {&Ppu::bgPrefetcherGetTile0};
 
     bool on {true};
@@ -168,12 +170,12 @@ private:
     bool lastStatIrq {};
     bool enableLycEqLyIrq {true};
 
-    uint16_t dots {IF_BOOTROM_ELSE(0, 395)}; // [0, 456)
-    uint8_t LX {};                           // LX=X+8, therefore [0, 168)
+    uint16_t dots {}; // [0, 456)
+    uint8_t LX {};    // LX=X+8, therefore [0, 168)
 
-    uint8_t BGP {IF_BOOTROM_ELSE(0, 0xFC)};         // video.BGP delayed by 1 t-cycle
-    uint8_t WX {};                                  // video.WX delayed by 1 t-cycle
-    uint8_t lastLCDC {IF_BOOTROM_ELSE(0x80, 0x85)}; // video.LCDC delayed by 1 t-cycle
+    uint8_t BGP {};      // video.BGP delayed by 1 t-cycle
+    uint8_t WX {};       // video.WX delayed by 1 t-cycle
+    uint8_t lastLCDC {}; // video.LCDC delayed by 1 t-cycle
 
     FillQueue<BgPixel, 8> bgFifo {};
     Queue<ObjPixel, 8> objFifo {};
@@ -214,8 +216,8 @@ private:
 
     // Window
     struct {
-        bool activeForFrame {};  // window activated for the frame
-        uint8_t WLY {UINT8_MAX}; // window line counter
+        bool activeForFrame {}; // window activated for the frame
+        uint8_t WLY {};         // window line counter
 
         bool active {};        // currently rendering window
         bool justActivated {}; // first fetch of this window streak

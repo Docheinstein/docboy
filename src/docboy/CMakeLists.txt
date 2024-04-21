@@ -93,7 +93,7 @@ target_sources(docboy PRIVATE
 )
 
 if (ENABLE_BOOTROM)
-    target_compile_definitions(docboy PRIVATE ENABLE_BOOTROM)
+    target_compile_definitions(docboy PUBLIC ENABLE_BOOTROM)
 
     target_sources(docboy PRIVATE
             docboy/boot/lock.h

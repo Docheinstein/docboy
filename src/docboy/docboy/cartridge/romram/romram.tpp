@@ -98,3 +98,8 @@ void RomRam<RomSize, RamSize, Battery>::loadState(Parcel& parcel) {
         parcel.readBytes(ram, RamSize);
     }
 }
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+void RomRam<RomSize, RamSize, Battery>::reset() {
+    memset(ram, 0, RamSize);
+}

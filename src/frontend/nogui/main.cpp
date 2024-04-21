@@ -61,6 +61,7 @@ int main(int argc, char* argv[]) {
     parser.addArgument(args.serial, "--serial", "-s").help("Display serial console");
     parser.addArgument(args.scaling, "--scaling", "-z").help("Scaling factor");
     parser.addArgument(args.dumpCartridgeInfo, "--cartridge-info", "-i").help("Dump cartridge info and quit");
+    parser.addArgument(args.ticksToRun, "-t").help("Ticks to run");
     IF_DEBUGGER(parser.addArgument(args.debugger, "--debugger", "-d").help("Attach debugger"));
 
     if (!parser.parse(argc, argv, 1))

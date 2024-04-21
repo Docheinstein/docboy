@@ -25,6 +25,8 @@ public:
     void saveState(Parcel& parcel) const override;
     void loadState(Parcel& parcel) override;
 
+    void reset() override;
+
 private:
     static constexpr bool Ram = RamSize > 0;
 

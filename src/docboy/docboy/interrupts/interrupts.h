@@ -46,7 +46,12 @@ public:
         IE = parcel.readUInt8();
     }
 
-    byte IF {make_byte(Specs::Registers::Interrupts::IF, 0b11100001)};
+    void reset() {
+        IF = 0b11100001;
+        IE = 0;
+    }
+
+    byte IF {make_byte(Specs::Registers::Interrupts::IF)};
     byte IE {make_byte(Specs::Registers::Interrupts::IE)};
 };
 

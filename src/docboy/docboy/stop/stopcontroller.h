@@ -24,6 +24,8 @@ public:
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
 
+    void reset();
+
 private:
     void enterStopMode();
     void eventuallyExitStopMode();

@@ -55,14 +55,29 @@ public:
         WX = parcel.readUInt8();
     }
 
-    byte LCDC {make_byte(Specs::Registers::Video::LCDC, IF_BOOTROM_ELSE(0, 0x91))};
-    byte STAT {make_byte(Specs::Registers::Video::STAT, IF_BOOTROM_ELSE(0x80, 0x85))};
+    void reset() {
+        LCDC = IF_BOOTROM_ELSE(0, 0x91);
+        STAT = IF_BOOTROM_ELSE(0x80, 0x85);
+        SCY = 0;
+        SCX = 0;
+        LY = 0;
+        LYC = 0;
+        DMA = 0;
+        BGP = IF_BOOTROM_ELSE(0, 0xFC);
+        OBP0 = 0;
+        OBP1 = 0;
+        WY = 0;
+        WX = 0;
+    }
+
+    byte LCDC {make_byte(Specs::Registers::Video::LCDC)};
+    byte STAT {make_byte(Specs::Registers::Video::STAT)};
     byte SCY {make_byte(Specs::Registers::Video::SCY)};
     byte SCX {make_byte(Specs::Registers::Video::SCX)};
     byte LY {make_byte(Specs::Registers::Video::LY)};
     byte LYC {make_byte(Specs::Registers::Video::LYC)};
     byte DMA {make_byte(Specs::Registers::Video::DMA)};
-    byte BGP {make_byte(Specs::Registers::Video::BGP, IF_BOOTROM_ELSE(0, 0xFC))};
+    byte BGP {make_byte(Specs::Registers::Video::BGP)};
     byte OBP0 {make_byte(Specs::Registers::Video::OBP0)};
     byte OBP1 {make_byte(Specs::Registers::Video::OBP1)};
     byte WY {make_byte(Specs::Registers::Video::WY)};

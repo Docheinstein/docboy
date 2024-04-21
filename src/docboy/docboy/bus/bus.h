@@ -4,6 +4,7 @@
 #include "device.h"
 #include "docboy/memory/fwd/bytefwd.h"
 #include "docboy/shared//macros.h"
+#include "utils/parcel.h"
 
 class IBus {};
 
@@ -29,6 +30,11 @@ public:
 
     template <Device::Type Dev>
     void flushWriteRequest(uint8_t value);
+
+    void saveState(Parcel& parcel) const;
+    void loadState(Parcel& parcel);
+
+    void reset();
 
     uint8_t requests {};
     uint16_t address {};

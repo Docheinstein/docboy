@@ -49,3 +49,6 @@ void StopController::saveState(Parcel& parcel) const {
 void StopController::loadState(Parcel& parcel) {
     requested = parcel.readUInt8();
 }
+void StopController::reset() {
+    requested = false;
+}

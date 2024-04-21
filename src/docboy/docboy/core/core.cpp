@@ -145,12 +145,9 @@ void Core::frame() {
     }
 }
 
-void Core::loadRom(const std::string& filename) const {
-    loadRom(CartridgeFactory().create(filename));
-}
-
-void Core::loadRom(std::unique_ptr<ICartridge>&& cartridge) const {
-    gb.cartridgeSlot.attach(std::move(cartridge));
+void Core::loadRom(const std::string& filename) {
+    gb.cartridgeSlot.attach(CartridgeFactory().create(filename));
+    reset();
 }
 
 void Core::attachSerialLink(SerialLink::Plug& plug) const {
@@ -204,6 +201,8 @@ Parcel Core::parcelizeState() const {
     gb.wram2.saveState(p);
     gb.oam.saveState(p);
     gb.hram.saveState(p);
+    gb.extBus.saveState(p);
+    gb.cpuBus.saveState(p);
     gb.vramBus.saveState(p);
     gb.oamBus.saveState(p);
     gb.boot.saveState(p);
@@ -231,6 +230,8 @@ void Core::unparcelizeState(Parcel&& p) {
     gb.wram2.loadState(p);
     gb.oam.loadState(p);
     gb.hram.loadState(p);
+    gb.extBus.loadState(p);
+    gb.cpuBus.loadState(p);
     gb.vramBus.loadState(p);
     gb.oamBus.loadState(p);
     gb.boot.loadState(p);
@@ -247,12 +248,31 @@ void Core::unparcelizeState(Parcel&& p) {
     check(p.getRemainingSize() == 0);
 }
 
-void Core::saveState(Parcel& parcel) const {
-    parcel.writeUInt64(ticks);
-}
+void Core::reset() {
+    ticks = 0;
 
-void Core::loadState(Parcel& parcel) {
-    ticks = parcel.readUInt64();
+    gb.cpu.reset();
+    gb.ppu.reset();
+    gb.cartridgeSlot.cartridge->reset();
+    gb.vram.reset();
+    gb.wram1.reset();
+    gb.wram2.reset();
+    gb.oam.reset();
+    gb.hram.reset();
+    gb.extBus.reset();
+    gb.cpuBus.reset();
+    gb.vramBus.reset();
+    gb.oamBus.reset();
+    gb.boot.reset();
+    gb.serialPort.reset();
+    gb.timers.reset();
+    gb.interrupts.reset();
+    gb.sound.reset();
+    gb.video.reset();
+    gb.lcd.reset();
+    gb.dma.reset();
+    gb.mmu.reset();
+    gb.stopController.reset();
 }
 
 #ifdef ENABLE_DEBUGGER

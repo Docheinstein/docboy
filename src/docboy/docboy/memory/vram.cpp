@@ -441,6 +441,6 @@ constexpr uint8_t VRAM_AFTER_BOOT[] {
 }
 #endif
 
-Vram::Vram() {
+void Vram::reset() {
     IF_NOT_BOOTROM(setData(VRAM_AFTER_BOOT, sizeof(VRAM_AFTER_BOOT)));
 }

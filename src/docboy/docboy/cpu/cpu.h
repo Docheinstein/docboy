@@ -29,6 +29,8 @@ public:
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
 
+    void reset();
+
 private:
     enum class Register8 : uint8_t {
         A,
@@ -621,19 +623,19 @@ private:
 
     Instruction& NOP {instructions[0]};
 
-    uint16_t AF {IF_NOT_BOOTROM(0x01B0)};
-    uint16_t BC {IF_NOT_BOOTROM(0x0013)};
-    uint16_t DE {IF_NOT_BOOTROM(0x00D8)};
-    uint16_t HL {IF_NOT_BOOTROM(0x014D)};
-    uint16_t PC {IF_NOT_BOOTROM(0x0100)};
-    uint16_t SP {IF_NOT_BOOTROM(0xFFFE)};
+    uint16_t AF {};
+    uint16_t BC {};
+    uint16_t DE {};
+    uint16_t HL {};
+    uint16_t PC {};
+    uint16_t SP {};
 
-    ImeState IME {ImeState::Disabled};
+    ImeState IME {};
 
     bool halted {};
 
     struct {
-        InterruptState state {InterruptState::None};
+        InterruptState state {};
         uint8_t remainingTicks {};
     } interrupt;
 

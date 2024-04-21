@@ -25,11 +25,13 @@ public:
     void saveState(Parcel& parcel) const override;
     void loadState(Parcel& parcel) override;
 
+    void reset() override;
+
 private:
     static constexpr bool Ram = RamSize > 0;
 
     bool ramEnabled {};
-    uint8_t romBankSelector {0b1};
+    uint8_t romBankSelector {};
     uint8_t upperRomBankSelector_ramBankSelector {};
     uint8_t bankingMode {};
 

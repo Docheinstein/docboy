@@ -162,6 +162,12 @@ int main(int argc, char* argv[]) {
     if (!argsParser.parse(argc, argv, 1))
         return 1;
 
+    if (!args.rom.empty() && args.dumpCartridgeInfo) {
+        // Just dump cartridge info and quit.
+        dump_cartridge_info(*CartridgeFactory().create(args.rom));
+        return 0;
+    }
+
     struct Preferences {
         Lcd::Palette palette {Lcd::DEFAULT_PALETTE};
         int32_t x {};
@@ -228,48 +234,69 @@ int main(int argc, char* argv[]) {
     IF_BOOTROM(ensureFileExists(args.bootRom));
 
     auto gb {std::make_unique<GameBoy>(prefs.palette IF_BOOTROM(COMMA BootRomFactory().create(args.bootRom)))};
+    Core core {*gb};
+
     Window window {gb->lcd.getPixels(), {prefs.x, prefs.y, prefs.scaling}};
 
-    // Wait for ROM if it is not given as parameter.
-    if (args.rom.empty()) {
-        window.addText("Drop a GB ROM", 27, 66, 0xFFFFFFFF, Window::TEXT_DURATION_PERSISTENT, TextGuids::DROP_ROM);
+    path romPath {};
 
-        SDL_Event e;
-        do {
-            // Handle input
-            while (SDL_PollEvent(&e) != 0) {
-                switch (e.type) {
-                case SDL_EVENT_QUIT:
-                    return 0;
-                case SDL_EVENT_DROP_FILE:
-                    // File dropped: use it as ROM.
-                    args.rom = e.drop.data;
-                    break;
-                }
-            }
+    const auto getSavePath = [&romPath]() {
+        return romPath.replace_extension("sav").string();
+    };
 
-            // Render
-            window.render();
-        } while (args.rom.empty());
+    const auto getStatePath = [&romPath]() {
+        return romPath.replace_extension("state").string();
+    };
 
-        window.removeText(TextGuids::DROP_ROM);
+    const auto writeSave = [&core](const std::string& path) {
+        if (!core.canSaveRam())
+            return false;
 
-        ensureFileExists(args.rom);
+        std::vector<uint8_t> data(core.getRamSaveSize());
+        core.saveRam(data.data());
+
+        bool ok;
+        write_file(path, data.data(), data.size(), &ok);
+
+        return ok;
+    };
+
+    const auto readSave = [&core](const std::string& path) {
+        if (!core.canSaveRam())
+            return false;
+
+        bool ok;
+        std::vector<uint8_t> data = read_file(path, &ok);
+        if (!ok)
+            return false;
+
+        core.loadRam(data.data());
+        return true;
+    };
+
+    bool isRomLoaded {};
+    const auto loadRom = [&](const std::string& p) {
+        if (isRomLoaded) {
+            // Eventually save current RAM state
+            writeSave(getSavePath());
+        }
+
+        ensureFileExists(p);
+        romPath = path(p);
+        isRomLoaded = true;
+
+        // Actually load ROM
+        core.loadRom(p);
+
+        // Eventually load new RAM state
+        readSave(getSavePath());
+
+        // TODO: reset debugger
+    };
+
+    if (!args.rom.empty()) {
+        loadRom(args.rom);
     }
-
-    path romPath {args.rom};
-
-    // Build the ROM cartridge.
-    std::unique_ptr<ICartridge> cartridge {CartridgeFactory().create(romPath.string())};
-
-    if (args.dumpCartridgeInfo) {
-        // Just dump cartridge info and quit.
-        dump_cartridge_info(*cartridge);
-        return 0;
-    }
-
-    Core core {*gb};
-    core.loadRom(std::move(cartridge));
 
 #ifdef ENABLE_SERIAL
     std::unique_ptr<SerialConsole> serialConsole;
@@ -418,32 +445,6 @@ int main(int argc, char* argv[]) {
         return ok;
     };
 
-    const auto writeSave = [&core](const std::string& path) {
-        if (!core.canSaveRam())
-            return false;
-
-        std::vector<uint8_t> data(core.getRamSaveSize());
-        core.saveRam(data.data());
-
-        bool ok;
-        write_file(path, data.data(), data.size(), &ok);
-
-        return ok;
-    };
-
-    const auto readSave = [&core](const std::string& path) {
-        if (!core.canSaveRam())
-            return false;
-
-        bool ok;
-        std::vector<uint8_t> data = read_file(path, &ok);
-        if (!ok)
-            return false;
-
-        core.loadRam(data.data());
-        return true;
-    };
-
     const auto writeState = [&core](const std::string& path) {
         std::vector<uint8_t> data(core.getStateSize());
         core.saveState(data.data());
@@ -468,11 +469,8 @@ int main(int argc, char* argv[]) {
         return ok;
     };
 
-    const std::string savePath = romPath.replace_extension("sav").string();
-    const std::string statePath = romPath.replace_extension("state").string();
-
-    // eventually load ram state
-    readSave(savePath);
+    if (!isRomLoaded)
+        window.addText("Drop a GB ROM", 27, 66, 0xFFFFFFFF, Window::TEXT_DURATION_PERSISTENT, TextGuids::DROP_ROM);
 
     std::chrono::high_resolution_clock::time_point nextFrameTime = std::chrono::high_resolution_clock::now();
 
@@ -493,11 +491,11 @@ int main(int argc, char* argv[]) {
             case SDL_EVENT_KEY_DOWN: {
                 switch (e.key.keysym.sym) {
                 case SDLK_F1:
-                    if (writeState(statePath))
+                    if (writeState(getStatePath()))
                         drawOverlay("State saved");
                     break;
                 case SDLK_F2:
-                    if (readState(statePath))
+                    if (readState(getStatePath()))
                         drawOverlay("State loaded");
                     break;
                 case SDLK_F11:
@@ -540,21 +538,30 @@ int main(int argc, char* argv[]) {
                 handleInput(e.key.keysym.sym, Joypad::KeyState::Released);
                 break;
             }
+            case SDL_EVENT_DROP_FILE: {
+                // File dropped: load ROM.
+                loadRom(e.drop.data);
+                window.removeText(TextGuids::DROP_ROM);
+                break;
+            }
             }
         }
 
-        // update emulator until next frame
-        core.frame();
+        // Update emulator until next frame
+        if (isRomLoaded)
+            core.frame();
 
-        // render frame
+        // Render frame
         window.render();
 
-        // update FPS estimation
+        // Update FPS estimation
         updateFPS();
     }
 
-    // Write ram state
-    writeSave(savePath);
+    // Write RAM state
+    if (isRomLoaded) {
+        writeSave(getSavePath());
+    }
 
     // Write preferences
     Window::Geometry geometry = window.getGeometry();

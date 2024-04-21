@@ -71,6 +71,8 @@ public:
     }
 
     bool run() {
+        canRun = true;
+
         auto* impl = static_cast<RunnerImpl*>(this);
         impl->onRun();
 

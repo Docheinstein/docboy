@@ -2,6 +2,7 @@
 #define LCD_H
 
 #include <array>
+#include <cstring>
 
 #include "docboy/shared//macros.h"
 #include "docboy/shared/specs.h"
@@ -44,7 +45,7 @@ public:
         return pixels;
     }
 
-    void reset() {
+    void resetCursor() {
         // Reset the LCD position.
         cursor = 0;
         IF_DEBUGGER(x = 0);
@@ -68,6 +69,13 @@ public:
 
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
+
+    void reset() {
+        memset(pixels, 0, sizeof(pixels));
+        cursor = 0;
+        IF_DEBUGGER(x = 0);
+        IF_DEBUGGER(y = 0);
+    }
 
 private:
     Palette palette {};

@@ -22,6 +22,8 @@ public:
     void saveState(Parcel& parcel) const;
     void loadState(Parcel& parcel);
 
+    void reset();
+
     [[nodiscard]] uint8_t readDIV() const {
         const uint8_t DIVh = DIV >> 8;
         IF_DEBUGGER(DebuggerMemorySniffer::notifyMemoryRead(Specs::Registers::Timers::DIV, DIVh));
@@ -33,10 +35,10 @@ public:
     void writeTMA(uint8_t value);
     void writeTAC(uint8_t value);
 
-    uint16_t DIV {IF_NOT_BOOTROM(0xABCC)};
+    uint16_t DIV {};
     byte TIMA {make_byte(Specs::Registers::Timers::TIMA)};
     byte TMA {make_byte(Specs::Registers::Timers::TMA)};
-    byte TAC {make_byte(Specs::Registers::Timers::TAC, 0b11111000)};
+    byte TAC {make_byte(Specs::Registers::Timers::TAC)};
 
 protected:
     struct TimaReloadState {

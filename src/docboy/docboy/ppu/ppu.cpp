@@ -108,7 +108,6 @@ Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Devic
     interrupts(interrupts),
     vram(vramBus),
     oam(oamBus) {
-    IF_NOT_BOOTROM(oamBus.acquire());
 }
 
 void Ppu::tick() {
@@ -184,7 +183,7 @@ void Ppu::turnOff() {
     on = false;
     dots = 0;
     video.LY = 0;
-    lcd.reset();
+    lcd.resetCursor();
 
     // Clear oam entries eventually still there
     for (uint32_t i = 0; i < array_size(oamEntries); i++)
@@ -1663,4 +1662,78 @@ void Ppu::loadState(Parcel& parcel) {
     psf.tileDataHigh = parcel.readUInt8();
 
     IF_DEBUGGER(cycles = parcel.readUInt64());
+}
+
+void Ppu::reset() {
+    tickSelector = IF_BOOTROM_ELSE(&Ppu::oamScanEven, &Ppu::vBlankLastLine7);
+    fetcherTickSelector = &Ppu::bgPrefetcherGetTile0;
+
+    on = true;
+
+    lastStatIrq = false;
+    enableLycEqLyIrq = true;
+
+    dots = IF_BOOTROM_ELSE(0, 395);
+    LX = 0;
+
+    BGP = IF_BOOTROM_ELSE(0, 0xFC);
+    WX = 0;
+    lastLCDC = IF_BOOTROM_ELSE(0x80, 0x85);
+
+    bgFifo.clear();
+    objFifo.clear();
+
+    for (uint32_t i = 0; i < array_size(oamEntries); i++)
+        oamEntries[i].clear();
+
+    IF_ASSERTS(oamEntriesCount = 0);
+    IF_ASSERTS(oamEntriesNotServedCount = 0);
+
+    IF_DEBUGGER(scanlineOamEntries.clear());
+
+    isFetchingSprite = false;
+
+    IF_DEBUGGER(timings.oamScan = 0);
+    IF_DEBUGGER(timings.pixelTransfer = 0);
+    IF_DEBUGGER(timings.hBlank = 0);
+
+    registers.oam.a = 0;
+    registers.oam.a = 0;
+
+    oamScan.count = 0;
+
+    pixelTransfer.initialSCX.toDiscard = 0;
+    pixelTransfer.initialSCX.discarded = 0;
+
+    w.activeForFrame = false;
+    w.WLY = UINT8_MAX;
+    w.active = false;
+    w.justActivated = false;
+    IF_ASSERTS_OR_DEBUGGER(w.lineTriggers.clear());
+
+    bwf.LX = 0;
+    bwf.vTilemapTileAddr = 0;
+
+    IF_DEBUGGER(bwf.tilemapX = 0);
+    IF_DEBUGGER(bwf.tilemapY = 0);
+    IF_DEBUGGER(bwf.vTilemapAddr = 0);
+
+    bwf.interruptedFetch.hasData = false;
+    bwf.interruptedFetch.tileDataLow = 0;
+    bwf.interruptedFetch.tileDataHigh = 0;
+    wf.tilemapX = 0;
+
+    of.entry.number = 0;
+    of.entry.y = 0;
+    IF_ASSERTS_OR_DEBUGGER(of.entry.x = 0);
+    of.tileNumber = 0;
+    of.attributes = 0;
+
+    psf.vTileDataAddress = 0;
+    psf.tileDataLow = 0;
+    psf.tileDataHigh = 0;
+
+    IF_DEBUGGER(cycles = 0);
+
+    IF_NOT_BOOTROM(oam.acquire());
 }

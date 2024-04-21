@@ -8,9 +8,8 @@ struct byte {
     static constexpr uint32_t INVALID_MEMORY_ADDRESS = UINT32_MAX;
 
     byte() = default;
-    constexpr explicit byte(uint16_t address, uint8_t initialValue = 0) :
-        address {address},
-        data {initialValue} {
+    constexpr explicit byte(uint16_t address) :
+        address {address} {
     }
 
     byte(const byte& b) = delete;
@@ -36,13 +35,15 @@ struct byte {
     uint8_t data {};
 };
 
-constexpr byte make_byte(const uint16_t address, const uint8_t initialValue = 0) {
-    return byte {address, initialValue};
+constexpr inline byte make_byte(const uint16_t address) {
+    return byte {address};
 }
 
 #else
-constexpr inline byte make_byte(const uint16_t address, const uint8_t initialValue = 0) {
-    return initialValue;
+
+constexpr inline byte make_byte(const uint16_t address) {
+    return {};
 }
+
 #endif
 #endif // BYTE_HPP

@@ -19,8 +19,7 @@ public:
     void frame();
 
     // Load ROM
-    void loadRom(const std::string& filename) const;
-    void loadRom(std::unique_ptr<ICartridge>&& cartridge) const;
+    void loadRom(const std::string& filename);
 
     // Serial
     void attachSerialLink(SerialLink::Plug& plug) const;
@@ -41,6 +40,10 @@ public:
     void loadState(const void* data);
     [[nodiscard]] uint32_t getStateSize() const;
 
+    // Reset
+    void reset();
+
+    // Debug
     IF_DEBUGGER(void attachDebugger(DebuggerBackend& debugger));
     IF_DEBUGGER(void detachDebugger());
     IF_DEBUGGER(bool isDebuggerAskingToShutdown() const);
@@ -61,9 +64,6 @@ private:
 
     [[nodiscard]] Parcel parcelizeState() const;
     void unparcelizeState(Parcel&& parcel);
-
-    void saveState(Parcel& parcel) const;
-    void loadState(Parcel& parcel);
 };
 
 #endif // CORE_H
