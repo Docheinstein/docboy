@@ -8,6 +8,7 @@
 #include <string>
 #include <variant>
 
+#include "docboy/bootrom/factory.h"
 #include "docboy/core/core.h"
 #include "docboy/gameboy/gameboy.h"
 #include "extra/serial/endpoints/buffer.h"
@@ -18,11 +19,12 @@
 
 constexpr Lcd::Palette GREY_PALETTE {0xFFFF, 0xAD55, 0x52AA, 0x0000}; // {0xFF, 0xAA, 0x55, 0x00} in RGB565
 
-constexpr uint64_t DURATION_VERY_LONG = 250'000'000;
-constexpr uint64_t DURATION_LONG = 100'000'000;
-constexpr uint64_t DURATION_MEDIUM = 30'000'000;
-constexpr uint64_t DURATION_SHORT = 5'000'000;
-constexpr uint64_t DURATION_VERY_SHORT = 1'500'000;
+constexpr uint64_t BOOT_DURATION = IF_BOOTROM_ELSE(23'440'328, 0);
+constexpr uint64_t DURATION_VERY_LONG = BOOT_DURATION + 250'000'000;
+constexpr uint64_t DURATION_LONG = BOOT_DURATION + 100'000'000;
+constexpr uint64_t DURATION_MEDIUM = BOOT_DURATION + 30'000'000;
+constexpr uint64_t DURATION_SHORT = BOOT_DURATION + 5'000'000;
+constexpr uint64_t DURATION_VERY_SHORT = BOOT_DURATION + 1'500'000;
 constexpr uint64_t DEFAULT_DURATION = DURATION_LONG;
 
 template <typename RunnerImpl>
@@ -34,8 +36,8 @@ public:
         Joypad::Key key {};
     };
 
-    explicit Runner(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE) :
-        gb {std::make_unique<GameBoy>(palette)},
+    explicit Runner(IF_BOOTROM(const std::string& bootRom COMMA) const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE) :
+        gb {std::make_unique<GameBoy>(palette IF_BOOTROM(COMMA BootRomFactory {}.create(bootRom)))},
         core {*gb} {
     }
 
@@ -79,6 +81,10 @@ public:
         bool hasEverChecked {false};
 
         for (tick = core.ticks; tick <= maxTicks_ && canRun; tick += 4) {
+            if (tick != core.ticks) {
+                tick += 4;
+                tick -= 4;
+            }
             // Eventually submit scheduled Joypad input.
             if (!inputs_.empty()) {
                 for (auto it = inputs_.begin(); it != inputs_.end(); it++) {
@@ -129,6 +135,10 @@ protected:
 
 class SimpleRunner : public Runner<SimpleRunner> {
 public:
+    SimpleRunner(IF_BOOTROM(const std::string& bootRom)) :
+        Runner<SimpleRunner>(IF_BOOTROM(bootRom)) {
+    }
+
     void onRun() {
     }
     bool shouldEverCheckExpectation() {
@@ -146,8 +156,8 @@ public:
 
 class FramebufferRunner : public Runner<FramebufferRunner> {
 public:
-    FramebufferRunner(const Lcd::Palette& palette) :
-        Runner<FramebufferRunner>(palette) {
+    FramebufferRunner(IF_BOOTROM(const std::string& bootRom COMMA) const Lcd::Palette& palette) :
+        Runner<FramebufferRunner>(IF_BOOTROM(bootRom COMMA) palette) {
     }
 
     FramebufferRunner& expectFramebuffer(const std::string& filename) {
@@ -231,6 +241,10 @@ private:
 
 class SerialRunner : public Runner<SerialRunner> {
 public:
+    explicit SerialRunner(IF_BOOTROM(const std::string& bootRom)) :
+        Runner<SerialRunner>(IF_BOOTROM(bootRom)) {
+    }
+
     SerialRunner& expectOutput(const std::vector<uint8_t>& output) {
         expectedOutput = output;
         return *this;

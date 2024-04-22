@@ -38,7 +38,7 @@ void TimersIO::loadState(Parcel& parcel) {
 }
 
 void TimersIO::reset() {
-    DIV = IF_BOOTROM_ELSE(0, 0xABCC);
+    DIV = IF_BOOTROM_ELSE(0x0008, 0xABCC); // [mooneye/boot_div-dmgABCmgb.gb]
     TIMA = 0;
     TMA = 0;
     TAC = 0b11111000;

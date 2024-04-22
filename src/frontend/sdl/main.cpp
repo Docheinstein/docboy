@@ -231,7 +231,13 @@ int main(int argc, char* argv[]) {
         readPreferences(args.config, prefs);
     }
 
-    IF_BOOTROM(ensureFileExists(args.bootRom));
+#ifdef ENABLE_BOOTROM
+    ensureFileExists(args.bootRom);
+    if (file_size(args.bootRom) != BootRom::Size) {
+        std::cerr << "ERROR: invalid boot rom '" << args.bootRom << "'" << std::endl;
+        return 3;
+    }
+#endif
 
     auto gb {std::make_unique<GameBoy>(prefs.palette IF_BOOTROM(COMMA BootRomFactory().create(args.bootRom)))};
     Core core {*gb};

@@ -7,6 +7,8 @@
 #include "utils/mathematics.h"
 #include "utils/memory.h"
 
+IF_BOOTROM(extern std::string bootRom);
+
 TEST_CASE("bits", "[bits]") {
     SECTION("test bit") {
         uint8_t B = 0;
@@ -555,7 +557,7 @@ TEST_CASE("state", "[state]") {
         std::vector<uint8_t> data1;
 
         {
-            SimpleRunner runner;
+            SimpleRunner runner {IF_BOOTROM(bootRom)};
             runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").maxTicks(10'000).run();
             data1.resize(runner.core.getStateSize());
             runner.core.saveState(data1.data());
@@ -564,7 +566,7 @@ TEST_CASE("state", "[state]") {
         std::vector<uint8_t> data2(data1.size());
 
         {
-            SimpleRunner runner;
+            SimpleRunner runner {IF_BOOTROM(bootRom)};
             runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
             runner.core.loadState(data1.data());
             runner.core.saveState(data2.data());
@@ -578,7 +580,7 @@ TEST_CASE("state", "[state]") {
         std::vector<uint8_t> data3;
 
         {
-            SimpleRunner runner;
+            SimpleRunner runner {IF_BOOTROM(bootRom)};
             runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
 
             runner.maxTicks(1'000'000).run();
@@ -592,7 +594,7 @@ TEST_CASE("state", "[state]") {
         }
 
         {
-            SimpleRunner runner;
+            SimpleRunner runner {IF_BOOTROM(bootRom)};
             runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
 
             runner.core.loadState(data1.data());
@@ -610,7 +612,7 @@ TEST_CASE("reset", "[reset]") {
     SECTION("Reset: Round 1") {
         std::vector<uint8_t> data1;
 
-        SimpleRunner runner;
+        SimpleRunner runner {IF_BOOTROM(bootRom)};
         runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
 
         data1.resize(runner.core.getStateSize());
@@ -626,7 +628,7 @@ TEST_CASE("reset", "[reset]") {
     SECTION("Reset: Round 2") {
         std::vector<uint8_t> data1;
 
-        SimpleRunner runner;
+        SimpleRunner runner {IF_BOOTROM(bootRom)};
         runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").maxTicks(10'000).run();
         data1.resize(runner.core.getStateSize());
         runner.core.saveState(data1.data());

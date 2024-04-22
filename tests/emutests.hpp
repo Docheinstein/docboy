@@ -6,6 +6,8 @@
 
 #define WIP_ONLY_TEST_ROMS 0
 
+IF_BOOTROM(extern std::string bootRom);
+
 using F = FramebufferRunnerParams;
 using S = SerialRunnerParams;
 using RunnerParams = std::variant<F, S>;
@@ -15,9 +17,9 @@ const std::string TEST_RESULTS_PATH = TESTS_ROOT_FOLDER "/results/";
 
 bool run_with_params(const RunnerParams& p) {
     if (std::holds_alternative<FramebufferRunnerParams>(p)) {
-        const auto pf = std::get<FramebufferRunnerParams>(p);
+        const auto& pf = std::get<FramebufferRunnerParams>(p);
         INFO("=== " << TEST_ROMS_PATH + pf.rom << " ===");
-        return FramebufferRunner(pf.palette.value_or(Lcd::DEFAULT_PALETTE))
+        return FramebufferRunner(IF_BOOTROM(bootRom COMMA) pf.palette.value_or(Lcd::DEFAULT_PALETTE))
             .rom(TEST_ROMS_PATH + pf.rom)
             .maxTicks(pf.maxTicks)
             .checkIntervalTicks(DURATION_VERY_SHORT)
@@ -29,9 +31,9 @@ bool run_with_params(const RunnerParams& p) {
     }
 
     if (std::holds_alternative<SerialRunnerParams>(p)) {
-        const auto ps = std::get<SerialRunnerParams>(p);
+        const auto& ps = std::get<SerialRunnerParams>(p);
         INFO("=== " << TEST_ROMS_PATH + ps.rom << " ===");
-        return SerialRunner()
+        return SerialRunner(IF_BOOTROM(bootRom))
             .rom(TEST_ROMS_PATH + ps.rom)
             .maxTicks(ps.maxTicks)
             .checkIntervalTicks(DURATION_VERY_SHORT)
@@ -88,13 +90,13 @@ TEST_CASE("emulation", "[emulation]") {
                       F {"docboy/cpu/halt_ime1_interrupt1_ret.gb", "docboy/ok.png"},
                       F {"daid/stop_instr.gb", "daid/stop_instr.png", GREY_PALETTE, ForceCheck {}},
                       F {"docboy/cpu/stop_joypad0_interrupt0.gb", "docboy/ok.png",
-                         Inputs {{200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                         Inputs {{BOOT_DURATION + 200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
                       F {"docboy/cpu/stop_joypad0_interrupt1.gb", "docboy/ok.png",
-                         Inputs {{200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                         Inputs {{BOOT_DURATION + 200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
                       F {"docboy/cpu/stop_joypad1_interrupt0.gb", "docboy/ok.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
                       F {"docboy/cpu/stop_joypad1_interrupt1.gb", "docboy/ok.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
 
         );
     }
@@ -1492,6 +1494,11 @@ TEST_CASE("emulation", "[emulation]") {
                       F {"docboy/boot/boot_ppu_phase_round2.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_ppu_phase_round3.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_ppu_phase_round4.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_regs_interrupts.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_regs_joypad.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_regs_serial.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_regs_timers.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_regs_video.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_stat_lyc_eq_ly_round1.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_stat_lyc_eq_ly_round2.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_vram_tile_data.gb", "docboy/ok.png"},
@@ -1664,46 +1671,46 @@ TEST_CASE("emulation", "[emulation]") {
     SECTION("joypad") {
         RUN_TEST_ROMS(F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png"},
                       F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_a.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::A}}},
                       F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_b.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::B}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::B}}},
                       F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_select.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Select}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Select}}},
                       F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_start.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Start}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Start}}},
                       F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::A},
-                                 {4, Joypad::KeyState::Released, Joypad::Key::A}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::A},
+                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::A}}},
                       F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::B},
-                                 {4, Joypad::KeyState::Released, Joypad::Key::B}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::B},
+                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::B}}},
                       F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Select},
-                                 {4, Joypad::KeyState::Released, Joypad::Key::Select}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Select},
+                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Select}}},
                       F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Start},
-                                 {4, Joypad::KeyState::Released, Joypad::Key::Start}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Start},
+                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Start}}},
                       F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png"},
                       F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_right.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Right}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Right}}},
                       F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_left.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Left}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Left}}},
                       F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_up.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
                       F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_down.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Down}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Down}}},
                       F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Right},
-                                 {4, Joypad::KeyState::Released, Joypad::Key::Right}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Right},
+                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Right}}},
                       F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Left},
-                                 {4, Joypad::KeyState::Released, Joypad::Key::Left}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Left},
+                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Left}}},
                       F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up},
-                                 {4, Joypad::KeyState::Released, Joypad::Key::Up}}},
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up},
+                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Up}}},
                       F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
-                         Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Down},
-                                 {4, Joypad::KeyState::Released, Joypad::Key::Down}}}, );
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Down},
+                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Down}}}, );
     }
 
     SECTION("integration") {

@@ -62,7 +62,7 @@ public:
         SCX = 0;
         LY = 0;
         LYC = 0;
-        DMA = 0;
+        DMA = 0xFF;
         BGP = IF_BOOTROM_ELSE(0, 0xFC);
         OBP0 = 0;
         OBP1 = 0;

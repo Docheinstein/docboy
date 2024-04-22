@@ -24,8 +24,7 @@ constexpr uint16_t LCD_VBLANK_CYCLES = 16416;
 
 constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
 
-// TODO: deduce SERIAL_TICKS_OFFSET also for bootrom version when sure about bootrom timing
-constexpr uint64_t SERIAL_PHASE_OFFSET = SERIAL_PERIOD - 48; // deduced from mooneye/boot_sclk_align-dmgABCmgb.gb
+constexpr uint64_t SERIAL_PHASE_OFFSET = IF_BOOTROM_ELSE(1036, 4048); // [mooneye/boot_sclk_align-dmgABCmgb.gb]
 
 constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
 

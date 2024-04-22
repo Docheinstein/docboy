@@ -110,7 +110,7 @@ void Mmu::initAccessors(uint16_t address, Bus* bus) {
 
 #ifdef ENABLE_BOOTROM
 void Mmu::lockBootRom() {
-    check(!lockBootRom);
+    check(!bootRomLocked);
     bootRomLocked = true;
     // Remap Boot Rom address range [0x0000 - 0x00FF] to EXT Bus.
     for (uint16_t i = Specs::MemoryLayout::BOOTROM::START; i <= Specs::MemoryLayout::BOOTROM::END; i++) {
