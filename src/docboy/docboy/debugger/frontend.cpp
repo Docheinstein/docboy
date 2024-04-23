@@ -1165,7 +1165,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
 
         b << header("CARTRIDGE", width) << endl;
 
-        b << yellow("Type") << "                        :  " << [mbc]() -> Text {
+        b << yellow("Title") << "                        :  " << info.title << endl;
+        b << yellow("Type") << "                         :  " << [mbc]() -> Text {
             switch (mbc) {
             case Mbc::NO_MBC:
                 return "No MBC";
@@ -1197,7 +1198,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             return {};
         }() << endl;
 
-        b << yellow("ROM") << "                         :  " << [rom]() -> Text {
+        b << yellow("ROM") << "                          :  " << [rom]() -> Text {
             switch (rom) {
             case Rom::KB_32:
                 return "32 KB";
@@ -1222,7 +1223,7 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             return {};
         }() << endl;
 
-        b << yellow("RAM") << "                         :  " << [ram]() -> Text {
+        b << yellow("RAM") << "                          :  " << [ram]() -> Text {
             switch (ram) {
             case Ram::NONE:
                 return "None";
@@ -1379,8 +1380,8 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
             }
         } else if (mbc == Mbc::MBC2 || mbc == Mbc::MBC2_BATTERY) {
             const auto mbc2 = [&b](auto&& cart) {
-                b << yellow("Ram Enabled") << "                 :  " << cart.ramEnabled << endl;
-                b << yellow("Rom Bank Selector") << "           :  " << hex(cart.romBankSelector) << endl;
+                b << yellow("Ram Enabled") << "                  :  " << cart.ramEnabled << endl;
+                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.romBankSelector) << endl;
             };
 
             if (mbc == Mbc::MBC2_BATTERY) {
@@ -1409,26 +1410,26 @@ void DebuggerFrontend::printUI(const ExecutionState& executionState) const {
         } else if (mbc == Mbc::MBC3_TIMER_BATTERY || mbc == Mbc::MBC3_TIMER_RAM_BATTERY || mbc == Mbc::MBC3 ||
                    mbc == Mbc::MBC3_RAM || mbc == Mbc::MBC3_RAM_BATTERY) {
             const auto mbc3 = [&b, mbc, subheader, width](auto&& cart) {
-                b << yellow("Ram/RTC Enabled") << "             :  " << cart.ramEnabled << endl;
-                b << yellow("Rom Bank Selector") << "           :  " << hex(cart.romBankSelector) << endl;
-                b << yellow("Ram Bank/RTC Reg. Selector") << "  :  " << hex(cart.ramBankSelector_rtcRegisterSelector)
+                b << yellow("Ram/RTC Enabled") << "              :  " << cart.ramEnabled << endl;
+                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.romBankSelector) << endl;
+                b << yellow("Ram Bank/RTC Reg. Selector") << "   :  " << hex(cart.ramBankSelector_rtcRegisterSelector)
                   << endl;
 
                 if (mbc == Mbc::MBC3_TIMER_BATTERY || mbc == Mbc::MBC3_TIMER_RAM_BATTERY) {
                     b << subheader("rtc", width) << endl;
-                    b << "                               " << magenta("Latch") << "  |   " << magenta("Real") << endl;
-                    b << yellow("Seconds") << "                     :   "
+                    b << "                                " << magenta("Latch") << "  |   " << magenta("Real") << endl;
+                    b << yellow("Seconds") << "                      :   "
                       << hex((uint8_t)keep_bits<6>(cart.rtc.latched.seconds)) << "    |    "
                       << hex((uint8_t)keep_bits<6>(cart.rtc.real.seconds)) << endl;
-                    b << yellow("Minutes") << "                     :   "
+                    b << yellow("Minutes") << "                      :   "
                       << hex((uint8_t)keep_bits<6>(cart.rtc.latched.minutes)) << "    |    "
                       << hex((uint8_t)keep_bits<6>(cart.rtc.real.minutes)) << endl;
-                    b << yellow("Hours") << "                       :   "
+                    b << yellow("Hours") << "                        :   "
                       << hex((uint8_t)keep_bits<5>(cart.rtc.latched.hours)) << "    |    "
                       << hex((uint8_t)keep_bits<5>(cart.rtc.real.hours)) << endl;
-                    b << yellow("Days Low") << "                    :   " << hex(cart.rtc.latched.days.low)
+                    b << yellow("Days Low") << "                     :   " << hex(cart.rtc.latched.days.low)
                       << "    |    " << hex(cart.rtc.real.days.low) << endl;
-                    b << yellow("Days High") << "                   :   "
+                    b << yellow("Days High") << "                    :   "
                       << hex((uint8_t)get_bits<7, 6, 0>(cart.rtc.latched.days.high)) << "    |    "
                       << hex((uint8_t)get_bits<7, 6, 0>(cart.rtc.real.days.high)) << endl;
                 }

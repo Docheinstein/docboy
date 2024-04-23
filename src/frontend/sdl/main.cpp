@@ -280,30 +280,6 @@ int main(int argc, char* argv[]) {
         return true;
     };
 
-    bool isRomLoaded {};
-    const auto loadRom = [&](const std::string& p) {
-        if (isRomLoaded) {
-            // Eventually save current RAM state
-            writeSave(getSavePath());
-        }
-
-        ensureFileExists(p);
-        romPath = path(p);
-        isRomLoaded = true;
-
-        // Actually load ROM
-        core.loadRom(p);
-
-        // Eventually load new RAM state
-        readSave(getSavePath());
-
-        // TODO: reset debugger
-    };
-
-    if (!args.rom.empty()) {
-        loadRom(args.rom);
-    }
-
 #ifdef ENABLE_SERIAL
     std::unique_ptr<SerialConsole> serialConsole;
     std::unique_ptr<SerialLink> serialLink;
@@ -376,10 +352,43 @@ int main(int argc, char* argv[]) {
         return true;
     };
 
+    const auto reattachDebugger = [&attachDebugger, &detachDebugger](bool proceed = false) {
+        detachDebugger();
+        attachDebugger(proceed);
+    };
+
     if (args.debugger) {
         attachDebugger();
     }
 #endif
+
+    bool isRomLoaded {};
+    const auto loadRom = [&](const std::string& p) {
+        if (isRomLoaded) {
+            // Eventually save current RAM state
+            writeSave(getSavePath());
+        }
+
+        ensureFileExists(p);
+        romPath = path(p);
+        isRomLoaded = true;
+
+        // Actually load ROM
+        core.loadRom(p);
+
+        // Eventually load new RAM state
+        readSave(getSavePath());
+
+#ifdef ENABLE_DEBUGGER
+        // Reset the debugger
+        if (isDebuggerAttached())
+            reattachDebugger(true);
+#endif
+    };
+
+    if (!args.rom.empty()) {
+        loadRom(args.rom);
+    }
 
     SDL_Event e;
     bool quit {false};

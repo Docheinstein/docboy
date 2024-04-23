@@ -248,6 +248,7 @@ void Core::unparcelizeState(Parcel&& p) {
 }
 
 void Core::reset() {
+    stateSize = STATE_SAVE_SIZE_UNKNOWN;
     ticks = 0;
 
     gb.cpu.reset();

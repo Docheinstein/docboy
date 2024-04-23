@@ -213,6 +213,9 @@ const CartridgeInfo& DebuggerBackend::getCartridgeInfo() {
         if (romSize < MemoryLayout::SIZE)
             fatal("unexpected rom size");
 
+        char title[16] {};
+        memcpy(title, &romData[MemoryLayout::TITLE::START], 16);
+        cartridgeInfo->title = title;
         cartridgeInfo->mbc = romData[MemoryLayout::TYPE];
         cartridgeInfo->rom = romData[MemoryLayout::ROM_SIZE];
         cartridgeInfo->ram = romData[MemoryLayout::RAM_SIZE];

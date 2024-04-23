@@ -2,6 +2,7 @@
 #define SHARED_H
 
 #include <cstdint>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -97,6 +98,7 @@ struct DisassembledInstructionReference {
 };
 
 struct CartridgeInfo {
+    std::string title {};
     uint8_t mbc {};
     uint8_t rom {};
     uint8_t ram {};
