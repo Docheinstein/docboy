@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
         IF_BOOTROM(std::string bootRom);
         std::string config {};
         bool serial {};
-        float scaling {1.0};
+        float scaling {};
         bool dumpCartridgeInfo {};
         IF_DEBUGGER(bool debugger {});
     } args;
@@ -174,8 +174,6 @@ int main(int argc, char* argv[]) {
         int32_t y {};
         float scaling {};
     } prefs {};
-
-    prefs.scaling = args.scaling;
 
     const auto readPreferences = [](const std::string& path, Preferences& p) {
         IniReader iniReader;
@@ -230,6 +228,13 @@ int main(int argc, char* argv[]) {
         ensureFileExists(args.config);
         readPreferences(args.config, prefs);
     }
+
+    // Args override both preferences and config
+    if (args.scaling > 0) {
+        prefs.scaling = args.scaling;
+    }
+
+    prefs.scaling = prefs.scaling > 0 ? prefs.scaling : 1.0f;
 
 #ifdef ENABLE_BOOTROM
     ensureFileExists(args.bootRom);
