@@ -1,5 +1,6 @@
 #include "reader.h"
 
+#include <iterator>
 #include "utils/io.h"
 #include "utils/strings.hpp"
 
