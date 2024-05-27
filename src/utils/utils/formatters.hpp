@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <array>
 
 template <typename T>
 void bin(T value, std::ostream& os) {
