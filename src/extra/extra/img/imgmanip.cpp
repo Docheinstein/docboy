@@ -168,3 +168,17 @@ std::vector<uint8_t> create_image_buffer(uint32_t width, uint32_t height, ImageF
     buf.resize(width * height * get_image_format_description_p(fmt).bytesPerPixel);
     return buf;
 }
+
+uint32_t rgb_to_pixel(uint8_t r, uint8_t g, uint8_t b, ImageFormat fmt) {
+    return map_rgb_to_pixel_with_format(r, g, b, get_image_format_description_p(fmt));
+}
+
+void pixel_to_rgb(uint32_t pixel, uint8_t& r, uint8_t& g, uint8_t& b, ImageFormat fmt) {
+    return get_rgb_from_pixel_with_format(pixel, r, g, b, get_image_format_description_p(fmt));
+}
+
+uint32_t convert_pixel(uint32_t pixel, ImageFormat from, ImageFormat to) {
+    uint8_t r, g, b;
+    pixel_to_rgb(pixel, r, g, b, from);
+    return rgb_to_pixel(r, g, b, to);
+}

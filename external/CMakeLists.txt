@@ -42,6 +42,28 @@ set(SDL_SENSOR OFF)
 
 add_subdirectory(SDL)
 
+# nativefiledialog
+# GTK3 is required by nativefiledialog on Linux: we don't build and link nfd at all if it's missing.
+set(NFD_BUILD_TESTS OFF CACHE BOOL "Build tests for nfd")
+set(NFD_INSTALL OFF CACHE BOOL "Generate install target for nfd")
+
+set(ENABLE_NFD ON)
+
+if (UNIX AND NOT APPLE)
+    find_package(PkgConfig)
+    pkg_check_modules(GTK3 gtk+-3.0)
+    if (NOT GTK3_FOUND)
+        set(ENABLE_NFD OFF)
+    endif ()
+endif ()
+
+if (ENABLE_NFD)
+    set(ENABLE_NFD ON PARENT_SCOPE)
+    add_subdirectory(nativefiledialog)
+else ()
+    set(ENABLE_NFD OFF PARENT_SCOPE)
+endif()
+
 # Catch2
 if (BUILD_TESTS)
     add_subdirectory(catch2)

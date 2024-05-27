@@ -22,3 +22,6 @@
 	path = external/catch2
 	url = https://github.com/catchorg/Catch2.git
 	branch = devel
+[submodule "external/nativefiledialog"]
+	path = external/nativefiledialog
+	url = https://github.com/btzy/nativefiledialog-extended.git

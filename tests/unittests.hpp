@@ -395,10 +395,10 @@ TEST_CASE("adt", "[adt]") {
 
         REQUIRE(v.size() == 4);
 
-        REQUIRE(v.popBack() == 4);
-        REQUIRE(v.popBack() == 3);
-        REQUIRE(v.popBack() == 2);
-        REQUIRE(v.popBack() == 1);
+        REQUIRE(v.pullBack() == 4);
+        REQUIRE(v.pullBack() == 3);
+        REQUIRE(v.pullBack() == 2);
+        REQUIRE(v.pullBack() == 1);
 
         REQUIRE(v.isEmpty());
 

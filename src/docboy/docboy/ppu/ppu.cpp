@@ -1206,7 +1206,7 @@ void Ppu::bgwinPixelSliceFetcherGetTileDataHigh1() {
         cacheBgWinFetch();
 
         isFetchingSprite = true;
-        of.entry = oamEntries[LX].popBack();
+        of.entry = oamEntries[LX].pullBack();
         objPrefetcherGetTile0();
         return;
     }
@@ -1275,7 +1275,7 @@ void Ppu::bgwinPixelSliceFetcherPush() {
         }
 
         isFetchingSprite = true;
-        of.entry = oamEntries[LX].popBack();
+        of.entry = oamEntries[LX].pullBack();
         objPrefetcherGetTile0();
     }
 }
@@ -1404,7 +1404,7 @@ void Ppu::objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo() {
     if (isObjReadyToBeFetched()) {
         // Still oam entries hit to be served for this x: setup the fetcher
         // for another obj fetch
-        of.entry = oamEntries[LX].popBack();
+        of.entry = oamEntries[LX].pullBack();
         fetcherTickSelector = &Ppu::objPrefetcherGetTile0;
     } else {
         // No more oam entries to serve for this x: setup to fetcher with

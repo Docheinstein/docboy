@@ -32,6 +32,10 @@ public:
         palette {palette} {
     }
 
+    void setPalette(const Palette& palette_) {
+        palette = palette_;
+    }
+
     void pushPixel(Pixel pixel) {
         check(static_cast<uint8_t>(pixel) < 4);
         pixels[cursor] = palette[static_cast<uint8_t>(pixel)];

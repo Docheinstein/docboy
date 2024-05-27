@@ -5,8 +5,7 @@
 #include <string>
 #include <vector>
 
-// using Palette = std::array<uint16_t, 4>;
-using Palette = std::vector<uint16_t>;
+using Palette = std::array<uint16_t, 4>;
 
 constexpr uint32_t FRAMEBUFFER_NUM_PIXELS = 160 * 144;
 constexpr uint32_t FRAMEBUFFER_SIZE = sizeof(uint16_t) * FRAMEBUFFER_NUM_PIXELS;

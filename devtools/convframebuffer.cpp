@@ -1,5 +1,6 @@
 #include "testutils/framebuffers.h"
 #include "utils/strings.hpp"
+#include <array>
 #include <iostream>
 #include <vector>
 
@@ -48,15 +49,15 @@ int main(int argc, const char* argv[]) {
 
     // Parse palettes string tokens into numbers
     const auto parsePalette = [](const std::vector<std::string>& tokens) {
-        std::vector<uint16_t> palette;
-        for (const auto& t : tokens) {
-            palette.push_back(std::stol(t, nullptr, 16));
+        std::array<uint16_t, 4> palette {};
+        for (uint32_t i = 0; i < 4 && i < tokens.size(); i++) {
+            palette[i] = std::stol(tokens[i], nullptr, 16);
         }
         return palette;
     };
 
-    std::vector<uint16_t> inPalette = parsePalette(inPaletteTokens);
-    std::vector<uint16_t> outPalette = parsePalette(outPaletteTokens);
+    std::array<uint16_t, 4> inPalette = parsePalette(inPaletteTokens);
+    std::array<uint16_t, 4> outPalette = parsePalette(outPaletteTokens);
 
     // Read input file
     uint16_t inBuffer[FRAMEBUFFER_NUM_PIXELS];

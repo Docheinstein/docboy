@@ -17,6 +17,7 @@ public:
 
     [[nodiscard]] std::string filename() const;
 
+    path with_extension(const std::string& extension) const;
     path& replace_extension(const std::string& extension);
 
     [[nodiscard]] std::string string() const;

@@ -227,7 +227,7 @@ private:
 #endif
     } w;
 
-    // Bg/Win Prefetcher
+    // Bg/Window Prefetcher
     struct {
         uint8_t LX {}; // [0, 256), advances 8 by 8
         uint16_t vTilemapTileAddr {};

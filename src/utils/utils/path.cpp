@@ -22,6 +22,10 @@ std::string path::string() const {
     return s;
 }
 
+path path::with_extension(const std::string& extension) const {
+    return path {*this}.replace_extension(extension);
+}
+
 path& path::replace_extension(const std::string& extension) {
     std::string& lastPart = parts.back();
     std::size_t dot = lastPart.find_last_of('.');

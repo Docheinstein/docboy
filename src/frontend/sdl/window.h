@@ -1,73 +1,51 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#include "controllers/navcontroller.h"
+#include "screens/screenstack.h"
+#include <cstdint>
+
 class SDL_Window;
 class SDL_Renderer;
-class SDL_Texture;
-
-#include "docboy/shared/specs.h"
-#include <chrono>
-#include <cstdint>
-#include <list>
-#include <optional>
-#include <string>
+struct SDL_Texture;
+union SDL_Event;
 
 class Window {
 public:
-    static constexpr int WINDOW_POSITION_UNDEFINED = -1;
-    static constexpr uint32_t WINDOW_WIDTH = Specs::Display::WIDTH;
-    static constexpr uint32_t WINDOW_HEIGHT = Specs::Display::HEIGHT;
-    static constexpr uint64_t TEXT_LETTER_WIDTH = 8;
-    static constexpr uint64_t TEXT_LETTER_HEIGHT = 8;
-    static constexpr std::optional<uint64_t> TEXT_DURATION_PERSISTENT = std::nullopt;
-
     struct Geometry {
         int x {};
         int y {};
-        float scaling {};
+        uint32_t scaling {};
     };
-    static constexpr Geometry DEFAULT_GEOMETRY = {WINDOW_POSITION_UNDEFINED, WINDOW_POSITION_UNDEFINED, 1.0};
 
-    explicit Window(const uint16_t* framebuffer, const Geometry& geometry = DEFAULT_GEOMETRY);
-    ~Window();
+    static constexpr int WINDOW_POSITION_UNDEFINED = -1;
+    static constexpr Geometry DEFAULT_GEOMETRY = {WINDOW_POSITION_UNDEFINED, WINDOW_POSITION_UNDEFINED, 1};
+
+    explicit Window(const Geometry& geometry = DEFAULT_GEOMETRY);
 
     void render();
     void clear();
 
-    uint64_t addText(const std::string& string, int x, int y, uint32_t color = 0x000000FF,
-                     std::optional<uint64_t> millisAlive = TEXT_DURATION_PERSISTENT,
-                     std::optional<uint64_t> guid = std::nullopt);
-    void removeText(uint64_t guid);
+    void handleEvent(const SDL_Event& event) const;
 
-    bool screenshot(const std::string& filename) const;
+    Geometry getGeometry() const;
 
-    [[nodiscard]] Geometry getGeometry() const;
+    SDL_Renderer* getRenderer() const;
+
+    ScreenStack& getScreenStack();
+
+    void setScaling(uint32_t scaling);
+    uint32_t getScaling() const;
 
 private:
-    struct Text {
-        uint64_t guid;
-        std::string string;
-        int x;
-        int y;
-        uint32_t color;
-        std::optional<std::chrono::high_resolution_clock::time_point> deadline;
-    };
-
-    void drawFramebuffer();
-    void drawTexts();
-    void drawText(const Text& text);
-
-    const uint16_t* framebuffer;
-
-    std::list<Text> texts;
+    ScreenStack screenStack;
 
     SDL_Window* window;
     SDL_Renderer* renderer;
-    SDL_Texture* texture;
 
-    float width;
-    float height;
-    float scaling;
+    uint32_t width;
+    uint32_t height;
+    uint32_t scaling;
 };
 
 #endif // WINDOW_H

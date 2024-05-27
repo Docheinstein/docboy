@@ -50,9 +50,19 @@ struct Vector {
         data[cursor++] = {std::forward<Args>(args)...};
     }
 
-    T popBack() {
+    T pullBack() {
         check(isNotEmpty());
         return data[--cursor];
+    }
+
+    void popBack() {
+        check(isNotEmpty());
+        --cursor;
+    }
+
+    T& back() {
+        check(isNotEmpty());
+        return data[cursor - 1];
     }
 
     void clear() {

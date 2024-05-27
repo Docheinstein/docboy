@@ -18,10 +18,6 @@ public:
 
         Outcome outcome {};
         uint32_t lastReadLine {};
-
-        explicit operator bool() const {
-            return outcome == Outcome::Success;
-        }
     };
 
     Result parse(const std::string& filename);
