@@ -6,7 +6,7 @@
 #include <cstdint>
 
 class SDL_Window;
-class SDL_Renderer;
+struct SDL_Renderer;
 struct SDL_Texture;
 union SDL_Event;
 

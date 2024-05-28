@@ -20,7 +20,6 @@ public:
     };
 
     explicit Menu(SDL_Texture* texture, const std::array<uint32_t, 4>& palette);
-    ;
 
     MenuItem& addItem(MenuItem&& item);
 

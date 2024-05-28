@@ -9,7 +9,7 @@
 
 class Window;
 class Core;
-class SDL_Renderer;
+struct SDL_Renderer;
 
 class UiController {
 public:
