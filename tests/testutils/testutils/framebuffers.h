@@ -1,6 +1,7 @@
 #ifndef FRAMEBUFFERSUTILS_H
 #define FRAMEBUFFERSUTILS_H
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>

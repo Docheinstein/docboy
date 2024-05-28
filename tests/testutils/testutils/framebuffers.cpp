@@ -6,8 +6,6 @@
 #include "utils/hexdump.hpp"
 #include <cstring>
 
-#include "docboy/lcd/lcd.h"
-
 void load_framebuffer_png(const std::string& filename, uint16_t* buffer) {
     const auto buffer_rgb888 = load_png_rgb888(filename);
     convert_image(ImageFormat::RGB888, buffer_rgb888.data(), ImageFormat::RGB565, buffer, Specs::Display::WIDTH,
