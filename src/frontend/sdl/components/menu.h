@@ -5,6 +5,7 @@
 #include "text.h"
 #include "utils/textures.h"
 #include "utils/vector.hpp"
+#include <array>
 #include <functional>
 #include <string>
 
