@@ -3,31 +3,34 @@
 
 # DocBoy
 
-GameBoy (DMG) emulator written in C++17.
+DocBoy is an open source accuracy-focused GameBoy (DMG) emulator, written in C++17.
 
 Can be used either with the standalone SDL frontend or as a libretro core (e.g. with RetroArch).
 
-DocBoy is a accuracy-focused GB emulator that tries to find a good spot between:
-1. Emulation accuracy
-2. Speed and efficiency
-3. Code clarity
-
-**Bonus**: a good CLI debugger (in the style of GDB).
+---
 
 ### Features
 
+#### GameBoy features
 * CPU: M-cycle accurate
 * PPU: T-cycle accurate (implements Pixel FIFO)
 * Cartridges: NoMBC, MBC1, MBC2, MBC3, MBC5
-* CLI debugger: supports breakpoints, watchpoints, disassembler, step by step execution (by instruction, m-cycle or by t-cycle), rewind, memory viewer, interrupts viewer, IO viewer
-* Serial Link (with the possibility to print the serial output to console)
-* Bootroom support
-* Joypad
+* Real Time Clock (RTC) emulation
+* Memory buses (EXT, CPU, OAM, VRAM) and MMU (for accurately handle read/write conflicts)
+* Timers
+* Interrupts
 * DMA
-* RTC
-* Multiple buses (EXT, CPU, OAM, VRAM) and MMU (for precise read/write conflicts handling)
-* Save / Load (RAM)
-* Save state / Load state
+* JoyPad
+
+#### Frontend features
+* CLI debugger (in GDB style): supports disassemble, breakpoints, watchpoints, step by step execution, rewind, memory viewer, interrupts viewer, IO viewer
+* Serial Link (output to console)
+* Save/Load
+* Save/Load state
+* Fast-forward
+* Configurable palette
+* Screenshots
+* Graphical menu (SDL)
 
 ### TODO
 * Sound
@@ -35,16 +38,14 @@ DocBoy is a accuracy-focused GB emulator that tries to find a good spot between:
 
 ## Build
 
-DocBoy is compiled as a static library which can be used by a _frontend_.
+DocBoy can be compiled as a static library which can be used by a _frontend_.
 
-These are the CMake options for the available frontends.
+These are the CMake options for the available _frontends_.
 
-* `BUILD_NOGUI_FRONTEND`
 * `BUILD_SDL_FRONTEND` (default)
 * `BUILD_LIBRETRO_CORE`
 * `BUILD_LIBRETRO_CORE_ANDROID`
-
-You have to enable at least one of them.
+* `BUILD_NOGUI_FRONTEND`
 
 **SDL**
 
@@ -84,18 +85,16 @@ _Note_: use just `make` instead of `make -j`; the latter does not work with NDK 
 
 ## Usage
 
-#### SDL Frontend
-
-```build/docboy-sdl <rom>```
+#### SDL
 
 ```
-usage: rom [--config CONFIG] [--serial] [--scaling SCALING] [--cartridge-info]
+usage: [rom] [--config CONFIG] [--serial] [--scaling SCALING] [--cartridge-info]
        [--debugger] [--help]
 
 positional arguments:
   rom                    ROM
 
-optional arguments:
+options:
   -c, --config CONFIG    Read configuration file
   -s, --serial           Display serial console
   -z, --scaling SCALING  Scaling factor
@@ -106,36 +105,40 @@ optional arguments:
 
 **Controls**
 
+These are the default controls.
+
+All the joypad keys can be remapped through the _Control Options_ menu.
+
 | Button | Action                   |
 |--------|--------------------------|
 | F1     | Save State               |
 | F2     | Load State               |
 | F11    | Dump framebuffer         |
 | F12    | Screenshot               |
-| f      | Show / Hide FPS          |
-| q      | Decrease speed           |
-| w      | Increase speed           |
-| d      | Attach / Detach debugger |
-| Enter  | GameBoy START            |
-| Tab    | GameBoy SELECT           |
-| z      | GameBoy A                |
-| x      | GameBoy B                |
-| Up     | GameBoy UP               |
-| Right  | GameBoy RIGHT            |
-| Down   | GameBoy DOWN             |
-| Left   | GameBoy LEFT             |
+| F      | Show / Hide FPS          |
+| Q      | Decrease speed           |
+| W      | Increase speed           |
+| D      | Attach / Detach debugger |
+| Enter  | START                    |
+| Tab    | SELECT                   |
+| Z      | A                        |
+| X      | B                        |
+| Up     | UP                       |
+| Right  | RIGHT                    |
+| Down   | DOWN                     |
+| Left   | LEFT                     |
 
-#### Retroarch (Libretro Frontend)
+#### Retroarch (libretro)
 
-Using retroarch, you can use the libretro core as follows.
+With [RetroArch](https://www.retroarch.com/) (supported by almost every existing platform, including Android and iOS), you can use the libretro core as follows.
 
 ```retroarch -L build/docboy_libretro.so <rom>```
 
 ## Debugging
 
-DocBoy offers a CLI debugger that's really useful to see what's going on.
+DocBoy offers a CLI debugger (in GDB style) that's really useful to see what's going on under the hood.
 
-To build with the debugger, enable the CMake `ENABLE_DEBUGGER` option.
+To build with the debugger support, enable the CMake `ENABLE_DEBUGGER` option.
 
 ```
 mkdir build
@@ -144,7 +147,7 @@ cmake .. -DENABLE_DEBUGGER=ON
 make -j 8
 ```
 
-Use the `-d` option to run with the debugger already attached from the beginning, or press the key `d` to attach/detach the debugger at any time.
+Use the `-d` option to run with the debugger already attached from the beginning, or press the key `D` to attach/detach the debugger at any time.
 
 **Commands**
 
@@ -193,6 +196,8 @@ Here's the debugger!
 ![Zelda Link's Awekening](images/zelda-links-awekening.png)
 ![Preistorik Man](images/preistorik-man.png)
 ![Mega Man](images/mega-man.png)
+![Launcher Screen](images/launcher-screen.png)
+![Launcher Screen](images/main-menu.png)
 
 
 ## Tests results
