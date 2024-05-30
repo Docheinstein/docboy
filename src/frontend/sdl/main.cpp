@@ -361,7 +361,7 @@ int main(int argc, char* argv[]) {
     SDL_Event e;
     std::chrono::high_resolution_clock::time_point nextFrameTime = std::chrono::high_resolution_clock::now();
 
-    while (!mainController.shouldQuit()) {
+    while (!mainController.shouldQuit() IF_DEBUGGER(&&!core.isDebuggerAskingToShutdown())) {
         // Wait until next frame
         while (std::chrono::high_resolution_clock::now() < nextFrameTime)
             ;
@@ -378,7 +378,12 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // Render frame
+        // Eventually advance emulation by one frame
+        if (!coreController.isPaused()) {
+            coreController.frame();
+        }
+
+        // Render current frame
         window.render();
     }
 

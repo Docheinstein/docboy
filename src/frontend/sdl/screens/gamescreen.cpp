@@ -25,6 +25,16 @@ GameScreen::GameScreen(Context context) :
 
     SDL_SetTextureScaleMode(gameOverlayTexture, SDL_SCALEMODE_NEAREST);
     SDL_SetTextureBlendMode(gameOverlayTexture, SDL_BLENDMODE_BLEND);
+
+    check(core.isRomLoaded());
+
+    // Exit pause state (start emulation)
+    core.setPaused(false);
+
+    // Pause the emulation if menu is visible
+    menu.screenStack.onScreenChanged = [this]() {
+        core.setPaused(isInMenu());
+    };
 }
 
 void GameScreen::redraw() {
@@ -43,9 +53,6 @@ void GameScreen::render() {
         menu.screenStack.top->render();
         return;
     }
-
-    // Advance emulator by one frame
-    core.frame();
 
     // Copy framebuffer to rendered texture
     copyToTexture(gameTexture, gameFramebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t));
@@ -77,6 +84,8 @@ void GameScreen::handleEvent(const SDL_Event& event) {
         menu.screenStack.top->handleEvent(event);
         return;
     }
+
+    check(!core.isPaused());
 
     switch (event.type) {
     case SDL_EVENT_KEY_DOWN: {

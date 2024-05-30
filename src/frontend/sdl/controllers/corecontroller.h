@@ -21,6 +21,14 @@ public:
     bool isRomLoaded() const;
     path getRom() const;
 
+    // Running/Pause
+    void setPaused(bool paused_) {
+        paused = paused_;
+    }
+    bool isPaused() const {
+        return paused;
+    }
+
     // Save
     bool writeSave() const;
     bool loadSave() const;
@@ -68,6 +76,8 @@ private:
         path romPath {};
         bool isLoaded {};
     } rom;
+
+    bool paused {true};
 
     std::map<SDL_Keycode, Joypad::Key> keycodeMap;
     std::map<Joypad::Key, SDL_Keycode> joypadMap;

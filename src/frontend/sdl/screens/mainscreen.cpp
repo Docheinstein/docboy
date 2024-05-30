@@ -13,6 +13,7 @@ MainScreen::MainScreen(Context ctx) :
     menu.addItem({"Load ROM", [this] {
                       if (const auto rom = openRomPicker()) {
                           core.loadRom(*rom);
+                          core.setPaused(false);
                           nav.push(std::make_unique<GameScreen>(context));
                       }
                   }});

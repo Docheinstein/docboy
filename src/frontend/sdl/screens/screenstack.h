@@ -1,6 +1,7 @@
 #ifndef SCREENSTACK_H
 #define SCREENSTACK_H
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -12,6 +13,8 @@ struct ScreenStack {
 
     std::vector<std::unique_ptr<Screen>> stack {};
     Screen* top {};
+
+    std::function<void()> onScreenChanged {};
 };
 
 #endif // SCREENSTACK_H
