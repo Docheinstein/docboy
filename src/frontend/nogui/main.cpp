@@ -23,9 +23,17 @@
 #include "docboy/debugger/memsniffer.h"
 #endif
 
-static constexpr uint64_t FOREVER = UINT64_MAX;
+namespace {
+constexpr uint64_t FOREVER = UINT64_MAX;
 
-static void dump_cartridge_info(const ICartridge& cartridge) {
+void ensure_file_exists(const std::string& path) {
+    if (!file_exists(path)) {
+        std::cerr << "ERROR: failed to load '" << path << "'" << std::endl;
+        exit(1);
+    }
+}
+
+void dump_cartridge_info(const ICartridge& cartridge) {
     const CartridgeHeader header = CartridgeHeader::parse(cartridge);
     std::cout << "Title             :  " << header.titleAsString() << "\n";
     std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     (" << header.cartridgeTypeDescription()
@@ -42,6 +50,7 @@ static void dump_cartridge_info(const ICartridge& cartridge) {
     std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";
     std::cout << "Header checksum   :  " << hex(header.header_checksum) << "\n";
 }
+} // namespace
 
 int main(int argc, char* argv[]) {
     struct {
@@ -53,7 +62,6 @@ int main(int argc, char* argv[]) {
         bool dumpCartridgeInfo {};
         IF_DEBUGGER(bool debugger {});
     } args;
-    check(1 > 2);
 
     Args::Parser parser {};
     IF_BOOTROM(parser.addArgument(args.bootRom, "boot-rom").help("Boot ROM"));
@@ -67,15 +75,14 @@ int main(int argc, char* argv[]) {
     if (!parser.parse(argc, argv, 1))
         return 1;
 
-    const auto ensureExists = [](const std::string& path) {
-        if (!file_exists(path)) {
-            std::cerr << "ERROR: failed to load '" << path << "'" << std::endl;
-            exit(1);
-        }
-    };
+    // Eventually just dump cartridge info and quit
+    if (!args.rom.empty() && args.dumpCartridgeInfo) {
+        dump_cartridge_info(*CartridgeFactory().create(args.rom));
+        return 0;
+    }
 
-    IF_BOOTROM(ensureExists(args.bootRom));
-    ensureExists(args.rom);
+    IF_BOOTROM(ensure_file_exists(args.bootRom));
+    ensure_file_exists(args.rom);
 
     std::unique_ptr<GameBoy> gb {std::make_unique<GameBoy>(IF_BOOTROM(BootRomFactory().create(args.bootRom)))};
     Core core {*gb};
@@ -89,7 +96,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    core.loadRom(std::move(cartridge));
+    core.loadRom(args.rom);
 
 #ifdef ENABLE_SERIAL
     std::unique_ptr<SerialConsole> serialConsole;
