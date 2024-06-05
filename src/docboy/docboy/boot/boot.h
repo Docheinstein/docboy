@@ -1,46 +1,45 @@
 #ifndef BOOT_H
 #define BOOT_H
 
-#include "docboy/bootrom/macros.h"
-#include "docboy/memory/byte.hpp"
-#include "docboy/shared/specs.h"
-#include "lock.h"
-#include "utils/bits.hpp"
+#include "docboy/bootrom/helpers.h"
+#include "docboy/common/specs.h"
+#include "docboy/memory/byte.h"
+
+#include "utils/bits.h"
 #include "utils/parcel.h"
+
+#ifdef ENABLE_BOOTROM
+class Mmu;
+#endif
 
 class BootIO {
 public:
 #ifdef ENABLE_BOOTROM
-    explicit BootIO(BootLock bootLock) :
-        bootLock(bootLock) {
+    explicit BootIO(Mmu& mmu) :
+        mmu {mmu} {
     }
 #endif
 
-    void writeBOOT(uint8_t value) {
-        // BOOT disable is one-way only
-#ifdef ENABLE_BOOTROM
-        if (!test_bit<Specs::Bits::Boot::BOOT_ENABLE>(BOOT) && test_bit<Specs::Bits::Boot::BOOT_ENABLE>(value))
-            bootLock.lock();
-#endif
-        BOOT |= value;
+    void write_boot(uint8_t value);
+
+    void save_state(Parcel& parcel) const {
+        parcel.write_uint8(boot);
     }
 
-    void saveState(Parcel& parcel) const {
-        parcel.writeUInt8(BOOT);
-    }
-
-    void loadState(Parcel& parcel) {
-        BOOT = parcel.readUInt8();
+    void load_state(Parcel& parcel) {
+        boot = parcel.read_uint8();
     }
 
     void reset() {
-        BOOT = IF_BOOTROM_ELSE(0b11111110, 0b11111111);
+        boot = if_bootrom_else(0b11111110, 0b11111111);
     }
 
-    byte BOOT {make_byte(Specs::Registers::Boot::BOOT)};
+    byte boot {make_byte(Specs::Registers::Boot::BOOT)};
 
 private:
-    IF_BOOTROM(BootLock bootLock);
+#ifdef ENABLE_BOOTROM
+    Mmu& mmu;
+#endif
 };
 
 #endif // BOOT_H

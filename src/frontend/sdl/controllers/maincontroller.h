@@ -1,29 +1,28 @@
 #ifndef MAINCONTROLLER_H
 #define MAINCONTROLLER_H
 
-#include "utils/mathematics.h"
 #include <chrono>
 #include <cstdint>
 
 class MainController {
 public:
-    void setSpeed(int32_t s) {
+    void set_speed(int32_t s) {
         speed = s;
-        frameTime = std::chrono::nanoseconds {(uint64_t)(DEFAULT_FRAME_TIME.count() / pow2(speed))};
+        frame_time = std::chrono::nanoseconds {(uint64_t)(DEFAULT_FRAME_TIME.count() / pow2(speed))};
     }
 
-    int32_t getSpeed() const {
+    int32_t get_speed() const {
         return speed;
     }
 
-    std::chrono::high_resolution_clock::duration getFrameTime() const {
-        return frameTime;
+    std::chrono::high_resolution_clock::duration get_frame_time() const {
+        return frame_time;
     }
 
     void quit() {
         quitting = true;
     }
-    bool shouldQuit() const {
+    bool should_quit() const {
         return quitting;
     }
 
@@ -32,7 +31,7 @@ private:
                                                                   Specs::Frequencies::CLOCK};
 
     int32_t speed {};
-    std::chrono::high_resolution_clock::duration frameTime {DEFAULT_FRAME_TIME};
+    std::chrono::high_resolution_clock::duration frame_time {DEFAULT_FRAME_TIME};
     bool quitting {};
 };
 

@@ -1,15 +1,18 @@
-#include "header.h"
-#include "docboy/cartridge/cartridge.h"
-#include "docboy/shared/specs.h"
+#include "extra/cartridge/header.h"
+
 #include <cstring>
 #include <map>
 
-static const std::map<uint8_t, std::string> CGB_FLAG_DESCRIPTION_MAP = {
+#include "docboy/cartridge/cartridge.h"
+#include "docboy/common/specs.h"
+
+namespace {
+const std::map<uint8_t, std::string> CGB_FLAG_DESCRIPTION_MAP = {
     {0x80, "The game supports CGB enhancements, but is backwards compatible with monochrome Game Boys"},
     {0xC0, "The game works on CGB only"},
 };
 
-static const std::map<uint16_t, std::string> NEW_LICENSEE_CODE_DESCRIPTION_MAP = {
+const std::map<uint16_t, std::string> NEW_LICENSEE_CODE_DESCRIPTION_MAP = {
     {0x00, "None"},
     {0x01, "Nintendo R&D1"},
     {0x08, "Capcom"},
@@ -73,7 +76,7 @@ static const std::map<uint16_t, std::string> NEW_LICENSEE_CODE_DESCRIPTION_MAP =
     {0xA4, "Konami (Yu-Gi-Oh!)"},
 };
 
-static const std::map<uint8_t, std::string> CARTRIDGE_TYPE_DESCRIPTION_MAP = {
+const std::map<uint8_t, std::string> CARTRIDGE_TYPE_DESCRIPTION_MAP = {
     {0x00, "ROM ONLY"},
     {0x01, "MBC1"},
     {0x02, "MBC1+RAM"},
@@ -104,7 +107,7 @@ static const std::map<uint8_t, std::string> CARTRIDGE_TYPE_DESCRIPTION_MAP = {
     {0xFF, "HuC1+RAM+BATTERY"},
 };
 
-static const std::map<uint8_t, std::string> OLD_LICENSEE_CODE_DESCRIPTION_MAP = {
+const std::map<uint8_t, std::string> OLD_LICENSEE_CODE_DESCRIPTION_MAP = {
     {0x00, "None"},
     {0x01, "Nintendo"},
     {0x08, "Capcom"},
@@ -254,46 +257,48 @@ static const std::map<uint8_t, std::string> OLD_LICENSEE_CODE_DESCRIPTION_MAP = 
     {0xFF, "LJN"},
 };
 
-static const std::map<uint8_t, std::string> ROM_SIZE_DESCRIPTION_MAP = {
+const std::map<uint8_t, std::string> ROM_SIZE_DESCRIPTION_MAP = {
     {0x00, "32 KiB (2 banks)"},   {0x01, "64 KiB (4 banks)"},   {0x02, "128 KiB (8 banks)"},
     {0x03, "256 KiB (16 banks)"}, {0x04, "512 KiB (32 banks)"}, {0x05, "1 MiB (64 banks)"},
     {0x06, "2 MiB (128 banks)"},  {0x07, "4 MiB (256 banks)"},  {0x08, "8 MiB (512 banks)"},
     {0x52, "1.1 MiB (72 banks)"}, {0x53, "1.2 MiB (80 banks)"}, {0x54, "1.5 MiB (96 banks)"},
 };
 
-static const std::map<uint8_t, std::string> RAM_SIZE_DESCRIPTION_MAP = {
+const std::map<uint8_t, std::string> RAM_SIZE_DESCRIPTION_MAP = {
     {0x00, "No RAM"},           {0x01, "2 KiB (unofficial)"}, {0x02, "8 KiB (1 banks)"},
     {0x03, "32 KiB (4 banks)"}, {0x04, "128 KiB (16 banks)"}, {0x05, "64 KiB (8 banks)"}};
+} // namespace
 
-bool CartridgeHeader::isNintendoLogoValid() const {
+bool CartridgeHeader::is_nintendo_logo_valid() const {
     return memcmp(nintendo_logo.data(), Specs::Cartridge::Header::NINTENDO_LOGO,
                   sizeof(Specs::Cartridge::Header::NINTENDO_LOGO)) == 0;
 }
 
-bool CartridgeHeader::isHeaderChecksumValid() const {
+bool CartridgeHeader::is_header_checksum_valid() const {
     uint8_t expected_header_checksum = 0;
-    for (uint16_t address = 0x134 - 0x100; address <= 0x14C - 0x100; address++)
+    for (uint16_t address = 0x134 - 0x100; address <= 0x14C - 0x100; address++) {
         expected_header_checksum = expected_header_checksum - data[address] - 1;
+    }
 
     return expected_header_checksum == header_checksum;
 }
 
-std::string CartridgeHeader::titleAsString() const {
-    std::string titleString {};
-    titleString.resize(title.size() + 1);
-    memcpy(titleString.data(), title.data(), title.size());
-    titleString[title.size()] = '\0';
-    return titleString;
+std::string CartridgeHeader::title_as_string() const {
+    std::string title_string {};
+    title_string.resize(title.size() + 1);
+    memcpy(title_string.data(), title.data(), title.size());
+    title_string[title.size()] = '\0';
+    return title_string;
 }
 
-std::string CartridgeHeader::cgbFlagDescription() const {
+std::string CartridgeHeader::cgb_flag_description() const {
     if (const auto it = CGB_FLAG_DESCRIPTION_MAP.find(cgb_flag); it != CGB_FLAG_DESCRIPTION_MAP.end()) {
         return it->second;
     }
     return "Unknown";
 }
 
-std::string CartridgeHeader::newLicenseeCodeDescription() const {
+std::string CartridgeHeader::new_licensee_code_description() const {
     uint16_t new_licensee_code_ext = new_licensee_code[0] << 8 | new_licensee_code[1];
     if (const auto it = NEW_LICENSEE_CODE_DESCRIPTION_MAP.find(new_licensee_code_ext);
         it != NEW_LICENSEE_CODE_DESCRIPTION_MAP.end()) {
@@ -302,7 +307,7 @@ std::string CartridgeHeader::newLicenseeCodeDescription() const {
     return "Unknown";
 }
 
-std::string CartridgeHeader::cartridgeTypeDescription() const {
+std::string CartridgeHeader::cartridge_type_description() const {
     if (const auto it = CARTRIDGE_TYPE_DESCRIPTION_MAP.find(cartridge_type);
         it != CARTRIDGE_TYPE_DESCRIPTION_MAP.end()) {
         return it->second;
@@ -310,21 +315,21 @@ std::string CartridgeHeader::cartridgeTypeDescription() const {
     return "Unknown";
 }
 
-std::string CartridgeHeader::romSizeDescription() const {
+std::string CartridgeHeader::rom_size_description() const {
     if (const auto it = ROM_SIZE_DESCRIPTION_MAP.find(rom_size); it != ROM_SIZE_DESCRIPTION_MAP.end()) {
         return it->second;
     }
     return "Unknown";
 }
 
-std::string CartridgeHeader::ramSizeDescription() const {
+std::string CartridgeHeader::ram_size_description() const {
     if (const auto it = RAM_SIZE_DESCRIPTION_MAP.find(ram_size); it != RAM_SIZE_DESCRIPTION_MAP.end()) {
         return it->second;
     }
     return "Unknown";
 }
 
-std::string CartridgeHeader::oldLicenseeCodeDescription() const {
+std::string CartridgeHeader::old_licensee_code_description() const {
     if (const auto it = OLD_LICENSEE_CODE_DESCRIPTION_MAP.find(old_licensee_code);
         it != OLD_LICENSEE_CODE_DESCRIPTION_MAP.end()) {
         return it->second;
@@ -339,8 +344,9 @@ CartridgeHeader CartridgeHeader::parse(const ICartridge& cartridge) {
 
     CartridgeHeader h;
 
-    for (uint16_t i = 0x100; i <= 0x150; i++)
-        h.data.push_back(cartridge.readRom(i));
+    for (uint16_t i = 0x100; i <= 0x150; i++) {
+        h.data.push_back(cartridge.read_rom(i));
+    }
 
     const uint8_t* data = h.data.data();
 

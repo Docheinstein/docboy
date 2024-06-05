@@ -1,191 +1,190 @@
 #ifndef SOUND_H
 #define SOUND_H
 
-#include "docboy/bootrom/macros.h"
-#include "docboy/memory/byte.hpp"
+#include "docboy/memory/byte.h"
 
 class SoundIO {
 public:
-    void writeNR10(uint8_t value) {
-        NR10 = 0b10000000 | value;
+    void write_nr10(uint8_t value) {
+        nr10 = 0b10000000 | value;
     }
 
-    void writeNR30(uint8_t value) {
-        NR30 = 0b01111111 | value;
+    void write_nr30(uint8_t value) {
+        nr30 = 0b01111111 | value;
     }
 
-    void writeNR32(uint8_t value) {
-        NR30 = 0b10011111 | value;
+    void write_nr32(uint8_t value) {
+        nr30 = 0b10011111 | value;
     }
 
-    void writeNR41(uint8_t value) {
-        NR41 = 0b11000000 | value;
+    void write_nr41(uint8_t value) {
+        nr41 = 0b11000000 | value;
     }
 
-    void writeNR44(uint8_t value) {
-        NR44 = 0b00111111 | value;
+    void write_nr44(uint8_t value) {
+        nr44 = 0b00111111 | value;
     }
 
-    void writeNR52(uint8_t value) {
-        NR52 = 0b01110000 | value;
+    void write_nr52(uint8_t value) {
+        nr52 = 0b01110000 | value;
     }
 
-    void saveState(Parcel& parcel) const {
-        parcel.writeUInt8(NR10);
-        parcel.writeUInt8(NR11);
-        parcel.writeUInt8(NR12);
-        parcel.writeUInt8(NR13);
-        parcel.writeUInt8(NR14);
-        parcel.writeUInt8(NR21);
-        parcel.writeUInt8(NR22);
-        parcel.writeUInt8(NR23);
-        parcel.writeUInt8(NR24);
-        parcel.writeUInt8(NR30);
-        parcel.writeUInt8(NR31);
-        parcel.writeUInt8(NR32);
-        parcel.writeUInt8(NR33);
-        parcel.writeUInt8(NR34);
-        parcel.writeUInt8(NR41);
-        parcel.writeUInt8(NR42);
-        parcel.writeUInt8(NR43);
-        parcel.writeUInt8(NR44);
-        parcel.writeUInt8(NR50);
-        parcel.writeUInt8(NR51);
-        parcel.writeUInt8(NR52);
-        parcel.writeUInt8(WAVE0);
-        parcel.writeUInt8(WAVE1);
-        parcel.writeUInt8(WAVE2);
-        parcel.writeUInt8(WAVE3);
-        parcel.writeUInt8(WAVE4);
-        parcel.writeUInt8(WAVE5);
-        parcel.writeUInt8(WAVE6);
-        parcel.writeUInt8(WAVE7);
-        parcel.writeUInt8(WAVE8);
-        parcel.writeUInt8(WAVE9);
-        parcel.writeUInt8(WAVEA);
-        parcel.writeUInt8(WAVEB);
-        parcel.writeUInt8(WAVEC);
-        parcel.writeUInt8(WAVED);
-        parcel.writeUInt8(WAVEE);
-        parcel.writeUInt8(WAVEF);
+    void save_state(Parcel& parcel) const {
+        parcel.write_uint8(nr10);
+        parcel.write_uint8(nr11);
+        parcel.write_uint8(nr12);
+        parcel.write_uint8(nr13);
+        parcel.write_uint8(nr14);
+        parcel.write_uint8(nr21);
+        parcel.write_uint8(nr22);
+        parcel.write_uint8(nr23);
+        parcel.write_uint8(nr24);
+        parcel.write_uint8(nr30);
+        parcel.write_uint8(nr31);
+        parcel.write_uint8(nr32);
+        parcel.write_uint8(nr33);
+        parcel.write_uint8(nr34);
+        parcel.write_uint8(nr41);
+        parcel.write_uint8(nr42);
+        parcel.write_uint8(nr43);
+        parcel.write_uint8(nr44);
+        parcel.write_uint8(nr50);
+        parcel.write_uint8(nr51);
+        parcel.write_uint8(nr52);
+        parcel.write_uint8(wave0);
+        parcel.write_uint8(wave1);
+        parcel.write_uint8(wave2);
+        parcel.write_uint8(wave3);
+        parcel.write_uint8(wave4);
+        parcel.write_uint8(wave5);
+        parcel.write_uint8(wave6);
+        parcel.write_uint8(wave7);
+        parcel.write_uint8(wave8);
+        parcel.write_uint8(wave9);
+        parcel.write_uint8(waveA);
+        parcel.write_uint8(waveB);
+        parcel.write_uint8(waveC);
+        parcel.write_uint8(waveD);
+        parcel.write_uint8(waveE);
+        parcel.write_uint8(waveF);
     }
 
-    void loadState(Parcel& parcel) {
-        NR10 = parcel.readUInt8();
-        NR11 = parcel.readUInt8();
-        NR12 = parcel.readUInt8();
-        NR13 = parcel.readUInt8();
-        NR14 = parcel.readUInt8();
-        NR21 = parcel.readUInt8();
-        NR22 = parcel.readUInt8();
-        NR23 = parcel.readUInt8();
-        NR24 = parcel.readUInt8();
-        NR30 = parcel.readUInt8();
-        NR31 = parcel.readUInt8();
-        NR32 = parcel.readUInt8();
-        NR33 = parcel.readUInt8();
-        NR34 = parcel.readUInt8();
-        NR41 = parcel.readUInt8();
-        NR42 = parcel.readUInt8();
-        NR43 = parcel.readUInt8();
-        NR44 = parcel.readUInt8();
-        NR50 = parcel.readUInt8();
-        NR51 = parcel.readUInt8();
-        NR52 = parcel.readUInt8();
-        WAVE0 = parcel.readUInt8();
-        WAVE1 = parcel.readUInt8();
-        WAVE2 = parcel.readUInt8();
-        WAVE3 = parcel.readUInt8();
-        WAVE4 = parcel.readUInt8();
-        WAVE5 = parcel.readUInt8();
-        WAVE6 = parcel.readUInt8();
-        WAVE7 = parcel.readUInt8();
-        WAVE8 = parcel.readUInt8();
-        WAVE9 = parcel.readUInt8();
-        WAVEA = parcel.readUInt8();
-        WAVEB = parcel.readUInt8();
-        WAVEC = parcel.readUInt8();
-        WAVED = parcel.readUInt8();
-        WAVEE = parcel.readUInt8();
-        WAVEF = parcel.readUInt8();
+    void load_state(Parcel& parcel) {
+        nr10 = parcel.read_uint8();
+        nr11 = parcel.read_uint8();
+        nr12 = parcel.read_uint8();
+        nr13 = parcel.read_uint8();
+        nr14 = parcel.read_uint8();
+        nr21 = parcel.read_uint8();
+        nr22 = parcel.read_uint8();
+        nr23 = parcel.read_uint8();
+        nr24 = parcel.read_uint8();
+        nr30 = parcel.read_uint8();
+        nr31 = parcel.read_uint8();
+        nr32 = parcel.read_uint8();
+        nr33 = parcel.read_uint8();
+        nr34 = parcel.read_uint8();
+        nr41 = parcel.read_uint8();
+        nr42 = parcel.read_uint8();
+        nr43 = parcel.read_uint8();
+        nr44 = parcel.read_uint8();
+        nr50 = parcel.read_uint8();
+        nr51 = parcel.read_uint8();
+        nr52 = parcel.read_uint8();
+        wave0 = parcel.read_uint8();
+        wave1 = parcel.read_uint8();
+        wave2 = parcel.read_uint8();
+        wave3 = parcel.read_uint8();
+        wave4 = parcel.read_uint8();
+        wave5 = parcel.read_uint8();
+        wave6 = parcel.read_uint8();
+        wave7 = parcel.read_uint8();
+        wave8 = parcel.read_uint8();
+        wave9 = parcel.read_uint8();
+        waveA = parcel.read_uint8();
+        waveB = parcel.read_uint8();
+        waveC = parcel.read_uint8();
+        waveD = parcel.read_uint8();
+        waveE = parcel.read_uint8();
+        waveF = parcel.read_uint8();
     }
 
     void reset() {
-        NR10 = 0b10000000;
-        NR11 = IF_BOOTROM_ELSE(0, 0b10111111);
-        NR12 = IF_BOOTROM_ELSE(0, 0b11110011);
-        NR13 = IF_BOOTROM_ELSE(0, 0b11111111);
-        NR14 = 0b10111111; // TODO: B8 or BF?
-        NR21 = IF_BOOTROM_ELSE(0, 0b00111111);
-        NR22 = 0;
-        NR23 = IF_BOOTROM_ELSE(0, 0b11111111);
-        NR24 = 0b10111111; // TODO: B8 or BF?
-        NR30 = 0b01111111;
-        NR31 = IF_BOOTROM_ELSE(0, 0b11111111);
-        NR32 = 0b10011111;
-        NR33 = IF_BOOTROM_ELSE(0, 0b11111111);
-        NR34 = 0b10111111; // TODO: B8 or BF?
-        NR41 = IF_BOOTROM_ELSE(0, 0b11111111);
-        NR42 = 0;
-        NR43 = 0;
-        NR44 = 0b10111111; // TODO: B8 or BF?
-        NR50 = IF_BOOTROM_ELSE(0, 0b01110111);
-        NR51 = IF_BOOTROM_ELSE(0, 0b11110011);
-        NR52 = IF_BOOTROM_ELSE(0, 0b11110001);
-        WAVE0 = 0;
-        WAVE1 = 0;
-        WAVE2 = 0;
-        WAVE3 = 0;
-        WAVE4 = 0;
-        WAVE5 = 0;
-        WAVE6 = 0;
-        WAVE7 = 0;
-        WAVE8 = 0;
-        WAVE9 = 0;
-        WAVEA = 0;
-        WAVEB = 0;
-        WAVEC = 0;
-        WAVED = 0;
-        WAVEE = 0;
-        WAVEF = 0;
+        nr10 = 0b10000000;
+        nr11 = if_bootrom_else(0, 0b10111111);
+        nr12 = if_bootrom_else(0, 0b11110011);
+        nr13 = if_bootrom_else(0, 0b11111111);
+        nr14 = 0b10111111; // TODO: B8 or BF?
+        nr21 = if_bootrom_else(0, 0b00111111);
+        nr22 = 0;
+        nr23 = if_bootrom_else(0, 0b11111111);
+        nr24 = 0b10111111; // TODO: B8 or BF?
+        nr30 = 0b01111111;
+        nr31 = if_bootrom_else(0, 0b11111111);
+        nr32 = 0b10011111;
+        nr33 = if_bootrom_else(0, 0b11111111);
+        nr34 = 0b10111111; // TODO: B8 or BF?
+        nr41 = if_bootrom_else(0, 0b11111111);
+        nr42 = 0;
+        nr43 = 0;
+        nr44 = 0b10111111; // TODO: B8 or BF?
+        nr50 = if_bootrom_else(0, 0b01110111);
+        nr51 = if_bootrom_else(0, 0b11110011);
+        nr52 = if_bootrom_else(0, 0b11110001);
+        wave0 = 0;
+        wave1 = 0;
+        wave2 = 0;
+        wave3 = 0;
+        wave4 = 0;
+        wave5 = 0;
+        wave6 = 0;
+        wave7 = 0;
+        wave8 = 0;
+        wave9 = 0;
+        waveA = 0;
+        waveB = 0;
+        waveC = 0;
+        waveD = 0;
+        waveE = 0;
+        waveF = 0;
     };
 
-    byte NR10 {make_byte(Specs::Registers::Sound::NR10)};
-    byte NR11 {make_byte(Specs::Registers::Sound::NR11)};
-    byte NR12 {make_byte(Specs::Registers::Sound::NR12)};
-    byte NR13 {make_byte(Specs::Registers::Sound::NR13)};
-    byte NR14 {make_byte(Specs::Registers::Sound::NR14)};
-    byte NR21 {make_byte(Specs::Registers::Sound::NR21)};
-    byte NR22 {make_byte(Specs::Registers::Sound::NR22)};
-    byte NR23 {make_byte(Specs::Registers::Sound::NR23)};
-    byte NR24 {make_byte(Specs::Registers::Sound::NR24)};
-    byte NR30 {make_byte(Specs::Registers::Sound::NR30)};
-    byte NR31 {make_byte(Specs::Registers::Sound::NR31)};
-    byte NR32 {make_byte(Specs::Registers::Sound::NR32)};
-    byte NR33 {make_byte(Specs::Registers::Sound::NR33)};
-    byte NR34 {make_byte(Specs::Registers::Sound::NR34)};
-    byte NR41 {make_byte(Specs::Registers::Sound::NR41)};
-    byte NR42 {make_byte(Specs::Registers::Sound::NR42)};
-    byte NR43 {make_byte(Specs::Registers::Sound::NR43)};
-    byte NR44 {make_byte(Specs::Registers::Sound::NR44)};
-    byte NR50 {make_byte(Specs::Registers::Sound::NR50)};
-    byte NR51 {make_byte(Specs::Registers::Sound::NR51)};
-    byte NR52 {make_byte(Specs::Registers::Sound::NR52)};
-    byte WAVE0 {make_byte(Specs::Registers::Sound::WAVE0)};
-    byte WAVE1 {make_byte(Specs::Registers::Sound::WAVE1)};
-    byte WAVE2 {make_byte(Specs::Registers::Sound::WAVE2)};
-    byte WAVE3 {make_byte(Specs::Registers::Sound::WAVE3)};
-    byte WAVE4 {make_byte(Specs::Registers::Sound::WAVE4)};
-    byte WAVE5 {make_byte(Specs::Registers::Sound::WAVE5)};
-    byte WAVE6 {make_byte(Specs::Registers::Sound::WAVE6)};
-    byte WAVE7 {make_byte(Specs::Registers::Sound::WAVE7)};
-    byte WAVE8 {make_byte(Specs::Registers::Sound::WAVE8)};
-    byte WAVE9 {make_byte(Specs::Registers::Sound::WAVE9)};
-    byte WAVEA {make_byte(Specs::Registers::Sound::WAVEA)};
-    byte WAVEB {make_byte(Specs::Registers::Sound::WAVEB)};
-    byte WAVEC {make_byte(Specs::Registers::Sound::WAVEC)};
-    byte WAVED {make_byte(Specs::Registers::Sound::WAVED)};
-    byte WAVEE {make_byte(Specs::Registers::Sound::WAVEE)};
-    byte WAVEF {make_byte(Specs::Registers::Sound::WAVEF)};
+    byte nr10 {make_byte(Specs::Registers::Sound::NR10)};
+    byte nr11 {make_byte(Specs::Registers::Sound::NR11)};
+    byte nr12 {make_byte(Specs::Registers::Sound::NR12)};
+    byte nr13 {make_byte(Specs::Registers::Sound::NR13)};
+    byte nr14 {make_byte(Specs::Registers::Sound::NR14)};
+    byte nr21 {make_byte(Specs::Registers::Sound::NR21)};
+    byte nr22 {make_byte(Specs::Registers::Sound::NR22)};
+    byte nr23 {make_byte(Specs::Registers::Sound::NR23)};
+    byte nr24 {make_byte(Specs::Registers::Sound::NR24)};
+    byte nr30 {make_byte(Specs::Registers::Sound::NR30)};
+    byte nr31 {make_byte(Specs::Registers::Sound::NR31)};
+    byte nr32 {make_byte(Specs::Registers::Sound::NR32)};
+    byte nr33 {make_byte(Specs::Registers::Sound::NR33)};
+    byte nr34 {make_byte(Specs::Registers::Sound::NR34)};
+    byte nr41 {make_byte(Specs::Registers::Sound::NR41)};
+    byte nr42 {make_byte(Specs::Registers::Sound::NR42)};
+    byte nr43 {make_byte(Specs::Registers::Sound::NR43)};
+    byte nr44 {make_byte(Specs::Registers::Sound::NR44)};
+    byte nr50 {make_byte(Specs::Registers::Sound::NR50)};
+    byte nr51 {make_byte(Specs::Registers::Sound::NR51)};
+    byte nr52 {make_byte(Specs::Registers::Sound::NR52)};
+    byte wave0 {make_byte(Specs::Registers::Sound::WAVE0)};
+    byte wave1 {make_byte(Specs::Registers::Sound::WAVE1)};
+    byte wave2 {make_byte(Specs::Registers::Sound::WAVE2)};
+    byte wave3 {make_byte(Specs::Registers::Sound::WAVE3)};
+    byte wave4 {make_byte(Specs::Registers::Sound::WAVE4)};
+    byte wave5 {make_byte(Specs::Registers::Sound::WAVE5)};
+    byte wave6 {make_byte(Specs::Registers::Sound::WAVE6)};
+    byte wave7 {make_byte(Specs::Registers::Sound::WAVE7)};
+    byte wave8 {make_byte(Specs::Registers::Sound::WAVE8)};
+    byte wave9 {make_byte(Specs::Registers::Sound::WAVE9)};
+    byte waveA {make_byte(Specs::Registers::Sound::WAVEA)};
+    byte waveB {make_byte(Specs::Registers::Sound::WAVEB)};
+    byte waveC {make_byte(Specs::Registers::Sound::WAVEC)};
+    byte waveD {make_byte(Specs::Registers::Sound::WAVED)};
+    byte waveE {make_byte(Specs::Registers::Sound::WAVEE)};
+    byte waveF {make_byte(Specs::Registers::Sound::WAVEF)};
 };
 #endif // SOUND_H

@@ -1,19 +1,19 @@
-#include "shortcutsscreen.h"
-#include "window.h"
+#include "screens/shortcutsscreen.h"
+#include "windows/window.h"
 
 ShortcutsScreen::ShortcutsScreen(Context context) :
-    MenuScreen(context) {
+    MenuScreen {context} {
 
-    menu.setNavigationEnabled(false);
+    menu.set_navigation_enabled(false);
 
-    menu.addItem({"Toggle FPS      F"});
-    menu.addItem({"Inc. speed      W"});
-    menu.addItem({"Dec. speed      Q"});
+    menu.add_item({"Toggle FPS      F"});
+    menu.add_item({"Inc. speed      W"});
+    menu.add_item({"Dec. speed      Q"});
 #ifdef ENABLE_DEBUGGER
-    menu.addItem({"Toggle debugger D"});
+    menu.add_item({"Toggle debugger D"});
 #endif
-    menu.addItem({"Save state     F1"});
-    menu.addItem({"Load state     F2"});
-    menu.addItem({"Dump frame    F11"});
-    menu.addItem({"Screenshot    F12"});
+    menu.add_item({"Save state     F1"});
+    menu.add_item({"Load state     F2"});
+    menu.add_item({"Dump frame    F11"});
+    menu.add_item({"Screenshot    F12"});
 }

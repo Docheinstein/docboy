@@ -1,7 +1,8 @@
-#include "testutils/framebuffers.h"
-#include "utils/formatters.hpp"
-#include "utils/strings.hpp"
 #include <iostream>
+
+#include "testutils/framebuffers.h"
+#include "utils/formatters.h"
+#include "utils/strings.h"
 
 // usage: convframebuffer <in_file> <in_palette> <out_file> <out_palette>
 
@@ -12,21 +13,21 @@ int main(int argc, const char* argv[]) {
     }
 
     // Read arguments
-    std::string inFile1 {argv[1]};
-    std::string inFile2 {argv[2]};
+    std::string in_file {argv[1]};
+    std::string in_file2 {argv[2]};
 
     // Read files
-    uint16_t inBuffer1[FRAMEBUFFER_NUM_PIXELS];
-    load_framebuffer_png(inFile1, inBuffer1);
+    uint16_t in_buffer1[FRAMEBUFFER_NUM_PIXELS];
+    load_framebuffer_png(in_file, in_buffer1);
 
-    uint16_t inBuffer2[FRAMEBUFFER_NUM_PIXELS];
-    load_framebuffer_png(inFile2, inBuffer2);
+    uint16_t in_buffer2[FRAMEBUFFER_NUM_PIXELS];
+    load_framebuffer_png(in_file2, in_buffer2);
 
     uint32_t i;
     for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
-        if (inBuffer1[i] != inBuffer2[i]) {
+        if (in_buffer1[i] != in_buffer2[i]) {
             std::cerr << "Mismatch at position " << i << " (row=" << i / 160 << ", column=" << i % 160 << "): 0x"
-                      << hex(inBuffer1[i]) << " != 0x" << hex(inBuffer2[i]) << std::endl;
+                      << hex(in_buffer1[i]) << " != 0x" << hex(in_buffer2[i]) << std::endl;
             return 1;
         }
     }

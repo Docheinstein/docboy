@@ -1,10 +1,11 @@
 #ifndef FRONTEND_H
 #define FRONTEND_H
 
-#include "shared.h"
 #include <functional>
 #include <optional>
 #include <string>
+
+#include "docboy/debugger/shared.h"
 
 class DebuggerBackend;
 class GameBoy;
@@ -23,11 +24,11 @@ public:
     explicit DebuggerFrontend(DebuggerBackend& backend);
     ~DebuggerFrontend();
 
-    Command pullCommand(const ExecutionState& state);
-    void onTick(uint64_t tick);
+    Command pull_command(const ExecutionState& state);
+    void notify_tick(uint64_t tick);
 
-    void setOnPullingCommandCallback(std::function<void()> callback);
-    void setOnCommandPulledCallback(std::function<bool(const std::string& s)> callback);
+    void set_on_pulling_command_callback(std::function<void()> callback);
+    void set_on_command_pulled_callback(std::function<bool(const std::string& s)> callback);
 
 private:
     struct DisplayEntry {
@@ -35,37 +36,37 @@ private:
 
         struct Examine {
             MemoryOutputFormat format {};
-            std::optional<uint8_t> formatArg {};
+            std::optional<uint8_t> format_arg {};
             uint16_t address {};
             size_t length {};
-            bool raw;
+            bool raw {};
         };
 
         std::variant<Examine /*, ...*/> expression;
     };
 
     template <typename FrontendCommandType>
-    std::optional<Command> handleCommand(const FrontendCommandType& cmd);
+    std::optional<Command> handle_command(const FrontendCommandType& cmd);
 
-    void printUI(const ExecutionState& executionState) const;
+    void print_ui(const ExecutionState& state) const;
 
-    [[nodiscard]] std::string dumpMemory(uint16_t from, uint32_t n, MemoryOutputFormat fmt,
-                                         std::optional<uint8_t> fmtArg, bool raw) const;
-    [[nodiscard]] std::string dumpDisplayEntry(const DisplayEntry& d) const;
+    std::string dump_memory(uint16_t from, uint32_t n, MemoryOutputFormat fmt, std::optional<uint8_t> fmt_arg,
+                            bool raw) const;
+    std::string dump_display_entry(const DisplayEntry& d) const;
 
     DebuggerBackend& backend;
     const Core& core;
     const GameBoy& gb;
 
-    std::string lastCmdline;
-    std::vector<DisplayEntry> displayEntries;
+    std::string last_cmdline;
+    std::vector<DisplayEntry> display_entries;
     uint32_t trace {};
 
-    uint16_t autoDisassembleNextInstructions {10};
-    bool reprintUI {};
+    uint16_t auto_disassemble_next_instructions {10};
+    bool reprint_ui {};
 
-    std::function<void()> onPullingCommandCallback {};
-    std::function<bool(const std::string& cmd)> onCommandPulledCallback {};
+    std::function<void()> on_pulling_command_callback {};
+    std::function<bool(const std::string& cmd)> on_command_pulled_callback {};
 };
 
 #endif // FRONTEND_H

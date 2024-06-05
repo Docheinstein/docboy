@@ -1,5 +1,5 @@
-#ifndef BITMAPS_H
-#define BITMAPS_H
+#ifndef PIXELMAP_H
+#define PIXELMAP_H
 
 #include <cstdint>
 

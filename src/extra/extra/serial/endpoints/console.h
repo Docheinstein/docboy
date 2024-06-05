@@ -1,15 +1,16 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-#include "buffer.h"
 #include <iosfwd>
+
+#include "extra/serial/endpoints/buffer.h"
 
 class SerialConsole : public SerialBuffer {
 public:
     explicit SerialConsole(std::ostream& output, uint32_t bufsize = UINT32_MAX);
     ~SerialConsole() override = default;
 
-    void serialWrite(uint8_t) override;
+    void serial_write(uint8_t) override;
     void flush();
 
 private:

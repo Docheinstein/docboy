@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-std::optional<std::string> openRomPicker();
+std::optional<std::string> open_rom_picker();
 
 #endif
 

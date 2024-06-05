@@ -3,28 +3,28 @@
 #include <cstdarg>
 #include <cstring>
 
-static struct retro_log_callback logging;
-static retro_log_printf_t retro_log;
+namespace {
+retro_log_printf_t retro_log;
 
-static retro_environment_t environ_cb;
-static retro_video_refresh_t video_cb;
-static retro_audio_sample_batch_t audio_batch_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
+retro_environment_t environ_cb;
+retro_video_refresh_t video_cb;
+retro_audio_sample_batch_t audio_batch_cb;
+retro_input_poll_t input_poll_cb;
+retro_input_state_t input_state_cb;
 
-// Use MAX_FREQUENCY since libretro frontend handles the emulation speed by itself
-static GameBoy gameboy;
-static Core core {gameboy};
-static const uint16_t* framebuffer {gameboy.lcd.getPixels()};
+GameBoy gameboy {};
+Core core {gameboy};
+const uint16_t* framebuffer {gameboy.lcd.get_pixels()};
 
-static int16_t audiobuffer[4096] {};
+int16_t audiobuffer[4096] {};
 
-static void retro_fallback_log(enum retro_log_level level, const char* fmt, ...) {
+void retro_fallback_log(enum retro_log_level level, const char* fmt, ...) {
     va_list va;
     va_start(va, fmt);
     vfprintf(stderr, fmt, va);
     va_end(va);
 }
+} // namespace
 
 void retro_init(void) {
 }
@@ -58,10 +58,13 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
 void retro_set_environment(retro_environment_t cb) {
     environ_cb = cb;
 
-    if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
+    struct retro_log_callback logging {};
+
+    if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging)) {
         retro_log = logging.log;
-    else
+    } else {
         retro_log = retro_fallback_log;
+    }
 
     static const struct retro_controller_description controllers[] = {
         {"Nintendo Gameboy", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)},
@@ -112,11 +115,11 @@ void retro_run(void) {
 
     input_poll_cb();
 
-    for (uint32_t keyIndex = 0; keyIndex < array_size(RETRO_KEYS); keyIndex++) {
-        const uint16_t retroKey = RETRO_KEYS[keyIndex];
-        const bool isKeyPressed = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, retroKey);
-        core.setKey(RETRO_KEYS_TO_GAMEBOY_KEYS[keyIndex],
-                    isKeyPressed ? Joypad::KeyState::Pressed : Joypad::KeyState::Released);
+    for (uint32_t key_index = 0; key_index < array_size(RETRO_KEYS); key_index++) {
+        const uint16_t retro_key = RETRO_KEYS[key_index];
+        const bool is_key_pressed = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, retro_key);
+        core.set_key(RETRO_KEYS_TO_GAMEBOY_KEYS[key_index],
+                     is_key_pressed ? Joypad::KeyState::Pressed : Joypad::KeyState::Released);
     }
 
     // Emulate until next frame
@@ -151,8 +154,8 @@ bool retro_load_game(const struct retro_game_info* info) {
     }
 
     retro_log(RETRO_LOG_INFO, "Loading: %s", info->path);
-    core.loadRom(info->path);
-    retro_log(RETRO_LOG_INFO, "loaded: %s", info->path);
+    core.load_rom(info->path);
+    retro_log(RETRO_LOG_INFO, "Loaded: %s", info->path);
     return true;
 }
 
@@ -168,23 +171,23 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info* info, 
 }
 
 size_t retro_serialize_size(void) {
-    return core.getStateSize();
+    return core.get_state_size();
 }
 
 bool retro_serialize(void* data, size_t size) {
-    core.saveState(data);
+    core.save_state(data);
     return true;
 }
 
 bool retro_unserialize(const void* data, size_t size) {
-    core.loadState(data);
+    core.load_state(data);
     return true;
 }
 
 void* retro_get_memory_data(unsigned id) {
     switch (id) {
     case RETRO_MEMORY_SAVE_RAM:
-        return gameboy.cartridgeSlot.cartridge->getRamSaveData();
+        return gameboy.cartridge_slot.cartridge->get_ram_save_data();
     case RETRO_MEMORY_RTC:
         return nullptr;
     default:
@@ -195,7 +198,7 @@ void* retro_get_memory_data(unsigned id) {
 size_t retro_get_memory_size(unsigned id) {
     switch (id) {
     case RETRO_MEMORY_SAVE_RAM:
-        return gameboy.cartridgeSlot.cartridge->getRamSaveSize();
+        return gameboy.cartridge_slot.cartridge->get_ram_save_size();
     case RETRO_MEMORY_RTC:
         return 0;
     default:

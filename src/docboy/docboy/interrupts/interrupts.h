@@ -1,10 +1,10 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
-#include "docboy/bootrom/macros.h"
-#include "docboy/memory/byte.hpp"
-#include "docboy/shared/specs.h"
-#include "utils/bits.hpp"
+#include "docboy/common/specs.h"
+#include "docboy/memory/byte.h"
+
+#include "utils/bits.h"
 #include "utils/parcel.h"
 
 class InterruptsIO {
@@ -17,12 +17,12 @@ public:
         Joypad,
     };
 
-    void writeIF(uint8_t value) {
+    void write_IF(uint8_t value) {
         IF = 0b11100000 | value;
     }
 
     template <InterruptType Type>
-    void raiseInterrupt() {
+    void raise_Interrupt() {
         if constexpr (Type == InterruptType::VBlank) {
             set_bit<Specs::Bits::Interrupts::VBLANK>(IF);
         } else if constexpr (Type == InterruptType::Stat) {
@@ -36,14 +36,14 @@ public:
         }
     }
 
-    void saveState(Parcel& parcel) const {
-        parcel.writeUInt8(IF);
-        parcel.writeUInt8(IE);
+    void save_state(Parcel& parcel) const {
+        parcel.write_uint8(IF);
+        parcel.write_uint8(IE);
     }
 
-    void loadState(Parcel& parcel) {
-        IF = parcel.readUInt8();
-        IE = parcel.readUInt8();
+    void load_state(Parcel& parcel) {
+        IF = parcel.read_uint8();
+        IE = parcel.read_uint8();
     }
 
     void reset() {

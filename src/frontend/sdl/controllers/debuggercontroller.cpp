@@ -1,46 +1,47 @@
-#include "debuggercontroller.h"
-#include "corecontroller.h"
-#include "window.h"
+#include "controllers/debuggercontroller.h"
 
-DebuggerController::DebuggerController(Window& window, Core& core, CoreController& coreController) :
-    window(window),
-    core(core),
-    coreController(coreController) {
+#include "controllers/corecontroller.h"
+#include "windows/window.h"
+
+DebuggerController::DebuggerController(Window& window, Core& core, CoreController& core_controller) :
+    window {window},
+    core {core},
+    core_controller {core_controller} {
 }
 
-bool DebuggerController::isDebuggerAttached() const {
-    return coreController.isDebuggerAttached();
+bool DebuggerController::is_debugger_attached() const {
+    return core_controller.is_debugger_attached();
 }
 
-bool DebuggerController::attachDebugger(bool proceedExecution) {
+bool DebuggerController::attach_debugger(bool proceed_execution) {
     // Highlight the next pixel when the execution is stopped from the debugger
-    const auto onPullingCommand = [this]() {
+    const auto on_pulling_command = [this]() {
         // Cache the next pixel color
-        Lcd::PixelRgb565& nextPixel = core.gb.lcd.getPixels()[core.gb.lcd.getCursor()];
-        const Lcd::PixelRgb565 nextPixelColor = nextPixel;
+        Lcd::PixelRgb565& next_pixel = core.gb.lcd.get_pixels()[core.gb.lcd.get_cursor()];
+        const Lcd::PixelRgb565 next_pixel_color = next_pixel;
 
         // Mark the current dot as a white pixel (useful for debug PPU)
-        nextPixel = 0xFFFF;
+        next_pixel = 0xFFFF;
 
         // Render framebuffer
         window.render();
 
         // Restore original color
-        nextPixel = nextPixelColor;
+        next_pixel = next_pixel_color;
     };
 
-    const auto onCommandPulled = [this](const std::string& cmd) {
+    const auto on_command_pulled = [this](const std::string& cmd) {
         if (cmd == "clear") {
-            memset(core.gb.lcd.getPixels(), 0, Lcd::PIXEL_BUFFER_SIZE);
+            memset(core.gb.lcd.get_pixels(), 0, Lcd::PIXEL_BUFFER_SIZE);
             window.clear();
             return true;
         }
         return false;
     };
 
-    return coreController.attachDebugger(onPullingCommand, onCommandPulled, proceedExecution);
+    return core_controller.attach_debugger(on_pulling_command, on_command_pulled, proceed_execution);
 }
 
-bool DebuggerController::detachDebugger() {
-    return coreController.detachDebugger();
+bool DebuggerController::detach_debugger() {
+    return core_controller.detach_debugger();
 }

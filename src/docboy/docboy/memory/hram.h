@@ -1,7 +1,7 @@
 #ifndef HRAM_H
 #define HRAM_H
 
-#include "fwd/hramfwd.h"
-#include "randmemory.hpp"
+#include "docboy/memory/fwd/hramfwd.h"
+#include "docboy/memory/randmemory.h"
 
 #endif // HRAM_H

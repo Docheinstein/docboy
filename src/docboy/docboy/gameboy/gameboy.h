@@ -1,26 +1,21 @@
 #ifndef GAMEBOY_H
 #define GAMEBOY_H
 
-#ifdef ENABLE_BOOTROM
-#include "docboy/bootrom/bootrom.h"
-#endif
-
 #include <memory>
 
 #include "docboy/boot/boot.h"
-#include "docboy/boot/lock.h"
 #include "docboy/bus/cpubus.h"
 #include "docboy/bus/extbus.h"
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
 #include "docboy/cartridge/slot.h"
 #include "docboy/cpu/cpu.h"
-#include "docboy/cpu/idu.hpp"
+#include "docboy/cpu/idu.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/memory/hram.h"
-#include "docboy/memory/memory.hpp"
+#include "docboy/memory/memory.h"
 #include "docboy/memory/oam.h"
 #include "docboy/memory/vram.h"
 #include "docboy/memory/wram1.h"
@@ -32,50 +27,78 @@
 #include "docboy/sound/sound.h"
 #include "docboy/stop/stopcontroller.h"
 #include "docboy/timers/timers.h"
-#include "utils/macros.h"
+
+#ifdef ENABLE_BOOTROM
+#include "docboy/bootrom/bootrom.h"
+#endif
 
 class GameBoy {
 public:
 #ifdef ENABLE_BOOTROM
-    explicit GameBoy(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE, std::unique_ptr<BootRom>&& bootRom = nullptr) :
-        bootRom {std::move(bootRom)},
-        lcd {palette} {
+    explicit GameBoy(std::unique_ptr<BootRom> boot_rom) :
+        boot_rom {std::move(boot_rom)} {
     }
 #endif
 
-    explicit GameBoy(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE) :
-        lcd {palette} {
-    }
-
-    bool stopped {};
-
+    // Memory
     Vram vram {};
     Wram1 wram1 {};
     Wram2 wram2 {};
     Oam oam {};
     Hram hram {};
 
-    IF_BOOTROM(std::unique_ptr<BootRom> bootRom {});
-    CartridgeSlot cartridgeSlot {};
-    BootIO boot {IF_BOOTROM(BootLock {mmu})};
+    // Boot ROM
+#ifdef ENABLE_BOOTROM
+    std::unique_ptr<BootRom> boot_rom {};
+#endif
+
+    // Cartridge
+    CartridgeSlot cartridge_slot {};
+
+    // IO
+#ifdef ENABLE_BOOTROM
+    BootIO boot {mmu};
+#else
+    BootIO boot {};
+#endif
     Joypad joypad {interrupts};
-    SerialPort serialPort {interrupts};
+    SerialPort serial_port {interrupts};
     Timers timers {interrupts};
     InterruptsIO interrupts {};
     SoundIO sound {};
     VideoIO video {dma};
-    ExtBus extBus {cartridgeSlot, wram1, wram2};
-    CpuBus cpuBus {IF_BOOTROM(*bootRom COMMA) hram, joypad, serialPort, timers, interrupts, sound, video, boot};
-    VramBus vramBus {vram};
-    OamBus oamBus {oam};
-    Mmu mmu {IF_BOOTROM(*bootRom COMMA) extBus, cpuBus, vramBus, oamBus};
-    Dma dma {mmu, oamBus};
-    Idu idu {oamBus};
-    Cpu cpu {idu, interrupts, mmu, joypad, stopController};
-    Lcd lcd {};
-    Ppu ppu {lcd, video, interrupts, vramBus, oamBus};
 
-    StopController stopController {stopped, joypad, timers, lcd};
+    // Buses
+    ExtBus ext_bus {cartridge_slot, wram1, wram2};
+#ifdef ENABLE_BOOTROM
+    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, sound, video, boot};
+#else
+    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, sound, video, boot};
+#endif
+    VramBus vram_bus {vram};
+    OamBus oam_bus {oam};
+
+    // MMU
+#if ENABLE_BOOTROM
+    Mmu mmu {*boot_rom, ext_bus, cpu_bus, vram_bus, oam_bus};
+#else
+    Mmu mmu {ext_bus, cpu_bus, vram_bus, oam_bus};
+#endif
+
+    // DMA
+    Dma dma {mmu, oam_bus};
+
+    // CPU
+    Idu idu {oam_bus};
+    Cpu cpu {idu, interrupts, mmu, joypad, stop_controller};
+
+    // Video
+    Lcd lcd {};
+    Ppu ppu {lcd, video, interrupts, vram_bus, oam_bus};
+
+    // Power Saving
+    bool stopped {};
+    StopController stop_controller {stopped, joypad, timers, lcd};
 };
 
 #endif // GAMEBOY_H

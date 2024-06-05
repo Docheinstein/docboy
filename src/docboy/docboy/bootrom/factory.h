@@ -1,13 +1,13 @@
 #ifndef BOOTROMFACTORY_H
 #define BOOTROMFACTORY_H
 
-#include "bootrom.h"
 #include <memory>
 #include <string>
 
-class BootRomFactory {
-public:
-    [[nodiscard]] std::unique_ptr<BootRom> create(const std::string& filename) const;
+#include "docboy/bootrom/fwd/bootromfwd.h"
+
+namespace BootRomFactory {
+std::unique_ptr<BootRom> create(const std::string& filename);
 };
 
 #endif // BOOTROMFACTORY_H

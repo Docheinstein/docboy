@@ -1,21 +1,23 @@
 #ifndef CONTROLOPTIONSSCREEN_H
 #define CONTROLOPTIONSSCREEN_H
 
-#include "components/menu.h"
-#include "docboy/joypad/joypad.h"
-#include "menuscreen.h"
-#include "screen.h"
 #include <optional>
+
+#include "components/menu.h"
+#include "screens/menuscreen.h"
+#include "screens/screen.h"
+
+#include "docboy/joypad/joypad.h"
 
 class ControlOptionsScreen : public MenuScreen {
 public:
     explicit ControlOptionsScreen(Context context);
 
     void redraw() override;
-    void handleEvent(const SDL_Event& event) override;
+    void handle_event(const SDL_Event& event) override;
 
 private:
-    void onRemapKey(Joypad::Key key);
+    void on_remap_key(Joypad::Key key);
 
     struct {
         Menu::MenuItem* a;
@@ -28,7 +30,7 @@ private:
         Menu::MenuItem* down;
     } items {};
 
-    std::optional<Joypad::Key> joypadKeyToRemap;
+    std::optional<Joypad::Key> joypad_key_to_remap;
 };
 
 #endif // CONTROLOPTIONSSCREEN_H

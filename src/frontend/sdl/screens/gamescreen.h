@@ -1,11 +1,14 @@
 #ifndef GAMESCREEN_H
 #define GAMESCREEN_H
 
-#include "controllers/navcontroller.h"
-#include "docboy/lcd/lcd.h"
-#include "screen.h"
-#include "screenstack.h"
 #include <chrono>
+
+#include "controllers/navcontroller.h"
+
+#include "screens/screen.h"
+#include "screens/screenstack.h"
+
+#include "docboy/lcd/lcd.h"
 
 struct SDL_Texture;
 
@@ -15,23 +18,23 @@ public:
 
     void redraw() override;
     void render() override;
-    void handleEvent(const SDL_Event& event) override;
+    void handle_event(const SDL_Event& event) override;
 
 private:
-    void drawPopup(const std::string& str);
+    void draw_popup(const std::string& str);
 
-    void redrawOverlay();
+    void redraw_overlay();
 
-    bool isInMenu() const;
+    bool is_in_menu() const;
 
-    SDL_Texture* gameTexture {};
-    SDL_Texture* gameOverlayTexture {};
+    SDL_Texture* game_texture {};
+    SDL_Texture* game_overlay_texture {};
 
-    const Lcd::PixelRgb565* gameFramebuffer {};
+    const Lcd::PixelRgb565* game_framebuffer {};
 
     struct {
-        ScreenStack screenStack {};
-        NavController navController {screenStack};
+        ScreenStack screen_stack {};
+        NavController nav_controller {screen_stack};
     } menu;
 
     struct {
@@ -42,9 +45,9 @@ private:
 
     struct {
         bool visible {};
-        std::chrono::high_resolution_clock::time_point lastSample {};
+        std::chrono::high_resolution_clock::time_point last_sample {};
         uint32_t count {};
-        uint32_t displayCount {};
+        uint32_t display_count {};
     } fps;
 };
 

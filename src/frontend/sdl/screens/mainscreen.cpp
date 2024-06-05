@@ -1,31 +1,32 @@
-#include "mainscreen.h"
+#include "screens/mainscreen.h"
+
 #include "controllers/corecontroller.h"
 #include "controllers/maincontroller.h"
-#include "gamescreen.h"
-#include "helpscreen.h"
-#include "optionsscreen.h"
+#include "screens/gamescreen.h"
+#include "screens/helpscreen.h"
+#include "screens/optionsscreen.h"
 #include "utils/rompicker.h"
 
 MainScreen::MainScreen(Context ctx) :
-    MenuScreen(ctx) {
+    MenuScreen {ctx} {
 
 #ifdef NFD
-    menu.addItem({"Load ROM", [this] {
-                      if (const auto rom = openRomPicker()) {
-                          core.loadRom(*rom);
-                          core.setPaused(false);
-                          nav.push(std::make_unique<GameScreen>(context));
-                      }
-                  }});
+    menu.add_item({"Load ROM", [this] {
+                       if (const auto rom = open_rom_picker()) {
+                           core.load_rom(*rom);
+                           core.set_paused(false);
+                           nav.push(std::make_unique<GameScreen>(context));
+                       }
+                   }});
 #endif
 
-    menu.addItem({"Options", [this] {
-                      nav.push(std::make_unique<OptionsScreen>(context));
-                  }});
-    menu.addItem({"Help", [this] {
-                      nav.push(std::make_unique<HelpScreen>(context));
-                  }});
-    menu.addItem({"Exit", [this] {
-                      main.quit();
-                  }});
+    menu.add_item({"Options", [this] {
+                       nav.push(std::make_unique<OptionsScreen>(context));
+                   }});
+    menu.add_item({"Help", [this] {
+                       nav.push(std::make_unique<HelpScreen>(context));
+                   }});
+    menu.add_item({"Exit", [this] {
+                       main.quit();
+                   }});
 }

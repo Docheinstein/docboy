@@ -1,14 +1,15 @@
-#include "helpscreen.h"
+#include "screens/helpscreen.h"
+
 #include "controllers/navcontroller.h"
-#include "shortcutsscreen.h"
+#include "screens/shortcutsscreen.h"
 
 HelpScreen::HelpScreen(Context ctx) :
-    MenuScreen(ctx) {
+    MenuScreen {ctx} {
 
-    menu.addItem({"Shortcuts", [this] {
-                      nav.push(std::make_unique<ShortcutsScreen>(context));
-                  }});
-    menu.addItem({"Back", [this] {
-                      nav.pop();
-                  }});
+    menu.add_item({"Shortcuts", [this] {
+                       nav.push(std::make_unique<ShortcutsScreen>(context));
+                   }});
+    menu.add_item({"Back", [this] {
+                       nav.pop();
+                   }});
 }

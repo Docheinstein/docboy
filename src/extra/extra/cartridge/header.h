@@ -28,16 +28,16 @@ struct CartridgeHeader {
 
     std::vector<uint8_t> data;
 
-    [[nodiscard]] bool isNintendoLogoValid() const;
-    [[nodiscard]] bool isHeaderChecksumValid() const;
+    bool is_nintendo_logo_valid() const;
+    bool is_header_checksum_valid() const;
 
-    [[nodiscard]] std::string titleAsString() const;
-    [[nodiscard]] std::string cgbFlagDescription() const;
-    [[nodiscard]] std::string newLicenseeCodeDescription() const;
-    [[nodiscard]] std::string cartridgeTypeDescription() const;
-    [[nodiscard]] std::string romSizeDescription() const;
-    [[nodiscard]] std::string ramSizeDescription() const;
-    [[nodiscard]] std::string oldLicenseeCodeDescription() const;
+    std::string title_as_string() const;
+    std::string cgb_flag_description() const;
+    std::string new_licensee_code_description() const;
+    std::string cartridge_type_description() const;
+    std::string rom_size_description() const;
+    std::string ram_size_description() const;
+    std::string old_licensee_code_description() const;
 };
 
 #endif // CARTRIDGEHEADER_H

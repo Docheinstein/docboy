@@ -1,19 +1,25 @@
-#include "memsniffer.h"
+#include "docboy/debugger/memsniffer.h"
+
 #include "docboy/debugger/backend.h"
-#include "utils/asserts.h"
 
-DebuggerBackend* DebuggerMemorySniffer::observer {};
-
-void DebuggerMemorySniffer::notifyMemoryRead(uint16_t address, uint8_t value) {
-    if (observer)
-        observer->onMemoryRead(address, value);
+namespace DebuggerMemorySniffer {
+namespace {
+    DebuggerBackend* observer {};
 }
 
-void DebuggerMemorySniffer::notifyMemoryWrite(uint16_t address, uint8_t oldValue, uint8_t newValue) {
-    if (observer)
-        observer->onMemoryWrite(address, oldValue, newValue);
+void notify_memory_read(uint16_t address, uint8_t value) {
+    if (observer) {
+        observer->notify_memory_read(address, value);
+    }
 }
 
-void DebuggerMemorySniffer::setObserver(DebuggerBackend* o) {
+void notify_memory_write(uint16_t address, uint8_t old_value, uint8_t new_value) {
+    if (observer) {
+        observer->notify_memory_write(address, old_value, new_value);
+    }
+}
+
+void set_observer(DebuggerBackend* o) {
     observer = o;
 }
+} // namespace DebuggerMemorySniffer

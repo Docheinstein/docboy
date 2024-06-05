@@ -1,7 +1,7 @@
 #ifndef GRAPHICSOPTIONSSCREEN_H
 #define GRAPHICSOPTIONSSCREEN_H
 
-#include "menuscreen.h"
+#include "screens/menuscreen.h"
 
 class GraphicsOptionsScreen : public MenuScreen {
 public:
@@ -10,13 +10,15 @@ public:
     void redraw() override;
 
 private:
-    void onIncreaseScaling();
-    void onDecreaseScaling();
-    void onPrevPalette();
-    void onNextPalette();
+    void on_increase_scaling();
+    void on_decrease_scaling();
+    void on_prev_palette();
+    void on_next_palette();
 
-    Menu::MenuItem* paletteItem;
-    Menu::MenuItem* scalingItem;
+    struct {
+        Menu::MenuItem* palette {};
+        Menu::MenuItem* scaling {};
+    } items {};
 };
 
 #endif // GRAPHICSOPTIONSSCREEN_H

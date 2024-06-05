@@ -1,29 +1,28 @@
 #ifdef ENABLE_DEBUGGER
-#include "slot.h"
+#include "docboy/cartridge/slot.h"
 #include "docboy/debugger/memsniffer.h"
 
-uint8_t CartridgeSlot::readRom(uint16_t address) const {
-    uint8_t value = cartridge->readRom(address);
-    DebuggerMemorySniffer::notifyMemoryRead(address, value);
+uint8_t CartridgeSlot::read_rom(uint16_t address) const {
+    uint8_t value = cartridge->read_rom(address);
+    DebuggerMemorySniffer::notify_memory_read(address, value);
     return value;
 }
 
-void CartridgeSlot::writeRom(uint16_t address, uint8_t value) {
-    uint8_t oldValue = cartridge->readRom(address);
-    cartridge->writeRom(address, value);
-    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, value);
+void CartridgeSlot::write_rom(uint16_t address, uint8_t value) {
+    uint8_t old_value = cartridge->read_rom(address);
+    cartridge->write_rom(address, value);
+    DebuggerMemorySniffer::notify_memory_write(address, old_value, value);
 }
 
-uint8_t CartridgeSlot::readRam(uint16_t address) const {
-    uint8_t value = cartridge->readRam(address);
-    DebuggerMemorySniffer::notifyMemoryRead(address, value);
+uint8_t CartridgeSlot::read_ram(uint16_t address) const {
+    uint8_t value = cartridge->read_ram(address);
+    DebuggerMemorySniffer::notify_memory_read(address, value);
     return value;
 }
 
-void CartridgeSlot::writeRam(uint16_t address, uint8_t value) {
-    uint8_t oldValue = cartridge->readRam(address);
-    cartridge->writeRam(address, value);
-    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, value);
+void CartridgeSlot::write_ram(uint16_t address, uint8_t value) {
+    uint8_t old_value = cartridge->read_ram(address);
+    cartridge->write_ram(address, value);
+    DebuggerMemorySniffer::notify_memory_write(address, old_value, value);
 }
-
 #endif

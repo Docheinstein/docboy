@@ -4,7 +4,7 @@
 #include <cstdint>
 
 // clang-format off
-#ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
+#ifdef ENABLE_DEBUGGER
 struct byte;
 #else
 using byte = uint8_t;

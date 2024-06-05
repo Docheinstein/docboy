@@ -4,94 +4,94 @@ MmuView<Dev>::MmuView(Mmu& mmu) :
 }
 
 template <Device::Type Dev>
-void MmuView<Dev>::readRequest(uint16_t address) {
-    mmu.readRequest<Dev>(address);
+void MmuView<Dev>::read_request(uint16_t address) {
+    mmu.read_request<Dev>(address);
 }
 
 template <Device::Type Dev>
-uint8_t MmuView<Dev>::flushReadRequest() {
-    return mmu.flushReadRequest<Dev>();
+uint8_t MmuView<Dev>::flush_read_request() {
+    return mmu.flush_read_request<Dev>();
 }
 
 template <Device::Type Dev>
-void MmuView<Dev>::writeRequest(uint16_t address) {
-    return mmu.writeRequest<Dev>(address);
+void MmuView<Dev>::write_request(uint16_t address) {
+    return mmu.write_request<Dev>(address);
 }
 
 template <Device::Type Dev>
-void MmuView<Dev>::flushWriteRequest(uint16_t value) {
-    return mmu.flushWriteRequest<Dev>(value);
+void MmuView<Dev>::flush_write_request(uint16_t value) {
+    return mmu.flush_write_request<Dev>(value);
 }
 
 template <Device::Type Dev>
-void Mmu::readRequest(uint16_t address) {
-    BusAccess& busAccess {busAccessors[Dev][address]};
-    requests[Dev] = &busAccess;
-    busAccess.readRequest(address);
+void Mmu::read_request(uint16_t address) {
+    BusAccess& bus_access {bus_accessors[Dev][address]};
+    requests[Dev] = &bus_access;
+    bus_access.read_request(address);
 }
 
 template <Device::Type Dev>
-uint8_t Mmu::flushReadRequest() {
-    return requests[Dev]->flushReadRequest();
+uint8_t Mmu::flush_read_request() {
+    return requests[Dev]->flush_read_request();
 }
 
 template <Device::Type Dev>
-void Mmu::writeRequest(uint16_t address) {
-    BusAccess& busAccess {busAccessors[Dev][address]};
-    requests[Dev] = &busAccess;
-    busAccess.writeRequest(address);
+void Mmu::write_request(uint16_t address) {
+    BusAccess& bus_access {bus_accessors[Dev][address]};
+    requests[Dev] = &bus_access;
+    bus_access.write_request(address);
 }
 
 template <Device::Type Dev>
-void Mmu::flushWriteRequest(uint16_t value) {
-    requests[Dev]->flushWriteRequest(value);
+void Mmu::flush_write_request(uint16_t value) {
+    requests[Dev]->flush_write_request(value);
 }
 
 template <typename Bus, Device::Type Dev>
-void Mmu::BusAccess::readRequest(IBus* bus, uint16_t address) {
-    static_cast<Bus*>(bus)->template readRequest<Dev>(address);
+void Mmu::BusAccess::read_request(IBus* bus, uint16_t address) {
+    static_cast<Bus*>(bus)->template read_request<Dev>(address);
 }
 
 template <typename Bus, Device::Type Dev>
-uint8_t Mmu::BusAccess::flushReadRequest(IBus* bus) {
-    return static_cast<Bus*>(bus)->template flushReadRequest<Dev>();
+uint8_t Mmu::BusAccess::flush_read_request(IBus* bus) {
+    return static_cast<Bus*>(bus)->template flush_read_request<Dev>();
 }
 
 template <typename Bus, Device::Type Dev>
-void Mmu::BusAccess::writeRequest(IBus* bus, uint16_t address) {
-    static_cast<Bus*>(bus)->template writeRequest<Dev>(address);
+void Mmu::BusAccess::write_request(IBus* bus, uint16_t address) {
+    static_cast<Bus*>(bus)->template write_request<Dev>(address);
 }
 
 template <typename Bus, Device::Type Dev>
-void Mmu::BusAccess::flushWriteRequest(IBus* bus, uint8_t value) {
-    static_cast<Bus*>(bus)->template flushWriteRequest<Dev>(value);
+void Mmu::BusAccess::flush_write_request(IBus* bus, uint8_t value) {
+    static_cast<Bus*>(bus)->template flush_write_request<Dev>(value);
 }
 
 #ifdef ENABLE_DEBUGGER
 template <typename Bus>
-uint8_t Mmu::BusAccess::readBus(const IBus* bus, uint16_t address) {
-    return static_cast<const Bus*>(bus)->readBus(address);
+uint8_t Mmu::BusAccess::read_bus(const IBus* bus, uint16_t address) {
+    return static_cast<const Bus*>(bus)->read_bus(address);
 }
 #endif
 
-inline void Mmu::BusAccess::readRequest(uint16_t address) {
-    vtable.readRequest(bus, address);
+inline void Mmu::BusAccess::read_request(uint16_t address) {
+    vtable.read_request(bus, address);
 }
 
-inline uint8_t Mmu::BusAccess::flushReadRequest() {
-    return vtable.flushReadRequest(bus);
+inline uint8_t Mmu::BusAccess::flush_read_request() {
+    return vtable.flush_read_request(bus);
 }
 
-inline void Mmu::BusAccess::writeRequest(uint16_t address) {
-    vtable.writeRequest(bus, address);
+inline void Mmu::BusAccess::write_request(uint16_t address) {
+    vtable.write_request(bus, address);
 }
 
-inline void Mmu::BusAccess::flushWriteRequest(uint8_t value) {
-    vtable.flushWriteRequest(bus, value);
+inline void Mmu::BusAccess::flush_write_request(uint8_t value) {
+    vtable.flush_write_request(bus, value);
 }
 
 #ifdef ENABLE_DEBUGGER
-inline uint8_t Mmu::BusAccess::readBus(uint16_t address) const {
-    return vtable.readBus(bus, address);
+inline uint8_t Mmu::BusAccess::read_bus(uint16_t address) const {
+    return vtable.read_bus(bus, address);
 }
 #endif

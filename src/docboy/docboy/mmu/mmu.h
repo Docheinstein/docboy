@@ -1,11 +1,9 @@
 #ifndef MMU_H
 #define MMU_H
 
-#include "docboy/bootrom/macros.h"
 #include "docboy/bus/bus.h"
+#include "docboy/common/macros.h"
 #include "docboy/memory/fwd/bytefwd.h"
-#include "docboy/shared//macros.h"
-#include "utils/macros.h"
 
 #ifdef ENABLE_BOOTROM
 #include "docboy/bootrom/fwd/bootromfwd.h"
@@ -28,24 +26,30 @@ public:
     template <Device::Type Dev>
     using View = MmuView<Dev>;
 
-    Mmu(IF_BOOTROM(BootRom& bootRom COMMA) ExtBus& extBus, CpuBus& cpuBus, VramBus& vramBus, OamBus& oamBus);
+#ifdef ENABLE_BOOTROM
+    Mmu(BootRom& boot_rom, ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
+#else
+    Mmu(ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
+#endif
 
     template <Device::Type>
-    void readRequest(uint16_t address);
+    void read_request(uint16_t address);
 
     template <Device::Type>
-    uint8_t flushReadRequest();
+    uint8_t flush_read_request();
 
     template <Device::Type>
-    void writeRequest(uint16_t address);
+    void write_request(uint16_t address);
 
     template <Device::Type>
-    void flushWriteRequest(uint16_t value);
+    void flush_write_request(uint16_t value);
 
-    IF_BOOTROM(void lockBootRom());
+#ifdef ENABLE_BOOTROM
+    void lock_boot_rom();
+#endif
 
-    void saveState(Parcel& parcel) const;
-    void loadState(Parcel& parcel);
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
     void reset();
 
@@ -54,62 +58,63 @@ private:
         IBus* bus {};
 
         struct {
-            void (*readRequest)(IBus*, uint16_t) {};
-            uint8_t (*flushReadRequest)(IBus*) {};
-            void (*writeRequest)(IBus*, uint16_t) {};
-            void (*flushWriteRequest)(IBus*, uint8_t) {};
+            void (*read_request)(IBus*, uint16_t) {};
+            uint8_t (*flush_read_request)(IBus*) {};
+            void (*write_request)(IBus*, uint16_t) {};
+            void (*flush_write_request)(IBus*, uint8_t) {};
 
 #ifdef ENABLE_DEBUGGER
-            uint8_t (*readBus)(const IBus*, uint16_t) {};
+            uint8_t (*read_bus)(const IBus*, uint16_t) {};
 #endif
         } vtable;
 
         template <typename Bus, Device::Type Dev>
-        static void readRequest(IBus* bus, uint16_t address);
+        static void read_request(IBus* bus, uint16_t address);
 
         template <typename Bus, Device::Type Dev>
-        static uint8_t flushReadRequest(IBus* bus);
+        static uint8_t flush_read_request(IBus* bus);
 
         template <typename Bus, Device::Type Dev>
-        static void writeRequest(IBus* bus, uint16_t address);
+        static void write_request(IBus* bus, uint16_t address);
 
         template <typename Bus, Device::Type Dev>
-        static void flushWriteRequest(IBus* bus, uint8_t value);
+        static void flush_write_request(IBus* bus, uint8_t value);
 
 #ifdef ENABLE_DEBUGGER
         template <typename Bus>
-        static uint8_t readBus(const IBus* bus, uint16_t address);
+        static uint8_t read_bus(const IBus* bus, uint16_t address);
 #endif
 
-        void readRequest(uint16_t);
-        uint8_t flushReadRequest();
-        void writeRequest(uint16_t);
-        void flushWriteRequest(uint8_t);
+        void read_request(uint16_t);
+        uint8_t flush_read_request();
+        void write_request(uint16_t);
+        void flush_write_request(uint8_t);
 
 #ifdef ENABLE_DEBUGGER
-        [[nodiscard]] uint8_t readBus(uint16_t) const;
+        uint8_t read_bus(uint16_t) const;
 #endif
     };
 
     static constexpr uint8_t NUM_DEVICES = 3;
 
     template <Device::Type Dev, typename Bus>
-    static BusAccess makeAccessors(Bus* bus);
+    static BusAccess make_accessors(Bus* bus);
 
     template <typename Bus>
-    void initAccessors(uint16_t address, Bus* bus);
+    void init_accessors(uint16_t address, Bus* bus);
 
-    IF_BOOTROM(BootRom& bootRom);
+#ifdef ENABLE_BOOTROM
+    BootRom& boot_rom;
+    bool boot_rom_locked {};
+#endif
 
-    ExtBus& extBus;
-    CpuBus& cpuBus;
-    VramBus& vramBus;
-    OamBus& oamBus;
+    ExtBus& ext_bus;
+    CpuBus& cpu_bus;
+    VramBus& vram_bus;
+    OamBus& oam_bus;
 
     BusAccess* requests[NUM_DEVICES] {};
-    BusAccess busAccessors[NUM_DEVICES][UINT16_MAX + 1] {};
-
-    IF_BOOTROM(bool bootRomLocked {});
+    BusAccess bus_accessors[NUM_DEVICES][UINT16_MAX + 1] {};
 };
 
 template <Device::Type>
@@ -117,15 +122,15 @@ class MmuView {
 public:
     MmuView(Mmu& mmu);
 
-    void readRequest(uint16_t address);
-    uint8_t flushReadRequest();
-    void writeRequest(uint16_t address);
-    void flushWriteRequest(uint16_t value);
+    void read_request(uint16_t address);
+    uint8_t flush_read_request();
+    void write_request(uint16_t address);
+    void flush_write_request(uint16_t value);
 
 private:
     Mmu& mmu;
 };
 
-#include "mmu.tpp"
+#include "docboy/mmu/mmu.tpp"
 
 #endif // MMU_H

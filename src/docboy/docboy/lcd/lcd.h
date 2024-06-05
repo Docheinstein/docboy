@@ -4,8 +4,9 @@
 #include <array>
 #include <cstring>
 
-#include "docboy/shared//macros.h"
-#include "docboy/shared/specs.h"
+#include "docboy/common/macros.h"
+#include "docboy/common/specs.h"
+
 #include "utils/asserts.h"
 
 class Parcel;
@@ -32,53 +33,61 @@ public:
         palette {palette} {
     }
 
-    void setPalette(const Palette& palette_) {
+    void set_palette(const Palette& palette_) {
         palette = palette_;
     }
 
-    void pushPixel(Pixel pixel) {
-        check(static_cast<uint8_t>(pixel) < 4);
+    void push_pixel(Pixel pixel) {
+        ASSERT(static_cast<uint8_t>(pixel) < 4);
         pixels[cursor] = palette[static_cast<uint8_t>(pixel)];
-        if (++cursor == PIXEL_COUNT)
+        if (++cursor == PIXEL_COUNT) {
             cursor = 0;
-        IF_DEBUGGER(x = (x + 1) % Specs::Display::WIDTH);
-        IF_DEBUGGER(y = (y + (x == 0)) % Specs::Display::HEIGHT);
+        }
+#ifdef ENABLE_DEBUGGER
+        x = (x + 1) % Specs::Display::WIDTH;
+        y = (y + (x == 0)) % Specs::Display::HEIGHT;
+#endif
     }
 
-    [[nodiscard]] const PixelRgb565* getPixels() const {
+    const PixelRgb565* get_pixels() const {
         return pixels;
     }
 
-    void resetCursor() {
+    void reset_cursor() {
         // Reset the LCD position.
         cursor = 0;
-        IF_DEBUGGER(x = 0);
-        IF_DEBUGGER(y = 0);
+#ifdef ENABLE_DEBUGGER
+        x = 0;
+        y = 0;
+#endif
     }
 
     void clear() {
         // Fills the LCD with color 0.
-        for (unsigned short& pixel : pixels)
+        for (unsigned short& pixel : pixels) {
             pixel = palette[0];
+        }
     }
 
 #ifdef ENABLE_DEBUGGER
-    Lcd::PixelRgb565* getPixels() {
+    Lcd::PixelRgb565* get_pixels() {
         return pixels;
     }
-    [[nodiscard]] uint16_t getCursor() const {
+    uint16_t get_cursor() const {
         return cursor;
     }
 #endif
 
-    void saveState(Parcel& parcel) const;
-    void loadState(Parcel& parcel);
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
     void reset() {
         memset(pixels, 0, sizeof(pixels));
         cursor = 0;
-        IF_DEBUGGER(x = 0);
-        IF_DEBUGGER(y = 0);
+#ifdef ENABLE_DEBUGGER
+        x = 0;
+        y = 0;
+#endif
     }
 
 private:
@@ -87,8 +96,10 @@ private:
     PixelRgb565 pixels[PIXEL_COUNT] {};
     uint16_t cursor {};
 
-    IF_DEBUGGER(uint8_t x {});
-    IF_DEBUGGER(uint8_t y {});
+#ifdef ENABLE_DEBUGGER
+    uint8_t x {};
+    uint8_t y {};
+#endif
 };
 
 #endif // LCD_H

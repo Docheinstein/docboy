@@ -1,4 +1,5 @@
-#include "glyphs.h"
+#include "components/glyphs.h"
+
 #include "SDL3/SDL.h"
 
 namespace {
@@ -151,7 +152,7 @@ constexpr Glyph ASCII_GLYPHS[128] = {
  * |        | *    * |        |
  * +--------+--------+--------+
  */
-void glyphToRgba(Glyph glyph, uint32_t color, uint32_t* data, uint32_t x, uint32_t y, uint32_t stride) {
+void glyph_to_rgba(Glyph glyph, uint32_t color, uint32_t* data, uint32_t x, uint32_t y, uint32_t stride) {
     for (int r = 0; r < GLYPH_HEIGHT; r++) {
         for (int c = 0; c < GLYPH_WIDTH; c++) {
             auto offset = (r + y) * stride + x + c;
@@ -162,19 +163,19 @@ void glyphToRgba(Glyph glyph, uint32_t color, uint32_t* data, uint32_t x, uint32
 }
 } // namespace
 
-Glyph charToGlyph(char c) {
+Glyph char_to_glyph(char c) {
     return ASCII_GLYPHS[static_cast<uint8_t>(c < 0 ? 0 : c)];
 }
 
-void drawGlyph(SDL_Texture* texture, Glyph glyph, uint32_t x, uint32_t y, uint32_t color, uint32_t stride) {
-    uint32_t* textureBuffer;
+void draw_glyph(SDL_Texture* texture, Glyph glyph, uint32_t x, uint32_t y, uint32_t color, uint32_t stride) {
+    uint32_t* buffer;
     int pitch;
 
-    SDL_LockTexture(texture, nullptr, (void**)&textureBuffer, &pitch);
-    drawGlyph(textureBuffer, glyph, x, y, color, stride);
+    SDL_LockTexture(texture, nullptr, (void**)&buffer, &pitch);
+    draw_glyph(buffer, glyph, x, y, color, stride);
     SDL_UnlockTexture(texture);
 }
 
-void drawGlyph(uint32_t* buffer, Glyph glyph, uint32_t x, uint32_t y, uint32_t color, uint32_t stride) {
-    glyphToRgba(glyph, color, buffer, x, y, stride);
+void draw_glyph(uint32_t* buffer, Glyph glyph, uint32_t x, uint32_t y, uint32_t color, uint32_t stride) {
+    glyph_to_rgba(glyph, color, buffer, x, y, stride);
 }

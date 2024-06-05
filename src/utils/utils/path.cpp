@@ -1,69 +1,72 @@
-#include "path.h"
-#include "exceptions.hpp"
-#include "os.h"
-#include "strings.hpp"
+#include "utils/path.h"
+
 #include <iostream>
 #include <iterator>
+
+#include "utils/exceptions.h"
+#include "utils/os.h"
+#include "utils/strings.h"
 
 #ifdef WINDOWS
 #include "Windows.h"
 #endif
 
-path::path(const std::string& path) {
-    check(!path.empty(), "cannot build an empty path");
+Path::Path(const std::string& path) {
+    ASSERT(!path.empty(), "cannot build an empty Path");
     split(path, std::back_inserter(parts), SEP);
-    isAbsolute = path[0] == SEP;
+    is_absolute = path[0] == SEP;
 }
 
-std::string path::string() const {
+std::string Path::string() const {
     std::string s = join(parts, SEP);
-    if (isAbsolute)
+    if (is_absolute) {
         return SEP + s;
+    }
     return s;
 }
 
-path path::with_extension(const std::string& extension) const {
-    return path {*this}.replace_extension(extension);
+Path Path::with_extension(const std::string& extension) const {
+    return Path {*this}.replace_extension(extension);
 }
 
-path& path::replace_extension(const std::string& extension) {
-    std::string& lastPart = parts.back();
-    std::size_t dot = lastPart.find_last_of('.');
+Path& Path::replace_extension(const std::string& extension) {
+    std::string& last_part = parts.back();
+    std::size_t dot = last_part.find_last_of('.');
     if (dot != std::string::npos) {
-        lastPart.replace(dot + 1, std::string::npos, extension);
+        last_part.replace(dot + 1, std::string::npos, extension);
     }
 
     return *this;
 }
 
-path& path::operator/(const std::string& part) {
+Path& Path::operator/(const std::string& part) {
     parts.push_back(part);
     return *this;
 }
 
-path& path::operator/(const path& part) {
-    check(!part.isAbsolute, "cannot append absolute path");
+Path& Path::operator/(const Path& part) {
+    ASSERT(!part.is_absolute, "cannot append absolute Path");
     parts.insert(parts.end(), part.parts.begin(), part.parts.end());
     return *this;
 }
 
-std::ostream& operator<<(std::ostream& os, const path& path) {
+std::ostream& operator<<(std::ostream& os, const Path& path) {
     os << path.filename();
     return os;
 }
 
-std::string path::filename() const {
+std::string Path::filename() const {
     return parts.back();
 }
 
-path operator/(const path& p1, const path& p2) {
-    path p {p1};
+Path operator/(const Path& p1, const Path& p2) {
+    Path p {p1};
     p = p / p2;
     return p;
 }
 
-path temp_directory_path() {
-    // Implementation inspired by boost::temp_directory_path
+Path temp_directory_path() {
+    // Implementation inspired by boost::temp_directory_Path
     std::string temp_path;
 
 #ifdef POSIX
@@ -79,13 +82,13 @@ path temp_directory_path() {
     temp_path = env_tmp ? env_tmp : default_tmp;
 
 #else // Windows
-    CHAR temp_path_buf[MAX_PATH];
-    if (GetTempPath(MAX_PATH, temp_path_buf) == 0) {
-        fatal("failed to obtain a temporary directory");
+    CHAR temp_Path_buf[MAX_PATH];
+    if (GetTempPath(MAX_PATH, temp_Path_buf) == 0) {
+        FATAL("failed to obtain a temporary directory");
     }
-    temp_path = temp_path_buf;
+    temp_Path = temp_Path_buf;
 
 #endif
 
-    return path(temp_path);
+    return Path {temp_path};
 }

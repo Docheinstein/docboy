@@ -1,5 +1,5 @@
-#ifndef PARCEL_H
-#define PARCEL_H
+#ifndef UTILSPARCEL_H
+#define UTILSPARCEL_H
 
 #include <cstdint>
 #include <vector>
@@ -10,37 +10,37 @@ public:
 
     explicit Parcel(const void* data, uint32_t size);
 
-    bool readBool();
+    bool read_bool();
 
-    uint8_t readUInt8();
-    uint16_t readUInt16();
-    uint32_t readUInt32();
-    uint64_t readUInt64();
+    uint8_t read_uint8();
+    uint16_t read_uint16();
+    uint32_t read_uint32();
+    uint64_t read_uint64();
 
-    int8_t readInt8();
-    int16_t readInt16();
-    int32_t readInt32();
-    int64_t readInt64();
+    int8_t read_int8();
+    int16_t read_int16();
+    int32_t read_int32();
+    int64_t read_int64();
 
-    void readBytes(void* data, uint32_t count);
+    void read_bytes(void* data, uint32_t count);
 
-    void writeBool(bool value);
+    void write_bool(bool value);
 
-    void writeUInt8(uint8_t value);
-    void writeUInt16(uint16_t value);
-    void writeUInt32(uint32_t value);
-    void writeUInt64(uint64_t value);
+    void write_uint8(uint8_t value);
+    void write_uint16(uint16_t value);
+    void write_uint32(uint32_t value);
+    void write_uint64(uint64_t value);
 
-    void writeInt8(int8_t value);
-    void writeInt16(int16_t value);
-    void writeInt32(int32_t value);
-    void writeInt64(int64_t value);
+    void write_int8(int8_t value);
+    void write_int16(int16_t value);
+    void write_int32(int32_t value);
+    void write_int64(int64_t value);
 
-    void writeBytes(const void* data, uint32_t count);
+    void write_bytes(const void* data, uint32_t count);
 
-    [[nodiscard]] const void* getData() const;
-    [[nodiscard]] uint32_t getSize() const;
-    [[nodiscard]] uint32_t getRemainingSize() const;
+    const void* get_data() const;
+    uint32_t get_size() const;
+    uint32_t get_remaining_size() const;
 
 private:
     template <typename T>
@@ -49,11 +49,11 @@ private:
     template <typename T>
     void write(T value);
 
-    void readRaw(void* data, uint32_t count);
-    void writeRaw(const void* data, uint32_t count);
+    void read_raw(void* data, uint32_t count);
+    void write_raw(const void* data, uint32_t count);
 
     std::vector<uint8_t> data;
     uint32_t cursor {};
 };
 
-#endif // PARCEL_H
+#endif // UTILSPARCEL_H

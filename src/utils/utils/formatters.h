@@ -1,6 +1,7 @@
-#ifndef FORMATTERS_HPP
-#define FORMATTERS_HPP
+#ifndef UTILSFORMATTERS_H
+#define UTILSFORMATTERS_H
 
+#include <array>
 #include <bitset>
 #include <cstdint>
 #include <iomanip>
@@ -8,7 +9,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <array>
 
 template <typename T>
 void bin(T value, std::ostream& os) {
@@ -73,4 +73,4 @@ std::string hex(const std::array<T, N>& arr) {
     return hex(arr.data(), arr.size() * sizeof(T));
 }
 
-#endif // FORMATTERS_HPP
+#endif // UTILSFORMATTERS_H

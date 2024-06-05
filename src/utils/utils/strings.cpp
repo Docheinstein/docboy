@@ -1,12 +1,13 @@
-#include "strings.hpp"
+#include "strings.h"
 
-static void ltrim(std::string& s) {
+namespace {
+void ltrim(std::string& s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
                 return !std::isspace(ch);
             }));
 }
 
-static void rtrim(std::string& s) {
+void rtrim(std::string& s) {
     s.erase(std::find_if(s.rbegin(), s.rend(),
                          [](unsigned char ch) {
                              return !std::isspace(ch);
@@ -14,6 +15,7 @@ static void rtrim(std::string& s) {
                 .base(),
             s.end());
 }
+} // namespace
 
 std::string trim(const std::string& s) {
     std::string out = s;
@@ -29,13 +31,13 @@ bool equals_ignore_case(const std::string& s1, const std::string& s2) {
 }
 
 std::string lpad(const std::string& s, std::size_t length, char ch) {
-    const std::size_t inLength = s.length();
-    return length < inLength ? std::string(length - inLength, ch) + s : s;
+    const std::size_t in_length = s.length();
+    return length < in_length ? std::string(length - in_length, ch) + s : s;
 }
 
 std::string rpad(const std::string& s, std::size_t length, char ch) {
-    const std::size_t inLength = s.length();
-    return inLength < length ? s + std::string(length - inLength, ch) : s;
+    const std::size_t in_length = s.length();
+    return in_length < length ? s + std::string(length - in_length, ch) : s;
 }
 
 bool starts_with(const std::string& heystack, const std::string& needle) {

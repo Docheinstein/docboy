@@ -1,9 +1,9 @@
 #include <algorithm>
-
-#include "testutils/framebuffers.h"
-#include "utils/formatters.hpp"
 #include <iostream>
 #include <set>
+
+#include "testutils/framebuffers.h"
+#include "utils/formatters.h"
 
 // usage: paleteframebuffer <in_file>
 int main(int argc, const char* argv[]) {
@@ -22,13 +22,13 @@ int main(int argc, const char* argv[]) {
         colors.emplace(i);
     }
 
-    std::vector<uint16_t> colorsVector;
+    std::vector<uint16_t> colors_vector;
     for (const auto& c : colors)
-        colorsVector.push_back(c);
+        colors_vector.push_back(c);
 
-    std::sort(colorsVector.begin(), colorsVector.end(), std::greater());
+    std::sort(colors_vector.begin(), colors_vector.end(), std::greater());
 
-    for (const auto color : colorsVector) {
+    for (const auto color : colors_vector) {
         std::cout << hex(color) << std::endl;
     }
 

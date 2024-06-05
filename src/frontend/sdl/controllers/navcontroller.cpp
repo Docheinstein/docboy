@@ -1,19 +1,22 @@
-#include "navcontroller.h"
+#include "controllers/navcontroller.h"
+
 #include "screens/screen.h"
 #include "screens/screenstack.h"
 
-NavController::NavController(ScreenStack& screenStack) :
-    screenStack(screenStack) {
+NavController::NavController(ScreenStack& screen_stack) :
+    screen_stack {screen_stack} {
 }
 
 void NavController::push(std::unique_ptr<Screen> screen) {
-    screenStack.push(std::move(screen));
-    if (screenStack.top)
-        screenStack.top->redraw();
+    screen_stack.push(std::move(screen));
+    if (screen_stack.top) {
+        screen_stack.top->redraw();
+    }
 }
 
 void NavController::pop() {
-    screenStack.pop();
-    if (screenStack.top)
-        screenStack.top->redraw();
+    screen_stack.pop();
+    if (screen_stack.top) {
+        screen_stack.top->redraw();
+    }
 }

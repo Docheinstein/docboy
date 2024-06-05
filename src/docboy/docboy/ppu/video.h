@@ -1,90 +1,90 @@
 #ifndef VIDEO_H
 #define VIDEO_H
 
-#include "docboy/bootrom/macros.h"
+#include "docboy/bootrom/helpers.h"
 #include "docboy/dma/dma.h"
-#include "docboy/memory/byte.hpp"
 #include "utils/parcel.h"
 
 #ifdef ENABLE_DEBUGGER
-#include "docboy/shared/specs.h"
+#include "docboy/common/specs.h"
 #endif
 
 class VideoIO {
 public:
     explicit VideoIO(Dma& dma) :
-        dma(dma) {
+        dma_controller {dma} {
     }
 
-    void writeSTAT(uint8_t value) {
-        STAT = 0b10000000 | (value & 0b01111000) | keep_bits<3>(STAT);
+    void write_stat(uint8_t value) {
+        stat = 0b10000000 | (value & 0b01111000) | keep_bits<3>(stat);
     }
 
-    void writeDMA(uint8_t value) {
-        DMA = value;
-        dma.startTransfer(DMA << 8);
+    void write_dma(uint8_t value) {
+        dma = value;
+        dma_controller.start_transfer(dma << 8);
     }
 
-    void saveState(Parcel& parcel) const {
-        parcel.writeUInt8(LCDC);
-        parcel.writeUInt8(STAT);
-        parcel.writeUInt8(SCY);
-        parcel.writeUInt8(SCX);
-        parcel.writeUInt8(LY);
-        parcel.writeUInt8(LYC);
-        parcel.writeUInt8(DMA);
-        parcel.writeUInt8(BGP);
-        parcel.writeUInt8(OBP0);
-        parcel.writeUInt8(OBP1);
-        parcel.writeUInt8(WY);
-        parcel.writeUInt8(WX);
+    void save_state(Parcel& parcel) const {
+        parcel.write_uint8(lcdc);
+        parcel.write_uint8(stat);
+        parcel.write_uint8(scy);
+        parcel.write_uint8(scx);
+        parcel.write_uint8(ly);
+        parcel.write_uint8(lyc);
+        parcel.write_uint8(dma);
+        parcel.write_uint8(bgp);
+        parcel.write_uint8(obp0);
+        parcel.write_uint8(obp1);
+        parcel.write_uint8(wy);
+        parcel.write_uint8(wx);
     }
 
-    void loadState(Parcel& parcel) {
-        LCDC = parcel.readUInt8();
-        STAT = parcel.readUInt8();
-        SCY = parcel.readUInt8();
-        SCX = parcel.readUInt8();
-        LY = parcel.readUInt8();
-        LYC = parcel.readUInt8();
-        DMA = parcel.readUInt8();
-        BGP = parcel.readUInt8();
-        OBP0 = parcel.readUInt8();
-        OBP1 = parcel.readUInt8();
-        WY = parcel.readUInt8();
-        WX = parcel.readUInt8();
+    void load_state(Parcel& parcel) {
+        lcdc = parcel.read_uint8();
+        stat = parcel.read_uint8();
+        scy = parcel.read_uint8();
+        scx = parcel.read_uint8();
+        ly = parcel.read_uint8();
+        lyc = parcel.read_uint8();
+        dma = parcel.read_uint8();
+        bgp = parcel.read_uint8();
+        obp0 = parcel.read_uint8();
+        obp1 = parcel.read_uint8();
+        wy = parcel.read_uint8();
+        wx = parcel.read_uint8();
     }
 
     void reset() {
-        LCDC = IF_BOOTROM_ELSE(0, 0x91);
-        STAT = IF_BOOTROM_ELSE(0x80, 0x85);
-        SCY = 0;
-        SCX = 0;
-        LY = 0;
-        LYC = 0;
-        DMA = 0xFF;
-        BGP = IF_BOOTROM_ELSE(0, 0xFC);
-        OBP0 = 0;
-        OBP1 = 0;
-        WY = 0;
-        WX = 0;
+        lcdc = if_bootrom_else(0, 0x91);
+        stat = 0x80;
+        stat = if_bootrom_else(0x80, 0x85);
+        scy = 0;
+        scx = 0;
+        ly = 0;
+        lyc = 0;
+        dma = 0xFF;
+        bgp = if_bootrom_else(0, 0xFC);
+        obp0 = 0;
+        obp1 = 0;
+        wy = 0;
+        wx = 0;
     }
 
-    byte LCDC {make_byte(Specs::Registers::Video::LCDC)};
-    byte STAT {make_byte(Specs::Registers::Video::STAT)};
-    byte SCY {make_byte(Specs::Registers::Video::SCY)};
-    byte SCX {make_byte(Specs::Registers::Video::SCX)};
-    byte LY {make_byte(Specs::Registers::Video::LY)};
-    byte LYC {make_byte(Specs::Registers::Video::LYC)};
-    byte DMA {make_byte(Specs::Registers::Video::DMA)};
-    byte BGP {make_byte(Specs::Registers::Video::BGP)};
-    byte OBP0 {make_byte(Specs::Registers::Video::OBP0)};
-    byte OBP1 {make_byte(Specs::Registers::Video::OBP1)};
-    byte WY {make_byte(Specs::Registers::Video::WY)};
-    byte WX {make_byte(Specs::Registers::Video::WX)};
+    byte lcdc {make_byte(Specs::Registers::Video::LCDC)};
+    byte stat {make_byte(Specs::Registers::Video::STAT)};
+    byte scy {make_byte(Specs::Registers::Video::SCY)};
+    byte scx {make_byte(Specs::Registers::Video::SCX)};
+    byte ly {make_byte(Specs::Registers::Video::LY)};
+    byte lyc {make_byte(Specs::Registers::Video::LYC)};
+    byte dma {make_byte(Specs::Registers::Video::DMA)};
+    byte bgp {make_byte(Specs::Registers::Video::BGP)};
+    byte obp0 {make_byte(Specs::Registers::Video::OBP0)};
+    byte obp1 {make_byte(Specs::Registers::Video::OBP1)};
+    byte wy {make_byte(Specs::Registers::Video::WY)};
+    byte wx {make_byte(Specs::Registers::Video::WX)};
 
 private:
-    Dma& dma;
+    Dma& dma_controller;
 };
 
 #endif // VIDEO_H

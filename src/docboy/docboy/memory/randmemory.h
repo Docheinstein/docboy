@@ -1,8 +1,9 @@
 #ifndef RANDMEMORY_H
 #define RANDMEMORY_H
 
-#include "memory.hpp"
-#include "utils/random.hpp"
+#include "docboy/memory/memory.h"
+
+#include "utils/random.h"
 
 template <uint16_t Start, uint16_t End>
 class RandomizedMemory : public Memory<Start, End> {
@@ -18,7 +19,7 @@ public:
             data[i] = rng.next();
         }
 
-        this->setData(data.data(), size);
+        this->set_data(data.data(), size);
     }
 };
 

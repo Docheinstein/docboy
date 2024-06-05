@@ -1,74 +1,76 @@
-#ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
-#include "byte.hpp"
+#ifdef ENABLE_DEBUGGER
+
+#include "docboy/memory/byte.h"
 #include "docboy/debugger/memsniffer.h"
+
 #include "utils/asserts.h"
 
 byte& byte::operator=(uint8_t value) {
-    check(address != INVALID_MEMORY_ADDRESS);
-    uint8_t oldValue = data;
+    ASSERT(address != INVALID_MEMORY_ADDRESS);
+    uint8_t old_value = data;
     data = value;
-    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, value);
+    DebuggerMemorySniffer::notify_memory_write(address, old_value, value);
     return *this;
 }
 
 byte::operator uint8_t() const {
-    check(address != INVALID_MEMORY_ADDRESS);
-    DebuggerMemorySniffer::notifyMemoryRead(address, data);
+    ASSERT(address != INVALID_MEMORY_ADDRESS);
+    DebuggerMemorySniffer::notify_memory_read(address, data);
     return data;
 }
 
 byte& byte::operator++() {
-    uint8_t oldValue = data;
+    uint8_t old_value = data;
     ++data;
-    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, data);
+    DebuggerMemorySniffer::notify_memory_write(address, old_value, data);
     return *this;
 }
 
 byte& byte::operator+=(uint64_t value) {
-    uint8_t oldValue = data;
+    uint8_t old_value = data;
     data += value;
-    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, data);
+    DebuggerMemorySniffer::notify_memory_write(address, old_value, data);
     return *this;
 }
 
 byte& byte::operator--() {
-    uint8_t oldValue = data;
+    uint8_t old_value = data;
     --data;
-    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, data);
+    DebuggerMemorySniffer::notify_memory_write(address, old_value, data);
     return *this;
 }
 
 byte& byte::operator-=(uint64_t value) {
-    uint8_t oldValue = data;
+    uint8_t old_value = data;
     data -= value;
-    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, data);
+    DebuggerMemorySniffer::notify_memory_write(address, old_value, data);
     return *this;
 }
 
 byte& byte::operator|=(uint64_t value) {
-    uint8_t oldValue = data;
+    uint8_t old_value = data;
     data |= value;
-    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, data);
+    DebuggerMemorySniffer::notify_memory_write(address, old_value, data);
     return *this;
 }
 
 byte& byte::operator&=(uint64_t value) {
-    uint8_t oldValue = data;
+    uint8_t old_value = data;
     data &= value;
-    DebuggerMemorySniffer::notifyMemoryWrite(address, oldValue, data);
+    DebuggerMemorySniffer::notify_memory_write(address, old_value, data);
     return *this;
 }
 
 uint8_t byte::operator|(uint64_t value) const {
-    uint8_t newValue = data | value;
-    DebuggerMemorySniffer::notifyMemoryRead(address, data);
-    return newValue;
+    uint8_t new_value = data | value;
+    DebuggerMemorySniffer::notify_memory_read(address, data);
+    return new_value;
 }
 
 uint8_t byte::operator&(uint64_t value) const {
-    uint8_t newValue = data & value;
-    DebuggerMemorySniffer::notifyMemoryRead(address, data);
-    return newValue;
+    uint8_t new_value = data & value;
+    DebuggerMemorySniffer::notify_memory_read(address, data);
+    return new_value;
 }
 
 uint8_t byte::operator|(const byte& other) const {

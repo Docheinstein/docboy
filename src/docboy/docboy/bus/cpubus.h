@@ -1,11 +1,12 @@
 #ifndef CPUBUS_H
 #define CPUBUS_H
 
-#include "bus.h"
-#include "docboy/bootrom/fwd/bootromfwd.h"
-#include "docboy/bootrom/macros.h"
+#include "docboy/bus/bus.h"
 #include "docboy/memory/fwd/hramfwd.h"
-#include "utils/macros.h"
+
+#ifdef ENABLE_BOOTROM
+#include "docboy/bootrom/fwd/bootromfwd.h"
+#endif
 
 class JoypadIO;
 class SerialIO;
@@ -15,43 +16,52 @@ class SoundIO;
 class VideoIO;
 class BootIO;
 
-class CpuBus : public Bus<CpuBus> {
+class CpuBus final : public Bus<CpuBus> {
 
 public:
-    CpuBus(IF_BOOTROM(BootRom& bootRom COMMA) Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
+#ifdef ENABLE_BOOTROM
+    CpuBus(BootRom& boot_rom, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
            InterruptsIO& interrupts, SoundIO& sound, VideoIO& video, BootIO& boot);
+#else
+    CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts, SoundIO& sound,
+           VideoIO& video, BootIO& boot);
+#endif
 
 private:
-    [[nodiscard]] uint8_t readP1(uint16_t address) const;
-    void writeP1(uint16_t address, uint8_t value);
+    uint8_t read_p1(uint16_t address) const;
+    void write_p1(uint16_t address, uint8_t value);
 
-    void writeSC(uint16_t address, uint8_t value);
+    void write_sc(uint16_t address, uint8_t value);
 
-    [[nodiscard]] uint8_t readDIV(uint16_t address) const;
-    void writeDIV(uint16_t address, uint8_t value);
-    void writeTIMA(uint16_t address, uint8_t value);
-    void writeTMA(uint16_t address, uint8_t value);
-    void writeTAC(uint16_t address, uint8_t value);
+    uint8_t read_div(uint16_t address) const;
+    void write_div(uint16_t address, uint8_t value);
+    void write_tima(uint16_t address, uint8_t value);
+    void write_tma(uint16_t address, uint8_t value);
+    void write_tac(uint16_t address, uint8_t value);
 
-    void writeIF(uint16_t address, uint8_t value);
+    void write_if(uint16_t address, uint8_t value);
 
-    void writeNR10(uint16_t address, uint8_t value);
-    void writeNR30(uint16_t address, uint8_t value);
-    void writeNR32(uint16_t address, uint8_t value);
-    void writeNR41(uint16_t address, uint8_t value);
-    void writeNR44(uint16_t address, uint8_t value);
-    void writeNR52(uint16_t address, uint8_t value);
+    void write_nr10(uint16_t address, uint8_t value);
+    void write_nr30(uint16_t address, uint8_t value);
+    void write_nr32(uint16_t address, uint8_t value);
+    void write_nr41(uint16_t address, uint8_t value);
+    void write_nr44(uint16_t address, uint8_t value);
+    void write_nr52(uint16_t address, uint8_t value);
 
-    void writeSTAT(uint16_t address, uint8_t value);
-    void writeDMA(uint16_t address, uint8_t value);
+    void write_stat(uint16_t address, uint8_t value);
+    void write_dma(uint16_t address, uint8_t value);
 
-    void writeBOOT(uint16_t address, uint8_t value);
+    void write_boot(uint16_t address, uint8_t value);
 
-    [[nodiscard]] uint8_t readFF(uint16_t address) const;
-    void writeNop(uint16_t address, uint8_t value);
+    uint8_t read_ff(uint16_t address) const;
+    void write_nop(uint16_t address, uint8_t value);
 
-    IF_BOOTROM(BootRom& bootRom);
+#ifdef ENABLE_BOOTROM
+    BootRom& boot_rom;
+#endif
+
     Hram& hram;
+
     struct {
         JoypadIO& joypad;
         SerialIO& serial;

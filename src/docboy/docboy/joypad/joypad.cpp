@@ -1,37 +1,44 @@
-#include "joypad.h"
+#include "docboy/joypad/joypad.h"
 #include "docboy/interrupts/interrupts.h"
-#include "docboy/shared//macros.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "docboy/debugger/memsniffer.h"
 #endif
 
-uint8_t JoypadIO::readP1() const {
+uint8_t JoypadIO::read_p1() const {
     const uint8_t out =
-        P1 | (test_bit<Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS>(P1) ? keep_bits<4>(keys)
+        p1 | (test_bit<Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS>(p1) ? keep_bits<4>(keys)
                                                                               : keep_bits<4>(keys >> 4));
-    IF_DEBUGGER(DebuggerMemorySniffer::notifyMemoryRead(Specs::Registers::Joypad::P1, out));
+#ifdef ENABLE_DEBUGGER
+    DebuggerMemorySniffer::notify_memory_read(Specs::Registers::Joypad::P1, out);
+#endif
     return out;
 }
 
-void JoypadIO::writeP1(uint8_t value) {
-    IF_DEBUGGER(uint8_t oldValue = P1);
-    P1 = 0b11000000 | (value & 0b00110000);
-    IF_DEBUGGER(DebuggerMemorySniffer::notifyMemoryWrite(Specs::Registers::Joypad::P1, oldValue, P1));
+void JoypadIO::write_p1(uint8_t value) {
+#ifdef ENABLE_DEBUGGER
+    uint8_t old_value = p1;
+#endif
+
+    p1 = 0b11000000 | (value & 0b00110000);
+
+#ifdef ENABLE_DEBUGGER
+    DebuggerMemorySniffer::notify_memory_write(Specs::Registers::Joypad::P1, old_value, p1);
+#endif
 }
 
 Joypad::Joypad(InterruptsIO& interrupts) :
-    interrupts(interrupts) {
+    interrupts {interrupts} {
 }
 
-void Joypad::setKeyState(Joypad::Key key, Joypad::KeyState state) {
+void Joypad::set_key_state(Key key, KeyState state) {
     set_bit(keys, static_cast<uint8_t>(key), static_cast<uint8_t>(state));
 
-    const bool raiseInterrupt =
+    const bool raise_interrupt =
         (state == KeyState::Pressed) &&
-        (test_bit<Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS>(P1) ? key <= Key::Start : key >= Key::Right);
+        (test_bit<Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS>(p1) ? key <= Key::Start : key >= Key::Right);
 
-    if (raiseInterrupt) {
-        interrupts.raiseInterrupt<InterruptsIO::InterruptType::Joypad>();
+    if (raise_interrupt) {
+        interrupts.raise_Interrupt<InterruptsIO::InterruptType::Joypad>();
     }
 }

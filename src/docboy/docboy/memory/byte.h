@@ -1,13 +1,14 @@
-#ifndef BYTE_HPP
-#define BYTE_HPP
+#ifndef BYTE_H
+#define BYTE_H
 
-#include "fwd/bytefwd.h"
+#include "docboy/memory/fwd/bytefwd.h"
 
-#ifdef ENABLE_DEBUGGER_MEMORY_SNIFFER
+#ifdef ENABLE_DEBUGGER
 struct byte {
     static constexpr uint32_t INVALID_MEMORY_ADDRESS = UINT32_MAX;
 
     byte() = default;
+
     constexpr explicit byte(uint16_t address) :
         address {address} {
     }
@@ -46,4 +47,4 @@ constexpr inline byte make_byte(const uint16_t address) {
 }
 
 #endif
-#endif // BYTE_HPP
+#endif // BYTE_H

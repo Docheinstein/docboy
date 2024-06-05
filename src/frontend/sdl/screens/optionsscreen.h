@@ -1,7 +1,7 @@
 #ifndef OPTIONSSCREEN_H
 #define OPTIONSSCREEN_H
 
-#include "menuscreen.h"
+#include "screens/menuscreen.h"
 
 class OptionsScreen : public MenuScreen {
 public:

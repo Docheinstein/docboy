@@ -1,22 +1,22 @@
-#ifndef IDU_HPP
-#define IDU_HPP
+#ifndef IDU_H
+#define IDU_H
+
+#include <cstdint>
 
 #include "docboy/bus/oambus.h"
-#include "docboy/shared/macros.h"
-#include "docboy/shared/specs.h"
-#include <cstdint>
+#include "docboy/common/specs.h"
 
 class Idu {
 public:
     DEBUGGABLE_CLASS()
 
-    explicit Idu(OamBus& oamBus) :
-        oamBus {oamBus} {
+    explicit Idu(OamBus& oam_bus) :
+        oam_bus {oam_bus} {
     }
 
     void tick_t1() {
         // Eventually clear any previous write request.
-        oamBus.clearWriteRequest<Device::Cpu>();
+        oam_bus.clear_write_request<Device::Cpu>();
     }
 
     void increment(uint16_t& data) {
@@ -34,14 +34,15 @@ public:
         // This might lead to the OAM Bug if such address is in the FE00-FEFF
         // range and the PPU is reading from OAM at that moment (DMG only).
         // [blargg/oam_bug/2-causes]
-        if (data >= Specs::MemoryLayout::OAM::START && data <= Specs::MemoryLayout::NOT_USABLE::END)
-            oamBus.writeRequest<Device::Cpu>(data);
+        if (data >= Specs::MemoryLayout::OAM::START && data <= Specs::MemoryLayout::NOT_USABLE::END) {
+            oam_bus.write_request<Device::Cpu>(data);
+        }
 
         data += inc;
     }
 
 private:
-    OamBus& oamBus;
+    OamBus& oam_bus;
 };
 
-#endif // IDU_HPP
+#endif // IDU_H

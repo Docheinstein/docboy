@@ -1,17 +1,20 @@
-#include "console.h"
-#include "utils/hexdump.hpp"
+#include "extra/serial/endpoints/console.h"
+
 #include <algorithm>
 #include <iostream>
 
+#include "utils/hexdump.h"
+
 SerialConsole::SerialConsole(std::ostream& output, uint32_t bufsize) :
-    output(output),
-    bufsize(bufsize) {
+    output {output},
+    bufsize {bufsize} {
 }
 
-void SerialConsole::serialWrite(uint8_t value) {
-    SerialBuffer::serialWrite(value);
-    if (value == '\n' || (buffer.size() > bufsize))
+void SerialConsole::serial_write(uint8_t value) {
+    SerialBuffer::serial_write(value);
+    if (value == '\n' || (buffer.size() > bufsize)) {
         flush();
+    }
 }
 
 void SerialConsole::flush() {
@@ -21,7 +24,7 @@ void SerialConsole::flush() {
         auto last = newline + (newline != buffer.end() ? 1 : 0);
         std::copy(buffer.begin(), last, std::back_inserter(line));
         std::string dump =
-            Hexdump<uint8_t>().showAddresses(false).showAscii(true).setNumColumns(16).hexdump(line.data(), line.size());
+            Hexdump<uint8_t>().show_addresses(false).show_ascii(true).num_columns(16).hexdump(line.data(), line.size());
         output << dump << std::endl;
         buffer.erase(buffer.begin(), last);
     }

@@ -41,8 +41,8 @@ target_sources(docboy-sdl PRIVATE
     utils/rompicker.h
     utils/textures.cpp
     utils/textures.h
-    window.cpp
-    window.h
+        windows/window.cpp
+        windows/window.h
 )
 
 if (ENABLE_DEBUGGER)

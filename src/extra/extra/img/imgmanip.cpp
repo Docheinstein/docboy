@@ -1,11 +1,11 @@
-#include "imgmanip.h"
+#include "extra/img/imgmanip.h"
 #include "extra/png/iopng.h"
 
 #include <cstring>
 
 namespace {
 struct ImageFormatDescription {
-    uint8_t bytesPerPixel {};
+    uint8_t bytes_per_pixel {};
     struct {
         uint8_t r {};
         uint8_t g {};
@@ -99,58 +99,63 @@ void get_rgb_from_pixel_with_format(const uint32_t pixel, uint8_t& r, uint8_t& g
 
 template <ImageFormat SrcFormat>
 void to_rgb888_pixel_converter(const void* src, void* dst, uint32_t index) {
-    constexpr ImageFormatDescription srcFmt = get_image_format_description<SrcFormat>();
-    uint32_t pSrc;
-    memcpy(&pSrc, static_cast<const uint8_t*>(src) + index * srcFmt.bytesPerPixel, srcFmt.bytesPerPixel);
-    uint8_t* pDst = static_cast<uint8_t*>(dst) + index * RGB888_DESCRIPTION.bytesPerPixel;
-    get_rgb_from_pixel_with_format(pSrc, *(pDst + 0), *(pDst + 1), *(pDst + 2), srcFmt);
+    constexpr ImageFormatDescription src_fmt = get_image_format_description<SrcFormat>();
+    uint32_t p_src;
+    memcpy(&p_src, static_cast<const uint8_t*>(src) + index * src_fmt.bytes_per_pixel, src_fmt.bytes_per_pixel);
+    uint8_t* p_dst = static_cast<uint8_t*>(dst) + index * RGB888_DESCRIPTION.bytes_per_pixel;
+    get_rgb_from_pixel_with_format(p_src, *(p_dst + 0), *(p_dst + 1), *(p_dst + 2), src_fmt);
 }
 
 template <ImageFormat DstFormat, typename DstType>
 void from_rgb888_pixel_converter(const void* src, void* dst, uint32_t index) {
-    constexpr ImageFormatDescription dstFmt = get_image_format_description<DstFormat>();
-    const uint8_t* pSrc = static_cast<const uint8_t*>(src) + index * RGB888_DESCRIPTION.bytesPerPixel;
-    DstType* pDst = static_cast<DstType*>(dst) + index;
-    *pDst = map_rgb_to_pixel_with_format(pSrc[0], pSrc[1], pSrc[2], dstFmt);
+    constexpr ImageFormatDescription dst_fmt = get_image_format_description<DstFormat>();
+    const uint8_t* p_src = static_cast<const uint8_t*>(src) + index * RGB888_DESCRIPTION.bytes_per_pixel;
+    DstType* p_dst = static_cast<DstType*>(dst) + index;
+    *p_dst = map_rgb_to_pixel_with_format(p_src[0], p_src[1], p_src[2], dst_fmt);
 }
 
 template <ImageFormat DstFormat>
 void from_rgb888_pixel_converter(const void* src, void* dst, uint32_t index) {
-    constexpr ImageFormatDescription dstFmt = get_image_format_description<DstFormat>();
-    if constexpr (dstFmt.bytesPerPixel == 1)
+    constexpr ImageFormatDescription dst_fmt = get_image_format_description<DstFormat>();
+    if constexpr (dst_fmt.bytes_per_pixel == 1) {
         from_rgb888_pixel_converter<DstFormat, uint8_t>(src, dst, index);
-    else if constexpr (dstFmt.bytesPerPixel == 2)
+    } else if constexpr (dst_fmt.bytes_per_pixel == 2) {
         from_rgb888_pixel_converter<DstFormat, uint16_t>(src, dst, index);
-    else if constexpr (dstFmt.bytesPerPixel == 4)
+    } else if constexpr (dst_fmt.bytes_per_pixel == 4) {
         from_rgb888_pixel_converter<DstFormat, uint32_t>(src, dst, index);
-    else
+    } else {
         static_assert(static_cast<uint32_t>(DstFormat) == UINT32_MAX); // always false
+    }
 }
 
 template <ImageFormat Format>
 void identity_pixel_converter(const void* src, void* dst, uint32_t index) {
     constexpr ImageFormatDescription fmt = get_image_format_description<Format>();
-    const uint8_t* pSrc = static_cast<const uint8_t*>(src) + index * fmt.bytesPerPixel;
-    uint8_t* pDst = static_cast<uint8_t*>(dst) + index * fmt.bytesPerPixel;
-    memcpy(pDst, pSrc, fmt.bytesPerPixel);
+    const uint8_t* p_src = static_cast<const uint8_t*>(src) + index * fmt.bytes_per_pixel;
+    uint8_t* p_dst = static_cast<uint8_t*>(dst) + index * fmt.bytes_per_pixel;
+    memcpy(p_dst, p_src, fmt.bytes_per_pixel);
 }
 
 using pixel_converter = void (*)(const void* /* src */, void* /* dst */, uint32_t /* index */);
 
 pixel_converter create_pixel_converter(ImageFormat from, ImageFormat to) {
     if (from == ImageFormat::RGB888) {
-        if (to == ImageFormat::RGB565)
+        if (to == ImageFormat::RGB565) {
             return from_rgb888_pixel_converter<ImageFormat::RGB565>;
+        }
     }
     if (to == ImageFormat::RGB888) {
-        if (from == ImageFormat::RGB565)
+        if (from == ImageFormat::RGB565) {
             return to_rgb888_pixel_converter<ImageFormat::RGB565>;
+        }
     }
     if (from == to) {
-        if (from == ImageFormat::RGB888)
+        if (from == ImageFormat::RGB888) {
             return identity_pixel_converter<ImageFormat::RGB888>;
-        if (from == ImageFormat::RGB565)
+        }
+        if (from == ImageFormat::RGB565) {
             return identity_pixel_converter<ImageFormat::RGB565>;
+        }
     }
     abort();
 }
@@ -165,7 +170,7 @@ void convert_image(ImageFormat from, const void* src, ImageFormat to, void* dst,
 
 std::vector<uint8_t> create_image_buffer(uint32_t width, uint32_t height, ImageFormat fmt) {
     std::vector<uint8_t> buf {};
-    buf.resize(width * height * get_image_format_description_p(fmt).bytesPerPixel);
+    buf.resize(width * height * get_image_format_description_p(fmt).bytes_per_pixel);
     return buf;
 }
 

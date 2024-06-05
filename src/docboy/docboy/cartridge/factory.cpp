@@ -1,4 +1,6 @@
-#include "factory.h"
+#include "docboy/cartridge/factory.h"
+
+#include "docboy/cartridge/cartridge.h"
 #include "docboy/cartridge/mbc1/mbc1.h"
 #include "docboy/cartridge/mbc1/mbc1m.h"
 #include "docboy/cartridge/mbc2/mbc2.h"
@@ -6,9 +8,10 @@
 #include "docboy/cartridge/mbc5/mbc5.h"
 #include "docboy/cartridge/nombc/nombc.h"
 #include "docboy/cartridge/romram/romram.h"
-#include "docboy/shared/specs.h"
-#include "utils/exceptions.hpp"
-#include "utils/formatters.hpp"
+#include "docboy/common/specs.h"
+
+#include "utils/exceptions.h"
+#include "utils/formatters.h"
 #include "utils/io.h"
 
 namespace {
@@ -95,24 +98,25 @@ using RomRam_Battery = RomRam<RomSize, RamSize, Battery>;
 template <uint32_t RomSize, uint32_t RamSize>
 using RomRam_NoBattery = RomRam<RomSize, RamSize, NoBattery>;
 
-bool isMbc1M(const std::vector<uint8_t>& data) {
+bool is_mbc1m(const std::vector<uint8_t>& data) {
     // MBC1M can't be distinguished from MBC1 only from the header.
     // The heuristic for distinguish it is the presence of (at least two)
     // NINTENDO LOGO at the beginning of each game's bank.
     if (data.size() < 0x100000 ||
         (data[MemoryLayout::TYPE] != Mbc::MBC1 && data[MemoryLayout::TYPE] != Mbc::MBC1_RAM &&
          data[MemoryLayout::TYPE] != Mbc::MBC1_RAM_BATTERY) ||
-        data[MemoryLayout::ROM_SIZE] != Rom::MB_1)
+        data[MemoryLayout::ROM_SIZE] != Rom::MB_1) {
         return false;
+    }
 
     // Count the occurrences of Nintendo Logo.
-    uint8_t numLogo {};
+    uint8_t num_logo {};
     for (uint8_t i = 0; i < 4; i++) {
-        numLogo +=
+        num_logo +=
             memcmp(data.data() + (0x40000 * i) + MemoryLayout::LOGO::START, NINTENDO_LOGO, sizeof(NINTENDO_LOGO)) == 0;
     }
 
-    return numLogo > 1;
+    return num_logo > 1;
 }
 
 template <template <uint32_t, uint32_t> typename T, uint32_t RomSize, uint32_t RamSize>
@@ -123,28 +127,34 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data) {
 template <template <uint32_t, uint32_t> typename T, uint32_t RomSize, uint16_t SupportedRamSize>
 std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t ram) {
     if constexpr (test_bit<SupportedRamSize, Ram::NONE>()) {
-        if (ram == Ram::NONE)
+        if (ram == Ram::NONE) {
             return create<T, RomSize, 0>(data);
+        }
     }
     if constexpr (test_bit<SupportedRamSize, Ram::KB_2>()) {
-        if (ram == Ram::KB_2)
+        if (ram == Ram::KB_2) {
             return create<T, RomSize, 2 * KB>(data);
+        }
     }
     if constexpr (test_bit<SupportedRamSize, Ram::KB_8>()) {
-        if (ram == Ram::KB_8)
+        if (ram == Ram::KB_8) {
             return create<T, RomSize, 8 * KB>(data);
+        }
     }
     if constexpr (test_bit<SupportedRamSize, Ram::KB_32>()) {
-        if (ram == Ram::KB_32)
+        if (ram == Ram::KB_32) {
             return create<T, RomSize, 32 * KB>(data);
+        }
     }
     if constexpr (test_bit<SupportedRamSize, Ram::KB_128>()) {
-        if (ram == Ram::KB_128)
+        if (ram == Ram::KB_128) {
             return create<T, RomSize, 128 * KB>(data);
+        }
     }
     if constexpr (test_bit<SupportedRamSize, Ram::KB_64>()) {
-        if (ram == Ram::KB_64)
+        if (ram == Ram::KB_64) {
             return create<T, RomSize, 64 * KB>(data);
+        }
     }
 
     return nullptr;
@@ -153,40 +163,49 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t ram
 template <template <uint32_t, uint32_t> typename T, uint16_t SupportedRomSize, uint16_t SupportedRamSize>
 std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
     if constexpr (test_bit<SupportedRomSize, Rom::KB_32>()) {
-        if (rom == Rom::KB_32)
+        if (rom == Rom::KB_32) {
             return create<T, 32 * KB, SupportedRamSize>(data, ram);
+        }
     }
     if constexpr (test_bit<SupportedRomSize, Rom::KB_64>()) {
-        if (rom == Rom::KB_64)
+        if (rom == Rom::KB_64) {
             return create<T, 64 * KB, SupportedRamSize>(data, ram);
+        }
     }
     if constexpr (test_bit<SupportedRomSize, Rom::KB_128>()) {
-        if (rom == Rom::KB_128)
+        if (rom == Rom::KB_128) {
             return create<T, 128 * KB, SupportedRamSize>(data, ram);
+        }
     }
     if constexpr (test_bit<SupportedRomSize, Rom::KB_256>()) {
-        if (rom == Rom::KB_256)
+        if (rom == Rom::KB_256) {
             return create<T, 256 * KB, SupportedRamSize>(data, ram);
+        }
     }
     if constexpr (test_bit<SupportedRomSize, Rom::KB_512>()) {
-        if (rom == Rom::KB_512)
+        if (rom == Rom::KB_512) {
             return create<T, 512 * KB, SupportedRamSize>(data, ram);
+        }
     }
     if constexpr (test_bit<SupportedRomSize, Rom::MB_1>()) {
-        if (rom == Rom::MB_1)
+        if (rom == Rom::MB_1) {
             return create<T, 1 * MB, SupportedRamSize>(data, ram);
+        }
     }
     if constexpr (test_bit<SupportedRomSize, Rom::MB_2>()) {
-        if (rom == Rom::MB_2)
+        if (rom == Rom::MB_2) {
             return create<T, 2 * MB, SupportedRamSize>(data, ram);
+        }
     }
     if constexpr (test_bit<SupportedRomSize, Rom::MB_4>()) {
-        if (rom == Rom::MB_4)
+        if (rom == Rom::MB_4) {
             return create<T, 4 * MB, SupportedRamSize>(data, ram);
+        }
     }
     if constexpr (test_bit<SupportedRomSize, Rom::MB_4>()) {
-        if (rom == Rom::MB_8)
+        if (rom == Rom::MB_8) {
             return create<T, 8 * MB, SupportedRamSize>(data, ram);
+        }
     }
     return nullptr;
 }
@@ -197,15 +216,17 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
         return create<NoMbc_, Info::NoMbc::Rom, Info::NoMbc::Ram>(data, rom, ram);
     case Mbc::MBC1:
     case Mbc::MBC1_RAM:
-        if (isMbc1M(data))
+        if (is_mbc1m(data)) {
             return create<Mbc1M_NoBattery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
-        else
+        } else {
             return create<Mbc1_NoBattery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
+        }
     case Mbc::MBC1_RAM_BATTERY:
-        if (isMbc1M(data))
+        if (is_mbc1m(data)) {
             return create<Mbc1M_Battery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
-        else
+        } else {
             return create<Mbc1_Battery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
+        }
     case Mbc::MBC2:
         return create<Mbc2_NoBattery, Info::Mbc2::Rom, Info::Mbc2::Ram>(data, rom, ram);
     case Mbc::MBC2_BATTERY:
@@ -231,20 +252,22 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
     case Mbc::MBC5_RUMBLE_RAM_BATTERY:
         return create<Mbc5_NoBattery, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
     default:
-        fatal("unknown MBC type: 0x" + hex(mbc));
+        FATAL("unknown MBC type: 0x" + hex(mbc));
     }
 }
 } // namespace
 
-std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename) const {
+std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename) {
     bool ok;
 
     const std::vector<uint8_t> data = read_file(filename, &ok);
-    if (!ok)
-        fatal("failed to read file");
+    if (!ok) {
+        FATAL("failed to read file");
+    }
 
-    if (data.size() < MemoryLayout::SIZE)
-        fatal("rom size is too small");
+    if (data.size() < MemoryLayout::SIZE) {
+        FATAL("rom size is too small");
+    }
 
     const uint8_t mbc = data[MemoryLayout::TYPE];
     const uint8_t rom = data[MemoryLayout::ROM_SIZE];
@@ -252,8 +275,9 @@ std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename
 
     auto cartridge = ::create(data, mbc, rom, ram);
 
-    if (!cartridge)
-        fatal("unexpected cartridge specs: ROM=" + std::to_string(rom) + ", RAM=" + std::to_string(ram));
+    if (!cartridge) {
+        FATAL("unexpected cartridge specs: ROM=" + std::to_string(rom) + ", RAM=" + std::to_string(ram));
+    }
 
     return cartridge;
 }

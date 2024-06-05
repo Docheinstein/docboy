@@ -1,7 +1,6 @@
 #ifndef CARTRIDGE_H
 #define CARTRIDGE_H
 
-#include "docboy/shared/macros.h"
 #include <cstdint>
 
 class Parcel;
@@ -10,30 +9,36 @@ class ICartridge {
 public:
     virtual ~ICartridge() = default;
 
-    [[nodiscard]] virtual uint8_t readRom(uint16_t address) const = 0;
-    virtual void writeRom(uint16_t address, uint8_t value) = 0;
+    virtual uint8_t read_rom(uint16_t address) const = 0;
+    virtual void write_rom(uint16_t address, uint8_t value) = 0;
 
-    [[nodiscard]] virtual uint8_t readRam(uint16_t address) const = 0;
-    virtual void writeRam(uint16_t address, uint8_t value) = 0;
+    virtual uint8_t read_ram(uint16_t address) const = 0;
+    virtual void write_ram(uint16_t address, uint8_t value) = 0;
 
-    [[nodiscard]] bool needTick() const {
-        return needTicks;
-    }
-    virtual void tick() {};
+    void tick() {
+        if (need_ticks) {
+            on_tick();
+        }
+    };
 
-    [[nodiscard]] virtual uint8_t* getRamSaveData() = 0;
-    [[nodiscard]] virtual uint32_t getRamSaveSize() const = 0;
+    virtual uint8_t* get_ram_save_data() = 0;
+    virtual uint32_t get_ram_save_size() const = 0;
 
-    IF_DEBUGGER(virtual uint8_t* getRomData() = 0);
-    IF_DEBUGGER(virtual uint32_t getRomSize() const = 0);
+#ifdef ENABLE_DEBUGGER
+    virtual uint8_t* get_rom_data() = 0;
+    virtual uint32_t get_rom_size() const = 0;
+#endif
 
-    virtual void saveState(Parcel& parcel) const = 0;
-    virtual void loadState(Parcel& parcel) = 0;
+    virtual void save_state(Parcel& parcel) const = 0;
+    virtual void load_state(Parcel& parcel) = 0;
 
     virtual void reset() = 0;
 
 protected:
-    bool needTicks {};
+    virtual void on_tick() {
+    }
+
+    bool need_ticks {};
 };
 
 #endif // CARTRIDGE_H

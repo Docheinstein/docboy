@@ -1,4 +1,5 @@
 SOURCES_CXX := \
+    $(SOURCE_DIR)/docboy/docboy/boot/boot.cpp \
     $(SOURCE_DIR)/docboy/docboy/bus/cpubus.cpp \
     $(SOURCE_DIR)/docboy/docboy/bus/extbus.cpp \
     $(SOURCE_DIR)/docboy/docboy/bus/oambus.cpp \

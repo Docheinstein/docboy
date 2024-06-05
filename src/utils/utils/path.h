@@ -1,34 +1,34 @@
-#ifndef PATH_H
-#define PATH_H
+#ifndef UTILSPATH_H
+#define UTILSPATH_H
 
 #include <string>
 #include <vector>
 
-class path {
+class Path {
 public:
-    path() = default;
-    explicit path(const std::string& path);
+    Path() = default;
+    explicit Path(const std::string& p);
 
-    path& operator/(const std::string& part);
-    path& operator/(const path& part);
+    Path& operator/(const std::string& part);
+    Path& operator/(const Path& part);
 
-    friend path operator/(const path& p1, const path& p2);
-    friend std::ostream& operator<<(std::ostream& os, const path& path);
+    friend Path operator/(const Path& p1, const Path& p2);
+    friend std::ostream& operator<<(std::ostream& os, const Path& p);
 
-    [[nodiscard]] std::string filename() const;
+    std::string filename() const;
 
-    path with_extension(const std::string& extension) const;
-    path& replace_extension(const std::string& extension);
+    Path with_extension(const std::string& extension) const;
+    Path& replace_extension(const std::string& extension);
 
-    [[nodiscard]] std::string string() const;
+    std::string string() const;
 
 private:
     static inline const char SEP = '/';
 
     std::vector<std::string> parts {};
-    bool isAbsolute {};
+    bool is_absolute {};
 };
 
-path temp_directory_path();
+Path temp_directory_path();
 
-#endif // PATH_H
+#endif // UTILSPATH_H

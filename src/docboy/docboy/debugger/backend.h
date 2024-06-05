@@ -1,10 +1,11 @@
 #ifndef BACKEND_H
 #define BACKEND_H
 
-#include "shared.h"
 #include <cstdint>
 #include <deque>
 #include <optional>
+
+#include "docboy/debugger/shared.h"
 
 class DebuggerFrontend;
 class Core;
@@ -24,11 +25,11 @@ struct MicroStepCommandState {
 };
 struct NextCommandState {
     uint64_t counter {};
-    uint16_t stackLevel {};
+    uint16_t stack_level {};
 };
 struct MicroNextCommandState {
     uint64_t counter {};
-    uint16_t stackLevel {};
+    uint16_t stack_level {};
 };
 struct FrameCommandState {
     uint64_t counter {};
@@ -50,90 +51,89 @@ class DebuggerBackend {
 public:
     explicit DebuggerBackend(Core& core);
 
-    void attachFrontend(DebuggerFrontend& frontend);
+    void attach_frontend(DebuggerFrontend& frontend);
 
-    void onTick(uint64_t tick);
-    void onMemoryRead(uint16_t address, uint8_t value);
-    void onMemoryWrite(uint16_t address, uint8_t oldValue, uint8_t newValue);
+    void notify_tick(uint64_t tick);
+    void notify_memory_read(uint16_t address, uint8_t value);
+    void notify_memory_write(uint16_t address, uint8_t old_value, uint8_t new_value);
 
-    [[nodiscard]] bool isAskingToShutdown() const;
+    bool is_asking_to_quit() const;
 
-    [[nodiscard]] const CartridgeInfo& getCartridgeInfo();
+    const CartridgeInfo& get_cartridge_info();
 
-    uint32_t addBreakpoint(uint16_t addr);
-    [[nodiscard]] std::optional<Breakpoint> getBreakpoint(uint16_t addr) const;
-    [[nodiscard]] const std::vector<Breakpoint>& getBreakpoints() const;
+    uint32_t add_breakpoint(uint16_t addr);
+    std::optional<Breakpoint> get_breakpoint(uint16_t addr) const;
+    const std::vector<Breakpoint>& get_breakpoints() const;
 
-    uint32_t addWatchpoint(Watchpoint::Type, uint16_t from, uint16_t to, std::optional<Watchpoint::Condition>);
-    [[nodiscard]] std::optional<Watchpoint> getWatchpoint(uint16_t addr) const;
-    [[nodiscard]] const std::vector<Watchpoint>& getWatchpoints() const;
+    uint32_t add_watchpoint(Watchpoint::Type, uint16_t from, uint16_t to, std::optional<Watchpoint::Condition>);
+    std::optional<Watchpoint> get_watchpoint(uint16_t addr) const;
+    const std::vector<Watchpoint>& get_watchpoints() const;
 
-    void removePoint(uint32_t id);
-    void clearPoints();
+    void remove_point(uint32_t id);
+    void clear_points();
 
     std::optional<DisassembledInstructionReference> disassemble(uint16_t addr, bool cache = false);
-    std::vector<DisassembledInstructionReference> disassembleMultiple(uint16_t addr, uint16_t n = 1,
-                                                                      bool cache = false);
-    std::vector<DisassembledInstructionReference> disassembleRange(uint16_t from, uint16_t to, bool cache = false);
-    [[nodiscard]] std::optional<DisassembledInstruction> getDisassembledInstruction(uint16_t addr) const;
-    [[nodiscard]] std::vector<DisassembledInstructionReference> getDisassembledInstructions() const;
+    std::vector<DisassembledInstructionReference> disassemble_multi(uint16_t addr, uint16_t n = 1, bool cache = false);
+    std::vector<DisassembledInstructionReference> disassemble_range(uint16_t from, uint16_t to, bool cache = false);
+    std::optional<DisassembledInstruction> get_disassembled_instruction(uint16_t addr) const;
+    std::vector<DisassembledInstructionReference> get_disassembled_instructions() const;
 
-    [[nodiscard]] const std::vector<DisassembledInstructionReference>& getCallStack() const;
+    const std::vector<DisassembledInstructionReference>& get_call_stack() const;
 
-    [[nodiscard]] uint32_t computeStateHash() const;
+    uint32_t state_hash() const;
 
-    [[nodiscard]] uint8_t readMemory(uint16_t addr);
-    [[nodiscard]] uint8_t readMemoryRaw(uint16_t addr);
+    uint8_t read_memory(uint16_t addr);
+    uint8_t read_memory_raw(uint16_t addr);
 
     void proceed();
     void interrupt();
 
-    [[nodiscard]] const Core& getCore() const;
+    const Core& get_core() const;
 
 private:
-    void pullCommand(const ExecutionState& state);
+    void pull_command(const ExecutionState& state);
 
-    [[nodiscard]] std::optional<DisassembledInstruction> doDisassemble(uint16_t addr);
-
-    template <typename CommandType>
-    void initializeCommandState();
+    std::optional<DisassembledInstruction> do_disassemble(uint16_t addr);
 
     template <typename CommandType>
-    void initializeCommandState(const CommandType& cmd);
+    void init_command_state();
+
+    template <typename CommandType>
+    void init_command_state(const CommandType& cmd);
 
     template <typename CommandType, typename CommandStateType>
-    void handleCommand();
+    void handle_command();
 
     template <typename CommandType, typename CommandStateType>
-    void handleCommand(const CommandType& cmd, CommandStateType& state);
+    void handle_command(const CommandType& cmd, CommandStateType& state);
 
     Core& core;
     DebuggerFrontend* frontend {};
 
     std::optional<Command> command;
-    std::optional<CommandState> commandState;
+    std::optional<CommandState> command_state;
 
     bool run {true};
     bool interrupted {};
 
-    std::optional<CartridgeInfo> cartridgeInfo {};
+    std::optional<CartridgeInfo> cartridge_info {};
 
     std::vector<Breakpoint> breakpoints;
     std::vector<Watchpoint> watchpoints;
-    std::optional<DisassembledInstruction> disassembledInstructions[0x10000];
+    std::optional<DisassembledInstruction> disassembled_instructions[0x10000];
 
-    std::optional<WatchpointHit> watchpointHit;
+    std::optional<WatchpointHit> watchpoint_hit;
 
-    uint32_t nextPointId {};
+    uint32_t next_point_id {};
 
-    bool allowMemoryCallbacks {true};
+    bool allow_memory_callbacks {true};
 
     std::deque<std::vector<uint8_t>> history;
 
-    std::optional<DisassembledInstructionReference> lastInstruction;
-    std::vector<DisassembledInstructionReference> callStack;
+    std::optional<DisassembledInstructionReference> last_instruction;
+    std::vector<DisassembledInstructionReference> call_stack;
 
-    uint32_t memoryHash {};
+    uint32_t memory_hash {};
 };
 
 #endif // BACKEND_H

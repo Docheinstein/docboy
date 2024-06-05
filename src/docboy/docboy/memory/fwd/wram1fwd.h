@@ -1,8 +1,8 @@
 #ifndef WRAM1FWD_H
 #define WRAM1FWD_H
 
-#include "docboy/shared/specs.h"
-#include "randmemoryfwd.h"
+#include "docboy/common/specs.h"
+#include "docboy/memory/fwd/randmemoryfwd.h"
 
 using Wram1 = RandomizedMemory<Specs::MemoryLayout::WRAM1::START, Specs::MemoryLayout::WRAM1::END>;
 

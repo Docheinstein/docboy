@@ -1,9 +1,9 @@
 #ifndef PORT_H
 #define PORT_H
 
-#include "endpoint.h"
-#include "link.h"
-#include "serial.h"
+#include "docboy/serial/endpoint.h"
+#include "docboy/serial/link.h"
+#include "docboy/serial/serial.h"
 
 class InterruptsIO;
 
@@ -14,8 +14,8 @@ public:
     void attach(SerialLink::Plug& plug);
     void detach();
 
-    uint8_t serialRead() override;
-    void serialWrite(uint8_t) override;
+    uint8_t serial_read() override;
+    void serial_write(uint8_t) override;
 
     void tick();
 

@@ -75,22 +75,22 @@ struct WatchpointHit {
     enum class AccessType { Read, Write };
     Watchpoint watchpoint;
     uint16_t address;
-    AccessType accessType;
-    uint8_t oldValue;
-    uint8_t newValue;
+    AccessType access_type;
+    uint8_t old_value;
+    uint8_t new_value;
 };
 
 using DisassembledInstruction = std::vector<uint8_t>;
 
 struct DisassembledInstructionReference {
     DisassembledInstructionReference(uint16_t address, const DisassembledInstruction& instruction) :
-        address(address),
-        instruction(instruction) {
+        address {address},
+        instruction {instruction} {
     }
 
     DisassembledInstructionReference(uint16_t address, DisassembledInstruction&& instruction) :
-        address(address),
-        instruction(std::move(instruction)) {
+        address {address},
+        instruction {std::move(instruction)} {
     }
 
     uint16_t address;
@@ -108,10 +108,10 @@ struct CartridgeInfo {
 struct ExecutionCompleted {};
 struct ExecutionInterrupted {};
 struct ExecutionBreakpointHit {
-    BreakpointHit breakpointHit;
+    BreakpointHit breakpoint_hit;
 };
 struct ExecutionWatchpointHit {
-    WatchpointHit watchpointHit;
+    WatchpointHit watchpoint_hit;
 };
 
 using ExecutionState =

@@ -1,11 +1,11 @@
-#ifndef STD_HPP
-#define STD_HPP
+#ifndef UTILSSTD_H
+#define UTILSSTD_H
 
 #include <algorithm>
 
 template <template <typename V, typename Allocator = std::allocator<V>> class Container, typename T>
 const T& pop(Container<T>& container) {
-    check(!container.empty());
+    ASSERT(!container.empty());
     const auto& value = container.back();
     container.pop_back();
     return value;
@@ -13,7 +13,7 @@ const T& pop(Container<T>& container) {
 
 template <template <typename V, typename Allocator = std::allocator<V>> class Container, typename T>
 const T& pop_front(Container<T>& container) {
-    check(!container.empty());
+    ASSERT(!container.empty());
     const auto& value = container.front();
     container.pop_front();
     return value;
@@ -29,4 +29,4 @@ bool contains(const Container<T>& container, const T& value) {
     return container.find(value) != container.end();
 }
 
-#endif // STD_HPP
+#endif // UTILSSTD_H

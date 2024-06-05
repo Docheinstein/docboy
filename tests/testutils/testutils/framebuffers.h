@@ -1,5 +1,5 @@
-#ifndef FRAMEBUFFERSUTILS_H
-#define FRAMEBUFFERSUTILS_H
+#ifndef FRAMEBUFFERS_H
+#define FRAMEBUFFERS_H
 
 #include <array>
 #include <cstdint>
@@ -22,4 +22,4 @@ bool are_framebuffer_equals(const uint16_t* buf1, const uint16_t* buf2);
 
 void dump_framebuffer_png(const std::string& filename);
 
-#endif // FRAMEBUFFERSUTILS_H
+#endif // FRAMEBUFFERS_H

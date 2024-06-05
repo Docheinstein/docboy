@@ -7,7 +7,7 @@
 
 // ---- end test cases   ----
 
-std::string bootRom;
+std::string boot_rom;
 
 int main(int argc, char* argv[]) {
 #ifdef ENABLE_BOOTROM

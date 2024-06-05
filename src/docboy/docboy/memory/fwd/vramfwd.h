@@ -1,8 +1,8 @@
 #ifndef VRAMFWD_H
 #define VRAMFWD_H
 
-#include "docboy/shared/specs.h"
-#include "memoryfwd.h"
+#include "docboy/common/specs.h"
+#include "docboy/memory/fwd/memoryfwd.h"
 
 class Vram;
 

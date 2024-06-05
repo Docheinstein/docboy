@@ -1,8 +1,10 @@
-#include "corecontroller.h"
-#include "utils/io.h"
-#include "utils/os.h"
+#include "controllers/corecontroller.h"
+
 #include <iostream>
 #include <string>
+
+#include "utils/io.h"
+#include "utils/os.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "docboy/debugger/backend.h"
@@ -10,167 +12,167 @@
 #endif
 
 CoreController::CoreController(Core& core) :
-    core(core) {
+    core {core} {
 }
 
-void CoreController::loadRom(const std::string& romPath) {
-    if (rom.isLoaded) {
+void CoreController::load_rom(const std::string& rom_path) {
+    if (rom.is_loaded) {
         // Eventually save current RAM state if a ROM is already loaded
-        writeSave();
+        write_save();
     }
 
-    if (!file_exists(romPath)) {
-        std::cerr << "WARN: failed to load '" << romPath << "'" << std::endl;
+    if (!file_exists(rom_path)) {
+        std::cerr << "WARN: failed to load '" << rom_path << "'" << std::endl;
         exit(1);
     }
 
-    rom.romPath = path(romPath);
-    rom.isLoaded = true;
+    rom.path = Path {rom_path};
+    rom.is_loaded = true;
 
     // Actually load ROM
-    core.loadRom(romPath);
+    core.load_rom(rom_path);
 
     // Eventually load new RAM state
-    loadSave();
+    load_save();
 
 #ifdef ENABLE_DEBUGGER
-    if (isDebuggerAttached()) {
+    if (is_debugger_attached()) {
         // Reattach the debugger
-        detachDebugger();
-        attachDebugger(debugger.callbacks.onPullingCommand, debugger.callbacks.onCommandPulled, true);
+        attach_debugger();
+        attach_debugger(debugger.callbacks.on_pulling_command, debugger.callbacks.on_command_pulled, true);
     }
 #endif
 }
 
-bool CoreController::isRomLoaded() const {
-    return rom.isLoaded;
+bool CoreController::is_rom_loaded() const {
+    return rom.is_loaded;
 }
 
-path CoreController::getRom() const {
-    return rom.romPath;
+Path CoreController::get_rom() const {
+    return rom.path;
 }
 
-bool CoreController::writeSave() const {
-    if (!core.canSaveRam())
+bool CoreController::write_save() const {
+    if (!core.can_save_ram()) {
         return false;
+    }
 
-    std::vector<uint8_t> data(core.getRamSaveSize());
-    core.saveRam(data.data());
+    std::vector<uint8_t> data(core.get_ram_save_size());
+    core.save_ram(data.data());
 
     bool ok;
-    write_file(getSavePath(), data.data(), data.size(), &ok);
+    write_file(get_save_path(), data.data(), data.size(), &ok);
 
     return ok;
 }
 
-bool CoreController::loadSave() const {
-    if (!core.canSaveRam())
+bool CoreController::load_save() const {
+    if (!core.can_save_ram()) {
         return false;
+    }
 
     bool ok;
-    std::vector<uint8_t> data = read_file(getSavePath(), &ok);
-    if (!ok)
+    std::vector<uint8_t> data = read_file(get_save_path(), &ok);
+    if (!ok) {
         return false;
+    }
 
-    core.loadRam(data.data());
+    core.load_ram(data.data());
     return true;
 }
 
-bool CoreController::writeState() const {
-    std::vector<uint8_t> data(core.getStateSize());
-    core.saveState(data.data());
+bool CoreController::write_state() const {
+    std::vector<uint8_t> data(core.get_state_size());
+    core.save_state(data.data());
 
     bool ok;
-    write_file(getStatePath(), data.data(), data.size(), &ok);
+    write_file(get_state_path(), data.data(), data.size(), &ok);
 
     return ok;
 }
 
-bool CoreController::loadState() const {
+bool CoreController::load_state() const {
     bool ok;
-    std::vector<uint8_t> data = read_file(getStatePath(), &ok);
-    if (!ok)
+    std::vector<uint8_t> data = read_file(get_state_path(), &ok);
+    if (!ok) {
         return false;
+    }
 
-    if (data.size() != core.getStateSize())
+    if (data.size() != core.get_state_size()) {
         return false;
+    }
 
-    core.loadState(data.data());
+    core.load_state(data.data());
 
     return ok;
 }
 
 #ifdef ENABLE_DEBUGGER
-bool CoreController::isDebuggerAttached() const {
+bool CoreController::is_debugger_attached() const {
     return debugger.backend != nullptr;
 }
 
-bool CoreController::attachDebugger(const std::function<void()>& onPullingCommand,
-                                    const std::function<bool(const std::string&)>& onCommandPulled,
-                                    bool proceedExecution) {
-    if (isDebuggerAttached())
+bool CoreController::attach_debugger(const std::function<void()>& on_pulling_command,
+                                     const std::function<bool(const std::string&)>& on_command_pulled,
+                                     bool proceed_execution) {
+    if (is_debugger_attached()) {
         return false;
+    }
 
     // Setup the debugger
     debugger.backend = std::make_unique<DebuggerBackend>(core);
     debugger.frontend = std::make_unique<DebuggerFrontend>(*debugger.backend);
-    core.attachDebugger(*debugger.backend);
-    debugger.backend->attachFrontend(*debugger.frontend);
-    DebuggerMemorySniffer::setObserver(&*debugger.backend);
+    core.attach_debugger(*debugger.backend);
+    debugger.backend->attach_frontend(*debugger.frontend);
+    DebuggerMemorySniffer::set_observer(&*debugger.backend);
 
     // Setup the callbacks
-    debugger.callbacks.onPullingCommand = onPullingCommand;
-    debugger.callbacks.onCommandPulled = onCommandPulled;
-    debugger.frontend->setOnPullingCommandCallback(debugger.callbacks.onPullingCommand);
-    debugger.frontend->setOnCommandPulledCallback(debugger.callbacks.onCommandPulled);
+    debugger.callbacks.on_pulling_command = on_pulling_command;
+    debugger.callbacks.on_command_pulled = on_command_pulled;
+    debugger.frontend->set_on_pulling_command_callback(debugger.callbacks.on_pulling_command);
+    debugger.frontend->set_on_command_pulled_callback(debugger.callbacks.on_command_pulled);
 
-    if (proceedExecution)
+    if (proceed_execution) {
         debugger.backend->proceed();
+    }
 
     return true;
 }
 
-bool CoreController::detachDebugger() {
-    if (!isDebuggerAttached())
+bool CoreController::detach_debugger() {
+    if (!is_debugger_attached()) {
         return false;
+    }
 
     debugger.backend = nullptr;
     debugger.frontend = nullptr;
-    DebuggerMemorySniffer::setObserver(nullptr);
-    core.detachDebugger();
+    DebuggerMemorySniffer::set_observer(nullptr);
+    core.detach_debugger();
 
     return true;
 }
 #endif
 
-const Lcd::PixelRgb565* CoreController::getFramebuffer() const {
-    return core.gb.lcd.getPixels();
+const Lcd::PixelRgb565* CoreController::get_framebuffer() const {
+    return core.gb.lcd.get_pixels();
 }
 
-void CoreController::setKeyMapping(SDL_Keycode keycode, Joypad::Key joypadKey) {
+void CoreController::set_key_mapping(SDL_Keycode keycode, Joypad::Key joypad_key) {
     // Remove previously bound keycode.
-    if (const auto prevKeycode = joypadMap.find(joypadKey); prevKeycode != joypadMap.end()) {
-        keycodeMap.erase(keycodeMap.find(prevKeycode->second));
+    if (const auto prev_keycode = joypad_map.find(joypad_key); prev_keycode != joypad_map.end()) {
+        keycode_map.erase(keycode_map.find(prev_keycode->second));
     }
 
-    keycodeMap[keycode] = joypadKey;
-    joypadMap[joypadKey] = keycode;
+    keycode_map[keycode] = joypad_key;
+    joypad_map[joypad_key] = keycode;
 }
 
-const std::map<SDL_Keycode, Joypad::Key>& CoreController::getKeycodeMap() const {
-    return keycodeMap;
+std::string CoreController::get_save_path() const {
+    ASSERT(is_rom_loaded());
+    return rom.path.with_extension("sav").string();
 }
 
-const std::map<Joypad::Key, SDL_Keycode>& CoreController::getJoypadMap() const {
-    return joypadMap;
-}
-
-std::string CoreController::getSavePath() const {
-    check(isRomLoaded());
-    return rom.romPath.with_extension("sav").string();
-}
-
-std::string CoreController::getStatePath() const {
-    check(isRomLoaded());
-    return rom.romPath.with_extension("state").string();
+std::string CoreController::get_state_path() const {
+    ASSERT(is_rom_loaded());
+    return rom.path.with_extension("state").string();
 }

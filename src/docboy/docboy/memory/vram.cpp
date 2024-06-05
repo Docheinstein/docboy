@@ -1,7 +1,5 @@
 #include "vram.h"
 
-#include "docboy/bootrom/macros.h"
-
 #ifndef ENABLE_BOOTROM
 namespace {
 constexpr uint8_t VRAM_AFTER_BOOT[] {
@@ -442,5 +440,7 @@ constexpr uint8_t VRAM_AFTER_BOOT[] {
 #endif
 
 void Vram::reset() {
-    IF_NOT_BOOTROM(setData(VRAM_AFTER_BOOT, sizeof(VRAM_AFTER_BOOT)));
+#ifndef ENABLE_BOOTROM
+    set_data(VRAM_AFTER_BOOT, sizeof(VRAM_AFTER_BOOT));
+#endif
 }

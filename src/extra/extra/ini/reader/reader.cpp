@@ -1,46 +1,47 @@
-#include "reader.h"
+#include "extra/ini/reader/reader.h"
 
-#include <iterator>
 #include "utils/io.h"
-#include "utils/strings.hpp"
+#include "utils/strings.h"
 
 IniReader::Result IniReader::parse(const std::string& filename) {
     // Read all file's lines
     bool ok;
     std::vector<std::string> lines = read_file_lines(filename, &ok);
-    if (!ok)
+    if (!ok) {
         return {Result::Outcome::ErrorReadFailed};
+    }
 
-    auto getKeyValue = [](const std::string& line) {
+    auto get_key_value = [](const std::string& line) {
         std::vector<std::string> tokens;
         split(line, std::back_inserter(tokens), '=');
 
-        std::vector<std::string> trimmedTokens;
-        std::transform(tokens.begin(), tokens.end(), std::back_inserter(trimmedTokens), [](const std::string& token) {
+        std::vector<std::string> trimmed_tokens;
+        std::transform(tokens.begin(), tokens.end(), std::back_inserter(trimmed_tokens), [](const std::string& token) {
             return trim(token);
         });
-        return trimmedTokens;
+        return trimmed_tokens;
     };
 
     // Read lines one by one
-    uint32_t lineIndex {};
+    uint32_t line_index {};
 
     for (const auto& line : lines) {
-        lineIndex++;
+        line_index++;
 
         // Eventually skip comments
         bool skip {};
-        for (const auto& commentPrefix : commentPrefixes) {
-            if (starts_with(line, commentPrefix)) {
+        for (const auto& comment_prefix : comment_prefixes) {
+            if (starts_with(line, comment_prefix)) {
                 skip = true;
                 break;
             }
         }
 
-        if (skip)
+        if (skip) {
             continue;
+        }
 
-        std::vector<std::string> tokens = getKeyValue(line);
+        std::vector<std::string> tokens = get_key_value(line);
         if (tokens.size() >= 2) {
             const std::string& key = tokens[0];
             const std::string& value = tokens[1];
@@ -48,22 +49,22 @@ IniReader::Result IniReader::parse(const std::string& filename) {
             if (const auto it = properties.find(key); it != properties.end()) {
                 if (!parsers[key](value, it->second)) {
                     // Failed to parse option
-                    return {Result::Outcome::ErrorParseFailed, lineIndex};
+                    return {Result::Outcome::ErrorParseFailed, line_index};
                 }
             }
         }
     }
 
     // Everything's ok
-    return {Result::Outcome::Success, lineIndex};
+    return {Result::Outcome::Success, line_index};
 }
 
-void IniReader::addCommentPrefix(const std::string& prefix) {
-    commentPrefixes.push_back(prefix);
+void IniReader::add_comment_prefix(const std::string& prefix) {
+    comment_prefixes.push_back(prefix);
 }
 
-void IniReader::addProperty(const std::string& name, std::string& option) {
-    addProperty(name, option, [](const std::string& s) {
+void IniReader::add_property(const std::string& name, std::string& option) {
+    add_property(name, option, [](const std::string& s) {
         return s;
     });
 }

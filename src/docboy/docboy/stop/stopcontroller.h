@@ -13,22 +13,23 @@ public:
     void stop();
 
     void tick() {
-        if (requested)
-            enterStopMode();
+        if (requested) {
+            enter_stop_mode();
+        }
     }
 
-    void handleStopMode() {
-        eventuallyExitStopMode();
+    void handle_stop_mode() {
+        eventually_exit_stop_mode();
     }
 
-    void saveState(Parcel& parcel) const;
-    void loadState(Parcel& parcel);
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
     void reset();
 
 private:
-    void enterStopMode();
-    void eventuallyExitStopMode();
+    void enter_stop_mode();
+    void eventually_exit_stop_mode();
 
     bool& stopped;
     bool requested {};

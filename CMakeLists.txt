@@ -24,6 +24,8 @@ option(ENABLE_DEBUGGER "Enable debugger" OFF)
 option(ENABLE_SERIAL "Enable serial link" OFF)
 option(ENABLE_BOOTROM "Enable boot rom" OFF)
 
+option(ENABLE_ASSERTS "Enable asserts" OFF)
+
 # Build in Release mode by default
 if (CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE Release)
@@ -64,7 +66,7 @@ if (MSVC)
     add_compile_options(/Zc:__cplusplus /Zc:preprocessor /bigobj)
 endif ()
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (ENABLE_ASSERTS OR CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(ENABLE_ASSERTS)
 endif()
 

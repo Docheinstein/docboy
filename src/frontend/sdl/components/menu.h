@@ -1,13 +1,16 @@
 #ifndef MENU_H
 #define MENU_H
 
-#include "SDL3/SDL_keycode.h"
-#include "text.h"
-#include "utils/textures.h"
-#include "utils/vector.hpp"
 #include <array>
 #include <functional>
 #include <string>
+
+#include "components/text.h"
+
+#include "utils/textures.h"
+#include "utils/vector.h"
+
+#include "SDL3/SDL_keycode.h"
 
 struct SDL_Texture;
 
@@ -15,20 +18,20 @@ class Menu {
 public:
     struct MenuItem {
         std::string text {};
-        std::function<void()> onEnter {};
-        std::function<void()> onPrev {};
-        std::function<void()> onNext {};
+        std::function<void()> on_enter {};
+        std::function<void()> on_prev {};
+        std::function<void()> on_next {};
     };
 
     explicit Menu(SDL_Texture* texture, const std::array<uint32_t, 4>& palette);
 
-    MenuItem& addItem(MenuItem&& item);
+    MenuItem& add_item(MenuItem&& item);
 
-    void setNavigationEnabled(bool enabled);
+    void set_navigation_enabled(bool enabled);
 
     void redraw();
 
-    void handleInput(SDL_Keycode key);
+    void handle_input(SDL_Keycode key);
 
 private:
     SDL_Texture* texture {};

@@ -1,7 +1,7 @@
 #ifndef OAM_H
 #define OAM_H
 
-#include "fwd/oamfwd.h"
-#include "randmemory.hpp"
+#include "docboy/memory/fwd/oamfwd.h"
+#include "docboy/memory/randmemory.h"
 
 #endif // OAM_H

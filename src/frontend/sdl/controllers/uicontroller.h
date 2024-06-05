@@ -29,26 +29,26 @@ public:
     explicit UiController(Window& window, Core& core);
 
     // Scaling
-    void setScaling(uint32_t scaling);
-    uint32_t getScaling() const;
+    void set_scaling(uint32_t scaling);
+    uint32_t get_scaling() const;
 
     // Palettes
-    const Palette& addPalette(const std::array<uint16_t, 4>& rgb565, const std::string& name,
-                              std::optional<uint16_t> accent = std::nullopt);
-    const Palette* getPalette(const std::array<uint16_t, 4>& rgb565) const;
-    const std::vector<Palette>& getPalettes() const;
+    const Palette& add_palette(const std::array<uint16_t, 4>& rgb565, const std::string& name,
+                               std::optional<uint16_t> optional_accent = std::nullopt);
+    const Palette* get_palette(const std::array<uint16_t, 4>& rgb565) const;
+    const std::vector<Palette>& get_palettes() const;
 
-    void setCurrentPalette(size_t index);
-    const Palette& getCurrentPalette() const;
+    void set_current_palette(size_t index);
+    const Palette& get_current_palette() const;
 
     // SDL
-    SDL_Renderer* getRenderer() const;
+    SDL_Renderer* get_renderer() const;
 
 private:
     Window& window;
     Core& core;
 
-    Palette currentPalette {};
+    Palette current_palette {};
     std::vector<Palette> palettes;
 };
 

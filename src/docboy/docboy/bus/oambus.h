@@ -1,11 +1,10 @@
 #ifndef OAMBUS_H
 #define OAMBUS_H
 
-#include "docboy/memory/oam.h"
-#include "videobus.h"
+#include "docboy/bus/videobus.h"
+#include "docboy/memory/fwd/oamfwd.h"
 
-class OamBus : public VideoBus<OamBus> {
-
+class OamBus final : public VideoBus<OamBus> {
 public:
     struct Word {
         uint8_t a;
@@ -15,45 +14,35 @@ public:
     template <Device::Type Dev>
     class View : public VideoBus::View<Dev> {
     public:
-        View(OamBus& bus) :
+        /* implicit */ View(OamBus& bus) :
             VideoBusView<OamBus, Dev>(bus) {
         }
 
-        void readWordRequest(uint16_t addr);
-        Word flushReadWordRequest();
+        void read_word_request(uint16_t addr);
+        Word flush_read_word_request();
     };
 
     explicit OamBus(Oam& oam);
 
     template <Device::Type Dev>
-    void clearWriteRequest();
+    void clear_write_request();
 
     template <Device::Type Dev>
-    void readWordRequest(uint16_t addr);
+    void read_word_request(uint16_t addr);
 
     template <Device::Type Dev>
-    Word flushReadWordRequest();
+    Word flush_read_word_request();
 
 private:
-    [[nodiscard]] uint8_t readOam(uint16_t address) const;
-    void writeOam(uint16_t address, uint8_t value);
+    uint8_t read_oam(uint16_t address) const;
+    void write_oam(uint16_t address, uint8_t value);
 
-    [[nodiscard]] uint8_t readFF(uint16_t address) const;
-    void writeNop(uint16_t address, uint8_t value);
+    uint8_t read_ff(uint16_t address) const;
+    void write_nop(uint16_t address, uint8_t value);
 
     Oam& oam;
 };
 
-template <Device::Type Dev>
-void OamBus::View<Dev>::readWordRequest(uint16_t addr) {
-    this->bus.template readWordRequest<Dev>(addr);
-}
-
-template <Device::Type Dev>
-OamBus::Word OamBus::View<Dev>::flushReadWordRequest() {
-    return this->bus.template flushReadWordRequest<Dev>();
-}
-
-#include "oambus.tpp"
+#include "docboy/bus/oambus.tpp"
 
 #endif // OAMBUS_H

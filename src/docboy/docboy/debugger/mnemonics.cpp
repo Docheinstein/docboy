@@ -1,8 +1,11 @@
-#include "mnemonics.h"
-#include "docboy/shared/specs.h"
-#include "utils/bits.hpp"
-#include "utils/formatters.hpp"
+#include "docboy/debugger/mnemonics.h"
+
 #include <map>
+
+#include "docboy/common/specs.h"
+
+#include "utils/bits.h"
+#include "utils/formatters.h"
 
 struct InstructionInfo {
     const char* mnemonic;
@@ -566,12 +569,14 @@ uint8_t instruction_length(uint8_t opcode) {
 }
 
 std::pair<uint8_t, uint8_t> instruction_duration(const std::vector<uint8_t>& instruction) {
-    if (instruction.empty())
+    if (instruction.empty()) {
         return {0, 0};
+    }
 
     if (instruction[0] == 0xCB) {
-        if (instruction.size() < 2)
+        if (instruction.size() < 2) {
             return {0, 0};
+        }
         return INSTRUCTIONS_CB[instruction[1]].duration;
     }
 
@@ -579,15 +584,17 @@ std::pair<uint8_t, uint8_t> instruction_duration(const std::vector<uint8_t>& ins
 }
 
 std::string instruction_mnemonic(const std::vector<uint8_t>& instruction, uint16_t address) {
-    if (instruction.empty())
+    if (instruction.empty()) {
         return "[INVALID]";
+    }
     uint8_t opcode = instruction[0];
 
     if (opcode == 0xCB) {
-        if (instruction.size() < 2)
+        if (instruction.size() < 2) {
             return "[INVALID]";
-        uint8_t opcodeCB = instruction[1];
-        return INSTRUCTIONS_CB[opcodeCB].mnemonic;
+        }
+        uint8_t opcode_CB = instruction[1];
+        return INSTRUCTIONS_CB[opcode_CB].mnemonic;
     }
 
     switch (opcode) {
@@ -609,8 +616,9 @@ std::string instruction_mnemonic(const std::vector<uint8_t>& instruction, uint16
     case 0xDC:
     case 0xEA:
     case 0xFA: {
-        if (instruction.size() < 3)
+        if (instruction.size() < 3) {
             return "[INVALID]";
+        }
         char buf[32];
         uint16_t uu = concat(instruction[2], instruction[1]);
         snprintf(buf, sizeof(buf), INSTRUCTIONS[opcode].mnemonic, uu);
@@ -637,8 +645,9 @@ std::string instruction_mnemonic(const std::vector<uint8_t>& instruction, uint16
     case 0xFE:
 
     {
-        if (instruction.size() < 2)
+        if (instruction.size() < 2) {
             return "[INVALID]";
+        }
         char buf[32];
         snprintf(buf, sizeof(buf), INSTRUCTIONS[opcode].mnemonic, instruction[1]);
         return buf;
@@ -649,8 +658,9 @@ std::string instruction_mnemonic(const std::vector<uint8_t>& instruction, uint16
     case 0x28:
     case 0x30:
     case 0x38: {
-        if (instruction.size() < 2)
+        if (instruction.size() < 2) {
             return "[INVALID]";
+        }
         char buf[32];
         auto s = static_cast<int8_t>(instruction[1]);
         uint16_t uu = address + instruction.size() + s;
@@ -660,8 +670,9 @@ std::string instruction_mnemonic(const std::vector<uint8_t>& instruction, uint16
     // u (FF00[u])
     case 0xE0:
     case 0xF0: {
-        if (instruction.size() < 2)
+        if (instruction.size() < 2) {
             return "[INVALID]";
+        }
         char buf[32];
         snprintf(buf, sizeof(buf), INSTRUCTIONS[opcode].mnemonic, instruction[1],
                  address_to_mnemonic(0xFF00 + instruction[1]).c_str());
@@ -673,37 +684,49 @@ std::string instruction_mnemonic(const std::vector<uint8_t>& instruction, uint16
 }
 
 std::string address_to_mnemonic(uint16_t address) {
-    if (address <= Specs::MemoryLayout::ROM0::END)
+    if (address <= Specs::MemoryLayout::ROM0::END) {
         return "ROM0";
-    if (address <= Specs::MemoryLayout::ROM1::END)
+    }
+    if (address <= Specs::MemoryLayout::ROM1::END) {
         return "ROM1";
-    if (address <= Specs::MemoryLayout::VRAM::END)
+    }
+    if (address <= Specs::MemoryLayout::VRAM::END) {
         return "VRAM";
-    if (address <= Specs::MemoryLayout::RAM::END)
+    }
+    if (address <= Specs::MemoryLayout::RAM::END) {
         return "RAM";
-    if (address <= Specs::MemoryLayout::WRAM1::END)
+    }
+    if (address <= Specs::MemoryLayout::WRAM1::END) {
         return "WRAM1";
-    if (address <= Specs::MemoryLayout::WRAM2::END)
+    }
+    if (address <= Specs::MemoryLayout::WRAM2::END) {
         return "WRAM2";
-    if (address <= Specs::MemoryLayout::ECHO_RAM::END)
+    }
+    if (address <= Specs::MemoryLayout::ECHO_RAM::END) {
         return "ECHO_RAM";
-    if (address <= Specs::MemoryLayout::OAM::END)
+    }
+    if (address <= Specs::MemoryLayout::OAM::END) {
         return "OAM";
-    if (address <= Specs::MemoryLayout::NOT_USABLE::END)
+    }
+    if (address <= Specs::MemoryLayout::NOT_USABLE::END) {
         return "NOT_USABLE";
-    if (address <= Specs::MemoryLayout::IO::END)
+    }
+    if (address <= Specs::MemoryLayout::IO::END) {
         return IO_MNEMONICS[address - Specs::MemoryLayout::IO::START];
-    if (address <= Specs::MemoryLayout::HRAM::END)
+    }
+    if (address <= Specs::MemoryLayout::HRAM::END) {
         return "HRAM";
-    if (address == Specs::MemoryLayout::IE)
+    }
+    if (address == Specs::MemoryLayout::IE) {
         return "IE";
+    }
     return hex(address);
 }
 
 std::optional<uint16_t> mnemonic_to_address(const std::string& mnemonic) {
-    const auto it = IO_ADDRESSES.find(mnemonic);
-    if (it != IO_ADDRESSES.end())
+    if (const auto it = IO_ADDRESSES.find(mnemonic); it != IO_ADDRESSES.end()) {
         return it->second;
+    }
     return std::nullopt;
 }
 

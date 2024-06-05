@@ -2,7 +2,7 @@
 #define MENUSCREEN_H
 
 #include "components/menu.h"
-#include "screen.h"
+#include "screens/screen.h"
 
 struct SDL_Texture;
 
@@ -12,11 +12,11 @@ public:
 
     void redraw() override;
     void render() override;
-    void handleEvent(const SDL_Event& event) override;
+    void handle_event(const SDL_Event& event) override;
 
 protected:
-    SDL_Texture* menuBackgroundTexture {};
-    SDL_Texture* menuForegroundTexture {};
+    SDL_Texture* menu_background_texture {};
+    SDL_Texture* menu_foreground_texture {};
 
     Menu menu;
 };

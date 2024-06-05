@@ -1,56 +1,58 @@
-#include "graphicsoptionsscreen.h"
+#include "screens/graphicsoptionsscreen.h"
+
 #include "controllers/navcontroller.h"
 #include "controllers/uicontroller.h"
+
 #include "docboy/core/core.h"
 
 GraphicsOptionsScreen::GraphicsOptionsScreen(Context context) :
     MenuScreen(context) {
 
-    scalingItem = &menu.addItem({"Scaling", nullptr,
-                                 [this] {
-                                     onDecreaseScaling();
-                                 },
-                                 [this] {
-                                     onIncreaseScaling();
-                                 }});
-    paletteItem = &menu.addItem({"Palette", nullptr,
-                                 [this] {
-                                     onPrevPalette();
-                                 },
-                                 [this] {
-                                     onNextPalette();
-                                 }});
-    menu.addItem({"Back", [this] {
-                      nav.pop();
-                  }});
+    items.scaling = &menu.add_item({"Scaling", nullptr,
+                                    [this] {
+                                        on_decrease_scaling();
+                                    },
+                                    [this] {
+                                        on_increase_scaling();
+                                    }});
+    items.palette = &menu.add_item({"Palette", nullptr,
+                                    [this] {
+                                        on_prev_palette();
+                                    },
+                                    [this] {
+                                        on_next_palette();
+                                    }});
+    menu.add_item({"Back", [this] {
+                       nav.pop();
+                   }});
 }
 
 void GraphicsOptionsScreen::redraw() {
-    scalingItem->text = "Scaling  " + std::to_string(ui.getScaling());
-    paletteItem->text = "Palette  " + ui.getCurrentPalette().name;
+    items.scaling->text = "Scaling  " + std::to_string(ui.get_scaling());
+    items.palette->text = "Palette  " + ui.get_current_palette().name;
     MenuScreen::redraw();
 }
 
-void GraphicsOptionsScreen::onIncreaseScaling() {
-    ui.setScaling(ui.getScaling() + 1);
+void GraphicsOptionsScreen::on_increase_scaling() {
+    ui.set_scaling(ui.get_scaling() + 1);
     redraw();
 }
 
-void GraphicsOptionsScreen::onDecreaseScaling() {
-    ui.setScaling(std::max(ui.getScaling() - 1, 1U));
+void GraphicsOptionsScreen::on_decrease_scaling() {
+    ui.set_scaling(std::max(ui.get_scaling() - 1, 1U));
     redraw();
 }
 
-void GraphicsOptionsScreen::onPrevPalette() {
-    const auto numPalette = ui.getPalettes().size();
-    const auto& currentPalette = ui.getCurrentPalette();
-    ui.setCurrentPalette((currentPalette.index + numPalette - 1) % numPalette);
+void GraphicsOptionsScreen::on_prev_palette() {
+    const auto num_palette = ui.get_palettes().size();
+    const auto& current_palette = ui.get_current_palette();
+    ui.set_current_palette((current_palette.index + num_palette - 1) % num_palette);
     redraw();
 }
 
-void GraphicsOptionsScreen::onNextPalette() {
-    const auto numPalette = ui.getPalettes().size();
-    const auto& currentPalette = ui.getCurrentPalette();
-    ui.setCurrentPalette((currentPalette.index + 1) % numPalette);
+void GraphicsOptionsScreen::on_next_palette() {
+    const auto num_palette = ui.get_palettes().size();
+    const auto& current_palette = ui.get_current_palette();
+    ui.set_current_palette((current_palette.index + 1) % num_palette);
     redraw();
 }

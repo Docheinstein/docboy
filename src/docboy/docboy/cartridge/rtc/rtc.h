@@ -1,9 +1,11 @@
 #ifndef RTC_H
 #define RTC_H
 
-#include "docboy/shared/specs.h"
-#include "utils/bits.hpp"
 #include <cstdint>
+
+#include "docboy/common/specs.h"
+
+#include "utils/bits.h"
 
 struct RtcRegisters {
     uint8_t seconds {};
@@ -27,8 +29,9 @@ struct Rtc : RtcRegisters {
     uint32_t cycles {};
 
     void tick() {
-        if (test_bit<Specs::Bits::Rtc::DH::STOPPED>(days.high))
+        if (test_bit<Specs::Bits::Rtc::DH::STOPPED>(days.high)) {
             return;
+        }
 
         if (++cycles == Specs::Frequencies::CPU) {
             cycles = 0;
@@ -39,8 +42,9 @@ struct Rtc : RtcRegisters {
                     if (++hours == 24) {
                         hours = 0;
                         if (++days.low == 0) {
-                            if (test_bit<Specs::Bits::Rtc::DH::DAY>(days.high))
+                            if (test_bit<Specs::Bits::Rtc::DH::DAY>(days.high)) {
                                 set_bit<Specs::Bits::Rtc::DH::DAY_OVERFLOW>(days.high);
+                            }
                             toggle_bit<Specs::Bits::Rtc::DH::DAY>(days.high);
                         }
                     }

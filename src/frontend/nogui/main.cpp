@@ -1,17 +1,21 @@
-#include "args/args.h"
+#include <chrono>
+#include <iostream>
+
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/cartridge/factory.h"
 #include "docboy/core/core.h"
 #include "docboy/cpu/cpu.h"
 #include "docboy/gameboy/gameboy.h"
-#include "docboy/memory/memory.hpp"
-#include "extra/cartridge/header.h"
-#include "extra/serial/endpoints/console.h"
-#include "utils/formatters.hpp"
+#include "docboy/memory/memory.h"
+
+#include "utils/formatters.h"
 #include "utils/os.h"
 #include "utils/path.h"
-#include <chrono>
-#include <iostream>
+
+#include "args/args.h"
+
+#include "extra/cartridge/header.h"
+#include "extra/serial/endpoints/console.h"
 
 #ifdef ENABLE_BOOTROM
 #include "docboy/bootrom/factory.h"
@@ -35,16 +39,16 @@ void ensure_file_exists(const std::string& path) {
 
 void dump_cartridge_info(const ICartridge& cartridge) {
     const CartridgeHeader header = CartridgeHeader::parse(cartridge);
-    std::cout << "Title             :  " << header.titleAsString() << "\n";
-    std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     (" << header.cartridgeTypeDescription()
-              << ")\n";
+    std::cout << "Title             :  " << header.title_as_string() << "\n";
+    std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     ("
+              << header.cartridge_type_description() << ")\n";
     std::cout << "Licensee (new)    :  " << hex(header.new_licensee_code) << "  ("
-              << header.newLicenseeCodeDescription() << ")\n";
+              << header.new_licensee_code_description() << ")\n";
     std::cout << "Licensee (old)    :  " << hex(header.old_licensee_code) << "     ("
-              << header.oldLicenseeCodeDescription() << ")\n";
-    std::cout << "ROM Size          :  " << hex(header.rom_size) << "     (" << header.romSizeDescription() << ")\n";
-    std::cout << "RAM Size          :  " << hex(header.ram_size) << "     (" << header.ramSizeDescription() << ")\n";
-    std::cout << "CGB flag          :  " << hex(header.cgb_flag) << "     (" << header.cgbFlagDescription() << ")\n";
+              << header.old_licensee_code_description() << ")\n";
+    std::cout << "ROM Size          :  " << hex(header.rom_size) << "     (" << header.rom_size_description() << ")\n";
+    std::cout << "RAM Size          :  " << hex(header.ram_size) << "     (" << header.ram_size_description() << ")\n";
+    std::cout << "CGB flag          :  " << hex(header.cgb_flag) << "     (" << header.cgb_flag_description() << ")\n";
     std::cout << "SGB flag          :  " << hex(header.sgb_flag) << "\n";
     std::cout << "Destination Code  :  " << hex(header.destination_code) << "\n";
     std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";
@@ -55,80 +59,93 @@ void dump_cartridge_info(const ICartridge& cartridge) {
 int main(int argc, char* argv[]) {
     struct {
         std::string rom;
-        std::string bootRom;
-        uint64_t ticksToRun {};
+        std::string boot_rom;
+        uint64_t ticks_to_run {};
         bool serial {};
         float scaling {};
-        bool dumpCartridgeInfo {};
-        IF_DEBUGGER(bool debugger {});
+        bool dump_cartridge_info {};
+#ifdef ENABLE_DEBUGGER
+        bool attach_debugger {};
+#endif
     } args;
 
     Args::Parser parser {};
-    IF_BOOTROM(parser.addArgument(args.bootRom, "boot-rom").help("Boot ROM"));
+#ifdef ENABLE_BOOTROM
+    parser.addArgument(args.boot_rom, "boot-rom").help("Boot ROM");
+#endif
     parser.addArgument(args.rom, "rom").help("ROM");
     parser.addArgument(args.serial, "--serial", "-s").help("Display serial console");
     parser.addArgument(args.scaling, "--scaling", "-z").help("Scaling factor");
-    parser.addArgument(args.dumpCartridgeInfo, "--cartridge-info", "-i").help("Dump cartridge info and quit");
-    parser.addArgument(args.ticksToRun, "-t").help("Ticks to run");
-    IF_DEBUGGER(parser.addArgument(args.debugger, "--debugger", "-d").help("Attach debugger"));
-
+    parser.addArgument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
+    parser.addArgument(args.ticks_to_run, "-t").help("Ticks to run");
+#ifdef ENABLE_DEBUGGER
+    parser.addArgument(args.attach_debugger, "--debugger", "-d").help("Attach debugger");
+#endif
     if (!parser.parse(argc, argv, 1))
         return 1;
 
     // Eventually just dump cartridge info and quit
-    if (!args.rom.empty() && args.dumpCartridgeInfo) {
-        dump_cartridge_info(*CartridgeFactory().create(args.rom));
+    if (!args.rom.empty() && args.dump_cartridge_info) {
+        dump_cartridge_info(*CartridgeFactory::create(args.rom));
         return 0;
     }
 
-    IF_BOOTROM(ensure_file_exists(args.bootRom));
+#ifdef ENABLE_BOOTROM
+    ensure_file_exists(args.boot_rom);
+#endif
+
     ensure_file_exists(args.rom);
 
-    std::unique_ptr<GameBoy> gb {std::make_unique<GameBoy>(IF_BOOTROM(BootRomFactory().create(args.bootRom)))};
+#ifdef ENABLE_BOOTROM
+    auto gb {std::make_unique<GameBoy>(BootRomFactory::create(args.boot_rom))};
+#else
+    auto gb {std::make_unique<GameBoy>()};
+#endif
+
     Core core {*gb};
 
-    path romPath {args.rom};
+    Path rom_path {args.rom};
 
-    std::unique_ptr<ICartridge> cartridge {CartridgeFactory().create(romPath.string())};
+    std::unique_ptr<ICartridge> cartridge {CartridgeFactory::create(rom_path.string())};
 
-    if (args.dumpCartridgeInfo) {
+    if (args.dump_cartridge_info) {
         dump_cartridge_info(*cartridge);
         return 0;
     }
 
-    core.loadRom(args.rom);
+    core.load_rom(args.rom);
 
 #ifdef ENABLE_SERIAL
-    std::unique_ptr<SerialConsole> serialConsole;
-    std::unique_ptr<SerialLink> serialLink;
+    std::unique_ptr<SerialConsole> serial_console;
+    std::unique_ptr<SerialLink> serial_link;
     if (args.serial) {
-        serialConsole = std::make_unique<SerialConsole>(std::cerr, 16);
-        serialLink = std::make_unique<SerialLink>();
-        serialLink->plug1.attach(*serialConsole);
-        core.attachSerialLink(serialLink->plug2);
+        serial_console = std::make_unique<SerialConsole>(std::cerr, 16);
+        serial_link = std::make_unique<SerialLink>();
+        serial_link->plug1.attach(*serial_console);
+        core.attach_serial_link(serial_link->plug2);
     }
 #endif
 
-    const auto tStart = std::chrono::high_resolution_clock::now();
-    for (uint64_t tick = 0; tick < args.ticksToRun; tick += 4) {
+    const auto start = std::chrono::high_resolution_clock::now();
+    for (uint64_t tick = 0; tick < args.ticks_to_run; tick += 4) {
 #ifdef ENABLE_DEBUGGER
-        if (core.isDebuggerAskingToShutdown())
+        if (core.is_asking_to_quit())
             break;
 #endif
         core.cycle();
     }
-    const auto tEnd = std::chrono::high_resolution_clock::now();
-    const auto elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(tEnd - tStart).count();
+    const auto end = std::chrono::high_resolution_clock::now();
+    const auto elapsed_millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-    if (args.ticksToRun != FOREVER) {
-        uint64_t secondsToRun = args.ticksToRun / Specs::Frequencies::CLOCK;
-        std::cout << "Time: " << elapsedMillis << std::endl;
-        std::cout << "SpeedUp: " << 1000.0 * (double)secondsToRun / (double)elapsedMillis << std::endl;
+    if (args.ticks_to_run != FOREVER) {
+        uint64_t seconds_to_run = args.ticks_to_run / Specs::Frequencies::CLOCK;
+        std::cout << "Time: " << elapsed_millis << std::endl;
+        std::cout << "SpeedUp: " << 1000.0 * (double)seconds_to_run / (double)elapsed_millis << std::endl;
     }
 
 #ifdef ENABLE_SERIAL
-    if (serialConsole) {
-        serialConsole->flush();
+    if (serial_console) {
+        serial_console->flush();
     }
 #endif
 

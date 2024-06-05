@@ -1,9 +1,9 @@
 #include "framebuffers.h"
 
-#include "docboy/shared/specs.h"
+#include "docboy/common/specs.h"
 #include "extra/img/imgmanip.h"
 #include "extra/png/iopng.h"
-#include "utils/hexdump.hpp"
+#include "utils/hexdump.h"
 #include <cstring>
 
 void load_framebuffer_png(const std::string& filename, uint16_t* buffer) {

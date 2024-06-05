@@ -1,42 +1,47 @@
-#include "menu.h"
-#include "SDL3/SDL.h"
+#include "components/menu.h"
+
 #include "components/glyphs.h"
 
+#include "SDL3/SDL.h"
+
 namespace {
-constexpr Glyph NAVIGATION_CURSOR_GLYPH = 0x80c0e0f0e0c08000 /* arrow */;
+constexpr Glyph NAVIGATION_CURSOR_GLYPH = 0x80C0E0F0E0C08000 /* arrow */;
 }
 
 Menu::Menu(SDL_Texture* texture, const std::array<uint32_t, 4>& palette) :
-    texture(texture),
-    palette(palette) {
+    texture {texture},
+    palette {palette} {
     // Deduce the menu size from the texture
     SDL_QueryTexture(texture, nullptr, nullptr, &width, &height);
 }
 
-Menu::MenuItem& Menu::addItem(Menu::MenuItem&& item) {
-    items.emplaceBack(std::move(item));
+Menu::MenuItem& Menu::add_item(MenuItem&& item) {
+    items.emplace_back(std::move(item));
     return items[items.size() - 1];
 }
 
-void Menu::setNavigationEnabled(bool enabled) {
+void Menu::set_navigation_enabled(bool enabled) {
     navigation = enabled;
 }
 
 void Menu::redraw() {
-    clearTexture(texture, width * height);
+    clear_texture(texture, width * height);
 
     // Draw items
-    for (uint32_t i = 0; i < items.size(); i++)
-        drawText(texture, items[i].text, 12, 12 + 14 * i, palette[0], width);
+    for (uint32_t i = 0; i < items.size(); i++) {
+        draw_text(texture, items[i].text, 12, 12 + 14 * i, palette[0], width);
+    }
 
     // Draw cursor
-    if (navigation)
-        drawGlyph(texture, NAVIGATION_CURSOR_GLYPH, 4, 12 + 14 * cursor, palette[0], width);
+    if (navigation) {
+        draw_glyph(texture, NAVIGATION_CURSOR_GLYPH, 4, 12 + 14 * cursor, palette[0], width);
+    }
 }
 
-void Menu::handleInput(SDL_Keycode key) {
-    if (!navigation)
+void Menu::handle_input(SDL_Keycode key) {
+    if (!navigation) {
         return;
+    }
 
     switch (key) {
     case SDLK_UP:
@@ -48,16 +53,16 @@ void Menu::handleInput(SDL_Keycode key) {
         redraw();
         break;
     case SDLK_LEFT:
-        if (items[cursor].onPrev)
-            items[cursor].onPrev();
+        if (items[cursor].on_prev)
+            items[cursor].on_prev();
         break;
     case SDLK_RIGHT:
-        if (items[cursor].onNext)
-            items[cursor].onNext();
+        if (items[cursor].on_next)
+            items[cursor].on_next();
         break;
     case SDLK_RETURN:
-        if (items[cursor].onEnter)
-            items[cursor].onEnter();
+        if (items[cursor].on_enter)
+            items[cursor].on_enter();
         break;
     default:
         break;

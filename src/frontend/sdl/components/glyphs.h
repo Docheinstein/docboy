@@ -12,9 +12,9 @@ constexpr uint8_t GLYPH_HEIGHT = 8;
 
 using Glyph = uint64_t;
 
-Glyph charToGlyph(char c);
+Glyph char_to_glyph(char c);
 
-void drawGlyph(SDL_Texture*, Glyph glyph, uint32_t x, uint32_t y, uint32_t color, uint32_t stride);
-void drawGlyph(uint32_t* buffer, Glyph glyph, uint32_t x, uint32_t y, uint32_t color, uint32_t stride);
+void draw_glyph(SDL_Texture* texture, Glyph glyph, uint32_t x, uint32_t y, uint32_t color, uint32_t stride);
+void draw_glyph(uint32_t* buffer, Glyph glyph, uint32_t x, uint32_t y, uint32_t color, uint32_t stride);
 
 #endif // GLYPHS_H

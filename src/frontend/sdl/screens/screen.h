@@ -1,7 +1,6 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
-#include "docboy/shared/macros.h"
 #include <memory>
 
 class CoreController;
@@ -31,7 +30,7 @@ public:
     struct Context {
         Controllers controllers;
         struct {
-            uint8_t backgroundAlpha;
+            uint8_t background_alpha;
         } ui;
     };
 
@@ -41,7 +40,7 @@ public:
 
     virtual void redraw() = 0;
     virtual void render() = 0;
-    virtual void handleEvent(const SDL_Event& event) = 0;
+    virtual void handle_event(const SDL_Event& event) = 0;
 
 protected:
     Context context;

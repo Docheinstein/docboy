@@ -1,36 +1,36 @@
-#include "utils/bits.hpp"
+#include "utils/bits.h"
 #include "utils/parcel.h"
 
 template<typename Impl>
 template<Device::Type Dev>
-uint8_t VideoBus<Impl>::flushReadRequest() {
-    check(test_bit<Bus<Impl>::template R<Dev>>(this->requests));
+uint8_t VideoBus<Impl>::flush_read_request() {
+    ASSERT(test_bit<Bus<Impl>::template R<Dev>>(this->requests));
 
     if constexpr (Dev == Device::Cpu) {
-        if (isAcquired()) {
+        if (is_acquired()) {
             // CPU reads FF while bus is acquired either by PPU or DMA.
             reset_bit<Bus<Impl>::template R<Dev>>(this->requests);
             return 0xFF;
         }
     }
 
-    return Bus<Impl>::template flushReadRequest<Dev>();
+    return Bus<Impl>::template flush_read_request<Dev>();
 }
 
 template<typename Impl>
 template<Device::Type Dev>
-void VideoBus<Impl>::flushWriteRequest(uint8_t value) {
-    check(test_bit<Bus<Impl>::template W<Dev>>(this->requests));
+void VideoBus<Impl>::flush_write_request(uint8_t value) {
+    ASSERT(test_bit<Bus<Impl>::template W<Dev>>(this->requests));
 
     if constexpr (Dev == Device::Cpu) {
-        if (isAcquired()) {
+        if (is_acquired()) {
             // CPU fails to write while bus is acquired either by PPU or DMA.
             reset_bit<Bus<Impl>::template W<Dev>>(this->requests);
             return;
         }
     }
 
-    return Bus<Impl>::template flushWriteRequest<Dev>(value);
+    return Bus<Impl>::template flush_write_request<Dev>(value);
 }
 
 template<typename Impl>
@@ -46,26 +46,26 @@ void VideoBus<Impl>::release() {
 }
 
 template<typename Impl>
-bool VideoBus<Impl>::isAcquired() const {
+bool VideoBus<Impl>::is_acquired() const {
     return acquirers;
 }
 
 template<typename Impl>
 template<Device::Type Dev>
-bool VideoBus<Impl>::isAcquiredBy() const {
+bool VideoBus<Impl>::is_acquired_by() const {
     return test_bit<Dev>(acquirers);
 }
 
 template<typename Impl>
-void VideoBus<Impl>::saveState(Parcel &parcel) const {
-    Bus<Impl>::saveState(parcel);
-    parcel.writeUInt8(acquirers);
+void VideoBus<Impl>::save_state(Parcel &parcel) const {
+    Bus<Impl>::save_state(parcel);
+    parcel.write_uint8(acquirers);
 }
 
 template<typename Impl>
-void VideoBus<Impl>::loadState(Parcel &parcel) {
-    Bus<Impl>::loadState(parcel);
-    acquirers = parcel.readUInt8();
+void VideoBus<Impl>::load_state(Parcel &parcel) {
+    Bus<Impl>::load_state(parcel);
+    acquirers = parcel.read_uint8();
 }
 
 template <typename Impl>
@@ -86,11 +86,11 @@ void VideoBusView<Bus, Dev>::release() {
 
 template<typename Bus, Device::Type Dev>
 template<Device::Type SomeDev>
-bool VideoBusView<Bus, Dev>::isAcquiredBy() const {
-    return this->bus.template isAcquiredBy<SomeDev>();
+bool VideoBusView<Bus, Dev>::is_acquired_by() const {
+    return this->bus.template is_acquired_by<SomeDev>();
 }
 
 template<typename Bus, Device::Type Dev>
-bool VideoBusView<Bus, Dev>::isAcquiredByMe() const {
-    return this->bus.template isAcquiredBy<Dev>();
+bool VideoBusView<Bus, Dev>::is_acquired_by_this() const {
+    return this->bus.template is_acquired_by<Dev>();
 }

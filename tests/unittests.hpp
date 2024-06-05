@@ -2,12 +2,9 @@
 #define UNITTESTS_H
 
 #include "testutils/catch.h"
-#include "testutils/runners.hpp"
-#include "utils/casts.hpp"
-#include "utils/mathematics.h"
+#include "testutils/runners.h"
+#include "utils/casts.h"
 #include "utils/memory.h"
-
-IF_BOOTROM(extern std::string bootRom);
 
 TEST_CASE("bits", "[bits]") {
     SECTION("test bit") {
@@ -386,123 +383,123 @@ TEST_CASE("memory", "[memory]") {
 TEST_CASE("adt", "[adt]") {
     SECTION("Vector") {
         Vector<uint8_t, 8> v;
-        REQUIRE(v.isEmpty());
+        REQUIRE(v.is_empty());
 
-        v.pushBack(1);
-        v.pushBack(2);
-        v.pushBack(3);
-        v.pushBack(4);
+        v.push_back(1);
+        v.push_back(2);
+        v.push_back(3);
+        v.push_back(4);
 
         REQUIRE(v.size() == 4);
 
-        REQUIRE(v.pullBack() == 4);
-        REQUIRE(v.pullBack() == 3);
-        REQUIRE(v.pullBack() == 2);
-        REQUIRE(v.pullBack() == 1);
+        REQUIRE(v.pull_back() == 4);
+        REQUIRE(v.pull_back() == 3);
+        REQUIRE(v.pull_back() == 2);
+        REQUIRE(v.pull_back() == 1);
 
-        REQUIRE(v.isEmpty());
+        REQUIRE(v.is_empty());
 
-        v.pushBack(1);
-        v.pushBack(2);
-        v.pushBack(3);
-        v.pushBack(4);
-        v.pushBack(5);
-        v.pushBack(6);
-        v.pushBack(7);
-        v.pushBack(8);
+        v.push_back(1);
+        v.push_back(2);
+        v.push_back(3);
+        v.push_back(4);
+        v.push_back(5);
+        v.push_back(6);
+        v.push_back(7);
+        v.push_back(8);
 
-        REQUIRE(v.isFull());
+        REQUIRE(v.is_full());
     }
 
     SECTION("Queue") {
         Queue<uint8_t, 8> q;
-        REQUIRE(q.isEmpty());
+        REQUIRE(q.is_empty());
 
-        q.pushBack(1);
-        q.pushBack(2);
-        REQUIRE(q.isNotEmpty());
+        q.push_back(1);
+        q.push_back(2);
+        REQUIRE(q.is_not_empty());
         REQUIRE(q.size() == 2);
 
         q.clear();
-        REQUIRE(q.isEmpty());
+        REQUIRE(q.is_empty());
 
-        q.pushBack(1);
-        q.pushBack(2);
-        q.pushBack(3);
-        q.pushBack(4);
-        q.pushBack(5);
-        q.pushBack(6);
-        q.pushBack(7);
-        q.pushBack(8);
+        q.push_back(1);
+        q.push_back(2);
+        q.push_back(3);
+        q.push_back(4);
+        q.push_back(5);
+        q.push_back(6);
+        q.push_back(7);
+        q.push_back(8);
 
         REQUIRE(q[7] == 8);
 
-        REQUIRE(q.isFull());
+        REQUIRE(q.is_full());
 
-        REQUIRE(q.popFront() == 1);
-        REQUIRE(q.popFront() == 2);
-        REQUIRE(q.popFront() == 3);
-        REQUIRE(q.popFront() == 4);
-        REQUIRE(q.popFront() == 5);
-        REQUIRE(q.popFront() == 6);
-        REQUIRE(q.popFront() == 7);
-        REQUIRE(q.popFront() == 8);
+        REQUIRE(q.pop_front() == 1);
+        REQUIRE(q.pop_front() == 2);
+        REQUIRE(q.pop_front() == 3);
+        REQUIRE(q.pop_front() == 4);
+        REQUIRE(q.pop_front() == 5);
+        REQUIRE(q.pop_front() == 6);
+        REQUIRE(q.pop_front() == 7);
+        REQUIRE(q.pop_front() == 8);
 
-        REQUIRE(q.isEmpty());
+        REQUIRE(q.is_empty());
 
-        q.pushBack(1);
-        q.pushBack(2);
+        q.push_back(1);
+        q.push_back(2);
 
         REQUIRE(q.size() == 2);
 
         q.clear();
-        REQUIRE(q.isEmpty());
+        REQUIRE(q.is_empty());
 
-        q.pushBack(3);
-        q.pushBack(4);
+        q.push_back(3);
+        q.push_back(4);
 
         REQUIRE(q[0] == 3);
         REQUIRE(q[1] == 4);
 
         REQUIRE(q.size() == 2);
-        REQUIRE(q.popFront() == 3);
+        REQUIRE(q.pop_front() == 3);
         REQUIRE(q.size() == 1);
-        REQUIRE(q.popFront() == 4);
-        REQUIRE(q.isEmpty());
+        REQUIRE(q.pop_front() == 4);
+        REQUIRE(q.is_empty());
 
-        q.pushBack(3);
-        q.pushBack(4);
+        q.push_back(3);
+        q.push_back(4);
 
         REQUIRE(q[0] == 3);
         REQUIRE(q[1] == 4);
 
-        REQUIRE(q.popFront() == 3);
+        REQUIRE(q.pop_front() == 3);
 
         REQUIRE(q[0] == 4);
     }
 
     SECTION("FillQueue") {
         FillQueue<uint8_t, 8> q;
-        REQUIRE(q.isEmpty());
+        REQUIRE(q.is_empty());
 
         uint64_t x = 1;
         q.fill(&x);
 
-        REQUIRE(q.isFull());
+        REQUIRE(q.is_full());
 
-        REQUIRE(q.popFront() == 1);
-        REQUIRE(q.popFront() == 0);
-        REQUIRE(q.popFront() == 0);
-        REQUIRE(q.popFront() == 0);
+        REQUIRE(q.pop_front() == 1);
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
 
         REQUIRE(q.size() == 4);
 
-        REQUIRE(q.popFront() == 0);
-        REQUIRE(q.popFront() == 0);
-        REQUIRE(q.popFront() == 0);
-        REQUIRE(q.popFront() == 0);
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
+        REQUIRE(q.pop_front() == 0);
 
-        REQUIRE(q.isEmpty());
+        REQUIRE(q.is_empty());
     }
 }
 
@@ -523,32 +520,33 @@ TEST_CASE("parcel", "[parcel]") {
 
         uint8_t B[4] {0x10, 0x42, 0xFF, 0xA4};
 
-        p.writeBool(b);
-        p.writeUInt8(u8);
-        p.writeUInt16(u16);
-        p.writeUInt32(u32);
-        p.writeUInt64(u64);
-        p.writeInt8(i8);
-        p.writeInt16(i16);
-        p.writeInt32(i32);
-        p.writeInt64(i64);
-        p.writeBytes(B, 4);
+        p.write_bool(b);
+        p.write_uint8(u8);
+        p.write_uint16(u16);
+        p.write_uint32(u32);
+        p.write_uint64(u64);
+        p.write_int8(i8);
+        p.write_int16(i16);
+        p.write_int32(i32);
+        p.write_int64(i64);
+        p.write_bytes(B, 4);
 
-        REQUIRE(p.readBool() == b);
-        REQUIRE(p.readUInt8() == u8);
-        REQUIRE(p.readUInt16() == u16);
-        REQUIRE(p.readUInt32() == u32);
-        REQUIRE(p.readUInt64() == u64);
-        REQUIRE(p.readInt8() == i8);
-        REQUIRE(p.readInt16() == i16);
-        REQUIRE(p.readInt32() == i32);
-        REQUIRE(p.readInt64() == i64);
+        REQUIRE(p.read_bool() == b);
+        REQUIRE(p.read_uint8() == u8);
+        REQUIRE(p.read_uint16() == u16);
+        REQUIRE(p.read_uint32() == u32);
+        REQUIRE(p.read_uint64() == u64);
+        REQUIRE(p.read_int8() == i8);
+        REQUIRE(p.read_int16() == i16);
+        REQUIRE(p.read_int16() == i16);
+        REQUIRE(p.read_int32() == i32);
+        REQUIRE(p.read_int64() == i64);
 
         uint8_t BB[4];
-        p.readBytes(BB, 4);
+        p.read_bytes(BB, 4);
         REQUIRE(memcmp(BB, B, 4) == 0);
 
-        REQUIRE(p.getRemainingSize() == 0);
+        REQUIRE(p.get_remaining_size() == 0);
     }
 }
 
@@ -557,19 +555,19 @@ TEST_CASE("state", "[state]") {
         std::vector<uint8_t> data1;
 
         {
-            SimpleRunner runner {IF_BOOTROM(bootRom)};
-            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").maxTicks(10'000).run();
-            data1.resize(runner.core.getStateSize());
-            runner.core.saveState(data1.data());
+            SimpleRunner runner {};
+            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").max_ticks(10'000).run();
+            data1.resize(runner.core.get_state_size());
+            runner.core.save_state(data1.data());
         }
 
         std::vector<uint8_t> data2(data1.size());
 
         {
-            SimpleRunner runner {IF_BOOTROM(bootRom)};
+            SimpleRunner runner {};
             runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
-            runner.core.loadState(data1.data());
-            runner.core.saveState(data2.data());
+            runner.core.load_state(data1.data());
+            runner.core.save_state(data2.data());
         }
 
         REQUIRE(memcmp(data1.data(), data2.data(), data1.size()) == 0);
@@ -580,26 +578,26 @@ TEST_CASE("state", "[state]") {
         std::vector<uint8_t> data3;
 
         {
-            SimpleRunner runner {IF_BOOTROM(bootRom)};
+            SimpleRunner runner {};
             runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
 
-            runner.maxTicks(1'000'000).run();
-            data1.resize(runner.core.getStateSize());
-            data2.resize(runner.core.getStateSize());
-            data3.resize(runner.core.getStateSize());
-            runner.core.saveState(data1.data());
+            runner.max_ticks(1'000'000).run();
+            data1.resize(runner.core.get_state_size());
+            data2.resize(runner.core.get_state_size());
+            data3.resize(runner.core.get_state_size());
+            runner.core.save_state(data1.data());
 
-            runner.maxTicks(2'000'000).run();
-            runner.core.saveState(data2.data());
+            runner.max_ticks(2'000'000).run();
+            runner.core.save_state(data2.data());
         }
 
         {
-            SimpleRunner runner {IF_BOOTROM(bootRom)};
+            SimpleRunner runner {};
             runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
 
-            runner.core.loadState(data1.data());
-            runner.maxTicks(2'000'000).run();
-            runner.core.saveState(data3.data());
+            runner.core.load_state(data1.data());
+            runner.max_ticks(2'000'000).run();
+            runner.core.save_state(data3.data());
         }
 
         REQUIRE(memcmp(data2.data(), data3.data(), data2.size()) == 0);
@@ -612,15 +610,15 @@ TEST_CASE("reset", "[reset]") {
     SECTION("Reset: Round 1") {
         std::vector<uint8_t> data1;
 
-        SimpleRunner runner {IF_BOOTROM(bootRom)};
+        SimpleRunner runner {};
         runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
 
-        data1.resize(runner.core.getStateSize());
-        runner.core.saveState(data1.data());
+        data1.resize(runner.core.get_state_size());
+        runner.core.save_state(data1.data());
 
         std::vector<uint8_t> data2(data1.size());
         runner.core.reset();
-        runner.core.saveState(data2.data());
+        runner.core.save_state(data2.data());
 
         REQUIRE(memcmp(data1.data(), data2.data(), data1.size()) == 0);
     }
@@ -628,16 +626,16 @@ TEST_CASE("reset", "[reset]") {
     SECTION("Reset: Round 2") {
         std::vector<uint8_t> data1;
 
-        SimpleRunner runner {IF_BOOTROM(bootRom)};
-        runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").maxTicks(10'000).run();
-        data1.resize(runner.core.getStateSize());
-        runner.core.saveState(data1.data());
+        SimpleRunner runner {};
+        runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").max_ticks(10'000).run();
+        data1.resize(runner.core.get_state_size());
+        runner.core.save_state(data1.data());
 
         std::vector<uint8_t> data2(data1.size());
         runner.core.reset();
         runner.run();
 
-        runner.core.saveState(data2.data());
+        runner.core.save_state(data2.data());
 
         REQUIRE(memcmp(data1.data(), data2.data(), data1.size()) == 0);
     }

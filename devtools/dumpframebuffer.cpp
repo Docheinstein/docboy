@@ -2,6 +2,7 @@
 #include <iostream>
 
 // usage: dumpframebuffer <in_file>
+
 int main(int argc, const char* argv[]) {
     if (argc < 2) {
         std::cerr << "usage: dumpframebuffer <in_file>" << std::endl;

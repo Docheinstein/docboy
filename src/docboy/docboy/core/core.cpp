@@ -1,38 +1,35 @@
-#include "core.h"
-#include "docboy/cartridge/factory.h"
-#include "utils/mathematics.h"
 #include <iostream>
+
+#include "docboy/cartridge/factory.h"
+#include "docboy/core/core.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "docboy/debugger/backend.h"
 
 #define TICK_DEBUGGER(n)                                                                                               \
     if (debugger) {                                                                                                    \
-        debugger->onTick(n);                                                                                           \
+        debugger->notify_tick(n);                                                                                      \
     }
-#define RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN()                                                                     \
-    if (debugger && debugger->isAskingToShutdown()) {                                                                  \
+#define RETURN_ON_QUIT_REQUEST()                                                                                       \
+    if (debugger && debugger->is_asking_to_quit()) {                                                                   \
         return;                                                                                                        \
     }
 #else
 #define TICK_DEBUGGER(n) (void)(0)
-#define RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN() (void)(0)
+#define RETURN_ON_QUIT_REQUEST() (void)(0)
 #endif
 
 namespace {
 constexpr uint16_t LCD_VBLANK_CYCLES = 16416;
-
 constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
-
-constexpr uint64_t SERIAL_PHASE_OFFSET = IF_BOOTROM_ELSE(1036, 4048); // [mooneye/boot_sclk_align-dmgABCmgb.gb]
-
+constexpr uint64_t SERIAL_PHASE_OFFSET = if_bootrom_else(1036, 4048); // [mooneye/boot_sclk_align-dmgABCmgb.gb]
 constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
 
-uint32_t stateSize = STATE_SAVE_SIZE_UNKNOWN;
+uint32_t rom_state_size = STATE_SAVE_SIZE_UNKNOWN;
 } // namespace
 
 Core::Core(GameBoy& gb) :
-    gb(gb) {
+    gb {gb} {
 }
 
 inline void Core::tick_t0() const {
@@ -53,35 +50,36 @@ inline void Core::tick_t2() const {
 
 inline void Core::tick_t3() const {
     gb.cpu.tick_t3();
-    if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3)
-        gb.serialPort.tick();
+    if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3) {
+        gb.serial_port.tick();
+    }
     gb.timers.tick_t3();
     gb.ppu.tick();
     gb.dma.tick_t3();
-    gb.stopController.tick();
-    gb.cartridgeSlot.tick();
+    gb.stop_controller.tick();
+    gb.cartridge_slot.tick();
 }
 
-void Core::cycle_() {
-    check(mod<4>(ticks) == 0);
+void Core::_cycle() {
+    ASSERT(mod<4>(ticks) == 0);
 
     TICK_DEBUGGER(ticks);
-    RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+    RETURN_ON_QUIT_REQUEST();
     tick_t0();
     ++ticks;
 
     TICK_DEBUGGER(ticks);
-    RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+    RETURN_ON_QUIT_REQUEST();
     tick_t1();
     ++ticks;
 
     TICK_DEBUGGER(ticks);
-    RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+    RETURN_ON_QUIT_REQUEST();
     tick_t2();
     ++ticks;
 
     TICK_DEBUGGER(ticks);
-    RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+    RETURN_ON_QUIT_REQUEST();
     tick_t3();
     ++ticks;
 }
@@ -90,181 +88,184 @@ void Core::cycle() {
     if (gb.stopped) {
         // Just handle joypad input in STOP mode: all the components are idle.
         TICK_DEBUGGER(ticks);
-        gb.stopController.handleStopMode();
+        gb.stop_controller.handle_stop_mode();
         return;
     }
 
-    cycle_();
+    _cycle();
 }
 
 void Core::frame() {
     if (gb.stopped) {
         // Just handle joypad input in STOP mode: all the components are idle.
         TICK_DEBUGGER(ticks);
-        gb.stopController.handleStopMode();
+        gb.stop_controller.handle_stop_mode();
         return;
     }
 
     // If LCD is disabled we risk to never reach VBlank (which would stall the UI and prevent inputs).
     // Therefore, proceed for the cycles needed to render an entire frame and quit
     // if the LCD is still disabled even after that.
-    if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC)) {
+    if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc)) {
         for (uint16_t c = 0; c < LCD_VBLANK_CYCLES; c++) {
-            cycle_();
-            check(keep_bits<2>(gb.video.STAT) != Specs::Ppu::Modes::VBLANK);
+            _cycle();
+            ASSERT(keep_bits<2>(gb.video.stat) != Specs::Ppu::Modes::VBLANK);
 
-            if (gb.stopped)
+            if (gb.stopped) {
                 return;
-            RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+            }
+            RETURN_ON_QUIT_REQUEST();
         }
 
         // LCD still disabled: quit.
-        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC))
+        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc)) {
             return;
+        }
     }
 
-    check(test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC));
+    ASSERT(test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc));
 
     // Eventually go out of current VBlank.
-    while (keep_bits<2>(gb.video.STAT) == Specs::Ppu::Modes::VBLANK) {
-        cycle_();
-        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC) || gb.stopped)
+    while (keep_bits<2>(gb.video.stat) == Specs::Ppu::Modes::VBLANK) {
+        _cycle();
+        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc) || gb.stopped) {
             return;
-        RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+        }
+        RETURN_ON_QUIT_REQUEST();
     }
 
-    check(keep_bits<2>(gb.video.STAT) != Specs::Ppu::Modes::VBLANK);
+    ASSERT(keep_bits<2>(gb.video.stat) != Specs::Ppu::Modes::VBLANK);
 
     // Proceed until next VBlank.
-    while (keep_bits<2>(gb.video.STAT) != Specs::Ppu::Modes::VBLANK) {
-        cycle_();
-        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.LCDC) || gb.stopped)
+    while (keep_bits<2>(gb.video.stat) != Specs::Ppu::Modes::VBLANK) {
+        _cycle();
+        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc) || gb.stopped)
             return;
-        RETURN_IF_DEBUGGER_IS_ASKING_TO_SHUTDOWN();
+        RETURN_ON_QUIT_REQUEST();
     }
 }
 
-void Core::loadRom(const std::string& filename) {
-    gb.cartridgeSlot.attach(CartridgeFactory().create(filename));
+void Core::load_rom(const std::string& filename) {
+    gb.cartridge_slot.attach(CartridgeFactory::create(filename));
     reset();
 }
 
-void Core::attachSerialLink(SerialLink::Plug& plug) const {
-    gb.serialPort.attach(plug);
+void Core::attach_serial_link(SerialLink::Plug& plug) const {
+    gb.serial_port.attach(plug);
 }
 
-bool Core::canSaveRam() const {
-    return getRamSaveSize() > 0;
+bool Core::can_save_ram() const {
+    return get_ram_save_size() > 0;
 }
 
-uint32_t Core::getRamSaveSize() const {
-    return gb.cartridgeSlot.cartridge->getRamSaveSize();
+uint32_t Core::get_ram_save_size() const {
+    return gb.cartridge_slot.cartridge->get_ram_save_size();
 }
 
-void Core::saveRam(void* data) const {
-    memcpy(data, gb.cartridgeSlot.cartridge->getRamSaveData(), getRamSaveSize());
+void Core::save_ram(void* data) const {
+    memcpy(data, gb.cartridge_slot.cartridge->get_ram_save_data(), get_ram_save_size());
 }
 
-void Core::loadRam(const void* data) const {
-    memcpy(gb.cartridgeSlot.cartridge->getRamSaveData(), data, getRamSaveSize());
+void Core::load_ram(const void* data) const {
+    memcpy(gb.cartridge_slot.cartridge->get_ram_save_data(), data, get_ram_save_size());
 }
 
-uint32_t Core::getStateSize() const {
-    if (stateSize == STATE_SAVE_SIZE_UNKNOWN) {
-        const Parcel p = parcelizeState();
-        stateSize = p.getSize();
+uint32_t Core::get_state_size() const {
+    if (rom_state_size == STATE_SAVE_SIZE_UNKNOWN) {
+        const Parcel p = parcelize_state();
+        rom_state_size = p.get_size();
     }
 
-    check(stateSize != STATE_SAVE_SIZE_UNKNOWN);
-    return stateSize;
+    ASSERT(rom_state_size != STATE_SAVE_SIZE_UNKNOWN);
+    return rom_state_size;
 }
 
-void Core::saveState(void* data) const {
-    memcpy(data, parcelizeState().getData(), getStateSize());
+void Core::save_state(void* data) const {
+    memcpy(data, parcelize_state().get_data(), get_state_size());
 }
 
-void Core::loadState(const void* data) {
-    unparcelizeState(Parcel {data, getStateSize()});
+void Core::load_state(const void* data) {
+    unparcelize_state(Parcel {data, get_state_size()});
 }
 
-Parcel Core::parcelizeState() const {
+Parcel Core::parcelize_state() const {
     Parcel p;
 
-    p.writeUInt64(ticks);
+    p.write_uint64(ticks);
 
-    gb.cpu.saveState(p);
-    gb.ppu.saveState(p);
-    gb.cartridgeSlot.cartridge->saveState(p);
-    gb.vram.saveState(p);
-    gb.wram1.saveState(p);
-    gb.wram2.saveState(p);
-    gb.oam.saveState(p);
-    gb.hram.saveState(p);
-    gb.extBus.saveState(p);
-    gb.cpuBus.saveState(p);
-    gb.vramBus.saveState(p);
-    gb.oamBus.saveState(p);
-    gb.boot.saveState(p);
-    gb.serialPort.saveState(p);
-    gb.timers.saveState(p);
-    gb.interrupts.saveState(p);
-    gb.sound.saveState(p);
-    gb.video.saveState(p);
-    gb.lcd.saveState(p);
-    gb.dma.saveState(p);
-    gb.mmu.saveState(p);
-    gb.stopController.saveState(p);
+    gb.cpu.save_state(p);
+    gb.ppu.save_state(p);
+    gb.cartridge_slot.cartridge->save_state(p);
+    gb.vram.save_state(p);
+    gb.wram1.save_state(p);
+    gb.wram2.save_state(p);
+    gb.oam.save_state(p);
+    gb.hram.save_state(p);
+    gb.ext_bus.save_state(p);
+    gb.cpu_bus.save_state(p);
+    gb.vram_bus.save_state(p);
+    gb.oam_bus.save_state(p);
+    gb.boot.save_state(p);
+    gb.serial_port.save_state(p);
+    gb.timers.save_state(p);
+    gb.interrupts.save_state(p);
+    gb.sound.save_state(p);
+    gb.video.save_state(p);
+    gb.lcd.save_state(p);
+    gb.dma.save_state(p);
+    gb.mmu.save_state(p);
+    gb.stop_controller.save_state(p);
 
     return p;
 }
 
-void Core::unparcelizeState(Parcel&& p) {
-    ticks = p.readUInt64();
+void Core::unparcelize_state(Parcel&& parcel) {
+    ticks = parcel.read_uint64();
 
-    gb.cpu.loadState(p);
-    gb.ppu.loadState(p);
-    gb.cartridgeSlot.cartridge->loadState(p);
-    gb.vram.loadState(p);
-    gb.wram1.loadState(p);
-    gb.wram2.loadState(p);
-    gb.oam.loadState(p);
-    gb.hram.loadState(p);
-    gb.extBus.loadState(p);
-    gb.cpuBus.loadState(p);
-    gb.vramBus.loadState(p);
-    gb.oamBus.loadState(p);
-    gb.boot.loadState(p);
-    gb.serialPort.loadState(p);
-    gb.timers.loadState(p);
-    gb.interrupts.loadState(p);
-    gb.sound.loadState(p);
-    gb.video.loadState(p);
-    gb.lcd.loadState(p);
-    gb.dma.loadState(p);
-    gb.mmu.loadState(p);
-    gb.stopController.loadState(p);
+    gb.cpu.load_state(parcel);
+    gb.ppu.load_state(parcel);
+    gb.cartridge_slot.cartridge->load_state(parcel);
+    gb.vram.load_state(parcel);
+    gb.wram1.load_state(parcel);
+    gb.wram2.load_state(parcel);
+    gb.oam.load_state(parcel);
+    gb.hram.load_state(parcel);
+    gb.ext_bus.load_state(parcel);
+    gb.cpu_bus.load_state(parcel);
+    gb.vram_bus.load_state(parcel);
+    gb.oam_bus.load_state(parcel);
+    gb.boot.load_state(parcel);
+    gb.serial_port.load_state(parcel);
+    gb.timers.load_state(parcel);
+    gb.interrupts.load_state(parcel);
+    gb.sound.load_state(parcel);
+    gb.video.load_state(parcel);
+    gb.lcd.load_state(parcel);
+    gb.dma.load_state(parcel);
+    gb.mmu.load_state(parcel);
+    gb.stop_controller.load_state(parcel);
 
-    check(p.getRemainingSize() == 0);
+    ASSERT(parcel.get_remaining_size() == 0);
 }
 
 void Core::reset() {
-    stateSize = STATE_SAVE_SIZE_UNKNOWN;
+    rom_state_size = STATE_SAVE_SIZE_UNKNOWN;
     ticks = 0;
 
     gb.cpu.reset();
     gb.ppu.reset();
-    gb.cartridgeSlot.cartridge->reset();
+    gb.cartridge_slot.cartridge->reset();
     gb.vram.reset();
     gb.wram1.reset();
     gb.wram2.reset();
     gb.oam.reset();
     gb.hram.reset();
-    gb.extBus.reset();
-    gb.cpuBus.reset();
-    gb.vramBus.reset();
-    gb.oamBus.reset();
+    gb.ext_bus.reset();
+    gb.cpu_bus.reset();
+    gb.vram_bus.reset();
+    gb.oam_bus.reset();
     gb.boot.reset();
-    gb.serialPort.reset();
+    gb.serial_port.reset();
     gb.timers.reset();
     gb.interrupts.reset();
     gb.sound.reset();
@@ -272,19 +273,19 @@ void Core::reset() {
     gb.lcd.reset();
     gb.dma.reset();
     gb.mmu.reset();
-    gb.stopController.reset();
+    gb.stop_controller.reset();
 }
 
 #ifdef ENABLE_DEBUGGER
-void Core::attachDebugger(DebuggerBackend& dbg) {
+void Core::attach_debugger(DebuggerBackend& dbg) {
     debugger = &dbg;
 }
 
-void Core::detachDebugger() {
+void Core::detach_debugger() {
     debugger = nullptr;
 }
 
-bool Core::isDebuggerAskingToShutdown() const {
-    return debugger != nullptr && debugger->isAskingToShutdown();
+bool Core::is_asking_to_quit() const {
+    return debugger && debugger->is_asking_to_quit();
 }
 #endif

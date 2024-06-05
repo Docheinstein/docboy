@@ -1,8 +1,8 @@
 #ifndef CORE_H
 #define CORE_H
 
+#include "docboy/common/macros.h"
 #include "docboy/gameboy/gameboy.h"
-#include "docboy/shared//macros.h"
 
 #ifdef ENABLE_DEBUGGER
 class DebuggerBackend;
@@ -19,40 +19,44 @@ public:
     void frame();
 
     // Load ROM
-    void loadRom(const std::string& filename);
+    void load_rom(const std::string& filename);
 
     // Serial
-    void attachSerialLink(SerialLink::Plug& plug) const;
+    void attach_serial_link(SerialLink::Plug& plug) const;
 
     // Input
-    void setKey(Joypad::Key key, Joypad::KeyState state) const {
-        gb.joypad.setKeyState(key, state);
+    void set_key(Joypad::Key key, Joypad::KeyState state) const {
+        gb.joypad.set_key_state(key, state);
     }
 
     // Save/Load RAM
-    void saveRam(void* data) const;
-    void loadRam(const void* data) const;
-    [[nodiscard]] bool canSaveRam() const;
-    [[nodiscard]] uint32_t getRamSaveSize() const;
+    void save_ram(void* data) const;
+    void load_ram(const void* data) const;
+    bool can_save_ram() const;
+    uint32_t get_ram_save_size() const;
 
     // Save/Load State
-    void saveState(void* data) const;
-    void loadState(const void* data);
-    [[nodiscard]] uint32_t getStateSize() const;
+    void save_state(void* data) const;
+    void load_state(const void* data);
+    uint32_t get_state_size() const;
 
     // Reset
     void reset();
 
     // Debug
-    IF_DEBUGGER(void attachDebugger(DebuggerBackend& debugger));
-    IF_DEBUGGER(void detachDebugger());
-    IF_DEBUGGER(bool isDebuggerAskingToShutdown() const);
+#ifdef ENABLE_DEBUGGER
+    void attach_debugger(DebuggerBackend& debugger);
+    void detach_debugger();
+    bool is_asking_to_quit() const;
+#endif
 
     GameBoy& gb;
 
     uint64_t ticks {};
 
-    IF_DEBUGGER(DebuggerBackend* debugger {});
+#ifdef ENABLE_DEBUGGER
+    DebuggerBackend* debugger {};
+#endif
 
 private:
     void tick_t0() const;
@@ -60,10 +64,10 @@ private:
     void tick_t2() const;
     void tick_t3() const;
 
-    void cycle_();
+    void _cycle();
 
-    [[nodiscard]] Parcel parcelizeState() const;
-    void unparcelizeState(Parcel&& parcel);
+    Parcel parcelize_state() const;
+    void unparcelize_state(Parcel&& parcel);
 };
 
 #endif // CORE_H

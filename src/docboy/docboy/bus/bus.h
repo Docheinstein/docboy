@@ -1,10 +1,11 @@
 #ifndef BUS_H
 #define BUS_H
 
-#include "device.h"
+#include "docboy/bus/device.h"
+#include "docboy/common/macros.h"
 #include "docboy/memory/fwd/bytefwd.h"
-#include "docboy/shared//macros.h"
-#include "utils/parcel.h"
+
+class Parcel;
 
 class IBus {};
 
@@ -20,19 +21,24 @@ public:
     using View = BusView<Bus, Dev>;
 
     template <Device::Type Dev>
-    void readRequest(uint16_t addr);
+    void read_request(uint16_t addr);
 
     template <Device::Type Dev>
-    uint8_t flushReadRequest();
+    uint8_t flush_read_request();
 
     template <Device::Type Dev>
-    void writeRequest(uint16_t addr);
+    void write_request(uint16_t addr);
 
     template <Device::Type Dev>
-    void flushWriteRequest(uint8_t value);
+    void flush_write_request(uint8_t value);
 
-    void saveState(Parcel& parcel) const;
-    void loadState(Parcel& parcel);
+#ifdef ENABLE_DEBUGGER
+    uint8_t read_bus(uint16_t address) const;
+    void write_bus(uint16_t address, uint8_t value);
+#endif
+
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
     void reset();
 
@@ -53,12 +59,12 @@ protected:
 
         struct Read {
             byte* trivial {};
-            NonTrivialRead nonTrivial {};
+            NonTrivialRead non_trivial {};
         } read {};
 
         struct Write {
             byte* trivial {};
-            NonTrivialWrite nonTrivial {};
+            NonTrivialWrite non_trivial {};
         } write {};
     };
 
@@ -68,30 +74,30 @@ protected:
     template <Device::Type Dev>
     static constexpr uint8_t W = 2 * Dev + 1;
 
-    IF_DEBUGGER(public:)
-    [[nodiscard]] uint8_t readBus(uint16_t address) const;
-    void writeBus(uint16_t address, uint8_t value);
-    IF_DEBUGGER(protected:)
+#ifndef ENABLE_DEBUGGER
+    uint8_t read_bus(uint16_t address) const;
+    void write_bus(uint16_t address, uint8_t value);
+#endif
 
-    MemoryAccess memoryAccessors[UINT16_MAX + 1] {};
+    MemoryAccess memory_accessors[UINT16_MAX + 1] {};
 };
 
 template <typename Bus, Device::Type Dev>
 class BusView {
 public:
-    BusView(Bus& bus) :
+    explicit BusView(Bus& bus) :
         bus(bus) {
     }
 
-    void readRequest(uint16_t addr);
-    uint8_t flushReadRequest();
-    void writeRequest(uint16_t addr);
-    void flushWriteRequest(uint8_t value);
+    void read_request(uint16_t addr);
+    uint8_t flush_read_request();
+    void write_request(uint16_t addr);
+    void flush_write_request(uint8_t value);
 
 protected:
     Bus& bus;
 };
 
-#include "bus.tpp"
+#include "docboy/bus/bus.tpp"
 
 #endif // BUS_H

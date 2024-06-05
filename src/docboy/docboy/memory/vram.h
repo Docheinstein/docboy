@@ -1,8 +1,8 @@
 #ifndef VRAM_H
 #define VRAM_H
 
-#include "fwd/vramfwd.h"
-#include "memory.hpp"
+#include "docboy/memory/fwd/vramfwd.h"
+#include "docboy/memory/memory.h"
 
 class Vram : public Memory<Specs::MemoryLayout::VRAM::START, Specs::MemoryLayout::VRAM::END> {
 public:

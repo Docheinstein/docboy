@@ -1,7 +1,7 @@
 #ifndef HELPSCREEN_H
 #define HELPSCREEN_H
 
-#include "menuscreen.h"
+#include "screens/menuscreen.h"
 
 class HelpScreen : public MenuScreen {
 public:

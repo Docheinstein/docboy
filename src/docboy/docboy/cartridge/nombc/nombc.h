@@ -8,20 +8,22 @@ class NoMbc final : public ICartridge {
 public:
     explicit NoMbc(const uint8_t* data, uint32_t length);
 
-    [[nodiscard]] uint8_t readRom(uint16_t address) const override;
-    void writeRom(uint16_t address, uint8_t value) override;
+    uint8_t read_rom(uint16_t address) const override;
+    void write_rom(uint16_t address, uint8_t value) override;
 
-    [[nodiscard]] uint8_t readRam(uint16_t address) const override;
-    void writeRam(uint16_t address, uint8_t value) override;
+    uint8_t read_ram(uint16_t address) const override;
+    void write_ram(uint16_t address, uint8_t value) override;
 
-    [[nodiscard]] uint8_t* getRamSaveData() override;
-    [[nodiscard]] uint32_t getRamSaveSize() const override;
+    uint8_t* get_ram_save_data() override;
+    uint32_t get_ram_save_size() const override;
 
-    IF_DEBUGGER(uint8_t* getRomData() override);
-    IF_DEBUGGER(uint32_t getRomSize() const override);
+#ifdef ENABLE_DEBUGGER
+    uint8_t* get_rom_data() override;
+    uint32_t get_rom_size() const override;
+#endif
 
-    void saveState(Parcel& parcel) const override;
-    void loadState(Parcel& parcel) override;
+    void save_state(Parcel& parcel) const override;
+    void load_state(Parcel& parcel) override;
 
     void reset() override;
 
@@ -33,6 +35,6 @@ private:
     uint8_t ram[RamSize] {};
 };
 
-#include "nombc.tpp"
+#include "docboy/cartridge/nombc/nombc.tpp"
 
 #endif // NOMBC_H

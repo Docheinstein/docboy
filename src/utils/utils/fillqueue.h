@@ -1,10 +1,11 @@
-#ifndef FILLQUEUE_HPP
-#define FILLQUEUE_HPP
+#ifndef UTILSFILLQUEUE_H
+#define UTILSFILLQUEUE_H
 
-#include "asserts.h"
-#include "type_traits"
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
+
+#include "utils/asserts.h"
 
 /*
  * Queue that supports:
@@ -21,22 +22,23 @@ template <typename T, uint8_t N>
 struct FillQueue {
     static_assert(std::is_trivially_copyable_v<T>);
 
-    [[nodiscard]] bool isEmpty() const {
+    bool is_empty() const {
         return cursor == N;
     }
-    [[nodiscard]] bool isNotEmpty() const {
+
+    bool is_not_empty() const {
         return cursor < N;
     }
 
-    [[nodiscard]] bool isFull() const {
+    bool is_full() const {
         return cursor == 0;
     }
 
-    [[nodiscard]] bool isNotFull() const {
+    bool is_not_full() const {
         return cursor > 0;
     }
 
-    [[nodiscard]] uint8_t size() const {
+    uint8_t size() const {
         return N - cursor;
     }
 
@@ -45,13 +47,13 @@ struct FillQueue {
         cursor = 0;
     }
 
-    void pushBack(T element) {
-        check(!isFull());
+    void push_back(T element) {
+        ASSERT(!is_full());
         data[--cursor] = element;
     }
 
-    T popFront() {
-        check(isNotEmpty());
+    T pop_front() {
+        ASSERT(is_not_empty());
         return data[cursor++];
     }
 
@@ -60,14 +62,14 @@ struct FillQueue {
     }
 
     const T& operator[](uint8_t index) const {
-        check(index < N);
-        check(index < size());
+        ASSERT(index < N);
+        ASSERT(index < size());
         return data[index];
     }
 
     T& operator[](uint8_t index) {
-        check(index < N);
-        check(index < size());
+        ASSERT(index < N);
+        ASSERT(index < size());
         return data[index];
     }
 
@@ -75,4 +77,4 @@ struct FillQueue {
     uint8_t cursor {N};
 };
 
-#endif // FILLQUEUE_HPP
+#endif // UTILSFILLQUEUE_H

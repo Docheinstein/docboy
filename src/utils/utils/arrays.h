@@ -1,5 +1,5 @@
-#ifndef ARRAYS_H
-#define ARRAYS_H
+#ifndef UTILSARRAYS_H
+#define UTILSARRAYS_H
 
 #include <cstddef>
 
@@ -8,4 +8,4 @@ constexpr size_t array_size(T (&)[N]) {
     return N;
 }
 
-#endif // ARRAYS_H
+#endif // UTILSARRAYS_H

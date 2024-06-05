@@ -3,17 +3,14 @@ add_library(utils STATIC)
 target_sources(utils PRIVATE
     utils/arrays.h
     utils/asserts.h
-    utils/bits.hpp
-    utils/casts.hpp
-    utils/exceptions.hpp
-    utils/fillqueue.hpp
-    utils/formatters.hpp
-    utils/hexdump.hpp
+    utils/bits.h
+    utils/casts.h
+    utils/exceptions.h
+    utils/fillqueue.h
+    utils/formatters.h
+    utils/hexdump.h
     utils/io.cpp
     utils/io.h
-    utils/log.h
-    utils/macros.h
-    utils/mathematics.h
     utils/memory.cpp
     utils/memory.h
     utils/os.cpp
@@ -22,13 +19,12 @@ target_sources(utils PRIVATE
     utils/parcel.h
     utils/path.cpp
     utils/path.h
-    utils/queue.hpp
-    utils/random.hpp
-    utils/std.hpp
+    utils/queue.h
+    utils/random.h
+    utils/std.h
     utils/strings.cpp
-    utils/strings.hpp
-    utils/traits.h
-    utils/vector.hpp
+    utils/strings.h
+    utils/vector.h
 )
 
 target_include_directories(utils PUBLIC .)

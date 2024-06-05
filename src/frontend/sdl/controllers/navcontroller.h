@@ -3,18 +3,18 @@
 
 #include <memory>
 
-struct ScreenStack;
+class ScreenStack;
 class Screen;
 
 class NavController {
 public:
-    explicit NavController(ScreenStack& screenStack);
+    explicit NavController(ScreenStack& screen_stack);
 
     void push(std::unique_ptr<Screen> screen);
     void pop();
 
 protected:
-    ScreenStack& screenStack;
+    ScreenStack& screen_stack;
 };
 
 #endif // NAVCONTROLLER_H

@@ -1,9 +1,9 @@
-#include "buffer.h"
+#include "extra/serial/endpoints/buffer.h"
 
-void SerialBuffer::serialWrite(uint8_t data) {
+void SerialBuffer::serial_write(uint8_t data) {
     buffer.push_back(data);
 }
 
-uint8_t SerialBuffer::serialRead() {
+uint8_t SerialBuffer::serial_read() {
     return 0xFF;
 }

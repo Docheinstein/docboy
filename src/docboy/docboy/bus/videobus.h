@@ -1,7 +1,7 @@
 #ifndef VIDEOBUS_H
 #define VIDEOBUS_H
 
-#include "bus.h"
+#include "docboy/bus/bus.h"
 
 class Parcel;
 
@@ -17,10 +17,10 @@ public:
     using View = VideoBusView<Impl, Dev>;
 
     template <Device::Type Dev>
-    uint8_t flushReadRequest();
+    uint8_t flush_read_request();
 
     template <Device::Type Dev>
-    void flushWriteRequest(uint8_t value);
+    void flush_write_request(uint8_t value);
 
     template <Device::Type Dev>
     void acquire();
@@ -28,13 +28,13 @@ public:
     template <Device::Type Dev>
     void release();
 
-    [[nodiscard]] bool isAcquired() const;
+    bool is_acquired() const;
 
     template <Device::Type Dev>
-    [[nodiscard]] bool isAcquiredBy() const;
+    bool is_acquired_by() const;
 
-    void saveState(Parcel& parcel) const;
-    void loadState(Parcel& parcel);
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
     void reset();
 
@@ -45,7 +45,7 @@ private:
 template <typename Bus, Device::Type Dev>
 class VideoBusView : public BusView<Bus, Dev> {
 public:
-    VideoBusView(Bus& bus) :
+    /* implicit */ VideoBusView(Bus& bus) :
         BusView<Bus, Dev>(bus) {
     }
 
@@ -53,11 +53,11 @@ public:
     void release();
 
     template <Device::Type SomeDev>
-    [[nodiscard]] bool isAcquiredBy() const;
+    bool is_acquired_by() const;
 
-    [[nodiscard]] bool isAcquiredByMe() const;
+    bool is_acquired_by_this() const;
 };
 
-#include "videobus.tpp"
+#include "docboy/bus/videobus.tpp"
 
 #endif // VIDEOBUS_H

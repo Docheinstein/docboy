@@ -1,10 +1,11 @@
-#ifndef STRINGS_HPP
-#define STRINGS_HPP
+#ifndef UTILSSTRINGS_H
+#define UTILSSTRINGS_H
 
-#include "asserts.h"
 #include <algorithm>
 #include <string>
 #include <vector>
+
+#include "utils/asserts.h"
 
 template <typename It, typename Pred = decltype(isspace)>
 void split(const std::string& s, It inserter, Pred predicate = isspace) {
@@ -15,8 +16,9 @@ void split(const std::string& s, It inserter, Pred predicate = isspace) {
         token_begin = std::find_if_not(begin, s.end(), predicate);
         token_end = std::find_if(token_begin, s.end(), predicate);
         auto token = std::string(token_begin, token_end);
-        if (!token.empty())
+        if (!token.empty()) {
             *inserter = token;
+        }
         begin = token_end;
     } while (token_end != s.end());
 }
@@ -33,8 +35,9 @@ std::string join(const Container& container, SepType sep) {
     std::string ss;
     for (auto it = container.begin(); it != container.end(); it++) {
         ss += *it;
-        if (it + 1 != container.end())
+        if (it + 1 != container.end()) {
             ss += sep;
+        }
     }
     return ss;
 }
@@ -44,8 +47,9 @@ std::string join(const Container& container, SepType sep, Transform&& transform)
     std::string ss;
     for (auto it = container.begin(); it != container.end(); it++) {
         ss += transform(*it);
-        if (it + 1 != container.end())
+        if (it + 1 != container.end()) {
             ss += sep;
+        }
     }
     return ss;
 }
@@ -59,4 +63,4 @@ std::string rpad(const std::string& s, std::size_t length, char ch = ' ');
 
 bool starts_with(const std::string& heystack, const std::string& needle);
 
-#endif // STRINGS_HPP
+#endif // UTILSSTRINGS_H

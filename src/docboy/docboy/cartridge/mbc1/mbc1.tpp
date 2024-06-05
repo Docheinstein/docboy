@@ -1,22 +1,21 @@
-#include "docboy/cartridge/helpers.h"
+#include <cstring>
+
 #include "utils/arrays.h"
 #include "utils/asserts.h"
-#include "utils/bits.hpp"
-#include "utils/exceptions.hpp"
-#include "utils/formatters.hpp"
-#include "utils/mathematics.h"
+#include "utils/bits.h"
+#include "utils/exceptions.h"
+#include "utils/formatters.h"
 #include "utils/parcel.h"
-#include <cstring>
 
 /*
  * ROM access.
  *
  * A := address
- * U := upperRomBankSelector_ramBankSelector (2 bits)
- * L := romBankSelector (5 bits)
+ * U := upper_rom_bank_selector__ram_bank_selector (2 bits)
+ * L := rom_bank_selector (5 bits)
  *
  *                   |             | Bank number   | Address in bank
- * Accessed address  | bankingMode | 20:19 | 18:14 | 13:0
+ * Accessed address  | banking_mode | 20:19 | 18:14 | 13:0
  * 0x0000 - 0x3FFF   | 0           | 0     | 0     | A[0:13]
  * 0x0000 - 0x3FFF   | 1           | U     | 0     | A[0:13]
  * 0x4000 - 0x7FFF   | 0/1         | U     | L     | A[0:13]
@@ -24,7 +23,7 @@
  * MBC1M (multicart) works the same way as MBC1 but uses 4 bits for the RomBankSelector.
  *
  *                   |             | Bank number   | Address in bank
- * Accessed address  | bankingMode | 19:18 | 17:14 | 13:0
+ * Accessed address  | banking_mode | 19:18 | 17:14 | 13:0
  * 0x0000 - 0x3FFF   | 0           | 0     | 0     | A[0:13]
  * 0x0000 - 0x3FFF   | 1           | U     | 0     | A[0:13]
  * 0x4000 - 0x7FFF   | 0/1         | U     | L     | A[0:13]
@@ -34,54 +33,55 @@
  * RAM access.
  *
  * A := address
- * U := upperRomBankSelector_ramBankSelector (2 bits)
+ * U := upper_rom_bank_selector__ram_bank_selector (2 bits)
  *
  *                   |             | Bank number   | Address in bank
- * Accessed address  | bankingMode | 14:13         | 12:0
+ * Accessed address  | banking_mode | 14:13         | 12:0
  * 0xA000 - 0xBFFF   | 0           | 0             | A[0:12]
  * 0xA000 - 0xBFFF   | 1           | U             | A[0:12]
  */
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
 Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::Mbc1(const uint8_t* data, uint32_t length) {
-    check(length <= array_size(rom), "Mbc1: actual ROM size (" + std::to_string(length) +
+    ASSERT(length <= array_size(rom), "Mbc1: actual ROM size (" + std::to_string(length) +
                                          ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::readRom(uint16_t address) const {
-    check(address < 0x8000);
+uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::read_rom(uint16_t address) const {
+    ASSERT(address < 0x8000);
 
-    uint32_t romBankAddress {};
+    uint32_t rom_bank_address {};
 
     if (address < 0x4000) {
         // 0000 - 0x3FFF
-        if (bankingMode == 0b1)
-            romBankAddress = upperRomBankSelector_ramBankSelector << RomBankSelectorBits;
+        if (banking_mode == 0b1) {
+            rom_bank_address = upper_rom_bank_selector_ram_bank_selector << RomBankSelectorBits;
+        }
     } else {
         // 4000 - 0x7FFF
-        check(romBankSelector != 0 || RomBankSelectorBits < 5);
-        romBankAddress = upperRomBankSelector_ramBankSelector << RomBankSelectorBits | romBankSelector;
+        ASSERT(rom_bank_selector != 0 || RomBankSelectorBits < 5);
+        rom_bank_address = upper_rom_bank_selector_ram_bank_selector << RomBankSelectorBits | rom_bank_selector;
     }
 
-    uint32_t romAddress = (romBankAddress << 14) | keep_bits<14>(address);
-    romAddress = masked<RomSize>(romAddress);
-    return rom[romAddress];
+    uint32_t rom_address = (rom_bank_address << 14) | keep_bits<14>(address);
+    rom_address = mask_by_pow2<RomSize>(rom_address);
+    return rom[rom_address];
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::writeRom(uint16_t address, uint8_t value) {
-    check(address < 0x8000);
+void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::write_rom(uint16_t address, uint8_t value) {
+    ASSERT(address < 0x8000);
 
     if (address < 0x4000) {
         // 0000 - 0x1FFF
         if (address < 0x2000) {
-            ramEnabled = keep_bits<4>(value) == 0xA;
+            ram_enabled = keep_bits<4>(value) == 0xA;
             return;
         }
         // 0x2000 - 0x3FFF
-        romBankSelector = keep_bits<5 /* always 5 bits: not related to RomBankSelectorBits */>(value) > 0
+        rom_bank_selector = keep_bits<5 /* always 5 bits: not related to RomBankSelectorBits */>(value) > 0
                               ? keep_bits<RomBankSelectorBits>(value)
                               : 0b1;
         return;
@@ -89,27 +89,27 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::writeRom(uint16_t add
 
     // 0x4000 - 0x5FFF
     if (address < 0x6000) {
-        upperRomBankSelector_ramBankSelector = keep_bits<2>(value);
+        upper_rom_bank_selector_ram_bank_selector = keep_bits<2>(value);
         return;
     }
     // 0x6000 - 0x7FFF
-    bankingMode = keep_bits<1>(value);
+    banking_mode = keep_bits<1>(value);
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::readRam(uint16_t address) const {
-    check(address >= 0xA000 && address < 0xC000);
+uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::read_ram(uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
 
     // 0xA000 - 0xBFFF
     if constexpr (Ram) {
-        if (ramEnabled) {
-            uint32_t ramAddress = keep_bits<13>(address);
-            if (bankingMode == 0x1) {
-                const uint32_t ramBankAddress = (upperRomBankSelector_ramBankSelector << 13);
-                ramAddress = ramBankAddress | ramAddress;
+        if (ram_enabled) {
+            uint32_t ram_address = keep_bits<13>(address);
+            if (banking_mode == 0x1) {
+                const uint32_t ram_bank_address = (upper_rom_bank_selector_ram_bank_selector << 13);
+                ram_address = ram_bank_address | ram_address;
             }
-            ramAddress = masked<RamSize>(ramAddress);
-            return ram[ramAddress];
+            ram_address = mask_by_pow2<RamSize>(ram_address);
+            return ram[ram_address];
         }
     }
 
@@ -117,25 +117,25 @@ uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::readRam(uint16_t a
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::writeRam(uint16_t address, uint8_t value) {
-    check(address >= 0xA000 && address < 0xC000);
+void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::write_ram(uint16_t address, uint8_t value) {
+    ASSERT(address >= 0xA000 && address < 0xC000);
 
     // 0xA000 - 0xBFFF
     if constexpr (Ram) {
-        if (ramEnabled) {
-            uint32_t ramAddress = keep_bits<13>(address);
-            if (bankingMode == 0x1) {
-                const uint32_t ramBankAddress = (upperRomBankSelector_ramBankSelector << 13);
-                ramAddress = ramBankAddress | ramAddress;
+        if (ram_enabled) {
+            uint32_t ram_address = keep_bits<13>(address);
+            if (banking_mode == 0x1) {
+                const uint32_t ram_bank_address = (upper_rom_bank_selector_ram_bank_selector << 13);
+                ram_address = ram_bank_address | ram_address;
             }
-            ramAddress = masked<RamSize>(ramAddress);
-            ram[ramAddress] = value;
+            ram_address = mask_by_pow2<RamSize>(ram_address);
+            ram[ram_address] = value;
         }
     }
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-uint8_t* Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::getRamSaveData() {
+uint8_t* Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_ram_save_data() {
     if constexpr (Ram && Battery) {
         return ram;
     }
@@ -143,7 +143,7 @@ uint8_t* Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::getRamSaveData() 
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::getRamSaveSize() const {
+uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_ram_save_size() const {
     if constexpr (Ram && Battery) {
         return RamSize;
     }
@@ -152,46 +152,46 @@ uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::getRamSaveSize() 
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-uint8_t *Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::getRomData() {
+uint8_t *Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_rom_data() {
     return rom;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::getRomSize() const {
+uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_rom_size() const {
     return RomSize;
 }
 #endif
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::saveState(Parcel& parcel) const {
-    parcel.writeBool(ramEnabled);
-    parcel.writeUInt8(romBankSelector);
-    parcel.writeUInt8(upperRomBankSelector_ramBankSelector);
-    parcel.writeUInt8(bankingMode);
-    parcel.writeBytes(rom, RomSize);
+void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::save_state(Parcel& parcel) const {
+    parcel.write_bool(ram_enabled);
+    parcel.write_uint8(rom_bank_selector);
+    parcel.write_uint8(upper_rom_bank_selector_ram_bank_selector);
+    parcel.write_uint8(banking_mode);
+    parcel.write_bytes(rom, RomSize);
     if constexpr (Ram) {
-        parcel.writeBytes(ram, RamSize);
+        parcel.write_bytes(ram, RamSize);
     }
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::loadState(Parcel& parcel) {
-    ramEnabled = parcel.readBool();
-    romBankSelector = parcel.readUInt8();
-    upperRomBankSelector_ramBankSelector = parcel.readUInt8();
-    bankingMode = parcel.readUInt8();
-    parcel.readBytes(rom, RomSize);
+void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::load_state(Parcel& parcel) {
+    ram_enabled = parcel.read_bool();
+    rom_bank_selector = parcel.read_uint8();
+    upper_rom_bank_selector_ram_bank_selector = parcel.read_uint8();
+    banking_mode = parcel.read_uint8();
+    parcel.read_bytes(rom, RomSize);
     if constexpr (Ram) {
-        parcel.readBytes(ram, RamSize);
+        parcel.read_bytes(ram, RamSize);
     }
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
 void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::reset() {
-    ramEnabled = false;
-    romBankSelector = 0b1;
-    upperRomBankSelector_ramBankSelector = 0;
-    bankingMode = 0;
+    ram_enabled = false;
+    rom_bank_selector = 0b1;
+    upper_rom_bank_selector_ram_bank_selector = 0;
+    banking_mode = 0;
 
     memset(ram, 0, RamSize);
 }

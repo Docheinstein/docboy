@@ -1,5 +1,5 @@
-#ifndef OS_H
-#define OS_H
+#ifndef UTILSOS_H
+#define UTILSOS_H
 
 #include <cstdint>
 #include <string>
@@ -12,4 +12,4 @@ bool is_directory(const std::string& filename);
 
 bool create_directory(const std::string& filename, int mode = 0755);
 
-#endif // OS_H
+#endif // UTILSOS_H

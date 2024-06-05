@@ -2,11 +2,9 @@
 #define EMUTESTS_H
 
 #include "testutils/catch.h"
-#include "testutils/runners.hpp"
+#include "testutils/runners.h"
 
 #define WIP_ONLY_TEST_ROMS 0
-
-IF_BOOTROM(extern std::string bootRom);
 
 using F = FramebufferRunnerParams;
 using S = SerialRunnerParams;
@@ -19,29 +17,29 @@ bool run_with_params(const RunnerParams& p) {
     if (std::holds_alternative<FramebufferRunnerParams>(p)) {
         const auto& pf = std::get<FramebufferRunnerParams>(p);
         INFO("=== " << TEST_ROMS_PATH + pf.rom << " ===");
-        return FramebufferRunner(IF_BOOTROM(bootRom COMMA) pf.palette.value_or(Lcd::DEFAULT_PALETTE))
+        return FramebufferRunner(pf.palette.value_or(Lcd::DEFAULT_PALETTE))
             .rom(TEST_ROMS_PATH + pf.rom)
-            .maxTicks(pf.maxTicks)
-            .checkIntervalTicks(DURATION_VERY_SHORT)
-            .stopAtInstruction(pf.stopAtInstruction)
-            .expectFramebuffer(TEST_RESULTS_PATH + pf.result)
-            .forceCheck(pf.forceCheck)
-            .scheduleInputs(pf.inputs)
+            .max_ticks(pf.max_ticks)
+            .check_interval_ticks(DURATION_VERY_SHORT)
+            .stop_at_instruction(pf.stop_at_instruction)
+            .expect_framebuffer(TEST_RESULTS_PATH + pf.result)
+            .force_check(pf.force_check)
+            .schedule_inputs(pf.inputs)
             .run();
     }
 
     if (std::holds_alternative<SerialRunnerParams>(p)) {
         const auto& ps = std::get<SerialRunnerParams>(p);
         INFO("=== " << TEST_ROMS_PATH + ps.rom << " ===");
-        return SerialRunner(IF_BOOTROM(bootRom))
+        return SerialRunner()
             .rom(TEST_ROMS_PATH + ps.rom)
-            .maxTicks(ps.maxTicks)
-            .checkIntervalTicks(DURATION_VERY_SHORT)
-            .expectOutput(ps.result)
+            .max_ticks(ps.max_ticks)
+            .check_interval_ticks(DURATION_VERY_SHORT)
+            .expect_output(ps.result)
             .run();
     }
 
-    checkNoEntry();
+    ASSERT_NO_ENTRY();
     return false;
 }
 
@@ -1919,7 +1917,8 @@ TEST_CASE("emulation", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS();
+        RUN_TEST_ROMS(F {"docboy/ppu/rendering/change_win_map_wx15.gb", "docboy/ppu/change_win_map_wx15.png",
+                         StopAtInstruction {0x40}}, );
     }
 
 #endif

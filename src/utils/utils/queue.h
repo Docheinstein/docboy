@@ -1,9 +1,10 @@
-#ifndef QUEUE_HPP
-#define QUEUE_HPP
+#ifndef UTILSQUEUE_H
+#define UTILSQUEUE_H
 
-#include "asserts.h"
 #include <cstdint>
 #include <type_traits>
+
+#include "utils/asserts.h"
 
 /*
  * Queue that supports:
@@ -21,34 +22,35 @@ template <typename T, uint8_t N>
 struct Queue {
     static_assert(std::is_trivially_copyable_v<T>);
 
-    [[nodiscard]] bool isEmpty() const {
+    bool is_empty() const {
         return count == 0;
     }
-    [[nodiscard]] bool isNotEmpty() const {
+
+    bool is_not_empty() const {
         return count > 0;
     }
 
-    [[nodiscard]] bool isFull() const {
+    bool is_full() const {
         return count == N;
     }
 
-    [[nodiscard]] bool isNotFull() const {
+    bool is_not_full() const {
         return count < N;
     }
 
-    [[nodiscard]] uint8_t size() const {
+    uint8_t size() const {
         return count;
     }
 
-    void pushBack(T element) {
-        check(!isFull());
+    void push_back(T element) {
+        ASSERT(!is_full());
         data[end] = element;
         end = (end + 1) % N;
         ++count;
     }
 
-    T popFront() {
-        check(isNotEmpty());
+    T pop_front() {
+        ASSERT(is_not_empty());
         T out = data[start];
         start = (start + 1) % N;
         --count;
@@ -61,14 +63,14 @@ struct Queue {
     }
 
     const T& operator[](uint8_t index) const {
-        check(index < N);
-        check(index < size());
+        ASSERT(index < N);
+        ASSERT(index < size());
         return data[(start + index) % N];
     }
 
     T& operator[](uint8_t index) {
-        check(index < N);
-        check(index < size());
+        ASSERT(index < N);
+        ASSERT(index < size());
         return data[(start + index) % N];
     }
 
@@ -78,4 +80,4 @@ struct Queue {
     uint8_t count {};
 };
 
-#endif // QUEUE_HPP
+#endif // UTILSQUEUE_H

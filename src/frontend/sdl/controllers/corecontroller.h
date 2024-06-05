@@ -1,11 +1,14 @@
 #ifndef CORECONTROLLER_H
 #define CORECONTROLLER_H
 
-#include "SDL3/SDL_keycode.h"
-#include "docboy/core/core.h"
-#include "utils/path.h"
 #include <functional>
 #include <map>
+
+#include "docboy/core/core.h"
+
+#include "utils/path.h"
+
+#include "SDL3/SDL_keycode.h"
 
 #ifdef ENABLE_DEBUGGER
 class DebuggerBackend;
@@ -17,37 +20,37 @@ public:
     explicit CoreController(Core& core);
 
     // Rom
-    void loadRom(const std::string& romPath);
-    bool isRomLoaded() const;
-    path getRom() const;
+    void load_rom(const std::string& rom_path);
+    bool is_rom_loaded() const;
+    Path get_rom() const;
 
     // Running/Pause
-    void setPaused(bool paused_) {
+    void set_paused(bool paused_) {
         paused = paused_;
     }
-    bool isPaused() const {
+    bool is_paused() const {
         return paused;
     }
 
     // Save
-    bool writeSave() const;
-    bool loadSave() const;
+    bool write_save() const;
+    bool load_save() const;
 
     // State
-    bool writeState() const;
-    bool loadState() const;
+    bool write_state() const;
+    bool load_state() const;
 
     // Debugger
 #ifdef ENABLE_DEBUGGER
-    bool isDebuggerAttached() const;
-    bool attachDebugger(const std::function<void()>& onPullingCommand = {},
-                        const std::function<bool(const std::string&)>& onCommandPulled = {},
-                        bool proceedExecution = false);
-    bool detachDebugger();
+    bool is_debugger_attached() const;
+    bool attach_debugger(const std::function<void()>& on_pulling_command = {},
+                         const std::function<bool(const std::string&)>& on_command_pulled = {},
+                         bool proceed_execution = false);
+    bool detach_debugger();
 #endif
 
     // Video
-    const Lcd::PixelRgb565* getFramebuffer() const;
+    const Lcd::PixelRgb565* get_framebuffer() const;
 
     // Emulation
     void frame() {
@@ -55,32 +58,36 @@ public:
     }
 
     // Input
-    void sendKey(SDL_Keycode key, Joypad::KeyState keyState) const {
-        if (const auto it = keycodeMap.find(key); it != keycodeMap.end()) {
-            core.setKey(it->second, keyState);
+    void send_key(SDL_Keycode key, Joypad::KeyState key_state) const {
+        if (const auto it = keycode_map.find(key); it != keycode_map.end()) {
+            core.set_key(it->second, key_state);
         }
     }
 
-    void setKeyMapping(SDL_Keycode keycode, Joypad::Key joypadKey);
+    void set_key_mapping(SDL_Keycode keycode, Joypad::Key joypad_key);
 
-    const std::map<SDL_Keycode, Joypad::Key>& getKeycodeMap() const;
-    const std::map<Joypad::Key, SDL_Keycode>& getJoypadMap() const;
+    const std::map<SDL_Keycode, Joypad::Key>& get_keycode_map() const {
+        return keycode_map;
+    }
+    const std::map<Joypad::Key, SDL_Keycode>& get_joypad_map() const {
+        return joypad_map;
+    }
 
 private:
-    std::string getSavePath() const;
-    std::string getStatePath() const;
+    std::string get_save_path() const;
+    std::string get_state_path() const;
 
     Core& core;
 
     struct {
-        path romPath {};
-        bool isLoaded {};
+        Path path {};
+        bool is_loaded {};
     } rom;
 
     bool paused {true};
 
-    std::map<SDL_Keycode, Joypad::Key> keycodeMap;
-    std::map<Joypad::Key, SDL_Keycode> joypadMap;
+    std::map<SDL_Keycode, Joypad::Key> keycode_map;
+    std::map<Joypad::Key, SDL_Keycode> joypad_map;
 
 #ifdef ENABLE_DEBUGGER
     struct {
@@ -88,8 +95,8 @@ private:
         std::unique_ptr<DebuggerFrontend> frontend {};
 
         struct {
-            std::function<void()> onPullingCommand {};
-            std::function<bool(const std::string&)> onCommandPulled {};
+            std::function<void()> on_pulling_command {};
+            std::function<bool(const std::string&)> on_command_pulled {};
         } callbacks;
     } debugger;
 #endif

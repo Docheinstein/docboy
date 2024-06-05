@@ -1,46 +1,49 @@
-#include "launcherscreen.h"
-#include "SDL3/SDL.h"
+#include "screens/launcherscreen.h"
+
 #include "controllers/corecontroller.h"
 #include "controllers/uicontroller.h"
-#include "gamescreen.h"
-#include "mainscreen.h"
+#include "screens/gamescreen.h"
+#include "screens/mainscreen.h"
+
 #include "utils/rompicker.h"
 
-LauncherScreen::LauncherScreen(Context context) :
-    Screen(context),
-    backgroundTexture(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
-                                        Specs::Display::WIDTH, Specs::Display::HEIGHT)),
-    foregroundTexture(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
-                                        Specs::Display::WIDTH, Specs::Display::HEIGHT)) {
-    SDL_SetTextureScaleMode(backgroundTexture, SDL_SCALEMODE_NEAREST);
+#include "SDL3/SDL.h"
 
-    SDL_SetTextureScaleMode(foregroundTexture, SDL_SCALEMODE_NEAREST);
-    SDL_SetTextureBlendMode(foregroundTexture, SDL_BLENDMODE_ADD);
+LauncherScreen::LauncherScreen(Context context) :
+    Screen {context},
+    background_texture {SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+                                          Specs::Display::WIDTH, Specs::Display::HEIGHT)},
+    foreground_texture {SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+                                          Specs::Display::WIDTH, Specs::Display::HEIGHT)} {
+    SDL_SetTextureScaleMode(background_texture, SDL_SCALEMODE_NEAREST);
+
+    SDL_SetTextureScaleMode(foreground_texture, SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureBlendMode(foreground_texture, SDL_BLENDMODE_ADD);
 }
 
 void LauncherScreen::render() {
-    SDL_RenderTexture(renderer, backgroundTexture, nullptr, nullptr);
-    SDL_RenderTexture(renderer, foregroundTexture, nullptr, nullptr);
+    SDL_RenderTexture(renderer, background_texture, nullptr, nullptr);
+    SDL_RenderTexture(renderer, foreground_texture, nullptr, nullptr);
 }
 
 void LauncherScreen::redraw() {
-    clearTexture(backgroundTexture, Specs::Display::WIDTH * Specs::Display::HEIGHT,
-                 ui.getCurrentPalette().rgba8888.palette[2] & (0xFFFFFF00 | context.ui.backgroundAlpha));
+    clear_texture(background_texture, Specs::Display::WIDTH * Specs::Display::HEIGHT,
+                  ui.get_current_palette().rgba8888.palette[2] & (0xFFFFFF00 | context.ui.background_alpha));
 
-    uint32_t textColor = ui.getCurrentPalette().rgba8888.palette[0];
+    uint32_t text_color = ui.get_current_palette().rgba8888.palette[0];
 
-    drawText(foregroundTexture, "Press ESC for menu", 9, 18, textColor, Specs::Display::WIDTH);
+    draw_text(foreground_texture, "Press ESC for menu", 9, 18, text_color, Specs::Display::WIDTH);
 
 #ifdef NFD
-    drawText(foregroundTexture, "Press ENTER or", 27, 90, textColor, Specs::Display::WIDTH);
-    drawText(foregroundTexture, "drop a file to", 27, 106, textColor, Specs::Display::WIDTH);
-    drawText(foregroundTexture, "load a GB ROM ", 27, 122, textColor, Specs::Display::WIDTH);
+    draw_text(foreground_texture, "Press ENTER or", 27, 90, text_color, Specs::Display::WIDTH);
+    draw_text(foreground_texture, "drop a file to", 27, 106, text_color, Specs::Display::WIDTH);
+    draw_text(foreground_texture, "load a GB ROM ", 27, 122, text_color, Specs::Display::WIDTH);
 #else
-    drawText(foregroundTexture, "Drop a GB ROM", 27, 118, textColor, Specs::Display::WIDTH);
+    drawText(foreground_texture, "Drop a GB ROM", 27, 118, text_color, Specs::Display::WIDTH);
 #endif
 }
 
-void LauncherScreen::handleEvent(const SDL_Event& event) {
+void LauncherScreen::handle_event(const SDL_Event& event) {
     switch (event.type) {
     case SDL_EVENT_KEY_DOWN:
         switch (event.key.keysym.sym) {
@@ -49,8 +52,8 @@ void LauncherScreen::handleEvent(const SDL_Event& event) {
             break;
 #ifdef NFD
         case SDLK_RETURN:
-            if (const auto rom = openRomPicker()) {
-                core.loadRom(*rom);
+            if (const auto rom = open_rom_picker()) {
+                core.load_rom(*rom);
                 nav.push(std::make_unique<GameScreen>(context));
             }
             break;
@@ -58,7 +61,7 @@ void LauncherScreen::handleEvent(const SDL_Event& event) {
         }
         break;
     case SDL_EVENT_DROP_FILE: {
-        core.loadRom(event.drop.data);
+        core.load_rom(event.drop.data);
         nav.push(std::make_unique<GameScreen>(context));
         break;
     }

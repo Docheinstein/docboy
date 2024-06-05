@@ -1,33 +1,34 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
-#include "docboy/memory/byte.hpp"
-#include "docboy/shared/specs.h"
+#include "docboy/common/specs.h"
+#include "docboy/memory/byte.h"
+
 #include "utils/parcel.h"
 
 class SerialIO {
 public:
-    void saveState(Parcel& parcel) const {
-        parcel.writeUInt8(SB);
-        parcel.writeUInt8(SC);
+    void save_state(Parcel& parcel) const {
+        parcel.write_uint8(sb);
+        parcel.write_uint8(sc);
     }
 
-    void loadState(Parcel& parcel) {
-        SB = parcel.readUInt8();
-        SC = parcel.readUInt8();
+    void load_state(Parcel& parcel) {
+        sb = parcel.read_uint8();
+        sc = parcel.read_uint8();
     }
 
     void reset() {
-        SB = 0;
-        SC = 0b01111110;
+        sb = 0;
+        sc = 0b01111110;
     }
 
-    void writeSC(uint8_t value) {
-        SC = 0b01111110 | value;
+    void write_SC(uint8_t value) {
+        sc = 0b01111110 | value;
     }
 
-    byte SB {make_byte(Specs::Registers::Serial::SB)};
-    byte SC {make_byte(Specs::Registers::Serial::SC)};
+    byte sb {make_byte(Specs::Registers::Serial::SB)};
+    byte sc {make_byte(Specs::Registers::Serial::SC)};
 };
 
 #endif // SERIAL_H

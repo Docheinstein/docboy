@@ -1,17 +1,16 @@
 #ifndef PPU_H
 #define PPU_H
 
-#include "docboy/bootrom/macros.h"
+#include <vector>
+
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
-#include "docboy/shared//macros.h"
+
 #include "utils/arrays.h"
 #include "utils/asserts.h"
-#include "utils/fillqueue.hpp"
-#include "utils/queue.hpp"
-#include "utils/vector.hpp"
-
-#include <vector>
+#include "utils/fillqueue.h"
+#include "utils/queue.h"
+#include "utils/vector.h"
 
 class Lcd;
 class VideoIO;
@@ -22,13 +21,13 @@ class Ppu {
     DEBUGGABLE_CLASS()
 
 public:
-    Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Device::Ppu> vramBus,
-        OamBus::View<Device::Ppu> oamBus);
+    Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Device::Ppu> vram_bus,
+        OamBus::View<Device::Ppu> oam_bus);
 
     void tick();
 
-    void saveState(Parcel& parcel) const;
-    void loadState(Parcel& parcel);
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
     void reset();
 
@@ -38,11 +37,11 @@ private:
     using PixelColorIndex = uint8_t;
 
     struct BgPixel {
-        PixelColorIndex colorIndex;
+        PixelColorIndex color_index;
     };
 
     struct ObjPixel {
-        PixelColorIndex colorIndex;
+        PixelColorIndex color_index;
         uint8_t attributes;
         uint8_t number; // TODO: probably can be removed since oam scan is ordered by number
         uint8_t x;
@@ -51,107 +50,109 @@ private:
     struct OamScanEntry {
         uint8_t number; // [0, 40)
         uint8_t y;
-        IF_ASSERTS_OR_DEBUGGER(uint8_t x);
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
+        uint8_t x;
+#endif
     };
 
     // PPU helpers
-    void turnOn();
-    void turnOff();
+    void turn_on();
+    void turn_off();
 
-    bool isLYCEqLY() const;
+    bool is_lyc_eq_ly() const;
 
-    void tickStat();
-    void updateStatIrq(bool irq);
+    void tick_stat();
+    void update_state_irq(bool irq);
 
-    void tickWindow();
+    void tick_window();
 
     // PPU states
-    void oamScanEven();
-    void oamScanOdd();
-    void oamScanDone();
-    void oamScanAfterTurnOn();
+    void oam_scan_even();
+    void oam_scan_odd();
+    void oam_scan_done();
+    void oam_scan_after_turn_on();
 
-    void pixelTransferDummy0();
-    void pixelTransferDiscard0();
-    void pixelTransferDiscard0WX0SCX7();
-    void pixelTransfer0();
-    void pixelTransfer8();
+    void pixel_transfer_dummy_lx0();
+    void pixel_transfer_discard_lx0();
+    void pixel_transfer_discard_lx0_wx0_scx7();
+    void pixel_transfer_lx0();
+    void pixel_transfer_lx8();
 
-    void hBlank();
-    void hBlank453();
-    void hBlank454();
-    void hBlank455();
-    void hBlankLastLine();
-    void hBlankLastLine454();
-    void hBlankLastLine455();
+    void hblank();
+    void hblank_453();
+    void hblank_454();
+    void hblank_455();
+    void hblank_last_line();
+    void hblank_last_line_454();
+    void hblank_last_line_455();
 
-    void vBlank();
-    void vBlank454();
-    void vBlankLastLine();
-    void vBlankLastLine2();
-    void vBlankLastLine7();
-    void vBlankLastLine454();
+    void vblank();
+    void vblank_454();
+    void vblank_last_line();
+    void vblank_last_line_2();
+    void vblank_last_line_7();
+    void vblank_last_line_454();
 
     // PPU states helpers
-    void enterOamScan();
-    void enterPixelTransfer();
-    void enterHBlank();
-    void enterVBlank();
-    void enterNewFrame();
+    void enter_oam_scan();
+    void enter_pixel_transfer();
+    void enter_hblank();
+    void enter_vblank();
+    void enter_new_frame();
 
-    void tickFetcher();
-    void resetFetcher();
+    void tick_fetcher();
+    void reset_fetcher();
 
     template <uint8_t mode>
-    void updateMode();
+    void update_mode();
 
-    void updateStatIrqForOamMode();
+    void update_stat_irq_for_oam_mode();
 
-    void increaseLX();
+    void increase_lx();
 
-    [[nodiscard]] bool isBgFifoReadyToBePopped() const;
-    [[nodiscard]] bool isObjReadyToBeFetched() const;
+    bool is_bg_fifo_ready_to_be_popped() const;
+    bool is_obj_ready_to_be_fetched() const;
 
-    void checkWindowActivation();
-    void setupFetcherForWindow();
+    void check_window_activation();
+    void setup_fetcher_for_window();
 
-    void handleOamScanBusesOddities();
+    void handle_oam_scan_buses_oddities();
 
     // Fetcher states
-    void bgwinPrefetcherGetTile0();
+    void bgwin_prefetcher_get_tile_0();
 
-    void bgPrefetcherGetTile0();
-    void bgPrefetcherGetTile1();
-    void bgPixelSliceFetcherGetTileDataLow0();
-    void bgPixelSliceFetcherGetTileDataLow1();
-    void bgPixelSliceFetcherGetTileDataHigh0();
+    void bg_prefetcher_get_tile_0();
+    void bg_prefetcher_get_tile_1();
+    void bg_pixel_slice_fetcher_get_tile_data_low_0();
+    void bg_pixel_slice_fetcher_get_tile_data_low_1();
+    void bg_pixel_slice_fetcher_get_tile_data_high_0();
 
-    void winPrefetcherActivating();
-    void winPrefetcherGetTile0();
-    void winPrefetcherGetTile1();
-    void winPixelSliceFetcherGetTileDataLow0();
-    void winPixelSliceFetcherGetTileDataLow1();
-    void winPixelSliceFetcherGetTileDataHigh0();
+    void win_prefetcher_activating();
+    void win_prefetcher_get_tile_0();
+    void win_prefetcher_get_tile_1();
+    void win_pixel_slice_fetcher_get_tile_data_low_0();
+    void win_pixel_slice_fetcher_get_tile_data_low_1();
+    void win_pixel_slice_fetcher_get_tile_data_high_0();
 
-    void bgwinPixelSliceFetcherGetTileDataHigh1();
-    void bgwinPixelSliceFetcherPush();
+    void bgwin_pixel_slice_fetcher_get_tile_data_high_1();
+    void bgwin_pixel_slice_fetcher_push();
 
-    void objPrefetcherGetTile0();
-    void objPrefetcherGetTile1();
-    void objPixelSliceFetcherGetTileDataLow0();
-    void objPixelSliceFetcherGetTileDataLow1();
-    void objPixelSliceFetcherGetTileDataHigh0();
-    void objPixelSliceFetcherGetTileDataHigh1AndMergeWithObjFifo();
+    void obj_prefetcher_get_tile_0();
+    void obj_prefetcher_get_tile_1();
+    void obj_pixel_slice_fetcher_get_tile_data_low_0();
+    void obj_pixel_slice_fetcher_get_tile_data_low_1();
+    void obj_pixel_slice_fetcher_get_tile_data_high_0();
+    void obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo();
 
     // Fetcher states helpers
-    void setupObjPixelSliceFetcherTileDataAddress();
-    void setupBgPixelSliceFetcherTilemapTileAddress();
-    void setupBgPixelSliceFetcherTileDataAddress();
-    void setupWinPixelSliceFetcherTilemapTileAddress();
-    void setupWinPixelSliceFetcherTileDataAddress();
+    void setup_obj_pixel_slice_fetcher_tile_data_address();
+    void setup_bg_pixel_slice_fetcher_tilemap_tile_address();
+    void setup_bg_pixel_slice_fetcher_tile_data_address();
+    void setup_win_pixel_slice_fetcher_tilemap_tile_address();
+    void setup_win_pixel_slice_fetcher_tile_data_address();
 
-    void cacheBgWinFetch();
-    void restoreBgWinFetch();
+    void cache_bg_win_fetch();
+    void restore_bg_win_fetch();
 
     static const TickSelector TICK_SELECTORS[];
     static const FetcherTickSelector FETCHER_TICK_SELECTORS[];
@@ -162,38 +163,40 @@ private:
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;
 
-    TickSelector tickSelector {};
-    FetcherTickSelector fetcherTickSelector {&Ppu::bgPrefetcherGetTile0};
+    TickSelector tick_selector {};
+    FetcherTickSelector fetcher_tick_selector {&Ppu::bg_prefetcher_get_tile_0};
 
     bool on {true};
 
-    bool lastStatIrq {};
-    bool enableLycEqLyIrq {true};
+    bool last_stat_irq {};
+    bool enable_lyc_eq_ly_irq {true};
 
     uint16_t dots {}; // [0, 456)
-    uint8_t LX {};    // LX=X+8, therefore [0, 168)
+    uint8_t lx {};    // LX=X+8, therefore [0, 168)
 
-    uint8_t BGP {};      // video.BGP delayed by 1 t-cycle
-    uint8_t WX {};       // video.WX delayed by 1 t-cycle
-    uint8_t lastLCDC {}; // video.LCDC delayed by 1 t-cycle
+    uint8_t last_bgp {};  // video.BGP delayed by 1 t-cycle
+    uint8_t last_wx {};   // video.WX delayed by 1 t-cycle
+    uint8_t last_lcdc {}; // video.LCDC delayed by 1 t-cycle
 
-    FillQueue<BgPixel, 8> bgFifo {};
-    Queue<ObjPixel, 8> objFifo {};
+    FillQueue<BgPixel, 8> bg_fifo {};
+    Queue<ObjPixel, 8> obj_fifo {};
 
-    Vector<OamScanEntry, 10> oamEntries[168] {};
-    IF_ASSERTS(uint8_t oamEntriesCount {});
-    IF_ASSERTS(uint8_t oamEntriesNotServedCount {});
+    Vector<OamScanEntry, 10> oam_entries[168] {};
+#ifdef ENABLE_ASSERTS
+    uint8_t oam_entries_count {};
+    uint8_t oam_entries_not_served_count {};
+#endif
 #ifdef ENABLE_DEBUGGER
-    Vector<OamScanEntry, 10> scanlineOamEntries {}; // not cleared after oam scan
+    Vector<OamScanEntry, 10> scanline_oam_entries {}; // not cleared after oam scan
 #endif
 
-    bool isFetchingSprite {};
+    bool is_fetching_sprite {};
 
 #ifdef ENABLE_DEBUGGER
     struct {
-        uint16_t oamScan {};
-        uint16_t pixelTransfer {};
-        uint16_t hBlank {};
+        uint16_t oam_scan {};
+        uint16_t pixel_transfer {};
+        uint16_t hblank {};
     } timings;
 #endif
 
@@ -204,65 +207,69 @@ private:
     // Oam Scan
     struct {
         uint8_t count {}; // [0, 10]
-    } oamScan;
+    } oam_scan;
 
     // Pixel Transfer
     struct {
         struct {
-            uint8_t toDiscard {}; // [0, 8)
-            uint8_t discarded {}; // [0, 8)
-        } initialSCX;
-    } pixelTransfer;
+            uint8_t to_discard {}; // [0, 8)
+            uint8_t discarded {};  // [0, 8)
+        } initial_scx;
+    } pixel_transfer;
 
     // Window
     struct {
-        bool activeForFrame {}; // window activated for the frame
-        uint8_t WLY {};         // window line counter
+        bool active_for_frame {}; // window activated for the frame
+        uint8_t wly {};           // window line counter
 
-        bool active {};        // currently rendering window
-        bool justActivated {}; // first fetch of this window streak
+        bool active {};         // currently rendering window
+        bool just_activated {}; // first fetch of this window streak
 
-#ifdef ASSERTS_OR_DEBUGGER_ENABLED
-        Vector<uint8_t, 20> lineTriggers {};
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
+        Vector<uint8_t, 20> line_triggers {};
 #endif
     } w;
 
     // Bg/Window Prefetcher
     struct {
-        uint8_t LX {}; // [0, 256), advances 8 by 8
-        uint16_t vTilemapTileAddr {};
+        uint8_t lx {}; // [0, 256), advances 8 by 8
+        uint16_t tilemap_tile_vram_addr {};
 
-        IF_DEBUGGER(uint8_t tilemapX {});
-        IF_DEBUGGER(uint8_t tilemapY {});
-        IF_DEBUGGER(uint8_t vTilemapAddr {});
+#ifdef ENABLE_DEBUGGER
+        uint8_t tilemap_x {};
+        uint8_t tilemap_y {};
+        uint8_t tilemap_vram_addr {};
+#endif
 
         struct {
-            bool hasData {};
-            uint8_t tileDataLow {};
-            uint8_t tileDataHigh {};
-        } interruptedFetch {};
+            bool has_data {};
+            uint8_t tile_data_low {};
+            uint8_t tile_data_high {};
+        } interrupted_fetch {};
     } bwf;
 
     // Window Prefetcher
     struct {
-        uint8_t tilemapX {};
+        uint8_t tilemap_x {};
     } wf;
 
     // Obj Prefetcher
     struct {
-        OamScanEntry entry {}; // hit obj
-        uint8_t tileNumber {}; // [0, 256)
+        OamScanEntry entry {};  // hit obj
+        uint8_t tile_number {}; // [0, 256)
         uint8_t attributes {};
     } of;
 
     // Pixel Slice Fetcher
     struct {
-        uint16_t vTileDataAddress {};
-        uint8_t tileDataLow {};
-        uint8_t tileDataHigh {};
+        uint16_t tile_data_vram_address {};
+        uint8_t tile_data_low {};
+        uint8_t tile_data_high {};
     } psf;
 
-    IF_DEBUGGER(uint64_t cycles {});
+#ifdef ENABLE_DEBUGGER
+    uint64_t cycles {};
+#endif
 };
 
 #endif // PPU_H

@@ -7,11 +7,11 @@ class InterruptsIO;
 
 class JoypadIO {
 public:
-    [[nodiscard]] uint8_t readP1() const;
-    void writeP1(uint8_t value);
+    uint8_t read_p1() const;
+    void write_p1(uint8_t value);
 
 protected:
-    uint8_t P1 {0b11000000};
+    uint8_t p1 {0b11000000};
     uint8_t keys {0b11111111};
 };
 
@@ -35,7 +35,7 @@ public:
 
     explicit Joypad(InterruptsIO& interrupts);
 
-    void setKeyState(Key key, KeyState state);
+    void set_key_state(Key key, KeyState state);
 
 private:
     InterruptsIO& interrupts;

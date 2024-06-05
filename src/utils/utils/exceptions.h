@@ -1,5 +1,5 @@
-#ifndef EXCEPTIONS_HPP
-#define EXCEPTIONS_HPP
+#ifndef UTILSEXCEPTIONS_H
+#define UTILSEXCEPTIONS_H
 
 #ifdef __FILE_NAME__
 #define FILENAME __FILE_NAME__
@@ -10,24 +10,19 @@
 #if __cpp_exceptions
 #include <stdexcept>
 #include <string>
-#define fatal(message) throw std::runtime_error(std::string() + message)
-#define fatalx(message) fatal(FILENAME + "@" + __func__ + ":" + std::to_string(__LINE__) + "   " + message)
+#define FATAL(message) throw std::runtime_error(std::string() + message)
+#define FATALX(message) FATAL(FILENAME + "@" + __func__ + ":" + std::to_string(__LINE__) + "   " + message)
 #else
 #include <cstdlib>
 #include <iostream>
-#define fatal(message)                                                                                                 \
+#define FATAL(message)                                                                                                 \
     do {                                                                                                               \
         std::cerr << message << std::endl;                                                                             \
         abort();                                                                                                       \
     } while (0)
-#define fatalx(message)                                                                                                \
+#define FATALX(message)                                                                                                \
     do {                                                                                                               \
         std::cerr << FILENAME << "@" << __func__ << ":" << std::to_string(__LINE__) << "   " << message << std::endl;  \
-        abort();                                                                                                       \
-    } while (0)
-#define noentry()                                                                                                      \
-    do {                                                                                                               \
-        std::cerr << "no entry check failed" << std::endl;                                                             \
         abort();                                                                                                       \
     } while (0)
 #endif
@@ -49,4 +44,4 @@
 
 #endif
 
-#endif // EXCEPTIONS_HPP
+#endif // UTILSEXCEPTIONS_H

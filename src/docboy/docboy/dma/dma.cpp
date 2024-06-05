@@ -1,4 +1,4 @@
-#include "dma.h"
+#include "docboy/dma/dma.h"
 
 /* DMA request timing example.
  *
@@ -13,17 +13,18 @@
  * DMA |                   Transfer first byte
  */
 
-Dma::Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oamBus) :
-    mmu(mmu),
-    oam(oamBus) {
+Dma::Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oam_bus) :
+    mmu {mmu},
+    oam {oam_bus} {
 }
 
-void Dma::startTransfer(uint16_t address) {
+void Dma::start_transfer(uint16_t address) {
     request.state = RequestState::Requested;
 
     // DMA source cannot exceed 0xDF00
-    if (address >= 0xE000)
+    if (address >= 0xE000) {
         reset_bit<13>(address);
+    }
 
     request.source = address;
 }
@@ -31,10 +32,10 @@ void Dma::startTransfer(uint16_t address) {
 void Dma::tick_t1() {
     if (transferring) {
         // Complete read request and actually read source data
-        const uint8_t srcData = mmu.flushReadRequest();
+        const uint8_t src_data = mmu.flush_read_request();
 
         // Actually write to OAM
-        oam.flushWriteRequest(srcData);
+        oam.flush_write_request(src_data);
 
         cursor++;
     }
@@ -54,14 +55,14 @@ void Dma::tick_t3() {
     if (transferring) {
         if (cursor < Specs::MemoryLayout::OAM::SIZE) {
             // Start a read request for the source data
-            mmu.readRequest(source + cursor);
+            mmu.read_request(source + cursor);
 
             // Start a write request to the OAM bus.
             // Note that the request is initiated here: this means that if the PPU
             // will access OAM during the next t0 and t1, conflicts will happen
             // (likely PPU will read from the address written by DMA now).
             // [hacktix/strikethrough]
-            oam.writeRequest(Specs::MemoryLayout::OAM::START + cursor);
+            oam.write_request(Specs::MemoryLayout::OAM::START + cursor);
         } else {
             // DMA transfer completed: release OAM bus
             oam.release();
@@ -70,20 +71,20 @@ void Dma::tick_t3() {
     }
 }
 
-void Dma::saveState(Parcel& parcel) const {
-    parcel.writeUInt8(request.state);
-    parcel.writeUInt16(request.source);
-    parcel.writeBool(transferring);
-    parcel.writeUInt16(source);
-    parcel.writeUInt8(cursor);
+void Dma::save_state(Parcel& parcel) const {
+    parcel.write_uint8(request.state);
+    parcel.write_uint16(request.source);
+    parcel.write_bool(transferring);
+    parcel.write_uint16(source);
+    parcel.write_uint8(cursor);
 }
 
-void Dma::loadState(Parcel& parcel) {
-    request.state = parcel.readUInt8();
-    request.source = parcel.readUInt16();
-    transferring = parcel.readBool();
-    source = parcel.readUInt16();
-    cursor = parcel.readUInt8();
+void Dma::load_state(Parcel& parcel) {
+    request.state = parcel.read_uint8();
+    request.source = parcel.read_uint16();
+    transferring = parcel.read_bool();
+    source = parcel.read_uint16();
+    cursor = parcel.read_uint8();
 }
 void Dma::reset() {
     request.state = RequestState::None;

@@ -1,4 +1,4 @@
-#include "iopng.h"
+#include "extra/png/iopng.h"
 
 #include <cstring>
 #include <iostream>
@@ -12,24 +12,28 @@ bool save_png_rgb888(const std::string& filename, const void* buffer, uint32_t w
     png_structp png {};
     png_infop info {};
 
-    png_byte** rowPointers {};
+    png_byte** raw_pointers {};
 
     bool success {};
 
     png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (!png)
+    if (!png) {
         goto error;
+    }
 
     info = png_create_info_struct(png);
-    if (!info)
+    if (!info) {
         goto error;
+    }
 
-    if (setjmp(png_jmpbuf(png)))
+    if (setjmp(png_jmpbuf(png))) {
         goto error;
+    }
 
     fp = fopen(filename.c_str(), "wb");
-    if (!fp)
+    if (!fp) {
         goto error;
+    }
 
     png_init_io(png, fp);
 
@@ -37,24 +41,25 @@ bool save_png_rgb888(const std::string& filename, const void* buffer, uint32_t w
                  PNG_FILTER_TYPE_DEFAULT);
     png_write_info(png, info);
 
-    rowPointers = new png_byte*[height];
+    raw_pointers = new png_byte*[height];
 
     for (uint32_t y = 0; y < height; y++) {
-        rowPointers[y] = const_cast<unsigned char*>(static_cast<const unsigned char*>(buffer)) + y * width * 3;
+        raw_pointers[y] = const_cast<unsigned char*>(static_cast<const unsigned char*>(buffer)) + y * width * 3;
     }
 
-    png_write_image(png, rowPointers);
+    png_write_image(png, raw_pointers);
     png_write_end(png, nullptr);
 
     success = true;
 
 error:
-    if (fp)
+    if (fp) {
         fclose(fp);
+    }
 
     png_destroy_write_struct(&png, &info);
 
-    delete[] rowPointers;
+    delete[] raw_pointers;
 
     return success;
 }
@@ -64,33 +69,37 @@ std::vector<uint8_t> load_png_rgb888(const std::string& filename, uint32_t* widt
     png_structp png {};
     png_infop info {};
 
-    png_byte** rowPointers {};
+    png_byte** raw_pointers {};
 
     uint32_t width {};
     uint32_t height {};
     png_byte color_type {};
     png_byte bit_depth {};
 
-    uint32_t bytesPerRow {};
+    uint32_t bytes_per_row {};
 
     bool success {};
 
     std::vector<uint8_t> result;
 
     fp = fopen(filename.c_str(), "rb");
-    if (!fp)
+    if (!fp) {
         goto error;
+    }
 
     png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (!png)
+    if (!png) {
         goto error;
+    }
 
     info = png_create_info_struct(png);
-    if (!info)
+    if (!info) {
         goto error;
+    }
 
-    if (setjmp(png_jmpbuf(png)))
+    if (setjmp(png_jmpbuf(png))) {
         goto error;
+    }
 
     png_init_io(png, fp);
 
@@ -101,8 +110,9 @@ std::vector<uint8_t> load_png_rgb888(const std::string& filename, uint32_t* widt
     color_type = png_get_color_type(png, info);
     bit_depth = png_get_bit_depth(png, info);
 
-    if (bit_depth == 16)
+    if (bit_depth == 16) {
         png_set_strip_16(png);
+    }
 
     switch (color_type) {
     case PNG_COLOR_TYPE_PALETTE:
@@ -117,45 +127,48 @@ std::vector<uint8_t> load_png_rgb888(const std::string& filename, uint32_t* widt
 
     png_read_update_info(png, info);
 
-    rowPointers = new png_byte*[height];
+    raw_pointers = new png_byte*[height];
 
-    bytesPerRow = png_get_rowbytes(png, info);
+    bytes_per_row = png_get_rowbytes(png, info);
 
     for (uint32_t y = 0; y < height; y++) {
-        rowPointers[y] = new png_byte[bytesPerRow];
+        raw_pointers[y] = new png_byte[bytes_per_row];
     }
 
-    png_read_image(png, rowPointers);
+    png_read_image(png, raw_pointers);
 
-    result.resize(height * bytesPerRow);
+    result.resize(height * bytes_per_row);
 
     for (uint32_t y = 0; y < height; y++) {
-        memcpy(result.data() + y * bytesPerRow, rowPointers[y], bytesPerRow);
+        memcpy(result.data() + y * bytes_per_row, raw_pointers[y], bytes_per_row);
     }
 
     success = true;
 
-    if (width_out)
+    if (width_out) {
         *width_out = width;
+    }
 
-    if (height_out)
+    if (height_out) {
         *height_out = height;
-
+    }
 error:
-    if (fp)
+    if (fp) {
         fclose(fp);
+    }
 
     png_destroy_read_struct(&png, &info, nullptr);
 
-    if (rowPointers) {
+    if (raw_pointers) {
         for (uint32_t y = 0; y < height; y++) {
-            delete[] rowPointers[y];
+            delete[] raw_pointers[y];
         }
-        delete[] rowPointers;
+        delete[] raw_pointers;
     }
 
-    if (ok)
+    if (ok) {
         *ok = success;
+    }
 
     return result;
 }

@@ -1,12 +1,11 @@
-#include "docboy/cartridge/helpers.h"
+#include <cstring>
+
 #include "utils/arrays.h"
 #include "utils/asserts.h"
-#include "utils/bits.hpp"
-#include "utils/exceptions.hpp"
-#include "utils/formatters.hpp"
-#include "utils/mathematics.h"
+#include "utils/bits.h"
+#include "utils/exceptions.h"
+#include "utils/formatters.h"
 #include "utils/parcel.h"
-#include <cstring>
 
 /*
  * From Pandocs:
@@ -15,48 +14,48 @@
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 RomRam<RomSize, RamSize, Battery>::RomRam(const uint8_t* data, uint32_t length) {
-    check(length <= array_size(rom), "RomRam: actual ROM size (" + std::to_string(length) +
+    ASSERT(length <= array_size(rom), "RomRam: actual ROM size (" + std::to_string(length) +
                                          ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t RomRam<RomSize, RamSize, Battery>::readRom(uint16_t address) const {
-    check(address < 0x8000);
+uint8_t RomRam<RomSize, RamSize, Battery>::read_rom(uint16_t address) const {
+    ASSERT(address < 0x8000);
     return rom[address];
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void RomRam<RomSize, RamSize, Battery>::writeRom(uint16_t address, uint8_t value) {
-    check(address < 0x8000);
+void RomRam<RomSize, RamSize, Battery>::write_rom(uint16_t address, uint8_t value) {
+    ASSERT(address < 0x8000);
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t RomRam<RomSize, RamSize, Battery>::readRam(uint16_t address) const {
-    check(address >= 0xA000 && address < 0xC000);
+uint8_t RomRam<RomSize, RamSize, Battery>::read_ram(uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
 
     if constexpr (Ram) {
-        uint32_t ramAddress = keep_bits<13>(address);
-        ramAddress = masked<RamSize>(ramAddress);
-        return ram[ramAddress];
+        uint32_t ram_address = keep_bits<13>(address);
+        ram_address = mask_by_pow2<RamSize>(ram_address);
+        return ram[ram_address];
     }
 
     return 0xFF;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void RomRam<RomSize, RamSize, Battery>::writeRam(uint16_t address, uint8_t value) {
-    check(address >= 0xA000 && address < 0xC000);
+void RomRam<RomSize, RamSize, Battery>::write_ram(uint16_t address, uint8_t value) {
+    ASSERT(address >= 0xA000 && address < 0xC000);
 
     if constexpr (Ram) {
-        uint32_t ramAddress = keep_bits<13>(address);
-        ramAddress = masked<RamSize>(ramAddress);
-        ram[ramAddress] = value;
+        uint32_t ram_address = keep_bits<13>(address);
+        ram_address = mask_by_pow2<RamSize>(ram_address);
+        ram[ram_address] = value;
     }
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t* RomRam<RomSize, RamSize, Battery>::getRamSaveData() {
+uint8_t* RomRam<RomSize, RamSize, Battery>::get_ram_save_data() {
     if constexpr (Ram && Battery) {
         return ram;
     }
@@ -64,7 +63,7 @@ uint8_t* RomRam<RomSize, RamSize, Battery>::getRamSaveData() {
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint32_t RomRam<RomSize, RamSize, Battery>::getRamSaveSize() const {
+uint32_t RomRam<RomSize, RamSize, Battery>::get_ram_save_size() const {
     if constexpr (Ram && Battery) {
         return RamSize;
     }
@@ -73,29 +72,29 @@ uint32_t RomRam<RomSize, RamSize, Battery>::getRamSaveSize() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t *RomRam<RomSize, RamSize, Battery>::getRomData() {
+uint8_t *RomRam<RomSize, RamSize, Battery>::get_rom_data() {
     return rom;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint32_t RomRam<RomSize, RamSize, Battery>::getRomSize() const {
+uint32_t RomRam<RomSize, RamSize, Battery>::get_rom_size() const {
     return RomSize;
 }
 #endif
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void RomRam<RomSize, RamSize, Battery>::saveState(Parcel& parcel) const {
-    parcel.writeBytes(rom, RomSize);
+void RomRam<RomSize, RamSize, Battery>::save_state(Parcel& parcel) const {
+    parcel.write_bytes(rom, RomSize);
     if constexpr (Ram) {
-        parcel.writeBytes(ram, RamSize);
+        parcel.write_bytes(ram, RamSize);
     }
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void RomRam<RomSize, RamSize, Battery>::loadState(Parcel& parcel) {
-    parcel.readBytes(rom, RomSize);
+void RomRam<RomSize, RamSize, Battery>::load_state(Parcel& parcel) {
+    parcel.read_bytes(rom, RomSize);
     if constexpr (Ram) {
-        parcel.readBytes(ram, RamSize);
+        parcel.read_bytes(ram, RamSize);
     }
 }
 

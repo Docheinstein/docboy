@@ -1,22 +1,26 @@
-#include "io.h"
-#include "exceptions.hpp"
-#include "os.h"
+#include "utils/io.h"
+
 #include <fstream>
+
+#include "utils/exceptions.h"
+#include "utils/os.h"
 
 std::vector<uint8_t> read_file(const std::string& filename, bool* ok) {
     std::vector<uint8_t> out;
 
     std::ifstream ifs(filename, std::ios::in | std::ios::binary);
     if (!ifs) {
-        if (ok)
+        if (ok) {
             *ok = false;
+        }
         return out;
     }
 
     uint64_t size = file_size(filename);
     if (!size) {
-        if (ok)
+        if (ok) {
             *ok = false;
+        }
         return out;
     }
 
@@ -26,59 +30,70 @@ std::vector<uint8_t> read_file(const std::string& filename, bool* ok) {
         ifs.read((char*)out.data(), static_cast<std::streamsize>(size));
     }
     __catch(std::ifstream::failure & err) {
-        if (ok)
+        if (ok) {
             *ok = false;
+        }
         return out;
     }
 
-    if (ok)
+    if (ok) {
         *ok = ifs.good();
+    }
     return out;
 }
 
 void write_file(const std::string& filename, const void* data, size_t length, bool* ok) {
     std::ofstream ofs(filename, std::ios::out | std::ios::binary);
     if (!ofs) {
-        if (ok)
+        if (ok) {
             *ok = false;
+        }
         return;
     }
 
     ofs.write(static_cast<const char*>(data), static_cast<std::streamsize>(length));
 
-    if (ok)
+    if (ok) {
         *ok = ofs.good();
+    }
 }
 
 std::vector<std::string> read_file_lines(const std::string& filename, bool* ok) {
     std::vector<std::string> lines;
     std::ifstream ifs(filename);
     if (!ifs.is_open() || ifs.fail()) {
-        if (ok)
+        if (ok) {
             *ok = false;
+        }
         return lines;
     }
 
     std::string line;
-    while (getline(ifs, line))
+    while (getline(ifs, line)) {
         lines.push_back(line);
+    }
 
-    if (ok)
+    if (ok) {
         *ok = true;
+    }
+
     return lines;
 }
 
 void write_file_lines(const std::string& filename, const std::vector<std::string>& lines, bool* ok) {
     std::ofstream ofs(filename);
     if (!ofs) {
-        if (ok)
+        if (ok) {
             *ok = false;
+        }
         return;
     }
 
-    for (const auto& line : lines)
+    for (const auto& line : lines) {
         ofs << line << "\n";
+    }
 
-    if (ok)
+    if (ok) {
         *ok = ofs.good();
+    }
 }

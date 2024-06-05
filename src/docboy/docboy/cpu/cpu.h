@@ -1,10 +1,10 @@
 #ifndef CPU_H
 #define CPU_H
 
-#include "docboy/bootrom/macros.h"
-#include "docboy/mmu/mmu.h"
-#include "docboy/shared//macros.h"
 #include <cstdint>
+
+#include "docboy/common/macros.h"
+#include "docboy/mmu/mmu.h"
 
 class Idu;
 class InterruptsIO;
@@ -18,7 +18,7 @@ class Cpu {
 
 public:
     Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu, JoypadIO& joypad,
-        StopController& stopController);
+        StopController& stop_controller);
 
     void tick();
     void tick_t0();
@@ -26,8 +26,8 @@ public:
     void tick_t2();
     void tick_t3();
 
-    void saveState(Parcel& parcel) const;
-    void loadState(Parcel& parcel);
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
     void reset();
 
@@ -82,50 +82,50 @@ private:
     using Instruction = MicroOperation[INSTR_LEN];
 
     template <uint8_t t>
-    void checkInterrupt();
+    void check_interrupt();
 
-    [[nodiscard]] uint8_t getPendingInterrupts() const;
+    uint8_t get_pending_interrupts() const;
 
-    void serveInterrupt();
+    void serve_interrupt();
 
     void fetch();
-    void fetchCB();
+    void fetch_cb();
 
     void read(uint16_t address);
     void write(uint16_t address, uint8_t value);
 
-    void flushRead();
-    void flushWrite();
+    void flush_read();
+    void flush_write();
 
     template <Register8 r>
-    [[nodiscard]] uint8_t readRegister8() const;
+    uint8_t read_reg8() const;
 
     template <Register8 r>
-    void writeRegister8(uint8_t value);
+    void write_reg8(uint8_t value);
 
     template <Register16 rr>
-    [[nodiscard]] uint16_t readRegister16() const;
+    uint16_t read_reg16() const;
 
     template <Register16 rr>
-    void writeRegister16(uint16_t value);
+    void write_reg16(uint16_t value);
 
     template <Register16 rr>
-    [[nodiscard]] uint16_t& getRegister16();
+    uint16_t& get_reg16();
 
     template <Flag f>
-    [[nodiscard]] bool testFlag() const;
+    bool test_flag() const;
 
     template <Flag f, bool y>
-    [[nodiscard]] bool checkFlag() const;
+    bool check_flag() const;
 
     template <Flag f>
-    void setFlag();
+    void set_flag();
 
     template <Flag f>
-    void setFlag(bool value);
+    void set_flag(bool value);
 
     template <Flag f>
-    void resetFlag();
+    void reset_flag();
 
     /*
      * [INSTRUCTIONS LEGEND]
@@ -142,501 +142,501 @@ private:
      * ann: address specified by 16 bit immediate number
      * c: check flag condition
      */
-    void invalidMicroOperation();
+    void invalid_microop();
 
-    void ISR_m0();
-    void ISR_m1();
-    void ISR_m2();
-    void ISR_m3();
-    void ISR_m4();
+    void isr_m0();
+    void isr_m1();
+    void isr_m2();
+    void isr_m3();
+    void isr_m4();
 
-    void NOP_m0();
-    void STOP_m0();
-    void HALT_m0();
-    void DI_m0();
-    void EI_m0();
-
-    template <Register16 rr>
-    void LD_rr_uu_m0();
-    template <Register16 rr>
-    void LD_rr_uu_m1();
-    template <Register16 rr>
-    void LD_rr_uu_m2();
+    void nop_m0();
+    void stop_m0();
+    void halt_m0();
+    void di_m0();
+    void ei_m0();
 
     template <Register16 rr>
-    void LD_arr_u_m0();
+    void ld_rr_uu_m0();
     template <Register16 rr>
-    void LD_arr_u_m1();
+    void ld_rr_uu_m1();
     template <Register16 rr>
-    void LD_arr_u_m2();
+    void ld_rr_uu_m2();
+
+    template <Register16 rr>
+    void ld_arr_u_m0();
+    template <Register16 rr>
+    void ld_arr_u_m1();
+    template <Register16 rr>
+    void ld_arr_u_m2();
 
     template <Register16 rr, Register8 r>
-    void LD_arr_r_m0();
+    void ld_arr_r_m0();
     template <Register16 rr, Register8 r>
-    void LD_arr_r_m1();
+    void ld_arr_r_m1();
 
     template <Register16 rr, Register8 r, int8_t inc>
-    void LD_arri_r_m0();
+    void ld_arri_r_m0();
     template <Register16 rr, Register8 r, int8_t inc>
-    void LD_arri_r_m1();
+    void ld_arri_r_m1();
 
     template <Register8 r>
-    void LD_r_u_m0();
+    void ld_r_u_m0();
     template <Register8 r>
-    void LD_r_u_m1();
+    void ld_r_u_m1();
 
     template <Register16 rr>
-    void LD_ann_rr_m0();
+    void ld_ann_rr_m0();
     template <Register16 rr>
-    void LD_ann_rr_m1();
+    void ld_ann_rr_m1();
     template <Register16 rr>
-    void LD_ann_rr_m2();
+    void ld_ann_rr_m2();
     template <Register16 rr>
-    void LD_ann_rr_m3();
+    void ld_ann_rr_m3();
     template <Register16 rr>
-    void LD_ann_rr_m4();
+    void ld_ann_rr_m4();
 
     template <Register8 r, Register16 rr>
-    void LD_r_arr_m0();
+    void ld_r_arr_m0();
     template <Register8 r, Register16 rr>
-    void LD_r_arr_m1();
+    void ld_r_arr_m1();
 
     template <Register8 r, Register16 rr, int8_t inc>
-    void LD_r_arri_m0();
+    void ld_r_arri_m0();
     template <Register8 r, Register16 rr, int8_t inc>
-    void LD_r_arri_m1();
+    void ld_r_arri_m1();
 
     template <Register8 r1, Register8 r2>
-    void LD_r_r_m0();
+    void ld_r_r_m0();
 
     template <Register8 r>
-    void LDH_an_r_m0();
+    void ldh_an_r_m0();
     template <Register8 r>
-    void LDH_an_r_m1();
+    void ldh_an_r_m1();
     template <Register8 r>
-    void LDH_an_r_m2();
+    void ldh_an_r_m2();
 
     template <Register8 r>
-    void LDH_r_an_m0();
+    void ldh_r_an_m0();
     template <Register8 r>
-    void LDH_r_an_m1();
+    void ldh_r_an_m1();
     template <Register8 r>
-    void LDH_r_an_m2();
-
-    template <Register8 r1, Register8 r2>
-    void LDH_ar_r_m0();
-    template <Register8 r1, Register8 r2>
-    void LDH_ar_r_m1();
+    void ldh_r_an_m2();
 
     template <Register8 r1, Register8 r2>
-    void LDH_r_ar_m0();
+    void ldh_ar_r_m0();
     template <Register8 r1, Register8 r2>
-    void LDH_r_ar_m1();
+    void ldh_ar_r_m1();
+
+    template <Register8 r1, Register8 r2>
+    void ldh_r_ar_m0();
+    template <Register8 r1, Register8 r2>
+    void ldh_r_ar_m1();
 
     template <Register8 r>
-    void LD_ann_r_m0();
+    void ld_ann_r_m0();
     template <Register8 r>
-    void LD_ann_r_m1();
+    void ld_ann_r_m1();
     template <Register8 r>
-    void LD_ann_r_m2();
+    void ld_ann_r_m2();
     template <Register8 r>
-    void LD_ann_r_m3();
+    void ld_ann_r_m3();
 
     template <Register8 r>
-    void LD_r_ann_m0();
+    void ld_r_ann_m0();
     template <Register8 r>
-    void LD_r_ann_m1();
+    void ld_r_ann_m1();
     template <Register8 r>
-    void LD_r_ann_m2();
+    void ld_r_ann_m2();
     template <Register8 r>
-    void LD_r_ann_m3();
+    void ld_r_ann_m3();
 
     template <Register16 rr1, Register16 rr2>
-    void LD_rr_rr_m0();
+    void ld_rr_rr_m0();
     template <Register16 rr1, Register16 rr2>
-    void LD_rr_rr_m1();
+    void ld_rr_rr_m1();
 
     template <Register16 rr1, Register16 rr2>
-    void LD_rr_rrs_m0();
+    void ld_rr_rrs_m0();
     template <Register16 rr1, Register16 rr2>
-    void LD_rr_rrs_m1();
+    void ld_rr_rrs_m1();
     template <Register16 rr1, Register16 rr2>
-    void LD_rr_rrs_m2();
+    void ld_rr_rrs_m2();
 
     template <Register8 r>
-    void INC_r_m0();
+    void inc_r_m0();
 
     template <Register16 rr>
-    void INC_rr_m0();
+    void inc_rr_m0();
     template <Register16 rr>
-    void INC_rr_m1();
+    void inc_rr_m1();
 
     template <Register16 rr>
-    void INC_arr_m0();
+    void inc_arr_m0();
     template <Register16 rr>
-    void INC_arr_m1();
+    void inc_arr_m1();
     template <Register16 rr>
-    void INC_arr_m2();
-
-    template <Register8 r>
-    void DEC_r_m0();
-
-    template <Register16 rr>
-    void DEC_rr_m0();
-    template <Register16 rr>
-    void DEC_rr_m1();
-
-    template <Register16 rr>
-    void DEC_arr_m0();
-    template <Register16 rr>
-    void DEC_arr_m1();
-    template <Register16 rr>
-    void DEC_arr_m2();
+    void inc_arr_m2();
 
     template <Register8 r>
-    void ADD_r_m0();
+    void dec_r_m0();
 
     template <Register16 rr>
-    void ADD_arr_m0();
+    void dec_rr_m0();
+    template <Register16 rr>
+    void dec_rr_m1();
+
+    template <Register16 rr>
+    void dec_arr_m0();
+    template <Register16 rr>
+    void dec_arr_m1();
+    template <Register16 rr>
+    void dec_arr_m2();
+
+    template <Register8 r>
+    void add_r_m0();
+
+    template <Register16 rr>
+    void add_arr_m0();
     template <Register16 r2>
-    void ADD_arr_m1();
+    void add_arr_m1();
 
     template <Register8 r>
-    void ADC_r_m0();
+    void adc_r_m0();
 
     template <Register16 rr>
-    void ADC_arr_m0();
+    void adc_arr_m0();
     template <Register16 r2>
-    void ADC_arr_m1();
+    void adc_arr_m1();
 
     template <Register16 rr1, Register16 rr2>
-    void ADD_rr_rr_m0();
+    void add_rr_rr_m0();
     template <Register16 rr1, Register16 rr2>
-    void ADD_rr_rr_m1();
+    void add_rr_rr_m1();
 
     template <Register16 rr>
-    void ADD_rr_s_m0();
+    void add_rr_s_m0();
     template <Register16 rr>
-    void ADD_rr_s_m1();
+    void add_rr_s_m1();
     template <Register16 rr>
-    void ADD_rr_s_m2();
+    void add_rr_s_m2();
     template <Register16 rr>
-    void ADD_rr_s_m3();
+    void add_rr_s_m3();
 
-    void ADD_u_m0();
-    void ADD_u_m1();
+    void add_u_m0();
+    void add_u_m1();
 
-    void ADC_u_m0();
-    void ADC_u_m1();
+    void adc_u_m0();
+    void adc_u_m1();
 
     template <Register8 r>
-    void SUB_r_m0();
+    void sub_r_m0();
 
     template <Register16 rr>
-    void SUB_arr_m0();
+    void sub_arr_m0();
     template <Register16 r2>
-    void SUB_arr_m1();
+    void sub_arr_m1();
 
     template <Register8 r>
-    void SBC_r_m0();
+    void sbc_r_m0();
 
     template <Register16 rr>
-    void SBC_arr_m0();
+    void sbc_arr_m0();
     template <Register16 r2>
-    void SBC_arr_m1();
+    void sbc_arr_m1();
 
-    void SUB_u_m0();
-    void SUB_u_m1();
+    void sub_u_m0();
+    void sub_u_m1();
 
-    void SBC_u_m0();
-    void SBC_u_m1();
-
-    template <Register8 r>
-    void AND_r_m0();
-
-    template <Register16 rr>
-    void AND_arr_m0();
-    template <Register16 rr>
-    void AND_arr_m1();
-
-    void AND_u_m0();
-    void AND_u_m1();
+    void sbc_u_m0();
+    void sbc_u_m1();
 
     template <Register8 r>
-    void OR_r_m0();
+    void and_r_m0();
 
     template <Register16 rr>
-    void OR_arr_m0();
+    void and_arr_m0();
     template <Register16 rr>
-    void OR_arr_m1();
+    void and_arr_m1();
 
-    void OR_u_m0();
-    void OR_u_m1();
+    void and_u_m0();
+    void and_u_m1();
 
     template <Register8 r>
-    void XOR_r_m0();
+    void or_r_m0();
 
     template <Register16 rr>
-    void XOR_arr_m0();
+    void or_arr_m0();
     template <Register16 rr>
-    void XOR_arr_m1();
+    void or_arr_m1();
 
-    void XOR_u_m0();
-    void XOR_u_m1();
+    void or_u_m0();
+    void or_u_m1();
 
     template <Register8 r>
-    void CP_r_m0();
+    void xor_r_m0();
 
     template <Register16 rr>
-    void CP_arr_m0();
+    void xor_arr_m0();
     template <Register16 rr>
-    void CP_arr_m1();
+    void xor_arr_m1();
 
-    void CP_u_m0();
-    void CP_u_m1();
+    void xor_u_m0();
+    void xor_u_m1();
 
-    void DAA_m0();
-    void SCF_m0();
+    template <Register8 r>
+    void cp_r_m0();
 
-    void CPL_m0();
-    void CCF_m0();
+    template <Register16 rr>
+    void cp_arr_m0();
+    template <Register16 rr>
+    void cp_arr_m1();
 
-    void RLCA_m0();
-    void RLA_m0();
+    void cp_u_m0();
+    void cp_u_m1();
 
-    void RRCA_m0();
-    void RRA_m0();
+    void daa_m0();
+    void scf_m0();
 
-    void JR_s_m0();
-    void JR_s_m1();
-    void JR_s_m2();
+    void cpl_m0();
+    void ccf_m0();
+
+    void rlca_m0();
+    void rla_m0();
+
+    void rrca_m0();
+    void rra_m0();
+
+    void jr_s_m0();
+    void jr_s_m1();
+    void jr_s_m2();
 
     template <Flag f, bool y = true>
-    void JR_c_s_m0();
+    void jr_c_s_m0();
     template <Flag f, bool y = true>
-    void JR_c_s_m1();
+    void jr_c_s_m1();
     template <Flag f, bool y = true>
-    void JR_c_s_m2();
+    void jr_c_s_m2();
 
-    void JP_uu_m0();
-    void JP_uu_m1();
-    void JP_uu_m2();
-    void JP_uu_m3();
+    void jp_uu_m0();
+    void jp_uu_m1();
+    void jp_uu_m2();
+    void jp_uu_m3();
 
     template <Register16>
-    void JP_rr_m0();
+    void jp_rr_m0();
 
     template <Flag f, bool y = true>
-    void JP_c_uu_m0();
+    void jp_c_uu_m0();
     template <Flag f, bool y = true>
-    void JP_c_uu_m1();
+    void jp_c_uu_m1();
     template <Flag f, bool y = true>
-    void JP_c_uu_m2();
+    void jp_c_uu_m2();
     template <Flag f, bool y = true>
-    void JP_c_uu_m3();
+    void jp_c_uu_m3();
 
-    void CALL_uu_m0();
-    void CALL_uu_m1();
-    void CALL_uu_m2();
-    void CALL_uu_m3();
-    void CALL_uu_m4();
-    void CALL_uu_m5();
+    void call_uu_m0();
+    void call_uu_m1();
+    void call_uu_m2();
+    void call_uu_m3();
+    void call_uu_m4();
+    void call_uu_m5();
 
     template <Flag f, bool y = true>
-    void CALL_c_uu_m0();
+    void call_c_uu_m0();
     template <Flag f, bool y = true>
-    void CALL_c_uu_m1();
+    void call_c_uu_m1();
     template <Flag f, bool y = true>
-    void CALL_c_uu_m2();
+    void call_c_uu_m2();
     template <Flag f, bool y = true>
-    void CALL_c_uu_m3();
+    void call_c_uu_m3();
     template <Flag f, bool y = true>
-    void CALL_c_uu_m4();
+    void call_c_uu_m4();
     template <Flag f, bool y = true>
-    void CALL_c_uu_m5();
+    void call_c_uu_m5();
 
     template <uint8_t n>
-    void RST_m0();
+    void rst_m0();
     template <uint8_t n>
-    void RST_m1();
+    void rst_m1();
     template <uint8_t n>
-    void RST_m2();
+    void rst_m2();
     template <uint8_t n>
-    void RST_m3();
+    void rst_m3();
 
-    void RET_uu_m0();
-    void RET_uu_m1();
-    void RET_uu_m2();
-    void RET_uu_m3();
+    void ret_uu_m0();
+    void ret_uu_m1();
+    void ret_uu_m2();
+    void ret_uu_m3();
 
-    void RETI_uu_m0();
-    void RETI_uu_m1();
-    void RETI_uu_m2();
-    void RETI_uu_m3();
+    void reti_uu_m0();
+    void reti_uu_m1();
+    void reti_uu_m2();
+    void reti_uu_m3();
 
     template <Flag f, bool y = true>
-    void RET_c_uu_m0();
+    void ret_c_uu_m0();
     template <Flag f, bool y = true>
-    void RET_c_uu_m1();
+    void ret_c_uu_m1();
     template <Flag f, bool y = true>
-    void RET_c_uu_m2();
+    void ret_c_uu_m2();
     template <Flag f, bool y = true>
-    void RET_c_uu_m3();
+    void ret_c_uu_m3();
     template <Flag f, bool y = true>
-    void RET_c_uu_m4();
+    void ret_c_uu_m4();
 
     template <Register16 rr>
-    void PUSH_rr_m0();
+    void push_rr_m0();
     template <Register16 rr>
-    void PUSH_rr_m1();
+    void push_rr_m1();
     template <Register16 rr>
-    void PUSH_rr_m2();
+    void push_rr_m2();
     template <Register16 rr>
-    void PUSH_rr_m3();
+    void push_rr_m3();
 
     template <Register16 rr>
-    void POP_rr_m0();
+    void pop_rr_m0();
     template <Register16 rr>
-    void POP_rr_m1();
+    void pop_rr_m1();
     template <Register16 rr>
-    void POP_rr_m2();
+    void pop_rr_m2();
 
-    void CB_m0();
-
-    template <Register8 r>
-    void RLC_r_m0();
-
-    template <Register16 rr>
-    void RLC_arr_m0();
-    template <Register16 rr>
-    void RLC_arr_m1();
-    template <Register16 rr>
-    void RLC_arr_m2();
+    void cb_m0();
 
     template <Register8 r>
-    void RRC_r_m0();
+    void rlc_r_m0();
 
     template <Register16 rr>
-    void RRC_arr_m0();
+    void rlc_arr_m0();
     template <Register16 rr>
-    void RRC_arr_m1();
+    void rlc_arr_m1();
     template <Register16 rr>
-    void RRC_arr_m2();
-
-    template <Register8 r>
-    void RL_r_m0();
-
-    template <Register16 rr>
-    void RL_arr_m0();
-    template <Register16 rr>
-    void RL_arr_m1();
-    template <Register16 rr>
-    void RL_arr_m2();
+    void rlc_arr_m2();
 
     template <Register8 r>
-    void RR_r_m0();
+    void rrc_r_m0();
 
     template <Register16 rr>
-    void RR_arr_m0();
+    void rrc_arr_m0();
     template <Register16 rr>
-    void RR_arr_m1();
+    void rrc_arr_m1();
     template <Register16 rr>
-    void RR_arr_m2();
-
-    template <Register8 r>
-    void SLA_r_m0();
-
-    template <Register16 rr>
-    void SLA_arr_m0();
-    template <Register16 rr>
-    void SLA_arr_m1();
-    template <Register16 rr>
-    void SLA_arr_m2();
+    void rrc_arr_m2();
 
     template <Register8 r>
-    void SRA_r_m0();
+    void rl_r_m0();
 
     template <Register16 rr>
-    void SRA_arr_m0();
+    void rl_arr_m0();
     template <Register16 rr>
-    void SRA_arr_m1();
+    void rl_arr_m1();
     template <Register16 rr>
-    void SRA_arr_m2();
-
-    template <Register8 r>
-    void SRL_r_m0();
-
-    template <Register16 rr>
-    void SRL_arr_m0();
-    template <Register16 rr>
-    void SRL_arr_m1();
-    template <Register16 rr>
-    void SRL_arr_m2();
+    void rl_arr_m2();
 
     template <Register8 r>
-    void SWAP_r_m0();
+    void rr_r_m0();
 
     template <Register16 rr>
-    void SWAP_arr_m0();
+    void rr_arr_m0();
     template <Register16 rr>
-    void SWAP_arr_m1();
+    void rr_arr_m1();
     template <Register16 rr>
-    void SWAP_arr_m2();
+    void rr_arr_m2();
+
+    template <Register8 r>
+    void sla_r_m0();
+
+    template <Register16 rr>
+    void sla_arr_m0();
+    template <Register16 rr>
+    void sla_arr_m1();
+    template <Register16 rr>
+    void sla_arr_m2();
+
+    template <Register8 r>
+    void sra_r_m0();
+
+    template <Register16 rr>
+    void sra_arr_m0();
+    template <Register16 rr>
+    void sra_arr_m1();
+    template <Register16 rr>
+    void sra_arr_m2();
+
+    template <Register8 r>
+    void srl_r_m0();
+
+    template <Register16 rr>
+    void srl_arr_m0();
+    template <Register16 rr>
+    void srl_arr_m1();
+    template <Register16 rr>
+    void srl_arr_m2();
+
+    template <Register8 r>
+    void swap_r_m0();
+
+    template <Register16 rr>
+    void swap_arr_m0();
+    template <Register16 rr>
+    void swap_arr_m1();
+    template <Register16 rr>
+    void swap_arr_m2();
 
     template <uint8_t n, Register8 r>
-    void BIT_r_m0();
+    void bit_r_m0();
 
     template <uint8_t n, Register16 r>
-    void BIT_arr_m0();
+    void bit_arr_m0();
     template <uint8_t n, Register16 r>
-    void BIT_arr_m1();
-
-    template <uint8_t n, Register8 r>
-    void RES_r_m0();
-
-    template <uint8_t n, Register16 r>
-    void RES_arr_m0();
-    template <uint8_t n, Register16 r>
-    void RES_arr_m1();
-    template <uint8_t n, Register16 r>
-    void RES_arr_m2();
+    void bit_arr_m1();
 
     template <uint8_t n, Register8 r>
-    void SET_r_m0();
+    void res_r_m0();
 
     template <uint8_t n, Register16 r>
-    void SET_arr_m0();
+    void res_arr_m0();
     template <uint8_t n, Register16 r>
-    void SET_arr_m1();
+    void res_arr_m1();
     template <uint8_t n, Register16 r>
-    void SET_arr_m2();
+    void res_arr_m2();
+
+    template <uint8_t n, Register8 r>
+    void set_r_m0();
+
+    template <uint8_t n, Register16 r>
+    void set_arr_m0();
+    template <uint8_t n, Register16 r>
+    void set_arr_m1();
+    template <uint8_t n, Register16 r>
+    void set_arr_m2();
 
     Idu& idu;
     InterruptsIO& interrupts;
     Mmu::View<Device::Cpu> mmu;
     JoypadIO& joypad;
-    StopController& stopController;
+    StopController& stop_controller;
 
     Instruction instructions[256];
-    Instruction instructionsCB[256];
-    Instruction ISR;
+    Instruction instructions_cb[256];
+    Instruction isr;
 
-    Instruction& NOP {instructions[0]};
+    Instruction& nop {instructions[0]};
 
-    uint16_t AF {};
-    uint16_t BC {};
-    uint16_t DE {};
-    uint16_t HL {};
-    uint16_t PC {};
-    uint16_t SP {};
+    uint16_t af {};
+    uint16_t bc {};
+    uint16_t de {};
+    uint16_t hl {};
+    uint16_t pc {};
+    uint16_t sp {};
 
-    ImeState IME {};
+    ImeState ime {};
 
     bool halted {};
 
     struct {
         InterruptState state {};
-        uint8_t remainingTicks {};
+        uint8_t remaining_ticks {};
     } interrupt;
 
     struct {
@@ -650,9 +650,14 @@ private:
             uint8_t counter {};
         } microop;
 
-        IF_TESTS(uint8_t opcode {});
-        IF_DEBUGGER(uint16_t address {});
-        IF_DEBUGGER(uint8_t cycleMicroop {});
+#ifdef ENABLE_TESTS
+        uint8_t opcode {};
+#endif
+
+#ifdef ENABLE_DEBUGGER
+        uint16_t address {};
+        uint8_t cycle_microop {};
+#endif
     } instruction {};
 
     struct IO {
@@ -677,7 +682,9 @@ private:
         uint16_t addr {};
     };
 
-    IF_DEBUGGER(uint64_t cycles {});
+#ifdef ENABLE_DEBUGGER
+    uint64_t cycles {};
+#endif
 };
 
 #endif // CPU_H

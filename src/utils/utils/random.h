@@ -1,5 +1,5 @@
-#ifndef RANDOM_HPP
-#define RANDOM_HPP
+#ifndef UTILSRANDOM_H
+#define UTILSRANDOM_H
 
 #include <random>
 
@@ -8,8 +8,8 @@ template <typename T, T min = 0, T max = std::numeric_limits<T>::max(),
 class RandomNumberGenerator {
 public:
     explicit RandomNumberGenerator(uint32_t seed = std::mt19937::default_seed) :
-        device(seed),
-        engine(device()) {
+        device {seed},
+        engine {device()} {
     }
 
     T next() {
@@ -22,4 +22,4 @@ private:
     std::uniform_int_distribution<T> distribution {min, max};
 };
 
-#endif // RANDOM_HPP
+#endif // UTILSRANDOM_H

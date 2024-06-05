@@ -5,14 +5,11 @@
 
 class DebuggerBackend;
 
-class DebuggerMemorySniffer {
-public:
-    static void setObserver(DebuggerBackend* observer);
-    static void notifyMemoryRead(uint16_t address, uint8_t value);
-    static void notifyMemoryWrite(uint16_t address, uint8_t oldValue, uint8_t newValue);
+namespace DebuggerMemorySniffer {
+void set_observer(DebuggerBackend* observer);
 
-private:
-    static DebuggerBackend* observer;
-};
+void notify_memory_read(uint16_t address, uint8_t value);
+void notify_memory_write(uint16_t address, uint8_t old_value, uint8_t new_value);
+}; // namespace DebuggerMemorySniffer
 
 #endif // MEMSNIFFER_H

@@ -1,7 +1,7 @@
 #ifndef LAUNCHERSCREEN_H
 #define LAUNCHERSCREEN_H
 
-#include "screen.h"
+#include "screens/screen.h"
 
 struct SDL_Texture;
 
@@ -11,11 +11,11 @@ public:
 
     void redraw() override;
     void render() override;
-    void handleEvent(const SDL_Event& event) override;
+    void handle_event(const SDL_Event& event) override;
 
 private:
-    SDL_Texture* backgroundTexture {};
-    SDL_Texture* foregroundTexture {};
+    SDL_Texture* background_texture {};
+    SDL_Texture* foreground_texture {};
 };
 
 #endif // LAUNCHERSCREEN_H

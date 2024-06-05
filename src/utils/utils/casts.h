@@ -1,5 +1,5 @@
-#ifndef CASTS_HPP
-#define CASTS_HPP
+#ifndef UTILSCASTS_H
+#define UTILSCASTS_H
 
 #include <cstdint>
 
@@ -8,4 +8,4 @@ inline int8_t to_signed(uint8_t value) {
     //    return static_cast<int8_t>(value);
 }
 
-#endif // CASTS_HPP
+#endif // UTILSCASTS_H

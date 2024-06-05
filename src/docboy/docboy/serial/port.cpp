@@ -1,14 +1,15 @@
-#include "port.h"
+#include "docboy/serial/port.h"
+
 #include "docboy/interrupts/interrupts.h"
-#include "link.h"
 
 SerialPort::SerialPort(InterruptsIO& interrupts) :
-    interrupts(interrupts) {
+    interrupts {interrupts} {
 }
 
 void SerialPort::tick() {
-    if (!test_bit<Specs::Bits::Serial::SC::TRANSFER_START>(SC) || !test_bit<Specs::Bits::Serial::SC::CLOCK>(SC))
+    if (!test_bit<Specs::Bits::Serial::SC::TRANSFER_START>(sc) || !test_bit<Specs::Bits::Serial::SC::CLOCK>(sc)) {
         return;
+    }
 
 #ifdef ENABLE_SERIAL
     if (link) {
@@ -18,7 +19,7 @@ void SerialPort::tick() {
 #endif
 
     // disconnected cable
-    serialWrite(0xFF);
+    serial_write(0xFF);
 }
 
 void SerialPort::attach(SerialLink::Plug& plug) {
@@ -29,12 +30,12 @@ void SerialPort::detach() {
     link = nullptr;
 }
 
-uint8_t SerialPort::serialRead() {
-    return SB;
+uint8_t SerialPort::serial_read() {
+    return sb;
 }
 
-void SerialPort::serialWrite(uint8_t data) {
-    SB = data;
-    reset_bit<Specs::Bits::Serial::SC::TRANSFER_START>(SC);
-    interrupts.raiseInterrupt<InterruptsIO::InterruptType::Serial>();
+void SerialPort::serial_write(uint8_t data) {
+    sb = data;
+    reset_bit<Specs::Bits::Serial::SC::TRANSFER_START>(sc);
+    interrupts.raise_Interrupt<InterruptsIO::InterruptType::Serial>();
 }
