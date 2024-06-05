@@ -2677,47 +2677,47 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     static constexpr uint32_t COLUMN_1_WIDTH = 48;
     auto c1 {make_vertical_layout()};
-    c1->addNode(make_gameboy_block(COLUMN_1_WIDTH));
-    c1->addNode(make_space_divider());
-    c1->addNode(make_cpu_block(COLUMN_1_WIDTH));
-    c1->addNode(make_space_divider());
-    c1->addNode(make_timers_block(COLUMN_1_WIDTH));
+    c1->add_node(make_gameboy_block(COLUMN_1_WIDTH));
+    c1->add_node(make_space_divider());
+    c1->add_node(make_cpu_block(COLUMN_1_WIDTH));
+    c1->add_node(make_space_divider());
+    c1->add_node(make_timers_block(COLUMN_1_WIDTH));
 
     static constexpr uint32_t COLUMN_2_WIDTH = 49;
     auto c2 {make_vertical_layout()};
-    c2->addNode(make_cartridge_block(COLUMN_2_WIDTH));
-    c2->addNode(make_space_divider());
-    c2->addNode(make_bus_block(COLUMN_2_WIDTH));
-    c2->addNode(make_space_divider());
-    c2->addNode(make_dma_block(COLUMN_2_WIDTH));
+    c2->add_node(make_cartridge_block(COLUMN_2_WIDTH));
+    c2->add_node(make_space_divider());
+    c2->add_node(make_bus_block(COLUMN_2_WIDTH));
+    c2->add_node(make_space_divider());
+    c2->add_node(make_dma_block(COLUMN_2_WIDTH));
 
     static constexpr uint32_t COLUMN_3_PART_1_WIDTH = 52;
     static constexpr uint32_t COLUMN_3_PART_2_WIDTH = 40;
     static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_PART_1_WIDTH + COLUMN_3_PART_2_WIDTH + 1;
 
     auto c3r2 {make_horizontal_layout()};
-    c3r2->addNode(make_ppu_block_1(COLUMN_3_PART_1_WIDTH));
-    c3r2->addNode(make_space_divider());
-    c3r2->addNode(make_ppu_block_2(COLUMN_3_PART_2_WIDTH));
+    c3r2->add_node(make_ppu_block_1(COLUMN_3_PART_1_WIDTH));
+    c3r2->add_node(make_space_divider());
+    c3r2->add_node(make_ppu_block_2(COLUMN_3_PART_2_WIDTH));
 
     auto c3 {make_vertical_layout()};
-    c3->addNode(make_ppu_header(COLUMN_3_WIDTH));
-    c3->addNode(std::move(c3r2));
+    c3->add_node(make_ppu_header(COLUMN_3_WIDTH));
+    c3->add_node(std::move(c3r2));
 
     static constexpr uint32_t COLUMN_4_WIDTH = 66;
     auto c4 {make_vertical_layout()};
-    c4->addNode(make_io_block(COLUMN_4_WIDTH));
+    c4->add_node(make_io_block(COLUMN_4_WIDTH));
 
     static constexpr uint32_t FULL_WIDTH = COLUMN_1_WIDTH + COLUMN_2_WIDTH + COLUMN_3_WIDTH + COLUMN_4_WIDTH;
 
     auto r1 {make_horizontal_layout()};
-    r1->addNode(std::move(c1));
-    r1->addNode(make_horizontal_line_divider());
-    r1->addNode(std::move(c2));
-    r1->addNode(make_horizontal_line_divider());
-    r1->addNode(std::move(c3));
-    r1->addNode(make_horizontal_line_divider());
-    r1->addNode(std::move(c4));
+    r1->add_node(std::move(c1));
+    r1->add_node(make_horizontal_line_divider());
+    r1->add_node(std::move(c2));
+    r1->add_node(make_horizontal_line_divider());
+    r1->add_node(std::move(c3));
+    r1->add_node(make_horizontal_line_divider());
+    r1->add_node(std::move(c4));
 
     static constexpr uint32_t CODE_WIDTH = 56;
     static constexpr uint32_t CALL_STACK_WIDTH = 36;
@@ -2727,23 +2727,23 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         FULL_WIDTH - CODE_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH;
 
     auto r2 {make_horizontal_layout()};
-    r2->addNode(make_code_block(CODE_WIDTH));
-    r2->addNode(make_horizontal_line_divider());
-    r2->addNode(make_call_stack_block(CALL_STACK_WIDTH));
-    r2->addNode(make_horizontal_line_divider());
-    r2->addNode(make_breakpoints_block(BREAKPOINTS_WIDTH));
-    r2->addNode(make_horizontal_line_divider());
-    r2->addNode(make_watchpoints_block(WATCHPOINTS_WIDTH));
-    r2->addNode(make_horizontal_line_divider());
-    r2->addNode(make_display_block(DISPLAY_WIDTH));
+    r2->add_node(make_code_block(CODE_WIDTH));
+    r2->add_node(make_horizontal_line_divider());
+    r2->add_node(make_call_stack_block(CALL_STACK_WIDTH));
+    r2->add_node(make_horizontal_line_divider());
+    r2->add_node(make_breakpoints_block(BREAKPOINTS_WIDTH));
+    r2->add_node(make_horizontal_line_divider());
+    r2->add_node(make_watchpoints_block(WATCHPOINTS_WIDTH));
+    r2->add_node(make_horizontal_line_divider());
+    r2->add_node(make_display_block(DISPLAY_WIDTH));
 
     auto root {make_vertical_layout()};
-    root->addNode(std::move(r1));
-    root->addNode(make_vertical_line_divider());
-    root->addNode(std::move(r2));
+    root->add_node(std::move(r1));
+    root->add_node(make_vertical_line_divider());
+    root->add_node(std::move(r2));
     auto interruption_block {make_interruption_block(FULL_WIDTH)};
     if (!interruption_block->lines.empty()) {
-        root->addNode(make_interruption_block(FULL_WIDTH));
+        root->add_node(make_interruption_block(FULL_WIDTH));
     }
 
     Presenter(std::cout).present(*root);

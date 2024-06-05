@@ -71,18 +71,20 @@ int main(int argc, char* argv[]) {
 
     Args::Parser parser {};
 #ifdef ENABLE_BOOTROM
-    parser.addArgument(args.boot_rom, "boot-rom").help("Boot ROM");
+    parser.add_argument(args.boot_rom, "boot-rom").help("Boot ROM");
 #endif
-    parser.addArgument(args.rom, "rom").help("ROM");
-    parser.addArgument(args.serial, "--serial", "-s").help("Display serial console");
-    parser.addArgument(args.scaling, "--scaling", "-z").help("Scaling factor");
-    parser.addArgument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
-    parser.addArgument(args.ticks_to_run, "-t").help("Ticks to run");
+    parser.add_argument(args.rom, "rom").help("ROM");
+    parser.add_argument(args.serial, "--serial", "-s").help("Display serial console");
+    parser.add_argument(args.scaling, "--scaling", "-z").help("Scaling factor");
+    parser.add_argument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
+    parser.add_argument(args.ticks_to_run, "-t").help("Ticks to run");
 #ifdef ENABLE_DEBUGGER
-    parser.addArgument(args.attach_debugger, "--debugger", "-d").help("Attach debugger");
+    parser.add_argument(args.attach_debugger, "--debugger", "-d").help("Attach debugger");
 #endif
-    if (!parser.parse(argc, argv, 1))
+
+    if (!parser.parse(argc, argv, 1)) {
         return 1;
+    }
 
     // Eventually just dump cartridge info and quit
     if (!args.rom.empty() && args.dump_cartridge_info) {
@@ -129,8 +131,9 @@ int main(int argc, char* argv[]) {
     const auto start = std::chrono::high_resolution_clock::now();
     for (uint64_t tick = 0; tick < args.ticks_to_run; tick += 4) {
 #ifdef ENABLE_DEBUGGER
-        if (core.is_asking_to_quit())
+        if (core.is_asking_to_quit()) {
             break;
+        }
 #endif
         core.cycle();
     }

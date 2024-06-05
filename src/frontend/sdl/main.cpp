@@ -235,17 +235,17 @@ int main(int argc, char* argv[]) {
 
     Args::Parser args_parser {};
 #ifdef ENABLE_BOOTROM
-    args_parser.addArgument(args.boot_rom, "boot-rom").help("Boot ROM");
+    args_parser.add_argument(args.boot_rom, "boot-rom").help("Boot ROM");
 #endif
-    args_parser.addArgument(args.rom, "rom").required(false).help("ROM");
-    args_parser.addArgument(args.config, "--config", "-c").help("Read configuration file");
+    args_parser.add_argument(args.rom, "rom").required(false).help("ROM");
+    args_parser.add_argument(args.config, "--config", "-c").help("Read configuration file");
 #ifdef ENABLE_SERIAL
-    args_parser.addArgument(args.serial, "--serial", "-s").help("Display serial console");
+    args_parser.add_argument(args.serial, "--serial", "-s").help("Display serial console");
 #endif
-    args_parser.addArgument(args.scaling, "--scaling", "-z").help("Scaling factor");
-    args_parser.addArgument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
+    args_parser.add_argument(args.scaling, "--scaling", "-z").help("Scaling factor");
+    args_parser.add_argument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
 #ifdef ENABLE_DEBUGGER
-    args_parser.addArgument(args.attach_debugger, "--debugger", "-d").help("Attach debugger");
+    args_parser.add_argument(args.attach_debugger, "--debugger", "-d").help("Attach debugger");
 #endif
 
     // Parse command line arguments
