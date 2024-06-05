@@ -39,7 +39,7 @@ void LauncherScreen::redraw() {
     draw_text(foreground_texture, "drop a file to", 27, 106, text_color, Specs::Display::WIDTH);
     draw_text(foreground_texture, "load a GB ROM ", 27, 122, text_color, Specs::Display::WIDTH);
 #else
-    drawText(foreground_texture, "Drop a GB ROM", 27, 118, text_color, Specs::Display::WIDTH);
+    draw_text(foreground_texture, "Drop a GB ROM", 27, 118, text_color, Specs::Display::WIDTH);
 #endif
 }
 
