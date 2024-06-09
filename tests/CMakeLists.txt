@@ -5,9 +5,9 @@ add_executable(docboy-tests)
 add_test(NAME docboy-tests COMMAND docboy-tests)
 
 target_sources(docboy-tests PRIVATE
-        emutests.hpp
+        emutests.h
         main.cpp
-        unittests.hpp
+        unittests.h
 )
 
 target_compile_definitions(docboy-tests PRIVATE "TESTS_ROOT_FOLDER=\"${CMAKE_CURRENT_SOURCE_DIR}\"")

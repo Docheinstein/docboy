@@ -2,8 +2,8 @@
 
 // ---- begin test cases ----
 
-#include "emutests.hpp"
-#include "unittests.hpp"
+#include "emutests.h"
+#include "unittests.h"
 
 // ---- end test cases   ----
 
