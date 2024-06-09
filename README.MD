@@ -3,15 +3,15 @@
 
 # DocBoy
 
-DocBoy is an open source accuracy-focused GameBoy (DMG) emulator, written in C++17.
+DocBoy is an open source, accuracy-focused, GameBoy (DMG) emulator, written in C++17.
 
 Can be used either with the standalone SDL frontend or as a libretro core (e.g. with RetroArch).
 
 ---
 
-### Features
+## Features
 
-#### GameBoy features
+### GameBoy features
 * CPU: M-cycle accurate
 * PPU: T-cycle accurate (implements Pixel FIFO)
 * Cartridges: NoMBC, MBC1, MBC2, MBC3, MBC5
@@ -22,7 +22,7 @@ Can be used either with the standalone SDL frontend or as a libretro core (e.g. 
 * DMA
 * JoyPad
 
-#### Frontend features
+### Frontend features
 * CLI debugger (in GDB style): supports disassemble, breakpoints, watchpoints, step by step execution, rewind, memory viewer, interrupts viewer, IO viewer
 * Serial Link (output to console)
 * Save/Load
@@ -36,7 +36,19 @@ Can be used either with the standalone SDL frontend or as a libretro core (e.g. 
 * Sound
 * GBC (add colors support)
 
-## Build
+
+---
+
+## Building
+
+### Clone
+Clone the repository and its submodules.
+
+```
+git clone https://github.com/Docheinstein/docboy.git --recurse-submodules
+```
+
+### Build
 
 DocBoy can be compiled as a static library which can be used by a _frontend_.
 
@@ -83,9 +95,11 @@ make
 
 _Note_: use just `make` instead of `make -j`; the latter does not work with NDK build.
 
+---
+
 ## Usage
 
-#### SDL
+### SDL
 
 ```
 usage: [rom] [--config CONFIG] [--serial] [--scaling SCALING] [--cartridge-info]
@@ -128,11 +142,15 @@ All the joypad keys can be remapped through the _Control Options_ menu.
 | Down   | DOWN                     |
 | Left   | LEFT                     |
 
-#### Retroarch (libretro)
+### Retroarch (libretro)
 
-With [RetroArch](https://www.retroarch.com/) (supported by almost every existing platform, including Android and iOS), you can use the libretro core as follows.
+With [RetroArch](https://www.retroarch.com/) (supported by almost every existing platform, including Android and iOS), you can _Load Core_ the libretro core compiled with the `BUILD_LIBRETRO_CORE` or `BUILD_LIBRETRO_CORE_ANDROID`.
+
+If you're on a desktop environment, you can also load the core from command line:
 
 ```retroarch -L build/docboy_libretro.so <rom>```
+
+---
 
 ## Debugging
 
@@ -184,6 +202,8 @@ Here's the debugger!
 
 ![Debugger](images/debugger.png)
 
+---
+
 ## Screenshots
 
 ![DMG boot](images/nintendo.png)
@@ -199,6 +219,7 @@ Here's the debugger!
 ![Launcher Screen](images/launcher-screen.png)
 ![Launcher Screen](images/main-menu.png)
 
+---
 
 ## Tests results
 
