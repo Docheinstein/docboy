@@ -1,5 +1,8 @@
 #include "extra/ini/reader/reader.h"
 
+#include <algorithm>
+#include <iterator>
+
 #include "utils/io.h"
 #include "utils/strings.h"
 
