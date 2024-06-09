@@ -82,12 +82,11 @@ Path temp_directory_path() {
     temp_path = env_tmp ? env_tmp : default_tmp;
 
 #else // Windows
-    CHAR temp_Path_buf[MAX_PATH];
-    if (GetTempPath(MAX_PATH, temp_Path_buf) == 0) {
+    CHAR temp_path_buf[MAX_PATH];
+    if (GetTempPath(MAX_PATH, temp_path_buf) == 0) {
         FATAL("failed to obtain a temporary directory");
     }
-    temp_Path = temp_Path_buf;
-
+    temp_path = temp_path_buf;
 #endif
 
     return Path {temp_path};
