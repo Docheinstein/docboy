@@ -17,6 +17,8 @@ target_sources(docboy-sdl PRIVATE
     main.cpp
     screens/controloptionsscreen.cpp
     screens/controloptionsscreen.h
+    screens/gamemainscreen.cpp
+    screens/gamemainscreen.h
     screens/gamescreen.cpp
     screens/gamescreen.h
     screens/graphicsoptionsscreen.cpp

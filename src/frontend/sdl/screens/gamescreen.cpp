@@ -12,6 +12,7 @@
 #include "utils/rompicker.h"
 
 #include "SDL3/SDL.h"
+#include "gamemainscreen.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "controllers/debuggercontroller.h"
@@ -159,7 +160,7 @@ void GameScreen::handle_event(const SDL_Event& event) {
 #else
             Screen::Controllers controllers {core, ui, menu.nav_controller, main};
 #endif
-            menu.screen_stack.push(std::make_unique<MainScreen>(Context {controllers, {0xE0}}));
+            menu.screen_stack.push(std::make_unique<GameMainScreen>(Context {controllers, {0xE0}}));
             redraw();
         }
         default:

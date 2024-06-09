@@ -1,8 +1,11 @@
-#include "menuscreen.h"
-#include "SDL3/SDL.h"
+#include "screens/menuscreen.h"
+
 #include "controllers/navcontroller.h"
 #include "controllers/uicontroller.h"
+
 #include "docboy/common/specs.h"
+
+#include "SDL3/SDL.h"
 
 MenuScreen::MenuScreen(Context context) :
     Screen {context},

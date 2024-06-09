@@ -1,7 +1,7 @@
 #ifndef MAINSCREEN_H
 #define MAINSCREEN_H
 
-#include "menuscreen.h"
+#include "screens/menuscreen.h"
 
 class MainScreen : public MenuScreen {
 public:
