@@ -6,7 +6,7 @@
 #include "utils/casts.h"
 #include "utils/memory.h"
 
-TEST_CASE("bits", "[bits]") {
+TEST_CASE("bits", "[bits][unit]") {
     SECTION("test bit") {
         uint8_t B = 0;
 
@@ -245,7 +245,7 @@ TEST_CASE("bits", "[bits]") {
     }
 }
 
-TEST_CASE("math", "[math]") {
+TEST_CASE("math", "[math][unit]") {
     SECTION("mod") {
         REQUIRE(mod<4>(0) == 0);
         REQUIRE(mod<4>(1) == 1);
@@ -286,7 +286,7 @@ TEST_CASE("math", "[math]") {
     }
 }
 
-TEST_CASE("casts", "[casts]") {
+TEST_CASE("casts", "[casts][unit]") {
     SECTION("unsigned_to_signed") {
         REQUIRE(to_signed((uint8_t)0) == 0);
         REQUIRE(to_signed((uint8_t)127) == 127);
@@ -296,7 +296,7 @@ TEST_CASE("casts", "[casts]") {
     }
 }
 
-TEST_CASE("memory", "[memory]") {
+TEST_CASE("memory", "[memory][unit]") {
     SECTION("mem_find_first") {
         {
             uint8_t haystack[] {1, 4, 6, 2, 7, 3, 6, 9, 4, 2, 3};
@@ -380,7 +380,7 @@ TEST_CASE("memory", "[memory]") {
     }
 }
 
-TEST_CASE("adt", "[adt]") {
+TEST_CASE("adt", "[adt][unit]") {
     SECTION("Vector") {
         Vector<uint8_t, 8> v;
         REQUIRE(v.is_empty());
@@ -503,7 +503,7 @@ TEST_CASE("adt", "[adt]") {
     }
 }
 
-TEST_CASE("parcel", "[parcel]") {
+TEST_CASE("parcel", "[parcel][unit]") {
     SECTION("Parcel") {
         Parcel p;
 
@@ -538,7 +538,6 @@ TEST_CASE("parcel", "[parcel]") {
         REQUIRE(p.read_uint64() == u64);
         REQUIRE(p.read_int8() == i8);
         REQUIRE(p.read_int16() == i16);
-        REQUIRE(p.read_int16() == i16);
         REQUIRE(p.read_int32() == i32);
         REQUIRE(p.read_int64() == i64);
 
@@ -550,7 +549,7 @@ TEST_CASE("parcel", "[parcel]") {
     }
 }
 
-TEST_CASE("state", "[state]") {
+TEST_CASE("state", "[state][unit]") {
     SECTION("Save/Load: Round 1") {
         std::vector<uint8_t> data1;
 
@@ -606,7 +605,7 @@ TEST_CASE("state", "[state]") {
 
 #include "utils/io.h"
 
-TEST_CASE("reset", "[reset]") {
+TEST_CASE("reset", "[reset][unit]") {
     SECTION("Reset: Round 1") {
         std::vector<uint8_t> data1;
 
