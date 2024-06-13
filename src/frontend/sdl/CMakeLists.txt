@@ -43,8 +43,8 @@ target_sources(docboy-sdl PRIVATE
     utils/rompicker.h
     utils/textures.cpp
     utils/textures.h
-        windows/window.cpp
-        windows/window.h
+    windows/window.cpp
+    windows/window.h
 )
 
 if (ENABLE_DEBUGGER)
@@ -62,3 +62,8 @@ endif ()
 target_link_libraries(docboy-sdl PRIVATE docboy utils extra args SDL3-static png_static)
 
 target_include_directories(docboy-sdl PRIVATE .)
+
+# Hide console on Windows.
+if (WIN32)
+    target_link_options(docboy-sdl PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+endif()
