@@ -69,7 +69,9 @@ Preferences make_default_preferences() {
     prefs.keys.up = SDLK_UP;
     prefs.keys.right = SDLK_RIGHT;
     prefs.keys.down = SDLK_DOWN;
-    prefs.scaling = 1;
+    prefs.scaling = 2;
+    prefs.x = 200;
+    prefs.y = 200;
     return prefs;
 }
 
