@@ -39,7 +39,11 @@ Can be used either with the standalone SDL frontend or as a libretro core (e.g. 
 
 ---
 
-## Building
+## Installation
+
+You can find the latest executables for both Windows and Linux in the [Releases Page](https://github.com/Docheinstein/docboy/releases).
+
+Alternatively, you can build the project by yourself as explained below.
 
 ### Clone
 Clone the repository and its submodules.
