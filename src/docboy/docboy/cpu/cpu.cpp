@@ -893,9 +893,6 @@ void Cpu::check_interrupt() {
                 if (interrupt.remaining_ticks == UNKNOWN_INTERRUPT_TIMING) {
                     std::cerr << "---- UNKNOWN INTERRUPT TIMING ----" << std::endl;
                     std::cerr << "PC     : " << hex(pc) << std::endl;
-#ifdef ENABLE_DEBUGGER
-                    std::cerr << "Cycle  : " << cycles << std::endl;
-#endif
                     std::cerr << "Halted : " << halted << std::endl;
                     std::cerr << "T      : " << +t << std::endl;
                     std::cerr << "IF     : " << bin((uint8_t)interrupts.IF) << std::endl;
