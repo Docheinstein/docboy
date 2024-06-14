@@ -63,7 +63,9 @@ target_link_libraries(docboy-sdl PRIVATE docboy utils extra args SDL3-static png
 
 target_include_directories(docboy-sdl PRIVATE .)
 
-# Hide console on Windows.
+# Hide console on Windows (but only if debugger is not enabled).
 if (WIN32)
-    target_link_options(docboy-sdl PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+    if (NOT ENABLE_DEBUGGER)
+        target_link_options(docboy-sdl PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+    endif()
 endif()
