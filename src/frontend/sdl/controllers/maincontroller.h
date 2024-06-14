@@ -27,7 +27,7 @@ public:
     }
 
 private:
-    static constexpr std::chrono::nanoseconds DEFAULT_FRAME_TIME {1000000000LU * Specs::Ppu::DOTS_PER_FRAME /
+    static constexpr std::chrono::nanoseconds DEFAULT_FRAME_TIME {1000000000LLU * Specs::Ppu::DOTS_PER_FRAME /
                                                                   Specs::Frequencies::CLOCK};
 
     int32_t speed {};
