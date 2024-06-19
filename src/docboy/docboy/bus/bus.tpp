@@ -115,7 +115,7 @@ Bus<Impl>::MemoryAccess::MemoryAccess(byte* rw) {
 }
 
 template <typename Impl>
-Bus<Impl>::MemoryAccess::MemoryAccess(byte* r, byte* w) {
+Bus<Impl>::MemoryAccess::MemoryAccess(const byte* r, byte* w) {
     read.trivial = r;
     write.trivial = w;
 }
@@ -127,7 +127,7 @@ Bus<Impl>::MemoryAccess::MemoryAccess(NonTrivialRead r, byte* w) {
 }
 
 template <typename Impl>
-Bus<Impl>::MemoryAccess::MemoryAccess(byte* r, NonTrivialWrite w) {
+Bus<Impl>::MemoryAccess::MemoryAccess(const byte* r, NonTrivialWrite w) {
     read.trivial = r;
     write.non_trivial = w;
 }

@@ -940,7 +940,7 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
 
         if (trace & TraceFlagPpu) {
             const Ppu& ppu = gb.ppu;
-            std::cerr << "Mode:" << +keep_bits<2>(gb.video.stat) << " Dots:" << std::setw(12) << ppu.dots << "  ";
+            std::cerr << "Mode:" << +gb.ppu.stat.mode << " Dots:" << std::setw(12) << ppu.dots << "  ";
         }
 
         if (trace & TraceFlagHash) {

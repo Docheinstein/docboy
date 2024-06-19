@@ -4,7 +4,7 @@
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/memory/hram.h"
-#include "docboy/ppu/video.h"
+#include "docboy/ppu/ppu.h"
 #include "docboy/serial/serial.h"
 #include "docboy/sound/sound.h"
 #include "docboy/timers/timers.h"
@@ -15,16 +15,17 @@
 
 #ifdef ENABLE_BOOTROM
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
-               InterruptsIO& interrupts, SoundIO& sound, VideoIO& video, BootIO& boot) :
+               InterruptsIO& interrupts, SoundIO& sound, Ppu& ppu, BootIO& boot) :
     Bus<CpuBus> {},
     boot_rom {boot_rom},
 #else
 CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts,
-               SoundIO& sound, VideoIO& video, BootIO& boot) :
+               SoundIO& sound, Ppu& ppu, BootIO& boot) :
     Bus<CpuBus> {},
 #endif
     hram {hram},
-    io {joypad, serial, timers, interrupts, sound, video, boot} {
+    io {joypad, serial, timers, interrupts, sound, boot},
+    ppu {ppu} {
 
     const MemoryAccess open_bus_access {&CpuBus::read_ff, &CpuBus::write_nop};
 
@@ -99,18 +100,18 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     /* FF3D */ memory_accessors[Specs::Registers::Sound::WAVED] = &io.sound.waveD;
     /* FF3E */ memory_accessors[Specs::Registers::Sound::WAVEE] = &io.sound.waveE;
     /* FF3F */ memory_accessors[Specs::Registers::Sound::WAVEF] = &io.sound.waveF;
-    /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = &io.video.lcdc;
-    /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = {&io.video.stat, &CpuBus::write_stat};
-    /* FF42 */ memory_accessors[Specs::Registers::Video::SCY] = &io.video.scy;
-    /* FF43 */ memory_accessors[Specs::Registers::Video::SCX] = &io.video.scx;
-    /* FF44 */ memory_accessors[Specs::Registers::Video::LY] = {&io.video.ly, &CpuBus::write_nop};
-    /* FF45 */ memory_accessors[Specs::Registers::Video::LYC] = &io.video.lyc;
-    /* FF46 */ memory_accessors[Specs::Registers::Video::DMA] = {&io.video.dma, &CpuBus::write_dma};
-    /* FF47 */ memory_accessors[Specs::Registers::Video::BGP] = &io.video.bgp;
-    /* FF48 */ memory_accessors[Specs::Registers::Video::OBP0] = &io.video.obp0;
-    /* FF49 */ memory_accessors[Specs::Registers::Video::OBP1] = &io.video.obp1;
-    /* FF4A */ memory_accessors[Specs::Registers::Video::WY] = &io.video.wy;
-    /* FF4B */ memory_accessors[Specs::Registers::Video::WX] = &io.video.wx;
+    /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = {&CpuBus::read_lcdc, &CpuBus::write_lcdc};
+    /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = {&CpuBus::read_stat, &CpuBus::write_stat};
+    /* FF42 */ memory_accessors[Specs::Registers::Video::SCY] = &ppu.scy;
+    /* FF43 */ memory_accessors[Specs::Registers::Video::SCX] = &ppu.scx;
+    /* FF44 */ memory_accessors[Specs::Registers::Video::LY] = {&ppu.ly, &CpuBus::write_nop};
+    /* FF45 */ memory_accessors[Specs::Registers::Video::LYC] = &ppu.lyc;
+    /* FF46 */ memory_accessors[Specs::Registers::Video::DMA] = {&ppu.dma, &CpuBus::write_dma};
+    /* FF47 */ memory_accessors[Specs::Registers::Video::BGP] = &ppu.bgp;
+    /* FF48 */ memory_accessors[Specs::Registers::Video::OBP0] = &ppu.obp0;
+    /* FF49 */ memory_accessors[Specs::Registers::Video::OBP1] = &ppu.obp1;
+    /* FF4A */ memory_accessors[Specs::Registers::Video::WY] = &ppu.wy;
+    /* FF4B */ memory_accessors[Specs::Registers::Video::WX] = &ppu.wx;
     /* FF4C */ memory_accessors[0xFF4C] = open_bus_access;
     /* FF4D */ memory_accessors[0xFF4D] = open_bus_access;
     /* FF4E */ memory_accessors[0xFF4E] = open_bus_access;
@@ -232,12 +233,24 @@ void CpuBus::write_nr52(uint16_t address, uint8_t value) {
     io.sound.write_nr52(value);
 }
 
+uint8_t CpuBus::read_lcdc(uint16_t address) const {
+    return ppu.read_lcdc();
+}
+
+void CpuBus::write_lcdc(uint16_t address, uint8_t value) {
+    ppu.write_lcdc(value);
+}
+
+uint8_t CpuBus::read_stat(uint16_t address) const {
+    return ppu.read_stat();
+}
+
 void CpuBus::write_stat(uint16_t address, uint8_t value) {
-    io.video.write_stat(value);
+    ppu.write_stat(value);
 }
 
 void CpuBus::write_dma(uint16_t address, uint8_t value) {
-    io.video.write_dma(value);
+    ppu.write_dma(value);
 }
 
 void CpuBus::write_boot(uint16_t address, uint8_t value) {

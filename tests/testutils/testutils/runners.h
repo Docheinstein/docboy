@@ -210,7 +210,7 @@ public:
         }
 
         // Check if we are in VBlank with a pending check
-        if (pending_check_next_vblank && keep_bits<2>(gb->video.stat) == Specs::Ppu::Modes::VBLANK) {
+        if (pending_check_next_vblank && gb->ppu.stat.mode == Specs::Ppu::Modes::VBLANK) {
             pending_check_next_vblank = false;
             return true;
         }

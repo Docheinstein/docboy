@@ -2,11 +2,12 @@
 
 #include <iostream>
 
+#include "docboy/bootrom/helpers.h"
+#include "docboy/dma/dma.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/memory/memory.h"
 #include "docboy/ppu/pixelmap.h"
-#include "docboy/ppu/video.h"
 
 #include "utils/casts.h"
 
@@ -95,11 +96,11 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_0,
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo};
 
-Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Device::Ppu> vram_bus,
+Ppu::Ppu(Lcd& lcd, InterruptsIO& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
          OamBus::View<Device::Ppu> oam_bus) :
     lcd {lcd},
-    video {video},
     interrupts {interrupts},
+    dma_controller {dma},
     vram {vram_bus},
     oam {oam_bus} {
 }
@@ -107,12 +108,12 @@ Ppu::Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Devic
 void Ppu::tick() {
     // Handle turn on/turn off
     if (on) {
-        if (!test_bit<LCD_ENABLE>(video.lcdc)) {
+        if (!lcdc.enable) {
             turn_off();
             return;
         }
     } else {
-        if (test_bit<LCD_ENABLE>(video.lcdc)) {
+        if (lcdc.enable) {
             turn_on();
         } else {
             return;
@@ -122,18 +123,18 @@ void Ppu::tick() {
     // Tick PPU by one dot
     (this->*(tick_selector))();
 
-    // There is 1 T-cycle delay between video.BGP and the BGP value the PPU sees.
+    // There is 1 T-cycle delay between BGP and the BGP value the PPU sees.
     // During this T-Cycle, the PPU sees the last BGP ORed with the new one.
-    // Therefore, we store the last BGP value here so that we can use (video.BGP | BGP)
+    // Therefore, we store the last BGP value here so that we can use (BGP | LAST_BGP)
     // for resolving BG color.
     // [mealybug/m3_bgp_change]
-    last_bgp = video.bgp;
+    last_bgp = bgp;
 
-    // It seems that there is 1 T-cycle delay between video.WX and the WX value the PPU sees.
+    // It seems that there is 1 T-cycle delay between WX and the WX value the PPU sees.
     // Therefore, we store the last WX here and we use it for the next T-cycle.
     // (TODO: Still not sure about this)
     // [mealybug/m3_wx_5_change]
-    last_wx = video.wx;
+    last_wx = wx;
 
     // This is needed for:
     // 1) LCDC.WIN_ENABLE, because it seems that the t-cycle window is turned on
@@ -141,7 +142,9 @@ void Ppu::tick() {
     //    [mealybug/m3_lcdc_win_en_change_multiple_wx]
     // 2) LCDC.BG_WIN_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
     //    [mealybug/m3_lcdc_bg_en_change]
-    last_lcdc = video.lcdc;
+    // 3) LCDC.OBJ_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
+    //        [mealybug/m3_lcdc_obj_en_change]
+    last_lcdc = lcdc;
 
     // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt
     tick_stat();
@@ -166,19 +169,19 @@ void Ppu::tick() {
 
 void Ppu::turn_on() {
     ASSERT(!on);
-    ASSERT(video.ly == 0);
+    ASSERT(ly == 0);
 
     on = true;
 
     // STAT's LYC_EQ_LY is updated properly (but interrupt is not raised)
-    set_bit<LYC_EQ_LY>(video.stat, is_lyc_eq_ly());
+    stat.lyc_eq_ly = is_lyc_eq_ly();
 }
 
 void Ppu::turn_off() {
     ASSERT(on);
     on = false;
     dots = 0;
-    video.ly = 0;
+    ly = 0;
     lcd.reset_cursor();
 
     // Clear oam entries eventually still there
@@ -210,12 +213,12 @@ void Ppu::turn_off() {
 }
 
 inline bool Ppu::is_lyc_eq_ly() const {
-    // In addition to the condition (video.LYC == video.LY), LYC_EQ_LY IRQ might be disabled for several reasons.
+    // In addition to the condition (LYC == LY), LYC_EQ_LY IRQ might be disabled for several reasons.
     // Remarkably:
     // * LYC_EQ_LY is always 0 at dot 454
     // * The last scanline (LY = 153 = 0) the LY values differs from what LYC_EQ_LY reads and from the related IRQ.
     // [mooneye/lcdon_timing, daid/ppu_scanline_bgp]
-    return (video.lyc == video.ly) && enable_lyc_eq_ly_irq;
+    return (lyc == ly) && enable_lyc_eq_ly_irq;
 }
 
 inline void Ppu::tick_stat() {
@@ -226,21 +229,18 @@ inline void Ppu::tick_stat() {
     // Note that the interrupt request is done only on raising edge
     // [mooneye/stat_irq_blocking, mooneye/stat_lyc_onoff].
     const bool lyc_eq_ly = is_lyc_eq_ly();
-    const bool lyc_eq_ly_irq = test_bit<LYC_EQ_LY_INTERRUPT>(video.stat) && lyc_eq_ly;
+    const bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && lyc_eq_ly;
 
-    const uint8_t mode = keep_bits<2>(video.stat);
-
-    const bool hblank_irq = test_bit<HBLANK_INTERRUPT>(video.stat) && mode == HBLANK;
+    const bool hblank_irq = stat.hblank_int && stat.mode == HBLANK;
 
     // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
-    const bool vblank_irq =
-        (test_bit<VBLANK_INTERRUPT>(video.stat) || test_bit<OAM_INTERRUPT>(video.stat)) && mode == VBLANK;
+    const bool vblank_irq = (stat.vblank_int || stat.oam_int) && stat.mode == VBLANK;
 
     // Eventually raise STAT interrupt.
     update_state_irq(lyc_eq_ly_irq || hblank_irq || vblank_irq);
 
     // Update STAT's LYC=LY Flag according to the current comparison
-    set_bit<LYC_EQ_LY>(video.stat, lyc_eq_ly);
+    stat.lyc_eq_ly = lyc_eq_ly;
 }
 
 inline void Ppu::update_state_irq(bool irq) {
@@ -255,8 +255,8 @@ void Ppu::update_stat_irq_for_oam_mode() {
     // OAM mode interrupt is not checked every dot: it is checked only here during mode transition.
     // Furthermore, it seems that having a pending LYC_EQ_LY signal high prevents the STAT IRQ to go low.
     // [daid/ppu_scanline_bgp]
-    bool lyc_eq_ly_irq = test_bit<LYC_EQ_LY_INTERRUPT>(video.stat) && is_lyc_eq_ly();
-    update_state_irq(test_bit<OAM_INTERRUPT>(video.stat) || lyc_eq_ly_irq);
+    bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && is_lyc_eq_ly();
+    update_state_irq(stat.oam_int || lyc_eq_ly_irq);
 }
 
 inline void Ppu::tick_window() {
@@ -265,7 +265,7 @@ inline void Ppu::tick_window() {
     // Note that this does not mean that window will always be rendered:
     // the WX == LX condition will be checked again during pixel transfer
     // (on the other hand WY is not checked again).
-    w.active_for_frame |= test_bit<WIN_ENABLE>(video.lcdc) && video.ly == video.wy;
+    w.active_for_frame |= lcdc.win_enable && ly == wy;
 }
 
 // ------- PPU states ------
@@ -294,10 +294,9 @@ void Ppu::oam_scan_odd() {
     ASSERT(oam.is_acquired_by_this() || dots == 77 /* oam bus seems released this cycle */);
 
     // Read oam entry height
-    const uint8_t obj_height = TILE_WIDTH << test_bit<OBJ_SIZE>(video.lcdc);
+    const uint8_t obj_height = TILE_WIDTH << lcdc.obj_size;
 
     // Check if the sprite is upon this scanline
-    const uint8_t ly = video.ly;
     const uint8_t oam_entry_y = registers.oam.a;
     const int32_t obj_y = oam_entry_y - TILE_DOUBLE_HEIGHT;
 
@@ -370,7 +369,7 @@ void Ppu::oam_scan_done() {
 
 void Ppu::oam_scan_after_turn_on() {
     ASSERT(!oam.is_acquired_by_this());
-    ASSERT(keep_bits<2>(video.stat) == HBLANK);
+    ASSERT(stat.mode == HBLANK);
 
     // First OAM Scan after PPU turn on does nothing.
     ++dots;
@@ -396,7 +395,7 @@ void Ppu::pixel_transfer_dummy_lx0() {
         // It is read some T-cycles after: around here, after the first BG fetch.
         // (TODO: verify precise T-Cycle timing).
         // [mealybug/m3_scx_low_3_bits]
-        pixel_transfer.initial_scx.to_discard = mod<TILE_WIDTH>(video.scx);
+        pixel_transfer.initial_scx.to_discard = mod<TILE_WIDTH>(scx);
 
         if (pixel_transfer.initial_scx.to_discard) {
             pixel_transfer.initial_scx.discarded = 0;
@@ -510,7 +509,7 @@ void Ppu::pixel_transfer_lx8() {
         // and the LCDC the PPU sees, both for LCDC.OBJ_ENABLE and LCDC.BG_WIN_ENABLE.
         // LX == 8 seems to be an expection to this rule.
         // [mealybug/m3_lcdc_bg_en_change, mealybug/m3_lcdc_obj_en_change]
-        const uint8_t lcdc = lx == 8 ? video.lcdc : last_lcdc;
+        const Lcdc lcdc_ = lx == 8 ? lcdc : last_lcdc;
 
         if (obj_fifo.is_not_empty()) {
             const ObjPixel obj_pixel = obj_fifo.pop_front();
@@ -519,19 +518,18 @@ void Ppu::pixel_transfer_lx8() {
             // - OBJ are still enabled
             // - OBJ pixel is opaque
             // - either BG_OVER_OBJ is disabled or the BG color is 0
-            if (test_bit<OBJ_ENABLE>(lcdc) && is_obj_opaque(obj_pixel.color_index) &&
+            if (lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
                 (!test_bit<BG_OVER_OBJ>(obj_pixel.attributes) || bg_pixel.color_index == 0)) {
-                color = resolve_color(obj_pixel.color_index,
-                                      test_bit<PALETTE_NUM>(obj_pixel.attributes) ? video.obp1 : video.obp0);
+                color = resolve_color(obj_pixel.color_index, test_bit<PALETTE_NUM>(obj_pixel.attributes) ? obp1 : obp0);
             }
         }
 
         if (color == NO_COLOR) {
-            // There is 1 T-cycle delay between video.BGP and the BGP value the PPU sees.
+            // There is 1 T-cycle delay between BGP and the BGP value the PPU sees.
             // During this T-Cycle, the PPU sees the last BGP ORed with the new BGP.
             // [mealybug/m3_bgp_change]
-            const uint8_t bgp = (uint8_t)video.bgp | last_bgp;
-            color = test_bit<BG_WIN_ENABLE>(lcdc) ? resolve_color(bg_pixel.color_index, bgp) : 0;
+            const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
+            color = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_) : 0;
         }
 
         ASSERT(color < NUMBER_OF_COLORS);
@@ -561,7 +559,7 @@ void Ppu::pixel_transfer_lx8() {
 
 void Ppu::hblank() {
     ASSERT(lx == 168);
-    ASSERT(video.ly < 143);
+    ASSERT(ly < 143);
 
     if (++dots == 453) {
         // Eventually raise OAM interrupt
@@ -576,7 +574,7 @@ void Ppu::hblank_453() {
 
     ++dots;
 
-    ++video.ly;
+    ++ly;
 
     // LYC_EQ_LY IRQ is disabled for dot 454.
     enable_lyc_eq_ly_irq = false;
@@ -608,9 +606,9 @@ void Ppu::hblank_455() {
 
 void Ppu::hblank_last_line() {
     ASSERT(lx == 168);
-    ASSERT(video.ly == 143);
+    ASSERT(ly == 143);
     if (++dots == 454) {
-        ++video.ly;
+        ++ly;
 
         // LYC_EQ_LY IRQ is disabled for dot 454.
         enable_lyc_eq_ly_irq = false;
@@ -642,9 +640,9 @@ void Ppu::hblank_last_line_455() {
 }
 
 void Ppu::vblank() {
-    ASSERT(video.ly >= 144 && video.ly < 154);
+    ASSERT(ly >= 144 && ly < 154);
     if (++dots == 454) {
-        ++video.ly;
+        ++ly;
 
         // LYC_EQ_LY IRQ is disabled for dot 454.
         enable_lyc_eq_ly_irq = false;
@@ -658,16 +656,16 @@ void Ppu::vblank_454() {
 
     if (++dots == 456) {
         dots = 0;
-        tick_selector = video.ly == 153 ? &Ppu::vblank_last_line : &Ppu::vblank;
+        tick_selector = ly == 153 ? &Ppu::vblank_last_line : &Ppu::vblank;
     }
 }
 
 void Ppu::vblank_last_line() {
-    ASSERT(video.ly == 153);
+    ASSERT(ly == 153);
 
     if (++dots == 2) {
         // LY is reset to 0
-        video.ly = 0;
+        ly = 0;
 
         // Altough LY is set to 0, LYC_EQ_LY IRQ is disabled (i.e. does not trigger for LY=0).
         enable_lyc_eq_ly_irq = false;
@@ -677,7 +675,7 @@ void Ppu::vblank_last_line() {
 }
 
 void Ppu::vblank_last_line_2() {
-    ASSERT(video.ly == 0);
+    ASSERT(ly == 0);
     ASSERT(dots >= 2);
 
     if (++dots == 7) {
@@ -688,7 +686,7 @@ void Ppu::vblank_last_line_2() {
 }
 
 void Ppu::vblank_last_line_7() {
-    ASSERT(video.ly == 0);
+    ASSERT(ly == 0);
     ASSERT(dots >= 7);
 
     if (++dots == 454) {
@@ -699,7 +697,7 @@ void Ppu::vblank_last_line_7() {
 }
 
 void Ppu::vblank_last_line_454() {
-    ASSERT(video.ly == 0);
+    ASSERT(ly == 0);
     ASSERT(dots >= 454);
 
     if (++dots == 456) {
@@ -743,7 +741,7 @@ void Ppu::enter_oam_scan() {
 
 void Ppu::enter_pixel_transfer() {
     ASSERT(dots == 80);
-    ASSERT(video.ly < 144);
+    ASSERT(ly < 144);
 
     ASSERT_CODE({
         ASSERT(oam_scan.count <= 10);
@@ -772,7 +770,7 @@ void Ppu::enter_pixel_transfer() {
 
 void Ppu::enter_hblank() {
     ASSERT(lx == 168);
-    ASSERT(video.ly < 144);
+    ASSERT(ly < 144);
 
     // clang-format off
     ASSERT_CODE({
@@ -840,7 +838,7 @@ void Ppu::enter_hblank() {
 #ifdef ENABLE_DEBUGGER
     timings.pixel_transfer = dots - timings.oam_scan;
 #endif
-    tick_selector = video.ly == 143 ? &Ppu::hblank_last_line : &Ppu::hblank;
+    tick_selector = ly == 143 ? &Ppu::hblank_last_line : &Ppu::hblank;
 
     update_mode<HBLANK>();
 
@@ -855,7 +853,7 @@ void Ppu::enter_vblank() {
 
     tick_selector = &Ppu::vblank;
 
-    ASSERT(((uint8_t)video.stat & 0b11) == VBLANK);
+    ASSERT(stat.mode == VBLANK);
 
     interrupts.raise_Interrupt<InterruptsIO::InterruptType::VBlank>();
 
@@ -900,7 +898,7 @@ void Ppu::reset_fetcher() {
 template <uint8_t Mode>
 inline void Ppu::update_mode() {
     ASSERT(Mode <= 0b11);
-    video.stat = ((uint8_t)video.stat & 0b11111100) | Mode;
+    stat.mode = Mode;
 }
 
 inline void Ppu::increase_lx() {
@@ -922,15 +920,14 @@ inline bool Ppu::is_bg_fifo_ready_to_be_popped() const {
     // - the bg fifo is not empty
     // - the fetcher is not fetching a sprite
     // - there are no more oam entries for this LX to be fetched or obj are disabled in LCDC
-    return bg_fifo.is_not_empty() && !is_fetching_sprite &&
-           (oam_entries[lx].is_empty() || !test_bit<OBJ_ENABLE>(video.lcdc));
+    return bg_fifo.is_not_empty() && !is_fetching_sprite && (oam_entries[lx].is_empty() || !lcdc.obj_enable);
 }
 
 inline bool Ppu::is_obj_ready_to_be_fetched() const {
     // The condition for which a obj fetch can be served are:
     // - there is at least a pending oam entry for the current LX
     // - obj are enabled in LCDC
-    return oam_entries[lx].is_not_empty() && test_bit<OBJ_ENABLE>(video.lcdc);
+    return oam_entries[lx].is_not_empty() && lcdc.obj_enable;
 }
 
 inline void Ppu::check_window_activation() {
@@ -942,9 +939,9 @@ inline void Ppu::check_window_activation() {
     //     is turned on while LX == WX + 1, window is activated
     //     (even if it would be late by 1-cycle to be activated).
     //     [mealybug/m3_lcdc_win_en_change_multiple_wx]
-    if (w.active_for_frame && !w.active && test_bit<WIN_ENABLE>(video.lcdc) &&
+    if (w.active_for_frame && !w.active && lcdc.win_enable &&
         (lx == last_wx /* standard case */ ||
-         (lx == last_wx + 1 && !test_bit<WIN_ENABLE>(last_lcdc) /* window just enabled case */))) {
+         (lx == last_wx + 1 && !last_lcdc.win_enable /* window just enabled case */))) {
         setup_fetcher_for_window();
     }
 }
@@ -974,7 +971,7 @@ inline void Ppu::setup_fetcher_for_window() {
 }
 
 inline void Ppu::handle_oam_scan_buses_oddities() {
-    ASSERT(keep_bits<2>(video.stat) == OAM_SCAN);
+    ASSERT(stat.mode == OAM_SCAN);
 
     if (dots == 76) {
         // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
@@ -1000,7 +997,7 @@ void Ppu::bgwin_prefetcher_get_tile_0() {
 
     // Check whether fetch the tile for the window or for the BG
     if (w.active) {
-        if (test_bit<WIN_ENABLE>(video.lcdc) /* TODO: other conditions checked? WY?*/) {
+        if (lcdc.win_enable /* TODO: other conditions checked? WY?*/) {
             // Proceed to fetch window
             win_prefetcher_get_tile_0();
             return;
@@ -1121,7 +1118,7 @@ void Ppu::win_prefetcher_activating() {
     ASSERT(w.active_for_frame);
     ASSERT(w.active);
     ASSERT(w.just_activated);
-    ASSERT(test_bit<WIN_ENABLE>(video.lcdc));
+    ASSERT(lcdc.win_enable);
 
     // It seems that the t-cycle the window is activated is just wasted and the
     // fetcher does not advance (this is deduced by the fact that the rom's expected
@@ -1140,7 +1137,7 @@ void Ppu::win_prefetcher_get_tile_0() {
     ASSERT(w.active);
 
     // If the window is turned off, the fetcher switches back to the BG fetcher.
-    if (!test_bit<WIN_ENABLE>(video.lcdc)) {
+    if (!lcdc.win_enable) {
         bg_prefetcher_get_tile_0();
     } else {
         // The prefetcher computes at this phase only the tile base address.
@@ -1166,7 +1163,7 @@ void Ppu::win_prefetcher_get_tile_1() {
     ASSERT(w.active);
 
     // If the window is turned off, the fetcher switches back to the BG fetcher.
-    if (!test_bit<WIN_ENABLE>(video.lcdc)) {
+    if (!lcdc.win_enable) {
         bg_prefetcher_get_tile_1();
         return;
     }
@@ -1178,7 +1175,7 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_low_0() {
     ASSERT(!is_fetching_sprite);
 
     // If the window is turned off, the fetcher switches back to the BG fetcher.
-    if (!test_bit<WIN_ENABLE>(video.lcdc)) {
+    if (!lcdc.win_enable) {
         bg_pixel_slice_fetcher_get_tile_data_low_0();
         return;
     }
@@ -1200,7 +1197,7 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_low_1() {
     ASSERT(!is_fetching_sprite);
 
     // If the window is turned off, the fetcher switches back to the BG fetcher.
-    if (!test_bit<WIN_ENABLE>(video.lcdc)) {
+    if (!lcdc.win_enable) {
         bg_pixel_slice_fetcher_get_tile_data_low_1();
         return;
     }
@@ -1212,7 +1209,7 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_0() {
     ASSERT(!is_fetching_sprite);
 
     // If the window is turned off, the fetcher switches back to the BG fetcher.
-    if (!test_bit<WIN_ENABLE>(video.lcdc)) {
+    if (!lcdc.win_enable) {
         bg_pixel_slice_fetcher_get_tile_data_high_0();
         return;
     }
@@ -1467,13 +1464,13 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
 // ------- Fetcher states helpers ---------
 
 inline void Ppu::setup_obj_pixel_slice_fetcher_tile_data_address() {
-    const bool is_double_height = test_bit<OBJ_SIZE>(video.lcdc);
+    const bool is_double_height = lcdc.obj_size;
     const uint8_t height_mask = is_double_height ? 0xF : 0x7;
 
     const uint8_t obj_y = of.entry.y - TILE_DOUBLE_HEIGHT;
 
     // The OBJ tileY is always mapped within the range [0:objHeight).
-    uint8_t tile_y = (video.ly - obj_y) & height_mask;
+    uint8_t tile_y = (ly - obj_y) & height_mask;
 
     if (test_bit<Y_FLIP>(of.attributes))
         // Take the opposite row within objHeight.
@@ -1488,10 +1485,10 @@ inline void Ppu::setup_obj_pixel_slice_fetcher_tile_data_address() {
 }
 
 inline void Ppu::setup_bg_pixel_slice_fetcher_tilemap_tile_address() {
-    const uint8_t tilemap_x = mod<TILEMAP_WIDTH>((bwf.lx + video.scx) / TILE_WIDTH);
-    const uint8_t tilemap_y = mod<TILEMAP_HEIGHT>((video.ly + video.scy) / TILE_HEIGHT);
+    const uint8_t tilemap_x = mod<TILEMAP_WIDTH>((bwf.lx + scx) / TILE_WIDTH);
+    const uint8_t tilemap_y = mod<TILEMAP_HEIGHT>((ly + scy) / TILE_HEIGHT);
 
-    const uint16_t tilemap_vram_addr = test_bit<BG_TILE_MAP>(video.lcdc) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    const uint16_t tilemap_vram_addr = lcdc.bg_tile_map ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
     bwf.tilemap_tile_vram_addr = tilemap_vram_addr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemap_y) + tilemap_x;
 
 #ifdef ENABLE_DEBUGGER
@@ -1504,14 +1501,14 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tilemap_tile_address() {
 inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
     const uint8_t tile_number = vram.read(bwf.tilemap_tile_vram_addr);
 
-    const uint16_t vram_tile_addr = test_bit<BG_WIN_TILE_DATA>(video.lcdc)
+    const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
                                         ?
                                         // unsigned addressing mode with 0x8000 as (global) base address
                                         0x0000 + TILE_BYTES * tile_number
                                         :
                                         // signed addressing mode with 0x9000 as (global) base address
                                         0x1000 + TILE_BYTES * to_signed(tile_number);
-    const uint8_t tile_y = mod<TILE_HEIGHT>(video.ly + video.scy);
+    const uint8_t tile_y = mod<TILE_HEIGHT>(ly + scy);
 
     psf.tile_data_vram_address = vram_tile_addr + TILE_ROW_BYTES * tile_y;
 }
@@ -1520,8 +1517,7 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
     // The window prefetcher has its own internal counter to determine the tile to fetch
     const uint8_t tilemap_x = wf.tilemap_x++;
     const uint8_t tilemap_y = w.wly / TILE_HEIGHT;
-    const uint16_t tilemap_vram_addr =
-        test_bit<WIN_TILE_MAP>(video.lcdc) ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    const uint16_t tilemap_vram_addr = lcdc.win_tile_map ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
     bwf.tilemap_tile_vram_addr = tilemap_vram_addr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemap_y) + tilemap_x;
 
 #ifdef ENABLE_DEBUGGER
@@ -1534,7 +1530,7 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
 inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
     const uint8_t tile_number = vram.read(bwf.tilemap_tile_vram_addr);
 
-    const uint16_t vram_tile_addr = test_bit<BG_WIN_TILE_DATA>(video.lcdc)
+    const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
                                         ?
                                         // unsigned addressing mode with 0x8000 as (global) base address
                                         0x0000 + TILE_BYTES * tile_number
@@ -1561,6 +1557,33 @@ inline void Ppu::restore_bg_win_fetch() {
 }
 
 void Ppu::save_state(Parcel& parcel) const {
+    parcel.write_bool(lcdc.enable);
+    parcel.write_bool(lcdc.win_tile_map);
+    parcel.write_bool(lcdc.win_enable);
+    parcel.write_bool(lcdc.bg_win_tile_data);
+    parcel.write_bool(lcdc.bg_tile_map);
+    parcel.write_bool(lcdc.obj_size);
+    parcel.write_bool(lcdc.obj_enable);
+    parcel.write_bool(lcdc.bg_win_enable);
+
+    parcel.write_bool(stat.lyc_eq_ly_int);
+    parcel.write_bool(stat.oam_int);
+    parcel.write_bool(stat.vblank_int);
+    parcel.write_bool(stat.hblank_int);
+    parcel.write_bool(stat.lyc_eq_ly);
+    parcel.write_uint8(stat.mode);
+
+    parcel.write_uint8(scy);
+    parcel.write_uint8(scx);
+    parcel.write_uint8(ly);
+    parcel.write_uint8(lyc);
+    parcel.write_uint8(dma);
+    parcel.write_uint8(bgp);
+    parcel.write_uint8(obp0);
+    parcel.write_uint8(obp1);
+    parcel.write_uint8(wy);
+    parcel.write_uint8(wx);
+
     {
         uint8_t i = 0;
 
@@ -1585,7 +1608,15 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_uint8(lx);
     parcel.write_uint8(last_bgp);
     parcel.write_uint8(last_wx);
-    parcel.write_uint8(last_lcdc);
+
+    parcel.write_bool(last_lcdc.enable);
+    parcel.write_bool(last_lcdc.win_tile_map);
+    parcel.write_bool(last_lcdc.win_enable);
+    parcel.write_bool(last_lcdc.bg_win_tile_data);
+    parcel.write_bool(last_lcdc.bg_tile_map);
+    parcel.write_bool(last_lcdc.obj_size);
+    parcel.write_bool(last_lcdc.obj_enable);
+    parcel.write_bool(last_lcdc.bg_win_enable);
 
     parcel.write_bytes(bg_fifo.data, sizeof(bg_fifo.data));
     parcel.write_uint8(bg_fifo.cursor);
@@ -1653,6 +1684,33 @@ void Ppu::save_state(Parcel& parcel) const {
 }
 
 void Ppu::load_state(Parcel& parcel) {
+    lcdc.enable = parcel.read_bool();
+    lcdc.win_tile_map = parcel.read_bool();
+    lcdc.win_enable = parcel.read_bool();
+    lcdc.bg_win_tile_data = parcel.read_bool();
+    lcdc.bg_tile_map = parcel.read_bool();
+    lcdc.obj_size = parcel.read_bool();
+    lcdc.obj_enable = parcel.read_bool();
+    lcdc.bg_win_enable = parcel.read_bool();
+
+    stat.lyc_eq_ly_int = parcel.read_bool();
+    stat.oam_int = parcel.read_bool();
+    stat.vblank_int = parcel.read_bool();
+    stat.hblank_int = parcel.read_bool();
+    stat.lyc_eq_ly = parcel.read_bool();
+    stat.mode = parcel.read_uint8();
+
+    scy = parcel.read_uint8();
+    scx = parcel.read_uint8();
+    ly = parcel.read_uint8();
+    lyc = parcel.read_uint8();
+    dma = parcel.read_uint8();
+    bgp = parcel.read_uint8();
+    obp0 = parcel.read_uint8();
+    obp1 = parcel.read_uint8();
+    wy = parcel.read_uint8();
+    wx = parcel.read_uint8();
+
     const uint8_t tick_selector_number = parcel.read_uint8();
     ASSERT(tick_selector_number < array_size(TICK_SELECTORS));
     tick_selector = TICK_SELECTORS[tick_selector_number];
@@ -1668,7 +1726,15 @@ void Ppu::load_state(Parcel& parcel) {
     lx = parcel.read_uint8();
     last_bgp = parcel.read_uint8();
     last_wx = parcel.read_uint8();
-    last_lcdc = parcel.read_uint8();
+
+    last_lcdc.enable = parcel.read_bool();
+    last_lcdc.win_tile_map = parcel.read_bool();
+    last_lcdc.win_enable = parcel.read_bool();
+    last_lcdc.bg_win_tile_data = parcel.read_bool();
+    last_lcdc.bg_tile_map = parcel.read_bool();
+    last_lcdc.obj_size = parcel.read_bool();
+    last_lcdc.obj_enable = parcel.read_bool();
+    last_lcdc.bg_win_enable = parcel.read_bool();
 
     parcel.read_bytes(bg_fifo.data, sizeof(bg_fifo.data));
     bg_fifo.cursor = parcel.read_uint8();
@@ -1736,6 +1802,33 @@ void Ppu::load_state(Parcel& parcel) {
 }
 
 void Ppu::reset() {
+    lcdc.enable = if_bootrom_else(false, true);
+    lcdc.win_tile_map = false;
+    lcdc.win_enable = false;
+    lcdc.bg_win_tile_data = if_bootrom_else(false, true);
+    lcdc.bg_tile_map = false;
+    lcdc.obj_size = false;
+    lcdc.obj_enable = false;
+    lcdc.bg_win_enable = if_bootrom_else(false, true);
+
+    stat.lyc_eq_ly_int = false;
+    stat.oam_int = false;
+    stat.vblank_int = false;
+    stat.hblank_int = false;
+    stat.lyc_eq_ly = if_bootrom_else(false, true);
+    stat.mode = if_bootrom_else(HBLANK, VBLANK);
+
+    scy = 0;
+    scx = 0;
+    ly = 0;
+    lyc = 0;
+    dma = 0xFF;
+    bgp = if_bootrom_else(0, 0xFC);
+    obp0 = 0;
+    obp1 = 0;
+    wy = 0;
+    wx = 0;
+
     tick_selector = if_bootrom_else(&Ppu::oam_scan_even, &Ppu::vblank_last_line_7);
     fetcher_tick_selector = &Ppu::bg_prefetcher_get_tile_0;
 
@@ -1749,7 +1842,6 @@ void Ppu::reset() {
 
     last_bgp = if_bootrom_else(0, 0xFC);
     last_wx = 0;
-    last_lcdc = if_bootrom_else(0x80, 0x85);
 
     bg_fifo.clear();
     obj_fifo.clear();
@@ -1824,4 +1916,46 @@ void Ppu::reset() {
 #ifndef ENABLE_BOOTROM
     oam.acquire();
 #endif
+}
+
+uint8_t Ppu::read_lcdc() const {
+    return lcdc.enable << Specs::Bits::Video::LCDC::LCD_ENABLE |
+           lcdc.win_tile_map << Specs::Bits::Video::LCDC::WIN_TILE_MAP |
+           lcdc.win_enable << Specs::Bits::Video::LCDC::WIN_ENABLE |
+           lcdc.bg_win_tile_data << Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA |
+           lcdc.bg_tile_map << Specs::Bits::Video::LCDC::BG_TILE_MAP |
+           lcdc.obj_size << Specs::Bits::Video::LCDC::OBJ_SIZE |
+           lcdc.obj_enable << Specs::Bits::Video::LCDC::OBJ_ENABLE |
+           lcdc.bg_win_enable << Specs::Bits::Video::LCDC::BG_WIN_ENABLE;
+}
+
+void Ppu::write_lcdc(uint8_t value) {
+    lcdc.enable = test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(value);
+    lcdc.win_tile_map = test_bit<Specs::Bits::Video::LCDC::WIN_TILE_MAP>(value);
+    lcdc.win_enable = test_bit<Specs::Bits::Video::LCDC::WIN_ENABLE>(value);
+    lcdc.bg_win_tile_data = test_bit<Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA>(value);
+    lcdc.bg_tile_map = test_bit<Specs::Bits::Video::LCDC::BG_TILE_MAP>(value);
+    lcdc.obj_size = test_bit<Specs::Bits::Video::LCDC::OBJ_SIZE>(value);
+    lcdc.obj_enable = test_bit<Specs::Bits::Video::LCDC::OBJ_ENABLE>(value);
+    lcdc.bg_win_enable = test_bit<Specs::Bits::Video::LCDC::BG_WIN_ENABLE>(value);
+}
+
+uint8_t Ppu::read_stat() const {
+    return 0b10000000 | stat.lyc_eq_ly_int << Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT |
+           stat.oam_int << Specs::Bits::Video::STAT::OAM_INTERRUPT |
+           stat.vblank_int << Specs::Bits::Video::STAT::VBLANK_INTERRUPT |
+           stat.hblank_int << Specs::Bits::Video::STAT::HBLANK_INTERRUPT |
+           stat.lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY | stat.mode;
+}
+
+void Ppu::write_stat(uint8_t value) {
+    stat.lyc_eq_ly_int = test_bit<Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT>(value);
+    stat.oam_int = test_bit<Specs::Bits::Video::STAT::OAM_INTERRUPT>(value);
+    stat.vblank_int = test_bit<Specs::Bits::Video::STAT::VBLANK_INTERRUPT>(value);
+    stat.hblank_int = test_bit<Specs::Bits::Video::STAT::HBLANK_INTERRUPT>(value);
+}
+
+void Ppu::write_dma(uint8_t value) {
+    dma = value;
+    dma_controller.start_transfer(dma << 8);
 }

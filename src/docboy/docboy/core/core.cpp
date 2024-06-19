@@ -106,10 +106,10 @@ void Core::frame() {
     // If LCD is disabled we risk to never reach VBlank (which would stall the UI and prevent inputs).
     // Therefore, proceed for the cycles needed to render an entire frame and quit
     // if the LCD is still disabled even after that.
-    if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc)) {
+    if (!gb.ppu.lcdc.enable) {
         for (uint16_t c = 0; c < LCD_VBLANK_CYCLES; c++) {
             _cycle();
-            ASSERT(keep_bits<2>(gb.video.stat) != Specs::Ppu::Modes::VBLANK);
+            ASSERT(gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK);
 
             if (gb.stopped) {
                 return;
@@ -118,28 +118,28 @@ void Core::frame() {
         }
 
         // LCD still disabled: quit.
-        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc)) {
+        if (!gb.ppu.lcdc.enable) {
             return;
         }
     }
 
-    ASSERT(test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc));
+    ASSERT(gb.ppu.lcdc.enable);
 
     // Eventually go out of current VBlank.
-    while (keep_bits<2>(gb.video.stat) == Specs::Ppu::Modes::VBLANK) {
+    while (gb.ppu.stat.mode == Specs::Ppu::Modes::VBLANK) {
         _cycle();
-        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc) || gb.stopped) {
+        if (!gb.ppu.lcdc.enable || gb.stopped) {
             return;
         }
         RETURN_ON_QUIT_REQUEST();
     }
 
-    ASSERT(keep_bits<2>(gb.video.stat) != Specs::Ppu::Modes::VBLANK);
+    ASSERT(gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK);
 
     // Proceed until next VBlank.
-    while (keep_bits<2>(gb.video.stat) != Specs::Ppu::Modes::VBLANK) {
+    while (gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK) {
         _cycle();
-        if (!test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(gb.video.lcdc) || gb.stopped)
+        if (!gb.ppu.lcdc.enable || gb.stopped)
             return;
         RETURN_ON_QUIT_REQUEST();
     }
@@ -210,7 +210,6 @@ Parcel Core::parcelize_state() const {
     gb.timers.save_state(p);
     gb.interrupts.save_state(p);
     gb.sound.save_state(p);
-    gb.video.save_state(p);
     gb.lcd.save_state(p);
     gb.dma.save_state(p);
     gb.mmu.save_state(p);
@@ -239,7 +238,6 @@ void Core::unparcelize_state(Parcel&& parcel) {
     gb.timers.load_state(parcel);
     gb.interrupts.load_state(parcel);
     gb.sound.load_state(parcel);
-    gb.video.load_state(parcel);
     gb.lcd.load_state(parcel);
     gb.dma.load_state(parcel);
     gb.mmu.load_state(parcel);
@@ -269,7 +267,6 @@ void Core::reset() {
     gb.timers.reset();
     gb.interrupts.reset();
     gb.sound.reset();
-    gb.video.reset();
     gb.lcd.reset();
     gb.dma.reset();
     gb.mmu.reset();

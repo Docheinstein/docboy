@@ -13,15 +13,15 @@
 #include "utils/vector.h"
 
 class Lcd;
-class VideoIO;
 class InterruptsIO;
+class Dma;
 class Parcel;
 
 class Ppu {
     DEBUGGABLE_CLASS()
 
 public:
-    Ppu(Lcd& lcd, VideoIO& video, InterruptsIO& interrupts, VramBus::View<Device::Ppu> vram_bus,
+    Ppu(Lcd& lcd, InterruptsIO& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
         OamBus::View<Device::Ppu> oam_bus);
 
     void tick();
@@ -30,6 +30,46 @@ public:
     void load_state(Parcel& parcel);
 
     void reset();
+
+    uint8_t read_lcdc() const;
+    void write_lcdc(uint8_t value);
+
+    uint8_t read_stat() const;
+    void write_stat(uint8_t value);
+
+    void write_dma(uint8_t value);
+
+    // Video I/O registers
+    struct Lcdc {
+        bool enable;
+        bool win_tile_map;
+        bool win_enable;
+        bool bg_win_tile_data;
+        bool bg_tile_map;
+        bool obj_size;
+        bool obj_enable;
+        bool bg_win_enable;
+    } lcdc {};
+
+    struct {
+        bool lyc_eq_ly_int;
+        bool oam_int;
+        bool vblank_int;
+        bool hblank_int;
+        bool lyc_eq_ly;
+        uint8_t mode;
+    } stat {};
+
+    byte scy {make_byte(Specs::Registers::Video::SCY)};
+    byte scx {make_byte(Specs::Registers::Video::SCX)};
+    byte ly {make_byte(Specs::Registers::Video::LY)};
+    byte dma {make_byte(Specs::Registers::Video::DMA)};
+    byte lyc {make_byte(Specs::Registers::Video::LYC)};
+    byte bgp {make_byte(Specs::Registers::Video::BGP)};
+    byte obp0 {make_byte(Specs::Registers::Video::OBP0)};
+    byte obp1 {make_byte(Specs::Registers::Video::OBP1)};
+    byte wy {make_byte(Specs::Registers::Video::WY)};
+    byte wx {make_byte(Specs::Registers::Video::WX)};
 
 private:
     using TickSelector = void (Ppu::*)();
@@ -158,8 +198,8 @@ private:
     static const FetcherTickSelector FETCHER_TICK_SELECTORS[];
 
     Lcd& lcd;
-    VideoIO& video;
     InterruptsIO& interrupts;
+    Dma& dma_controller;
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;
 
@@ -174,9 +214,9 @@ private:
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
 
-    uint8_t last_bgp {};  // video.BGP delayed by 1 t-cycle
-    uint8_t last_wx {};   // video.WX delayed by 1 t-cycle
-    uint8_t last_lcdc {}; // video.LCDC delayed by 1 t-cycle
+    uint8_t last_bgp {}; // BGP delayed by 1 t-cycle
+    uint8_t last_wx {};  // WX delayed by 1 t-cycle
+    Lcdc last_lcdc {};   // LCDC delayed by 1 t-cycle
 
     FillQueue<BgPixel, 8> bg_fifo {};
     Queue<ObjPixel, 8> obj_fifo {};

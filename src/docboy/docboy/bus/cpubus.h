@@ -13,7 +13,7 @@ class SerialIO;
 class TimersIO;
 class InterruptsIO;
 class SoundIO;
-class VideoIO;
+class Ppu;
 class BootIO;
 
 class CpuBus final : public Bus<CpuBus> {
@@ -21,10 +21,10 @@ class CpuBus final : public Bus<CpuBus> {
 public:
 #ifdef ENABLE_BOOTROM
     CpuBus(BootRom& boot_rom, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
-           InterruptsIO& interrupts, SoundIO& sound, VideoIO& video, BootIO& boot);
+           InterruptsIO& interrupts, SoundIO& sound, Ppu& ppu, BootIO& boot);
 #else
     CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts, SoundIO& sound,
-           VideoIO& video, BootIO& boot);
+           Ppu& ppu, BootIO& boot);
 #endif
 
 private:
@@ -48,6 +48,9 @@ private:
     void write_nr44(uint16_t address, uint8_t value);
     void write_nr52(uint16_t address, uint8_t value);
 
+    uint8_t read_lcdc(uint16_t address) const;
+    void write_lcdc(uint16_t address, uint8_t value);
+    uint8_t read_stat(uint16_t address) const;
     void write_stat(uint16_t address, uint8_t value);
     void write_dma(uint16_t address, uint8_t value);
 
@@ -68,8 +71,9 @@ private:
         TimersIO& timers;
         InterruptsIO& interrupts;
         SoundIO& sound;
-        VideoIO& video;
         BootIO& boot;
     } io;
+
+    Ppu& ppu;
 };
 #endif // CPUBUS_H

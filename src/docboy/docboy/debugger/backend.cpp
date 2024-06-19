@@ -44,7 +44,7 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
     }
 
     // Cache the state at each new frame to allow rewinding with FrameBack command
-    bool is_new_frame = core.gb.ppu.tick_selector == &Ppu::vblank && core.gb.video.ly == 144 && core.gb.ppu.dots == 0;
+    bool is_new_frame = core.gb.ppu.tick_selector == &Ppu::vblank && core.gb.ppu.ly == 144 && core.gb.ppu.dots == 0;
     if (is_new_frame) {
         // Eventually make space for the new state
         if (history.size() == MAX_HISTORY_SIZE) {
@@ -606,7 +606,7 @@ void DebuggerBackend::handle_command<MicroNextCommand, MicroNextCommandState>(co
 template <>
 void DebuggerBackend::handle_command<FrameCommand, FrameCommandState>(const FrameCommand& cmd,
                                                                       FrameCommandState& state) {
-    bool is_new_frame = core.gb.ppu.tick_selector == &Ppu::vblank && core.gb.video.ly == 144 && core.gb.ppu.dots == 0;
+    bool is_new_frame = core.gb.ppu.tick_selector == &Ppu::vblank && core.gb.ppu.ly == 144 && core.gb.ppu.dots == 0;
     if (is_new_frame) {
         if (++state.counter >= cmd.count) {
             pull_command(ExecutionCompleted());

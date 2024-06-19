@@ -79,7 +79,6 @@ target_sources(docboy PRIVATE
         docboy/ppu/pixelmap.h
         docboy/ppu/ppu.cpp
         docboy/ppu/ppu.h
-        docboy/ppu/video.h
         docboy/serial/endpoint.h
         docboy/serial/link.cpp
         docboy/serial/link.h

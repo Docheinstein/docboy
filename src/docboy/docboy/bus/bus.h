@@ -52,13 +52,13 @@ protected:
 
         MemoryAccess() = default;
         MemoryAccess(byte* rw);
-        MemoryAccess(byte* r, byte* w);
+        MemoryAccess(const byte* r, byte* w);
         MemoryAccess(NonTrivialRead r, byte* w);
-        MemoryAccess(byte* r, NonTrivialWrite w);
+        MemoryAccess(const byte* r, NonTrivialWrite w);
         MemoryAccess(NonTrivialRead r, NonTrivialWrite w);
 
         struct Read {
-            byte* trivial {};
+            const byte* trivial {};
             NonTrivialRead non_trivial {};
         } read {};
 
