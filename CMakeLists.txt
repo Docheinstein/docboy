@@ -66,7 +66,7 @@ if (MSVC)
     add_compile_options(/Zc:__cplusplus /Zc:preprocessor /bigobj)
 endif ()
 
-if (ENABLE_ASSERTS OR CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (ENABLE_ASSERTS)
     add_compile_definitions(ENABLE_ASSERTS)
 endif()
 
