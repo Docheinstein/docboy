@@ -3,7 +3,7 @@
 
 #include "docboy/bus/device.h"
 #include "docboy/common/macros.h"
-#include "docboy/memory/fwd/bytefwd.h"
+#include "docboy/memory/fwd/cellfwd.h"
 
 class Parcel;
 
@@ -51,19 +51,19 @@ protected:
         using NonTrivialWrite = void (Impl::*)(uint16_t, uint8_t);
 
         MemoryAccess() = default;
-        MemoryAccess(byte* rw);
-        MemoryAccess(const byte* r, byte* w);
-        MemoryAccess(NonTrivialRead r, byte* w);
-        MemoryAccess(const byte* r, NonTrivialWrite w);
+        MemoryAccess(UInt8* rw);
+        MemoryAccess(const UInt8* r, UInt8* w);
+        MemoryAccess(NonTrivialRead r, UInt8* w);
+        MemoryAccess(const UInt8* r, NonTrivialWrite w);
         MemoryAccess(NonTrivialRead r, NonTrivialWrite w);
 
         struct Read {
-            const byte* trivial {};
+            const UInt8* trivial {};
             NonTrivialRead non_trivial {};
         } read {};
 
         struct Write {
-            byte* trivial {};
+            UInt8* trivial {};
             NonTrivialWrite non_trivial {};
         } write {};
     };

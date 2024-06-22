@@ -3,7 +3,7 @@
 
 #include "docboy/common/macros.h"
 #include "docboy/common/specs.h"
-#include "docboy/memory/byte.h"
+#include "docboy/memory/cell.h"
 
 #include "utils/parcel.h"
 
@@ -38,9 +38,9 @@ public:
     void write_tac(uint8_t value);
 
     uint16_t div {};
-    byte tima {make_byte(Specs::Registers::Timers::TIMA)};
-    byte tma {make_byte(Specs::Registers::Timers::TMA)};
-    byte tac {make_byte(Specs::Registers::Timers::TAC)};
+    UInt8 tima {make_uint8(Specs::Registers::Timers::TIMA)};
+    UInt8 tma {make_uint8(Specs::Registers::Timers::TMA)};
+    UInt8 tac {make_uint8(Specs::Registers::Timers::TAC)};
 
 protected:
     struct TimaReloadState {

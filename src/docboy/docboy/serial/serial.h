@@ -2,7 +2,7 @@
 #define SERIAL_H
 
 #include "docboy/common/specs.h"
-#include "docboy/memory/byte.h"
+#include "docboy/memory/cell.h"
 
 #include "utils/parcel.h"
 
@@ -27,8 +27,8 @@ public:
         sc = 0b01111110 | value;
     }
 
-    byte sb {make_byte(Specs::Registers::Serial::SB)};
-    byte sc {make_byte(Specs::Registers::Serial::SC)};
+    UInt8 sb {make_uint8(Specs::Registers::Serial::SB)};
+    UInt8 sc {make_uint8(Specs::Registers::Serial::SC)};
 };
 
 #endif // SERIAL_H

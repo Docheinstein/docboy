@@ -1,4 +1,4 @@
-#include "docboy/memory/byte.h"
+#include "docboy/memory/cell.h"
 
 #include "utils/asserts.h"
 #include "utils/bits.h"
@@ -109,25 +109,25 @@ void BusView<Bus, Dev>::flush_write_request(uint8_t value) {
 }
 
 template <typename Impl>
-Bus<Impl>::MemoryAccess::MemoryAccess(byte* rw) {
+Bus<Impl>::MemoryAccess::MemoryAccess(UInt8* rw) {
     read.trivial = rw;
     write.trivial = rw;
 }
 
 template <typename Impl>
-Bus<Impl>::MemoryAccess::MemoryAccess(const byte* r, byte* w) {
+Bus<Impl>::MemoryAccess::MemoryAccess(const UInt8* r, UInt8* w) {
     read.trivial = r;
     write.trivial = w;
 }
 
 template <typename Impl>
-Bus<Impl>::MemoryAccess::MemoryAccess(NonTrivialRead r, byte* w) {
+Bus<Impl>::MemoryAccess::MemoryAccess(NonTrivialRead r, UInt8* w) {
     read.non_trivial = r;
     write.trivial = w;
 }
 
 template <typename Impl>
-Bus<Impl>::MemoryAccess::MemoryAccess(const byte* r, NonTrivialWrite w) {
+Bus<Impl>::MemoryAccess::MemoryAccess(const UInt8* r, NonTrivialWrite w) {
     read.trivial = r;
     write.non_trivial = w;
 }

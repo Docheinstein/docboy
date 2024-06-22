@@ -234,19 +234,19 @@ void CpuBus::write_nr52(uint16_t address, uint8_t value) {
 }
 
 uint8_t CpuBus::read_lcdc(uint16_t address) const {
-    return ppu.read_lcdc();
+    return ppu.lcdc.read();
 }
 
 void CpuBus::write_lcdc(uint16_t address, uint8_t value) {
-    ppu.write_lcdc(value);
+    ppu.lcdc.write(value);
 }
 
 uint8_t CpuBus::read_stat(uint16_t address) const {
-    return ppu.read_stat();
+    return ppu.stat.read();
 }
 
 void CpuBus::write_stat(uint16_t address, uint8_t value) {
-    ppu.write_stat(value);
+    ppu.stat.write(value);
 }
 
 void CpuBus::write_dma(uint16_t address, uint8_t value) {

@@ -1,7 +1,7 @@
 #ifndef SOUND_H
 #define SOUND_H
 
-#include "docboy/memory/byte.h"
+#include "docboy/memory/cell.h"
 
 class SoundIO {
 public:
@@ -149,42 +149,42 @@ public:
         waveF = 0;
     };
 
-    byte nr10 {make_byte(Specs::Registers::Sound::NR10)};
-    byte nr11 {make_byte(Specs::Registers::Sound::NR11)};
-    byte nr12 {make_byte(Specs::Registers::Sound::NR12)};
-    byte nr13 {make_byte(Specs::Registers::Sound::NR13)};
-    byte nr14 {make_byte(Specs::Registers::Sound::NR14)};
-    byte nr21 {make_byte(Specs::Registers::Sound::NR21)};
-    byte nr22 {make_byte(Specs::Registers::Sound::NR22)};
-    byte nr23 {make_byte(Specs::Registers::Sound::NR23)};
-    byte nr24 {make_byte(Specs::Registers::Sound::NR24)};
-    byte nr30 {make_byte(Specs::Registers::Sound::NR30)};
-    byte nr31 {make_byte(Specs::Registers::Sound::NR31)};
-    byte nr32 {make_byte(Specs::Registers::Sound::NR32)};
-    byte nr33 {make_byte(Specs::Registers::Sound::NR33)};
-    byte nr34 {make_byte(Specs::Registers::Sound::NR34)};
-    byte nr41 {make_byte(Specs::Registers::Sound::NR41)};
-    byte nr42 {make_byte(Specs::Registers::Sound::NR42)};
-    byte nr43 {make_byte(Specs::Registers::Sound::NR43)};
-    byte nr44 {make_byte(Specs::Registers::Sound::NR44)};
-    byte nr50 {make_byte(Specs::Registers::Sound::NR50)};
-    byte nr51 {make_byte(Specs::Registers::Sound::NR51)};
-    byte nr52 {make_byte(Specs::Registers::Sound::NR52)};
-    byte wave0 {make_byte(Specs::Registers::Sound::WAVE0)};
-    byte wave1 {make_byte(Specs::Registers::Sound::WAVE1)};
-    byte wave2 {make_byte(Specs::Registers::Sound::WAVE2)};
-    byte wave3 {make_byte(Specs::Registers::Sound::WAVE3)};
-    byte wave4 {make_byte(Specs::Registers::Sound::WAVE4)};
-    byte wave5 {make_byte(Specs::Registers::Sound::WAVE5)};
-    byte wave6 {make_byte(Specs::Registers::Sound::WAVE6)};
-    byte wave7 {make_byte(Specs::Registers::Sound::WAVE7)};
-    byte wave8 {make_byte(Specs::Registers::Sound::WAVE8)};
-    byte wave9 {make_byte(Specs::Registers::Sound::WAVE9)};
-    byte waveA {make_byte(Specs::Registers::Sound::WAVEA)};
-    byte waveB {make_byte(Specs::Registers::Sound::WAVEB)};
-    byte waveC {make_byte(Specs::Registers::Sound::WAVEC)};
-    byte waveD {make_byte(Specs::Registers::Sound::WAVED)};
-    byte waveE {make_byte(Specs::Registers::Sound::WAVEE)};
-    byte waveF {make_byte(Specs::Registers::Sound::WAVEF)};
+    UInt8 nr10 {make_uint8(Specs::Registers::Sound::NR10)};
+    UInt8 nr11 {make_uint8(Specs::Registers::Sound::NR11)};
+    UInt8 nr12 {make_uint8(Specs::Registers::Sound::NR12)};
+    UInt8 nr13 {make_uint8(Specs::Registers::Sound::NR13)};
+    UInt8 nr14 {make_uint8(Specs::Registers::Sound::NR14)};
+    UInt8 nr21 {make_uint8(Specs::Registers::Sound::NR21)};
+    UInt8 nr22 {make_uint8(Specs::Registers::Sound::NR22)};
+    UInt8 nr23 {make_uint8(Specs::Registers::Sound::NR23)};
+    UInt8 nr24 {make_uint8(Specs::Registers::Sound::NR24)};
+    UInt8 nr30 {make_uint8(Specs::Registers::Sound::NR30)};
+    UInt8 nr31 {make_uint8(Specs::Registers::Sound::NR31)};
+    UInt8 nr32 {make_uint8(Specs::Registers::Sound::NR32)};
+    UInt8 nr33 {make_uint8(Specs::Registers::Sound::NR33)};
+    UInt8 nr34 {make_uint8(Specs::Registers::Sound::NR34)};
+    UInt8 nr41 {make_uint8(Specs::Registers::Sound::NR41)};
+    UInt8 nr42 {make_uint8(Specs::Registers::Sound::NR42)};
+    UInt8 nr43 {make_uint8(Specs::Registers::Sound::NR43)};
+    UInt8 nr44 {make_uint8(Specs::Registers::Sound::NR44)};
+    UInt8 nr50 {make_uint8(Specs::Registers::Sound::NR50)};
+    UInt8 nr51 {make_uint8(Specs::Registers::Sound::NR51)};
+    UInt8 nr52 {make_uint8(Specs::Registers::Sound::NR52)};
+    UInt8 wave0 {make_uint8(Specs::Registers::Sound::WAVE0)};
+    UInt8 wave1 {make_uint8(Specs::Registers::Sound::WAVE1)};
+    UInt8 wave2 {make_uint8(Specs::Registers::Sound::WAVE2)};
+    UInt8 wave3 {make_uint8(Specs::Registers::Sound::WAVE3)};
+    UInt8 wave4 {make_uint8(Specs::Registers::Sound::WAVE4)};
+    UInt8 wave5 {make_uint8(Specs::Registers::Sound::WAVE5)};
+    UInt8 wave6 {make_uint8(Specs::Registers::Sound::WAVE6)};
+    UInt8 wave7 {make_uint8(Specs::Registers::Sound::WAVE7)};
+    UInt8 wave8 {make_uint8(Specs::Registers::Sound::WAVE8)};
+    UInt8 wave9 {make_uint8(Specs::Registers::Sound::WAVE9)};
+    UInt8 waveA {make_uint8(Specs::Registers::Sound::WAVEA)};
+    UInt8 waveB {make_uint8(Specs::Registers::Sound::WAVEB)};
+    UInt8 waveC {make_uint8(Specs::Registers::Sound::WAVEC)};
+    UInt8 waveD {make_uint8(Specs::Registers::Sound::WAVED)};
+    UInt8 waveE {make_uint8(Specs::Registers::Sound::WAVEE)};
+    UInt8 waveF {make_uint8(Specs::Registers::Sound::WAVEF)};
 };
 #endif // SOUND_H

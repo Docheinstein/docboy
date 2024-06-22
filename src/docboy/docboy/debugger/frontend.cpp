@@ -1940,7 +1940,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << subheader("general", width) << endl;
 
-        b << yellow("On") << "               :  " << gb.ppu.on << endl;
+        b << yellow("On") << "               :  " << gb.ppu.lcdc.enable << endl;
         b << yellow("Cycle") << "            :  " << gb.ppu.cycles << endl;
         b << yellow("Dots") << "             :  " << gb.ppu.dots << endl;
         b << yellow("Mode") << "             :  " << [this]() -> Text {

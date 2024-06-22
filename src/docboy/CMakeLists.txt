@@ -53,9 +53,8 @@ target_sources(docboy PRIVATE
         docboy/joypad/joypad.h
         docboy/lcd/lcd.cpp
         docboy/lcd/lcd.h
-        docboy/memory/byte.cpp
-        docboy/memory/byte.h
-        docboy/memory/fwd/bytefwd.h
+        docboy/memory/cell.h
+        docboy/memory/fwd/cellfwd.h
         docboy/memory/fwd/hramfwd.h
         docboy/memory/fwd/memoryfwd.h
         docboy/memory/fwd/oamfwd.h

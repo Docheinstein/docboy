@@ -3,7 +3,7 @@
 
 #include "docboy/bootrom/helpers.h"
 #include "docboy/common/specs.h"
-#include "docboy/memory/byte.h"
+#include "docboy/memory/cell.h"
 
 #include "utils/bits.h"
 #include "utils/parcel.h"
@@ -34,7 +34,7 @@ public:
         boot = if_bootrom_else(0b11111110, 0b11111111);
     }
 
-    byte boot {make_byte(Specs::Registers::Boot::BOOT)};
+    UInt8 boot {make_uint8(Specs::Registers::Boot::BOOT)};
 
 private:
 #ifdef ENABLE_BOOTROM

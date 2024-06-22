@@ -106,18 +106,9 @@ Ppu::Ppu(Lcd& lcd, InterruptsIO& interrupts, Dma& dma, VramBus::View<Device::Ppu
 }
 
 void Ppu::tick() {
-    // Handle turn on/turn off
-    if (on) {
-        if (!lcdc.enable) {
-            turn_off();
-            return;
-        }
-    } else {
-        if (lcdc.enable) {
-            turn_on();
-        } else {
-            return;
-        }
+    // Do nothing if PPU is off
+    if (!lcdc.enable) {
+        return;
     }
 
     // Tick PPU by one dot
@@ -168,18 +159,13 @@ void Ppu::tick() {
 // ------- PPU helpers -------
 
 void Ppu::turn_on() {
-    ASSERT(!on);
     ASSERT(ly == 0);
-
-    on = true;
 
     // STAT's LYC_EQ_LY is updated properly (but interrupt is not raised)
     stat.lyc_eq_ly = is_lyc_eq_ly();
 }
 
 void Ppu::turn_off() {
-    ASSERT(on);
-    on = false;
     dots = 0;
     ly = 0;
     lcd.reset_cursor();
@@ -1601,7 +1587,6 @@ void Ppu::save_state(Parcel& parcel) const {
         parcel.write_uint8(i);
     }
 
-    parcel.write_bool(on);
     parcel.write_bool(last_stat_irq);
     parcel.write_bool(enable_lyc_eq_ly_irq);
     parcel.write_uint16(dots);
@@ -1719,7 +1704,6 @@ void Ppu::load_state(Parcel& parcel) {
     ASSERT(fetcher_tick_selector_number < array_size(FETCHER_TICK_SELECTORS));
     fetcher_tick_selector = FETCHER_TICK_SELECTORS[fetcher_tick_selector_number];
 
-    on = parcel.read_bool();
     last_stat_irq = parcel.read_bool();
     enable_lyc_eq_ly_irq = parcel.read_bool();
     dots = parcel.read_uint16();
@@ -1832,8 +1816,6 @@ void Ppu::reset() {
     tick_selector = if_bootrom_else(&Ppu::oam_scan_even, &Ppu::vblank_last_line_7);
     fetcher_tick_selector = &Ppu::bg_prefetcher_get_tile_0;
 
-    on = true;
-
     last_stat_irq = false;
     enable_lyc_eq_ly_irq = true;
 
@@ -1918,6 +1900,11 @@ void Ppu::reset() {
 #endif
 }
 
+void Ppu::write_dma(uint8_t value) {
+    dma = value;
+    dma_controller.start_transfer(dma << 8);
+}
+
 uint8_t Ppu::read_lcdc() const {
     return lcdc.enable << Specs::Bits::Video::LCDC::LCD_ENABLE |
            lcdc.win_tile_map << Specs::Bits::Video::LCDC::WIN_TILE_MAP |
@@ -1930,7 +1917,11 @@ uint8_t Ppu::read_lcdc() const {
 }
 
 void Ppu::write_lcdc(uint8_t value) {
-    lcdc.enable = test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(value);
+    const bool enable = test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(value);
+    if (enable != lcdc.enable) {
+        enable ? turn_on() : turn_off();
+        lcdc.enable = enable;
+    }
     lcdc.win_tile_map = test_bit<Specs::Bits::Video::LCDC::WIN_TILE_MAP>(value);
     lcdc.win_enable = test_bit<Specs::Bits::Video::LCDC::WIN_ENABLE>(value);
     lcdc.bg_win_tile_data = test_bit<Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA>(value);
@@ -1955,7 +1946,41 @@ void Ppu::write_stat(uint8_t value) {
     stat.hblank_int = test_bit<Specs::Bits::Video::STAT::HBLANK_INTERRUPT>(value);
 }
 
-void Ppu::write_dma(uint8_t value) {
-    dma = value;
-    dma_controller.start_transfer(dma << 8);
+Ppu::Lcdc::Lcdc(Ppu& ppu, bool notifications) :
+    Composite {ppu} {
+    enable_notification(notifications);
+}
+
+Ppu::Lcdc::Lcdc(const Ppu::Lcdc& other_c) :
+    Composite {other_c} {
+    auto& other = const_cast<Ppu::Lcdc&>(other_c);
+    suspend_notification();
+    other.suspend_notification();
+    enable = (bool)other.enable;
+    win_tile_map = (bool)other.win_tile_map;
+    win_enable = (bool)other.win_enable;
+    bg_win_tile_data = (bool)other.bg_win_tile_data;
+    bg_tile_map = (bool)other.bg_tile_map;
+    obj_size = (bool)other.obj_size;
+    obj_enable = (bool)other.obj_enable;
+    bg_win_enable = (bool)other.bg_win_enable;
+    other.restore_notification();
+    restore_notification();
+}
+
+Ppu::Lcdc& Ppu::Lcdc::operator=(const Ppu::Lcdc& other_c) {
+    auto& other = const_cast<Ppu::Lcdc&>(other_c);
+    suspend_notification();
+    other.suspend_notification();
+    enable = (bool)other.enable;
+    win_tile_map = (bool)other.win_tile_map;
+    win_enable = (bool)other.win_enable;
+    bg_win_tile_data = (bool)other.bg_win_tile_data;
+    bg_tile_map = (bool)other.bg_tile_map;
+    obj_size = (bool)other.obj_size;
+    obj_enable = (bool)other.obj_enable;
+    bg_win_enable = (bool)other.bg_win_enable;
+    other.restore_notification();
+    restore_notification();
+    return *this;
 }

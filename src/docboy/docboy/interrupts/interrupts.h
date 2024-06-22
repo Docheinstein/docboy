@@ -2,7 +2,7 @@
 #define INTERRUPTS_H
 
 #include "docboy/common/specs.h"
-#include "docboy/memory/byte.h"
+#include "docboy/memory/cell.h"
 
 #include "utils/bits.h"
 #include "utils/parcel.h"
@@ -51,8 +51,8 @@ public:
         IE = 0;
     }
 
-    byte IF {make_byte(Specs::Registers::Interrupts::IF)};
-    byte IE {make_byte(Specs::Registers::Interrupts::IE)};
+    UInt8 IF {make_uint8(Specs::Registers::Interrupts::IF)};
+    UInt8 IE {make_uint8(Specs::Registers::Interrupts::IE)};
 };
 
 #endif // INTERRUPTS_H

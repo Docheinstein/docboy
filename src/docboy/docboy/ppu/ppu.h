@@ -31,45 +31,57 @@ public:
 
     void reset();
 
+    // PPU I/O registers
+    void write_dma(uint8_t value);
+
+private:
     uint8_t read_lcdc() const;
     void write_lcdc(uint8_t value);
 
     uint8_t read_stat() const;
     void write_stat(uint8_t value);
 
-    void write_dma(uint8_t value);
+public:
+    struct Lcdc : Composite<Specs::Registers::Video::LCDC, Ppu, &Ppu::read_lcdc, &Ppu::write_lcdc> {
+        explicit Lcdc(Ppu& ppu, bool notifications = false);
+        Lcdc(const Lcdc& lcdc);
+        Lcdc& operator=(const Lcdc& lcdc);
 
-    // Video I/O registers
-    struct Lcdc {
-        bool enable;
-        bool win_tile_map;
-        bool win_enable;
-        bool bg_win_tile_data;
-        bool bg_tile_map;
-        bool obj_size;
-        bool obj_enable;
-        bool bg_win_enable;
-    } lcdc {};
+        Bool enable {make_bool()};
+        Bool win_tile_map {make_bool()};
+        Bool win_enable {make_bool()};
+        Bool bg_win_tile_data {make_bool()};
+        Bool bg_tile_map {make_bool()};
+        Bool obj_size {make_bool()};
+        Bool obj_enable {make_bool()};
+        Bool bg_win_enable {make_bool()};
+    } lcdc {*this, true /* enable notifications */};
 
-    struct {
-        bool lyc_eq_ly_int;
-        bool oam_int;
-        bool vblank_int;
-        bool hblank_int;
-        bool lyc_eq_ly;
-        uint8_t mode;
-    } stat {};
+    struct Stat : Composite<Specs::Registers::Video::STAT, Ppu, &Ppu::read_stat, &Ppu::write_stat> {
+        using Composite::Composite;
 
-    byte scy {make_byte(Specs::Registers::Video::SCY)};
-    byte scx {make_byte(Specs::Registers::Video::SCX)};
-    byte ly {make_byte(Specs::Registers::Video::LY)};
-    byte dma {make_byte(Specs::Registers::Video::DMA)};
-    byte lyc {make_byte(Specs::Registers::Video::LYC)};
-    byte bgp {make_byte(Specs::Registers::Video::BGP)};
-    byte obp0 {make_byte(Specs::Registers::Video::OBP0)};
-    byte obp1 {make_byte(Specs::Registers::Video::OBP1)};
-    byte wy {make_byte(Specs::Registers::Video::WY)};
-    byte wx {make_byte(Specs::Registers::Video::WX)};
+        explicit Stat(Ppu& ppu) :
+            Composite {ppu} {
+        }
+
+        Bool lyc_eq_ly_int {make_bool()};
+        Bool oam_int {make_bool()};
+        Bool vblank_int {make_bool()};
+        Bool hblank_int {make_bool()};
+        Bool lyc_eq_ly {make_bool()};
+        UInt8 mode {make_uint8()};
+    } stat {*this};
+
+    UInt8 scy {make_uint8(Specs::Registers::Video::SCY)};
+    UInt8 scx {make_uint8(Specs::Registers::Video::SCX)};
+    UInt8 ly {make_uint8(Specs::Registers::Video::LY)};
+    UInt8 dma {make_uint8(Specs::Registers::Video::DMA)};
+    UInt8 lyc {make_uint8(Specs::Registers::Video::LYC)};
+    UInt8 bgp {make_uint8(Specs::Registers::Video::BGP)};
+    UInt8 obp0 {make_uint8(Specs::Registers::Video::OBP0)};
+    UInt8 obp1 {make_uint8(Specs::Registers::Video::OBP1)};
+    UInt8 wy {make_uint8(Specs::Registers::Video::WY)};
+    UInt8 wx {make_uint8(Specs::Registers::Video::WX)};
 
 private:
     using TickSelector = void (Ppu::*)();
@@ -206,17 +218,15 @@ private:
     TickSelector tick_selector {};
     FetcherTickSelector fetcher_tick_selector {&Ppu::bg_prefetcher_get_tile_0};
 
-    bool on {true};
-
     bool last_stat_irq {};
     bool enable_lyc_eq_ly_irq {true};
 
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
 
-    uint8_t last_bgp {}; // BGP delayed by 1 t-cycle
-    uint8_t last_wx {};  // WX delayed by 1 t-cycle
-    Lcdc last_lcdc {};   // LCDC delayed by 1 t-cycle
+    uint8_t last_bgp {};    // BGP delayed by 1 t-cycle
+    uint8_t last_wx {};     // WX delayed by 1 t-cycle
+    Lcdc last_lcdc {*this}; // LCDC delayed by 1 t-cycle
 
     FillQueue<BgPixel, 8> bg_fifo {};
     Queue<ObjPixel, 8> obj_fifo {};

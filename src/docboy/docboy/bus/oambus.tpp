@@ -24,17 +24,17 @@ void OamBus::read_word_request(uint16_t addr) {
     uint8_t oam_addr = addr - Specs::MemoryLayout::OAM::START;
     if (oam_addr < 0x98) {
         // PPU is reading while CPU is accessing OAM, OAM Bug Corruption happens.
-        const auto read_word = [](const byte* b) {
-            return concat(b[0], b[1]);
+        const auto read_word = [](const UInt8* u) {
+            return concat(u[0], u[1]);
         };
 
-        const auto write_word = [](byte* b, uint16_t word) {
-            b[0] = get_byte<1>(word);
-            b[1] = get_byte<0>(word);
+        const auto write_word = [](UInt8* u, uint16_t word) {
+            u[0] = get_byte<1>(word);
+            u[1] = get_byte<0>(word);
         };
 
         const uint8_t row_addr = discard_bits<3>(oam_addr) + 8 /* next row */;
-        byte* row = &oam[row_addr];
+        UInt8* row = &oam[row_addr];
 
         if (test_bits_and<R<Device::Cpu>, W<Device::Cpu>>(requests)) {
             if (oam_addr > 0x08) {

@@ -3,7 +3,7 @@
 
 #include "docboy/bus/bus.h"
 #include "docboy/common/macros.h"
-#include "docboy/memory/fwd/bytefwd.h"
+#include "docboy/memory/fwd/cellfwd.h"
 
 #ifdef ENABLE_BOOTROM
 #include "docboy/bootrom/fwd/bootromfwd.h"

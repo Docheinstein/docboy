@@ -3,7 +3,7 @@
 
 #include <cstring>
 
-#include "docboy/memory/byte.h"
+#include "docboy/memory/cell.h"
 
 #include "utils/asserts.h"
 #include "utils/parcel.h"
@@ -26,18 +26,18 @@ public:
         set_data(data_, length);
     }
 
-    const byte& operator[](uint16_t index) const {
+    const UInt8& operator[](uint16_t index) const {
         return data[index];
     }
-    byte& operator[](uint16_t index) {
+    UInt8& operator[](uint16_t index) {
         return data[index];
     }
 
     void save_state(Parcel& parcel) {
-        parcel.write_bytes(data, Size * sizeof(byte));
+        parcel.write_bytes(data, Size * sizeof(UInt8));
     }
     void load_state(Parcel& parcel) {
-        parcel.read_bytes(data, Size * sizeof(byte));
+        parcel.read_bytes(data, Size * sizeof(UInt8));
     }
 
 protected:
@@ -53,7 +53,7 @@ protected:
 #endif
     }
 
-    byte data[Size] {};
+    UInt8 data[Size] {};
 };
 
 #endif // MEMORY_H
