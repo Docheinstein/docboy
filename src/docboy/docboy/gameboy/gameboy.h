@@ -70,7 +70,7 @@ public:
     // Buses
     ExtBus ext_bus {cartridge_slot, wram1, wram2};
 #ifdef ENABLE_BOOTROM
-    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, sound, video, boot};
+    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, sound, ppu, boot};
 #else
     CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, sound, ppu, boot};
 #endif
