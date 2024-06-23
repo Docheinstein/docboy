@@ -3,14 +3,8 @@
 
 #include <cstdint>
 
-template <typename Type>
-using CompositeReadFunction = uint8_t (Type::*)() const;
-
-template <typename Type>
-using CompositeWriteFunction = void (Type::*)(uint8_t);
-
-template <uint16_t Address, typename T, CompositeReadFunction<T> Read, CompositeWriteFunction<T> Write>
-class Composite;
+template <typename T, uint16_t Address>
+struct Composite;
 
 #ifdef ENABLE_DEBUGGER
 struct UInt8;

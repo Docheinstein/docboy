@@ -1905,54 +1905,13 @@ void Ppu::write_dma(uint8_t value) {
     dma_controller.start_transfer(dma << 8);
 }
 
-uint8_t Ppu::read_lcdc() const {
-    return lcdc.enable << Specs::Bits::Video::LCDC::LCD_ENABLE |
-           lcdc.win_tile_map << Specs::Bits::Video::LCDC::WIN_TILE_MAP |
-           lcdc.win_enable << Specs::Bits::Video::LCDC::WIN_ENABLE |
-           lcdc.bg_win_tile_data << Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA |
-           lcdc.bg_tile_map << Specs::Bits::Video::LCDC::BG_TILE_MAP |
-           lcdc.obj_size << Specs::Bits::Video::LCDC::OBJ_SIZE |
-           lcdc.obj_enable << Specs::Bits::Video::LCDC::OBJ_ENABLE |
-           lcdc.bg_win_enable << Specs::Bits::Video::LCDC::BG_WIN_ENABLE;
-}
-
-void Ppu::write_lcdc(uint8_t value) {
-    const bool enable = test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(value);
-    if (enable != lcdc.enable) {
-        enable ? turn_on() : turn_off();
-        lcdc.enable = enable;
-    }
-    lcdc.win_tile_map = test_bit<Specs::Bits::Video::LCDC::WIN_TILE_MAP>(value);
-    lcdc.win_enable = test_bit<Specs::Bits::Video::LCDC::WIN_ENABLE>(value);
-    lcdc.bg_win_tile_data = test_bit<Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA>(value);
-    lcdc.bg_tile_map = test_bit<Specs::Bits::Video::LCDC::BG_TILE_MAP>(value);
-    lcdc.obj_size = test_bit<Specs::Bits::Video::LCDC::OBJ_SIZE>(value);
-    lcdc.obj_enable = test_bit<Specs::Bits::Video::LCDC::OBJ_ENABLE>(value);
-    lcdc.bg_win_enable = test_bit<Specs::Bits::Video::LCDC::BG_WIN_ENABLE>(value);
-}
-
-uint8_t Ppu::read_stat() const {
-    return 0b10000000 | stat.lyc_eq_ly_int << Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT |
-           stat.oam_int << Specs::Bits::Video::STAT::OAM_INTERRUPT |
-           stat.vblank_int << Specs::Bits::Video::STAT::VBLANK_INTERRUPT |
-           stat.hblank_int << Specs::Bits::Video::STAT::HBLANK_INTERRUPT |
-           stat.lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY | stat.mode;
-}
-
-void Ppu::write_stat(uint8_t value) {
-    stat.lyc_eq_ly_int = test_bit<Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT>(value);
-    stat.oam_int = test_bit<Specs::Bits::Video::STAT::OAM_INTERRUPT>(value);
-    stat.vblank_int = test_bit<Specs::Bits::Video::STAT::VBLANK_INTERRUPT>(value);
-    stat.hblank_int = test_bit<Specs::Bits::Video::STAT::HBLANK_INTERRUPT>(value);
-}
-
 Ppu::Lcdc::Lcdc(Ppu& ppu, bool notifications) :
-    Composite {ppu} {
+    ppu {ppu} {
     enable_notification(notifications);
 }
 
 Ppu::Lcdc::Lcdc(const Ppu::Lcdc& other_c) :
-    Composite {other_c} {
+    ppu {other_c.ppu} {
     auto& other = const_cast<Ppu::Lcdc&>(other_c);
     suspend_notification();
     other.suspend_notification();
@@ -1983,4 +1942,43 @@ Ppu::Lcdc& Ppu::Lcdc::operator=(const Ppu::Lcdc& other_c) {
     other.restore_notification();
     restore_notification();
     return *this;
+}
+
+uint8_t Ppu::Lcdc::rd() {
+    return enable << Specs::Bits::Video::LCDC::LCD_ENABLE | win_tile_map << Specs::Bits::Video::LCDC::WIN_TILE_MAP |
+           win_enable << Specs::Bits::Video::LCDC::WIN_ENABLE |
+           bg_win_tile_data << Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA |
+           bg_tile_map << Specs::Bits::Video::LCDC::BG_TILE_MAP | obj_size << Specs::Bits::Video::LCDC::OBJ_SIZE |
+           obj_enable << Specs::Bits::Video::LCDC::OBJ_ENABLE |
+           bg_win_enable << Specs::Bits::Video::LCDC::BG_WIN_ENABLE;
+}
+
+void Ppu::Lcdc::wr(uint8_t value) {
+    const bool en = test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(value);
+    if (en != enable) {
+        en ? ppu.turn_on() : ppu.turn_off();
+        enable = en;
+    }
+    win_tile_map = test_bit<Specs::Bits::Video::LCDC::WIN_TILE_MAP>(value);
+    win_enable = test_bit<Specs::Bits::Video::LCDC::WIN_ENABLE>(value);
+    bg_win_tile_data = test_bit<Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA>(value);
+    bg_tile_map = test_bit<Specs::Bits::Video::LCDC::BG_TILE_MAP>(value);
+    obj_size = test_bit<Specs::Bits::Video::LCDC::OBJ_SIZE>(value);
+    obj_enable = test_bit<Specs::Bits::Video::LCDC::OBJ_ENABLE>(value);
+    bg_win_enable = test_bit<Specs::Bits::Video::LCDC::BG_WIN_ENABLE>(value);
+}
+
+uint8_t Ppu::Stat::rd() {
+    return 0b10000000 | lyc_eq_ly_int << Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT |
+           oam_int << Specs::Bits::Video::STAT::OAM_INTERRUPT |
+           vblank_int << Specs::Bits::Video::STAT::VBLANK_INTERRUPT |
+           hblank_int << Specs::Bits::Video::STAT::HBLANK_INTERRUPT | lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY |
+           mode;
+}
+
+void Ppu::Stat::wr(uint8_t value) {
+    lyc_eq_ly_int = test_bit<Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT>(value);
+    oam_int = test_bit<Specs::Bits::Video::STAT::OAM_INTERRUPT>(value);
+    vblank_int = test_bit<Specs::Bits::Video::STAT::VBLANK_INTERRUPT>(value);
+    hblank_int = test_bit<Specs::Bits::Video::STAT::HBLANK_INTERRUPT>(value);
 }

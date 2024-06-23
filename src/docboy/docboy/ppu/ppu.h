@@ -34,18 +34,14 @@ public:
     // PPU I/O registers
     void write_dma(uint8_t value);
 
-private:
-    uint8_t read_lcdc() const;
-    void write_lcdc(uint8_t value);
-
-    uint8_t read_stat() const;
-    void write_stat(uint8_t value);
-
 public:
-    struct Lcdc : Composite<Specs::Registers::Video::LCDC, Ppu, &Ppu::read_lcdc, &Ppu::write_lcdc> {
+    struct Lcdc : Composite<Lcdc, Specs::Registers::Video::LCDC> {
         explicit Lcdc(Ppu& ppu, bool notifications = false);
         Lcdc(const Lcdc& lcdc);
         Lcdc& operator=(const Lcdc& lcdc);
+
+        uint8_t rd();
+        void wr(uint8_t value);
 
         Bool enable {make_bool()};
         Bool win_tile_map {make_bool()};
@@ -55,14 +51,14 @@ public:
         Bool obj_size {make_bool()};
         Bool obj_enable {make_bool()};
         Bool bg_win_enable {make_bool()};
+
+    private:
+        Ppu& ppu;
     } lcdc {*this, true /* enable notifications */};
 
-    struct Stat : Composite<Specs::Registers::Video::STAT, Ppu, &Ppu::read_stat, &Ppu::write_stat> {
-        using Composite::Composite;
-
-        explicit Stat(Ppu& ppu) :
-            Composite {ppu} {
-        }
+    struct Stat : Composite<Stat, Specs::Registers::Video::STAT> {
+        uint8_t rd();
+        void wr(uint8_t value);
 
         Bool lyc_eq_ly_int {make_bool()};
         Bool oam_int {make_bool()};
@@ -70,7 +66,7 @@ public:
         Bool hblank_int {make_bool()};
         Bool lyc_eq_ly {make_bool()};
         UInt8 mode {make_uint8()};
-    } stat {*this};
+    } stat {};
 
     UInt8 scy {make_uint8(Specs::Registers::Video::SCY)};
     UInt8 scx {make_uint8(Specs::Registers::Video::SCX)};

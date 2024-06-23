@@ -109,8 +109,8 @@ constexpr inline UInt8 make_uint8(const uint16_t address) {
     return UInt8 {address};
 }
 
-template <uint16_t Address, typename T, CompositeReadFunction<T> Read, CompositeWriteFunction<T> Write>
-class Composite {
+template <typename T, uint16_t Address>
+struct Composite {
 public:
     struct UInt8 {
         static constexpr uint32_t INVALID_MEMORY_ADDRESS = UINT32_MAX;
@@ -257,10 +257,6 @@ public:
 
     using Bool = UInt8;
 
-    explicit Composite(T& parent) :
-        parent {parent} {
-    }
-
     uint8_t read() {
         begin_read();
         uint8_t v = read_raw();
@@ -297,11 +293,11 @@ protected:
 
 private:
     uint8_t read_raw() {
-        return (parent.*(Read))();
+        return static_cast<T&>(*this).rd();
     }
 
     void write_raw(uint8_t value) {
-        return (parent.*(Write))(value);
+        static_cast<T&>(*this).wr(value);
     }
 
     void begin_read() {
@@ -327,8 +323,6 @@ private:
         restore_notification();
     }
 
-    T& parent;
-
     bool notification_enabled {true};
 
     struct {
@@ -343,8 +337,8 @@ constexpr inline UInt8 make_uint8(const uint16_t address) {
     return {};
 }
 
-template <uint16_t Address, typename T, CompositeReadFunction<T> Read, CompositeWriteFunction<T> Write>
-class Composite {
+template <typename T, uint16_t Address>
+struct Composite {
 public:
     using Bool = bool;
     using UInt8 = ::UInt8;
@@ -357,12 +351,6 @@ public:
         return Bool {};
     }
 
-    explicit Composite(T& parent) :
-        parent {parent} {
-    }
-
-    T& parent;
-
     void begin_read() {
     }
 
@@ -370,11 +358,11 @@ public:
     }
 
     uint8_t read() {
-        return (parent.*(Read))();
+        return static_cast<T&>(*this).rd();
     }
 
     void write(uint8_t value) {
-        return (parent.*(Write))(value);
+        static_cast<T&>(*this).wr(value);
     }
 
     void begin_write() {
