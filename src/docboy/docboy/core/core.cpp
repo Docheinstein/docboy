@@ -278,7 +278,7 @@ void Core::reset() {
 }
 
 #ifdef ENABLE_AUDIO
-void Core::set_audio_callback(std::function<void(const int16_t*)>&& audio_callback) const {
+void Core::set_audio_callback(std::function<void(const int16_t*, uint32_t count)>&& audio_callback) const {
     gb.apu.set_audio_callback(std::move(audio_callback));
 }
 #endif

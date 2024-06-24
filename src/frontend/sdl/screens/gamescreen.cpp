@@ -132,6 +132,11 @@ void GameScreen::handle_event(const SDL_Event& event) {
             fps.count = 0;
             redraw_overlay();
             break;
+#ifdef ENABLE_AUDIO
+        case SDLK_m:
+            main.set_audio_enabled(!main.is_audio_enabled());
+            break;
+#endif
         case SDLK_q:
             main.set_speed(main.get_speed() - 1);
             redraw_overlay();

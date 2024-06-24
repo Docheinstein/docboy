@@ -22,7 +22,7 @@ Apu::Apu(TimersIO& timers) :
     reset();
 }
 
-void Apu::set_audio_callback(std::function<void(const int16_t*)>&& callback) {
+void Apu::set_audio_callback(std::function<void(const int16_t*, uint32_t)>&& callback) {
     audio_callback = std::move(callback);
 }
 
@@ -97,7 +97,7 @@ void Apu::tick_t0() {
         if (sample_index == SAMPLES_PER_FRAME) {
             sample_index = 0;
             if (audio_callback) {
-                audio_callback(samples);
+                audio_callback(samples, SAMPLES_PER_FRAME);
             }
         }
     }

@@ -56,6 +56,7 @@ struct Preferences {
     uint32_t scaling {};
     int x {};
     int y {};
+    bool audio {};
 };
 
 Preferences make_default_preferences() {
@@ -72,6 +73,7 @@ Preferences make_default_preferences() {
     prefs.scaling = 2;
     prefs.x = 200;
     prefs.y = 200;
+    prefs.audio = true;
     return prefs;
 }
 
@@ -106,6 +108,10 @@ std::optional<T> parse_int(const std::string& s) {
     }
 
     return val;
+}
+
+std::optional<bool> parse_bool(const std::string& s) {
+    return parse_int<bool>(s);
 }
 
 std::optional<uint16_t> parse_hex_uint16(const std::string& s) {
@@ -180,6 +186,7 @@ void read_preferences(const std::string& path, Preferences& p) {
     ini_reader.add_property("scaling", p.scaling, parse_int<uint32_t>);
     ini_reader.add_property("x", p.x, parse_int<int32_t>);
     ini_reader.add_property("y", p.y, parse_int<int32_t>);
+    ini_reader.add_property("audio", p.audio, parse_bool);
 
     const auto result = ini_reader.parse(path);
     switch (result.outcome) {
@@ -211,106 +218,13 @@ void write_preferences(const std::string& path, const Preferences& p) {
     properties.emplace("scaling", std::to_string(p.scaling));
     properties.emplace("x", std::to_string(p.x));
     properties.emplace("y", std::to_string(p.y));
+    properties.emplace("audio", std::to_string(p.audio));
 
     IniWriter ini_writer;
     if (!ini_writer.write(properties, path)) {
         std::cerr << "WARN: failed to write '" << path << "'" << std::endl;
     }
 }
-
-//
-// void audio_test() {
-//    const SDL_AudioSpec srcspec = { SDL_AUDIO_S16, 1, 48000 };
-//    const SDL_AudioSpec dstspec = { SDL_AUDIO_F32, 2, 48000 };
-//    SDL_AudioStream *stream = SDL_CreateAudioStream(&srcspec, &dstspec);
-//
-//    if (!stream) {
-//        printf("Uhoh, stream failed to create: %s\n", SDL_GetError());
-//        exit(-1);
-//    }
-//
-//    SDL_AudioSpec audio_spec;
-//    audio_spec.format = SDL_AUDIO_F32;
-//    audio_spec.channels = 2;
-//    audio_spec.freq = 48000;
-//
-//    const auto find_audio_device_by_name = [](const std::string& name)-> SDL_AudioDeviceID {
-//        int num_devices;
-//        SDL_AudioDeviceID* device_ids = SDL_GetAudioOutputDevices(&num_devices);
-//        for (int i = 0; i < num_devices; i++) {
-//            const auto device_id = device_ids[i];
-//            if (SDL_GetAudioDeviceName(device_id) == name) {
-//                return device_id;
-//            }
-//        }
-//        return SDL_AUDIO_DEVICE_DEFAULT_OUTPUT;
-//    };
-//
-////    SDL_AudioDeviceID device_id = find_audio_device_by_name("HDA Intel PCH, ALC892 Analog");
-//    const auto audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &audio_spec);
-//    if (!audio_device) {
-//        printf("Uhoh, failed to open audio dev: %s\n", SDL_GetError());
-//        exit(-1);
-//    }
-//
-//    std::chrono::high_resolution_clock::time_point next_frame_time = std::chrono::high_resolution_clock::now();
-//
-//    int16_t samples[48000]{};
-//
-//    SDL_BindAudioStream(audio_device, stream);
-//
-//    struct Note {
-//        double freq;
-//        uint32_t length; // [0, 48000]
-//        int16_t amplitude; // [0, 256]
-//    };
-//    std::vector<Note> notes{
-//        {440.0, 6000, 2000},
-//        {440.0, 6000, 4000},
-//        {440.0, 6000, 6000},
-//        {440.0, 6000, 8000},
-//        {440.0, 6000, 10000},
-//        {440.0, 6000, 12000},
-//        {440.0, 6000, 14000},
-//        {440.0, 6000, 16000},
-//    };
-//
-//    while (true) {
-//        while (std::chrono::high_resolution_clock::now() < next_frame_time) {
-//
-//        }
-//        next_frame_time += std::chrono::milliseconds{1000};
-//
-//        uint32_t n_samples = 48000;
-//
-//        auto note = [](int i, double freq, int16_t amplitude /* [0,256] */) {
-//            auto s = sin(2 * 3.1415 * i * (freq / 48000));
-//            if (s > 0)
-//                return amplitude;
-//            return (int16_t) 0;
-//        };
-//
-//        int i = 0;
-//        for (const auto& n : notes) {
-//            for (int t = 0; t < n.length; t++) {
-//                samples[i] = note(i, n.freq, n.amplitude);
-//                i++;
-//            }
-//        }
-//        if (i != 48000)
-//            exit(1);
-//
-//        // you tell it the number of _bytes_, not samples, you're putting!
-//        int rc = SDL_PutAudioStreamData(stream, samples, n_samples * sizeof (int16_t ));
-//        if (rc == -1) {
-//            printf("Uhoh, failed to put samples in stream: %s\n", SDL_GetError());
-//            return;
-//        }
-//
-//        SDL_FlushAudioStream(stream);
-//    }
-//}
-
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -462,6 +376,11 @@ int main(int argc, char* argv[]) {
     }
     ui_controller.set_current_palette(palette->index);
 
+#ifdef ENABLE_AUDIO
+    // - Audio
+    main_controller.set_audio_enabled(prefs.audio);
+#endif
+
 #ifdef ENABLE_SERIAL
     // Eventually attach serial
     std::unique_ptr<SerialConsole> serial_console;
@@ -501,6 +420,13 @@ int main(int argc, char* argv[]) {
 
     // Bind audio stream to audio device
     SDL_BindAudioStream(audio_device, stream);
+
+    core.set_audio_callback([&stream, &main_controller](const int16_t* samples, uint32_t count) {
+        if (main_controller.is_audio_enabled()) {
+            SDL_PutAudioStreamData(stream, samples, static_cast<int>(count * sizeof(int16_t)));
+            SDL_FlushAudioStream(stream);
+        }
+    });
 #endif
 
     if (!args.rom.empty()) {
@@ -511,13 +437,6 @@ int main(int argc, char* argv[]) {
         // Start with launcher screen instead
         nav_controller.push(std::make_unique<LauncherScreen>(context));
     }
-
-#ifdef ENABLE_AUDIO
-    core.set_audio_callback([&stream](const int16_t* samples) {
-        SDL_PutAudioStreamData(stream, samples, Apu::SAMPLES_PER_FRAME * sizeof(int16_t));
-        SDL_FlushAudioStream(stream);
-    });
-#endif
 
     // Main loop
     SDL_Event e;
@@ -575,6 +494,10 @@ int main(int argc, char* argv[]) {
     Window::Position pos = window.get_position();
     prefs.x = pos.x;
     prefs.y = pos.y;
+
+#ifdef ENABLE_AUDIO
+    prefs.audio = main_controller.is_audio_enabled();
+#endif
 
     write_preferences(pref_path, prefs);
 

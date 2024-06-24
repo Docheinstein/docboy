@@ -31,7 +31,7 @@ public:
 
 #ifdef ENABLE_AUDIO
     // Audio
-    void set_audio_callback(std::function<void(const int16_t*)>&& audio_callback) const;
+    void set_audio_callback(std::function<void(const int16_t*, uint32_t count)>&& audio_callback) const;
 #endif
 
     // Save/Load RAM

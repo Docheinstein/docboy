@@ -9,6 +9,9 @@ ShortcutsScreen::ShortcutsScreen(Context context) :
     menu.add_item({"Toggle FPS      F"});
     menu.add_item({"Inc. speed      W"});
     menu.add_item({"Dec. speed      Q"});
+#ifdef ENABLE_AUDIO
+    menu.add_item({"Toggle audio    M"});
+#endif
 #ifdef ENABLE_DEBUGGER
     menu.add_item({"Toggle debugger D"});
 #endif

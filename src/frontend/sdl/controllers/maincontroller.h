@@ -22,9 +22,20 @@ public:
     void quit() {
         quitting = true;
     }
+
     bool should_quit() const {
         return quitting;
     }
+
+#ifdef ENABLE_AUDIO
+    void set_audio_enabled(bool enabled) {
+        audio = enabled;
+    }
+
+    bool is_audio_enabled() const {
+        return audio;
+    }
+#endif
 
 private:
     static constexpr std::chrono::nanoseconds DEFAULT_FRAME_TIME {1000000000LLU * Specs::Ppu::DOTS_PER_FRAME /
@@ -33,6 +44,10 @@ private:
     int32_t speed {};
     std::chrono::high_resolution_clock::duration frame_time {DEFAULT_FRAME_TIME};
     bool quitting {};
+
+#ifdef ENABLE_AUDIO
+    bool audio {true};
+#endif
 };
 
 #endif // MAINCONTROLLER_H

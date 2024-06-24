@@ -30,7 +30,7 @@ public:
 
     explicit Apu(TimersIO& timers);
 
-    void set_audio_callback(std::function<void(const int16_t* samples)>&& callback);
+    void set_audio_callback(std::function<void(const int16_t* samples, uint32_t count)>&& callback);
 
     void tick_t0();
     void tick_t1();
@@ -135,7 +135,7 @@ private:
 
     int16_t samples[SAMPLES_PER_FRAME] {};
 
-    std::function<void(const int16_t*)> audio_callback {};
+    std::function<void(const int16_t*, uint32_t)> audio_callback {};
 
     struct {
         bool dac {};
