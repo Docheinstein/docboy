@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "docboy/audio/apu.h"
 #include "docboy/boot/boot.h"
 #include "docboy/bus/cpubus.h"
 #include "docboy/bus/extbus.h"
@@ -24,7 +25,6 @@
 #include "docboy/mmu/mmu.h"
 #include "docboy/ppu/ppu.h"
 #include "docboy/serial/port.h"
-#include "docboy/sound/sound.h"
 #include "docboy/stop/stopcontroller.h"
 #include "docboy/timers/timers.h"
 
@@ -65,14 +65,13 @@ public:
     SerialPort serial_port {interrupts};
     Timers timers {interrupts};
     InterruptsIO interrupts {};
-    SoundIO sound {};
 
     // Buses
     ExtBus ext_bus {cartridge_slot, wram1, wram2};
 #ifdef ENABLE_BOOTROM
-    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, sound, ppu, boot};
+    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
 #else
-    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, sound, ppu, boot};
+    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
 #endif
     VramBus vram_bus {vram};
     OamBus oam_bus {oam};
@@ -94,6 +93,9 @@ public:
     // Video
     Lcd lcd {};
     Ppu ppu {lcd, interrupts, dma, vram_bus, oam_bus};
+
+    // Audio
+    Apu apu {timers};
 
     // Power Saving
     bool stopped {};

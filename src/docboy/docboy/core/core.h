@@ -29,6 +29,11 @@ public:
         gb.joypad.set_key_state(key, state);
     }
 
+#ifdef ENABLE_AUDIO
+    // Audio
+    void set_audio_callback(std::function<void(const int16_t*)>&& audio_callback) const;
+#endif
+
     // Save/Load RAM
     void save_ram(void* data) const;
     void load_ram(const void* data) const;

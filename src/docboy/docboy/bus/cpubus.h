@@ -12,19 +12,19 @@ class JoypadIO;
 class SerialIO;
 class TimersIO;
 class InterruptsIO;
-class SoundIO;
-class Ppu;
 class BootIO;
+class Apu;
+class Ppu;
 
 class CpuBus final : public Bus<CpuBus> {
 
 public:
 #ifdef ENABLE_BOOTROM
     CpuBus(BootRom& boot_rom, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
-           InterruptsIO& interrupts, SoundIO& sound, Ppu& ppu, BootIO& boot);
+           InterruptsIO& interrupts, Apu& apu, Ppu& ppu, BootIO& boot);
 #else
-    CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts, SoundIO& sound,
-           Ppu& ppu, BootIO& boot);
+    CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts, Apu& apu,
+           Ppu& Ppu, BootIO& boot);
 #endif
 
 private:
@@ -42,10 +42,17 @@ private:
     void write_if(uint16_t address, uint8_t value);
 
     void write_nr10(uint16_t address, uint8_t value);
+    uint8_t read_nr21(uint16_t address) const;
+    void write_nr21(uint16_t address, uint8_t value);
+    uint8_t read_nr22(uint16_t address) const;
+    void write_nr22(uint16_t address, uint8_t value);
+    uint8_t read_nr24(uint16_t address) const;
+    void write_nr24(uint16_t address, uint8_t value);
     void write_nr30(uint16_t address, uint8_t value);
     void write_nr32(uint16_t address, uint8_t value);
     void write_nr41(uint16_t address, uint8_t value);
     void write_nr44(uint16_t address, uint8_t value);
+    uint8_t read_nr52(uint16_t address) const;
     void write_nr52(uint16_t address, uint8_t value);
 
     uint8_t read_lcdc(uint16_t address) const;
@@ -70,10 +77,10 @@ private:
         SerialIO& serial;
         TimersIO& timers;
         InterruptsIO& interrupts;
-        SoundIO& sound;
         BootIO& boot;
     } io;
 
+    Apu& apu;
     Ppu& ppu;
 };
 #endif // CPUBUS_H

@@ -35,17 +35,20 @@ Core::Core(GameBoy& gb) :
 inline void Core::tick_t0() const {
     gb.cpu.tick_t0();
     gb.ppu.tick();
+    gb.apu.tick_t0();
 }
 
 inline void Core::tick_t1() const {
     gb.cpu.tick_t1();
     gb.ppu.tick();
     gb.dma.tick_t1();
+    gb.apu.tick_t1();
 }
 
 inline void Core::tick_t2() const {
     gb.cpu.tick_t2();
     gb.ppu.tick();
+    gb.apu.tick_t2();
 }
 
 inline void Core::tick_t3() const {
@@ -58,6 +61,7 @@ inline void Core::tick_t3() const {
     gb.dma.tick_t3();
     gb.stop_controller.tick();
     gb.cartridge_slot.tick();
+    gb.apu.tick_t3();
 }
 
 void Core::_cycle() {
@@ -195,6 +199,7 @@ Parcel Core::parcelize_state() const {
 
     gb.cpu.save_state(p);
     gb.ppu.save_state(p);
+    gb.apu.save_state(p);
     gb.cartridge_slot.cartridge->save_state(p);
     gb.vram.save_state(p);
     gb.wram1.save_state(p);
@@ -209,7 +214,6 @@ Parcel Core::parcelize_state() const {
     gb.serial_port.save_state(p);
     gb.timers.save_state(p);
     gb.interrupts.save_state(p);
-    gb.sound.save_state(p);
     gb.lcd.save_state(p);
     gb.dma.save_state(p);
     gb.mmu.save_state(p);
@@ -223,6 +227,7 @@ void Core::unparcelize_state(Parcel&& parcel) {
 
     gb.cpu.load_state(parcel);
     gb.ppu.load_state(parcel);
+    gb.apu.load_state(parcel);
     gb.cartridge_slot.cartridge->load_state(parcel);
     gb.vram.load_state(parcel);
     gb.wram1.load_state(parcel);
@@ -237,7 +242,6 @@ void Core::unparcelize_state(Parcel&& parcel) {
     gb.serial_port.load_state(parcel);
     gb.timers.load_state(parcel);
     gb.interrupts.load_state(parcel);
-    gb.sound.load_state(parcel);
     gb.lcd.load_state(parcel);
     gb.dma.load_state(parcel);
     gb.mmu.load_state(parcel);
@@ -252,6 +256,7 @@ void Core::reset() {
 
     gb.cpu.reset();
     gb.ppu.reset();
+    gb.apu.reset();
     gb.cartridge_slot.cartridge->reset();
     gb.vram.reset();
     gb.wram1.reset();
@@ -266,12 +271,17 @@ void Core::reset() {
     gb.serial_port.reset();
     gb.timers.reset();
     gb.interrupts.reset();
-    gb.sound.reset();
     gb.lcd.reset();
     gb.dma.reset();
     gb.mmu.reset();
     gb.stop_controller.reset();
 }
+
+#ifdef ENABLE_AUDIO
+void Core::set_audio_callback(std::function<void(const int16_t*)>&& audio_callback) const {
+    gb.apu.set_audio_callback(std::move(audio_callback));
+}
+#endif
 
 #ifdef ENABLE_DEBUGGER
 void Core::attach_debugger(DebuggerBackend& dbg) {

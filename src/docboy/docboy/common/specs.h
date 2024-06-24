@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include "utils/bitrange.h"
+
 namespace Specs {
 namespace Display {
     constexpr uint32_t WIDTH = 160;
@@ -247,6 +249,43 @@ namespace Bits {
             constexpr uint8_t MODE_LOW = 0;
         } // namespace STAT
     }     // namespace Video
+
+    namespace Audio {
+        namespace NR21 {
+            constexpr BitRange DUTY_CYCLE = {7, 6};
+            constexpr BitRange INITIAL_LENGTH_TIMER = {5, 0};
+        } // namespace NR21
+        namespace NR22 {
+            constexpr BitRange INITIAL_VOLUME = {7, 4};
+            constexpr uint8_t ENVELOPE_DIRECTION = 3;
+            constexpr BitRange SWEEP_PACE = {2, 0};
+        } // namespace NR22
+        namespace NR24 {
+            constexpr uint8_t TRIGGER = 7;
+            constexpr uint8_t LENGTH_ENABLE = 6;
+            constexpr BitRange PERIOD = {2, 0};
+        } // namespace NR24
+
+        namespace NR51 {
+            constexpr uint8_t CH4_LEFT = 7;
+            constexpr uint8_t CH3_LEFT = 6;
+            constexpr uint8_t CH2_LEFT = 5;
+            constexpr uint8_t CH1_LEFT = 4;
+            constexpr uint8_t CH4_RIGHT = 7;
+            constexpr uint8_t CH3_RIGHT = 6;
+            constexpr uint8_t CH2_RIGHT = 5;
+            constexpr uint8_t CH1_RIGHT = 4;
+        } // namespace NR51
+
+        namespace NR52 {
+            constexpr uint8_t AUDIO_ENABLE = 7;
+            constexpr uint8_t CH4_ENABLE = 3;
+            constexpr uint8_t CH3_ENABLE = 2;
+            constexpr uint8_t CH2_ENABLE = 1;
+            constexpr uint8_t CH1_ENABLE = 0;
+        } // namespace NR52
+
+    } // namespace Audio
 
     namespace OAM {
         namespace Attributes {

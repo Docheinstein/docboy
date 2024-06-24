@@ -84,7 +84,8 @@ target_sources(docboy PRIVATE
         docboy/serial/port.cpp
         docboy/serial/port.h
         docboy/serial/serial.h
-        docboy/sound/sound.h
+        docboy/audio/apu.cpp
+        docboy/audio/apu.h
         docboy/timers/timers.cpp
         docboy/timers/timers.h
 )
@@ -129,6 +130,10 @@ endif ()
 
 if (ENABLE_SERIAL)
     target_compile_definitions(docboy PUBLIC ENABLE_SERIAL)
+endif ()
+
+if (ENABLE_AUDIO)
+    target_compile_definitions(docboy PUBLIC ENABLE_AUDIO)
 endif ()
 
 target_link_libraries(docboy PRIVATE utils)

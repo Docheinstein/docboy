@@ -217,6 +217,100 @@ void write_preferences(const std::string& path, const Preferences& p) {
         std::cerr << "WARN: failed to write '" << path << "'" << std::endl;
     }
 }
+
+//
+// void audio_test() {
+//    const SDL_AudioSpec srcspec = { SDL_AUDIO_S16, 1, 48000 };
+//    const SDL_AudioSpec dstspec = { SDL_AUDIO_F32, 2, 48000 };
+//    SDL_AudioStream *stream = SDL_CreateAudioStream(&srcspec, &dstspec);
+//
+//    if (!stream) {
+//        printf("Uhoh, stream failed to create: %s\n", SDL_GetError());
+//        exit(-1);
+//    }
+//
+//    SDL_AudioSpec audio_spec;
+//    audio_spec.format = SDL_AUDIO_F32;
+//    audio_spec.channels = 2;
+//    audio_spec.freq = 48000;
+//
+//    const auto find_audio_device_by_name = [](const std::string& name)-> SDL_AudioDeviceID {
+//        int num_devices;
+//        SDL_AudioDeviceID* device_ids = SDL_GetAudioOutputDevices(&num_devices);
+//        for (int i = 0; i < num_devices; i++) {
+//            const auto device_id = device_ids[i];
+//            if (SDL_GetAudioDeviceName(device_id) == name) {
+//                return device_id;
+//            }
+//        }
+//        return SDL_AUDIO_DEVICE_DEFAULT_OUTPUT;
+//    };
+//
+////    SDL_AudioDeviceID device_id = find_audio_device_by_name("HDA Intel PCH, ALC892 Analog");
+//    const auto audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &audio_spec);
+//    if (!audio_device) {
+//        printf("Uhoh, failed to open audio dev: %s\n", SDL_GetError());
+//        exit(-1);
+//    }
+//
+//    std::chrono::high_resolution_clock::time_point next_frame_time = std::chrono::high_resolution_clock::now();
+//
+//    int16_t samples[48000]{};
+//
+//    SDL_BindAudioStream(audio_device, stream);
+//
+//    struct Note {
+//        double freq;
+//        uint32_t length; // [0, 48000]
+//        int16_t amplitude; // [0, 256]
+//    };
+//    std::vector<Note> notes{
+//        {440.0, 6000, 2000},
+//        {440.0, 6000, 4000},
+//        {440.0, 6000, 6000},
+//        {440.0, 6000, 8000},
+//        {440.0, 6000, 10000},
+//        {440.0, 6000, 12000},
+//        {440.0, 6000, 14000},
+//        {440.0, 6000, 16000},
+//    };
+//
+//    while (true) {
+//        while (std::chrono::high_resolution_clock::now() < next_frame_time) {
+//
+//        }
+//        next_frame_time += std::chrono::milliseconds{1000};
+//
+//        uint32_t n_samples = 48000;
+//
+//        auto note = [](int i, double freq, int16_t amplitude /* [0,256] */) {
+//            auto s = sin(2 * 3.1415 * i * (freq / 48000));
+//            if (s > 0)
+//                return amplitude;
+//            return (int16_t) 0;
+//        };
+//
+//        int i = 0;
+//        for (const auto& n : notes) {
+//            for (int t = 0; t < n.length; t++) {
+//                samples[i] = note(i, n.freq, n.amplitude);
+//                i++;
+//            }
+//        }
+//        if (i != 48000)
+//            exit(1);
+//
+//        // you tell it the number of _bytes_, not samples, you're putting!
+//        int rc = SDL_PutAudioStreamData(stream, samples, n_samples * sizeof (int16_t ));
+//        if (rc == -1) {
+//            printf("Uhoh, failed to put samples in stream: %s\n", SDL_GetError());
+//            return;
+//        }
+//
+//        SDL_FlushAudioStream(stream);
+//    }
+//}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -292,10 +386,18 @@ int main(int argc, char* argv[]) {
 #endif
 
     // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+#ifdef ENABLE_AUDIO
+    const uint32_t sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO;
+#else
+    const uint32_t sdl_init_flags = SDL_INIT_VIDEO;
+#endif
+
+    if (SDL_Init(sdl_init_flags) != 0) {
         std::cerr << "ERROR: SDL initialization failed '" << SDL_GetError() << "'" << std::endl;
         return 4;
     }
+
+    //    audio_test();
 
 #ifdef NFD
     // Initialize NFD
@@ -379,6 +481,28 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
+#ifdef ENABLE_AUDIO
+    // Open audio device
+    const SDL_AudioSpec audio_src_spec = {SDL_AUDIO_S16, 1, Apu::SAMPLES_PER_SECOND};
+    const SDL_AudioSpec audio_dst_spec = {SDL_AUDIO_S16, 2, Apu::SAMPLES_PER_SECOND};
+
+    const auto audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &audio_dst_spec);
+    if (!audio_device) {
+        std::cerr << "ERROR: SDL audio device initialization failed '" << SDL_GetError() << "'" << std::endl;
+        return 6;
+    }
+
+    // Create audio stream
+    SDL_AudioStream* stream = SDL_CreateAudioStream(&audio_src_spec, &audio_dst_spec);
+    if (!stream) {
+        std::cerr << "ERROR: SDL audio stream initialization failed '" << SDL_GetError() << "'" << std::endl;
+        return 7;
+    }
+
+    // Bind audio stream to audio device
+    SDL_BindAudioStream(audio_device, stream);
+#endif
+
     if (!args.rom.empty()) {
         // Start with loaded game
         core_controller.load_rom(args.rom);
@@ -387,6 +511,13 @@ int main(int argc, char* argv[]) {
         // Start with launcher screen instead
         nav_controller.push(std::make_unique<LauncherScreen>(context));
     }
+
+#ifdef ENABLE_AUDIO
+    core.set_audio_callback([&stream](const int16_t* samples) {
+        SDL_PutAudioStreamData(stream, samples, Apu::SAMPLES_PER_FRAME * sizeof(int16_t));
+        SDL_FlushAudioStream(stream);
+    });
+#endif
 
     // Main loop
     SDL_Event e;
@@ -451,6 +582,12 @@ int main(int argc, char* argv[]) {
     if (serial_console) {
         serial_console->flush();
     }
+#endif
+
+#ifdef ENABLE_AUDIO
+    // Release audio resources
+    SDL_DestroyAudioStream(stream);
+    SDL_CloseAudioDevice(audio_device);
 #endif
 
     return 0;

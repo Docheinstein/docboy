@@ -2240,6 +2240,23 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         return b;
     };
 
+#ifdef ENABLE_AUDIO
+    // APU
+    const auto make_apu_block = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("APU", width) << endl;
+
+        b << yellow("On") << "           :  " << +gb.apu.nr52.enable << endl;
+
+        b << subheader("channel 2", width) << endl;
+        b << yellow("Enabled") << "      :  " << +gb.apu.ch2.dac << endl;
+        b << yellow("DAC") << "          :  " << +gb.apu.nr52.ch2 << endl;
+
+        return b;
+    };
+#endif
+
     // Bus
     const auto make_bus_block = [&](uint32_t width) {
         auto b {make_block(width)};
@@ -2431,7 +2448,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << ios(Specs::Registers::Timers::REGISTERS, array_size(Specs::Registers::Timers::REGISTERS)) << endl;
         b << subheader("interrupts", width) << endl;
         b << ios(Specs::Registers::Interrupts::REGISTERS, array_size(Specs::Registers::Interrupts::REGISTERS)) << endl;
-        b << subheader("sound", width) << endl;
+        b << subheader("audio", width) << endl;
         b << ios(Specs::Registers::Sound::REGISTERS, array_size(Specs::Registers::Sound::REGISTERS)) << endl;
         b << subheader("video", width) << endl;
         b << ios(Specs::Registers::Video::REGISTERS, array_size(Specs::Registers::Video::REGISTERS)) << endl;
@@ -2703,6 +2720,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     auto c3 {make_vertical_layout()};
     c3->add_node(make_ppu_header(COLUMN_3_WIDTH));
     c3->add_node(std::move(c3r2));
+    c3->add_node(make_apu_block(COLUMN_3_WIDTH));
 
     static constexpr uint32_t COLUMN_4_WIDTH = 66;
     auto c4 {make_vertical_layout()};

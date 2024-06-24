@@ -1,12 +1,12 @@
 #include "docboy/bus/cpubus.h"
 
+#include "docboy/audio/apu.h"
 #include "docboy/boot/boot.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/memory/hram.h"
 #include "docboy/ppu/ppu.h"
 #include "docboy/serial/serial.h"
-#include "docboy/sound/sound.h"
 #include "docboy/timers/timers.h"
 
 #ifdef ENABLE_BOOTROM
@@ -15,16 +15,17 @@
 
 #ifdef ENABLE_BOOTROM
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
-               InterruptsIO& interrupts, SoundIO& sound, Ppu& ppu, BootIO& boot) :
+               InterruptsIO& interrupts, Apu& apu, Ppu& ppu, BootIO& boot) :
     Bus<CpuBus> {},
     boot_rom {boot_rom},
 #else
-CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts,
-               SoundIO& sound, Ppu& ppu, BootIO& boot) :
+CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts, Apu& apu,
+               Ppu& ppu, BootIO& boot) :
     Bus<CpuBus> {},
 #endif
     hram {hram},
-    io {joypad, serial, timers, interrupts, sound, boot},
+    io {joypad, serial, timers, interrupts, boot},
+    apu {apu},
     ppu {ppu} {
 
     const MemoryAccess open_bus_access {&CpuBus::read_ff, &CpuBus::write_nop};
@@ -52,29 +53,29 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     /* FF0D */ memory_accessors[0xFF0D] = open_bus_access;
     /* FF0E */ memory_accessors[0xFF0E] = open_bus_access;
     /* FF0F */ memory_accessors[Specs::Registers::Interrupts::IF] = {&io.interrupts.IF, &CpuBus::write_if};
-    /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {&io.sound.nr10, &CpuBus::write_nr10};
-    /* FF11 */ memory_accessors[Specs::Registers::Sound::NR11] = &io.sound.nr11;
-    /* FF12 */ memory_accessors[Specs::Registers::Sound::NR12] = &io.sound.nr12;
-    /* FF13 */ memory_accessors[Specs::Registers::Sound::NR13] = &io.sound.nr13;
-    /* FF14 */ memory_accessors[Specs::Registers::Sound::NR14] = &io.sound.nr14;
+    /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {&apu.nr10, &CpuBus::write_nr10};
+    /* FF11 */ memory_accessors[Specs::Registers::Sound::NR11] = &apu.nr11;
+    /* FF12 */ memory_accessors[Specs::Registers::Sound::NR12] = &apu.nr12;
+    /* FF13 */ memory_accessors[Specs::Registers::Sound::NR13] = &apu.nr13;
+    /* FF14 */ memory_accessors[Specs::Registers::Sound::NR14] = &apu.nr14;
     /* FF15 */ memory_accessors[0xFF15] = open_bus_access;
-    /* FF16 */ memory_accessors[Specs::Registers::Sound::NR21] = &io.sound.nr21;
-    /* FF17 */ memory_accessors[Specs::Registers::Sound::NR22] = &io.sound.nr22;
-    /* FF18 */ memory_accessors[Specs::Registers::Sound::NR23] = &io.sound.nr23;
-    /* FF19 */ memory_accessors[Specs::Registers::Sound::NR24] = &io.sound.nr24;
-    /* FF1A */ memory_accessors[Specs::Registers::Sound::NR30] = {&io.sound.nr30, &CpuBus::write_nr30};
-    /* FF1B */ memory_accessors[Specs::Registers::Sound::NR31] = &io.sound.nr31;
-    /* FF1C */ memory_accessors[Specs::Registers::Sound::NR32] = {&io.sound.nr32, &CpuBus::write_nr32};
-    /* FF1D */ memory_accessors[Specs::Registers::Sound::NR33] = &io.sound.nr33;
-    /* FF1E */ memory_accessors[Specs::Registers::Sound::NR34] = &io.sound.nr34;
+    /* FF16 */ memory_accessors[Specs::Registers::Sound::NR21] = {&CpuBus::read_nr21, &CpuBus::write_nr21};
+    /* FF17 */ memory_accessors[Specs::Registers::Sound::NR22] = {&CpuBus::read_nr22, &CpuBus::write_nr22};
+    /* FF18 */ memory_accessors[Specs::Registers::Sound::NR23] = &apu.nr23;
+    /* FF19 */ memory_accessors[Specs::Registers::Sound::NR24] = {&CpuBus::read_nr24, &CpuBus::write_nr24};
+    /* FF1A */ memory_accessors[Specs::Registers::Sound::NR30] = {&apu.nr30, &CpuBus::write_nr30};
+    /* FF1B */ memory_accessors[Specs::Registers::Sound::NR31] = &apu.nr31;
+    /* FF1C */ memory_accessors[Specs::Registers::Sound::NR32] = {&apu.nr32, &CpuBus::write_nr32};
+    /* FF1D */ memory_accessors[Specs::Registers::Sound::NR33] = &apu.nr33;
+    /* FF1E */ memory_accessors[Specs::Registers::Sound::NR34] = &apu.nr34;
     /* FF1F */ memory_accessors[0xFF1F] = open_bus_access;
-    /* FF20 */ memory_accessors[Specs::Registers::Sound::NR41] = {&io.sound.nr41, &CpuBus::write_nr41};
-    /* FF21 */ memory_accessors[Specs::Registers::Sound::NR42] = &io.sound.nr42;
-    /* FF22 */ memory_accessors[Specs::Registers::Sound::NR43] = &io.sound.nr43;
-    /* FF23 */ memory_accessors[Specs::Registers::Sound::NR44] = {&io.sound.nr44, &CpuBus::write_nr44};
-    /* FF24 */ memory_accessors[Specs::Registers::Sound::NR50] = &io.sound.nr50;
-    /* FF25 */ memory_accessors[Specs::Registers::Sound::NR51] = &io.sound.nr51;
-    /* FF26 */ memory_accessors[Specs::Registers::Sound::NR52] = {&io.sound.nr52, &CpuBus::write_nr52};
+    /* FF20 */ memory_accessors[Specs::Registers::Sound::NR41] = {&apu.nr41, &CpuBus::write_nr41};
+    /* FF21 */ memory_accessors[Specs::Registers::Sound::NR42] = &apu.nr42;
+    /* FF22 */ memory_accessors[Specs::Registers::Sound::NR43] = &apu.nr43;
+    /* FF23 */ memory_accessors[Specs::Registers::Sound::NR44] = {&apu.nr44, &CpuBus::write_nr44};
+    /* FF24 */ memory_accessors[Specs::Registers::Sound::NR50] = &apu.nr50;
+    /* FF25 */ memory_accessors[Specs::Registers::Sound::NR51] = &apu.nr51;
+    /* FF26 */ memory_accessors[Specs::Registers::Sound::NR52] = {&CpuBus::read_nr52, &CpuBus::write_nr52};
     /* FF27 */ memory_accessors[0xFF27] = open_bus_access;
     /* FF28 */ memory_accessors[0xFF28] = open_bus_access;
     /* FF29 */ memory_accessors[0xFF29] = open_bus_access;
@@ -84,22 +85,22 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     /* FF2D */ memory_accessors[0xFF2D] = open_bus_access;
     /* FF2E */ memory_accessors[0xFF2E] = open_bus_access;
     /* FF2F */ memory_accessors[0xFF2F] = open_bus_access;
-    /* FF30 */ memory_accessors[Specs::Registers::Sound::WAVE0] = &io.sound.wave0;
-    /* FF31 */ memory_accessors[Specs::Registers::Sound::WAVE1] = &io.sound.wave1;
-    /* FF32 */ memory_accessors[Specs::Registers::Sound::WAVE2] = &io.sound.wave2;
-    /* FF33 */ memory_accessors[Specs::Registers::Sound::WAVE3] = &io.sound.wave3;
-    /* FF34 */ memory_accessors[Specs::Registers::Sound::WAVE4] = &io.sound.wave4;
-    /* FF35 */ memory_accessors[Specs::Registers::Sound::WAVE5] = &io.sound.wave5;
-    /* FF36 */ memory_accessors[Specs::Registers::Sound::WAVE6] = &io.sound.wave6;
-    /* FF37 */ memory_accessors[Specs::Registers::Sound::WAVE7] = &io.sound.wave7;
-    /* FF38 */ memory_accessors[Specs::Registers::Sound::WAVE8] = &io.sound.wave8;
-    /* FF39 */ memory_accessors[Specs::Registers::Sound::WAVE9] = &io.sound.wave9;
-    /* FF3A */ memory_accessors[Specs::Registers::Sound::WAVEA] = &io.sound.waveA;
-    /* FF3B */ memory_accessors[Specs::Registers::Sound::WAVEB] = &io.sound.waveB;
-    /* FF3C */ memory_accessors[Specs::Registers::Sound::WAVEC] = &io.sound.waveC;
-    /* FF3D */ memory_accessors[Specs::Registers::Sound::WAVED] = &io.sound.waveD;
-    /* FF3E */ memory_accessors[Specs::Registers::Sound::WAVEE] = &io.sound.waveE;
-    /* FF3F */ memory_accessors[Specs::Registers::Sound::WAVEF] = &io.sound.waveF;
+    /* FF30 */ memory_accessors[Specs::Registers::Sound::WAVE0] = &apu.wave0;
+    /* FF31 */ memory_accessors[Specs::Registers::Sound::WAVE1] = &apu.wave1;
+    /* FF32 */ memory_accessors[Specs::Registers::Sound::WAVE2] = &apu.wave2;
+    /* FF33 */ memory_accessors[Specs::Registers::Sound::WAVE3] = &apu.wave3;
+    /* FF34 */ memory_accessors[Specs::Registers::Sound::WAVE4] = &apu.wave4;
+    /* FF35 */ memory_accessors[Specs::Registers::Sound::WAVE5] = &apu.wave5;
+    /* FF36 */ memory_accessors[Specs::Registers::Sound::WAVE6] = &apu.wave6;
+    /* FF37 */ memory_accessors[Specs::Registers::Sound::WAVE7] = &apu.wave7;
+    /* FF38 */ memory_accessors[Specs::Registers::Sound::WAVE8] = &apu.wave8;
+    /* FF39 */ memory_accessors[Specs::Registers::Sound::WAVE9] = &apu.wave9;
+    /* FF3A */ memory_accessors[Specs::Registers::Sound::WAVEA] = &apu.waveA;
+    /* FF3B */ memory_accessors[Specs::Registers::Sound::WAVEB] = &apu.waveB;
+    /* FF3C */ memory_accessors[Specs::Registers::Sound::WAVEC] = &apu.waveC;
+    /* FF3D */ memory_accessors[Specs::Registers::Sound::WAVED] = &apu.waveD;
+    /* FF3E */ memory_accessors[Specs::Registers::Sound::WAVEE] = &apu.waveE;
+    /* FF3F */ memory_accessors[Specs::Registers::Sound::WAVEF] = &apu.waveF;
     /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = {&CpuBus::read_lcdc, &CpuBus::write_lcdc};
     /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = {&CpuBus::read_stat, &CpuBus::write_stat};
     /* FF42 */ memory_accessors[Specs::Registers::Video::SCY] = &ppu.scy;
@@ -210,27 +211,55 @@ void CpuBus::write_if(uint16_t address, uint8_t value) {
 }
 
 void CpuBus::write_nr10(uint16_t address, uint8_t value) {
-    io.sound.write_nr10(value);
+    apu.write_nr10(value);
+}
+
+uint8_t CpuBus::read_nr21(uint16_t address) const {
+    return apu.nr21.read();
+}
+
+void CpuBus::write_nr21(uint16_t address, uint8_t value) {
+    apu.nr21.write(value);
+}
+
+uint8_t CpuBus::read_nr22(uint16_t address) const {
+    return apu.nr22.read();
+}
+
+void CpuBus::write_nr22(uint16_t address, uint8_t value) {
+    apu.nr22.write(value);
+}
+
+uint8_t CpuBus::read_nr24(uint16_t address) const {
+    return apu.nr24.read();
+}
+
+void CpuBus::write_nr24(uint16_t address, uint8_t value) {
+    apu.nr24.write(value);
 }
 
 void CpuBus::write_nr30(uint16_t address, uint8_t value) {
-    io.sound.write_nr30(value);
+    apu.write_nr30(value);
 }
 
 void CpuBus::write_nr32(uint16_t address, uint8_t value) {
-    io.sound.write_nr32(value);
+    apu.write_nr32(value);
 }
 
 void CpuBus::write_nr41(uint16_t address, uint8_t value) {
-    io.sound.write_nr41(value);
+    apu.write_nr41(value);
 }
 
 void CpuBus::write_nr44(uint16_t address, uint8_t value) {
-    io.sound.write_nr44(value);
+    apu.write_nr44(value);
+}
+
+uint8_t CpuBus::read_nr52(uint16_t address) const {
+    return apu.nr52.read();
 }
 
 void CpuBus::write_nr52(uint16_t address, uint8_t value) {
-    io.sound.write_nr52(value);
+    apu.nr52.write(value);
 }
 
 uint8_t CpuBus::read_lcdc(uint16_t address) const {

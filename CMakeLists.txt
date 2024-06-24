@@ -23,6 +23,7 @@ option(NDK_PATH "NDK Path for Android build" "")
 option(ENABLE_DEBUGGER "Enable debugger" OFF)
 option(ENABLE_SERIAL "Enable serial link" OFF)
 option(ENABLE_BOOTROM "Enable boot rom" OFF)
+option(ENABLE_AUDIO "Enable audio" ON)
 
 option(ENABLE_ASSERTS "Enable asserts" OFF)
 

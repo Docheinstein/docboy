@@ -31,7 +31,7 @@ add_subdirectory(libpng)
 set(SDL_STATIC ON)
 set(SDL_TEST_LIBRARY OFF)
 
-set(SDL_AUDIO OFF)
+set(SDL_AUDIO ${ENABLE_AUDIO})
 set(SDL_VIDEO ON)
 set(SDL_RENDER ON)
 set(SDL_JOYSTICK ON)
