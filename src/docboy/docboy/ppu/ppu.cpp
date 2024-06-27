@@ -96,7 +96,7 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_0,
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo};
 
-Ppu::Ppu(Lcd& lcd, InterruptsIO& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
+Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
          OamBus::View<Device::Ppu> oam_bus) :
     lcd {lcd},
     interrupts {interrupts},
@@ -232,7 +232,7 @@ inline void Ppu::tick_stat() {
 inline void Ppu::update_state_irq(bool irq) {
     // Raise STAT interrupt request only on rising edge
     if (last_stat_irq < irq) {
-        interrupts.raise_Interrupt<InterruptsIO::InterruptType::Stat>();
+        interrupts.raise_Interrupt<Interrupts::InterruptType::Stat>();
     }
     last_stat_irq = irq;
 }
@@ -841,7 +841,7 @@ void Ppu::enter_vblank() {
 
     ASSERT(stat.mode == VBLANK);
 
-    interrupts.raise_Interrupt<InterruptsIO::InterruptType::VBlank>();
+    interrupts.raise_Interrupt<Interrupts::InterruptType::VBlank>();
 
     ASSERT(!vram.is_acquired_by_this());
     ASSERT(!oam.is_acquired_by_this());

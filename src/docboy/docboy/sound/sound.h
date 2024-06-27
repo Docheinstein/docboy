@@ -3,7 +3,7 @@
 
 #include "docboy/memory/cell.h"
 
-class SoundIO {
+class Sound {
 public:
     void write_nr10(uint8_t value) {
         nr10 = 0b10000000 | value;
@@ -187,4 +187,5 @@ public:
     UInt8 waveE {make_uint8(Specs::Registers::Sound::WAVEE)};
     UInt8 waveF {make_uint8(Specs::Registers::Sound::WAVEF)};
 };
+
 #endif // SOUND_H

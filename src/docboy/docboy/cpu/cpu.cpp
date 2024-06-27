@@ -18,7 +18,7 @@ constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
 constexpr uint8_t STATE_INSTRUCTION_FLAG_NONE = 255;
 } // namespace
 
-Cpu::Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu, JoypadIO& joypad,
+Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad,
          StopController& stop_controller) :
     idu {idu},
     interrupts {interrupts},
@@ -1215,7 +1215,7 @@ void Cpu::stop_m0() {
     //     1    |      0      ||  HALT  |  -----  |       2
     //     1    |      1      ||  ----  |  ------ |       1
 
-    bool has_joypad_input = keep_bits<4>(joypad.read_p1()) == bitmask<4>;
+    bool has_joypad_input = keep_bits<4>(joypad.p1.read()) == bitmask<4>;
     bool has_pending_interrupts = get_pending_interrupts();
 
     if (has_joypad_input) {

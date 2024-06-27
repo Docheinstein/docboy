@@ -57,15 +57,15 @@ public:
 
     // IO
 #ifdef ENABLE_BOOTROM
-    BootIO boot {mmu};
+    Boot boot {mmu};
 #else
-    BootIO boot {};
+    Boot boot {};
 #endif
     Joypad joypad {interrupts};
     SerialPort serial_port {interrupts};
     Timers timers {interrupts};
-    InterruptsIO interrupts {};
-    SoundIO sound {};
+    Interrupts interrupts {};
+    Sound sound {};
 
     // Buses
     ExtBus ext_bus {cartridge_slot, wram1, wram2};

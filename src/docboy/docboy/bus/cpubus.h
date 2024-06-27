@@ -8,23 +8,23 @@
 #include "docboy/bootrom/fwd/bootromfwd.h"
 #endif
 
-class JoypadIO;
-class SerialIO;
-class TimersIO;
-class InterruptsIO;
-class SoundIO;
+class Joypad;
+class Serial;
+class Timers;
+class Interrupts;
+class Sound;
 class Ppu;
-class BootIO;
+class Boot;
 
 class CpuBus final : public Bus {
 
 public:
 #ifdef ENABLE_BOOTROM
-    CpuBus(BootRom& boot_rom, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
-           InterruptsIO& interrupts, SoundIO& sound, Ppu& ppu, BootIO& boot);
+    CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
+           Sound& sound, Ppu& ppu, Boot& boot);
 #else
-    CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts, SoundIO& sound,
-           Ppu& ppu, BootIO& boot);
+    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Sound& sound, Ppu& ppu,
+           Boot& boot);
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -33,12 +33,12 @@ public:
 
     Hram& hram;
 
-    JoypadIO& joypad;
-    SerialIO& serial;
-    TimersIO& timers;
-    InterruptsIO& interrupts;
-    SoundIO& sound;
-    BootIO& boot;
+    Joypad& joypad;
+    Serial& serial;
+    Timers& timers;
+    Interrupts& interrupts;
+    Sound& sound;
+    Boot& boot;
 
     Ppu& ppu;
 };

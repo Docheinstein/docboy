@@ -13,7 +13,7 @@
 #include "utils/vector.h"
 
 class Lcd;
-class InterruptsIO;
+class Interrupts;
 class Dma;
 class Parcel;
 
@@ -21,7 +21,7 @@ class Ppu {
     DEBUGGABLE_CLASS()
 
 public:
-    Ppu(Lcd& lcd, InterruptsIO& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
+    Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
         OamBus::View<Device::Ppu> oam_bus);
 
     void tick();
@@ -210,7 +210,7 @@ private:
     static const FetcherTickSelector FETCHER_TICK_SELECTORS[];
 
     Lcd& lcd;
-    InterruptsIO& interrupts;
+    Interrupts& interrupts;
     Dma& dma_controller;
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;

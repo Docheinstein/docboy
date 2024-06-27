@@ -6,7 +6,7 @@
 #include "utils/bits.h"
 #include "utils/parcel.h"
 
-StopController::StopController(bool& stopped, JoypadIO& joypad, TimersIO& timers, Lcd& lcd) :
+StopController::StopController(bool& stopped, Joypad& joypad, Timers& timers, Lcd& lcd) :
     stopped {stopped},
     joypad {joypad},
     timers {timers},
@@ -41,7 +41,7 @@ void StopController::eventually_exit_stop_mode() {
     ASSERT(!requested);
 
     // Exit STOP mode if there's joypad input
-    stopped = keep_bits<4>(joypad.read_p1()) == bitmask<4>;
+    stopped = keep_bits<4>(joypad.p1.read()) == bitmask<4>;
 }
 
 void StopController::save_state(Parcel& parcel) const {

@@ -904,7 +904,7 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
         }
 
         if (trace & TraceFlagInterrupts) {
-            const InterruptsIO& interrupts = gb.interrupts;
+            const Interrupts& interrupts = gb.interrupts;
             std::cerr << "IME:"
                       << (cpu.ime == Cpu::ImeState::Enabled
                               ? "1"
@@ -2349,11 +2349,11 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << header("TIMERS", width) << endl;
         b << yellow("TMA reload") << " :  " << [this]() -> Text {
             switch (gb.timers.tima_state) {
-            case TimersIO::TimaReloadState::None:
+            case Timers::TimaReloadState::None:
                 return darkgray("None");
-            case TimersIO::TimaReloadState::Pending:
+            case Timers::TimaReloadState::Pending:
                 return green("Pending");
-            case TimersIO::TimaReloadState::Reload:
+            case Timers::TimaReloadState::Reload:
                 return green("Reloading");
             default:
                 return Text {};

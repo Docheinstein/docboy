@@ -5,11 +5,11 @@
 #include "docboy/serial/link.h"
 #include "docboy/serial/serial.h"
 
-class InterruptsIO;
+class Interrupts;
 
-class SerialPort : public SerialIO, public ISerialEndpoint {
+class SerialPort : public Serial, public ISerialEndpoint {
 public:
-    explicit SerialPort(InterruptsIO& interrupts);
+    explicit SerialPort(Interrupts& interrupts);
 
     void attach(SerialLink::Plug& plug);
     void detach();
@@ -20,7 +20,7 @@ public:
     void tick();
 
 private:
-    InterruptsIO& interrupts;
+    Interrupts& interrupts;
 
     SerialLink* link {};
 };

@@ -7,8 +7,8 @@
 #include "docboy/mmu/mmu.h"
 
 class Idu;
-class InterruptsIO;
-class JoypadIO;
+class Interrupts;
+class Joypad;
 class StopController;
 class Parcel;
 
@@ -17,8 +17,7 @@ class Cpu {
     TESTABLE_CLASS()
 
 public:
-    Cpu(Idu& idu, InterruptsIO& interrupts, Mmu::View<Device::Cpu> mmu, JoypadIO& joypad,
-        StopController& stop_controller);
+    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller);
 
     void tick();
     void tick_t0();
@@ -612,9 +611,9 @@ private:
     void set_arr_m2();
 
     Idu& idu;
-    InterruptsIO& interrupts;
+    Interrupts& interrupts;
     Mmu::View<Device::Cpu> mmu;
-    JoypadIO& joypad;
+    Joypad& joypad;
     StopController& stop_controller;
 
     Instruction instructions[256];
