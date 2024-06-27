@@ -4,6 +4,7 @@
 
 #include "docboy/timers/timers.h"
 
+#include "docboy/bootrom/helpers.h"
 #include "utils/asserts.h"
 #include "utils/bits.h"
 #include "utils/parcel.h"
@@ -27,6 +28,54 @@ void Apu::set_audio_callback(std::function<void(const int16_t*, uint32_t)>&& cal
 }
 
 void Apu::reset() {
+    // Reset I/O registers
+    nr10 = 0b10000000;
+    nr11 = if_bootrom_else(0, 0b10111111);
+    nr12 = if_bootrom_else(0, 0b11110011);
+    nr13 = if_bootrom_else(0, 0b11111111);
+    nr14 = 0b10111111; // TODO: B8 or BF?
+    nr21.duty_cycle = false;
+    nr21.initial_length_timer = if_bootrom_else(0, 0b00111111);
+    nr22.initial_volume = false;
+    nr22.envelope_direction = false;
+    nr22.sweep_pace = false;
+    nr23 = if_bootrom_else(0, 0b11111111);
+    nr24.trigger = true;
+    nr24.length_enable = false;
+    nr24.period = 0b00111111;
+    nr30 = 0b01111111;
+    nr31 = if_bootrom_else(0, 0b11111111);
+    nr32 = 0b10011111;
+    nr33 = if_bootrom_else(0, 0b11111111);
+    nr34 = 0b10111111; // TODO: B8 or BF?
+    nr41 = if_bootrom_else(0, 0b11111111);
+    nr42 = 0;
+    nr43 = 0;
+    nr44 = 0b10111111; // TODO: B8 or BF?
+    nr50 = if_bootrom_else(0, 0b01110111);
+    nr51 = if_bootrom_else(0, 0b11110011);
+    nr52.enable = true;
+    nr52.ch4 = false;
+    nr52.ch3 = false;
+    nr52.ch2 = false;
+    nr52.ch1 = true;
+    wave0 = 0;
+    wave1 = 0;
+    wave2 = 0;
+    wave3 = 0;
+    wave4 = 0;
+    wave5 = 0;
+    wave6 = 0;
+    wave7 = 0;
+    wave8 = 0;
+    wave9 = 0;
+    waveA = 0;
+    waveB = 0;
+    waveC = 0;
+    waveD = 0;
+    waveE = 0;
+    waveF = 0;
+
     // Reload frequency timer
     ch2.period_timer = nr24.period << 8 | nr23;
     ch2.dac = false;
