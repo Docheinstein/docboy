@@ -24,7 +24,6 @@ target_sources(utils PRIVATE
     utils/std.h
     utils/strings.cpp
     utils/strings.h
-    utils/traits.h
     utils/vector.h
 )
 
