@@ -40,7 +40,9 @@ public:
         Lcdc(const Lcdc& lcdc);
         Lcdc& operator=(const Lcdc& lcdc);
 
-        uint8_t rd();
+        using Composite::operator=;
+
+        uint8_t rd() const;
         void wr(uint8_t value);
 
         Bool enable {make_bool()};
@@ -57,7 +59,9 @@ public:
     } lcdc {*this, true /* enable notifications */};
 
     struct Stat : Composite<Stat, Specs::Registers::Video::STAT> {
-        uint8_t rd();
+        using Composite::operator=;
+
+        uint8_t rd() const;
         void wr(uint8_t value);
 
         Bool lyc_eq_ly_int {make_bool()};

@@ -23,7 +23,7 @@ public:
         sc = 0b01111110;
     }
 
-    void write_SC(uint8_t value) {
+    void write_sc(uint8_t value) {
         sc = 0b01111110 | value;
     }
 

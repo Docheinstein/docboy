@@ -1944,7 +1944,7 @@ Ppu::Lcdc& Ppu::Lcdc::operator=(const Ppu::Lcdc& other_c) {
     return *this;
 }
 
-uint8_t Ppu::Lcdc::rd() {
+uint8_t Ppu::Lcdc::rd() const {
     return enable << Specs::Bits::Video::LCDC::LCD_ENABLE | win_tile_map << Specs::Bits::Video::LCDC::WIN_TILE_MAP |
            win_enable << Specs::Bits::Video::LCDC::WIN_ENABLE |
            bg_win_tile_data << Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA |
@@ -1968,7 +1968,7 @@ void Ppu::Lcdc::wr(uint8_t value) {
     bg_win_enable = test_bit<Specs::Bits::Video::LCDC::BG_WIN_ENABLE>(value);
 }
 
-uint8_t Ppu::Stat::rd() {
+uint8_t Ppu::Stat::rd() const {
     return 0b10000000 | lyc_eq_ly_int << Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT |
            oam_int << Specs::Bits::Video::STAT::OAM_INTERRUPT |
            vblank_int << Specs::Bits::Video::STAT::VBLANK_INTERRUPT |

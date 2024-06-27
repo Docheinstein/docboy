@@ -9,12 +9,12 @@ uint8_t VideoBus<Impl>::flush_read_request() {
     if constexpr (Dev == Device::Cpu) {
         if (is_acquired()) {
             // CPU reads FF while bus is acquired either by PPU or DMA.
-            reset_bit<Bus<Impl>::template R<Dev>>(this->requests);
+            reset_bit<Bus::R<Dev>>(this->requests);
             return 0xFF;
         }
     }
 
-    return Bus<Impl>::template flush_read_request<Dev>();
+    return Bus::flush_read_request<Dev>();
 }
 
 template<typename Impl>
@@ -25,12 +25,12 @@ void VideoBus<Impl>::flush_write_request(uint8_t value) {
     if constexpr (Dev == Device::Cpu) {
         if (is_acquired()) {
             // CPU fails to write while bus is acquired either by PPU or DMA.
-            reset_bit<Bus<Impl>::template W<Dev>>(this->requests);
+            reset_bit<Bus::W<Dev>>(this->requests);
             return;
         }
     }
 
-    return Bus<Impl>::template flush_write_request<Dev>(value);
+    return Bus::flush_write_request<Dev>(value);
 }
 
 template<typename Impl>
@@ -58,19 +58,19 @@ bool VideoBus<Impl>::is_acquired_by() const {
 
 template<typename Impl>
 void VideoBus<Impl>::save_state(Parcel &parcel) const {
-    Bus<Impl>::save_state(parcel);
+    Bus::save_state(parcel);
     parcel.write_uint8(acquirers);
 }
 
 template<typename Impl>
 void VideoBus<Impl>::load_state(Parcel &parcel) {
-    Bus<Impl>::load_state(parcel);
+    Bus::load_state(parcel);
     acquirers = parcel.read_uint8();
 }
 
 template <typename Impl>
 void VideoBus<Impl>::reset() {
-    Bus<Impl>::reset();
+    Bus::reset();
     acquirers = 0;
 }
 

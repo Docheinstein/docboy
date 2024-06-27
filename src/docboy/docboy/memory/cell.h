@@ -340,6 +340,8 @@ constexpr inline UInt8 make_uint8(const uint16_t address) {
 template <typename T, uint16_t Address>
 struct Composite {
 public:
+    using Type = Composite<T, Address>;
+
     using Bool = bool;
     using UInt8 = ::UInt8;
 
@@ -351,24 +353,12 @@ public:
         return Bool {};
     }
 
-    void begin_read() {
-    }
-
-    void end_read() {
-    }
-
-    uint8_t read() {
-        return static_cast<T&>(*this).rd();
+    uint8_t read() const {
+        return static_cast<const T&>(*this).rd();
     }
 
     void write(uint8_t value) {
         static_cast<T&>(*this).wr(value);
-    }
-
-    void begin_write() {
-    }
-
-    void end_write() {
     }
 
     void enable_notification(bool enabled) {
@@ -378,6 +368,19 @@ public:
     }
 
     void restore_notification() {
+    }
+
+private:
+    void begin_read() {
+    }
+
+    void end_read() {
+    }
+
+    void begin_write() {
+    }
+
+    void end_write() {
     }
 };
 

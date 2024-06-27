@@ -22,9 +22,6 @@ public:
     uint8_t read(uint16_t vram_address) const;
 
 private:
-    uint8_t read_vram(uint16_t address) const;
-    void write_vram(uint16_t address, uint8_t value);
-
     Vram& vram;
 };
 

@@ -34,12 +34,6 @@ public:
     Word flush_read_word_request();
 
 private:
-    uint8_t read_oam(uint16_t address) const;
-    void write_oam(uint16_t address, uint8_t value);
-
-    uint8_t read_ff(uint16_t address) const;
-    void write_nop(uint16_t address, uint8_t value);
-
     Oam& oam;
 };
 
