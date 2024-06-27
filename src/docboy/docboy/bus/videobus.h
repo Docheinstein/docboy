@@ -9,7 +9,7 @@ template <typename Bus, Device::Type Dev>
 class VideoBusView;
 
 template <typename Impl>
-class VideoBus : public Bus<Impl> {
+class VideoBus : public Bus {
     DEBUGGABLE_CLASS()
 
 public:

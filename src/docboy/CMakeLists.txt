@@ -4,6 +4,7 @@ target_sources(docboy PRIVATE
         docboy/boot/boot.h
         docboy/boot/boot.cpp
         docboy/bus/bus.h
+        docboy/bus/bus.cpp
         docboy/bus/bus.tpp
         docboy/bus/cpubus.cpp
         docboy/bus/cpubus.h

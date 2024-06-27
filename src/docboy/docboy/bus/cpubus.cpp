@@ -21,14 +21,25 @@ CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, JoypadIO& joypad, SerialIO& serial
 #else
 CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts, Apu& apu,
                Ppu& ppu, BootIO& boot) :
-    Bus<CpuBus> {},
+    Bus {},
 #endif
     hram {hram},
-    io {joypad, serial, timers, interrupts, boot},
+    joypad {joypad},
+    serial {serial},
+    timers {timers},
+    interrupts {interrupts},
+    boot {boot},
     apu {apu},
     ppu {ppu} {
 
-    const MemoryAccess open_bus_access {&CpuBus::read_ff, &CpuBus::write_nop};
+    const NonTrivialReadFunctor read_ff = {[](void*, uint16_t) -> uint8_t {
+                                               return 0xFF;
+                                           },
+                                           nullptr};
+    const NonTrivialWriteFunctor write_nop = {[](void*, uint16_t, uint8_t) {
+                                              },
+                                              nullptr};
+    const MemoryAccess open_bus_access {read_ff, write_nop};
 
 #ifdef ENABLE_BOOTROM
     /* 0x0000 - 0x00FF */
@@ -37,14 +48,22 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     }
 #endif
 
-    /* FF00 */ memory_accessors[Specs::Registers::Joypad::P1] = {&CpuBus::read_p1, &CpuBus::write_p1};
-    /* FF01 */ memory_accessors[Specs::Registers::Serial::SB] = &io.serial.sb;
-    /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {&io.serial.sc, &CpuBus::write_sc};
+    /* FF00 */ memory_accessors[Specs::Registers::Joypad::P1] = {
+        NonTrivialRead<JoypadIO, &JoypadIO::read_p1> {&joypad},
+        NonTrivialWrite<JoypadIO, &JoypadIO::write_p1> {&joypad}};
+    /* FF01 */ memory_accessors[Specs::Registers::Serial::SB] = &serial.sb;
+    /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {
+        &serial.sc, NonTrivialWrite<SerialIO, &SerialIO::write_sc> {&serial}};
     /* FF03 */ memory_accessors[0xFF03] = open_bus_access;
-    /* FF04 */ memory_accessors[Specs::Registers::Timers::DIV] = {&CpuBus::read_div, &CpuBus::write_div};
-    /* FF05 */ memory_accessors[Specs::Registers::Timers::TIMA] = {&io.timers.tima, &CpuBus::write_tima};
-    /* FF06 */ memory_accessors[Specs::Registers::Timers::TMA] = {&io.timers.tma, &CpuBus::write_tma};
-    /* FF07 */ memory_accessors[Specs::Registers::Timers::TAC] = {&io.timers.tac, &CpuBus::write_tac};
+    /* FF04 */ memory_accessors[Specs::Registers::Timers::DIV] = {
+        NonTrivialRead<TimersIO, &TimersIO::read_div> {&timers},
+        NonTrivialWrite<TimersIO, &TimersIO::write_div> {&timers}};
+    /* FF05 */ memory_accessors[Specs::Registers::Timers::TIMA] = {
+        &timers.tima, NonTrivialWrite<TimersIO, &TimersIO::write_tima> {&timers}};
+    /* FF06 */ memory_accessors[Specs::Registers::Timers::TMA] = {
+        &timers.tma, NonTrivialWrite<TimersIO, &TimersIO::write_tma> {&timers}};
+    /* FF07 */ memory_accessors[Specs::Registers::Timers::TAC] = {
+        &timers.tac, NonTrivialWrite<TimersIO, &TimersIO::write_tac> {&timers}};
     /* FF08 */ memory_accessors[0xFF08] = open_bus_access;
     /* FF09 */ memory_accessors[0xFF09] = open_bus_access;
     /* FF0A */ memory_accessors[0xFF0A] = open_bus_access;
@@ -52,30 +71,36 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     /* FF0C */ memory_accessors[0xFF0C] = open_bus_access;
     /* FF0D */ memory_accessors[0xFF0D] = open_bus_access;
     /* FF0E */ memory_accessors[0xFF0E] = open_bus_access;
-    /* FF0F */ memory_accessors[Specs::Registers::Interrupts::IF] = {&io.interrupts.IF, &CpuBus::write_if};
-    /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {&apu.nr10, &CpuBus::write_nr10};
+    /* FF0F */ memory_accessors[Specs::Registers::Interrupts::IF] = {
+        &interrupts.IF, NonTrivialWrite<InterruptsIO, &InterruptsIO::write_IF> {&interrupts}};
+    /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {&apu.nr10,
+                                                                  NonTrivialWrite<Apu, &Apu::write_nr10> {&apu}};
     /* FF11 */ memory_accessors[Specs::Registers::Sound::NR11] = &apu.nr11;
     /* FF12 */ memory_accessors[Specs::Registers::Sound::NR12] = &apu.nr12;
     /* FF13 */ memory_accessors[Specs::Registers::Sound::NR13] = &apu.nr13;
     /* FF14 */ memory_accessors[Specs::Registers::Sound::NR14] = &apu.nr14;
     /* FF15 */ memory_accessors[0xFF15] = open_bus_access;
-    /* FF16 */ memory_accessors[Specs::Registers::Sound::NR21] = {&CpuBus::read_nr21, &CpuBus::write_nr21};
-    /* FF17 */ memory_accessors[Specs::Registers::Sound::NR22] = {&CpuBus::read_nr22, &CpuBus::write_nr22};
+    /* FF16 */ memory_accessors[Specs::Registers::Sound::NR21] = CompositeMemoryAccess {&apu.nr21};
+    /* FF17 */ memory_accessors[Specs::Registers::Sound::NR22] = CompositeMemoryAccess {&apu.nr22};
     /* FF18 */ memory_accessors[Specs::Registers::Sound::NR23] = &apu.nr23;
-    /* FF19 */ memory_accessors[Specs::Registers::Sound::NR24] = {&CpuBus::read_nr24, &CpuBus::write_nr24};
-    /* FF1A */ memory_accessors[Specs::Registers::Sound::NR30] = {&apu.nr30, &CpuBus::write_nr30};
+    /* FF19 */ memory_accessors[Specs::Registers::Sound::NR24] = CompositeMemoryAccess {&apu.nr24};
+    /* FF1A */ memory_accessors[Specs::Registers::Sound::NR30] = {&apu.nr30,
+                                                                  NonTrivialWrite<Apu, &Apu::write_nr30> {&apu}};
     /* FF1B */ memory_accessors[Specs::Registers::Sound::NR31] = &apu.nr31;
-    /* FF1C */ memory_accessors[Specs::Registers::Sound::NR32] = {&apu.nr32, &CpuBus::write_nr32};
+    /* FF1C */ memory_accessors[Specs::Registers::Sound::NR32] = {&apu.nr32,
+                                                                  NonTrivialWrite<Apu, &Apu::write_nr32> {&apu}};
     /* FF1D */ memory_accessors[Specs::Registers::Sound::NR33] = &apu.nr33;
     /* FF1E */ memory_accessors[Specs::Registers::Sound::NR34] = &apu.nr34;
     /* FF1F */ memory_accessors[0xFF1F] = open_bus_access;
-    /* FF20 */ memory_accessors[Specs::Registers::Sound::NR41] = {&apu.nr41, &CpuBus::write_nr41};
+    /* FF20 */ memory_accessors[Specs::Registers::Sound::NR41] = {&apu.nr41,
+                                                                  NonTrivialWrite<Apu, &Apu::write_nr41> {&apu}};
     /* FF21 */ memory_accessors[Specs::Registers::Sound::NR42] = &apu.nr42;
     /* FF22 */ memory_accessors[Specs::Registers::Sound::NR43] = &apu.nr43;
-    /* FF23 */ memory_accessors[Specs::Registers::Sound::NR44] = {&apu.nr44, &CpuBus::write_nr44};
+    /* FF23 */ memory_accessors[Specs::Registers::Sound::NR44] = {&apu.nr44,
+                                                                  NonTrivialWrite<Apu, &Apu::write_nr44> {&apu}};
     /* FF24 */ memory_accessors[Specs::Registers::Sound::NR50] = &apu.nr50;
     /* FF25 */ memory_accessors[Specs::Registers::Sound::NR51] = &apu.nr51;
-    /* FF26 */ memory_accessors[Specs::Registers::Sound::NR52] = {&CpuBus::read_nr52, &CpuBus::write_nr52};
+    /* FF26 */ memory_accessors[Specs::Registers::Sound::NR52] = CompositeMemoryAccess {&apu.nr52};
     /* FF27 */ memory_accessors[0xFF27] = open_bus_access;
     /* FF28 */ memory_accessors[0xFF28] = open_bus_access;
     /* FF29 */ memory_accessors[0xFF29] = open_bus_access;
@@ -101,13 +126,14 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     /* FF3D */ memory_accessors[Specs::Registers::Sound::WAVED] = &apu.waveD;
     /* FF3E */ memory_accessors[Specs::Registers::Sound::WAVEE] = &apu.waveE;
     /* FF3F */ memory_accessors[Specs::Registers::Sound::WAVEF] = &apu.waveF;
-    /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = {&CpuBus::read_lcdc, &CpuBus::write_lcdc};
-    /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = {&CpuBus::read_stat, &CpuBus::write_stat};
+    /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = CompositeMemoryAccess {&ppu.lcdc};
+    /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = CompositeMemoryAccess {&ppu.stat};
     /* FF42 */ memory_accessors[Specs::Registers::Video::SCY] = &ppu.scy;
     /* FF43 */ memory_accessors[Specs::Registers::Video::SCX] = &ppu.scx;
-    /* FF44 */ memory_accessors[Specs::Registers::Video::LY] = {&ppu.ly, &CpuBus::write_nop};
+    /* FF44 */ memory_accessors[Specs::Registers::Video::LY] = {&ppu.ly, write_nop};
     /* FF45 */ memory_accessors[Specs::Registers::Video::LYC] = &ppu.lyc;
-    /* FF46 */ memory_accessors[Specs::Registers::Video::DMA] = {&ppu.dma, &CpuBus::write_dma};
+    /* FF46 */ memory_accessors[Specs::Registers::Video::DMA] = {&ppu.dma,
+                                                                 NonTrivialWrite<Ppu, &Ppu::write_dma> {&ppu}};
     /* FF47 */ memory_accessors[Specs::Registers::Video::BGP] = &ppu.bgp;
     /* FF48 */ memory_accessors[Specs::Registers::Video::OBP0] = &ppu.obp0;
     /* FF49 */ memory_accessors[Specs::Registers::Video::OBP1] = &ppu.obp1;
@@ -117,7 +143,8 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     /* FF4D */ memory_accessors[0xFF4D] = open_bus_access;
     /* FF4E */ memory_accessors[0xFF4E] = open_bus_access;
     /* FF4F */ memory_accessors[0xFF4F] = open_bus_access;
-    /* FF50 */ memory_accessors[Specs::Registers::Boot::BOOT] = {&io.boot.boot, &CpuBus::write_boot};
+    /* FF50 */ memory_accessors[Specs::Registers::Boot::BOOT] = {&boot.boot,
+                                                                 NonTrivialWrite<BootIO, &BootIO::write_boot> {&boot}};
     /* FF51 */ memory_accessors[0xFF51] = open_bus_access;
     /* FF52 */ memory_accessors[0xFF52] = open_bus_access;
     /* FF53 */ memory_accessors[0xFF53] = open_bus_access;
@@ -171,124 +198,5 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
         memory_accessors[i] = &hram[i - Specs::MemoryLayout::HRAM::START];
     }
 
-    /* FFFF */ memory_accessors[Specs::MemoryLayout::IE] = &io.interrupts.IE;
-}
-
-uint8_t CpuBus::read_p1(uint16_t address) const {
-    return io.joypad.read_p1();
-}
-
-void CpuBus::write_p1(uint16_t address, uint8_t value) {
-    return io.joypad.write_p1(value);
-}
-
-void CpuBus::write_sc(uint16_t address, uint8_t value) {
-    return io.serial.write_SC(value);
-}
-
-uint8_t CpuBus::read_div(uint16_t address) const {
-    return io.timers.read_div();
-}
-
-void CpuBus::write_div(uint16_t address, uint8_t value) {
-    io.timers.write_div(value);
-}
-
-void CpuBus::write_tima(uint16_t address, uint8_t value) {
-    io.timers.write_tima(value);
-}
-
-void CpuBus::write_tma(uint16_t address, uint8_t value) {
-    io.timers.write_tma(value);
-}
-
-void CpuBus::write_tac(uint16_t address, uint8_t value) {
-    io.timers.write_tac(value);
-}
-
-void CpuBus::write_if(uint16_t address, uint8_t value) {
-    io.interrupts.write_IF(value);
-}
-
-void CpuBus::write_nr10(uint16_t address, uint8_t value) {
-    apu.write_nr10(value);
-}
-
-uint8_t CpuBus::read_nr21(uint16_t address) const {
-    return apu.nr21.read();
-}
-
-void CpuBus::write_nr21(uint16_t address, uint8_t value) {
-    apu.nr21.write(value);
-}
-
-uint8_t CpuBus::read_nr22(uint16_t address) const {
-    return apu.nr22.read();
-}
-
-void CpuBus::write_nr22(uint16_t address, uint8_t value) {
-    apu.nr22.write(value);
-}
-
-uint8_t CpuBus::read_nr24(uint16_t address) const {
-    return apu.nr24.read();
-}
-
-void CpuBus::write_nr24(uint16_t address, uint8_t value) {
-    apu.nr24.write(value);
-}
-
-void CpuBus::write_nr30(uint16_t address, uint8_t value) {
-    apu.write_nr30(value);
-}
-
-void CpuBus::write_nr32(uint16_t address, uint8_t value) {
-    apu.write_nr32(value);
-}
-
-void CpuBus::write_nr41(uint16_t address, uint8_t value) {
-    apu.write_nr41(value);
-}
-
-void CpuBus::write_nr44(uint16_t address, uint8_t value) {
-    apu.write_nr44(value);
-}
-
-uint8_t CpuBus::read_nr52(uint16_t address) const {
-    return apu.nr52.read();
-}
-
-void CpuBus::write_nr52(uint16_t address, uint8_t value) {
-    apu.nr52.write(value);
-}
-
-uint8_t CpuBus::read_lcdc(uint16_t address) const {
-    return ppu.lcdc.read();
-}
-
-void CpuBus::write_lcdc(uint16_t address, uint8_t value) {
-    ppu.lcdc.write(value);
-}
-
-uint8_t CpuBus::read_stat(uint16_t address) const {
-    return ppu.stat.read();
-}
-
-void CpuBus::write_stat(uint16_t address, uint8_t value) {
-    ppu.stat.write(value);
-}
-
-void CpuBus::write_dma(uint16_t address, uint8_t value) {
-    ppu.write_dma(value);
-}
-
-void CpuBus::write_boot(uint16_t address, uint8_t value) {
-    io.boot.write_boot(value);
-}
-
-uint8_t CpuBus::read_ff(uint16_t address) const {
-    return 0xFF;
-}
-
-void CpuBus::write_nop(uint16_t address, uint8_t value) {
+    /* FFFF */ memory_accessors[Specs::MemoryLayout::IE] = &interrupts.IE;
 }

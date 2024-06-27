@@ -4,28 +4,22 @@ OamBus::OamBus(Oam& oam) :
     VideoBus {},
     oam {oam} {
 
+    const NonTrivialReadFunctor read_ff = {[](void*, uint16_t) -> uint8_t {
+                                               return 0xFF;
+                                           },
+                                           nullptr};
+    const NonTrivialWriteFunctor write_nop = {[](void*, uint16_t, uint8_t) {
+                                              },
+                                              nullptr};
+    const MemoryAccess open_bus_access {read_ff, write_nop};
+
     /* 0xFE00 - 0xFE9F */
     for (uint16_t i = Specs::MemoryLayout::OAM::START; i <= Specs::MemoryLayout::OAM::END; i++) {
-        memory_accessors[i] = {&OamBus::read_oam, &OamBus::write_oam};
+        memory_accessors[i] = &oam[i - Specs::MemoryLayout::OAM::START];
     }
 
     /* 0xFEA0 - 0xFEFF */
     for (uint16_t i = Specs::MemoryLayout::NOT_USABLE::START; i <= Specs::MemoryLayout::NOT_USABLE::END; i++) {
-        memory_accessors[i] = {&OamBus::read_ff, &OamBus::write_nop};
+        memory_accessors[i] = open_bus_access;
     }
-}
-
-uint8_t OamBus::read_oam(uint16_t address) const {
-    return oam[address - Specs::MemoryLayout::OAM::START];
-}
-
-void OamBus::write_oam(uint16_t address, uint8_t value) {
-    oam[address - Specs::MemoryLayout::OAM::START] = value;
-}
-
-uint8_t OamBus::read_ff(uint16_t address) const {
-    return 0xFF;
-}
-
-void OamBus::write_nop(uint16_t address, uint8_t value) {
 }
