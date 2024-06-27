@@ -11,13 +11,15 @@
 #include "docboy/debugger/memsniffer.h"
 #endif
 
-class InterruptsIO;
+class Interrupts;
 
-class TimersIO {
+class Timers {
 public:
     DEBUGGABLE_CLASS()
 
-    explicit TimersIO(InterruptsIO& interrupts);
+    explicit Timers(Interrupts& interrupts);
+
+    void tick_t3();
 
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
@@ -55,17 +57,10 @@ protected:
     void on_falling_edge_inc_tima();
     void handle_pending_tima_reload();
 
-    InterruptsIO& interrupts;
+    Interrupts& interrupts;
 
     TimaReloadState::Type tima_state {};
     bool last_div_bit_and_tac_enable {};
-};
-
-class Timers : public TimersIO {
-public:
-    explicit Timers(InterruptsIO& interrupts);
-
-    void tick_t3();
 };
 
 #endif // TIMERS_H

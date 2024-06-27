@@ -7,7 +7,7 @@
 #include "utils/bits.h"
 #include "utils/parcel.h"
 
-class InterruptsIO {
+class Interrupts {
 public:
     enum class InterruptType {
         VBlank,

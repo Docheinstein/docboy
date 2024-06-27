@@ -1,14 +1,14 @@
 #ifndef STOPCONTROLLER_H
 #define STOPCONTROLLER_H
 
-class JoypadIO;
-class TimersIO;
+class Joypad;
+class Timers;
 class Lcd;
 class Parcel;
 
 class StopController {
 public:
-    StopController(bool& stopped, JoypadIO& joypad, TimersIO& timers, Lcd& lcd);
+    StopController(bool& stopped, Joypad& joypad, Timers& timers, Lcd& lcd);
 
     void stop();
 
@@ -34,8 +34,8 @@ private:
     bool& stopped;
     bool requested {};
 
-    JoypadIO& joypad;
-    TimersIO& timers;
+    Joypad& joypad;
+    Timers& timers;
     Lcd& lcd;
 };
 

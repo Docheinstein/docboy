@@ -6,8 +6,12 @@
 
 #include "utils/parcel.h"
 
-class SerialIO {
+class Serial {
 public:
+    void write_sc(uint8_t value) {
+        sc = 0b01111110 | value;
+    }
+
     void save_state(Parcel& parcel) const {
         parcel.write_uint8(sb);
         parcel.write_uint8(sc);
@@ -21,10 +25,6 @@ public:
     void reset() {
         sb = 0;
         sc = 0b01111110;
-    }
-
-    void write_sc(uint8_t value) {
-        sc = 0b01111110 | value;
     }
 
     UInt8 sb {make_uint8(Specs::Registers::Serial::SB)};

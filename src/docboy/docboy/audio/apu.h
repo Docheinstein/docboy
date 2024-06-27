@@ -8,7 +8,7 @@
 #include "docboy/common/specs.h"
 #include "docboy/memory/cell.h"
 
-class TimersIO;
+class Timers;
 class Parcel;
 
 class Apu {
@@ -28,7 +28,7 @@ public:
         Apu& apu;
     };
 
-    explicit Apu(TimersIO& timers);
+    explicit Apu(Timers& timers);
 
     void set_audio_callback(std::function<void(const int16_t* samples, uint32_t count)>&& callback);
 
@@ -131,7 +131,7 @@ private:
 
     int16_t compute_audio_sample() const;
 
-    TimersIO& timers;
+    Timers& timers;
 
     int16_t samples[SAMPLES_PER_FRAME] {};
 

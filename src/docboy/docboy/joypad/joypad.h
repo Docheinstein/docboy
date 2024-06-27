@@ -3,19 +3,12 @@
 
 #include <cstdint>
 
-class InterruptsIO;
+#include "docboy/common/specs.h"
+#include "docboy/memory/cell.h"
 
-class JoypadIO {
-public:
-    uint8_t read_p1() const;
-    void write_p1(uint8_t value);
+class Interrupts;
 
-protected:
-    uint8_t p1 {0b11000000};
-    uint8_t keys {0b11111111};
-};
-
-class Joypad : public JoypadIO {
+class Joypad {
 public:
     enum class Key : uint8_t {
         Down = 7,
@@ -33,11 +26,21 @@ public:
         Released = 1,
     };
 
-    explicit Joypad(InterruptsIO& interrupts);
+    explicit Joypad(Interrupts& interrupts);
 
     void set_key_state(Key key, KeyState state);
 
+    struct P1 : Composite<P1, Specs::Registers::Joypad::P1> {
+        uint8_t rd() const;
+        void wr(uint8_t value);
+
+        bool select_buttons {};
+        bool select_dpad {};
+
+        uint8_t keys {0b11111111};
+    } p1 {};
+
 private:
-    InterruptsIO& interrupts;
+    Interrupts& interrupts;
 };
 #endif // JOYPAD_H

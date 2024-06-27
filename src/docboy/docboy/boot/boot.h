@@ -12,10 +12,10 @@
 class Mmu;
 #endif
 
-class BootIO {
+class Boot {
 public:
 #ifdef ENABLE_BOOTROM
-    explicit BootIO(Mmu& mmu) :
+    explicit Boot(Mmu& mmu) :
         mmu {mmu} {
     }
 #endif

@@ -1,44 +1,28 @@
 #include "docboy/joypad/joypad.h"
 #include "docboy/interrupts/interrupts.h"
 
-#ifdef ENABLE_DEBUGGER
-#include "docboy/debugger/memsniffer.h"
-#endif
-
-uint8_t JoypadIO::read_p1() const {
-    const uint8_t out =
-        p1 | (test_bit<Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS>(p1) ? keep_bits<4>(keys)
-                                                                              : keep_bits<4>(keys >> 4));
-#ifdef ENABLE_DEBUGGER
-    DebuggerMemorySniffer::notify_memory_read(Specs::Registers::Joypad::P1, out);
-#endif
-    return out;
-}
-
-void JoypadIO::write_p1(uint8_t value) {
-#ifdef ENABLE_DEBUGGER
-    uint8_t old_value = p1;
-#endif
-
-    p1 = 0b11000000 | (value & 0b00110000);
-
-#ifdef ENABLE_DEBUGGER
-    DebuggerMemorySniffer::notify_memory_write(Specs::Registers::Joypad::P1, old_value, p1);
-#endif
-}
-
-Joypad::Joypad(InterruptsIO& interrupts) :
+Joypad::Joypad(Interrupts& interrupts) :
     interrupts {interrupts} {
 }
 
 void Joypad::set_key_state(Key key, KeyState state) {
-    set_bit(keys, static_cast<uint8_t>(key), static_cast<uint8_t>(state));
+    set_bit(p1.keys, static_cast<uint8_t>(key), static_cast<uint8_t>(state));
 
     const bool raise_interrupt =
-        (state == KeyState::Pressed) &&
-        (test_bit<Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS>(p1) ? key <= Key::Start : key >= Key::Right);
+        (state == KeyState::Pressed) && (p1.select_dpad ? key <= Key::Start : key >= Key::Right);
 
     if (raise_interrupt) {
-        interrupts.raise_Interrupt<InterruptsIO::InterruptType::Joypad>();
+        interrupts.raise_Interrupt<Interrupts::InterruptType::Joypad>();
     }
+}
+
+uint8_t Joypad::P1::rd() const {
+    return 0b11000000 | select_buttons << Specs::Bits::Joypad::P1::SELECT_ACTION_BUTTONS |
+           select_dpad << Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS |
+           (select_dpad ? keep_bits<4>(keys) : keep_bits<4>(keys >> 4));
+}
+
+void Joypad::P1::wr(uint8_t value) {
+    select_buttons = test_bit<Specs::Bits::Joypad::P1::SELECT_ACTION_BUTTONS>(value);
+    select_dpad = test_bit<Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS>(value);
 }

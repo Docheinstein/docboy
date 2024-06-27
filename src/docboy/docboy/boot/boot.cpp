@@ -4,7 +4,7 @@
 #include "docboy/mmu/mmu.h"
 #endif
 
-void BootIO::write_boot(uint8_t value) {
+void Boot::write_boot(uint8_t value) {
     // BOOT disable is one-way only
 #ifdef ENABLE_BOOTROM
     if (!test_bit<Specs::Bits::Boot::BOOT_ENABLE>(boot) && test_bit<Specs::Bits::Boot::BOOT_ENABLE>(value)) {

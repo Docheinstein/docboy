@@ -14,13 +14,13 @@
 #endif
 
 #ifdef ENABLE_BOOTROM
-CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
-               InterruptsIO& interrupts, Apu& apu, Ppu& ppu, BootIO& boot) :
+<<<<<<< HEAD CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
+                 Apu& apu, Ppu& ppu, Boot& boot) :
     Bus<CpuBus> {},
     boot_rom {boot_rom},
 #else
-CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers, InterruptsIO& interrupts, Apu& apu,
-               Ppu& ppu, BootIO& boot) :
+CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
+               Boot& boot) :
     Bus {},
 #endif
     hram {hram},
@@ -48,22 +48,19 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     }
 #endif
 
-    /* FF00 */ memory_accessors[Specs::Registers::Joypad::P1] = {
-        NonTrivialRead<JoypadIO, &JoypadIO::read_p1> {&joypad},
-        NonTrivialWrite<JoypadIO, &JoypadIO::write_p1> {&joypad}};
+    /* FF00 */ memory_accessors[Specs::Registers::Joypad::P1] = CompositeMemoryAccess {&joypad.p1};
     /* FF01 */ memory_accessors[Specs::Registers::Serial::SB] = &serial.sb;
-    /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {
-        &serial.sc, NonTrivialWrite<SerialIO, &SerialIO::write_sc> {&serial}};
+    /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {&serial.sc,
+                                                                 NonTrivialWrite<Serial, &Serial::write_sc> {&serial}};
     /* FF03 */ memory_accessors[0xFF03] = open_bus_access;
     /* FF04 */ memory_accessors[Specs::Registers::Timers::DIV] = {
-        NonTrivialRead<TimersIO, &TimersIO::read_div> {&timers},
-        NonTrivialWrite<TimersIO, &TimersIO::write_div> {&timers}};
+        NonTrivialRead<Timers, &Timers::read_div> {&timers}, NonTrivialWrite<Timers, &Timers::write_div> {&timers}};
     /* FF05 */ memory_accessors[Specs::Registers::Timers::TIMA] = {
-        &timers.tima, NonTrivialWrite<TimersIO, &TimersIO::write_tima> {&timers}};
+        &timers.tima, NonTrivialWrite<Timers, &Timers::write_tima> {&timers}};
     /* FF06 */ memory_accessors[Specs::Registers::Timers::TMA] = {
-        &timers.tma, NonTrivialWrite<TimersIO, &TimersIO::write_tma> {&timers}};
+        &timers.tma, NonTrivialWrite<Timers, &Timers::write_tma> {&timers}};
     /* FF07 */ memory_accessors[Specs::Registers::Timers::TAC] = {
-        &timers.tac, NonTrivialWrite<TimersIO, &TimersIO::write_tac> {&timers}};
+        &timers.tac, NonTrivialWrite<Timers, &Timers::write_tac> {&timers}};
     /* FF08 */ memory_accessors[0xFF08] = open_bus_access;
     /* FF09 */ memory_accessors[0xFF09] = open_bus_access;
     /* FF0A */ memory_accessors[0xFF0A] = open_bus_access;
@@ -72,7 +69,7 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     /* FF0D */ memory_accessors[0xFF0D] = open_bus_access;
     /* FF0E */ memory_accessors[0xFF0E] = open_bus_access;
     /* FF0F */ memory_accessors[Specs::Registers::Interrupts::IF] = {
-        &interrupts.IF, NonTrivialWrite<InterruptsIO, &InterruptsIO::write_IF> {&interrupts}};
+        &interrupts.IF, NonTrivialWrite<Interrupts, &Interrupts::write_IF> {&interrupts}};
     /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {&apu.nr10,
                                                                   NonTrivialWrite<Apu, &Apu::write_nr10> {&apu}};
     /* FF11 */ memory_accessors[Specs::Registers::Sound::NR11] = &apu.nr11;
@@ -144,7 +141,7 @@ CpuBus::CpuBus(Hram& hram, JoypadIO& joypad, SerialIO& serial, TimersIO& timers,
     /* FF4E */ memory_accessors[0xFF4E] = open_bus_access;
     /* FF4F */ memory_accessors[0xFF4F] = open_bus_access;
     /* FF50 */ memory_accessors[Specs::Registers::Boot::BOOT] = {&boot.boot,
-                                                                 NonTrivialWrite<BootIO, &BootIO::write_boot> {&boot}};
+                                                                 NonTrivialWrite<Boot, &Boot::write_boot> {&boot}};
     /* FF51 */ memory_accessors[0xFF51] = open_bus_access;
     /* FF52 */ memory_accessors[0xFF52] = open_bus_access;
     /* FF53 */ memory_accessors[0xFF53] = open_bus_access;

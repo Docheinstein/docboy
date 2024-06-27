@@ -18,7 +18,7 @@ constexpr bool SQUARE_WAVES[][8] {
 };
 }
 
-Apu::Apu(TimersIO& timers) :
+Apu::Apu(Timers& timers) :
     timers {timers} {
     reset();
 }
