@@ -4,7 +4,7 @@
 template<typename Impl>
 template<Device::Type Dev>
 uint8_t VideoBus<Impl>::flush_read_request() {
-    ASSERT(test_bit<Bus<Impl>::template R<Dev>>(this->requests));
+    ASSERT(test_bit<Bus::template R<Dev>>(this->requests));
 
     if constexpr (Dev == Device::Cpu) {
         if (is_acquired()) {
@@ -20,7 +20,7 @@ uint8_t VideoBus<Impl>::flush_read_request() {
 template<typename Impl>
 template<Device::Type Dev>
 void VideoBus<Impl>::flush_write_request(uint8_t value) {
-    ASSERT(test_bit<Bus<Impl>::template W<Dev>>(this->requests));
+    ASSERT(test_bit<Bus::template W<Dev>>(this->requests));
 
     if constexpr (Dev == Device::Cpu) {
         if (is_acquired()) {

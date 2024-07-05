@@ -243,7 +243,7 @@ public:
         Composite& composite;
 
         uint8_t get_value() const {
-            ASSERT(Composite.notification_enabled);
+            ASSERT(composite.notification_enabled);
             composite.notification_enabled = false;
             uint8_t v = composite.read_raw();
             composite.notification_enabled = true;

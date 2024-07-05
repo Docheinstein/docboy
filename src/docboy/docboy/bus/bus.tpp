@@ -8,7 +8,7 @@
 
 inline uint8_t Bus::read_bus(uint16_t addr) const {
     const MemoryAccess::Read& read_access = memory_accessors[addr].read;
-    ASSERT(read_access.trivial || read_access.non_trivial);
+    ASSERT(read_access.trivial || read_access.non_trivial.target);
 
     return read_access.trivial ? static_cast<uint8_t>(*read_access.trivial)
                                : (read_access.non_trivial.function)(read_access.non_trivial.target, addr);
@@ -16,7 +16,7 @@ inline uint8_t Bus::read_bus(uint16_t addr) const {
 
 inline void Bus::write_bus(uint16_t addr, uint8_t value) {
     const MemoryAccess::Write& write_access = memory_accessors[addr].write;
-    ASSERT(write_access.trivial || write_access.non_trivial);
+    ASSERT(write_access.trivial || write_access.non_trivial.target);
 
     if (write_access.trivial) {
         *write_access.trivial = value;
