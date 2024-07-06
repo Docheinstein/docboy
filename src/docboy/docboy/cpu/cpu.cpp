@@ -593,7 +593,7 @@ void Cpu::tick_t3() {
 #endif
 }
 
-void Cpu::tick() {
+inline void Cpu::tick() {
     // Eventually handle pending interrupt
     if (interrupt.state == InterruptState::Pending) {
         // Decrease the remaining ticks for the pending interrupt

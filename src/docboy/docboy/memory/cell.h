@@ -343,8 +343,6 @@ constexpr inline UInt8 make_uint8(const uint16_t address) {
 template <typename T, uint16_t Address>
 struct Composite {
 public:
-    using Type = Composite<T, Address>;
-
     using Bool = bool;
     using UInt8 = ::UInt8;
 

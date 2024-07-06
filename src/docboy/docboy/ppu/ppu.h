@@ -36,13 +36,12 @@ public:
     void write_dma(uint8_t value);
 
     struct Lcdc : Composite<Lcdc, Specs::Registers::Video::LCDC> {
-        explicit Lcdc(Ppu& ppu, bool notifications = false);
-        Lcdc(const Lcdc& lcdc);
+        Lcdc();
+
+        explicit Lcdc(Ppu* ppu, bool notifications = false);
         Lcdc& operator=(const Lcdc& lcdc);
 
         using Composite::operator=;
-
-        void assign(const Lcdc& lcdc);
 
         uint8_t rd() const;
         void wr(uint8_t value);
@@ -56,9 +55,8 @@ public:
         Bool obj_enable {make_bool()};
         Bool bg_win_enable {make_bool()};
 
-    private:
-        Ppu& ppu;
-    } lcdc {*this, true /* enable notifications */};
+        Ppu* ppu;
+    } lcdc {this, true /* enable notifications */};
 
     struct Stat : Composite<Stat, Specs::Registers::Video::STAT> {
         using Composite::operator=;
@@ -226,9 +224,9 @@ private:
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
 
-    uint8_t last_bgp {};    // BGP delayed by 1 t-cycle
-    uint8_t last_wx {};     // WX delayed by 1 t-cycle
-    Lcdc last_lcdc {*this}; // LCDC delayed by 1 t-cycle
+    uint8_t last_bgp {};   // BGP delayed by 1 t-cycle
+    uint8_t last_wx {};    // WX delayed by 1 t-cycle
+    Lcdc last_lcdc {this}; // LCDC delayed by 1 t-cycle
 
     FillQueue<BgPixel, 8> bg_fifo {};
     Queue<ObjPixel, 8> obj_fifo {};
