@@ -1,26 +1,30 @@
 #include "docboy/debugger/memwatcher.h"
 
+#include "docboy/core/core.h"
 #include "docboy/debugger/backend.h"
 
 namespace DebuggerMemoryWatcher {
 namespace {
-    DebuggerBackend* observer {};
+    DebuggerBackend* backend {};
 }
 
-void set_observer(DebuggerBackend* o) {
-    observer = o;
+void attach_backend(DebuggerBackend& b) {
+    backend = &b;
 }
 
-void notify_read(uint16_t address, uint8_t value) {
-    if (observer) {
-        observer->notify_memory_read(address, value);
+void detach_backend() {
+    backend = nullptr;
+}
+
+void notify_read(uint16_t address) {
+    if (backend) {
+        backend->notify_memory_read(address);
     }
 }
 
-void notify_write(uint16_t address, uint8_t old_value, uint8_t new_value) {
-    if (observer) {
-        observer->notify_memory_write(address, old_value, new_value);
+void notify_write(uint16_t address) {
+    if (backend) {
+        backend->notify_memory_write(address);
     }
 }
-
 } // namespace DebuggerMemoryWatcher

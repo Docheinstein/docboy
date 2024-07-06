@@ -45,7 +45,8 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     }
 #endif
 
-    /* FF00 */ memory_accessors[Specs::Registers::Joypad::P1] = &joypad.p1;
+    /* FF00 */ memory_accessors[Specs::Registers::Joypad::P1] = {NonTrivial<&Joypad::read_p1> {&joypad},
+                                                                 NonTrivial<&Joypad::write_p1> {&joypad}};
     /* FF01 */ memory_accessors[Specs::Registers::Serial::SB] = &serial.sb;
     /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {&serial.sc, NonTrivial<&Serial::write_sc> {&serial}};
     /* FF03 */ memory_accessors[0xFF03] = open_bus_access;
@@ -114,8 +115,10 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF3D */ memory_accessors[Specs::Registers::Sound::WAVED] = &sound.waveD;
     /* FF3E */ memory_accessors[Specs::Registers::Sound::WAVEE] = &sound.waveE;
     /* FF3F */ memory_accessors[Specs::Registers::Sound::WAVEF] = &sound.waveF;
-    /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = &ppu.lcdc;
-    /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = &ppu.stat;
+    /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = {NonTrivial<&Ppu::read_lcdc> {&ppu},
+                                                                  NonTrivial<&Ppu::write_lcdc> {&ppu}};
+    /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = {NonTrivial<&Ppu::read_stat> {&ppu},
+                                                                  NonTrivial<&Ppu::write_stat> {&ppu}};
     /* FF42 */ memory_accessors[Specs::Registers::Video::SCY] = &ppu.scy;
     /* FF43 */ memory_accessors[Specs::Registers::Video::SCX] = &ppu.scx;
     /* FF44 */ memory_accessors[Specs::Registers::Video::LY] = {&ppu.ly, write_nop};

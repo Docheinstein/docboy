@@ -30,19 +30,19 @@ public:
 
     explicit Joypad(Interrupts& interrupts);
 
+    uint8_t read_p1() const;
+    void write_p1(uint8_t value);
+
     void set_key_state(Key key, KeyState state);
 
-    struct P1 : Composite<P1, Specs::Registers::Joypad::P1> {
-        uint8_t rd() const;
-        void wr(uint8_t value);
-
+    struct P1 : Composite<Specs::Registers::Joypad::P1> {
         Bool select_buttons {make_bool()};
         Bool select_dpad {make_bool()};
-
-        uint8_t keys {0b11111111};
     } p1 {};
 
 private:
     Interrupts& interrupts;
+
+    uint8_t keys {0b11111111};
 };
 #endif // JOYPAD_H

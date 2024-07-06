@@ -1215,7 +1215,7 @@ void Cpu::stop_m0() {
     //     1    |      0      ||  HALT  |  -----  |       2
     //     1    |      1      ||  ----  |  ------ |       1
 
-    bool has_joypad_input = keep_bits<4>(joypad.p1.read()) == bitmask<4>;
+    bool has_joypad_input = keep_bits<4>(joypad.read_p1()) == bitmask<4>;
     bool has_pending_interrupts = get_pending_interrupts();
 
     if (has_joypad_input) {

@@ -105,10 +105,33 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
 
     // Check watchpoints
     if (watchpoint_hit) {
-        // A watchpoint has been triggered: pull command again
-        ExecutionWatchpointHit state {*watchpoint_hit};
+        // Fill the missing watchpoint info (new value)
+        watchpoint_hit->new_value = read_memory_raw(watchpoint_hit->address);
+
+        // Check if watchpoint's conditions are actually satisfied
+        const auto& watchpoint = watchpoint_hit->watchpoint;
+
+        if ((watchpoint_hit->access_type == WatchpointHit::AccessType::Read &&
+             (!watchpoint.condition.enabled ||
+              (watchpoint.condition.condition.operation == Watchpoint::Condition::Operator::Equal &&
+               watchpoint_hit->new_value == watchpoint.condition.condition.operand))) ||
+            (watchpoint_hit->access_type == WatchpointHit::AccessType::Write &&
+
+             ((watchpoint.type == Watchpoint::Type::ReadWrite || watchpoint.type == Watchpoint::Type::Write ||
+               (watchpoint.type == Watchpoint::Type::Change &&
+                watchpoint_hit->old_value != watchpoint_hit->new_value)) &&
+              (!watchpoint.condition.enabled ||
+               (watchpoint.condition.condition.operation == Watchpoint::Condition::Operator::Equal &&
+                watchpoint_hit->new_value == watchpoint.condition.condition.operand))))) {
+
+            // A watchpoint has been triggered: pull the command again
+            ExecutionWatchpointHit state {*watchpoint_hit};
+            state.watchpoint_hit.new_value = read_memory_raw(watchpoint_hit->address);
+            pull_command(state);
+        }
+
+        // Reset watchpoint anyway
         watchpoint_hit = std::nullopt;
-        pull_command(state);
         return;
     }
 
@@ -157,49 +180,62 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
     }
 }
 
-void DebuggerBackend::notify_memory_read(uint16_t address, uint8_t value) {
+void DebuggerBackend::notify_memory_read(uint16_t address) {
+    if (!has_watchpoint(address)) {
+        return;
+    }
+
     if (!allow_memory_callbacks) {
         return;
     }
 
-    std::optional<Watchpoint> w = get_watchpoint(address);
-    if (w) {
-        if ((w->type == Watchpoint::Type::Read || w->type == Watchpoint::Type::ReadWrite) &&
-            (!w->condition.enabled || (w->condition.condition.operation == Watchpoint::Condition::Operator::Equal &&
-                                       value == w->condition.condition.operand))) {
-            watchpoint_hit = WatchpointHit();
-            watchpoint_hit->watchpoint = *w;
-            watchpoint_hit->address = address;
-            watchpoint_hit->access_type = WatchpointHit::AccessType::Read;
-            watchpoint_hit->old_value = value;
-            watchpoint_hit->new_value = value;
-        }
+    if (watchpoint_hit) {
+        // At the moment we handle at maximum one watchpoint hit per tick.
+        return;
+    }
+
+    auto w = get_watchpoint(address);
+    ASSERT(w);
+
+    uint8_t current_value = read_memory_raw(address);
+    if ((w->type == Watchpoint::Type::Read || w->type == Watchpoint::Type::ReadWrite)) {
+        watchpoint_hit = WatchpointHit();
+        watchpoint_hit->watchpoint = *w;
+        watchpoint_hit->address = address;
+        watchpoint_hit->access_type = WatchpointHit::AccessType::Read;
+        watchpoint_hit->old_value = current_value;
     }
 }
 
-void DebuggerBackend::notify_memory_write(uint16_t address, uint8_t old_value, uint8_t new_value) {
+void DebuggerBackend::notify_memory_write(uint16_t address) {
+    // Update the memory hash after a change so that we don't
+    // have to recompute it from scratch each time.
+    memory_hash = hash_combine(memory_hash, address);
+
+    if (!has_watchpoint(address)) {
+        return;
+    }
+
     if (!allow_memory_callbacks) {
         return;
     }
 
-    std::optional<Watchpoint> w = get_watchpoint(address);
-    if (w) {
-        if (((w->type == Watchpoint::Type::ReadWrite || w->type == Watchpoint::Type::Write) ||
-             (w->type == Watchpoint::Type::Change && old_value != new_value)) &&
-            (!w->condition.enabled || (w->condition.condition.operation == Watchpoint::Condition::Operator::Equal &&
-                                       new_value == w->condition.condition.operand))) {
-            watchpoint_hit = WatchpointHit();
-            watchpoint_hit->watchpoint = *w;
-            watchpoint_hit->address = address;
-            watchpoint_hit->access_type = WatchpointHit::AccessType::Write;
-            watchpoint_hit->old_value = old_value;
-            watchpoint_hit->new_value = new_value;
-        }
+    if (watchpoint_hit) {
+        // At the moment we handle at maximum one watchpoint hit per tick.
+        return;
     }
 
-    // Update the memory hash after a change so that we don't
-    // have to recompute it from scratch each time.
-    memory_hash = hash_combine(memory_hash, hash_combine(address, new_value));
+    auto w = get_watchpoint(address);
+    ASSERT(w);
+
+    if (((w->type == Watchpoint::Type::ReadWrite || w->type == Watchpoint::Type::Write) ||
+         (w->type == Watchpoint::Type::Change))) {
+        watchpoint_hit = WatchpointHit();
+        watchpoint_hit->watchpoint = *w;
+        watchpoint_hit->address = address;
+        watchpoint_hit->access_type = WatchpointHit::AccessType::Write;
+        watchpoint_hit->old_value = read_memory_raw(address);
+    }
 }
 
 bool DebuggerBackend::is_asking_to_quit() const {
@@ -257,10 +293,11 @@ uint32_t DebuggerBackend::add_breakpoint(uint16_t addr) {
 }
 
 std::optional<Breakpoint> DebuggerBackend::get_breakpoint(uint16_t addr) const {
-    auto b = std::find_if(breakpoints.begin(), breakpoints.end(), [addr](const Breakpoint& b) {
-        return b.address == addr;
-    });
-    if (b != breakpoints.end()) {
+    if (const auto b = std::find_if(breakpoints.begin(), breakpoints.end(),
+                                    [addr](const Breakpoint& b) {
+                                        return b.address == addr;
+                                    });
+        b != breakpoints.end()) {
         return *b;
     }
     return std::nullopt;
@@ -275,16 +312,24 @@ uint32_t DebuggerBackend::add_watchpoint(Watchpoint::Type type, uint16_t from, u
     const uint32_t id = next_point_id++;
     const Watchpoint w {id, type, {from, to}, {static_cast<bool>(cond), cond ? *cond : Watchpoint::Condition()}};
     watchpoints.push_back(w);
+    for (uint16_t i = from; i <= to; i++) {
+        watchpoints_at_address[i] += 1;
+    }
     return id;
 }
 
 std::optional<Watchpoint> DebuggerBackend::get_watchpoint(uint16_t addr) const {
-    auto w = std::find_if(watchpoints.begin(), watchpoints.end(), [addr](const Watchpoint& wp) {
-        return wp.address.from <= addr && addr <= wp.address.to;
-    });
-    if (w != watchpoints.end()) {
+    if (const auto w = std::find_if(watchpoints.begin(), watchpoints.end(),
+                                    [addr](const Watchpoint& wp) {
+                                        return wp.address.from <= addr && addr <= wp.address.to;
+                                    });
+        w != watchpoints.end()) {
+        ASSERT(has_watchpoint(addr));
         return *w;
     }
+
+    ASSERT(!has_watchpoint(addr));
+
     return std::nullopt;
 }
 
@@ -292,18 +337,34 @@ const std::vector<Watchpoint>& DebuggerBackend::get_watchpoints() const {
     return watchpoints;
 }
 
+bool DebuggerBackend::has_watchpoint(uint16_t addr) const {
+    // More efficient get_watchpoint.
+    return watchpoints_at_address[addr];
+}
+
 void DebuggerBackend::remove_point(uint32_t id) {
     erase_if(breakpoints, [id](const Breakpoint& b) {
         return b.id == id;
     });
-    erase_if(watchpoints, [id](const Watchpoint& w) {
-        return w.id == id;
-    });
+    if (const auto w = std::find_if(watchpoints.begin(), watchpoints.end(),
+                                    [id](const Watchpoint& w) {
+                                        return w.id == id;
+                                    });
+        w != watchpoints.end()) {
+        for (uint16_t i = w->address.from; i <= w->address.to; i++) {
+            watchpoints_at_address[i] -= 1;
+        }
+
+        erase_if(watchpoints, [id](const Watchpoint& w) {
+            return w.id == id;
+        });
+    }
 }
 
 void DebuggerBackend::clear_points() {
     breakpoints.clear();
     watchpoints.clear();
+    memset(watchpoints_at_address, 0, sizeof(watchpoints_at_address));
 }
 
 std::optional<DisassembledInstructionReference> DebuggerBackend::disassemble(uint16_t addr, bool cache) {
