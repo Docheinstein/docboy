@@ -24,7 +24,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "docboy/debugger/backend.h"
 #include "docboy/debugger/frontend.h"
-#include "docboy/debugger/memsniffer.h"
+#include "docboy/debugger/memwatcher.h"
 #endif
 
 namespace {

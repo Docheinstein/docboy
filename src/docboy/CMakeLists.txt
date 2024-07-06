@@ -67,6 +67,7 @@ target_sources(docboy PRIVATE
         docboy/memory/memory.h
         docboy/memory/oam.h
         docboy/memory/randmemory.h
+        docboy/memory/traits.h
         docboy/memory/vram.cpp
         docboy/memory/vram.h
         docboy/memory/wram1.h
@@ -84,6 +85,7 @@ target_sources(docboy PRIVATE
         docboy/serial/link.h
         docboy/serial/port.cpp
         docboy/serial/port.h
+        docboy/serial/serial.cpp
         docboy/serial/serial.h
         docboy/audio/apu.cpp
         docboy/audio/apu.h
@@ -119,8 +121,8 @@ if (ENABLE_DEBUGGER)
             docboy/debugger/frontend.h
             docboy/debugger/helpers.cpp
             docboy/debugger/helpers.h
-            docboy/debugger/memsniffer.cpp
-            docboy/debugger/memsniffer.h
+            docboy/debugger/memwatcher.cpp
+            docboy/debugger/memwatcher.h
             docboy/debugger/mnemonics.cpp
             docboy/debugger/mnemonics.h
             docboy/debugger/shared.h

@@ -8,20 +8,20 @@
 
 inline uint8_t Bus::read_bus(uint16_t addr) const {
     const MemoryAccess::Read& read_access = memory_accessors[addr].read;
-    ASSERT(read_access.trivial || read_access.non_trivial);
+    ASSERT(read_access.trivial || read_access.non_trivial.owner);
 
     return read_access.trivial ? static_cast<uint8_t>(*read_access.trivial)
-                               : (read_access.non_trivial.function)(read_access.non_trivial.target, addr);
+                               : read_access.non_trivial(addr);
 }
 
 inline void Bus::write_bus(uint16_t addr, uint8_t value) {
     const MemoryAccess::Write& write_access = memory_accessors[addr].write;
-    ASSERT(write_access.trivial || write_access.non_trivial);
+    ASSERT(write_access.trivial || write_access.non_trivial.owner);
 
     if (write_access.trivial) {
         *write_access.trivial = value;
     } else {
-        (write_access.non_trivial.function)(write_access.non_trivial.target, addr, value);
+        write_access.non_trivial(addr, value);
     }
 }
 
@@ -108,4 +108,48 @@ inline Bus::MemoryAccess::MemoryAccess(const UInt8* r, Bus::NonTrivialWriteFunct
 inline Bus::MemoryAccess::MemoryAccess(Bus::NonTrivialReadFunctor r, Bus::NonTrivialWriteFunctor w) {
     read.non_trivial = r;
     write.non_trivial = w;
+}
+
+template <typename T>
+std::enable_if_t<HasReadMemberFunctionV<T> && HasWriteMemberFunctionV<T>, Bus::MemoryAccess&> Bus::MemoryAccess::operator=(T* t) {
+    *this = MemoryAccess {NonTrivialRead<&T::read> {t}, NonTrivialWrite<&T::write> {t}};
+    return *this;
+}
+
+template <auto Read>
+Bus::NonTrivialRead<Read>::NonTrivialRead(Bus::NonTrivialRead<Read>::OwnerType* t) {
+    ASSERT(t);
+    owner = t;
+    function = [](void* p, uint16_t addr) {
+        if constexpr (std::is_invocable_v<FunctionType, OwnerType&>) {
+            return (static_cast<OwnerType*>(p)->*Read)();
+        } else if constexpr (std::is_invocable_v<FunctionType, const OwnerType&>) {
+            return (static_cast<const OwnerType*>(p)->*Read)();
+        } else if constexpr (std::is_invocable_v<FunctionType, OwnerType&, uint16_t>) {
+            return (static_cast<OwnerType*>(p)->*Read)(addr);
+        } else if constexpr (std::is_invocable_v<FunctionType, const OwnerType&, uint16_t>) {
+            return (static_cast<const OwnerType*>(p)->*Read)(addr);
+        } else {
+            static_assert(false);
+        }
+    };
+}
+
+template <auto Write>
+Bus::NonTrivialWrite<Write>::NonTrivialWrite(Bus::NonTrivialWrite<Write>::OwnerType* t) {
+    ASSERT(t);
+    owner = t;
+    function = [](void* p, uint16_t addr, uint8_t value) {
+        if constexpr (std::is_invocable_v<FunctionType, OwnerType&, uint8_t>) {
+            return (static_cast<OwnerType*>(p)->*Write)(value);
+        } else if constexpr (std::is_invocable_v<FunctionType, const OwnerType&, uint8_t>) {
+            return (static_cast<const OwnerType>(p)->*Write)(value);
+        } else if constexpr (std::is_invocable_v<FunctionType, OwnerType&, uint16_t, uint8_t>) {
+            return (static_cast<OwnerType*>(p)->*Write)(addr, value);
+        } else if constexpr (std::is_invocable_v<FunctionType, const OwnerType&, uint16_t, uint8_t>) {
+            return (static_cast<const OwnerType*>(p)->*Write)(addr, value);
+        } else {
+            static_assert(false);
+        }
+    };
 }

@@ -6,6 +6,9 @@
 #include "docboy/bus/device.h"
 #include "docboy/common/macros.h"
 #include "docboy/memory/fwd/cellfwd.h"
+#include "docboy/memory/traits.h"
+
+#include "utils/asserts.h"
 
 class Parcel;
 
@@ -47,59 +50,40 @@ public:
     uint16_t address {};
 
 protected:
-    struct NonTrivialReadFunctor {
-        using Function = uint8_t (*)(void*, uint16_t);
-
-        Function function {};
-        void* target {};
+    template <typename Function>
+    struct Functor {
+        Function function;
+        void* owner {};
     };
 
-    struct NonTrivialWriteFunctor {
-        using Function = void (*)(void*, uint16_t, uint8_t);
-
-        Function function {};
-        void* target {};
+    struct NonTrivialReadFunctor : Functor<uint8_t (*)(void*, uint16_t)> {
+        uint8_t operator()(uint16_t addr) const;
     };
 
-    template <typename T, auto Read>
+    struct NonTrivialWriteFunctor : Functor<void (*)(void*, uint16_t, uint8_t)> {
+        void operator()(uint16_t addr, uint8_t value) const;
+    };
+
+    template <auto Read>
     struct NonTrivialRead : NonTrivialReadFunctor {
-        explicit NonTrivialRead(T* t) {
-            target = t;
-            function = [](void* p, uint16_t addr) {
-                if constexpr (std::is_invocable_v<decltype(Read), T&>) {
-                    return (static_cast<T*>(p)->*Read)();
-                } else if constexpr (std::is_invocable_v<decltype(Read), const T&>) {
-                    return (static_cast<const T*>(p)->*Read)();
-                } else if constexpr (std::is_invocable_v<decltype(Read), T&, uint16_t>) {
-                    return (static_cast<T*>(p)->*Read)(addr);
-                } else if constexpr (std::is_invocable_v<decltype(Read), const T&, uint16_t>) {
-                    return (static_cast<const T*>(p)->*Read)(addr);
-                } else {
-                    static_assert(false);
-                }
-            };
-        }
+        using FunctionType = decltype(Read);
+        using OwnerType = ClassOfMemberFunctionT<FunctionType>;
+
+        explicit NonTrivialRead(OwnerType* t);
     };
 
-    template <typename T, auto Write>
+    template <auto Write>
     struct NonTrivialWrite : NonTrivialWriteFunctor {
-        explicit NonTrivialWrite(T* t) {
-            target = t;
-            function = [](void* p, uint16_t addr, uint8_t value) {
-                if constexpr (std::is_invocable_v<decltype(Write), T&, uint8_t>) {
-                    return (static_cast<T*>(p)->*Write)(value);
-                } else if constexpr (std::is_invocable_v<decltype(Write), const T&, uint8_t>) {
-                    return (static_cast<const T*>(p)->*Write)(value);
-                } else if constexpr (std::is_invocable_v<decltype(Write), T&, uint16_t, uint8_t>) {
-                    return (static_cast<T*>(p)->*Write)(addr, value);
-                } else if constexpr (std::is_invocable_v<decltype(Write), const T&, uint16_t, uint8_t>) {
-                    return (static_cast<const T*>(p)->*Write)(addr, value);
-                } else {
-                    static_assert(false);
-                }
-            };
-        }
+        using FunctionType = decltype(Write);
+        using OwnerType = ClassOfMemberFunctionT<FunctionType>;
+
+        explicit NonTrivialWrite(OwnerType* t);
     };
+
+    template <auto F>
+    using NonTrivial =
+        std::conditional_t<IsReadMemberFunctionV<F>, NonTrivialRead<F>,
+                           std::conditional_t<IsWriteMemberFunctionV<F>, NonTrivialWrite<F>, std::nullptr_t>>;
 
     struct MemoryAccess {
         struct Read {
@@ -118,13 +102,9 @@ protected:
         MemoryAccess(NonTrivialReadFunctor r, UInt8* w);
         MemoryAccess(const UInt8* r, NonTrivialWriteFunctor w);
         MemoryAccess(NonTrivialReadFunctor r, NonTrivialWriteFunctor w);
-    };
 
-    template <typename T>
-    struct CompositeMemoryAccess : MemoryAccess {
-        explicit CompositeMemoryAccess(T* t) :
-            MemoryAccess {NonTrivialRead<T, &T::read> {t}, NonTrivialWrite<T, &T::write> {t}} {
-        }
+        template <typename T>
+        std::enable_if_t<HasReadMemberFunctionV<T> && HasWriteMemberFunctionV<T>, MemoryAccess&> operator=(T* t);
     };
 
     template <Device::Type Dev>

@@ -8,7 +8,7 @@
 #include "utils/parcel.h"
 
 #ifdef ENABLE_DEBUGGER
-#include "docboy/debugger/memsniffer.h"
+#include "docboy/debugger/memwatcher.h"
 #endif
 
 class Interrupts;
@@ -26,13 +26,7 @@ public:
 
     void reset();
 
-    uint8_t read_div() const {
-        const uint8_t div_high = div >> 8;
-#ifdef ENABLE_DEBUGGER
-        DebuggerMemorySniffer::notify_memory_read(Specs::Registers::Timers::DIV, div_high);
-#endif
-        return div_high;
-    }
+    uint8_t read_div() const;
 
     void write_div(uint8_t value);
     void write_tima(uint8_t value);
@@ -44,7 +38,7 @@ public:
     UInt8 tma {make_uint8(Specs::Registers::Timers::TMA)};
     UInt8 tac {make_uint8(Specs::Registers::Timers::TAC)};
 
-protected:
+private:
     struct TimaReloadState {
         using Type = uint8_t;
         static constexpr Type Pending = 2;

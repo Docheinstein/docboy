@@ -1907,41 +1907,39 @@ void Ppu::write_dma(uint8_t value) {
 
 Ppu::Lcdc::Lcdc(Ppu& ppu, bool notifications) :
     ppu {ppu} {
+#ifdef ENABLE_DEBUGGER
     enable_notification(notifications);
+#endif
 }
 
-Ppu::Lcdc::Lcdc(const Ppu::Lcdc& other_c) :
-    ppu {other_c.ppu} {
-    auto& other = const_cast<Ppu::Lcdc&>(other_c);
-    suspend_notification();
-    other.suspend_notification();
-    enable = (bool)other.enable;
-    win_tile_map = (bool)other.win_tile_map;
-    win_enable = (bool)other.win_enable;
-    bg_win_tile_data = (bool)other.bg_win_tile_data;
-    bg_tile_map = (bool)other.bg_tile_map;
-    obj_size = (bool)other.obj_size;
-    obj_enable = (bool)other.obj_enable;
-    bg_win_enable = (bool)other.bg_win_enable;
-    other.restore_notification();
-    restore_notification();
+Ppu::Lcdc::Lcdc(const Ppu::Lcdc& other) :
+    ppu {other.ppu} {
+    assign(other);
 }
 
-Ppu::Lcdc& Ppu::Lcdc::operator=(const Ppu::Lcdc& other_c) {
-    auto& other = const_cast<Ppu::Lcdc&>(other_c);
-    suspend_notification();
-    other.suspend_notification();
-    enable = (bool)other.enable;
-    win_tile_map = (bool)other.win_tile_map;
-    win_enable = (bool)other.win_enable;
-    bg_win_tile_data = (bool)other.bg_win_tile_data;
-    bg_tile_map = (bool)other.bg_tile_map;
-    obj_size = (bool)other.obj_size;
-    obj_enable = (bool)other.obj_enable;
-    bg_win_enable = (bool)other.bg_win_enable;
-    other.restore_notification();
-    restore_notification();
+Ppu::Lcdc& Ppu::Lcdc::operator=(const Ppu::Lcdc& other) {
+    assign(other);
     return *this;
+}
+
+void Ppu::Lcdc::assign(const Ppu::Lcdc& other) {
+#ifdef ENABLE_DEBUGGER
+    auto& other_non_const = const_cast<Ppu::Lcdc&>(other);
+    suspend_notification();
+    other_non_const.suspend_notification();
+#endif
+    enable = (bool)other.enable;
+    win_tile_map = (bool)other.win_tile_map;
+    win_enable = (bool)other.win_enable;
+    bg_win_tile_data = (bool)other.bg_win_tile_data;
+    bg_tile_map = (bool)other.bg_tile_map;
+    obj_size = (bool)other.obj_size;
+    obj_enable = (bool)other.obj_enable;
+    bg_win_enable = (bool)other.bg_win_enable;
+#ifdef ENABLE_DEBUGGER
+    other_non_const.restore_notification();
+    restore_notification();
+#endif
 }
 
 uint8_t Ppu::Lcdc::rd() const {

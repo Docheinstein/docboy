@@ -5,6 +5,7 @@
 
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
+#include "docboy/dma/dma.h"
 
 #include "utils/arrays.h"
 #include "utils/asserts.h"
@@ -34,13 +35,14 @@ public:
     // PPU I/O registers
     void write_dma(uint8_t value);
 
-public:
     struct Lcdc : Composite<Lcdc, Specs::Registers::Video::LCDC> {
         explicit Lcdc(Ppu& ppu, bool notifications = false);
         Lcdc(const Lcdc& lcdc);
         Lcdc& operator=(const Lcdc& lcdc);
 
         using Composite::operator=;
+
+        void assign(const Lcdc& lcdc);
 
         uint8_t rd() const;
         void wr(uint8_t value);
