@@ -495,7 +495,8 @@ void Ppu::pixel_transfer_lx8() {
         // and the LCDC the PPU sees, both for LCDC.OBJ_ENABLE and LCDC.BG_WIN_ENABLE.
         // LX == 8 seems to be an expection to this rule.
         // [mealybug/m3_lcdc_bg_en_change, mealybug/m3_lcdc_obj_en_change]
-        const Lcdc lcdc_ = lx == 8 ? lcdc : last_lcdc;
+        Lcdc lcdc_;
+        lcdc_ = lx == 8 ? lcdc : last_lcdc;
 
         if (obj_fifo.is_not_empty()) {
             const ObjPixel obj_pixel = obj_fifo.pop_front();
@@ -754,7 +755,7 @@ void Ppu::enter_pixel_transfer() {
     oam.acquire();
 }
 
-void Ppu::enter_hblank() {
+inline void Ppu::enter_hblank() {
     ASSERT(lx == 168);
     ASSERT(ly < 144);
 
@@ -1099,7 +1100,7 @@ void Ppu::bg_pixel_slice_fetcher_get_tile_data_high_0() {
  *  Glitch Next Lines  = 1 if (WX2 = 7 - SCX + 8n)    ∃n € N
  */
 
-void Ppu::win_prefetcher_activating() {
+inline void Ppu::win_prefetcher_activating() {
     ASSERT(!is_fetching_sprite);
     ASSERT(w.active_for_frame);
     ASSERT(w.active);
@@ -1905,24 +1906,20 @@ void Ppu::write_dma(uint8_t value) {
     dma_controller.start_transfer(dma << 8);
 }
 
-Ppu::Lcdc::Lcdc(Ppu& ppu, bool notifications) :
+inline Ppu::Lcdc::Lcdc() {
+#ifdef ENABLE_DEBUGGER
+    enable_notification(false);
+#endif
+}
+
+inline Ppu::Lcdc::Lcdc(Ppu* ppu, bool notifications) :
     ppu {ppu} {
 #ifdef ENABLE_DEBUGGER
     enable_notification(notifications);
 #endif
 }
 
-Ppu::Lcdc::Lcdc(const Ppu::Lcdc& other) :
-    ppu {other.ppu} {
-    assign(other);
-}
-
-Ppu::Lcdc& Ppu::Lcdc::operator=(const Ppu::Lcdc& other) {
-    assign(other);
-    return *this;
-}
-
-void Ppu::Lcdc::assign(const Ppu::Lcdc& other) {
+inline Ppu::Lcdc& Ppu::Lcdc::operator=(const Ppu::Lcdc& other) {
 #ifdef ENABLE_DEBUGGER
     auto& other_non_const = const_cast<Ppu::Lcdc&>(other);
     suspend_notification();
@@ -1940,6 +1937,7 @@ void Ppu::Lcdc::assign(const Ppu::Lcdc& other) {
     other_non_const.restore_notification();
     restore_notification();
 #endif
+    return *this;
 }
 
 uint8_t Ppu::Lcdc::rd() const {
@@ -1954,7 +1952,7 @@ uint8_t Ppu::Lcdc::rd() const {
 void Ppu::Lcdc::wr(uint8_t value) {
     const bool en = test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(value);
     if (en != enable) {
-        en ? ppu.turn_on() : ppu.turn_off();
+        en ? ppu->turn_on() : ppu->turn_off();
         enable = en;
     }
     win_tile_map = test_bit<Specs::Bits::Video::LCDC::WIN_TILE_MAP>(value);

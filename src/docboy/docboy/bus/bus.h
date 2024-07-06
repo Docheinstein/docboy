@@ -56,13 +56,8 @@ protected:
         void* owner {};
     };
 
-    struct NonTrivialReadFunctor : Functor<uint8_t (*)(void*, uint16_t)> {
-        uint8_t operator()(uint16_t addr) const;
-    };
-
-    struct NonTrivialWriteFunctor : Functor<void (*)(void*, uint16_t, uint8_t)> {
-        void operator()(uint16_t addr, uint8_t value) const;
-    };
+    using NonTrivialReadFunctor = Functor<uint8_t (*)(void*, uint16_t)>;
+    using NonTrivialWriteFunctor = Functor<void (*)(void*, uint16_t, uint8_t)>;
 
     template <auto Read>
     struct NonTrivialRead : NonTrivialReadFunctor {
