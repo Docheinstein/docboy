@@ -124,7 +124,7 @@ bool CoreController::attach_debugger(const std::function<void()>& on_pulling_com
     debugger.frontend = std::make_unique<DebuggerFrontend>(*debugger.backend);
     core.attach_debugger(*debugger.backend);
     debugger.backend->attach_frontend(*debugger.frontend);
-    DebuggerMemorySniffer::set_observer(&*debugger.backend);
+    DebuggerMemoryWatcher::set_observer(&*debugger.backend);
 
     // Setup the callbacks
     debugger.callbacks.on_pulling_command = on_pulling_command;
@@ -146,7 +146,7 @@ bool CoreController::detach_debugger() {
 
     debugger.backend = nullptr;
     debugger.frontend = nullptr;
-    DebuggerMemorySniffer::set_observer(nullptr);
+    DebuggerMemoryWatcher::set_observer(nullptr);
     core.detach_debugger();
 
     return true;

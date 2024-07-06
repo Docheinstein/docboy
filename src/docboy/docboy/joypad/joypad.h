@@ -6,6 +6,8 @@
 #include "docboy/common/specs.h"
 #include "docboy/memory/cell.h"
 
+#include "utils/bits.h"
+
 class Interrupts;
 
 class Joypad {
@@ -34,8 +36,8 @@ public:
         uint8_t rd() const;
         void wr(uint8_t value);
 
-        bool select_buttons {};
-        bool select_dpad {};
+        Bool select_buttons {make_bool()};
+        Bool select_dpad {make_bool()};
 
         uint8_t keys {0b11111111};
     } p1 {};

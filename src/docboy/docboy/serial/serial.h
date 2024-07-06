@@ -8,24 +8,12 @@
 
 class Serial {
 public:
-    void write_sc(uint8_t value) {
-        sc = 0b01111110 | value;
-    }
+    void write_sc(uint8_t value);
 
-    void save_state(Parcel& parcel) const {
-        parcel.write_uint8(sb);
-        parcel.write_uint8(sc);
-    }
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
-    void load_state(Parcel& parcel) {
-        sb = parcel.read_uint8();
-        sc = parcel.read_uint8();
-    }
-
-    void reset() {
-        sb = 0;
-        sc = 0b01111110;
-    }
+    void reset();
 
     UInt8 sb {make_uint8(Specs::Registers::Serial::SB)};
     UInt8 sc {make_uint8(Specs::Registers::Serial::SC)};

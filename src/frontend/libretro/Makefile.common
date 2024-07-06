@@ -19,6 +19,7 @@ SOURCES_CXX := \
     $(SOURCE_DIR)/docboy/docboy/ppu/ppu.cpp \
     $(SOURCE_DIR)/docboy/docboy/serial/link.cpp \
     $(SOURCE_DIR)/docboy/docboy/serial/port.cpp \
+    $(SOURCE_DIR)/docboy/docboy/serial/serial.cpp \
     $(SOURCE_DIR)/docboy/docboy/timers/timers.cpp \
     $(SOURCE_DIR)/frontend/libretro/libretro.cpp \
     $(SOURCE_DIR)/utils/utils/io.cpp \
