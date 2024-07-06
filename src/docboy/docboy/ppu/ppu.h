@@ -35,16 +35,20 @@ public:
     // PPU I/O registers
     void write_dma(uint8_t value);
 
-    struct Lcdc : Composite<Lcdc, Specs::Registers::Video::LCDC> {
-        Lcdc();
+    uint8_t read_stat() const;
+    void write_stat(uint8_t value);
 
-        explicit Lcdc(Ppu* ppu, bool notifications = false);
+    uint8_t read_lcdc() const;
+    void write_lcdc(uint8_t value);
+
+    struct Lcdc : Composite<Specs::Registers::Video::LCDC> {
+#ifdef ENABLE_DEBUGGER
+        explicit Lcdc(bool watch = false);
+        Lcdc(const Lcdc& lcdc);
         Lcdc& operator=(const Lcdc& lcdc);
 
-        using Composite::operator=;
-
-        uint8_t rd() const;
-        void wr(uint8_t value);
+        void assign(const Lcdc& lcdc);
+#endif
 
         Bool enable {make_bool()};
         Bool win_tile_map {make_bool()};
@@ -54,21 +58,18 @@ public:
         Bool obj_size {make_bool()};
         Bool obj_enable {make_bool()};
         Bool bg_win_enable {make_bool()};
+    } lcdc {
+#ifdef ENABLE_DEBUGGER
+        true /* watch */
+#endif
+    };
 
-        Ppu* ppu;
-    } lcdc {this, true /* enable notifications */};
-
-    struct Stat : Composite<Stat, Specs::Registers::Video::STAT> {
-        using Composite::operator=;
-
-        uint8_t rd() const;
-        void wr(uint8_t value);
-
-        Bool lyc_eq_ly_int {make_bool()};
-        Bool oam_int {make_bool()};
-        Bool vblank_int {make_bool()};
-        Bool hblank_int {make_bool()};
-        Bool lyc_eq_ly {make_bool()};
+    struct Stat : Composite<Specs::Registers::Video::STAT> {
+        UInt8 lyc_eq_ly_int {make_uint8()};
+        UInt8 oam_int {make_uint8()};
+        UInt8 vblank_int {make_uint8()};
+        UInt8 hblank_int {make_uint8()};
+        UInt8 lyc_eq_ly {make_uint8()};
         UInt8 mode {make_uint8()};
     } stat {};
 
@@ -224,9 +225,9 @@ private:
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
 
-    uint8_t last_bgp {};   // BGP delayed by 1 t-cycle
-    uint8_t last_wx {};    // WX delayed by 1 t-cycle
-    Lcdc last_lcdc {this}; // LCDC delayed by 1 t-cycle
+    uint8_t last_bgp {}; // BGP delayed by 1 t-cycle
+    uint8_t last_wx {};  // WX delayed by 1 t-cycle
+    Lcdc last_lcdc {};   // LCDC delayed by 1 t-cycle
 
     FillQueue<BgPixel, 8> bg_fifo {};
     Queue<ObjPixel, 8> obj_fifo {};

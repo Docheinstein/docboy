@@ -20,14 +20,6 @@ public:
     static constexpr uint32_t SAMPLES_PER_FRAME =
         SAMPLES_PER_SECOND * Specs::Ppu::DOTS_PER_FRAME / Specs::Frequencies::CLOCK;
 
-    template <typename T, uint16_t Address>
-    struct ApuComposite : Composite<T, Address> {
-        explicit ApuComposite(Apu& apu) :
-            apu {apu} {
-        }
-        Apu& apu;
-    };
-
     explicit Apu(Timers& timers);
 
     void set_audio_callback(std::function<void(const int16_t* samples, uint32_t count)>&& callback);
@@ -45,46 +37,44 @@ public:
     // I/O registers
 
     void write_nr10(uint8_t value);
+
+    uint8_t read_nr21() const;
+    void write_nr21(uint8_t value);
+
+    uint8_t read_nr22() const;
+    void write_nr22(uint8_t value);
+
+    uint8_t read_nr24() const;
+    void write_nr24(uint8_t value);
+
     void write_nr30(uint8_t value);
     void write_nr32(uint8_t value);
     void write_nr41(uint8_t value);
     void write_nr44(uint8_t value);
+
+    uint8_t read_nr52() const;
+    void write_nr52(uint8_t value);
 
     UInt8 nr10 {make_uint8(Specs::Registers::Sound::NR10)};
     UInt8 nr11 {make_uint8(Specs::Registers::Sound::NR11)};
     UInt8 nr12 {make_uint8(Specs::Registers::Sound::NR12)};
     UInt8 nr13 {make_uint8(Specs::Registers::Sound::NR13)};
     UInt8 nr14 {make_uint8(Specs::Registers::Sound::NR14)};
-    struct Nr21 : ApuComposite<Nr21, Specs::Registers::Sound::NR24> {
-        using ApuComposite::ApuComposite;
-
-        uint8_t rd() const;
-        void wr(uint8_t value);
-
+    struct Nr21 : Composite<Specs::Registers::Sound::NR24> {
         UInt8 duty_cycle {make_uint8()};
         UInt8 initial_length_timer {make_uint8()};
-    } nr21 {*this};
-    struct Nr22 : ApuComposite<Nr22, Specs::Registers::Sound::NR24> {
-        using ApuComposite::ApuComposite;
-
-        uint8_t rd() const;
-        void wr(uint8_t value);
-
+    } nr21 {};
+    struct Nr22 : Composite<Specs::Registers::Sound::NR24> {
         UInt8 initial_volume {make_uint8()};
         Bool envelope_direction {make_bool()};
         UInt8 sweep_pace {make_uint8()};
-    } nr22 {*this};
+    } nr22 {};
     UInt8 nr23 {make_uint8(Specs::Registers::Sound::NR23)};
-    struct Nr24 : ApuComposite<Nr24, Specs::Registers::Sound::NR24> {
-        using ApuComposite::ApuComposite;
-
-        uint8_t rd() const;
-        void wr(uint8_t value);
-
+    struct Nr24 : Composite<Specs::Registers::Sound::NR24> {
         Bool trigger {make_bool()};
         Bool length_enable {make_bool()};
         UInt8 period {make_uint8()};
-    } nr24 {*this};
+    } nr24 {};
     UInt8 nr30 {make_uint8(Specs::Registers::Sound::NR30)};
     UInt8 nr31 {make_uint8(Specs::Registers::Sound::NR31)};
     UInt8 nr32 {make_uint8(Specs::Registers::Sound::NR32)};
@@ -96,18 +86,13 @@ public:
     UInt8 nr44 {make_uint8(Specs::Registers::Sound::NR44)};
     UInt8 nr50 {make_uint8(Specs::Registers::Sound::NR50)};
     UInt8 nr51 {make_uint8(Specs::Registers::Sound::NR51)};
-    struct Nr52 : ApuComposite<Nr52, Specs::Registers::Sound::NR52> {
-        using ApuComposite::ApuComposite;
-
-        uint8_t rd() const;
-        void wr(uint8_t value);
-
+    struct Nr52 : Composite<Specs::Registers::Sound::NR52> {
         Bool enable {make_bool()};
         Bool ch4 {make_bool()};
         Bool ch3 {make_bool()};
         Bool ch2 {make_bool()};
         Bool ch1 {make_bool()};
-    } nr52 {*this};
+    } nr52 {};
     UInt8 wave0 {make_uint8(Specs::Registers::Sound::WAVE0)};
     UInt8 wave1 {make_uint8(Specs::Registers::Sound::WAVE1)};
     UInt8 wave2 {make_uint8(Specs::Registers::Sound::WAVE2)};

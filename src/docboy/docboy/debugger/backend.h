@@ -54,8 +54,8 @@ public:
     void attach_frontend(DebuggerFrontend& frontend);
 
     void notify_tick(uint64_t tick);
-    void notify_memory_read(uint16_t address, uint8_t value);
-    void notify_memory_write(uint16_t address, uint8_t old_value, uint8_t new_value);
+    void notify_memory_read(uint16_t address);
+    void notify_memory_write(uint16_t address);
 
     bool is_asking_to_quit() const;
 
@@ -68,6 +68,7 @@ public:
     uint32_t add_watchpoint(Watchpoint::Type, uint16_t from, uint16_t to, std::optional<Watchpoint::Condition>);
     std::optional<Watchpoint> get_watchpoint(uint16_t addr) const;
     const std::vector<Watchpoint>& get_watchpoints() const;
+    bool has_watchpoint(uint16_t addr) const;
 
     void remove_point(uint32_t id);
     void clear_points();
@@ -120,6 +121,7 @@ private:
 
     std::vector<Breakpoint> breakpoints;
     std::vector<Watchpoint> watchpoints;
+    uint8_t watchpoints_at_address[UINT16_MAX + 1];
     std::optional<DisassembledInstruction> disassembled_instructions[0x10000];
 
     std::optional<WatchpointHit> watchpoint_hit;

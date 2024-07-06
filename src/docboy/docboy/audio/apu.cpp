@@ -88,7 +88,7 @@ int16_t Apu::compute_audio_sample() const {
     }
 
     ASSERT(square_wave_position >= 0 && square_wave_position < 8);
-    ASSERT(duty_cycle >= 0 && duty_cycle < 4);
+    ASSERT(nr21.duty_cycle >= 0 && nr21.duty_cycle < 4);
 
     const bool digital_amplitude = SQUARE_WAVES[nr21.duty_cycle][square_wave_position];
     const int16_t volume = 16000; // TODO
@@ -286,60 +286,61 @@ void Apu::write_nr44(uint8_t value) {
     nr44 = 0b00111111 | value;
 }
 
-uint8_t Apu::Nr21::rd() const {
-    return duty_cycle << Specs::Bits::Audio::NR21::DUTY_CYCLE.lsb |
-           initial_length_timer << Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER.lsb;
+uint8_t Apu::read_nr21() const {
+    return nr21.duty_cycle << Specs::Bits::Audio::NR21::DUTY_CYCLE.lsb |
+           nr21.initial_length_timer << Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER.lsb;
 }
 
-void Apu::Nr21::wr(uint8_t value) {
-    duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
-    initial_length_timer = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
+void Apu::write_nr21(uint8_t value) {
+    nr21.duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
+    nr21.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
 }
 
-uint8_t Apu::Nr22::rd() const {
-    return initial_volume << Specs::Bits::Audio::NR22::INITIAL_VOLUME.lsb |
-           envelope_direction << Specs::Bits::Audio::NR22::ENVELOPE_DIRECTION |
-           initial_volume << Specs::Bits::Audio::NR22::SWEEP_PACE.lsb;
+uint8_t Apu::read_nr22() const {
+    return nr22.initial_volume << Specs::Bits::Audio::NR22::INITIAL_VOLUME.lsb |
+           nr22.envelope_direction << Specs::Bits::Audio::NR22::ENVELOPE_DIRECTION |
+           nr22.initial_volume << Specs::Bits::Audio::NR22::SWEEP_PACE.lsb;
 }
 
-void Apu::Nr22::wr(uint8_t value) {
-    initial_volume = get_bits_range<Specs::Bits::Audio::NR22::INITIAL_VOLUME>(value);
-    envelope_direction = test_bit<Specs::Bits::Audio::NR22::ENVELOPE_DIRECTION>(value);
-    sweep_pace = get_bits_range<Specs::Bits::Audio::NR22::SWEEP_PACE>(value);
+void Apu::write_nr22(uint8_t value) {
+    nr22.initial_volume = get_bits_range<Specs::Bits::Audio::NR22::INITIAL_VOLUME>(value);
+    nr22.envelope_direction = test_bit<Specs::Bits::Audio::NR22::ENVELOPE_DIRECTION>(value);
+    nr22.sweep_pace = get_bits_range<Specs::Bits::Audio::NR22::SWEEP_PACE>(value);
 
-    apu.ch2.dac = initial_volume | envelope_direction;
-    if (!apu.ch2.dac) {
+    ch2.dac = nr22.initial_volume | nr22.envelope_direction;
+    if (!ch2.dac) {
         // If the DAC is turned off the channel is disabled as well
-        apu.nr52.ch2 = false;
+        nr52.ch2 = false;
     }
 }
 
-uint8_t Apu::Nr24::rd() const {
-    return 0b00111000 | trigger << Specs::Bits::Audio::NR24::TRIGGER |
-           length_enable << Specs::Bits::Audio::NR24::LENGTH_ENABLE | period << Specs::Bits::Audio::NR24::PERIOD.lsb;
+uint8_t Apu::read_nr24() const {
+    return 0b00111000 | nr24.trigger << Specs::Bits::Audio::NR24::TRIGGER |
+           nr24.length_enable << Specs::Bits::Audio::NR24::LENGTH_ENABLE |
+           nr24.period << Specs::Bits::Audio::NR24::PERIOD.lsb;
 }
 
-void Apu::Nr24::wr(uint8_t value) {
-    trigger = test_bit<Specs::Bits::Audio::NR24::TRIGGER>(value);
-    length_enable = test_bit<Specs::Bits::Audio::NR24::LENGTH_ENABLE>(value);
-    period = get_bits_range<Specs::Bits::Audio::NR24::PERIOD>(value);
+void Apu::write_nr24(uint8_t value) {
+    nr24.trigger = test_bit<Specs::Bits::Audio::NR24::TRIGGER>(value);
+    nr24.length_enable = test_bit<Specs::Bits::Audio::NR24::LENGTH_ENABLE>(value);
+    nr24.period = get_bits_range<Specs::Bits::Audio::NR24::PERIOD>(value);
 
-    if (trigger && apu.ch2.dac) {
+    if (nr24.trigger && ch2.dac) {
         // Any write with Trigger bit set and DAC enabled turns on the channel
-        apu.nr52.ch2 = true;
+        nr52.ch2 = true;
     }
 }
 
-uint8_t Apu::Nr52::rd() const {
-    return 0b01110000 | enable << Specs::Bits::Audio::NR52::AUDIO_ENABLE | ch4 << Specs::Bits::Audio::NR52::CH4_ENABLE |
-           ch3 << Specs::Bits::Audio::NR52::CH3_ENABLE | ch2 << Specs::Bits::Audio::NR52::CH2_ENABLE |
-           ch1 << Specs::Bits::Audio::NR52::CH1_ENABLE;
+uint8_t Apu::read_nr52() const {
+    return 0b01110000 | nr52.enable << Specs::Bits::Audio::NR52::AUDIO_ENABLE |
+           nr52.ch4 << Specs::Bits::Audio::NR52::CH4_ENABLE | nr52.ch3 << Specs::Bits::Audio::NR52::CH3_ENABLE |
+           nr52.ch2 << Specs::Bits::Audio::NR52::CH2_ENABLE | nr52.ch1 << Specs::Bits::Audio::NR52::CH1_ENABLE;
 }
 
-void Apu::Nr52::wr(uint8_t value) {
+void Apu::write_nr52(uint8_t value) {
     const bool en = test_bit<Specs::Bits::Audio::NR52::AUDIO_ENABLE>(value);
-    if (en != enable) {
-        en ? apu.turn_on() : apu.turn_off();
-        enable = en;
+    if (en != nr52.enable) {
+        en ? turn_on() : turn_off();
+        nr52.enable = en;
     }
 }

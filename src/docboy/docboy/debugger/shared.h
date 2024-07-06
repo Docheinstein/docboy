@@ -39,11 +39,11 @@ struct AbortCommand {};
 using Command = std::variant<TickCommand, DotCommand, StepCommand, MicroStepCommand, NextCommand, MicroNextCommand,
                              FrameCommand, FrameBackCommand, ScanlineCommand, ContinueCommand, AbortCommand>;
 
-template <typename Op>
+template <typename Operand>
 struct LogicExpression {
     enum class Operator { Equal };
     Operator operation;
-    Op operand;
+    Operand operand;
 };
 
 struct Breakpoint {

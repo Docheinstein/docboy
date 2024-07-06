@@ -4,14 +4,11 @@ OamBus::OamBus(Oam& oam) :
     VideoBus {},
     oam {oam} {
 
-    const NonTrivialReadFunctor read_ff = {[](void*, uint16_t) -> uint8_t {
-                                               return 0xFF;
-                                           },
-                                           nullptr};
-    const NonTrivialWriteFunctor write_nop = {[](void*, uint16_t, uint8_t) {
-                                              },
-                                              nullptr};
+    // clang-format off
+    const NonTrivialReadFunctor read_ff {[](void*, uint16_t) -> uint8_t { return 0xFF;}, nullptr};
+    const NonTrivialWriteFunctor write_nop {[](void*, uint16_t, uint8_t) {}, nullptr};
     const MemoryAccess open_bus_access {read_ff, write_nop};
+    // clang-format on
 
     /* 0xFE00 - 0xFE9F */
     for (uint16_t i = Specs::MemoryLayout::OAM::START; i <= Specs::MemoryLayout::OAM::END; i++) {

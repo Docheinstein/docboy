@@ -6,10 +6,11 @@
 class DebuggerBackend;
 
 namespace DebuggerMemoryWatcher {
-void set_observer(DebuggerBackend* observer);
+void attach_backend(DebuggerBackend& b);
+void detach_backend();
 
-void notify_read(uint16_t address, uint8_t value);
-void notify_write(uint16_t address, uint8_t old_value, uint8_t new_value);
+void notify_read(uint16_t address);
+void notify_write(uint16_t address);
 }; // namespace DebuggerMemoryWatcher
 
 #endif // MEMWATCHER_H

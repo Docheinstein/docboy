@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-template <typename T, uint16_t Address>
+template <uint32_t Address>
 struct Composite;
 
 #ifdef ENABLE_DEBUGGER

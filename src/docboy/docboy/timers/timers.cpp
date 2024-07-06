@@ -57,21 +57,17 @@ void Timers::reset() {
 uint8_t Timers::read_div() const {
     const uint8_t div_high = div >> 8;
 #ifdef ENABLE_DEBUGGER
-    DebuggerMemoryWatcher::notify_read(Specs::Registers::Timers::DIV, div_high);
+    DebuggerMemoryWatcher::notify_read(Specs::Registers::Timers::DIV);
 #endif
     return div_high;
 }
 
 void Timers::write_div(uint8_t value) {
 #ifdef ENABLE_DEBUGGER
-    uint8_t old_value = read_div();
+    DebuggerMemoryWatcher::notify_write(Specs::Registers::Timers::DIV);
 #endif
 
     set_div(0);
-
-#ifdef ENABLE_DEBUGGER
-    DebuggerMemoryWatcher::notify_write(Specs::Registers::Timers::DIV, old_value, value);
-#endif
 }
 
 void Timers::write_tima(uint8_t value) {
