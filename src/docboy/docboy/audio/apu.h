@@ -126,6 +126,9 @@ private:
         bool dac {};
         uint8_t length_timer {};
         uint16_t period_timer {};
+
+        uint8_t envelope_counter {};
+        uint8_t volume {};
     } ch2 {};
 
     uint16_t prev_div_bit_4 {};

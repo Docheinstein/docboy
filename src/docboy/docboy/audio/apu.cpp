@@ -16,7 +16,14 @@ constexpr bool SQUARE_WAVES[][8] {
     {true, false, false, false, false, true, true, true},    /* 50.0 % */
     {false, true, true, true, true, true, true, false}       /* 75.0 % */
 };
+
+inline int16_t digital_to_analog_volume(uint8_t digital_volume) {
+    ASSERT(digital_volume <= 0xF);
+    int32_t analog_volume = INT16_MIN + (UINT16_MAX / 15) * digital_volume;
+    ASSERT(analog_volume >= INT16_MIN && analog_volume <= INT16_MAX);
+    return static_cast<int16_t>(analog_volume);
 }
+} // namespace
 
 Apu::Apu(Timers& timers) :
     timers {timers} {
@@ -42,7 +49,7 @@ void Apu::reset() {
     nr23 = if_bootrom_else(0, 0b11111111);
     nr24.trigger = true;
     nr24.length_enable = false;
-    nr24.period = 0b00111111;
+    nr24.period = 0b00000111;
     nr30 = 0b01111111;
     nr31 = if_bootrom_else(0, 0b11111111);
     nr32 = 0b10011111;
@@ -89,11 +96,11 @@ int16_t Apu::compute_audio_sample() const {
 
     ASSERT(square_wave_position >= 0 && square_wave_position < 8);
     ASSERT(nr21.duty_cycle >= 0 && nr21.duty_cycle < 4);
+    ASSERT(ch2.volume <= 0xF);
 
     const bool digital_amplitude = SQUARE_WAVES[nr21.duty_cycle][square_wave_position];
-    const int16_t volume = 16000; // TODO
-
-    const int16_t result = digital_amplitude * volume;
+    const int16_t analog_volume = digital_to_analog_volume(ch2.volume);
+    const int16_t result = digital_amplitude * analog_volume;
 
     return result;
 }
@@ -107,7 +114,7 @@ void Apu::tick_t0() {
     // Update DIV APU
     const bool div_bit_4 = test_bit<4>(timers.div);
     if (prev_div_bit_4 && !div_bit_4) {
-        // Increase DIV-APU each time DIV[4] has a falling edge
+        // Increase DIV-APU each time DIV[4] has a falling edge (~512Hz)
         div_apu++;
 
         if (mod<2>(div_apu) == 0) {
@@ -116,6 +123,24 @@ void Apu::tick_t0() {
                 if (nr24.length_enable) {
                     // Length timer expired: turn off the channel
                     nr52.ch2 = false;
+                }
+            }
+            if (mod<8>(div_apu) == 0 && nr22.sweep_pace /* 0 disables envelope */) {
+                // Update envelope
+                if (++ch2.envelope_counter >= nr22.sweep_pace) {
+                    // Increase/decrease volume (if possible)
+                    if (nr22.envelope_direction) {
+                        if (ch2.volume < 0xF) {
+                            ++ch2.volume;
+                        }
+                    } else {
+                        if (ch2.volume > 0) {
+                            --ch2.volume;
+                        }
+                    }
+
+                    // Reset counter?
+                    ch2.envelope_counter = 0;
                 }
             }
         }
@@ -324,10 +349,17 @@ void Apu::write_nr24(uint8_t value) {
     nr24.trigger = test_bit<Specs::Bits::Audio::NR24::TRIGGER>(value);
     nr24.length_enable = test_bit<Specs::Bits::Audio::NR24::LENGTH_ENABLE>(value);
     nr24.period = get_bits_range<Specs::Bits::Audio::NR24::PERIOD>(value);
+    ASSERT(nr24.period < 8);
 
     if (nr24.trigger && ch2.dac) {
         // Any write with Trigger bit set and DAC enabled turns on the channel
         nr52.ch2 = true;
+
+        // TODO: where are these reset here?
+        ch2.length_timer = 0;
+        ch2.period_timer = nr24.period << 8 | nr23;
+        ch2.envelope_counter = 0;
+        ch2.volume = nr22.initial_volume;
     }
 }
 
