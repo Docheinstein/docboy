@@ -19,4 +19,10 @@ struct ClassOfMemberFunction<std::nullptr_t> {
 template <typename T>
 using ClassOfMemberFunctionT = typename ClassOfMemberFunction<T>::Type;
 
+template <typename T>
+using AlwaysFalse = std::false_type;
+
+template <typename T>
+inline constexpr auto AlwaysFalseV = AlwaysFalse<T>::value;
+
 #endif // UTILSTRAITS_H
