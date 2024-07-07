@@ -38,6 +38,15 @@ public:
 
     void write_nr10(uint8_t value);
 
+    uint8_t read_nr11() const;
+    void write_nr11(uint8_t value);
+
+    uint8_t read_nr12() const;
+    void write_nr12(uint8_t value);
+
+    uint8_t read_nr14() const;
+    void write_nr14(uint8_t value);
+
     uint8_t read_nr21() const;
     void write_nr21(uint8_t value);
 
@@ -56,15 +65,26 @@ public:
     void write_nr52(uint8_t value);
 
     UInt8 nr10 {make_uint8(Specs::Registers::Sound::NR10)};
-    UInt8 nr11 {make_uint8(Specs::Registers::Sound::NR11)};
-    UInt8 nr12 {make_uint8(Specs::Registers::Sound::NR12)};
+    struct Nr11 : Composite<Specs::Registers::Sound::NR11> {
+        UInt8 duty_cycle {make_uint8()};
+        UInt8 initial_length_timer {make_uint8()};
+    } nr11 {};
+    struct Nr12 : Composite<Specs::Registers::Sound::NR12> {
+        UInt8 initial_volume {make_uint8()};
+        Bool envelope_direction {make_bool()};
+        UInt8 sweep_pace {make_uint8()};
+    } nr12 {};
     UInt8 nr13 {make_uint8(Specs::Registers::Sound::NR13)};
-    UInt8 nr14 {make_uint8(Specs::Registers::Sound::NR14)};
-    struct Nr21 : Composite<Specs::Registers::Sound::NR24> {
+    struct Nr14 : Composite<Specs::Registers::Sound::NR14> {
+        Bool trigger {make_bool()};
+        Bool length_enable {make_bool()};
+        UInt8 period {make_uint8()};
+    } nr14 {};
+    struct Nr21 : Composite<Specs::Registers::Sound::NR21> {
         UInt8 duty_cycle {make_uint8()};
         UInt8 initial_length_timer {make_uint8()};
     } nr21 {};
-    struct Nr22 : Composite<Specs::Registers::Sound::NR24> {
+    struct Nr22 : Composite<Specs::Registers::Sound::NR22> {
         UInt8 initial_volume {make_uint8()};
         Bool envelope_direction {make_bool()};
         UInt8 sweep_pace {make_uint8()};
@@ -129,6 +149,19 @@ private:
 
         uint8_t envelope_counter {};
         uint8_t volume {};
+
+        uint8_t square_wave_position {};
+    } ch1 {};
+
+    struct {
+        bool dac {};
+        uint8_t length_timer {};
+        uint16_t period_timer {};
+
+        uint8_t envelope_counter {};
+        uint8_t volume {};
+
+        uint8_t square_wave_position {};
     } ch2 {};
 
     uint16_t prev_div_bit_4 {};
@@ -137,8 +170,6 @@ private:
     uint16_t sample_index {0}; // [0, SAMPLES_PER_FRAME)
 
     uint16_t ticks_since_last_sample {}; // [0, TICKS_BETWEEN_SAMPLES)
-
-    uint8_t square_wave_position {}; // [0, 8)
 };
 
 #endif // APU_H

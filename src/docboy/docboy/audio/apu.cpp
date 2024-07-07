@@ -21,7 +21,7 @@ inline int16_t digital_to_analog_volume(uint8_t digital_volume) {
     ASSERT(digital_volume <= 0xF);
     int32_t analog_volume = INT16_MIN + (UINT16_MAX / 15) * digital_volume;
     ASSERT(analog_volume >= INT16_MIN && analog_volume <= INT16_MAX);
-    return static_cast<int16_t>(analog_volume);
+    return static_cast<int16_t>(analog_volume) / 2 /* n channels ? */;
 }
 } // namespace
 
@@ -37,19 +37,24 @@ void Apu::set_audio_callback(std::function<void(const int16_t*, uint32_t)>&& cal
 void Apu::reset() {
     // Reset I/O registers
     nr10 = 0b10000000;
-    nr11 = if_bootrom_else(0, 0b10111111);
-    nr12 = if_bootrom_else(0, 0b11110011);
+    nr11.duty_cycle = if_bootrom_else(0, 0b10);
+    nr11.initial_length_timer = if_bootrom_else(0, 0b111111);
+    nr12.initial_volume = if_bootrom_else(0, 0b1111);
+    nr12.envelope_direction = false;
+    nr12.sweep_pace = if_bootrom_else(0, 0b011);
     nr13 = if_bootrom_else(0, 0b11111111);
-    nr14 = 0b10111111; // TODO: B8 or BF?
-    nr21.duty_cycle = false;
-    nr21.initial_length_timer = if_bootrom_else(0, 0b00111111);
+    nr14.trigger = true;
+    nr14.length_enable = false;
+    nr14.period = 0b111;
+    nr21.duty_cycle = 0;
+    nr21.initial_length_timer = if_bootrom_else(0, 0b111111);
     nr22.initial_volume = false;
     nr22.envelope_direction = false;
     nr22.sweep_pace = false;
     nr23 = if_bootrom_else(0, 0b11111111);
     nr24.trigger = true;
     nr24.length_enable = false;
-    nr24.period = 0b00000111;
+    nr24.period = 0b111;
     nr30 = 0b01111111;
     nr31 = if_bootrom_else(0, 0b11111111);
     nr32 = 0b10011111;
@@ -84,25 +89,41 @@ void Apu::reset() {
     waveF = 0;
 
     // Reload frequency timer
+    ch1.period_timer = nr14.period << 8 | nr13;
+    ch1.dac = false;
+
     ch2.period_timer = nr24.period << 8 | nr23;
     ch2.dac = false;
+
     memset(samples, 0, sizeof(samples));
 }
 
 int16_t Apu::compute_audio_sample() const {
-    if (!(nr52.ch2 && ch2.dac)) {
-        return 0;
-    }
+    ASSERT(nr11.duty_cycle >= 0 && nr11.duty_cycle < 4);
+    ASSERT(ch1.square_wave_position >= 0 && ch1.square_wave_position < 8);
+    ASSERT(ch1.volume <= 0xF);
 
-    ASSERT(square_wave_position >= 0 && square_wave_position < 8);
     ASSERT(nr21.duty_cycle >= 0 && nr21.duty_cycle < 4);
+    ASSERT(ch2.square_wave_position >= 0 && ch2.square_wave_position < 8);
     ASSERT(ch2.volume <= 0xF);
 
-    const bool digital_amplitude = SQUARE_WAVES[nr21.duty_cycle][square_wave_position];
-    const int16_t analog_volume = digital_to_analog_volume(ch2.volume);
-    const int16_t result = digital_amplitude * analog_volume;
+    int32_t output {};
 
-    return result;
+    if (nr52.ch1 && ch1.dac) {
+        const bool digital_amplitude = SQUARE_WAVES[nr11.duty_cycle][ch1.square_wave_position];
+        const int16_t analog_volume = digital_to_analog_volume(ch1.volume);
+        output += digital_amplitude * analog_volume;
+    }
+
+    if (nr52.ch2 && ch2.dac) {
+        const bool digital_amplitude = SQUARE_WAVES[nr21.duty_cycle][ch2.square_wave_position];
+        const int16_t analog_volume = digital_to_analog_volume(ch2.volume);
+        output += digital_amplitude * analog_volume;
+    }
+
+    ASSERT(output >= INT16_MIN && output <= INT16_MAX);
+
+    return output;
 }
 
 void Apu::tick_t0() {
@@ -110,6 +131,9 @@ void Apu::tick_t0() {
     if (!nr52.enable) {
         return;
     }
+
+    const bool ch1_on = nr52.ch1 && ch1.dac;
+    const bool ch2_on = nr52.ch2 && ch2.dac;
 
     // Update DIV APU
     const bool div_bit_4 = test_bit<4>(timers.div);
@@ -119,28 +143,58 @@ void Apu::tick_t0() {
 
         if (mod<2>(div_apu) == 0) {
             // Increase length timer
-            if (++ch2.length_timer == nr21.initial_length_timer) {
-                if (nr24.length_enable) {
+            if (ch1_on && nr14.length_enable) {
+                if (++ch1.length_timer == nr11.initial_length_timer) {
+                    // Length timer expired: turn off the channel
+                    nr52.ch1 = false;
+                }
+            }
+
+            // Increase length timer
+            if (ch2_on && nr24.length_enable) {
+                if (++ch2.length_timer == nr21.initial_length_timer) {
                     // Length timer expired: turn off the channel
                     nr52.ch2 = false;
                 }
             }
-            if (mod<8>(div_apu) == 0 && nr22.sweep_pace /* 0 disables envelope */) {
-                // Update envelope
-                if (++ch2.envelope_counter >= nr22.sweep_pace) {
-                    // Increase/decrease volume (if possible)
-                    if (nr22.envelope_direction) {
-                        if (ch2.volume < 0xF) {
-                            ++ch2.volume;
-                        }
-                    } else {
-                        if (ch2.volume > 0) {
-                            --ch2.volume;
-                        }
-                    }
 
-                    // Reset counter?
-                    ch2.envelope_counter = 0;
+            if (mod<8>(div_apu) == 0) {
+                if (ch1_on && nr12.sweep_pace /* 0 disables envelope */) {
+                    // Update envelope
+                    if (++ch1.envelope_counter >= nr12.sweep_pace) {
+                        // Increase/decrease volume (if possible)
+                        if (nr12.envelope_direction) {
+                            if (ch1.volume < 0xF) {
+                                ++ch1.volume;
+                            }
+                        } else {
+                            if (ch1.volume > 0) {
+                                --ch1.volume;
+                            }
+                        }
+
+                        // Reset counter?
+                        ch1.envelope_counter = 0;
+                    }
+                }
+
+                if (ch2_on && nr22.sweep_pace /* 0 disables envelope */) {
+                    // Update envelope
+                    if (++ch2.envelope_counter >= nr22.sweep_pace) {
+                        // Increase/decrease volume (if possible)
+                        if (nr22.envelope_direction) {
+                            if (ch2.volume < 0xF) {
+                                ++ch2.volume;
+                            }
+                        } else {
+                            if (ch2.volume > 0) {
+                                --ch2.volume;
+                            }
+                        }
+
+                        // Reset counter?
+                        ch2.envelope_counter = 0;
+                    }
                 }
             }
         }
@@ -148,13 +202,26 @@ void Apu::tick_t0() {
     prev_div_bit_4 = div_bit_4;
 
     // Advance period timer
-    if (++ch2.period_timer == 2048) {
-        // Advance square wave position
-        square_wave_position = mod<8>(square_wave_position + 1);
+    if (ch1_on) {
+        if (++ch1.period_timer == 2048) {
+            // Advance square wave position
+            ch1.square_wave_position = mod<8>(ch1.square_wave_position + 1);
 
-        // Reload period timer
-        ch2.period_timer = nr24.period << 8 | nr23;
-        ASSERT(ch2.period_timer < 2048);
+            // Reload period timer
+            ch1.period_timer = nr14.period << 8 | nr13;
+            ASSERT(ch1.period_timer < 2048);
+        }
+    }
+
+    if (ch2_on) {
+        if (++ch2.period_timer == 2048) {
+            // Advance square wave position
+            ch2.square_wave_position = mod<8>(ch2.square_wave_position + 1);
+
+            // Reload period timer
+            ch2.period_timer = nr24.period << 8 | nr23;
+            ASSERT(ch2.period_timer < 2048);
+        }
     }
 
     // Handle sampling
@@ -195,10 +262,15 @@ void Apu::turn_off() {
 
 void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(nr10);
-    parcel.write_uint8(nr11);
-    parcel.write_uint8(nr12);
+    parcel.write_uint8(nr11.duty_cycle);
+    parcel.write_uint8(nr11.initial_length_timer);
+    parcel.write_uint8(nr12.initial_volume);
+    parcel.write_bool(nr12.envelope_direction);
+    parcel.write_uint8(nr12.sweep_pace);
     parcel.write_uint8(nr13);
-    parcel.write_uint8(nr14);
+    parcel.write_bool(nr14.trigger);
+    parcel.write_bool(nr14.length_enable);
+    parcel.write_uint8(nr14.period);
     parcel.write_uint8(nr21.duty_cycle);
     parcel.write_uint8(nr21.initial_length_timer);
     parcel.write_uint8(nr22.initial_volume);
@@ -244,10 +316,15 @@ void Apu::save_state(Parcel& parcel) const {
 
 void Apu::load_state(Parcel& parcel) {
     nr10 = parcel.read_uint8();
-    nr11 = parcel.read_uint8();
-    nr12 = parcel.read_uint8();
+    nr11.duty_cycle = parcel.read_uint8();
+    nr11.initial_length_timer = parcel.read_uint8();
+    nr12.initial_volume = parcel.read_uint8();
+    nr12.envelope_direction = parcel.read_bool();
+    nr12.sweep_pace = parcel.read_uint8();
     nr13 = parcel.read_uint8();
-    nr14 = parcel.read_uint8();
+    nr14.trigger = parcel.read_bool();
+    nr14.length_enable = parcel.read_bool();
+    nr14.trigger = parcel.read_uint8();
     nr21.duty_cycle = parcel.read_uint8();
     nr21.initial_length_timer = parcel.read_uint8();
     nr22.initial_volume = parcel.read_uint8();
@@ -311,6 +388,58 @@ void Apu::write_nr44(uint8_t value) {
     nr44 = 0b00111111 | value;
 }
 
+uint8_t Apu::read_nr11() const {
+    return nr11.duty_cycle << Specs::Bits::Audio::NR11::DUTY_CYCLE.lsb |
+           nr11.initial_length_timer << Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER.lsb;
+}
+
+void Apu::write_nr11(uint8_t value) {
+    nr11.duty_cycle = get_bits_range<Specs::Bits::Audio::NR11::DUTY_CYCLE>(value);
+    nr11.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER>(value);
+}
+
+uint8_t Apu::read_nr12() const {
+    return nr12.initial_volume << Specs::Bits::Audio::NR12::INITIAL_VOLUME.lsb |
+           nr12.envelope_direction << Specs::Bits::Audio::NR12::ENVELOPE_DIRECTION |
+           nr12.sweep_pace << Specs::Bits::Audio::NR12::SWEEP_PACE.lsb;
+}
+
+void Apu::write_nr12(uint8_t value) {
+    nr12.initial_volume = get_bits_range<Specs::Bits::Audio::NR12::INITIAL_VOLUME>(value);
+    nr12.envelope_direction = test_bit<Specs::Bits::Audio::NR12::ENVELOPE_DIRECTION>(value);
+    nr12.sweep_pace = get_bits_range<Specs::Bits::Audio::NR12::SWEEP_PACE>(value);
+
+    ch1.dac = nr12.initial_volume | nr12.envelope_direction;
+    if (!ch1.dac) {
+        // If the DAC is turned off the channel is disabled as well
+        nr52.ch1 = false;
+    }
+}
+
+uint8_t Apu::read_nr14() const {
+    return 0b00111000 | nr14.trigger << Specs::Bits::Audio::NR14::TRIGGER |
+           nr14.length_enable << Specs::Bits::Audio::NR14::LENGTH_ENABLE |
+           nr14.period << Specs::Bits::Audio::NR14::PERIOD.lsb;
+}
+
+void Apu::write_nr14(uint8_t value) {
+    nr14.trigger = test_bit<Specs::Bits::Audio::NR14::TRIGGER>(value);
+    nr14.length_enable = test_bit<Specs::Bits::Audio::NR14::LENGTH_ENABLE>(value);
+    nr14.period = get_bits_range<Specs::Bits::Audio::NR14::PERIOD>(value);
+    ASSERT(nr24.period < 8);
+
+    if (nr14.trigger && ch1.dac) {
+        // Any write with Trigger bit set and DAC enabled turns on the channel
+        nr52.ch1 = true;
+
+        // TODO: where are these reset here?
+        ch1.length_timer = 0;
+        ch1.period_timer = nr14.period << 8 | nr13;
+        ch1.envelope_counter = 0;
+        ch1.volume = nr12.initial_volume;
+    }
+}
+
 uint8_t Apu::read_nr21() const {
     return nr21.duty_cycle << Specs::Bits::Audio::NR21::DUTY_CYCLE.lsb |
            nr21.initial_length_timer << Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER.lsb;
@@ -324,7 +453,7 @@ void Apu::write_nr21(uint8_t value) {
 uint8_t Apu::read_nr22() const {
     return nr22.initial_volume << Specs::Bits::Audio::NR22::INITIAL_VOLUME.lsb |
            nr22.envelope_direction << Specs::Bits::Audio::NR22::ENVELOPE_DIRECTION |
-           nr22.initial_volume << Specs::Bits::Audio::NR22::SWEEP_PACE.lsb;
+           nr22.sweep_pace << Specs::Bits::Audio::NR22::SWEEP_PACE.lsb;
 }
 
 void Apu::write_nr22(uint8_t value) {

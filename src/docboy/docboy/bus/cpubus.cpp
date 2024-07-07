@@ -68,10 +68,13 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF0F */ memory_accessors[Specs::Registers::Interrupts::IF] = {&interrupts.IF,
                                                                      NonTrivial<&Interrupts::write_IF> {&interrupts}};
     /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {&apu.nr10, NonTrivial<&Apu::write_nr10> {&apu}};
-    /* FF11 */ memory_accessors[Specs::Registers::Sound::NR11] = &apu.nr11;
-    /* FF12 */ memory_accessors[Specs::Registers::Sound::NR12] = &apu.nr12;
+    /* FF11 */ memory_accessors[Specs::Registers::Sound::NR11] = {NonTrivial<&Apu::read_nr11> {&apu},
+                                                                  NonTrivial<&Apu::write_nr11> {&apu}};
+    /* FF12 */ memory_accessors[Specs::Registers::Sound::NR12] = {NonTrivial<&Apu::read_nr12> {&apu},
+                                                                  NonTrivial<&Apu::write_nr12> {&apu}};
     /* FF13 */ memory_accessors[Specs::Registers::Sound::NR13] = &apu.nr13;
-    /* FF14 */ memory_accessors[Specs::Registers::Sound::NR14] = &apu.nr14;
+    /* FF14 */ memory_accessors[Specs::Registers::Sound::NR14] = {NonTrivial<&Apu::read_nr14> {&apu},
+                                                                  NonTrivial<&Apu::write_nr14> {&apu}};
     /* FF15 */ memory_accessors[0xFF15] = open_bus_access;
     /* FF16 */ memory_accessors[Specs::Registers::Sound::NR21] = {NonTrivial<&Apu::read_nr21> {&apu},
                                                                   NonTrivial<&Apu::write_nr21> {&apu}};

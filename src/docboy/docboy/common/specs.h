@@ -251,6 +251,21 @@ namespace Bits {
     }     // namespace Video
 
     namespace Audio {
+        namespace NR11 {
+            constexpr BitRange DUTY_CYCLE = {7, 6};
+            constexpr BitRange INITIAL_LENGTH_TIMER = {5, 0};
+        } // namespace NR11
+        namespace NR12 {
+            constexpr BitRange INITIAL_VOLUME = {7, 4};
+            constexpr uint8_t ENVELOPE_DIRECTION = 3;
+            constexpr BitRange SWEEP_PACE = {2, 0};
+        } // namespace NR12
+        namespace NR14 {
+            constexpr uint8_t TRIGGER = 7;
+            constexpr uint8_t LENGTH_ENABLE = 6;
+            constexpr BitRange PERIOD = {2, 0};
+        } // namespace NR14
+
         namespace NR21 {
             constexpr BitRange DUTY_CYCLE = {7, 6};
             constexpr BitRange INITIAL_LENGTH_TIMER = {5, 0};
