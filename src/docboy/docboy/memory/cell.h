@@ -131,17 +131,9 @@ private:
     }
 };
 
-constexpr inline UInt8 make_uint8(const uint32_t address) {
+constexpr UInt8 make_uint8(const uint32_t address) {
     return UInt8 {address};
 }
-
-#else
-
-constexpr inline UInt8 make_uint8(const uint16_t address) {
-    return {};
-}
-
-#endif
 
 template <uint32_t Address>
 struct Composite {
@@ -157,5 +149,28 @@ protected:
         return make_uint8();
     }
 };
+
+#else
+
+constexpr UInt8 make_uint8(const uint16_t address) {
+    return {};
+}
+
+template <uint32_t Address>
+struct Composite {
+public:
+    using Bool = bool;
+
+protected:
+    static constexpr UInt8 make_uint8() {
+        return {};
+    }
+
+    static constexpr Bool make_bool() {
+        return {};
+    }
+};
+
+#endif
 
 #endif // CELL_H

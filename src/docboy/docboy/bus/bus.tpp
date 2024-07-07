@@ -130,7 +130,7 @@ Bus::NonTrivialRead<Read>::NonTrivialRead(Bus::NonTrivialRead<Read>::OwnerType* 
         } else if constexpr (std::is_invocable_v<FunctionType, const OwnerType&, uint16_t>) {
             return (static_cast<const OwnerType*>(p)->*Read)(addr);
         } else {
-            static_assert(false);
+            static_assert(AlwaysFalseV<decltype(Read)>);
         }
     };
 }
@@ -149,7 +149,7 @@ Bus::NonTrivialWrite<Write>::NonTrivialWrite(Bus::NonTrivialWrite<Write>::OwnerT
         } else if constexpr (std::is_invocable_v<FunctionType, const OwnerType&, uint16_t, uint8_t>) {
             return (static_cast<const OwnerType*>(p)->*Write)(addr, value);
         } else {
-            static_assert(false);
+            static_assert(AlwaysFalseV<decltype(Write)>);
         }
     };
 }
