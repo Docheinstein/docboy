@@ -516,7 +516,7 @@ uint32_t DebuggerBackend::state_hash() const {
     h = hash_combine(h, gb.cpu.sp);
     h = hash_combine(h, gb.interrupts.IE);
     h = hash_combine(h, gb.interrupts.IF);
-    h = hash_combine(h, gb.timers.div);
+    h = hash_combine(h, gb.timers.div16);
     h = hash_combine(h, gb.timers.tima);
     h = hash_combine(h, gb.timers.tma);
     h = hash_combine(h, gb.timers.tac);
