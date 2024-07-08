@@ -424,7 +424,6 @@ int main(int argc, char* argv[]) {
     core.set_audio_callback([&stream, &main_controller](const int16_t* samples, uint32_t count) {
         if (main_controller.is_audio_enabled()) {
             SDL_PutAudioStreamData(stream, samples, static_cast<int>(count * sizeof(int16_t)));
-            SDL_FlushAudioStream(stream);
         }
     });
 #endif
