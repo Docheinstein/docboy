@@ -241,6 +241,9 @@ int main(int argc, char* argv[]) {
 #ifdef ENABLE_DEBUGGER
         bool attach_debugger {};
 #endif
+#ifdef ENABLE_AUDIO
+        std::string audio_device_name {};
+#endif
     } args;
 
     Args::Parser args_parser {};
@@ -256,6 +259,10 @@ int main(int argc, char* argv[]) {
     args_parser.add_argument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
 #ifdef ENABLE_DEBUGGER
     args_parser.add_argument(args.attach_debugger, "--debugger", "-d").help("Attach debugger");
+#endif
+#ifdef ENABLE_AUDIO
+    // (mostly for development)
+    args_parser.add_argument(args.audio_device_name, "--audio-device-name", "-a").help("Override output audio device");
 #endif
 
     // Parse command line arguments
@@ -405,7 +412,29 @@ int main(int argc, char* argv[]) {
     const SDL_AudioSpec audio_src_spec = {SDL_AUDIO_S16, 1, Apu::SAMPLES_PER_SECOND};
     const SDL_AudioSpec audio_dst_spec = {SDL_AUDIO_S16, 2, Apu::SAMPLES_PER_SECOND};
 
-    const auto audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &audio_dst_spec);
+    // Eventually use user-specified audio device
+    SDL_AudioDeviceID audio_output_device_id {SDL_AUDIO_DEVICE_DEFAULT_OUTPUT};
+
+    if (!args.audio_device_name.empty()) {
+        int count {};
+        SDL_AudioDeviceID* devices = SDL_GetAudioOutputDevices(&count);
+
+        int i;
+        for (i = 0; i < count; i++) {
+            const auto device_id = devices[i];
+            if (SDL_GetAudioDeviceName(device_id) == args.audio_device_name) {
+                audio_output_device_id = device_id;
+                break;
+            }
+        }
+
+        if (i == count) {
+            std::cerr << "WARN: failed to find audio device '" << args.audio_device_name << "'; using default one"
+                      << std::endl;
+        }
+    }
+
+    const auto audio_device = SDL_OpenAudioDevice(audio_output_device_id, &audio_dst_spec);
     if (!audio_device) {
         std::cerr << "ERROR: SDL audio device initialization failed '" << SDL_GetError() << "'" << std::endl;
         return 6;
