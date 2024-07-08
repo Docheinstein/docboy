@@ -919,7 +919,7 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
         }
 
         if (trace & TraceFlagTimers) {
-            std::cerr << "DIV16:" << hex(gb.timers.div)
+            std::cerr << "DIV16:" << hex(gb.timers.div16)
                       << " DIV:" << hex(backend.read_memory(Specs::Registers::Timers::DIV))
                       << " TIMA:" << hex(backend.read_memory(Specs::Registers::Timers::TIMA))
                       << " TMA:" << hex(backend.read_memory(Specs::Registers::Timers::TMA))
@@ -2362,7 +2362,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << hr(width) << endl;
 
         b << red("DIV (16)") << "   :  " << [this]() -> Text {
-            uint8_t div = gb.timers.div;
+            uint16_t div = gb.timers.div16;
             Text t {};
             uint8_t highlight_bit = Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(gb.timers.tac)];
             for (int8_t b = 15; b >= 0; b--) {

@@ -30,7 +30,7 @@ void StopController::enter_stop_mode() {
     stopped = true;
 
     // DIV is reset
-    timers.div = 0;
+    timers.div16 = 0;
 
     // LCD is cleared
     lcd.clear();

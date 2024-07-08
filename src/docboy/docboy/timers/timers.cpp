@@ -23,11 +23,11 @@ Timers::Timers(Interrupts& interrupts) :
 
 void Timers::tick_t3() {
     handle_pending_tima_reload();
-    set_div(div + 4);
+    set_div(div16 + 4);
 }
 
 void Timers::save_state(Parcel& parcel) const {
-    parcel.write_uint16(div);
+    parcel.write_uint16(div16);
     parcel.write_uint8(tima);
     parcel.write_uint8(tma);
     parcel.write_uint8(tac);
@@ -36,7 +36,7 @@ void Timers::save_state(Parcel& parcel) const {
 }
 
 void Timers::load_state(Parcel& parcel) {
-    div = parcel.read_uint16();
+    div16 = parcel.read_uint16();
     tima = parcel.read_uint8();
     tma = parcel.read_uint8();
     tac = parcel.read_uint8();
@@ -45,7 +45,7 @@ void Timers::load_state(Parcel& parcel) {
 }
 
 void Timers::reset() {
-    div = if_bootrom_else(0x0008, 0xABCC); // [mooneye/boot_div-dmgABCmgb.gb]
+    div16 = if_bootrom_else(0x0008, 0xABCC); // [mooneye/boot_div-dmgABCmgb.gb]
     tima = 0;
     tma = 0;
     tac = 0b11111000;
@@ -55,7 +55,7 @@ void Timers::reset() {
 }
 
 uint8_t Timers::read_div() const {
-    const uint8_t div_high = div >> 8;
+    const uint8_t div_high = div16 >> 8;
 #ifdef ENABLE_DEBUGGER
     DebuggerMemoryWatcher::notify_read(Specs::Registers::Timers::DIV);
 #endif
@@ -92,7 +92,7 @@ void Timers::write_tac(uint8_t value) {
 }
 
 inline void Timers::set_div(uint16_t value) {
-    div = value;
+    div16 = value;
     on_falling_edge_inc_tima();
 }
 
@@ -106,7 +106,7 @@ inline void Timers::inc_tima() {
 inline void Timers::on_falling_edge_inc_tima() {
     // TIMA is incremented if (DIV bit selected by TAC && TAC enable)
     // was true and now it's false (on falling edge)
-    const bool tac_div_bit = test_bit(div, Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(tac)]);
+    const bool tac_div_bit = test_bit(div16, Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(tac)]);
     const bool tac_enable = test_bit<Specs::Bits::Timers::TAC::ENABLE>(tac);
     const bool div_bit_and_tac_enable = tac_div_bit && tac_enable;
     if (last_div_bit_and_tac_enable > div_bit_and_tac_enable) {
