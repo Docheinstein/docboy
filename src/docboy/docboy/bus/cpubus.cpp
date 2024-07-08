@@ -67,7 +67,8 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF0E */ memory_accessors[0xFF0E] = open_bus_access;
     /* FF0F */ memory_accessors[Specs::Registers::Interrupts::IF] = {&interrupts.IF,
                                                                      NonTrivial<&Interrupts::write_IF> {&interrupts}};
-    /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {&apu.nr10, NonTrivial<&Apu::write_nr10> {&apu}};
+    /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {NonTrivial<&Apu::read_nr10> {&apu},
+                                                                  NonTrivial<&Apu::write_nr10> {&apu}};
     /* FF11 */ memory_accessors[Specs::Registers::Sound::NR11] = {NonTrivial<&Apu::read_nr11> {&apu},
                                                                   NonTrivial<&Apu::write_nr11> {&apu}};
     /* FF12 */ memory_accessors[Specs::Registers::Sound::NR12] = {NonTrivial<&Apu::read_nr12> {&apu},

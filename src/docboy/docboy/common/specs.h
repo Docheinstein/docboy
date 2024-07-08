@@ -251,6 +251,11 @@ namespace Bits {
     }     // namespace Video
 
     namespace Audio {
+        namespace NR10 {
+            constexpr BitRange PACE = {6, 4};
+            constexpr uint8_t DIRECTION = 3;
+            constexpr BitRange STEP = {2, 0};
+        } // namespace NR10
         namespace NR11 {
             constexpr BitRange DUTY_CYCLE = {7, 6};
             constexpr BitRange INITIAL_LENGTH_TIMER = {5, 0};

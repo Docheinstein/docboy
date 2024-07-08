@@ -36,6 +36,7 @@ public:
 
     // I/O registers
 
+    uint8_t read_nr10() const;
     void write_nr10(uint8_t value);
 
     uint8_t read_nr11() const;
@@ -64,7 +65,11 @@ public:
     uint8_t read_nr52() const;
     void write_nr52(uint8_t value);
 
-    UInt8 nr10 {make_uint8(Specs::Registers::Sound::NR10)};
+    struct Nr10 : Composite<Specs::Registers::Sound::NR11> {
+        UInt8 pace {make_uint8()};
+        Bool direction {make_bool()};
+        UInt8 step {make_uint8()};
+    } nr10 {};
     struct Nr11 : Composite<Specs::Registers::Sound::NR11> {
         UInt8 duty_cycle {make_uint8()};
         UInt8 initial_length_timer {make_uint8()};
@@ -148,7 +153,13 @@ private:
         uint16_t period_timer {};
 
         uint8_t envelope_counter {};
+
+        // TODO: are these loaded from NR12 after a trigger? Not sure.
         uint8_t volume {};
+        bool envelope_direction {};
+        uint8_t sweep_pace {};
+
+        uint8_t sweep_counter {};
 
         uint8_t square_wave_position {};
     } ch1 {};
@@ -159,7 +170,11 @@ private:
         uint16_t period_timer {};
 
         uint8_t envelope_counter {};
+
+        // TODO: are these loaded from NR22 after a trigger? Not sure.
         uint8_t volume {};
+        bool envelope_direction {};
+        uint8_t sweep_pace {};
 
         uint8_t square_wave_position {};
     } ch2 {};

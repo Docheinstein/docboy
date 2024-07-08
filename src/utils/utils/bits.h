@@ -268,6 +268,11 @@ auto get_bits_range(T&& value) {
     return keep_bits_range_r<range>(std::forward<T>(value)) >> range.lsb;
 };
 
+template <uint8_t msb, uint8_t lsb, typename T>
+auto get_bits_range(T&& value) {
+    return keep_bits_range<msb, lsb>(std::forward<T>(value)) >> lsb;
+};
+
 template <uint8_t n, typename T>
 auto discard_bits(T&& value) {
     static_assert(n < 8 * sizeof(T));
