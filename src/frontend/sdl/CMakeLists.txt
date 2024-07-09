@@ -15,6 +15,8 @@ target_sources(docboy-sdl PRIVATE
     controllers/uicontroller.cpp
     controllers/uicontroller.h
     main.cpp
+    screens/audiooptionsscreen.cpp
+    screens/audiooptionsscreen.h
     screens/controloptionsscreen.cpp
     screens/controloptionsscreen.h
     screens/gamemainscreen.cpp

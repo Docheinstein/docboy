@@ -15,11 +15,6 @@ Menu::Menu(SDL_Texture* texture, const std::array<uint32_t, 4>& palette) :
     SDL_QueryTexture(texture, nullptr, nullptr, &width, &height);
 }
 
-Menu::MenuItem& Menu::add_item(MenuItem&& item) {
-    items.emplace_back(std::move(item));
-    return items[items.size() - 1];
-}
-
 void Menu::set_navigation_enabled(bool enabled) {
     navigation = enabled;
 }
@@ -53,16 +48,16 @@ void Menu::handle_input(SDL_Keycode key) {
         redraw();
         break;
     case SDLK_LEFT:
-        if (items[cursor].on_prev)
-            items[cursor].on_prev();
+        if (items[cursor].on_prev_fn)
+            items[cursor].on_prev_fn();
         break;
     case SDLK_RIGHT:
-        if (items[cursor].on_next)
-            items[cursor].on_next();
+        if (items[cursor].on_next_fn)
+            items[cursor].on_next_fn();
         break;
     case SDLK_RETURN:
-        if (items[cursor].on_enter)
-            items[cursor].on_enter();
+        if (items[cursor].on_enter_fn)
+            items[cursor].on_enter_fn();
         break;
     default:
         break;

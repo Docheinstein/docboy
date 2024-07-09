@@ -6,10 +6,10 @@
 HelpScreen::HelpScreen(Context ctx) :
     MenuScreen {ctx} {
 
-    menu.add_item({"Shortcuts", [this] {
-                       nav.push(std::make_unique<ShortcutsScreen>(context));
-                   }});
-    menu.add_item({"Back", [this] {
-                       nav.pop();
-                   }});
+    menu.add_item(MenuItem {"Shortcuts"}.on_enter([this] {
+        nav.push(std::make_unique<ShortcutsScreen>(context));
+    }));
+    menu.add_item(MenuItem {"Back"}.on_enter([this] {
+        nav.pop();
+    }));
 }

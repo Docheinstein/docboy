@@ -20,14 +20,14 @@ private:
     void on_remap_key(Joypad::Key key);
 
     struct {
-        Menu::MenuItem* a;
-        Menu::MenuItem* b;
-        Menu::MenuItem* start;
-        Menu::MenuItem* select;
-        Menu::MenuItem* left;
-        Menu::MenuItem* up;
-        Menu::MenuItem* right;
-        Menu::MenuItem* down;
+        MenuItem* a;
+        MenuItem* b;
+        MenuItem* start;
+        MenuItem* select;
+        MenuItem* left;
+        MenuItem* up;
+        MenuItem* right;
+        MenuItem* down;
     } items {};
 
     std::optional<Joypad::Key> joypad_key_to_remap;

@@ -7,30 +7,30 @@
 ControlOptionsScreen::ControlOptionsScreen(Context context) :
     MenuScreen {context} {
 
-    items.a = &menu.add_item({"A", [this] {
-                                  on_remap_key(Joypad::Key::A);
-                              }});
-    items.b = &menu.add_item({"B", [this] {
-                                  on_remap_key(Joypad::Key::B);
-                              }});
-    items.start = &menu.add_item({"Start", [this] {
-                                      on_remap_key(Joypad::Key::Start);
-                                  }});
-    items.select = &menu.add_item({"Select", [this] {
-                                       on_remap_key(Joypad::Key::Select);
-                                   }});
-    items.left = &menu.add_item({"Left", [this] {
-                                     on_remap_key(Joypad::Key::Left);
-                                 }});
-    items.up = &menu.add_item({"Up", [this] {
-                                   on_remap_key(Joypad::Key::Up);
-                               }});
-    items.right = &menu.add_item({"Right", [this] {
-                                      on_remap_key(Joypad::Key::Right);
-                                  }});
-    items.down = &menu.add_item({"Down", [this] {
-                                     on_remap_key(Joypad::Key::Down);
-                                 }});
+    items.a = &menu.add_item(MenuItem {"A"}.on_enter([this] {
+        on_remap_key(Joypad::Key::A);
+    }));
+    items.b = &menu.add_item(MenuItem {"B"}.on_enter([this] {
+        on_remap_key(Joypad::Key::B);
+    }));
+    items.start = &menu.add_item(MenuItem {"Start"}.on_enter([this] {
+        on_remap_key(Joypad::Key::Start);
+    }));
+    items.select = &menu.add_item(MenuItem {"Select"}.on_enter([this] {
+        on_remap_key(Joypad::Key::Select);
+    }));
+    items.left = &menu.add_item(MenuItem {"Left"}.on_enter([this] {
+        on_remap_key(Joypad::Key::Left);
+    }));
+    items.up = &menu.add_item(MenuItem {"Up"}.on_enter([this] {
+        on_remap_key(Joypad::Key::Up);
+    }));
+    items.right = &menu.add_item(MenuItem {"Right"}.on_enter([this] {
+        on_remap_key(Joypad::Key::Right);
+    }));
+    items.down = &menu.add_item(MenuItem {"Down"}.on_enter([this] {
+        on_remap_key(Joypad::Key::Down);
+    }));
 }
 
 void ControlOptionsScreen::redraw() {
