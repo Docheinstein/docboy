@@ -135,6 +135,7 @@ void GameScreen::handle_event(const SDL_Event& event) {
 #ifdef ENABLE_AUDIO
         case SDLK_m:
             main.set_audio_enabled(!main.is_audio_enabled());
+            draw_popup(std::string {"Audio "} + (main.is_audio_enabled() ? "enabled" : "disabled"));
             break;
 #endif
         case SDLK_q:
