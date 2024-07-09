@@ -48,16 +48,19 @@ void Menu::handle_input(SDL_Keycode key) {
         redraw();
         break;
     case SDLK_LEFT:
-        if (items[cursor].on_prev_fn)
+        if (items[cursor].on_prev_fn) {
             items[cursor].on_prev_fn();
+        }
         break;
     case SDLK_RIGHT:
-        if (items[cursor].on_next_fn)
+        if (items[cursor].on_next_fn) {
             items[cursor].on_next_fn();
+        }
         break;
     case SDLK_RETURN:
-        if (items[cursor].on_enter_fn)
+        if (items[cursor].on_enter_fn) {
             items[cursor].on_enter_fn();
+        }
         break;
     default:
         break;

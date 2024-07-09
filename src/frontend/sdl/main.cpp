@@ -56,7 +56,10 @@ struct Preferences {
     uint32_t scaling {};
     int x {};
     int y {};
+#ifdef ENABLE_AUDIO
     bool audio {};
+    uint8_t volume {};
+#endif
 };
 
 Preferences make_default_preferences() {
@@ -73,7 +76,10 @@ Preferences make_default_preferences() {
     prefs.scaling = 2;
     prefs.x = 200;
     prefs.y = 200;
+#ifdef ENABLE_AUDIO
     prefs.audio = true;
+    prefs.volume = 100;
+#endif
     return prefs;
 }
 
@@ -95,19 +101,19 @@ void dump_cartridge_info(const ICartridge& cartridge) {
     std::cout << "Header checksum   :  " << hex(header.header_checksum) << "\n";
 }
 
-template <typename T>
+template <typename T, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()>
 std::optional<T> parse_int(const std::string& s) {
     const char* cstr = s.c_str();
     char* endptr {};
     errno = 0;
 
-    T val = std::strtol(cstr, &endptr, 10);
+    auto val = std::strtoll(cstr, &endptr, 10);
 
     if (errno || endptr == cstr || *endptr != '\0') {
         return std::nullopt;
     }
 
-    return val;
+    return std::clamp(val, static_cast<decltype(val)>(min), static_cast<decltype(val)>(max));
 }
 
 std::optional<bool> parse_bool(const std::string& s) {
@@ -186,7 +192,11 @@ void read_preferences(const std::string& path, Preferences& p) {
     ini_reader.add_property("scaling", p.scaling, parse_int<uint32_t>);
     ini_reader.add_property("x", p.x, parse_int<int32_t>);
     ini_reader.add_property("y", p.y, parse_int<int32_t>);
+
+#ifdef ENABLE_AUDIO
     ini_reader.add_property("audio", p.audio, parse_bool);
+    ini_reader.add_property("volume", p.volume, parse_int<uint8_t, 0, 100>);
+#endif
 
     const auto result = ini_reader.parse(path);
     switch (result.outcome) {
@@ -218,7 +228,11 @@ void write_preferences(const std::string& path, const Preferences& p) {
     properties.emplace("scaling", std::to_string(p.scaling));
     properties.emplace("x", std::to_string(p.x));
     properties.emplace("y", std::to_string(p.y));
+
+#ifdef ENABLE_AUDIO
     properties.emplace("audio", std::to_string(p.audio));
+    properties.emplace("volume", std::to_string(p.volume));
+#endif
 
     IniWriter ini_writer;
     if (!ini_writer.write(properties, path)) {
@@ -385,7 +399,12 @@ int main(int argc, char* argv[]) {
 
 #ifdef ENABLE_AUDIO
     // - Audio
+    main_controller.set_volume_changed_callback([&gb](uint8_t volume /* [0, 100] */) {
+        gb->apu.set_volume(static_cast<float>(volume) / 100);
+    });
+
     main_controller.set_audio_enabled(prefs.audio);
+    main_controller.set_volume(prefs.volume);
 #endif
 
 #ifdef ENABLE_SERIAL
@@ -525,6 +544,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef ENABLE_AUDIO
     prefs.audio = main_controller.is_audio_enabled();
+    prefs.volume = main_controller.get_volume();
 #endif
 
     write_preferences(pref_path, prefs);

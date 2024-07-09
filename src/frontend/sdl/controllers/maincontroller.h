@@ -4,8 +4,12 @@
 #include <chrono>
 #include <cstdint>
 
+#include "utils/asserts.h"
+
 class MainController {
 public:
+    static constexpr uint8_t VOLUME_MAX = 100;
+
     void set_speed(int32_t s) {
         speed = s;
         frame_time = std::chrono::nanoseconds {(uint64_t)(DEFAULT_FRAME_TIME.count() / pow2(speed))};
@@ -35,6 +39,22 @@ public:
     bool is_audio_enabled() const {
         return audio;
     }
+
+    void set_volume(uint8_t vol) {
+        ASSERT(vol <= 100);
+        volume = vol;
+        if (volume_changed_callback) {
+            volume_changed_callback(volume);
+        }
+    }
+
+    uint8_t get_volume() const {
+        return volume;
+    }
+
+    void set_volume_changed_callback(std::function<void(uint8_t volume)>&& callback) {
+        volume_changed_callback = std::move(callback);
+    }
 #endif
 
 private:
@@ -47,6 +67,8 @@ private:
 
 #ifdef ENABLE_AUDIO
     bool audio {true};
+    uint8_t volume {100};
+    std::function<void(uint8_t)> volume_changed_callback {};
 #endif
 };
 

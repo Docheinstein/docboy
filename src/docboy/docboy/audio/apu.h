@@ -22,6 +22,8 @@ public:
 
     explicit Apu(Timers& timers);
 
+    void set_volume(float volume /* [0:1]*/);
+
     void set_audio_callback(std::function<void(const int16_t* samples, uint32_t count)>&& callback);
 
     void tick_t0();
@@ -144,6 +146,8 @@ private:
     Timers& timers;
 
     int16_t samples[SAMPLES_PER_FRAME] {};
+
+    float volume {1.0f};
 
     std::function<void(const int16_t*, uint32_t)> audio_callback {};
 

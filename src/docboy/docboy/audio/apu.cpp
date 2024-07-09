@@ -145,8 +145,10 @@ int16_t Apu::compute_audio_sample() const {
         }
     }
 
-    ASSERT(output >= INT16_MIN && output <= INT16_MAX);
+    ASSERT(volume >= 0.0f && volume <= 1.0f);
+    output = static_cast<int32_t>(output * volume);
 
+    ASSERT(output >= INT16_MIN && output <= INT16_MAX);
     return output;
 }
 
@@ -572,4 +574,9 @@ void Apu::write_nr52(uint8_t value) {
         en ? turn_on() : turn_off();
         nr52.enable = en;
     }
+}
+
+void Apu::set_volume(float v) {
+    ASSERT(volume >= 0.0f && volume <= 1.0f);
+    volume = v;
 }
