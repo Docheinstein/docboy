@@ -16,8 +16,8 @@ private:
     void on_next_palette();
 
     struct {
-        Menu::MenuItem* palette {};
-        Menu::MenuItem* scaling {};
+        MenuItem* palette {};
+        MenuItem* scaling {};
     } items {};
 };
 

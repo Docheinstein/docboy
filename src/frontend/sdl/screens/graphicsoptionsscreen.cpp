@@ -8,23 +8,24 @@
 GraphicsOptionsScreen::GraphicsOptionsScreen(Context context) :
     MenuScreen(context) {
 
-    items.scaling = &menu.add_item({"Scaling", nullptr,
-                                    [this] {
-                                        on_decrease_scaling();
-                                    },
-                                    [this] {
-                                        on_increase_scaling();
-                                    }});
-    items.palette = &menu.add_item({"Palette", nullptr,
-                                    [this] {
-                                        on_prev_palette();
-                                    },
-                                    [this] {
-                                        on_next_palette();
-                                    }});
-    menu.add_item({"Back", [this] {
-                       nav.pop();
-                   }});
+    items.scaling = &menu.add_item(MenuItem {"Scaling"}
+                                       .on_prev([this] {
+                                           on_decrease_scaling();
+                                       })
+                                       .on_next([this] {
+                                           on_increase_scaling();
+                                       }));
+
+    items.palette = &menu.add_item(MenuItem {"Palette"}
+                                       .on_prev([this] {
+                                           on_prev_palette();
+                                       })
+                                       .on_next([this] {
+                                           on_next_palette();
+                                       }));
+    menu.add_item(MenuItem {"Back"}.on_enter([this] {
+        nav.pop();
+    }));
 }
 
 void GraphicsOptionsScreen::redraw() {

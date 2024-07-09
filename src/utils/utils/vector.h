@@ -49,7 +49,7 @@ struct Vector {
     template <typename... Args>
     void emplace_back(Args&&... args) {
         ASSERT(!is_full());
-        data[cursor++] = {std::forward<Args>(args)...};
+        data[cursor++] = T {std::forward<Args>(args)...};
     }
 
     T pull_back() {
