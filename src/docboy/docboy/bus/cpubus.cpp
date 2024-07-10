@@ -94,7 +94,8 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF21 */ memory_accessors[Specs::Registers::Sound::NR42] = &apu.nr42;
     /* FF22 */ memory_accessors[Specs::Registers::Sound::NR43] = &apu.nr43;
     /* FF23 */ memory_accessors[Specs::Registers::Sound::NR44] = {&apu.nr44, NonTrivial<&Apu::write_nr44> {&apu}};
-    /* FF24 */ memory_accessors[Specs::Registers::Sound::NR50] = &apu.nr50;
+    /* FF24 */ memory_accessors[Specs::Registers::Sound::NR50] = {NonTrivial<&Apu::read_nr50> {&apu},
+                                                                  NonTrivial<&Apu::write_nr50> {&apu}};
     /* FF25 */ memory_accessors[Specs::Registers::Sound::NR51] = &apu.nr51;
     /* FF26 */ memory_accessors[Specs::Registers::Sound::NR52] = {NonTrivial<&Apu::read_nr52> {&apu},
                                                                   NonTrivial<&Apu::write_nr52> {&apu}};

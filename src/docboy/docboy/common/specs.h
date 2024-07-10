@@ -286,6 +286,12 @@ namespace Bits {
             constexpr BitRange PERIOD = {2, 0};
         } // namespace NR24
 
+        namespace NR50 {
+            constexpr uint8_t VIN_LEFT = 7;
+            constexpr BitRange VOLUME_LEFT = {6, 4};
+            constexpr uint8_t VIN_RIGHT = 3;
+            constexpr BitRange VOLUME_RIGHT = {2, 0};
+        } // namespace NR50
         namespace NR51 {
             constexpr uint8_t CH4_LEFT = 7;
             constexpr uint8_t CH3_LEFT = 6;
@@ -296,7 +302,6 @@ namespace Bits {
             constexpr uint8_t CH2_RIGHT = 5;
             constexpr uint8_t CH1_RIGHT = 4;
         } // namespace NR51
-
         namespace NR52 {
             constexpr uint8_t AUDIO_ENABLE = 7;
             constexpr uint8_t CH4_ENABLE = 3;

@@ -19,6 +19,7 @@ public:
     static constexpr uint32_t TICKS_BETWEEN_SAMPLES = Specs::Frequencies::CLOCK / SAMPLES_PER_SECOND;
     static constexpr uint32_t SAMPLES_PER_FRAME =
         SAMPLES_PER_SECOND * Specs::Ppu::DOTS_PER_FRAME / Specs::Frequencies::CLOCK;
+    static constexpr uint32_t NUM_CHANNELS = 2;
 
     explicit Apu(Timers& timers);
 
@@ -63,6 +64,9 @@ public:
     void write_nr32(uint8_t value);
     void write_nr41(uint8_t value);
     void write_nr44(uint8_t value);
+
+    uint8_t read_nr50() const;
+    void write_nr50(uint8_t value);
 
     uint8_t read_nr52() const;
     void write_nr52(uint8_t value);
@@ -111,7 +115,12 @@ public:
     UInt8 nr42 {make_uint8(Specs::Registers::Sound::NR42)};
     UInt8 nr43 {make_uint8(Specs::Registers::Sound::NR43)};
     UInt8 nr44 {make_uint8(Specs::Registers::Sound::NR44)};
-    UInt8 nr50 {make_uint8(Specs::Registers::Sound::NR50)};
+    struct Nr50 : Composite<Specs::Registers::Sound::NR50> {
+        Bool vin_left {make_bool()};
+        uint8_t volume_left {make_uint8()};
+        Bool vin_right {make_bool()};
+        uint8_t volume_right {make_uint8()};
+    } nr50 {};
     UInt8 nr51 {make_uint8(Specs::Registers::Sound::NR51)};
     struct Nr52 : Composite<Specs::Registers::Sound::NR52> {
         Bool enable {make_bool()};
@@ -138,14 +147,19 @@ public:
     UInt8 waveF {make_uint8(Specs::Registers::Sound::WAVEF)};
 
 private:
+    struct AudioSample {
+        int16_t left;
+        int16_t right;
+    };
+
     void turn_on();
     void turn_off();
 
-    int16_t compute_audio_sample() const;
+    AudioSample compute_audio_sample() const;
 
     Timers& timers;
 
-    int16_t samples[SAMPLES_PER_FRAME] {};
+    int16_t samples[SAMPLES_PER_FRAME * NUM_CHANNELS] {};
 
     float volume {1.0f};
 

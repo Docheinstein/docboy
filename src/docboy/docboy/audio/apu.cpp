@@ -23,6 +23,13 @@ inline int16_t digital_to_analog_volume(uint8_t digital_volume) {
     ASSERT(analog_volume >= INT16_MIN && analog_volume <= INT16_MAX);
     return static_cast<int16_t>(analog_volume) / 2 /* n channels ? */;
 }
+
+inline int16_t scale_analog_volume_by_master_volume(int16_t input_analog_volume, uint8_t master_volume) {
+    ASSERT(master_volume < 8);
+    int32_t output_analog_volume = input_analog_volume * (1 + master_volume) / 8;
+    ASSERT(output_analog_volume >= INT16_MIN && output_analog_volume <= INT16_MAX);
+    return static_cast<int16_t>(output_analog_volume);
+}
 } // namespace
 
 Apu::Apu(Timers& timers) :
@@ -66,7 +73,10 @@ void Apu::reset() {
     nr42 = 0;
     nr43 = 0;
     nr44 = 0b10111111; // TODO: B8 or BF?
-    nr50 = if_bootrom_else(0, 0b01110111);
+    nr50.vin_left = false;
+    nr50.volume_left = if_bootrom_else(0, 0b111);
+    nr50.vin_right = false;
+    nr50.volume_right = if_bootrom_else(0, 0b111);
     nr51 = if_bootrom_else(0, 0b11110011);
     nr52.enable = true;
     nr52.ch4 = false;
@@ -100,7 +110,7 @@ void Apu::reset() {
     memset(samples, 0, sizeof(samples));
 }
 
-int16_t Apu::compute_audio_sample() const {
+Apu::AudioSample Apu::compute_audio_sample() const {
     ASSERT(nr11.duty_cycle >= 0 && nr11.duty_cycle < 4);
     ASSERT(ch1.square_wave_position >= 0 && ch1.square_wave_position < 8);
     ASSERT(ch1.volume <= 0xF);
@@ -149,7 +159,10 @@ int16_t Apu::compute_audio_sample() const {
     output = static_cast<int32_t>(output * volume);
 
     ASSERT(output >= INT16_MIN && output <= INT16_MAX);
-    return output;
+    return {
+        scale_analog_volume_by_master_volume(output, nr50.volume_left),
+        scale_analog_volume_by_master_volume(output, nr50.volume_right),
+    };
 }
 
 void Apu::tick_t0() {
@@ -286,11 +299,12 @@ void Apu::tick_t0() {
     if (ticks_since_last_sample == TICKS_BETWEEN_SAMPLES) {
         ticks_since_last_sample = 0;
 
-        ASSERT(sample_index < SAMPLES_PER_FRAME);
-        samples[sample_index] = compute_audio_sample();
+        ASSERT(sample_index < SAMPLES_PER_FRAME * NUM_CHANNELS);
+        AudioSample sample = compute_audio_sample();
+        samples[sample_index++] = sample.left;
+        samples[sample_index++] = sample.right;
 
-        sample_index = sample_index + 1;
-        if (sample_index == SAMPLES_PER_FRAME) {
+        if (sample_index == SAMPLES_PER_FRAME * NUM_CHANNELS) {
             sample_index = 0;
             if (audio_callback) {
                 audio_callback(samples, SAMPLES_PER_FRAME);
@@ -346,7 +360,10 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(nr42);
     parcel.write_uint8(nr43);
     parcel.write_uint8(nr44);
-    parcel.write_uint8(nr50);
+    parcel.write_bool(nr50.vin_left);
+    parcel.write_uint8(nr50.volume_left);
+    parcel.write_bool(nr50.vin_right);
+    parcel.write_uint8(nr50.volume_right);
     parcel.write_uint8(nr51);
     parcel.write_bool(nr52.enable);
     parcel.write_bool(nr52.ch4);
@@ -402,7 +419,10 @@ void Apu::load_state(Parcel& parcel) {
     nr42 = parcel.read_uint8();
     nr43 = parcel.read_uint8();
     nr44 = parcel.read_uint8();
-    nr50 = parcel.read_uint8();
+    nr50.vin_left = parcel.read_bool();
+    nr50.volume_left = parcel.read_uint8();
+    nr50.vin_right = parcel.read_bool();
+    nr50.volume_right = parcel.read_uint8();
     nr51 = parcel.read_uint8();
     nr52.enable = parcel.read_bool();
     nr52.ch4 = parcel.read_bool();
@@ -560,6 +580,20 @@ void Apu::write_nr24(uint8_t value) {
         ch2.envelope_direction = nr22.envelope_direction;
         ch2.sweep_pace = nr22.sweep_pace;
     }
+}
+
+uint8_t Apu::read_nr50() const {
+    return nr50.vin_left << Specs::Bits::Audio::NR50::VIN_LEFT |
+           nr50.volume_left << Specs::Bits::Audio::NR50::VOLUME_LEFT.lsb |
+           nr50.vin_right << Specs::Bits::Audio::NR50::VIN_RIGHT |
+           nr50.volume_right << Specs::Bits::Audio::NR50::VOLUME_RIGHT.lsb;
+}
+
+void Apu::write_nr50(uint8_t value) {
+    nr50.vin_left = test_bit<Specs::Bits::Audio::NR50::VIN_LEFT>(value);
+    nr50.volume_left = get_bits_range<Specs::Bits::Audio::NR50::VOLUME_LEFT>(value);
+    nr50.vin_right = test_bit<Specs::Bits::Audio::NR50::VIN_RIGHT>(value);
+    nr50.volume_right = get_bits_range<Specs::Bits::Audio::NR50::VOLUME_RIGHT>(value);
 }
 
 uint8_t Apu::read_nr52() const {

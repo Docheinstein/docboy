@@ -428,8 +428,8 @@ int main(int argc, char* argv[]) {
 
 #ifdef ENABLE_AUDIO
     // Open audio device
-    const SDL_AudioSpec audio_src_spec = {SDL_AUDIO_S16, 1, Apu::SAMPLES_PER_SECOND};
-    const SDL_AudioSpec audio_dst_spec = {SDL_AUDIO_S16, 2, Apu::SAMPLES_PER_SECOND};
+    const SDL_AudioSpec audio_src_spec = {SDL_AUDIO_S16, Apu::NUM_CHANNELS, Apu::SAMPLES_PER_SECOND};
+    const SDL_AudioSpec audio_dst_spec = {SDL_AUDIO_S16, Apu::NUM_CHANNELS, Apu::SAMPLES_PER_SECOND};
 
     // Eventually use user-specified audio device
     SDL_AudioDeviceID audio_output_device_id {SDL_AUDIO_DEVICE_DEFAULT_OUTPUT};
@@ -471,7 +471,7 @@ int main(int argc, char* argv[]) {
 
     core.set_audio_callback([&stream, &main_controller](const int16_t* samples, uint32_t count) {
         if (main_controller.is_audio_enabled()) {
-            SDL_PutAudioStreamData(stream, samples, static_cast<int>(count * sizeof(int16_t)));
+            SDL_PutAudioStreamData(stream, samples, static_cast<int>(Apu::NUM_CHANNELS * count * sizeof(int16_t)));
         }
     });
 #endif
