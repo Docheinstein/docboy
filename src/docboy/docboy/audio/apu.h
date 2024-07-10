@@ -7,6 +7,7 @@
 #include "docboy/common/macros.h"
 #include "docboy/common/specs.h"
 #include "docboy/memory/cell.h"
+#include "docboy/memory/memory.h"
 
 class Timers;
 class Parcel;
@@ -60,8 +61,15 @@ public:
     uint8_t read_nr24() const;
     void write_nr24(uint8_t value);
 
+    uint8_t read_nr30() const;
     void write_nr30(uint8_t value);
+
+    uint8_t read_nr32() const;
     void write_nr32(uint8_t value);
+
+    uint8_t read_nr34() const;
+    void write_nr34(uint8_t value);
+
     void write_nr41(uint8_t value);
     void write_nr44(uint8_t value);
 
@@ -106,11 +114,19 @@ public:
         Bool length_enable {make_bool()};
         UInt8 period {make_uint8()};
     } nr24 {};
-    UInt8 nr30 {make_uint8(Specs::Registers::Sound::NR30)};
+    struct Nr30 : Composite<Specs::Registers::Sound::NR30> {
+        Bool dac {make_bool()};
+    } nr30 {};
     UInt8 nr31 {make_uint8(Specs::Registers::Sound::NR31)};
-    UInt8 nr32 {make_uint8(Specs::Registers::Sound::NR32)};
+    struct Nr32 : Composite<Specs::Registers::Sound::NR32> {
+        UInt8 volume {make_uint8()};
+    } nr32 {};
     UInt8 nr33 {make_uint8(Specs::Registers::Sound::NR33)};
-    UInt8 nr34 {make_uint8(Specs::Registers::Sound::NR34)};
+    struct Nr34 : Composite<Specs::Registers::Sound::NR34> {
+        Bool trigger {make_bool()};
+        Bool length_enable {make_bool()};
+        UInt8 period {make_uint8()};
+    } nr34 {};
     UInt8 nr41 {make_uint8(Specs::Registers::Sound::NR41)};
     UInt8 nr42 {make_uint8(Specs::Registers::Sound::NR42)};
     UInt8 nr43 {make_uint8(Specs::Registers::Sound::NR43)};
@@ -129,22 +145,8 @@ public:
         Bool ch2 {make_bool()};
         Bool ch1 {make_bool()};
     } nr52 {};
-    UInt8 wave0 {make_uint8(Specs::Registers::Sound::WAVE0)};
-    UInt8 wave1 {make_uint8(Specs::Registers::Sound::WAVE1)};
-    UInt8 wave2 {make_uint8(Specs::Registers::Sound::WAVE2)};
-    UInt8 wave3 {make_uint8(Specs::Registers::Sound::WAVE3)};
-    UInt8 wave4 {make_uint8(Specs::Registers::Sound::WAVE4)};
-    UInt8 wave5 {make_uint8(Specs::Registers::Sound::WAVE5)};
-    UInt8 wave6 {make_uint8(Specs::Registers::Sound::WAVE6)};
-    UInt8 wave7 {make_uint8(Specs::Registers::Sound::WAVE7)};
-    UInt8 wave8 {make_uint8(Specs::Registers::Sound::WAVE8)};
-    UInt8 wave9 {make_uint8(Specs::Registers::Sound::WAVE9)};
-    UInt8 waveA {make_uint8(Specs::Registers::Sound::WAVEA)};
-    UInt8 waveB {make_uint8(Specs::Registers::Sound::WAVEB)};
-    UInt8 waveC {make_uint8(Specs::Registers::Sound::WAVEC)};
-    UInt8 waveD {make_uint8(Specs::Registers::Sound::WAVED)};
-    UInt8 waveE {make_uint8(Specs::Registers::Sound::WAVEE)};
-    UInt8 waveF {make_uint8(Specs::Registers::Sound::WAVEF)};
+
+    Memory<Specs::Registers::Sound::WAVE0, Specs::Registers::Sound::WAVEF> wave_ram;
 
 private:
     struct AudioSample {
@@ -196,6 +198,13 @@ private:
 
         uint8_t square_wave_position {};
     } ch2 {};
+
+    struct {
+        uint8_t length_timer {};
+        uint16_t period_timer {};
+
+        uint8_t wave_position {};
+    } ch3 {};
 
     uint16_t prev_div_bit_4 {};
     uint16_t div_apu {};

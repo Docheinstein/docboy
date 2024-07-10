@@ -286,6 +286,18 @@ namespace Bits {
             constexpr BitRange PERIOD = {2, 0};
         } // namespace NR24
 
+        namespace NR30 {
+            constexpr uint8_t DAC = 7;
+        } // namespace NR30
+        namespace NR32 {
+            constexpr BitRange VOLUME = {6, 5};
+        } // namespace NR32
+        namespace NR34 {
+            constexpr uint8_t TRIGGER = 7;
+            constexpr uint8_t LENGTH_ENABLE = 6;
+            constexpr BitRange PERIOD = {2, 0};
+        } // namespace NR34
+
         namespace NR50 {
             constexpr uint8_t VIN_LEFT = 7;
             constexpr BitRange VOLUME_LEFT = {6, 4};

@@ -84,11 +84,14 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF18 */ memory_accessors[Specs::Registers::Sound::NR23] = &apu.nr23;
     /* FF19 */ memory_accessors[Specs::Registers::Sound::NR24] = {NonTrivial<&Apu::read_nr24> {&apu},
                                                                   NonTrivial<&Apu::write_nr24> {&apu}};
-    /* FF1A */ memory_accessors[Specs::Registers::Sound::NR30] = {&apu.nr30, NonTrivial<&Apu::write_nr30> {&apu}};
+    /* FF1A */ memory_accessors[Specs::Registers::Sound::NR30] = {NonTrivial<&Apu::read_nr30> {&apu},
+                                                                  NonTrivial<&Apu::write_nr30> {&apu}};
     /* FF1B */ memory_accessors[Specs::Registers::Sound::NR31] = &apu.nr31;
-    /* FF1C */ memory_accessors[Specs::Registers::Sound::NR32] = {&apu.nr32, NonTrivial<&Apu::write_nr32> {&apu}};
+    /* FF1C */ memory_accessors[Specs::Registers::Sound::NR32] = {NonTrivial<&Apu::read_nr32> {&apu},
+                                                                  NonTrivial<&Apu::write_nr32> {&apu}};
     /* FF1D */ memory_accessors[Specs::Registers::Sound::NR33] = &apu.nr33;
-    /* FF1E */ memory_accessors[Specs::Registers::Sound::NR34] = &apu.nr34;
+    /* FF1E */ memory_accessors[Specs::Registers::Sound::NR34] = {NonTrivial<&Apu::read_nr34> {&apu},
+                                                                  NonTrivial<&Apu::write_nr34> {&apu}};
     /* FF1F */ memory_accessors[0xFF1F] = open_bus_access;
     /* FF20 */ memory_accessors[Specs::Registers::Sound::NR41] = {&apu.nr41, NonTrivial<&Apu::write_nr41> {&apu}};
     /* FF21 */ memory_accessors[Specs::Registers::Sound::NR42] = &apu.nr42;
@@ -108,22 +111,12 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF2D */ memory_accessors[0xFF2D] = open_bus_access;
     /* FF2E */ memory_accessors[0xFF2E] = open_bus_access;
     /* FF2F */ memory_accessors[0xFF2F] = open_bus_access;
-    /* FF30 */ memory_accessors[Specs::Registers::Sound::WAVE0] = &apu.wave0;
-    /* FF31 */ memory_accessors[Specs::Registers::Sound::WAVE1] = &apu.wave1;
-    /* FF32 */ memory_accessors[Specs::Registers::Sound::WAVE2] = &apu.wave2;
-    /* FF33 */ memory_accessors[Specs::Registers::Sound::WAVE3] = &apu.wave3;
-    /* FF34 */ memory_accessors[Specs::Registers::Sound::WAVE4] = &apu.wave4;
-    /* FF35 */ memory_accessors[Specs::Registers::Sound::WAVE5] = &apu.wave5;
-    /* FF36 */ memory_accessors[Specs::Registers::Sound::WAVE6] = &apu.wave6;
-    /* FF37 */ memory_accessors[Specs::Registers::Sound::WAVE7] = &apu.wave7;
-    /* FF38 */ memory_accessors[Specs::Registers::Sound::WAVE8] = &apu.wave8;
-    /* FF39 */ memory_accessors[Specs::Registers::Sound::WAVE9] = &apu.wave9;
-    /* FF3A */ memory_accessors[Specs::Registers::Sound::WAVEA] = &apu.waveA;
-    /* FF3B */ memory_accessors[Specs::Registers::Sound::WAVEB] = &apu.waveB;
-    /* FF3C */ memory_accessors[Specs::Registers::Sound::WAVEC] = &apu.waveC;
-    /* FF3D */ memory_accessors[Specs::Registers::Sound::WAVED] = &apu.waveD;
-    /* FF3E */ memory_accessors[Specs::Registers::Sound::WAVEE] = &apu.waveE;
-    /* FF3F */ memory_accessors[Specs::Registers::Sound::WAVEF] = &apu.waveF;
+
+    /* FF30 - FF3F */
+    for (uint16_t i = Specs::Registers::Sound::WAVE0; i <= Specs::Registers::Sound::WAVEF; i++) {
+        memory_accessors[i] = &apu.wave_ram[i - Specs::Registers::Sound::WAVE0];
+    }
+
     /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = {NonTrivial<&Ppu::read_lcdc> {&ppu},
                                                                   NonTrivial<&Ppu::write_lcdc> {&ppu}};
     /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = {NonTrivial<&Ppu::read_stat> {&ppu},
