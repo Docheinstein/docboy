@@ -70,7 +70,16 @@ public:
     uint8_t read_nr34() const;
     void write_nr34(uint8_t value);
 
+    uint8_t read_nr41() const;
     void write_nr41(uint8_t value);
+
+    uint8_t read_nr42() const;
+    void write_nr42(uint8_t value);
+
+    uint8_t read_nr43() const;
+    void write_nr43(uint8_t value);
+
+    uint8_t read_nr44() const;
     void write_nr44(uint8_t value);
 
     uint8_t read_nr50() const;
@@ -127,10 +136,23 @@ public:
         Bool length_enable {make_bool()};
         UInt8 period {make_uint8()};
     } nr34 {};
-    UInt8 nr41 {make_uint8(Specs::Registers::Sound::NR41)};
-    UInt8 nr42 {make_uint8(Specs::Registers::Sound::NR42)};
-    UInt8 nr43 {make_uint8(Specs::Registers::Sound::NR43)};
-    UInt8 nr44 {make_uint8(Specs::Registers::Sound::NR44)};
+    struct Nr41 : Composite<Specs::Registers::Sound::NR41> {
+        UInt8 initial_length_timer {make_uint8()};
+    } nr41 {};
+    struct Nr42 : Composite<Specs::Registers::Sound::NR42> {
+        UInt8 initial_volume {make_uint8()};
+        Bool envelope_direction {make_bool()};
+        UInt8 sweep_pace {make_uint8()};
+    } nr42 {};
+    struct Nr43 : Composite<Specs::Registers::Sound::NR43> {
+        UInt8 clock_shift {make_uint8()};
+        Bool lfsr_width {make_bool()};
+        UInt8 clock_divider {make_uint8()};
+    } nr43 {};
+    struct Nr44 : Composite<Specs::Registers::Sound::NR44> {
+        Bool trigger {make_bool()};
+        Bool length_enable {make_bool()};
+    } nr44 {};
     struct Nr50 : Composite<Specs::Registers::Sound::NR50> {
         Bool vin_left {make_bool()};
         uint8_t volume_left {make_uint8()};
@@ -205,6 +227,21 @@ private:
 
         uint8_t wave_position {};
     } ch3 {};
+
+    struct {
+        bool dac {};
+        uint8_t length_timer {};
+        uint16_t period_timer {};
+
+        uint8_t envelope_counter {};
+
+        // TODO: are these loaded from NR12 after a trigger? Not sure.
+        uint8_t volume {};
+        bool envelope_direction {};
+        uint8_t sweep_pace {};
+
+        uint16_t lfsr {};
+    } ch4 {};
 
     uint16_t prev_div_bit_4 {};
     uint16_t div_apu {};

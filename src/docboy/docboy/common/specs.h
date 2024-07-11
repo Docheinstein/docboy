@@ -298,6 +298,24 @@ namespace Bits {
             constexpr BitRange PERIOD = {2, 0};
         } // namespace NR34
 
+        namespace NR41 {
+            constexpr BitRange INITIAL_LENGTH_TIMER = {5, 0};
+        } // namespace NR41
+        namespace NR42 {
+            constexpr BitRange INITIAL_VOLUME = {7, 4};
+            constexpr uint8_t ENVELOPE_DIRECTION = 3;
+            constexpr BitRange SWEEP_PACE = {2, 0};
+        } // namespace NR42
+        namespace NR43 {
+            constexpr BitRange CLOCK_SHIFT = {7, 4};
+            constexpr uint8_t LFSR_WIDTH = 3;
+            constexpr BitRange CLOCK_DIVIDER = {2, 0};
+        } // namespace NR43
+        namespace NR44 {
+            constexpr uint8_t TRIGGER = 7;
+            constexpr uint8_t LENGTH_ENABLE = 6;
+        } // namespace NR44
+
         namespace NR50 {
             constexpr uint8_t VIN_LEFT = 7;
             constexpr BitRange VOLUME_LEFT = {6, 4};
