@@ -327,10 +327,10 @@ namespace Bits {
             constexpr uint8_t CH3_LEFT = 6;
             constexpr uint8_t CH2_LEFT = 5;
             constexpr uint8_t CH1_LEFT = 4;
-            constexpr uint8_t CH4_RIGHT = 7;
-            constexpr uint8_t CH3_RIGHT = 6;
-            constexpr uint8_t CH2_RIGHT = 5;
-            constexpr uint8_t CH1_RIGHT = 4;
+            constexpr uint8_t CH4_RIGHT = 3;
+            constexpr uint8_t CH3_RIGHT = 2;
+            constexpr uint8_t CH2_RIGHT = 1;
+            constexpr uint8_t CH1_RIGHT = 0;
         } // namespace NR51
         namespace NR52 {
             constexpr uint8_t AUDIO_ENABLE = 7;

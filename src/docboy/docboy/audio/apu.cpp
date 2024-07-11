@@ -5,6 +5,7 @@
 #include "docboy/timers/timers.h"
 
 #include "docboy/bootrom/helpers.h"
+
 #include "utils/asserts.h"
 #include "utils/bits.h"
 #include "utils/parcel.h"
@@ -21,7 +22,7 @@ inline int16_t digital_to_analog_volume(uint8_t digital_volume) {
     ASSERT(digital_volume <= 0xF);
     int32_t analog_volume = INT16_MAX - (UINT16_MAX / 15) * digital_volume;
     ASSERT(analog_volume >= INT16_MIN && analog_volume <= INT16_MAX);
-    return static_cast<int16_t>(analog_volume) / 4;
+    return static_cast<int16_t>(analog_volume);
 }
 
 inline int16_t scale_analog_volume_by_master_volume(int16_t input_analog_volume, uint8_t master_volume) {
@@ -56,32 +57,32 @@ void Apu::reset() {
     nr12.initial_volume = if_bootrom_else(0, 0b1111);
     nr12.envelope_direction = false;
     nr12.sweep_pace = if_bootrom_else(0, 0b011);
-    nr13 = if_bootrom_else(0, 0b11111111);
+    nr13.period_low = if_bootrom_else(0, 0b11111111);
     nr14.trigger = true;
     nr14.length_enable = false;
-    nr14.period = 0b111;
+    nr14.period_high = 0b111;
     nr21.duty_cycle = 0;
     nr21.initial_length_timer = if_bootrom_else(0, 0b111111);
     nr22.initial_volume = false;
     nr22.envelope_direction = false;
     nr22.sweep_pace = false;
-    nr23 = if_bootrom_else(0, 0b11111111);
+    nr23.period_low = if_bootrom_else(0, 0b11111111);
     nr24.trigger = true;
     nr24.length_enable = false;
-    nr24.period = 0b111;
+    nr24.period_high = 0b111;
     nr30.dac = false;
-    nr31 = if_bootrom_else(0, 0b11111111);
+    nr31.initial_length_timer = if_bootrom_else(0, 0b11111111);
     nr32.volume = 0;
-    nr33 = if_bootrom_else(0, 0b11111111);
+    nr33.period_low = if_bootrom_else(0, 0b11111111);
     nr34.trigger = true;
     nr34.length_enable = false;
-    nr34.period = 0b111;
+    nr34.period_high = 0b111;
     nr41.initial_length_timer = if_bootrom_else(0, 0b111111);
     nr42.initial_volume = 0;
-    nr42.envelope_direction = 0;
+    nr42.envelope_direction = false;
     nr42.sweep_pace = 0;
     nr43.clock_shift = 0;
-    nr43.lfsr_width = 0;
+    nr43.lfsr_width = false;
     nr43.clock_divider = 0;
     nr44.trigger = true;
     nr44.length_enable = false;
@@ -89,21 +90,28 @@ void Apu::reset() {
     nr50.volume_left = if_bootrom_else(0, 0b111);
     nr50.vin_right = false;
     nr50.volume_right = if_bootrom_else(0, 0b111);
-    nr51 = if_bootrom_else(0, 0b11110011);
+    nr51.ch4_left = if_bootrom_else(false, true);
+    nr51.ch3_left = if_bootrom_else(false, true);
+    nr51.ch2_left = if_bootrom_else(false, true);
+    nr51.ch1_left = if_bootrom_else(false, true);
+    nr51.ch4_right = false;
+    nr51.ch3_right = false;
+    nr51.ch2_right = if_bootrom_else(false, true);
+    nr51.ch1_right = if_bootrom_else(false, true);
     nr52.enable = true;
     nr52.ch4 = false;
     nr52.ch3 = false;
     nr52.ch2 = false;
     nr52.ch1 = true;
-    for (uint16_t i = 0; i < wave_ram.Size; i++) {
+    for (uint16_t i = 0; i < decltype(wave_ram)::Size; i++) {
         wave_ram[i] = 0;
     }
 
     // Reload frequency timer
-    ch1.period_timer = nr14.period << 8 | nr13;
+    ch1.period_timer = nr14.period_high << 8 | nr13.period_low;
     ch1.dac = true;
 
-    ch2.period_timer = nr24.period << 8 | nr23;
+    ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
     ch2.dac = false;
 
     memset(samples, 0, sizeof(samples));
@@ -118,7 +126,12 @@ Apu::AudioSample Apu::compute_audio_sample() const {
     ASSERT(ch2.square_wave_position >= 0 && ch2.square_wave_position < 8);
     ASSERT(ch2.volume <= 0xF);
 
-    int32_t output {};
+    struct {
+        int16_t ch1 {};
+        int16_t ch2 {};
+        int16_t ch3 {};
+        int16_t ch4 {};
+    } analog_output;
 
     // CH1
     {
@@ -133,7 +146,7 @@ Apu::AudioSample Apu::compute_audio_sample() const {
         if (ch1.dac) {
             // Note: DAC does its work even if channel is off.
             const int16_t analog_volume = digital_to_analog_volume(digital_volume);
-            output += analog_volume;
+            analog_output.ch1 = analog_volume;
         }
     }
 
@@ -150,7 +163,7 @@ Apu::AudioSample Apu::compute_audio_sample() const {
         if (ch2.dac) {
             // Note: DAC does its work even if channel is off.
             const int16_t analog_volume = digital_to_analog_volume(digital_volume);
-            output += analog_volume;
+            analog_output.ch2 = analog_volume;
         }
     }
 
@@ -182,7 +195,7 @@ Apu::AudioSample Apu::compute_audio_sample() const {
         if (nr30.dac) {
             // Note: DAC does its work even if channel is off.
             const int16_t analog_volume = digital_to_analog_volume(digital_volume);
-            output += analog_volume;
+            analog_output.ch3 = analog_volume;
         }
     }
 
@@ -202,18 +215,49 @@ Apu::AudioSample Apu::compute_audio_sample() const {
         if (ch4.dac) {
             // Note: DAC does its work even if channel is off.
             const int16_t analog_volume = digital_to_analog_volume(digital_volume);
-            output += analog_volume;
+            analog_output.ch4 = analog_volume;
         }
     }
 
-    ASSERT(volume >= 0.0f && volume <= 1.0f);
-    output = static_cast<int32_t>(output * volume);
+    // Mix channels
+    struct {
+        struct ChanneStereoAnalogOutput {
+            int16_t left, right;
+        } ch1, ch2, ch3, ch4;
+    } analog_stereo_output {};
 
-    ASSERT(output >= INT16_MIN && output <= INT16_MAX);
-    return {
-        scale_analog_volume_by_master_volume(output, nr50.volume_left),
-        scale_analog_volume_by_master_volume(output, nr50.volume_right),
-    };
+    analog_stereo_output.ch1.left = nr51.ch1_left ? analog_output.ch1 : (int16_t)0;
+    analog_stereo_output.ch2.left = nr51.ch2_left ? analog_output.ch2 : (int16_t)0;
+    analog_stereo_output.ch3.left = nr51.ch3_left ? analog_output.ch3 : (int16_t)0;
+    analog_stereo_output.ch4.left = nr51.ch4_left ? analog_output.ch4 : (int16_t)0;
+    analog_stereo_output.ch1.right = nr51.ch1_right ? analog_output.ch1 : (int16_t)0;
+    analog_stereo_output.ch2.right = nr51.ch2_right ? analog_output.ch2 : (int16_t)0;
+    analog_stereo_output.ch3.right = nr51.ch3_right ? analog_output.ch3 : (int16_t)0;
+    analog_stereo_output.ch4.right = nr51.ch4_right ? analog_output.ch4 : (int16_t)0;
+
+    int32_t analog_left = (analog_stereo_output.ch1.left + analog_stereo_output.ch2.left +
+                           analog_stereo_output.ch3.left + analog_stereo_output.ch4.left) /
+                          4;
+    int32_t analog_right = (analog_stereo_output.ch1.right + analog_stereo_output.ch2.right +
+                            analog_stereo_output.ch3.right + analog_stereo_output.ch4.right) /
+                           4;
+
+    ASSERT(analog_left >= INT16_MIN && analog_left <= INT16_MAX);
+    ASSERT(analog_right >= INT16_MIN && analog_right <= INT16_MAX);
+
+    AudioSample sample {static_cast<int16_t>(analog_left), static_cast<int16_t>(analog_right)};
+
+    // Scale by NR50 volume
+    sample.left = scale_analog_volume_by_master_volume(sample.left, nr50.volume_left);
+    sample.right = scale_analog_volume_by_master_volume(sample.right, nr50.volume_right);
+
+    // Scale by software volume (physical knob)
+    ASSERT(master_volume >= 0.0f && master_volume <= 1.0f);
+
+    sample.left = static_cast<int16_t>(static_cast<float>(sample.left) * master_volume);
+    sample.right = static_cast<int16_t>(static_cast<float>(sample.right) * master_volume);
+
+    return sample;
 }
 
 void Apu::tick_t0() {
@@ -251,7 +295,7 @@ void Apu::tick_t0() {
 
             // Increase length timer
             if (nr52.ch3 && nr34.length_enable) {
-                if (++ch3.length_timer == nr31) {
+                if (++ch3.length_timer == nr31.initial_length_timer) {
                     // Length timer expired: turn off the channel
                     nr52.ch3 = false;
                 }
@@ -271,7 +315,7 @@ void Apu::tick_t0() {
                         // Update period:
                         // P_t+1 = P_t + P_t / (2^pace)
 
-                        uint16_t period = nr14.period << 8 | nr13;
+                        uint16_t period = nr14.period_high << 8 | nr13.period_low;
 
                         int32_t new_period = period + (nr10.direction ? 1 : -1) * (period >> nr10.step);
                         if (new_period >= 2048) {
@@ -282,8 +326,8 @@ void Apu::tick_t0() {
                             new_period = 0;
                         }
 
-                        nr14.period = get_bits_range<11, 8>(new_period);
-                        nr13 = keep_bits<8>(new_period);
+                        nr14.period_high = get_bits_range<11, 8>(new_period);
+                        nr13.period_low = keep_bits<8>(new_period);
 
                         // Reset counter?
                         ch1.sweep_counter = 0;
@@ -360,7 +404,7 @@ void Apu::tick_t0() {
             ch1.square_wave_position = mod<8>(ch1.square_wave_position + 1);
 
             // Reload period timer
-            ch1.period_timer = nr14.period << 8 | nr13;
+            ch1.period_timer = nr14.period_high << 8 | nr13.period_low;
             ASSERT(ch1.period_timer < 2048);
         }
     }
@@ -371,7 +415,7 @@ void Apu::tick_t0() {
             ch2.square_wave_position = mod<8>(ch2.square_wave_position + 1);
 
             // Reload period timer
-            ch2.period_timer = nr24.period << 8 | nr23;
+            ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
             ASSERT(ch2.period_timer < 2048);
         }
     }
@@ -383,7 +427,7 @@ void Apu::tick_t0() {
             ch3.wave_position = mod<32>(ch3.wave_position + 1);
 
             // Reload period timer
-            ch3.period_timer = nr34.period << 8 | nr33;
+            ch3.period_timer = nr34.period_high << 8 | nr33.period_low;
             //            ASSERT(mod<2>(ch3.period_timer) == 0);
             ASSERT(ch3.period_timer < 2048);
         }
@@ -449,26 +493,26 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(nr12.initial_volume);
     parcel.write_bool(nr12.envelope_direction);
     parcel.write_uint8(nr12.sweep_pace);
-    parcel.write_uint8(nr13);
+    parcel.write_uint8(nr13.period_low);
     parcel.write_bool(nr14.trigger);
     parcel.write_bool(nr14.length_enable);
-    parcel.write_uint8(nr14.period);
+    parcel.write_uint8(nr14.period_high);
     parcel.write_uint8(nr21.duty_cycle);
     parcel.write_uint8(nr21.initial_length_timer);
     parcel.write_uint8(nr22.initial_volume);
     parcel.write_bool(nr22.envelope_direction);
     parcel.write_uint8(nr22.sweep_pace);
-    parcel.write_uint8(nr23);
+    parcel.write_uint8(nr23.period_low);
     parcel.write_bool(nr24.trigger);
     parcel.write_bool(nr24.length_enable);
-    parcel.write_uint8(nr24.period);
+    parcel.write_uint8(nr24.period_high);
     parcel.write_bool(nr30.dac);
-    parcel.write_uint8(nr31);
+    parcel.write_uint8(nr31.initial_length_timer);
     parcel.write_uint8(nr32.volume);
-    parcel.write_uint8(nr33);
+    parcel.write_uint8(nr33.period_low);
     parcel.write_bool(nr34.trigger);
     parcel.write_bool(nr34.length_enable);
-    parcel.write_uint8(nr34.period);
+    parcel.write_uint8(nr34.period_high);
     parcel.write_uint8(nr41.initial_length_timer);
     parcel.write_uint8(nr42.initial_volume);
     parcel.write_bool(nr42.envelope_direction);
@@ -482,7 +526,14 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(nr50.volume_left);
     parcel.write_bool(nr50.vin_right);
     parcel.write_uint8(nr50.volume_right);
-    parcel.write_uint8(nr51);
+    parcel.write_bool(nr51.ch4_left);
+    parcel.write_bool(nr51.ch3_left);
+    parcel.write_bool(nr51.ch2_left);
+    parcel.write_bool(nr51.ch1_left);
+    parcel.write_bool(nr51.ch4_right);
+    parcel.write_bool(nr51.ch3_right);
+    parcel.write_bool(nr51.ch2_right);
+    parcel.write_bool(nr51.ch1_right);
     parcel.write_bool(nr52.enable);
     parcel.write_bool(nr52.ch4);
     parcel.write_bool(nr52.ch3);
@@ -500,7 +551,7 @@ void Apu::load_state(Parcel& parcel) {
     nr12.initial_volume = parcel.read_uint8();
     nr12.envelope_direction = parcel.read_bool();
     nr12.sweep_pace = parcel.read_uint8();
-    nr13 = parcel.read_uint8();
+    nr13.period_low = parcel.read_uint8();
     nr14.trigger = parcel.read_bool();
     nr14.length_enable = parcel.read_bool();
     nr14.trigger = parcel.read_uint8();
@@ -509,17 +560,17 @@ void Apu::load_state(Parcel& parcel) {
     nr22.initial_volume = parcel.read_uint8();
     nr22.envelope_direction = parcel.read_bool();
     nr22.sweep_pace = parcel.read_uint8();
-    nr23 = parcel.read_uint8();
+    nr23.period_low = parcel.read_uint8();
     nr24.trigger = parcel.read_bool();
     nr24.length_enable = parcel.read_bool();
     nr24.trigger = parcel.read_uint8();
     nr30.dac = parcel.read_bool();
-    nr31 = parcel.read_uint8();
+    nr31.initial_length_timer = parcel.read_uint8();
     nr32.volume = parcel.read_uint8();
-    nr33 = parcel.read_uint8();
+    nr33.period_low = parcel.read_uint8();
     nr34.trigger = parcel.read_bool();
     nr34.length_enable = parcel.read_bool();
-    nr34.period = parcel.read_uint8();
+    nr34.period_high = parcel.read_uint8();
     nr41.initial_length_timer = parcel.read_uint8();
     nr42.initial_volume = parcel.read_uint8();
     nr42.envelope_direction = parcel.read_bool();
@@ -533,7 +584,14 @@ void Apu::load_state(Parcel& parcel) {
     nr50.volume_left = parcel.read_uint8();
     nr50.vin_right = parcel.read_bool();
     nr50.volume_right = parcel.read_uint8();
-    nr51 = parcel.read_uint8();
+    nr51.ch4_left = parcel.read_bool();
+    nr51.ch3_left = parcel.read_bool();
+    nr51.ch2_left = parcel.read_bool();
+    nr51.ch1_left = parcel.read_bool();
+    nr51.ch4_right = parcel.read_bool();
+    nr51.ch3_right = parcel.read_bool();
+    nr51.ch2_right = parcel.read_bool();
+    nr51.ch1_right = parcel.read_bool();
     nr52.enable = parcel.read_bool();
     nr52.ch4 = parcel.read_bool();
     nr52.ch3 = parcel.read_bool();
@@ -584,14 +642,14 @@ void Apu::write_nr12(uint8_t value) {
 uint8_t Apu::read_nr14() const {
     return 0b00111000 | nr14.trigger << Specs::Bits::Audio::NR14::TRIGGER |
            nr14.length_enable << Specs::Bits::Audio::NR14::LENGTH_ENABLE |
-           nr14.period << Specs::Bits::Audio::NR14::PERIOD;
+           nr14.period_high << Specs::Bits::Audio::NR14::PERIOD;
 }
 
 void Apu::write_nr14(uint8_t value) {
     nr14.trigger = test_bit<Specs::Bits::Audio::NR14::TRIGGER>(value);
     nr14.length_enable = test_bit<Specs::Bits::Audio::NR14::LENGTH_ENABLE>(value);
-    nr14.period = get_bits_range<Specs::Bits::Audio::NR14::PERIOD>(value);
-    ASSERT(nr14.period < 8);
+    nr14.period_high = get_bits_range<Specs::Bits::Audio::NR14::PERIOD>(value);
+    ASSERT(nr14.period_high < 8);
 
     if (nr14.trigger && ch1.dac) {
         // Any write with Trigger bit set and DAC enabled turns on the channel
@@ -599,7 +657,7 @@ void Apu::write_nr14(uint8_t value) {
 
         // TODO: where are these reset here?
         ch1.length_timer = 0;
-        ch1.period_timer = nr14.period << 8 | nr13;
+        ch1.period_timer = nr14.period_high << 8 | nr13.period_low;
         ch1.envelope_counter = 0;
         ch1.volume = nr12.initial_volume;
         ch1.envelope_direction = nr12.envelope_direction;
@@ -638,14 +696,14 @@ void Apu::write_nr22(uint8_t value) {
 uint8_t Apu::read_nr24() const {
     return 0b00111000 | nr24.trigger << Specs::Bits::Audio::NR24::TRIGGER |
            nr24.length_enable << Specs::Bits::Audio::NR24::LENGTH_ENABLE |
-           nr24.period << Specs::Bits::Audio::NR24::PERIOD;
+           nr24.period_high << Specs::Bits::Audio::NR24::PERIOD;
 }
 
 void Apu::write_nr24(uint8_t value) {
     nr24.trigger = test_bit<Specs::Bits::Audio::NR24::TRIGGER>(value);
     nr24.length_enable = test_bit<Specs::Bits::Audio::NR24::LENGTH_ENABLE>(value);
-    nr24.period = get_bits_range<Specs::Bits::Audio::NR24::PERIOD>(value);
-    ASSERT(nr24.period < 8);
+    nr24.period_high = get_bits_range<Specs::Bits::Audio::NR24::PERIOD>(value);
+    ASSERT(nr24.period_high < 8);
 
     if (nr24.trigger && ch2.dac) {
         // Any write with Trigger bit set and DAC enabled turns on the channel
@@ -653,7 +711,7 @@ void Apu::write_nr24(uint8_t value) {
 
         // TODO: where are these reset here?
         ch2.length_timer = 0;
-        ch2.period_timer = nr24.period << 8 | nr23;
+        ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
         ch2.envelope_counter = 0;
         ch2.volume = nr22.initial_volume;
         ch2.envelope_direction = nr22.envelope_direction;
@@ -685,13 +743,13 @@ void Apu::write_nr32(uint8_t value) {
 uint8_t Apu::read_nr34() const {
     return 0b00111000 | nr34.trigger << Specs::Bits::Audio::NR34::TRIGGER |
            nr34.length_enable << Specs::Bits::Audio::NR34::LENGTH_ENABLE |
-           nr34.period << Specs::Bits::Audio::NR34::PERIOD;
+           nr34.period_high << Specs::Bits::Audio::NR34::PERIOD;
 }
 
 void Apu::write_nr34(uint8_t value) {
     nr34.trigger = test_bit<Specs::Bits::Audio::NR34::TRIGGER>(value);
     nr34.length_enable = test_bit<Specs::Bits::Audio::NR34::LENGTH_ENABLE>(value);
-    nr34.period = get_bits_range<Specs::Bits::Audio::NR34::PERIOD>(value);
+    nr34.period_high = get_bits_range<Specs::Bits::Audio::NR34::PERIOD>(value);
 
     if (nr34.trigger && nr30.dac) {
         // Any write with Trigger bit set and DAC enabled turns on the channel
@@ -777,6 +835,26 @@ void Apu::write_nr50(uint8_t value) {
     nr50.volume_right = get_bits_range<Specs::Bits::Audio::NR50::VOLUME_RIGHT>(value);
 }
 
+uint8_t Apu::read_nr51() const {
+    return nr51.ch4_left << Specs::Bits::Audio::NR51::CH4_LEFT | nr51.ch3_left << Specs::Bits::Audio::NR51::CH3_LEFT |
+           nr51.ch2_left << Specs::Bits::Audio::NR51::CH2_LEFT | nr51.ch1_left << Specs::Bits::Audio::NR51::CH1_LEFT |
+           nr51.ch4_right << Specs::Bits::Audio::NR51::CH4_RIGHT |
+           nr51.ch3_right << Specs::Bits::Audio::NR51::CH3_RIGHT |
+           nr51.ch2_right << Specs::Bits::Audio::NR51::CH2_RIGHT |
+           nr51.ch1_right << Specs::Bits::Audio::NR51::CH1_RIGHT;
+}
+
+void Apu::write_nr51(uint8_t value) {
+    nr51.ch4_left = test_bit<Specs::Bits::Audio::NR51::CH4_LEFT>(value);
+    nr51.ch3_left = test_bit<Specs::Bits::Audio::NR51::CH3_LEFT>(value);
+    nr51.ch2_left = test_bit<Specs::Bits::Audio::NR51::CH2_LEFT>(value);
+    nr51.ch1_left = test_bit<Specs::Bits::Audio::NR51::CH1_LEFT>(value);
+    nr51.ch4_right = test_bit<Specs::Bits::Audio::NR51::CH4_RIGHT>(value);
+    nr51.ch3_right = test_bit<Specs::Bits::Audio::NR51::CH3_RIGHT>(value);
+    nr51.ch2_right = test_bit<Specs::Bits::Audio::NR51::CH2_RIGHT>(value);
+    nr51.ch1_right = test_bit<Specs::Bits::Audio::NR51::CH1_RIGHT>(value);
+}
+
 uint8_t Apu::read_nr52() const {
     return 0b01110000 | nr52.enable << Specs::Bits::Audio::NR52::AUDIO_ENABLE |
            nr52.ch4 << Specs::Bits::Audio::NR52::CH4_ENABLE | nr52.ch3 << Specs::Bits::Audio::NR52::CH3_ENABLE |
@@ -791,7 +869,7 @@ void Apu::write_nr52(uint8_t value) {
     }
 }
 
-void Apu::set_volume(float v) {
+void Apu::set_volume(float volume) {
     ASSERT(volume >= 0.0f && volume <= 1.0f);
-    volume = v;
+    master_volume = volume;
 }

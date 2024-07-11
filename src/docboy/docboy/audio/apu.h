@@ -85,6 +85,9 @@ public:
     uint8_t read_nr50() const;
     void write_nr50(uint8_t value);
 
+    uint8_t read_nr51() const;
+    void write_nr51(uint8_t value);
+
     uint8_t read_nr52() const;
     void write_nr52(uint8_t value);
 
@@ -102,11 +105,13 @@ public:
         Bool envelope_direction {make_bool()};
         UInt8 sweep_pace {make_uint8()};
     } nr12 {};
-    UInt8 nr13 {make_uint8(Specs::Registers::Sound::NR13)};
+    struct Nr13 {
+        UInt8 period_low {make_uint8(Specs::Registers::Sound::NR13)};
+    } nr13;
     struct Nr14 : Composite<Specs::Registers::Sound::NR14> {
         Bool trigger {make_bool()};
         Bool length_enable {make_bool()};
-        UInt8 period {make_uint8()};
+        UInt8 period_high {make_uint8()};
     } nr14 {};
     struct Nr21 : Composite<Specs::Registers::Sound::NR21> {
         UInt8 duty_cycle {make_uint8()};
@@ -117,24 +122,30 @@ public:
         Bool envelope_direction {make_bool()};
         UInt8 sweep_pace {make_uint8()};
     } nr22 {};
-    UInt8 nr23 {make_uint8(Specs::Registers::Sound::NR23)};
+    struct Nr23 {
+        UInt8 period_low {make_uint8(Specs::Registers::Sound::NR23)};
+    } nr23;
     struct Nr24 : Composite<Specs::Registers::Sound::NR24> {
         Bool trigger {make_bool()};
         Bool length_enable {make_bool()};
-        UInt8 period {make_uint8()};
+        UInt8 period_high {make_uint8()};
     } nr24 {};
     struct Nr30 : Composite<Specs::Registers::Sound::NR30> {
         Bool dac {make_bool()};
     } nr30 {};
-    UInt8 nr31 {make_uint8(Specs::Registers::Sound::NR31)};
+    struct Nr31 {
+        UInt8 initial_length_timer {make_uint8(Specs::Registers::Sound::NR31)};
+    } nr31;
     struct Nr32 : Composite<Specs::Registers::Sound::NR32> {
         UInt8 volume {make_uint8()};
     } nr32 {};
-    UInt8 nr33 {make_uint8(Specs::Registers::Sound::NR33)};
+    struct Nr33 {
+        UInt8 period_low {make_uint8(Specs::Registers::Sound::NR33)};
+    } nr33;
     struct Nr34 : Composite<Specs::Registers::Sound::NR34> {
         Bool trigger {make_bool()};
         Bool length_enable {make_bool()};
-        UInt8 period {make_uint8()};
+        UInt8 period_high {make_uint8()};
     } nr34 {};
     struct Nr41 : Composite<Specs::Registers::Sound::NR41> {
         UInt8 initial_length_timer {make_uint8()};
@@ -159,7 +170,16 @@ public:
         Bool vin_right {make_bool()};
         uint8_t volume_right {make_uint8()};
     } nr50 {};
-    UInt8 nr51 {make_uint8(Specs::Registers::Sound::NR51)};
+    struct Nr51 : Composite<Specs::Registers::Sound::NR51> {
+        Bool ch4_left {make_bool()};
+        Bool ch3_left {make_bool()};
+        Bool ch2_left {make_bool()};
+        Bool ch1_left {make_bool()};
+        Bool ch4_right {make_bool()};
+        Bool ch3_right {make_bool()};
+        Bool ch2_right {make_bool()};
+        Bool ch1_right {make_bool()};
+    } nr51 {};
     struct Nr52 : Composite<Specs::Registers::Sound::NR52> {
         Bool enable {make_bool()};
         Bool ch4 {make_bool()};
@@ -185,7 +205,7 @@ private:
 
     int16_t samples[SAMPLES_PER_FRAME * NUM_CHANNELS] {};
 
-    float volume {1.0f};
+    float master_volume {1.0f};
 
     std::function<void(const int16_t*, uint32_t)> audio_callback {};
 

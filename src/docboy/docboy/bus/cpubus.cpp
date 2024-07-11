@@ -73,7 +73,7 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
                                                                   NonTrivial<&Apu::write_nr11> {&apu}};
     /* FF12 */ memory_accessors[Specs::Registers::Sound::NR12] = {NonTrivial<&Apu::read_nr12> {&apu},
                                                                   NonTrivial<&Apu::write_nr12> {&apu}};
-    /* FF13 */ memory_accessors[Specs::Registers::Sound::NR13] = &apu.nr13;
+    /* FF13 */ memory_accessors[Specs::Registers::Sound::NR13] = &apu.nr13.period_low;
     /* FF14 */ memory_accessors[Specs::Registers::Sound::NR14] = {NonTrivial<&Apu::read_nr14> {&apu},
                                                                   NonTrivial<&Apu::write_nr14> {&apu}};
     /* FF15 */ memory_accessors[0xFF15] = open_bus_access;
@@ -81,15 +81,15 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
                                                                   NonTrivial<&Apu::write_nr21> {&apu}};
     /* FF17 */ memory_accessors[Specs::Registers::Sound::NR22] = {NonTrivial<&Apu::read_nr22> {&apu},
                                                                   NonTrivial<&Apu::write_nr22> {&apu}};
-    /* FF18 */ memory_accessors[Specs::Registers::Sound::NR23] = &apu.nr23;
+    /* FF18 */ memory_accessors[Specs::Registers::Sound::NR23] = &apu.nr23.period_low;
     /* FF19 */ memory_accessors[Specs::Registers::Sound::NR24] = {NonTrivial<&Apu::read_nr24> {&apu},
                                                                   NonTrivial<&Apu::write_nr24> {&apu}};
     /* FF1A */ memory_accessors[Specs::Registers::Sound::NR30] = {NonTrivial<&Apu::read_nr30> {&apu},
                                                                   NonTrivial<&Apu::write_nr30> {&apu}};
-    /* FF1B */ memory_accessors[Specs::Registers::Sound::NR31] = &apu.nr31;
+    /* FF1B */ memory_accessors[Specs::Registers::Sound::NR31] = &apu.nr31.initial_length_timer;
     /* FF1C */ memory_accessors[Specs::Registers::Sound::NR32] = {NonTrivial<&Apu::read_nr32> {&apu},
                                                                   NonTrivial<&Apu::write_nr32> {&apu}};
-    /* FF1D */ memory_accessors[Specs::Registers::Sound::NR33] = &apu.nr33;
+    /* FF1D */ memory_accessors[Specs::Registers::Sound::NR33] = &apu.nr33.period_low;
     /* FF1E */ memory_accessors[Specs::Registers::Sound::NR34] = {NonTrivial<&Apu::read_nr34> {&apu},
                                                                   NonTrivial<&Apu::write_nr34> {&apu}};
     /* FF1F */ memory_accessors[0xFF1F] = open_bus_access;
@@ -103,7 +103,8 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
                                                                   NonTrivial<&Apu::write_nr44> {&apu}};
     /* FF24 */ memory_accessors[Specs::Registers::Sound::NR50] = {NonTrivial<&Apu::read_nr50> {&apu},
                                                                   NonTrivial<&Apu::write_nr50> {&apu}};
-    /* FF25 */ memory_accessors[Specs::Registers::Sound::NR51] = &apu.nr51;
+    /* FF25 */ memory_accessors[Specs::Registers::Sound::NR51] = {NonTrivial<&Apu::read_nr51> {&apu},
+                                                                  NonTrivial<&Apu::write_nr51> {&apu}};
     /* FF26 */ memory_accessors[Specs::Registers::Sound::NR52] = {NonTrivial<&Apu::read_nr52> {&apu},
                                                                   NonTrivial<&Apu::write_nr52> {&apu}};
     /* FF27 */ memory_accessors[0xFF27] = open_bus_access;
