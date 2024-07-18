@@ -31,7 +31,8 @@ AudioOptionsScreen::AudioOptionsScreen(Context context) :
                                                on_increase_volume();
                                            }});
 
-    menu.add_item(Label {"Dynamic Rate Ctrl", MenuItem::Justification::Center});
+    items.dynamic_sample_rate_control.enabled_label =
+        &menu.add_item(Label {"Dynamic Rate Ctrl", MenuItem::Justification::Center});
 
     items.dynamic_sample_rate_control.enabled = &menu.add_item(Spinner {[this] {
                                                                             on_change_dynamic_sample_rate_control();
@@ -75,25 +76,34 @@ AudioOptionsScreen::AudioOptionsScreen(Context context) :
 }
 
 void AudioOptionsScreen::redraw() {
+    const bool audio_enabled = main.is_audio_enabled();
     const bool dynamic_sample_rate_control_enabled = main.is_dynamic_sample_rate_control_enabled();
+
     items.audio_enabled->text = "Audio   " + std::string {main.is_audio_enabled() ? "Enabled" : "Disabled"};
+    items.volume->visible = audio_enabled;
     items.volume->text = "Volume  " + std::to_string(main.get_volume());
 
+    items.dynamic_sample_rate_control.enabled_label->visible = audio_enabled;
+    items.dynamic_sample_rate_control.enabled->visible = audio_enabled;
     items.dynamic_sample_rate_control.enabled->text =
         std::string {main.is_dynamic_sample_rate_control_enabled() ? "Enabled" : "Disabled"};
 
-    items.dynamic_sample_rate_control.max_latency_label->visible = dynamic_sample_rate_control_enabled;
-    items.dynamic_sample_rate_control.max_latency->visible = dynamic_sample_rate_control_enabled;
+    items.dynamic_sample_rate_control.max_latency_label->visible = audio_enabled && dynamic_sample_rate_control_enabled;
+    items.dynamic_sample_rate_control.max_latency->visible = audio_enabled && dynamic_sample_rate_control_enabled;
     items.dynamic_sample_rate_control.max_latency->text =
         to_string_with_precision<0>(main.get_dynamic_sample_rate_control_max_latency());
 
-    items.dynamic_sample_rate_control.moving_average_factor_label->visible = dynamic_sample_rate_control_enabled;
-    items.dynamic_sample_rate_control.moving_average_factor->visible = dynamic_sample_rate_control_enabled;
+    items.dynamic_sample_rate_control.moving_average_factor_label->visible =
+        audio_enabled && dynamic_sample_rate_control_enabled;
+    items.dynamic_sample_rate_control.moving_average_factor->visible =
+        audio_enabled && dynamic_sample_rate_control_enabled;
     items.dynamic_sample_rate_control.moving_average_factor->text =
         to_string_with_precision<3>(main.get_dynamic_sample_rate_control_moving_average_factor());
 
-    items.dynamic_sample_rate_control.max_pitch_slack_factor_label->visible = dynamic_sample_rate_control_enabled;
-    items.dynamic_sample_rate_control.max_pitch_slack_factor->visible = dynamic_sample_rate_control_enabled;
+    items.dynamic_sample_rate_control.max_pitch_slack_factor_label->visible =
+        audio_enabled && dynamic_sample_rate_control_enabled;
+    items.dynamic_sample_rate_control.max_pitch_slack_factor->visible =
+        audio_enabled && dynamic_sample_rate_control_enabled;
     items.dynamic_sample_rate_control.max_pitch_slack_factor->text =
         to_string_with_precision<3>(main.get_dynamic_sample_rate_control_max_pitch_slack_factor());
 

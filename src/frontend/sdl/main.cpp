@@ -496,7 +496,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Open audio device
-    const auto audio_device = SDL_OpenAudioDevice(audio_output_device_id, &audio_device_spec_hint);
+    const SDL_AudioDeviceID audio_device = SDL_OpenAudioDevice(audio_output_device_id, &audio_device_spec_hint);
     if (!audio_device) {
         std::cerr << "ERROR: SDL audio device initialization failed '" << SDL_GetError() << "'" << std::endl;
         return 6;
@@ -523,12 +523,30 @@ int main(int argc, char* argv[]) {
     // Set audio sample rate accordingly to opened audio device
     core.set_audio_sample_rate(audio_device_sample_rate);
 
+    bool audio_stream_bound {};
+
+    const auto unbind_audio_stream = [&audio_stream_bound, &audio_stream]() {
+        SDL_UnbindAudioStream(audio_stream);
+        audio_stream_bound = false;
+    };
+
+    const auto bind_audio_stream = [&audio_stream_bound, &audio_device, &audio_stream]() {
+        SDL_BindAudioStream(audio_device, audio_stream);
+        audio_stream_bound = true;
+    };
+
     // Audio preferences
+    main_controller.set_audio_enabled(prefs.audio);
+    main_controller.set_audio_enabled_changed_callback([&unbind_audio_stream](bool enabled) {
+        // Unbind audio stream when audio is disabled.
+        if (!enabled) {
+            unbind_audio_stream();
+        }
+    });
+
     main_controller.set_volume_changed_callback([&core](uint8_t volume /* [0, 100] */) {
         core.set_audio_volume(static_cast<float>(volume) / 100);
     });
-
-    main_controller.set_audio_enabled(prefs.audio);
     main_controller.set_volume(prefs.volume);
 
     struct {
@@ -581,8 +599,6 @@ int main(int argc, char* argv[]) {
 
     double sample_rate_control = 1.0;
 
-    bool audio_stream_bound {};
-
     core.set_audio_sample_callback([&audiobuffer](const Apu::AudioSample sample) {
         if (audiobuffer.index < array_size(audiobuffer.data) - 1) {
             audiobuffer.data[audiobuffer.index++] = sample.left;
@@ -590,6 +606,15 @@ int main(int argc, char* argv[]) {
         }
     });
 #endif
+
+    core_controller.set_paused_changed_callback([&unbind_audio_stream](bool paused) {
+#ifdef ENABLE_AUDIO
+        // Unbind audio stream when game is paused.
+        if (paused) {
+            unbind_audio_stream();
+        }
+#endif
+    });
 
     if (!args.rom.empty()) {
         // Start with loaded game
@@ -651,14 +676,12 @@ int main(int argc, char* argv[]) {
                     const double sample_rate = audio_device_sample_rate * sample_rate_control;
                     core.set_audio_sample_rate(sample_rate);
                 }
-            } else {
-                // Bind the audio stream if we have enough samples to start.
+            } else if (main_controller.is_audio_enabled()) {
+                // Bind the audio stream if we have enough samples to start and audio is enabled.
                 if (!dynamic_sample_rate_control.enabled ||
                     audiobuffer.index * sizeof(int16_t) >
                         static_cast<uint32_t>(dynamic_sample_rate_control.target_sample_queue_size)) {
-
-                    SDL_BindAudioStream(audio_device, audio_stream);
-                    audio_stream_bound = true;
+                    bind_audio_stream();
                 }
             }
 
@@ -667,14 +690,6 @@ int main(int argc, char* argv[]) {
                 SDL_PutAudioStreamData(audio_stream, audiobuffer.data,
                                        static_cast<int>(audiobuffer.index * sizeof(int16_t)));
                 audiobuffer.index = 0;
-            }
-#endif
-        } else {
-#ifdef ENABLE_AUDIO
-            if (audio_stream_bound) {
-                // Unbind the audio stream
-                SDL_UnbindAudioStream(audio_stream);
-                audio_stream_bound = false;
             }
 #endif
         }

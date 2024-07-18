@@ -34,10 +34,17 @@ public:
 #ifdef ENABLE_AUDIO
     void set_audio_enabled(bool enabled) {
         audio.enabled = enabled;
+        if (audio.enabled_changed_callback) {
+            audio.enabled_changed_callback(audio.enabled);
+        }
     }
 
     bool is_audio_enabled() const {
         return audio.enabled;
+    }
+
+    void set_audio_enabled_changed_callback(std::function<void(uint8_t volume)>&& callback) {
+        audio.enabled_changed_callback = std::move(callback);
     }
 
     void set_volume(uint8_t vol) {
@@ -116,6 +123,7 @@ private:
 #ifdef ENABLE_AUDIO
     struct {
         bool enabled {true};
+        std::function<void(uint8_t)> enabled_changed_callback {};
         uint8_t volume {100};
         std::function<void(uint8_t)> volume_changed_callback {};
         struct {

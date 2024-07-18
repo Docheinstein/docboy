@@ -18,6 +18,7 @@ private:
         MenuItem* audio_enabled {};
         MenuItem* volume {};
         struct {
+            MenuItem* enabled_label {};
             MenuItem* enabled {};
             MenuItem* max_latency_label {};
             MenuItem* max_latency {};
