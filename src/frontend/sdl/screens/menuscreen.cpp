@@ -23,8 +23,10 @@ MenuScreen::MenuScreen(Context context) :
 }
 
 void MenuScreen::redraw() {
-    clear_texture(menu_background_texture, Specs::Display::WIDTH * Specs::Display::HEIGHT,
+    uint32_t* texture_buffer = lock_texture(menu_background_texture);
+    clear_texture(texture_buffer, Specs::Display::WIDTH * Specs::Display::HEIGHT,
                   ui.get_current_palette().rgba8888.palette[2] & (0xFFFFFF00 | context.ui.background_alpha));
+    unlock_texture(menu_background_texture);
     menu.redraw();
 }
 

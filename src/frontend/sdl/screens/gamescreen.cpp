@@ -60,7 +60,10 @@ void GameScreen::render() {
     }
 
     // Copy framebuffer to rendered texture
-    copy_to_texture(game_texture, game_framebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t));
+    uint32_t* game_texture_buffer = lock_texture(game_texture);
+    copy_to_texture(game_texture_buffer, game_framebuffer,
+                    Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t));
+    unlock_texture(game_texture);
 
     // Update FPS
     if (fps.visible) {
@@ -196,22 +199,27 @@ void GameScreen::draw_popup(const std::string& str) {
 void GameScreen::redraw_overlay() {
     uint32_t text_color = ui.get_current_palette().rgba8888.accent;
 
-    clear_texture(game_overlay_texture, Specs::Display::WIDTH * Specs::Display::HEIGHT);
+    uint32_t* overlay_texture_buffer = lock_texture(game_overlay_texture);
+
+    clear_texture(overlay_texture_buffer, Specs::Display::WIDTH * Specs::Display::HEIGHT);
 
     if (popup.visible) {
-        draw_text(game_overlay_texture, popup.text, 4, Specs::Display::HEIGHT - 12, text_color, Specs::Display::WIDTH);
+        draw_text(overlay_texture_buffer, Specs::Display::WIDTH, popup.text, 4, Specs::Display::HEIGHT - 12,
+                  text_color);
     }
 
     if (fps.visible) {
         const std::string fps_str = std::to_string(fps.display_count);
-        draw_text(game_overlay_texture, fps_str, Specs::Display::WIDTH - 4 - fps_str.size() * 8, 4, text_color,
-                  Specs::Display::WIDTH);
+        draw_text(overlay_texture_buffer, Specs::Display::WIDTH, fps_str,
+                  Specs::Display::WIDTH - 4 - fps_str.size() * 8, 4, text_color);
     }
 
     if (const int32_t speed {main.get_speed()}; speed != 0) {
-        draw_text(game_overlay_texture, (speed > 0 ? "x" : "/") + std::to_string((uint32_t)(pow2(abs(speed)))), 4, 4,
-                  text_color, Specs::Display::WIDTH);
+        draw_text(overlay_texture_buffer, Specs::Display::WIDTH,
+                  (speed > 0 ? "x" : "/") + std::to_string((uint32_t)(pow2(abs(speed)))), 4, 4, text_color);
     }
+
+    unlock_texture(game_overlay_texture);
 }
 
 bool GameScreen::is_in_menu() const {

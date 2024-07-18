@@ -62,7 +62,7 @@ AudioOptionsScreen::AudioOptionsScreen(Context context) :
                                 MenuItem::Justification::Center});
 
     items.dynamic_sample_rate_control.max_pitch_slack_factor_label =
-        &menu.add_item(Label {"Max Pitch Slack", MenuItem::Justification::Center});
+        &menu.add_item(Label {"Max Pitch Slack F.", MenuItem::Justification::Center});
 
     items.dynamic_sample_rate_control.max_pitch_slack_factor =
         &menu.add_item(Spinner {[this] {

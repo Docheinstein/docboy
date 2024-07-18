@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "components/menu/item.h"
-#include "components/text.h"
+#include "primitives/text.h"
 
 #include "utils/textures.h"
 #include "utils/vector.h"

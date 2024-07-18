@@ -1,13 +1,16 @@
 #include "menu.h"
 
-#include "components/glyphs.h"
+#include "primitives/glyph.h"
 
 #include "SDL3/SDL.h"
+#include "primitives/geometry.h"
 
 namespace {
 constexpr Glyph NAVIGATION_CURSOR_GLYPH = 0x80C0E0F0E0C08000 /* arrow */;
 constexpr uint8_t V_MARGIN = 12;
 constexpr uint8_t H_MARGIN = 12;
+constexpr uint8_t SCROLLBAR_H_MARGIN = 6;
+constexpr uint8_t SCROLLBAR_WIDTH = 2;
 constexpr uint8_t TEXT_WIDTH = 8;
 constexpr uint8_t TEXT_HEIGHT = 8;
 constexpr uint8_t TEXT_V_SPACING = 6;
@@ -38,7 +41,9 @@ MenuItem& Menu::add_item(MenuItem&& item) {
 }
 
 void Menu::redraw() {
-    clear_texture(texture, width * height);
+    uint32_t* texture_buffer = lock_texture(texture);
+
+    clear_texture(texture_buffer, width * height);
 
     const uint8_t max_items = std::min(visible_items.size(), max_viewport_items);
 
@@ -57,18 +62,35 @@ void Menu::redraw() {
             text_x = (width - H_MARGIN - text_size);
         }
 
-        draw_text(texture, item.text, text_x, V_MARGIN + TEXT_ROW_HEIGHT * i, palette[0], width);
+        draw_text(texture_buffer, width, item.text, text_x, V_MARGIN + TEXT_ROW_HEIGHT * i, palette[0]);
     }
 
     // Draw cursor
     ASSERT(cursor >= viewport_cursor && cursor < viewport_cursor + max_viewport_items);
     uint8_t cursor_viewport_space = cursor - viewport_cursor;
-    draw_glyph(texture, NAVIGATION_CURSOR_GLYPH, 4, V_MARGIN + TEXT_ROW_HEIGHT * cursor_viewport_space, palette[0],
-               width);
+    draw_glyph(texture_buffer, width, NAVIGATION_CURSOR_GLYPH, 4, V_MARGIN + TEXT_ROW_HEIGHT * cursor_viewport_space,
+               palette[0]);
+
+    if (visible_items.size() > max_viewport_items) {
+        // Draw scrollbar
+
+        // Container
+        draw_box(texture_buffer, width, width - SCROLLBAR_H_MARGIN, V_MARGIN,
+                 width - SCROLLBAR_H_MARGIN + SCROLLBAR_WIDTH, height - V_MARGIN, palette[3]);
+
+        // Handle
+        uint32_t scrollbar_height = height - 2 * V_MARGIN;
+        uint32_t handle_y = V_MARGIN + viewport_cursor * scrollbar_height / visible_items.size();
+        uint32_t handle_height = max_viewport_items * scrollbar_height / visible_items.size();
+        draw_box(texture_buffer, width, width - SCROLLBAR_H_MARGIN, handle_y,
+                 width - SCROLLBAR_H_MARGIN + SCROLLBAR_WIDTH, handle_y + handle_height, palette[0]);
+    }
+
+    unlock_texture(texture);
 }
 
 void Menu::handle_input(SDL_Keycode key) {
-    const auto goToNextSelectableItem = [this](int8_t increment) {
+    const auto goto_next_selectable_item = [this](int8_t increment) {
         ASSERT(visible_items[cursor]->selectable);
 
         uint8_t next_cursor = cursor;
@@ -101,11 +123,11 @@ void Menu::handle_input(SDL_Keycode key) {
 
     switch (key) {
     case SDLK_UP:
-        goToNextSelectableItem(-1);
+        goto_next_selectable_item(-1);
         redraw();
         break;
     case SDLK_DOWN:
-        goToNextSelectableItem(1);
+        goto_next_selectable_item(1);
         redraw();
         break;
     case SDLK_LEFT:
