@@ -72,6 +72,8 @@ cmake ..
 make -j 8
 ```
 
+Additional dependencies:
+* An audio framework: for Linux you can install [alsa-lib](https://github.com/alsa-project/alsa-lib)
 
 **Libretro Core**
 
