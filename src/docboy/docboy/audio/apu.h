@@ -16,17 +16,20 @@ class Apu {
     DEBUGGABLE_CLASS()
 
 public:
-    static constexpr uint32_t SAMPLES_PER_SECOND = 32768;
-    static constexpr uint32_t TICKS_BETWEEN_SAMPLES = Specs::Frequencies::CLOCK / SAMPLES_PER_SECOND;
-    static constexpr uint32_t SAMPLES_PER_FRAME =
-        SAMPLES_PER_SECOND * Specs::Ppu::DOTS_PER_FRAME / Specs::Frequencies::CLOCK;
+    struct AudioSample {
+        int16_t left;
+        int16_t right;
+    };
+
     static constexpr uint32_t NUM_CHANNELS = 2;
 
     explicit Apu(Timers& timers);
 
     void set_volume(float volume /* [0:1]*/);
 
-    void set_audio_callback(std::function<void(const int16_t* samples, uint32_t count)>&& callback);
+    void set_sample_rate(double rate);
+
+    void set_audio_sample_callback(std::function<void(const AudioSample sample)>&& callback);
 
     void tick_t0();
     void tick_t1();
@@ -191,23 +194,23 @@ public:
     Memory<Specs::Registers::Sound::WAVE0, Specs::Registers::Sound::WAVEF> wave_ram;
 
 private:
-    struct AudioSample {
-        int16_t left;
-        int16_t right;
-    };
-
     void turn_on();
     void turn_off();
+
+    void tick_sampler();
 
     AudioSample compute_audio_sample() const;
 
     Timers& timers;
 
-    int16_t samples[SAMPLES_PER_FRAME * NUM_CHANNELS] {};
+    std::function<void(const AudioSample)> audio_sample_callback {};
 
     float master_volume {1.0f};
 
-    std::function<void(const int16_t*, uint32_t)> audio_callback {};
+    uint64_t ticks {};
+
+    double sample_period {};
+    double next_tick_sample {};
 
     struct {
         bool dac {};
@@ -265,10 +268,6 @@ private:
 
     uint16_t prev_div_bit_4 {};
     uint16_t div_apu {};
-
-    uint16_t sample_index {0}; // [0, SAMPLES_PER_FRAME)
-
-    uint16_t ticks_since_last_sample {}; // [0, TICKS_BETWEEN_SAMPLES)
 };
 
 #endif // APU_H

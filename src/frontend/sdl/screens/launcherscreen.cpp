@@ -46,7 +46,7 @@ void LauncherScreen::redraw() {
 void LauncherScreen::handle_event(const SDL_Event& event) {
     switch (event.type) {
     case SDL_EVENT_KEY_DOWN:
-        switch (event.key.keysym.sym) {
+        switch (event.key.key) {
         case SDLK_ESCAPE:
             nav.push(std::make_unique<MainScreen>(context));
             break;

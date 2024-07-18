@@ -43,8 +43,17 @@ Apu::Apu(Timers& timers) :
     reset();
 }
 
-void Apu::set_audio_callback(std::function<void(const int16_t*, uint32_t)>&& callback) {
-    audio_callback = std::move(callback);
+void Apu::set_volume(float volume) {
+    ASSERT(volume >= 0.0f && volume <= 1.0f);
+    master_volume = volume;
+}
+
+void Apu::set_sample_rate(double rate) {
+    sample_period = (double)Specs::Frequencies::CLOCK / rate;
+}
+
+void Apu::set_audio_sample_callback(std::function<void(const AudioSample)>&& callback) {
+    audio_sample_callback = std::move(callback);
 }
 
 void Apu::reset() {
@@ -113,8 +122,6 @@ void Apu::reset() {
 
     ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
     ch2.dac = false;
-
-    memset(samples, 0, sizeof(samples));
 }
 
 Apu::AudioSample Apu::compute_audio_sample() const {
@@ -261,8 +268,9 @@ Apu::AudioSample Apu::compute_audio_sample() const {
 }
 
 void Apu::tick_t0() {
-    // Do nothing if APU is off
+    // Do nothing if APU is off (but advance the sampler anyhow).
     if (!nr52.enable) {
+        tick_sampler();
         return;
     }
 
@@ -447,34 +455,31 @@ void Apu::tick_t0() {
         }
     }
 
-    // Handle sampling
-    ticks_since_last_sample += 4;
-    static_assert(mod<4>(TICKS_BETWEEN_SAMPLES) == 0);
-
-    if (ticks_since_last_sample == TICKS_BETWEEN_SAMPLES) {
-        ticks_since_last_sample = 0;
-
-        ASSERT(sample_index < SAMPLES_PER_FRAME * NUM_CHANNELS);
-        AudioSample sample = compute_audio_sample();
-        samples[sample_index++] = sample.left;
-        samples[sample_index++] = sample.right;
-
-        if (sample_index == SAMPLES_PER_FRAME * NUM_CHANNELS) {
-            sample_index = 0;
-            if (audio_callback) {
-                audio_callback(samples, SAMPLES_PER_FRAME);
-            }
-        }
-    }
+    tick_sampler();
 }
 
 void Apu::tick_t1() {
+    tick_sampler();
 }
 
 void Apu::tick_t2() {
+    tick_sampler();
 }
 
 void Apu::tick_t3() {
+    tick_sampler();
+}
+
+void Apu::tick_sampler() {
+    ASSERT(sample_period > 0.0);
+
+    if (++ticks >= static_cast<uint64_t>(next_tick_sample)) {
+        next_tick_sample += sample_period;
+
+        if (audio_sample_callback) {
+            audio_sample_callback(compute_audio_sample());
+        }
+    }
 }
 
 void Apu::turn_on() {
@@ -485,6 +490,8 @@ void Apu::turn_off() {
 }
 
 void Apu::save_state(Parcel& parcel) const {
+    parcel.write_uint64(ticks);
+
     parcel.write_uint8(nr10.pace);
     parcel.write_bool(nr10.direction);
     parcel.write_uint8(nr10.step);
@@ -543,6 +550,9 @@ void Apu::save_state(Parcel& parcel) const {
 }
 
 void Apu::load_state(Parcel& parcel) {
+    ticks = parcel.read_uint64();
+    next_tick_sample = static_cast<double>(ticks) + sample_period;
+
     nr10.pace = parcel.read_uint8();
     nr10.direction = parcel.read_bool();
     nr10.step = parcel.read_uint8();
@@ -867,9 +877,4 @@ void Apu::write_nr52(uint8_t value) {
         en ? turn_on() : turn_off();
         nr52.enable = en;
     }
-}
-
-void Apu::set_volume(float volume) {
-    ASSERT(volume >= 0.0f && volume <= 1.0f);
-    master_volume = volume;
 }

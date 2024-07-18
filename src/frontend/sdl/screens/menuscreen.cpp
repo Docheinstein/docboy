@@ -35,7 +35,7 @@ void MenuScreen::render() {
 
 void MenuScreen::handle_event(const SDL_Event& event) {
     if (event.type == SDL_EVENT_KEY_DOWN) {
-        const auto key {event.key.keysym.sym};
+        const auto key {event.key.key};
         if (key == SDLK_ESCAPE || key == SDLK_BACKSPACE) {
             nav.pop();
         } else {

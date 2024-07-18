@@ -3,8 +3,10 @@ add_executable(docboy-sdl)
 target_sources(docboy-sdl PRIVATE
     components/glyphs.cpp
     components/glyphs.h
-    components/menu.cpp
-    components/menu.h
+    components/menu/menu.cpp
+    components/menu/menu.h
+    components/menu/item.h
+    components/menu/items.h
     components/text.cpp
     components/text.h
     controllers/corecontroller.cpp

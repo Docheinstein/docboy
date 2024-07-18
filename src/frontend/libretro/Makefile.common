@@ -1,4 +1,5 @@
 SOURCES_CXX := \
+    $(SOURCE_DIR)/docboy/docboy/audio/apu.cpp \
     $(SOURCE_DIR)/docboy/docboy/boot/boot.cpp \
     $(SOURCE_DIR)/docboy/docboy/bus/bus.cpp \
     $(SOURCE_DIR)/docboy/docboy/bus/cpubus.cpp \
@@ -12,7 +13,6 @@ SOURCES_CXX := \
     $(SOURCE_DIR)/docboy/docboy/dma/dma.cpp \
     $(SOURCE_DIR)/docboy/docboy/joypad/joypad.cpp \
     $(SOURCE_DIR)/docboy/docboy/lcd/lcd.cpp \
-    $(SOURCE_DIR)/docboy/docboy/memory/byte.cpp \
     $(SOURCE_DIR)/docboy/docboy/memory/vram.cpp \
     $(SOURCE_DIR)/docboy/docboy/mmu/mmu.cpp \
     $(SOURCE_DIR)/docboy/docboy/stop/stopcontroller.cpp \

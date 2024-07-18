@@ -31,7 +31,14 @@ public:
 
 #ifdef ENABLE_AUDIO
     // Audio
-    void set_audio_callback(std::function<void(const int16_t*, uint32_t count)>&& audio_callback) const;
+    void set_audio_sample_callback(std::function<void(const Apu::AudioSample)>&& audio_callback) const;
+
+    void set_audio_sample_rate(double sample_rate) const {
+        gb.apu.set_sample_rate(sample_rate);
+    }
+    void set_audio_volume(float volume) const {
+        gb.apu.set_volume(volume);
+    }
 #endif
 
     // Save/Load RAM

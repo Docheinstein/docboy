@@ -40,6 +40,10 @@ int64_t Parcel::read_int64() {
     return read<int64_t>();
 }
 
+double Parcel::read_double() {
+    return read<double>();
+}
+
 void Parcel::read_bytes(void* data_, uint32_t count) {
     read_raw(data_, count);
 }
@@ -77,6 +81,10 @@ void Parcel::write_int32(int32_t value) {
 }
 
 void Parcel::write_int64(int64_t value) {
+    write(value);
+}
+
+void Parcel::write_double(double value) {
     write(value);
 }
 

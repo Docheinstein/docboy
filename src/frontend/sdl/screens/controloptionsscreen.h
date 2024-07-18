@@ -3,7 +3,7 @@
 
 #include <optional>
 
-#include "components/menu.h"
+#include "components/menu/menu.h"
 #include "screens/menuscreen.h"
 #include "screens/screen.h"
 

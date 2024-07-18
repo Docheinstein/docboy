@@ -467,6 +467,8 @@ namespace Cartridge {
 namespace Timers {
     constexpr uint8_t TAC_DIV_BITS_SELECTOR[] {9, 3, 5, 7};
 }
+
+constexpr double FPS = (double)Frequencies::CLOCK / Ppu::DOTS_PER_FRAME;
 } // namespace Specs
 
 #endif // SPECS_H

@@ -22,6 +22,8 @@ public:
     int32_t read_int32();
     int64_t read_int64();
 
+    double read_double();
+
     void read_bytes(void* data, uint32_t count);
 
     void write_bool(bool value);
@@ -35,6 +37,8 @@ public:
     void write_int16(int16_t value);
     void write_int32(int32_t value);
     void write_int64(int64_t value);
+
+    void write_double(double value);
 
     void write_bytes(const void* data, uint32_t count);
 

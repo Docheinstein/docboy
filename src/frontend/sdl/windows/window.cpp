@@ -24,7 +24,7 @@ Window::Window(int x, int y, uint32_t scaling) :
         FATAL("SDL_CreateWindow error: " + SDL_GetError());
     }
 
-    renderer = SDL_CreateRenderer(window, nullptr, 0);
+    renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
         FATAL("SDL_CreateRenderer error: " + SDL_GetError());
     }
