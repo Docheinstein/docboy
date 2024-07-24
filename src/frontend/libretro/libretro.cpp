@@ -4,6 +4,8 @@
 #include <cstring>
 
 namespace {
+constexpr uint32_t AUDIO_SAMPLE_RATE = 32768;
+
 retro_log_printf_t retro_log;
 
 retro_environment_t environ_cb;
@@ -38,6 +40,7 @@ void audio_sample_cb(const Apu::AudioSample sample) {
 } // namespace
 
 void retro_init(void) {
+    core.set_audio_sample_rate(AUDIO_SAMPLE_RATE);
     core.set_audio_sample_callback(audio_sample_cb);
 }
 
@@ -66,7 +69,7 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
     info->geometry.max_height = Specs::Display::HEIGHT;
     info->geometry.aspect_ratio = 0.0f;
     info->timing.fps = Specs::FPS;
-    info->timing.sample_rate = 32786;
+    info->timing.sample_rate = AUDIO_SAMPLE_RATE;
 }
 
 void retro_set_environment(retro_environment_t cb) {
