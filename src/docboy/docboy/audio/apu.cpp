@@ -287,7 +287,7 @@ void Apu::tick_t0() {
         if (mod<2>(div_apu) == 0) {
             // Increase length timer
             if (nr52.ch1 && nr14.length_enable) {
-                if (++ch1.length_timer == nr11.initial_length_timer) {
+                if (++ch1.length_timer >= 64) {
                     // Length timer expired: turn off the channel
                     nr52.ch1 = false;
                 }
@@ -295,7 +295,7 @@ void Apu::tick_t0() {
 
             // Increase length timer
             if (nr52.ch2 && nr24.length_enable) {
-                if (++ch2.length_timer == nr21.initial_length_timer) {
+                if (++ch2.length_timer >= 64) {
                     // Length timer expired: turn off the channel
                     nr52.ch2 = false;
                 }
@@ -303,7 +303,7 @@ void Apu::tick_t0() {
 
             // Increase length timer
             if (nr52.ch3 && nr34.length_enable) {
-                if (++ch3.length_timer == nr31.initial_length_timer) {
+                if (++ch3.length_timer >= 64) {
                     // Length timer expired: turn off the channel
                     nr52.ch3 = false;
                 }
@@ -311,7 +311,7 @@ void Apu::tick_t0() {
 
             // Increase length timer
             if (nr52.ch4 && nr44.length_enable) {
-                if (++ch4.length_timer == nr41.initial_length_timer) {
+                if (++ch4.length_timer >= 64) {
                     // Length timer expired: turn off the channel
                     nr52.ch4 = false;
                 }
@@ -666,7 +666,7 @@ void Apu::write_nr14(uint8_t value) {
         nr52.ch1 = true;
 
         // TODO: where are these reset here?
-        ch1.length_timer = 0;
+        ch1.length_timer = nr11.initial_length_timer;
         ch1.period_timer = nr14.period_high << 8 | nr13.period_low;
         ch1.envelope_counter = 0;
         ch1.volume = nr12.initial_volume;
@@ -720,7 +720,7 @@ void Apu::write_nr24(uint8_t value) {
         nr52.ch2 = true;
 
         // TODO: where are these reset here?
-        ch2.length_timer = 0;
+        ch2.length_timer = nr21.initial_length_timer;
         ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
         ch2.envelope_counter = 0;
         ch2.volume = nr22.initial_volume;
@@ -765,7 +765,7 @@ void Apu::write_nr34(uint8_t value) {
         // Any write with Trigger bit set and DAC enabled turns on the channel
         nr52.ch3 = true;
 
-        ch3.length_timer = 0;
+        ch3.length_timer = nr31.initial_length_timer;
         ch3.wave_position = 1;
     }
 }
@@ -822,7 +822,7 @@ void Apu::write_nr44(uint8_t value) {
         nr52.ch4 = true;
 
         // TODO: where are these reset here?
-        ch4.length_timer = 0;
+        ch4.length_timer = nr41.initial_length_timer;
         ch4.envelope_counter = 0;
         ch4.volume = nr42.initial_volume;
         ch4.envelope_direction = nr42.envelope_direction;
