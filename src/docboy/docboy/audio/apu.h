@@ -52,6 +52,9 @@ public:
     uint8_t read_nr12() const;
     void write_nr12(uint8_t value);
 
+    uint8_t read_nr13() const;
+    void write_nr13(uint8_t value);
+
     uint8_t read_nr14() const;
     void write_nr14(uint8_t value);
 
@@ -61,14 +64,23 @@ public:
     uint8_t read_nr22() const;
     void write_nr22(uint8_t value);
 
+    uint8_t read_nr23() const;
+    void write_nr23(uint8_t value);
+
     uint8_t read_nr24() const;
     void write_nr24(uint8_t value);
 
     uint8_t read_nr30() const;
     void write_nr30(uint8_t value);
 
+    uint8_t read_nr31() const;
+    void write_nr31(uint8_t value);
+
     uint8_t read_nr32() const;
     void write_nr32(uint8_t value);
+
+    uint8_t read_nr33() const;
+    void write_nr33(uint8_t value);
 
     uint8_t read_nr34() const;
     void write_nr34(uint8_t value);

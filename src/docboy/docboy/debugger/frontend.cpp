@@ -2249,9 +2249,20 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << yellow("On") << "           :  " << +gb.apu.nr52.enable << endl;
 
+        b << subheader("channel 1", width) << endl;
+        b << yellow("DAC") << "      :  " << +gb.apu.ch1.dac << endl;
+        b << yellow("Enabled") << "  :  " << +gb.apu.nr52.ch1 << endl;
+
         b << subheader("channel 2", width) << endl;
-        b << yellow("Enabled") << "      :  " << +gb.apu.ch2.dac << endl;
-        b << yellow("DAC") << "          :  " << +gb.apu.nr52.ch2 << endl;
+        b << yellow("DAC") << "      :  " << +gb.apu.ch2.dac << endl;
+        b << yellow("Enabled") << "  :  " << +gb.apu.nr52.ch2 << endl;
+
+        b << subheader("channel 3", width) << endl;
+        b << yellow("Enabled") << "  :  " << +gb.apu.nr52.ch3 << endl;
+
+        b << subheader("channel 4", width) << endl;
+        b << yellow("DAC") << "      :  " << +gb.apu.ch4.dac << endl;
+        b << yellow("Enabled") << "  :  " << +gb.apu.nr52.ch4 << endl;
 
         return b;
     };

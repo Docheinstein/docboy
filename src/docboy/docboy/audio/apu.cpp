@@ -622,8 +622,7 @@ void Apu::write_nr10(uint8_t value) {
 }
 
 uint8_t Apu::read_nr11() const {
-    return nr11.duty_cycle << Specs::Bits::Audio::NR11::DUTY_CYCLE |
-           nr11.initial_length_timer << Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER;
+    return 0b00111111 | nr11.duty_cycle << Specs::Bits::Audio::NR11::DUTY_CYCLE;
 }
 
 void Apu::write_nr11(uint8_t value) {
@@ -649,10 +648,16 @@ void Apu::write_nr12(uint8_t value) {
     }
 }
 
+uint8_t Apu::read_nr13() const {
+    return 0xFF;
+}
+
+void Apu::write_nr13(uint8_t value) {
+    nr13.period_low = value;
+}
+
 uint8_t Apu::read_nr14() const {
-    return 0b00111000 | nr14.trigger << Specs::Bits::Audio::NR14::TRIGGER |
-           nr14.length_enable << Specs::Bits::Audio::NR14::LENGTH_ENABLE |
-           nr14.period_high << Specs::Bits::Audio::NR14::PERIOD;
+    return 0b10111111 | nr14.length_enable << Specs::Bits::Audio::NR14::LENGTH_ENABLE;
 }
 
 void Apu::write_nr14(uint8_t value) {
@@ -676,8 +681,7 @@ void Apu::write_nr14(uint8_t value) {
 }
 
 uint8_t Apu::read_nr21() const {
-    return nr21.duty_cycle << Specs::Bits::Audio::NR21::DUTY_CYCLE |
-           nr21.initial_length_timer << Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER;
+    return 0b00111111 | nr21.duty_cycle << Specs::Bits::Audio::NR21::DUTY_CYCLE;
 }
 
 void Apu::write_nr21(uint8_t value) {
@@ -703,10 +707,16 @@ void Apu::write_nr22(uint8_t value) {
     }
 }
 
+uint8_t Apu::read_nr23() const {
+    return 0xFF;
+}
+
+void Apu::write_nr23(uint8_t value) {
+    nr23.period_low = value;
+}
+
 uint8_t Apu::read_nr24() const {
-    return 0b00111000 | nr24.trigger << Specs::Bits::Audio::NR24::TRIGGER |
-           nr24.length_enable << Specs::Bits::Audio::NR24::LENGTH_ENABLE |
-           nr24.period_high << Specs::Bits::Audio::NR24::PERIOD;
+    return 0b10111111 | nr24.length_enable << Specs::Bits::Audio::NR24::LENGTH_ENABLE;
 }
 
 void Apu::write_nr24(uint8_t value) {
@@ -742,6 +752,14 @@ void Apu::write_nr30(uint8_t value) {
     }
 }
 
+uint8_t Apu::read_nr31() const {
+    return 0xFF;
+}
+
+void Apu::write_nr31(uint8_t value) {
+    nr31.initial_length_timer = value;
+}
+
 uint8_t Apu::read_nr32() const {
     return 0b10011111 | nr32.volume << Specs::Bits::Audio::NR32::VOLUME;
 }
@@ -750,10 +768,16 @@ void Apu::write_nr32(uint8_t value) {
     nr32.volume = get_bits_range<Specs::Bits::Audio::NR32::VOLUME>(value);
 }
 
+uint8_t Apu::read_nr33() const {
+    return 0xFF;
+}
+
+void Apu::write_nr33(uint8_t value) {
+    nr33.period_low = value;
+}
+
 uint8_t Apu::read_nr34() const {
-    return 0b00111000 | nr34.trigger << Specs::Bits::Audio::NR34::TRIGGER |
-           nr34.length_enable << Specs::Bits::Audio::NR34::LENGTH_ENABLE |
-           nr34.period_high << Specs::Bits::Audio::NR34::PERIOD;
+    return 0b10111111 | nr34.length_enable << Specs::Bits::Audio::NR34::LENGTH_ENABLE;
 }
 
 void Apu::write_nr34(uint8_t value) {
@@ -771,7 +795,7 @@ void Apu::write_nr34(uint8_t value) {
 }
 
 uint8_t Apu::read_nr41() const {
-    return 0b11000000 | nr41.initial_length_timer << Specs::Bits::Audio::NR41::INITIAL_LENGTH_TIMER;
+    return 0xFF;
 }
 
 void Apu::write_nr41(uint8_t value) {
@@ -809,8 +833,7 @@ void Apu::write_nr43(uint8_t value) {
 }
 
 uint8_t Apu::read_nr44() const {
-    return 0b00111111 | nr44.trigger << Specs::Bits::Audio::NR44::TRIGGER |
-           nr44.length_enable << Specs::Bits::Audio::NR44::LENGTH_ENABLE;
+    return 0b10111111 | nr44.length_enable << Specs::Bits::Audio::NR44::LENGTH_ENABLE;
 }
 
 void Apu::write_nr44(uint8_t value) {
