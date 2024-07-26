@@ -483,10 +483,13 @@ void Apu::tick_sampler() {
 }
 
 void Apu::turn_on() {
-    reset();
 }
 
 void Apu::turn_off() {
+    nr52.ch4 = false;
+    nr52.ch3 = false;
+    nr52.ch2 = false;
+    nr52.ch1 = false;
 }
 
 void Apu::save_state(Parcel& parcel) const {
