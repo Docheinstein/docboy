@@ -668,6 +668,10 @@ uint8_t Apu::read_nr10() const {
 }
 
 void Apu::write_nr10(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr10.pace = get_bits_range<Specs::Bits::Audio::NR10::PACE>(value);
     nr10.direction = test_bit<Specs::Bits::Audio::NR10::DIRECTION>(value);
     nr10.step = get_bits_range<Specs::Bits::Audio::NR10::STEP>(value);
@@ -678,6 +682,10 @@ uint8_t Apu::read_nr11() const {
 }
 
 void Apu::write_nr11(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr11.duty_cycle = get_bits_range<Specs::Bits::Audio::NR11::DUTY_CYCLE>(value);
     nr11.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER>(value);
 }
@@ -689,6 +697,10 @@ uint8_t Apu::read_nr12() const {
 }
 
 void Apu::write_nr12(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr12.initial_volume = get_bits_range<Specs::Bits::Audio::NR12::INITIAL_VOLUME>(value);
     nr12.envelope_direction = test_bit<Specs::Bits::Audio::NR12::ENVELOPE_DIRECTION>(value);
     nr12.sweep_pace = get_bits_range<Specs::Bits::Audio::NR12::SWEEP_PACE>(value);
@@ -705,6 +717,10 @@ uint8_t Apu::read_nr13() const {
 }
 
 void Apu::write_nr13(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr13.period_low = value;
 }
 
@@ -713,6 +729,10 @@ uint8_t Apu::read_nr14() const {
 }
 
 void Apu::write_nr14(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr14.trigger = test_bit<Specs::Bits::Audio::NR14::TRIGGER>(value);
     nr14.length_enable = test_bit<Specs::Bits::Audio::NR14::LENGTH_ENABLE>(value);
     nr14.period_high = get_bits_range<Specs::Bits::Audio::NR14::PERIOD>(value);
@@ -737,6 +757,10 @@ uint8_t Apu::read_nr21() const {
 }
 
 void Apu::write_nr21(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr21.duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
     nr21.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
 }
@@ -748,6 +772,10 @@ uint8_t Apu::read_nr22() const {
 }
 
 void Apu::write_nr22(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr22.initial_volume = get_bits_range<Specs::Bits::Audio::NR22::INITIAL_VOLUME>(value);
     nr22.envelope_direction = test_bit<Specs::Bits::Audio::NR22::ENVELOPE_DIRECTION>(value);
     nr22.sweep_pace = get_bits_range<Specs::Bits::Audio::NR22::SWEEP_PACE>(value);
@@ -764,6 +792,10 @@ uint8_t Apu::read_nr23() const {
 }
 
 void Apu::write_nr23(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr23.period_low = value;
 }
 
@@ -772,6 +804,10 @@ uint8_t Apu::read_nr24() const {
 }
 
 void Apu::write_nr24(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr24.trigger = test_bit<Specs::Bits::Audio::NR24::TRIGGER>(value);
     nr24.length_enable = test_bit<Specs::Bits::Audio::NR24::LENGTH_ENABLE>(value);
     nr24.period_high = get_bits_range<Specs::Bits::Audio::NR24::PERIOD>(value);
@@ -796,6 +832,10 @@ uint8_t Apu::read_nr30() const {
 }
 
 void Apu::write_nr30(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr30.dac = test_bit<Specs::Bits::Audio::NR30::DAC>(value);
 
     if (!nr30.dac) {
@@ -809,6 +849,10 @@ uint8_t Apu::read_nr31() const {
 }
 
 void Apu::write_nr31(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr31.initial_length_timer = value;
 }
 
@@ -817,6 +861,10 @@ uint8_t Apu::read_nr32() const {
 }
 
 void Apu::write_nr32(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr32.volume = get_bits_range<Specs::Bits::Audio::NR32::VOLUME>(value);
 }
 
@@ -825,6 +873,10 @@ uint8_t Apu::read_nr33() const {
 }
 
 void Apu::write_nr33(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr33.period_low = value;
 }
 
@@ -833,6 +885,10 @@ uint8_t Apu::read_nr34() const {
 }
 
 void Apu::write_nr34(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr34.trigger = test_bit<Specs::Bits::Audio::NR34::TRIGGER>(value);
     nr34.length_enable = test_bit<Specs::Bits::Audio::NR34::LENGTH_ENABLE>(value);
     nr34.period_high = get_bits_range<Specs::Bits::Audio::NR34::PERIOD>(value);
@@ -851,6 +907,10 @@ uint8_t Apu::read_nr41() const {
 }
 
 void Apu::write_nr41(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr41.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR41::INITIAL_LENGTH_TIMER>(value);
 }
 
@@ -861,6 +921,10 @@ uint8_t Apu::read_nr42() const {
 }
 
 void Apu::write_nr42(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr42.initial_volume = get_bits_range<Specs::Bits::Audio::NR42::INITIAL_VOLUME>(value);
     nr42.envelope_direction = test_bit<Specs::Bits::Audio::NR42::ENVELOPE_DIRECTION>(value);
     nr42.sweep_pace = get_bits_range<Specs::Bits::Audio::NR42::SWEEP_PACE>(value);
@@ -879,6 +943,10 @@ uint8_t Apu::read_nr43() const {
 }
 
 void Apu::write_nr43(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr43.clock_shift = get_bits_range<Specs::Bits::Audio::NR43::CLOCK_SHIFT>(value);
     nr43.lfsr_width = test_bit<Specs::Bits::Audio::NR43::LFSR_WIDTH>(value);
     nr43.clock_divider = get_bits_range<Specs::Bits::Audio::NR43::CLOCK_DIVIDER>(value);
@@ -889,6 +957,10 @@ uint8_t Apu::read_nr44() const {
 }
 
 void Apu::write_nr44(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr44.trigger = test_bit<Specs::Bits::Audio::NR44::TRIGGER>(value);
     nr44.length_enable = test_bit<Specs::Bits::Audio::NR44::LENGTH_ENABLE>(value);
 
@@ -914,6 +986,10 @@ uint8_t Apu::read_nr50() const {
 }
 
 void Apu::write_nr50(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr50.vin_left = test_bit<Specs::Bits::Audio::NR50::VIN_LEFT>(value);
     nr50.volume_left = get_bits_range<Specs::Bits::Audio::NR50::VOLUME_LEFT>(value);
     nr50.vin_right = test_bit<Specs::Bits::Audio::NR50::VIN_RIGHT>(value);
@@ -930,6 +1006,10 @@ uint8_t Apu::read_nr51() const {
 }
 
 void Apu::write_nr51(uint8_t value) {
+    if (!nr52.enable) {
+        return;
+    }
+
     nr51.ch4_left = test_bit<Specs::Bits::Audio::NR51::CH4_LEFT>(value);
     nr51.ch3_left = test_bit<Specs::Bits::Audio::NR51::CH3_LEFT>(value);
     nr51.ch2_left = test_bit<Specs::Bits::Audio::NR51::CH2_LEFT>(value);
