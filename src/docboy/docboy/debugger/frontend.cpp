@@ -1928,22 +1928,29 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         return b;
     };
 
+    // PPU
     const auto make_ppu_header = [&](uint32_t width) {
         auto b {make_block(width)};
         b << header("PPU", width) << endl;
         return b;
     };
 
-    // PPU
-    const auto make_ppu_block_1 = [&](uint32_t width) {
+    const auto make_ppu_general_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
 
-        b << subheader("general", width) << endl;
+        // General
+        b << yellow("On") << "                :  " << (gb.ppu.lcdc.enable ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Cycle") << "             :  " << gb.ppu.cycles << endl;
+        b << yellow("Dots") << "              :  " << gb.ppu.dots << endl;
 
-        b << yellow("On") << "               :  " << gb.ppu.lcdc.enable << endl;
-        b << yellow("Cycle") << "            :  " << gb.ppu.cycles << endl;
-        b << yellow("Dots") << "             :  " << gb.ppu.dots << endl;
-        b << yellow("Mode") << "             :  " << [this]() -> Text {
+        return b;
+    };
+
+    const auto make_ppu_general_block_2 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        // General
+        b << yellow("Mode") << "                :  " << [this]() -> Text {
             if (gb.ppu.tick_selector == &Ppu::oam_scan_even || gb.ppu.tick_selector == &Ppu::oam_scan_odd ||
                 gb.ppu.tick_selector == &Ppu::oam_scan_done || gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on)
                 return "Oam Scan";
@@ -1988,8 +1995,14 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             return "Unknown";
         }() << endl;
 
-        b << yellow("Last Stat IRQ") << "    :  " << gb.ppu.last_stat_irq << endl;
-        b << yellow("LYC_EQ_LY En.") << "    :  " << gb.ppu.enable_lyc_eq_ly_irq << endl;
+        b << yellow("Last Stat IRQ") << "       :  " << gb.ppu.last_stat_irq << endl;
+        b << yellow("LYC_EQ_LY En.") << "       :  " << gb.ppu.enable_lyc_eq_ly_irq << endl;
+
+        return b;
+    };
+
+    const auto make_ppu_block_1 = [&](uint32_t width) {
+        auto b {make_block(width)};
 
         // LCD
         const auto pixel_color = [this](uint16_t lcd_color) {
@@ -2008,9 +2021,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         };
 
         b << subheader("lcd", width) << endl;
-        b << yellow("X") << "                :  " << gb.lcd.x << endl;
-        b << yellow("Y") << "                :  " << gb.lcd.y << endl;
-        b << yellow("Last Pixels") << "      :  ";
+        b << yellow("X") << "                 :  " << gb.lcd.x << endl;
+        b << yellow("Y") << "                 :  " << gb.lcd.y << endl;
+        b << yellow("Last Pixels") << "       :  ";
         for (int32_t i = 0; i < 8; i++) {
             int32_t idx = gb.lcd.cursor - 8 + i;
             if (idx >= 0) {
@@ -2026,7 +2039,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         for (uint8_t i = 0; i < gb.ppu.bg_fifo.size(); i++) {
             bg_pixels[i] = gb.ppu.bg_fifo[i].color_index;
         }
-        b << yellow("BG Fifo Pixels") << "   :  " << hex(bg_pixels, gb.ppu.bg_fifo.size()) << endl;
+        b << yellow("BG Fifo Pixels") << "    :  " << hex(bg_pixels, gb.ppu.bg_fifo.size()) << endl;
 
         // OBJ Fifo
         uint8_t obj_pixels[8];
@@ -2044,18 +2057,19 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << subheader("obj fifo", width) << endl;
 
-        b << yellow("OBJ Fifo Pixels") << "  :  " << hex(obj_pixels, gb.ppu.obj_fifo.size()) << endl;
-        b << yellow("OBJ Fifo Number") << "  :  " << hex(obj_numbers, gb.ppu.obj_fifo.size()) << endl;
-        b << yellow("OBJ Fifo Attrs.") << "  :  " << hex(obj_attrs, gb.ppu.obj_fifo.size()) << endl;
-        b << yellow("OBJ Fifo X") << "       :  " << hex(obj_xs, gb.ppu.obj_fifo.size()) << endl;
+        b << yellow("OBJ Fifo Pixels") << "   :  " << hex(obj_pixels, gb.ppu.obj_fifo.size()) << endl;
+        b << yellow("OBJ Fifo Number") << "   :  " << hex(obj_numbers, gb.ppu.obj_fifo.size()) << endl;
+        b << yellow("OBJ Fifo Attrs.") << "   :  " << hex(obj_attrs, gb.ppu.obj_fifo.size()) << endl;
+        b << yellow("OBJ Fifo X") << "        :  " << hex(obj_xs, gb.ppu.obj_fifo.size()) << endl;
 
         // Window
         b << subheader("window", width) << endl;
-        b << yellow("Active for frame") << " :  " << gb.ppu.w.active_for_frame << endl;
-        b << yellow("WLY") << "              :  " << (gb.ppu.w.wly != UINT8_MAX ? gb.ppu.w.wly : darkgray("None"))
+        b << yellow("Active for frame") << "  :  " << (gb.ppu.w.active_for_frame ? green("ON") : darkgray("OFF"))
           << endl;
-        b << yellow("Active") << "           :  " << gb.ppu.w.active << endl;
-        b << yellow("WX Triggers") << "      :  ";
+        b << yellow("WLY") << "               :  " << (gb.ppu.w.wly != UINT8_MAX ? gb.ppu.w.wly : darkgray("None"))
+          << endl;
+        b << yellow("Active") << "            :  " << (gb.ppu.w.active ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("WX Triggers") << "       :  ";
         for (uint8_t i = 0; i < gb.ppu.w.line_triggers.size(); i++) {
             b << Text {gb.ppu.w.line_triggers[i]};
             if (i < gb.ppu.w.line_triggers.size() - 1) {
@@ -2064,68 +2078,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         }
         b << endl;
 
-        // OAM Registers
-        b << subheader("oam registers", width) << endl;
-        b << yellow("OAM A") << "            :  " << hex(gb.ppu.registers.oam.a) << endl;
-        b << yellow("OAM B") << "            :  " << hex(gb.ppu.registers.oam.b) << endl;
-
-        // OAM Scanline entries
-        const auto& oam_entries = gb.ppu.scanline_oam_entries;
-        b << subheader("oam scanline entries", width) << endl;
-
-        const auto oam_entries_info = [](const auto& v, uint8_t (*fn)(const Ppu::OamScanEntry&)) {
-            Text t {};
-            for (uint8_t i = 0; i < v.size(); i++) {
-                t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
-            }
-            return t;
-        };
-
-        b << yellow("OAM Number") << "       :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.number;
-        }) << endl;
-        b << yellow("OAM X") << "            :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.x;
-        }) << endl;
-        b << yellow("OAM Y") << "            :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.y;
-        }) << endl;
-
-        if (gb.ppu.lx < array_size(gb.ppu.oam_entries)) {
-            const auto& oam_entries_hit = gb.ppu.oam_entries[gb.ppu.lx];
-            // OAM Hit
-            b << subheader("oam hit", width) << endl;
-
-            b << yellow("OAM Number") << "       :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.number;
-                                  })
-              << endl;
-            b << yellow("OAM X") << "            :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.x;
-                                  })
-              << endl;
-            b << yellow("OAM Y") << "            :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.y;
-                                  })
-              << endl;
-        }
-
-        return b;
-    };
-
-    const auto make_ppu_block_2 = [&](uint32_t width) {
-        auto b {make_block(width)};
-
         // Pixel Transfer
         b << subheader("pixel transfer", width) << endl;
 
-        b << yellow("Fetcher Mode") << "        :  " <<
+        b << yellow("Fetcher Mode") << "      :  " <<
             [this]() {
                 if (gb.ppu.fetcher_tick_selector == &Ppu::bgwin_prefetcher_get_tile_0) {
                     return "BG/WIN Tile0";
@@ -2194,11 +2150,69 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             }()
           << endl;
 
-        b << yellow("LX") << "                  :  " << gb.ppu.lx << endl;
-        b << yellow("SCX % 8 Initial") << "     :  " << gb.ppu.pixel_transfer.initial_scx.to_discard << endl;
-        b << yellow("SCX % 8 Discard") << "     :  " << gb.ppu.pixel_transfer.initial_scx.discarded << "/"
+        b << yellow("LX") << "                :  " << gb.ppu.lx << endl;
+        b << yellow("SCX % 8 Initial") << "   :  " << gb.ppu.pixel_transfer.initial_scx.to_discard << endl;
+        b << yellow("SCX % 8 Discard") << "   :  " << gb.ppu.pixel_transfer.initial_scx.discarded << "/"
           << gb.ppu.pixel_transfer.initial_scx.to_discard << endl;
-        b << yellow("LX 0->8 Discard") << "     :  " << (gb.ppu.lx < 8 ? (Text(gb.ppu.lx) + "/8") : "8/8") << endl;
+        b << yellow("LX 0->8 Discard") << "   :  " << (gb.ppu.lx < 8 ? (Text(gb.ppu.lx) + "/8") : "8/8") << endl;
+
+        return b;
+    };
+
+    const auto make_ppu_block_2 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        // OAM Registers
+        b << subheader("oam registers", width) << endl;
+        b << yellow("OAM A") << "               :  " << hex(gb.ppu.registers.oam.a) << endl;
+        b << yellow("OAM B") << "               :  " << hex(gb.ppu.registers.oam.b) << endl;
+
+        // OAM Scanline entries
+        const auto& oam_entries = gb.ppu.scanline_oam_entries;
+        b << subheader("oam scanline entries", width) << endl;
+
+        const auto oam_entries_info = [](const auto& v, uint8_t (*fn)(const Ppu::OamScanEntry&)) {
+            Text t {};
+            for (uint8_t i = 0; i < v.size(); i++) {
+                t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
+            }
+            return t;
+        };
+
+        b << yellow("OAM Number") << "          :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
+            return e.number;
+        }) << endl;
+        b << yellow("OAM X") << "               :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
+            return e.x;
+        }) << endl;
+        b << yellow("OAM Y") << "               :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
+            return e.y;
+        }) << endl;
+
+        if (gb.ppu.lx < array_size(gb.ppu.oam_entries)) {
+            const auto& oam_entries_hit = gb.ppu.oam_entries[gb.ppu.lx];
+            // OAM Hit
+            b << subheader("oam hit", width) << endl;
+
+            b << yellow("OAM Number") << "          :  "
+              << oam_entries_info(oam_entries_hit,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.number;
+                                  })
+              << endl;
+            b << yellow("OAM X") << "               :  "
+              << oam_entries_info(oam_entries_hit,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.x;
+                                  })
+              << endl;
+            b << yellow("OAM Y") << "               :  "
+              << oam_entries_info(oam_entries_hit,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.y;
+                                  })
+              << endl;
+        }
 
         // BG/WIN Prefetcher
         b << subheader("bg/win prefetcher", width) << endl;
@@ -2242,27 +2256,85 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
 #ifdef ENABLE_AUDIO
     // APU
-    const auto make_apu_block = [&](uint32_t width) {
+    const auto make_apu_header = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << header("APU", width) << endl;
+        return b;
+    };
+
+    const auto make_apu_general_block_1 = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << yellow("On") << "             :  " << (gb.apu.nr52.enable ? green("ON") : darkgray("OFF")) << endl;
+        return b;
+    };
+
+    const auto make_apu_general_block_2 = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << yellow("DIV") << "            :  " << (gb.apu.div_apu % 8) << endl;
+        return b;
+    };
+
+    const auto make_apu_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
 
-        b << header("APU", width) << endl;
-
-        b << yellow("On") << "           :  " << +gb.apu.nr52.enable << endl;
-
         b << subheader("channel 1", width) << endl;
-        b << yellow("DAC") << "      :  " << +gb.apu.ch1.dac << endl;
-        b << yellow("Enabled") << "  :  " << +gb.apu.nr52.ch1 << endl;
+        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "            :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
+        b << yellow("Period Timer") << "   :  " << +gb.apu.ch1.period_timer << endl;
+        b << yellow("Env. Timer") << "     :  " << +gb.apu.ch1.envelope_counter << endl;
+        b << yellow("Env. Dir.") << "      :  " << +gb.apu.ch1.envelope_direction << endl;
+        b << yellow("Volume") << "         :  " << +gb.apu.ch1.volume << endl;
+        b << yellow("Sweep Pace") << "     :  " << +gb.apu.ch1.sweep_pace << endl;
+        b << yellow("Sweep Counter") << "  :  " << +gb.apu.ch1.sweep_counter << endl;
+        b << yellow("Wave Position") << "  :  " << +gb.apu.ch1.square_wave_position << endl;
+
+        return b;
+    };
+
+    const auto make_apu_block_2 = [&](uint32_t width) {
+        auto b {make_block(width)};
 
         b << subheader("channel 2", width) << endl;
-        b << yellow("DAC") << "      :  " << +gb.apu.ch2.dac << endl;
-        b << yellow("Enabled") << "  :  " << +gb.apu.nr52.ch2 << endl;
+        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch2 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "            :  " << (gb.apu.ch2.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Length Timer") << "   :  " << +gb.apu.ch2.length_timer << endl;
+        b << yellow("Period Timer") << "   :  " << +gb.apu.ch2.period_timer << endl;
+        b << yellow("Env Timer") << "      :  " << +gb.apu.ch2.envelope_counter << endl;
+        b << yellow("Env Dir.") << "       :  " << +gb.apu.ch2.envelope_direction << endl;
+        b << yellow("Volume") << "         :  " << +gb.apu.ch2.volume << endl;
+        b << yellow("Sweep Pace") << "     :  " << +gb.apu.ch2.sweep_pace << endl;
+        b << yellow("Wave Position") << "  :  " << +gb.apu.ch2.square_wave_position << endl;
+
+        return b;
+    };
+
+    const auto make_apu_block_3 = [&](uint32_t width) {
+        auto b {make_block(width)};
 
         b << subheader("channel 3", width) << endl;
-        b << yellow("Enabled") << "  :  " << +gb.apu.nr52.ch3 << endl;
+        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "            :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Length Timer") << "   :  " << +gb.apu.ch3.length_timer << endl;
+        b << yellow("Period Timer") << "   :  " << +gb.apu.ch3.period_timer << endl;
+        b << yellow("Wave Position") << "  :  " << +gb.apu.ch3.wave_position << endl;
+
+        return b;
+    };
+
+    const auto make_apu_block_4 = [&](uint32_t width) {
+        auto b {make_block(width)};
 
         b << subheader("channel 4", width) << endl;
-        b << yellow("DAC") << "      :  " << +gb.apu.ch4.dac << endl;
-        b << yellow("Enabled") << "  :  " << +gb.apu.nr52.ch4 << endl;
+        b << yellow("Enabled") << "       :  " << (gb.apu.nr52.ch4 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "           :  " << (gb.apu.ch4.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Length Timer") << "  :  " << +gb.apu.ch4.length_timer << endl;
+        b << yellow("Period Timer") << "  :  " << +gb.apu.ch4.period_timer << endl;
+        b << yellow("Env. Timer") << "    :  " << +gb.apu.ch4.envelope_counter << endl;
+        b << yellow("Env. Dir.") << "     :  " << +gb.apu.ch4.envelope_direction << endl;
+        b << yellow("Volume") << "        :  " << +gb.apu.ch4.volume << endl;
+        b << yellow("Sweep Pace") << "    :  " << +gb.apu.ch4.sweep_pace << endl;
+        b << yellow("LFSR") << "          :  " << +gb.apu.ch4.lfsr << endl;
 
         return b;
     };
@@ -2703,7 +2775,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         return b;
     };
 
-    static constexpr uint32_t COLUMN_1_WIDTH = 48;
+    static constexpr uint32_t COLUMN_1_WIDTH = 40;
     auto c1 {make_vertical_layout()};
     c1->add_node(make_gameboy_block(COLUMN_1_WIDTH));
     c1->add_node(make_space_divider());
@@ -2719,19 +2791,56 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     c2->add_node(make_space_divider());
     c2->add_node(make_dma_block(COLUMN_2_WIDTH));
 
-    static constexpr uint32_t COLUMN_3_PART_1_WIDTH = 52;
-    static constexpr uint32_t COLUMN_3_PART_2_WIDTH = 40;
-    static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_PART_1_WIDTH + COLUMN_3_PART_2_WIDTH + 1;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_PART_1_WIDTH = 45;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_PART_2_WIDTH = 52;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_WIDTH =
+        COLUMN_3_ROW_1_2_PART_1_WIDTH + COLUMN_3_ROW_1_2_PART_2_WIDTH + 1;
+
+    auto c3r1 {make_horizontal_layout()};
+    c3r1->add_node(make_ppu_general_block_1(COLUMN_3_ROW_1_2_PART_1_WIDTH));
+    c3r1->add_node(make_space_divider());
+    c3r1->add_node(make_ppu_general_block_2(COLUMN_3_ROW_1_2_PART_2_WIDTH));
 
     auto c3r2 {make_horizontal_layout()};
-    c3r2->add_node(make_ppu_block_1(COLUMN_3_PART_1_WIDTH));
+    c3r2->add_node(make_ppu_block_1(COLUMN_3_ROW_1_2_PART_1_WIDTH));
     c3r2->add_node(make_space_divider());
-    c3r2->add_node(make_ppu_block_2(COLUMN_3_PART_2_WIDTH));
+    c3r2->add_node(make_ppu_block_2(COLUMN_3_ROW_1_2_PART_2_WIDTH));
+
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_1_WIDTH = 24;
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_2_WIDTH = 24;
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_3_WIDTH = 24;
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_4_WIDTH = 23;
+
+    static constexpr uint32_t COLUMN_3_ROW_3_4_WIDTH = COLUMN_3_ROW_3_4_PART_1_WIDTH + COLUMN_3_ROW_3_4_PART_2_WIDTH +
+                                                       COLUMN_3_ROW_3_4_PART_3_WIDTH + COLUMN_3_ROW_3_4_PART_4_WIDTH +
+                                                       3;
+
+    static_assert(COLUMN_3_ROW_1_2_WIDTH == COLUMN_3_ROW_3_4_WIDTH);
+
+    static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_ROW_1_2_WIDTH;
+
+    auto c3r3 {make_horizontal_layout()};
+    c3r3->add_node(make_apu_general_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));
+    c3r3->add_node(make_space_divider());
+    c3r3->add_node(make_apu_general_block_2(COLUMN_3_ROW_3_4_PART_2_WIDTH));
+
+    auto c3r4 {make_horizontal_layout()};
+    c3r4->add_node(make_apu_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));
+    c3r4->add_node(make_space_divider());
+    c3r4->add_node(make_apu_block_2(COLUMN_3_ROW_3_4_PART_2_WIDTH));
+    c3r4->add_node(make_space_divider());
+    c3r4->add_node(make_apu_block_3(COLUMN_3_ROW_3_4_PART_3_WIDTH));
+    c3r4->add_node(make_space_divider());
+    c3r4->add_node(make_apu_block_4(COLUMN_3_ROW_3_4_PART_4_WIDTH));
 
     auto c3 {make_vertical_layout()};
     c3->add_node(make_ppu_header(COLUMN_3_WIDTH));
+    c3->add_node(std::move(c3r1));
     c3->add_node(std::move(c3r2));
-    c3->add_node(make_apu_block(COLUMN_3_WIDTH));
+    c3->add_node(make_space_divider());
+    c3->add_node(make_apu_header(COLUMN_3_WIDTH));
+    c3->add_node(std::move(c3r3));
+    c3->add_node(std::move(c3r4));
 
     static constexpr uint32_t COLUMN_4_WIDTH = 66;
     auto c4 {make_vertical_layout()};
@@ -2753,7 +2862,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     static constexpr uint32_t BREAKPOINTS_WIDTH = 50;
     static constexpr uint32_t WATCHPOINTS_WIDTH = 30;
     static constexpr uint32_t DISPLAY_WIDTH =
-        FULL_WIDTH - CODE_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH;
+        FULL_WIDTH - CODE_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH - 4;
 
     auto r2 {make_horizontal_layout()};
     r2->add_node(make_code_block(CODE_WIDTH));
