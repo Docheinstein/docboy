@@ -286,34 +286,38 @@ void Apu::tick_t0() {
 
         if (mod<2>(div_apu) == 0) {
             // Increase length timer
-            if (nr52.ch1 && nr14.length_enable) {
-                if (++ch1.length_timer >= 64) {
+            if (nr14.length_enable) {
+                if (ch1.length_timer-- == 0) {
                     // Length timer expired: turn off the channel
                     nr52.ch1 = false;
+                    ch1.length_timer = 0x3F;
                 }
             }
 
             // Increase length timer
-            if (nr52.ch2 && nr24.length_enable) {
-                if (++ch2.length_timer >= 64) {
+            if (nr24.length_enable) {
+                if (ch2.length_timer-- == 0) {
                     // Length timer expired: turn off the channel
                     nr52.ch2 = false;
+                    ch2.length_timer = 0x3F;
                 }
             }
 
             // Increase length timer
-            if (nr52.ch3 && nr34.length_enable) {
-                if (++ch3.length_timer >= 64) {
+            if (nr34.length_enable) {
+                if (ch3.length_timer-- == 0) {
                     // Length timer expired: turn off the channel
                     nr52.ch3 = false;
+                    ch3.length_timer = 0xFF;
                 }
             }
 
             // Increase length timer
-            if (nr52.ch4 && nr44.length_enable) {
-                if (++ch4.length_timer >= 64) {
+            if (nr44.length_enable) {
+                if (ch4.length_timer-- == 0) {
                     // Length timer expired: turn off the channel
                     nr52.ch4 = false;
+                    ch4.length_timer = 0x3F;
                 }
             }
 
@@ -688,6 +692,8 @@ void Apu::write_nr11(uint8_t value) {
 
     nr11.duty_cycle = get_bits_range<Specs::Bits::Audio::NR11::DUTY_CYCLE>(value);
     nr11.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER>(value);
+
+    ch1.length_timer = 0x3F - nr11.initial_length_timer;
 }
 
 uint8_t Apu::read_nr12() const {
@@ -740,15 +746,16 @@ void Apu::write_nr14(uint8_t value) {
 
     if (nr14.trigger && ch1.dac) {
         // Any write with Trigger bit set and DAC enabled turns on the channel
-        nr52.ch1 = true;
+        if (!nr52.ch1) {
+            nr52.ch1 = true;
 
-        // TODO: where are these reset here?
-        ch1.length_timer = nr11.initial_length_timer;
-        ch1.period_timer = nr14.period_high << 8 | nr13.period_low;
-        ch1.envelope_counter = 0;
-        ch1.volume = nr12.initial_volume;
-        ch1.envelope_direction = nr12.envelope_direction;
-        ch1.sweep_pace = nr12.sweep_pace;
+            // TODO: where are these reset here?
+            ch1.period_timer = nr14.period_high << 8 | nr13.period_low;
+            ch1.envelope_counter = 0;
+            ch1.volume = nr12.initial_volume;
+            ch1.envelope_direction = nr12.envelope_direction;
+            ch1.sweep_pace = nr12.sweep_pace;
+        }
     }
 }
 
@@ -763,6 +770,8 @@ void Apu::write_nr21(uint8_t value) {
 
     nr21.duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
     nr21.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
+
+    ch2.length_timer = 0x3F - nr21.initial_length_timer;
 }
 
 uint8_t Apu::read_nr22() const {
@@ -818,7 +827,6 @@ void Apu::write_nr24(uint8_t value) {
         nr52.ch2 = true;
 
         // TODO: where are these reset here?
-        ch2.length_timer = nr21.initial_length_timer;
         ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
         ch2.envelope_counter = 0;
         ch2.volume = nr22.initial_volume;
@@ -854,6 +862,8 @@ void Apu::write_nr31(uint8_t value) {
     }
 
     nr31.initial_length_timer = value;
+
+    ch3.length_timer = 0xFF - nr31.initial_length_timer;
 }
 
 uint8_t Apu::read_nr32() const {
@@ -897,7 +907,6 @@ void Apu::write_nr34(uint8_t value) {
         // Any write with Trigger bit set and DAC enabled turns on the channel
         nr52.ch3 = true;
 
-        ch3.length_timer = nr31.initial_length_timer;
         ch3.wave_position = 1;
     }
 }
@@ -912,6 +921,8 @@ void Apu::write_nr41(uint8_t value) {
     }
 
     nr41.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR41::INITIAL_LENGTH_TIMER>(value);
+
+    ch4.length_timer = 0x3F - nr41.initial_length_timer;
 }
 
 uint8_t Apu::read_nr42() const {
@@ -969,7 +980,6 @@ void Apu::write_nr44(uint8_t value) {
         nr52.ch4 = true;
 
         // TODO: where are these reset here?
-        ch4.length_timer = nr41.initial_length_timer;
         ch4.envelope_counter = 0;
         ch4.volume = nr42.initial_volume;
         ch4.envelope_direction = nr42.envelope_direction;

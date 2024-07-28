@@ -278,8 +278,8 @@ private:
         uint16_t lfsr {};
     } ch4 {};
 
-    uint16_t prev_div_bit_4 {};
-    uint16_t div_apu {};
+    bool prev_div_bit_4 {};
+    uint8_t div_apu {};
 };
 
 #endif // APU_H
