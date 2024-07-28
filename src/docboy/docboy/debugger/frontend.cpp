@@ -55,7 +55,8 @@ struct FrontendDeleteCommand {
 };
 
 struct FrontendAutoDisassembleCommand {
-    uint16_t n {};
+    uint16_t past {};
+    uint16_t next {};
 };
 
 struct FrontendExamineCommand {
@@ -279,11 +280,21 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          }
          return cmd;
      }},
-    {std::regex(R"(ad\s*(\d+)?)"), "ad <num>", "Automatically disassemble next <n> instructions (default = 10)",
+    {std::regex(R"(ad\s*(\d+)\s+(\d+))"), "ad <past> <next>",
+     "Automatically disassemble past <past> and next <next> instructions",
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         FrontendAutoDisassembleCommand cmd {};
+         const std::string& past = groups[0];
+         const std::string& next = groups[1];
+         cmd.past = std::stoi(past);
+         cmd.next = std::stoi(next);
+         return cmd;
+     }},
+    {std::regex(R"(ad\s*(\d+)?)"), "ad <num>", "Automatically disassemble next <num> instructions (default = 10)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          FrontendAutoDisassembleCommand cmd {};
          const std::string& n = groups[0];
-         cmd.n = !n.empty() ? std::stoi(n) : 10;
+         cmd.next = !n.empty() ? std::stoi(n) : 10;
          return cmd;
      }},
     {std::regex(R"(x(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "x[x][/<length><format>] <addr>",
@@ -549,7 +560,8 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendDeleteCommand>(c
 template <>
 std::optional<Command>
 DebuggerFrontend::handle_command<FrontendAutoDisassembleCommand>(const FrontendAutoDisassembleCommand& cmd) {
-    auto_disassemble_next_instructions = cmd.n;
+    auto_disassemble_instructions.past = cmd.past;
+    auto_disassemble_instructions.next = cmd.next;
     reprint_ui = true;
     return std::nullopt;
 }
@@ -2280,7 +2292,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 1", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Init, Length") << "   :  " << +gb.apu.nr11.initial_length_timer << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
+        b << yellow("Initial Period") << " :  " << (gb.apu.nr14.period_high << 8 | gb.apu.nr13.period_low) << endl;
         b << yellow("Period Timer") << "   :  " << +gb.apu.ch1.period_timer << endl;
         b << yellow("Env. Timer") << "     :  " << +gb.apu.ch1.envelope_counter << endl;
         b << yellow("Env. Dir.") << "      :  " << +gb.apu.ch1.envelope_direction << endl;
@@ -2298,7 +2312,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 2", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch2 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch2.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Init. Length") << "   :  " << +gb.apu.nr21.initial_length_timer << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch2.length_timer << endl;
+        b << yellow("Initial Period") << " :  " << (gb.apu.nr24.period_high << 8 | gb.apu.nr23.period_low) << endl;
         b << yellow("Period Timer") << "   :  " << +gb.apu.ch2.period_timer << endl;
         b << yellow("Env Timer") << "      :  " << +gb.apu.ch2.envelope_counter << endl;
         b << yellow("Env Dir.") << "       :  " << +gb.apu.ch2.envelope_direction << endl;
@@ -2315,7 +2331,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 3", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Init. Length") << "   :  " << +gb.apu.nr31.initial_length_timer << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch3.length_timer << endl;
+        b << yellow("Initial Period") << " :  " << (gb.apu.nr34.period_high << 8 | gb.apu.nr33.period_low) << endl;
         b << yellow("Period Timer") << "   :  " << +gb.apu.ch3.period_timer << endl;
         b << yellow("Wave Position") << "  :  " << +gb.apu.ch3.wave_position << endl;
 
@@ -2328,6 +2346,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 4", width) << endl;
         b << yellow("Enabled") << "       :  " << (gb.apu.nr52.ch4 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "           :  " << (gb.apu.ch4.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Init. Length") << "  :  " << +gb.apu.nr41.initial_length_timer << endl;
         b << yellow("Length Timer") << "  :  " << +gb.apu.ch4.length_timer << endl;
         b << yellow("Period Timer") << "  :  " << +gb.apu.ch4.period_timer << endl;
         b << yellow("Env. Timer") << "    :  " << +gb.apu.ch4.envelope_counter << endl;
@@ -2574,10 +2593,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
             // Past instructions
             {
-                static constexpr uint8_t CODE_VIEW_PAST_INSTRUCTION_COUNT = 6;
                 uint8_t n = 0;
-                for (int32_t addr = current_instruction.address - 1; addr >= 0 && n < CODE_VIEW_PAST_INSTRUCTION_COUNT;
-                     addr--) {
+                for (int32_t addr = current_instruction.address - 1;
+                     addr >= 0 && n < auto_disassemble_instructions.past; addr--) {
                     auto instr = backend.get_disassembled_instruction(addr);
                     if (instr) {
                         code_view.emplace_front(static_cast<uint16_t>(addr), *instr,
@@ -2594,7 +2612,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             // Next instructions
             {
                 uint32_t addr = current_instruction.address + current_instruction.instruction.size();
-                for (uint16_t n = 0; n < auto_disassemble_next_instructions && addr <= 0xFFFF; n++) {
+                for (uint16_t n = 0; n < auto_disassemble_instructions.next && addr <= 0xFFFF; n++) {
                     const auto known_instr = backend.get_disassembled_instruction(addr);
                     auto instr = backend.disassemble(addr);
                     if (!instr)
