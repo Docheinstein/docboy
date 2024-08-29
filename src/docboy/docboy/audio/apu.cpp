@@ -287,37 +287,41 @@ void Apu::tick_t0() {
         if (mod<2>(div_apu) == 0) {
             // Increase length timer
             if (nr14.length_enable) {
-                if (ch1.length_timer-- == 0) {
-                    // Length timer expired: turn off the channel
-                    nr52.ch1 = false;
-                    ch1.length_timer = 0x3F;
+                if (ch1.length_timer > 0) {
+                    if (--ch1.length_timer == 0) {
+                        // Length timer expired: turn off the channel
+                        nr52.ch1 = false;
+                    }
                 }
             }
 
             // Increase length timer
             if (nr24.length_enable) {
-                if (ch2.length_timer-- == 0) {
-                    // Length timer expired: turn off the channel
-                    nr52.ch2 = false;
-                    ch2.length_timer = 0x3F;
+                if (ch2.length_timer > 0) {
+                    if (--ch2.length_timer == 0) {
+                        // Length timer expired: turn off the channel
+                        nr52.ch2 = false;
+                    }
                 }
             }
 
             // Increase length timer
             if (nr34.length_enable) {
-                if (ch3.length_timer-- == 0) {
-                    // Length timer expired: turn off the channel
-                    nr52.ch3 = false;
-                    ch3.length_timer = 0xFF;
+                if (ch3.length_timer > 0) {
+                    if (--ch3.length_timer == 0) {
+                        // Length timer expired: turn off the channel
+                        nr52.ch3 = false;
+                    }
                 }
             }
 
             // Increase length timer
             if (nr44.length_enable) {
-                if (ch4.length_timer-- == 0) {
-                    // Length timer expired: turn off the channel
-                    nr52.ch4 = false;
-                    ch4.length_timer = 0x3F;
+                if (ch4.length_timer > 0) {
+                    if (--ch4.length_timer == 0) {
+                        // Length timer expired: turn off the channel
+                        nr52.ch4 = false;
+                    }
                 }
             }
 
@@ -693,7 +697,7 @@ void Apu::write_nr11(uint8_t value) {
     nr11.duty_cycle = get_bits_range<Specs::Bits::Audio::NR11::DUTY_CYCLE>(value);
     nr11.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER>(value);
 
-    ch1.length_timer = 0x3F - nr11.initial_length_timer;
+    ch1.length_timer = 64 - nr11.initial_length_timer;
 }
 
 uint8_t Apu::read_nr12() const {
@@ -739,22 +743,49 @@ void Apu::write_nr14(uint8_t value) {
         return;
     }
 
+    bool prev_length_enable = nr14.length_enable;
+
     nr14.trigger = test_bit<Specs::Bits::Audio::NR14::TRIGGER>(value);
     nr14.length_enable = test_bit<Specs::Bits::Audio::NR14::LENGTH_ENABLE>(value);
     nr14.period_high = get_bits_range<Specs::Bits::Audio::NR14::PERIOD>(value);
     ASSERT(nr14.period_high < 8);
 
-    if (nr14.trigger && ch1.dac) {
-        // Any write with Trigger bit set and DAC enabled turns on the channel
-        if (!nr52.ch1) {
-            nr52.ch1 = true;
+    // Length timer clocks if length_enable has a rising edge (disabled -> enabled)
+    // [blargg/03-trigger]
+    if (!prev_length_enable && nr14.length_enable) {
+        if (mod<2>(div_apu) == 0) {
+            if (ch1.length_timer > 0) {
+                if (--ch1.length_timer == 0) {
+                    nr52.ch1 = false;
+                }
+            }
+        }
+    }
 
-            // TODO: where are these reset here?
+    // Writing with the Trigger bit set reloads the channel configuration
+    if (nr14.trigger) {
+        if (!nr52.ch1) {
+            if (ch1.dac) {
+                // If the DAC is on, the channel is turned on as well
+                nr52.ch1 = true;
+            }
+
             ch1.period_timer = nr14.period_high << 8 | nr13.period_low;
             ch1.envelope_counter = 0;
             ch1.volume = nr12.initial_volume;
             ch1.envelope_direction = nr12.envelope_direction;
             ch1.sweep_pace = nr12.sweep_pace;
+
+            // If length timer is 0, it is reloaded with the maximum value (64) as well
+            // [blargg/03-trigger]
+            if (ch1.length_timer == 0) {
+                if (nr14.length_enable && mod<2>(div_apu) == 0) {
+                    // Reload and clocks the length timer all at once
+                    ch1.length_timer = 63;
+                } else {
+                    ch1.length_timer = 64;
+                }
+            }
         }
     }
 }
@@ -771,7 +802,7 @@ void Apu::write_nr21(uint8_t value) {
     nr21.duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
     nr21.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
 
-    ch2.length_timer = 0x3F - nr21.initial_length_timer;
+    ch2.length_timer = 64 - nr21.initial_length_timer;
 }
 
 uint8_t Apu::read_nr22() const {
@@ -817,21 +848,50 @@ void Apu::write_nr24(uint8_t value) {
         return;
     }
 
+    bool prev_length_enable = nr24.length_enable;
+
     nr24.trigger = test_bit<Specs::Bits::Audio::NR24::TRIGGER>(value);
     nr24.length_enable = test_bit<Specs::Bits::Audio::NR24::LENGTH_ENABLE>(value);
     nr24.period_high = get_bits_range<Specs::Bits::Audio::NR24::PERIOD>(value);
     ASSERT(nr24.period_high < 8);
 
-    if (nr24.trigger && ch2.dac) {
-        // Any write with Trigger bit set and DAC enabled turns on the channel
-        nr52.ch2 = true;
+    // Length timer clocks if length_enable has a rising edge (disabled -> enabled)
+    // [blargg/03-trigger]
+    if (!prev_length_enable && nr24.length_enable) {
+        if (mod<2>(div_apu) == 0) {
+            if (ch2.length_timer > 0) {
+                if (--ch2.length_timer == 0) {
+                    nr52.ch2 = false;
+                }
+            }
+        }
+    }
 
-        // TODO: where are these reset here?
-        ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
-        ch2.envelope_counter = 0;
-        ch2.volume = nr22.initial_volume;
-        ch2.envelope_direction = nr22.envelope_direction;
-        ch2.sweep_pace = nr22.sweep_pace;
+    // Writing with the Trigger bit set reloads the channel configuration
+    if (nr24.trigger) {
+        if (!nr52.ch2) {
+            if (ch2.dac) {
+                // If the DAC is on, the channel is turned on as well
+                nr52.ch2 = true;
+            }
+
+            ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
+            ch2.envelope_counter = 0;
+            ch2.volume = nr22.initial_volume;
+            ch2.envelope_direction = nr22.envelope_direction;
+            ch2.sweep_pace = nr22.sweep_pace;
+
+            // If length timer is 0, it is reloaded with the maximum value (64) as well
+            // [blargg/03-trigger]
+            if (ch2.length_timer == 0) {
+                if (nr24.length_enable && mod<2>(div_apu) == 0) {
+                    // Reload and clocks the length timer all at once
+                    ch2.length_timer = 63;
+                } else {
+                    ch2.length_timer = 64;
+                }
+            }
+        }
     }
 }
 
@@ -863,7 +923,7 @@ void Apu::write_nr31(uint8_t value) {
 
     nr31.initial_length_timer = value;
 
-    ch3.length_timer = 0xFF - nr31.initial_length_timer;
+    ch3.length_timer = 256 - nr31.initial_length_timer;
 }
 
 uint8_t Apu::read_nr32() const {
@@ -899,15 +959,46 @@ void Apu::write_nr34(uint8_t value) {
         return;
     }
 
+    bool prev_length_enable = nr34.length_enable;
+
     nr34.trigger = test_bit<Specs::Bits::Audio::NR34::TRIGGER>(value);
     nr34.length_enable = test_bit<Specs::Bits::Audio::NR34::LENGTH_ENABLE>(value);
     nr34.period_high = get_bits_range<Specs::Bits::Audio::NR34::PERIOD>(value);
+    ASSERT(nr34.period_high < 8);
 
-    if (nr34.trigger && nr30.dac) {
-        // Any write with Trigger bit set and DAC enabled turns on the channel
-        nr52.ch3 = true;
+    // Length timer clocks if length_enable has a rising edge (disabled -> enabled)
+    // [blargg/03-trigger]
+    if (!prev_length_enable && nr34.length_enable) {
+        if (mod<2>(div_apu) == 0) {
+            if (ch3.length_timer > 0) {
+                if (--ch3.length_timer == 0) {
+                    nr52.ch3 = false;
+                }
+            }
+        }
+    }
 
-        ch3.wave_position = 1;
+    // Writing with the Trigger bit set reloads the channel configurations
+    if (nr34.trigger) {
+        if (!nr52.ch3) {
+            if (nr30.dac) {
+                // If the DAC is on, the channel is turned on as well
+                nr52.ch3 = true;
+            }
+
+            ch3.wave_position = 1;
+
+            // If length timer is 0, it is reloaded with the maximum value (256) as well
+            // [blargg/03-trigger]
+            if (ch3.length_timer == 0) {
+                if (nr34.length_enable && mod<2>(div_apu) == 0) {
+                    // Reload and clocks the length timer all at once
+                    ch3.length_timer = 255;
+                } else {
+                    ch3.length_timer = 256;
+                }
+            }
+        }
     }
 }
 
@@ -922,7 +1013,7 @@ void Apu::write_nr41(uint8_t value) {
 
     nr41.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR41::INITIAL_LENGTH_TIMER>(value);
 
-    ch4.length_timer = 0x3F - nr41.initial_length_timer;
+    ch4.length_timer = 64 - nr41.initial_length_timer;
 }
 
 uint8_t Apu::read_nr42() const {
@@ -972,19 +1063,48 @@ void Apu::write_nr44(uint8_t value) {
         return;
     }
 
+    bool prev_length_enable = nr44.length_enable;
+
     nr44.trigger = test_bit<Specs::Bits::Audio::NR44::TRIGGER>(value);
     nr44.length_enable = test_bit<Specs::Bits::Audio::NR44::LENGTH_ENABLE>(value);
 
-    if (nr44.trigger && ch4.dac) {
-        // Any write with Trigger bit set and DAC enabled turns on the channel
-        nr52.ch4 = true;
+    // Length timer clocks if length_enable has a rising edge (disabled -> enabled)
+    // [blargg/03-trigger]
+    if (!prev_length_enable && nr44.length_enable) {
+        if (mod<2>(div_apu) == 0) {
+            if (ch4.length_timer > 0) {
+                if (--ch4.length_timer == 0) {
+                    nr52.ch4 = false;
+                }
+            }
+        }
+    }
 
-        // TODO: where are these reset here?
-        ch4.envelope_counter = 0;
-        ch4.volume = nr42.initial_volume;
-        ch4.envelope_direction = nr42.envelope_direction;
-        ch4.sweep_pace = nr42.sweep_pace;
-        ch4.lfsr = 0;
+    // Writing with the Trigger bit set reloads the channel configurations
+    if (nr44.trigger) {
+        if (!nr52.ch4) {
+            if (ch4.dac) {
+                // If the DAC is on, the channel is turned on as well
+                nr52.ch4 = true;
+            }
+
+            ch4.envelope_counter = 0;
+            ch4.volume = nr42.initial_volume;
+            ch4.envelope_direction = nr42.envelope_direction;
+            ch4.sweep_pace = nr42.sweep_pace;
+            ch4.lfsr = 0;
+
+            // If length timer is 0, it is reloaded with the maximum value (64) as well
+            // [blargg/03-trigger]
+            if (ch4.length_timer == 0) {
+                if (nr44.length_enable && mod<2>(div_apu) == 0) {
+                    // Reload and clocks the length timer all at once
+                    ch4.length_timer = 63;
+                } else {
+                    ch4.length_timer = 64;
+                }
+            }
+        }
     }
 }
 

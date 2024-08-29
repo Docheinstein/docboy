@@ -257,7 +257,7 @@ private:
     } ch2 {};
 
     struct {
-        uint8_t length_timer {};
+        uint16_t length_timer {};
         uint16_t period_timer {};
 
         uint8_t wave_position {};
