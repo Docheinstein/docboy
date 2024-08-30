@@ -2292,7 +2292,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 1", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("Init, Length") << "   :  " << +gb.apu.nr11.initial_length_timer << endl;
+        b << yellow("Init. Length") << "   :  " << +gb.apu.nr11.initial_length_timer << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
         b << yellow("Initial Period") << " :  " << (gb.apu.nr14.period_high << 8 | gb.apu.nr13.period_low) << endl;
         b << yellow("Period Timer") << "   :  " << +gb.apu.ch1.period_timer << endl;
