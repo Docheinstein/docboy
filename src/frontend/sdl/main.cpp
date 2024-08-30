@@ -126,8 +126,7 @@ std::optional<T> parse_integer(const std::string& s) {
     return std::clamp(val, static_cast<decltype(val)>(min), static_cast<decltype(val)>(max));
 }
 
-template <uint32_t min_num = std::numeric_limits<double>::min(), uint32_t min_denum = 1,
-          uint32_t max_num = std::numeric_limits<double>::max(), uint32_t max_denum = 1>
+template <uint32_t min_num, uint32_t min_denum, uint32_t max_num, uint32_t max_denum>
 std::optional<double> parse_double(const std::string& s) {
     const char* cstr = s.c_str();
     char* endptr {};
