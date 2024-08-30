@@ -116,12 +116,42 @@ void Apu::reset() {
         wave_ram[i] = 0;
     }
 
-    // Reload frequency timer
-    ch1.period_timer = nr14.period_high << 8 | nr13.period_low;
-    ch1.dac = true;
+    ticks = 0;
 
-    ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
+    ch1.dac = true;
+    ch1.length_timer = 0;
+    ch1.period_timer = nr14.period_high << 8 | nr13.period_low;
+    ch1.envelope_counter = 0;
+    ch1.volume = 0;
+    ch1.envelope_direction = false;
+    ch1.sweep_pace = 0;
+    ch1.sweep_counter = 0;
+    ch1.square_wave_position = 0;
+
     ch2.dac = false;
+    ch2.length_timer = 0;
+    ch2.period_timer = nr24.period_high << 8 | nr23.period_low;
+    ch2.envelope_counter = 0;
+    ch1.volume = 0;
+    ch2.envelope_direction = false;
+    ch2.sweep_pace = 0;
+    ch2.square_wave_position = 0;
+
+    ch3.length_timer = 0;
+    ch3.period_timer = 0;
+    ch3.wave_position = 0;
+
+    ch4.dac = false;
+    ch4.length_timer = 0;
+    ch4.period_timer = 0;
+    ch4.envelope_counter = 0;
+    ch4.volume = 0;
+    ch4.envelope_direction = false;
+    ch4.sweep_pace = 0;
+    ch4.lfsr = 0;
+
+    prev_div_bit_4 = false;
+    div_apu = 0;
 }
 
 Apu::AudioSample Apu::compute_audio_sample() const {
@@ -550,8 +580,6 @@ void Apu::turn_off() {
 }
 
 void Apu::save_state(Parcel& parcel) const {
-    parcel.write_uint64(ticks);
-
     parcel.write_uint8(nr10.pace);
     parcel.write_bool(nr10.direction);
     parcel.write_uint8(nr10.step);
@@ -607,12 +635,43 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(nr52.ch2);
     parcel.write_bool(nr52.ch1);
     wave_ram.save_state(parcel);
+
+    parcel.write_uint64(ticks);
+
+    parcel.write_bool(ch1.dac);
+    parcel.write_uint8(ch1.length_timer);
+    parcel.write_uint16(ch1.period_timer);
+    parcel.write_uint8(ch1.envelope_counter);
+    parcel.write_uint8(ch1.volume);
+    parcel.write_bool(ch1.envelope_direction);
+    parcel.write_uint8(ch1.sweep_pace);
+    parcel.write_uint8(ch1.sweep_counter);
+    parcel.write_uint8(ch1.square_wave_position);
+
+    parcel.write_bool(ch2.dac);
+    parcel.write_uint8(ch2.length_timer);
+    parcel.write_uint16(ch2.period_timer);
+    parcel.write_uint8(ch2.envelope_counter);
+    parcel.write_uint8(ch2.volume);
+    parcel.write_bool(ch2.envelope_direction);
+    parcel.write_uint8(ch2.sweep_pace);
+    parcel.write_uint8(ch2.square_wave_position);
+
+    parcel.write_uint16(ch3.length_timer);
+    parcel.write_uint16(ch3.period_timer);
+    parcel.write_uint8(ch3.wave_position);
+
+    parcel.write_bool(ch4.dac);
+    parcel.write_uint8(ch4.length_timer);
+    parcel.write_uint16(ch4.period_timer);
+    parcel.write_uint8(ch4.envelope_counter);
+    parcel.write_uint8(ch4.volume);
+    parcel.write_bool(ch4.envelope_direction);
+    parcel.write_uint8(ch4.sweep_pace);
+    parcel.write_uint16(ch4.lfsr);
 }
 
 void Apu::load_state(Parcel& parcel) {
-    ticks = parcel.read_uint64();
-    next_tick_sample = static_cast<double>(ticks) + sample_period;
-
     nr10.pace = parcel.read_uint8();
     nr10.direction = parcel.read_bool();
     nr10.step = parcel.read_uint8();
@@ -624,7 +683,7 @@ void Apu::load_state(Parcel& parcel) {
     nr13.period_low = parcel.read_uint8();
     nr14.trigger = parcel.read_bool();
     nr14.length_enable = parcel.read_bool();
-    nr14.trigger = parcel.read_uint8();
+    nr14.period_high = parcel.read_uint8();
     nr21.duty_cycle = parcel.read_uint8();
     nr21.initial_length_timer = parcel.read_uint8();
     nr22.initial_volume = parcel.read_uint8();
@@ -633,7 +692,7 @@ void Apu::load_state(Parcel& parcel) {
     nr23.period_low = parcel.read_uint8();
     nr24.trigger = parcel.read_bool();
     nr24.length_enable = parcel.read_bool();
-    nr24.trigger = parcel.read_uint8();
+    nr24.period_high = parcel.read_uint8();
     nr30.dac = parcel.read_bool();
     nr31.initial_length_timer = parcel.read_uint8();
     nr32.volume = parcel.read_uint8();
@@ -668,6 +727,41 @@ void Apu::load_state(Parcel& parcel) {
     nr52.ch2 = parcel.read_bool();
     nr52.ch1 = parcel.read_bool();
     wave_ram.load_state(parcel);
+
+    ticks = parcel.read_uint64();
+    next_tick_sample = static_cast<double>(ticks) + sample_period;
+
+    ch1.dac = parcel.read_bool();
+    ch1.length_timer = parcel.read_uint8();
+    ch1.period_timer = parcel.read_uint16();
+    ch1.envelope_counter = parcel.read_uint8();
+    ch1.volume = parcel.read_uint8();
+    ch1.envelope_direction = parcel.read_bool();
+    ch1.sweep_pace = parcel.read_uint8();
+    ch1.sweep_counter = parcel.read_uint8();
+    ch1.square_wave_position = parcel.read_uint8();
+
+    ch2.dac = parcel.read_bool();
+    ch2.length_timer = parcel.read_uint8();
+    ch2.period_timer = parcel.read_uint16();
+    ch2.envelope_counter = parcel.read_uint8();
+    ch2.volume = parcel.read_uint8();
+    ch2.envelope_direction = parcel.read_bool();
+    ch2.sweep_pace = parcel.read_uint8();
+    ch2.square_wave_position = parcel.read_uint8();
+
+    ch3.length_timer = parcel.read_uint16();
+    ch3.period_timer = parcel.read_uint16();
+    ch3.wave_position = parcel.read_uint8();
+
+    ch4.dac = parcel.read_bool();
+    ch4.length_timer = parcel.read_uint8();
+    ch4.period_timer = parcel.read_uint16();
+    ch4.envelope_counter = parcel.read_uint8();
+    ch4.volume = parcel.read_uint8();
+    ch4.envelope_direction = parcel.read_bool();
+    ch4.sweep_pace = parcel.read_uint8();
+    ch4.lfsr = parcel.read_uint16();
 }
 
 uint8_t Apu::read_nr10() const {
