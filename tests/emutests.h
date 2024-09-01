@@ -1759,7 +1759,8 @@ TEST_CASE("emulation", "[emulation]") {
     SECTION("joypad") {
         RUN_TEST_ROMS(F {"blargg/dmg_sound/01-registers.gb", "blargg/dmg_sound/01-registers.png"},
                       F {"blargg/dmg_sound/02-len_ctr.gb", "blargg/dmg_sound/02-len_ctr.png"},
-                      F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"}, );
+                      F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"},
+                      F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"}, );
     }
 
     SECTION("integration") {
@@ -1970,7 +1971,8 @@ TEST_CASE("emulation", "[emulation]") {
     SECTION("wip") {
         RUN_TEST_ROMS(F {"blargg/dmg_sound/01-registers.gb", "blargg/dmg_sound/01-registers.png"},
                       F {"blargg/dmg_sound/02-len_ctr.gb", "blargg/dmg_sound/02-len_ctr.png"},
-                      F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"}, );
+                      F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"},
+                      F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"}, );
     }
 
 #endif

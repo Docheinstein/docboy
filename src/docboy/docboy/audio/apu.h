@@ -213,6 +213,8 @@ private:
 
     AudioSample compute_audio_sample() const;
 
+    uint32_t compute_next_period_sweep_period() const;
+
     Timers& timers;
 
     std::function<void(const AudioSample)> audio_sample_callback {};
@@ -226,54 +228,73 @@ private:
 
     struct {
         bool dac {};
-        uint8_t length_timer {};
-        uint16_t period_timer {};
 
-        uint8_t envelope_counter {};
-
-        // TODO: are these loaded from NR12 after a trigger? Not sure.
         uint8_t volume {};
-        bool envelope_direction {};
-        uint8_t sweep_pace {};
 
-        uint8_t sweep_counter {};
+        uint8_t length_timer {};
 
-        uint8_t square_wave_position {};
+        struct {
+            uint8_t position {};
+            uint16_t timer {};
+        } wave;
+
+        struct {
+            bool direction {};
+            uint8_t pace {};
+            uint8_t timer {};
+        } volume_sweep;
+
+        struct {
+            bool enabled {};
+            uint16_t period {};
+            uint8_t timer {};
+        } period_sweep;
     } ch1 {};
 
     struct {
         bool dac {};
-        uint8_t length_timer {};
-        uint16_t period_timer {};
 
-        uint8_t envelope_counter {};
-
-        // TODO: are these loaded from NR22 after a trigger? Not sure.
         uint8_t volume {};
-        bool envelope_direction {};
-        uint8_t sweep_pace {};
 
-        uint8_t square_wave_position {};
+        uint8_t length_timer {};
+
+        struct {
+            uint8_t position {};
+            uint16_t timer {};
+        } wave;
+
+        struct {
+            bool direction {};
+            uint8_t pace {};
+            uint8_t timer {};
+        } volume_sweep;
     } ch2 {};
 
     struct {
         uint16_t length_timer {};
-        uint16_t period_timer {};
 
-        uint8_t wave_position {};
+        struct {
+            uint8_t position {};
+            uint16_t timer {};
+        } wave;
     } ch3 {};
 
     struct {
         bool dac {};
-        uint8_t length_timer {};
-        uint16_t period_timer {};
 
-        uint8_t envelope_counter {};
-
-        // TODO: are these loaded from NR12 after a trigger? Not sure.
         uint8_t volume {};
-        bool envelope_direction {};
-        uint8_t sweep_pace {};
+
+        uint8_t length_timer {};
+
+        struct {
+            uint16_t timer {};
+        } wave;
+
+        struct {
+            bool direction {};
+            uint8_t pace {};
+            uint8_t timer {};
+        } volume_sweep;
 
         uint16_t lfsr {};
     } ch4 {};

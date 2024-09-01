@@ -121,8 +121,8 @@ private:
 
     std::vector<Breakpoint> breakpoints;
     std::vector<Watchpoint> watchpoints;
-    uint8_t watchpoints_at_address[UINT16_MAX + 1];
-    std::optional<DisassembledInstruction> disassembled_instructions[0x10000];
+    uint8_t watchpoints_at_address[UINT16_MAX + 1] {};
+    std::optional<DisassembledInstruction> disassembled_instructions[0x10000] {};
 
     std::optional<WatchpointHit> watchpoint_hit;
 

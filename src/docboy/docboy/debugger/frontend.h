@@ -67,6 +67,8 @@ private:
         uint16_t next {10};
     } auto_disassemble_instructions {};
 
+    std::optional<uint16_t> temporary_breakpoint {};
+
     bool reprint_ui {};
 
     std::function<void()> on_pulling_command_callback {};

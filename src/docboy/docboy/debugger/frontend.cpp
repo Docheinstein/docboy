@@ -121,7 +121,9 @@ struct FrontendFrameBackCommand {
     uint64_t count {};
 };
 
-struct FrontendContinueCommand {};
+struct FrontendContinueCommand {
+    std::optional<uint16_t> address {};
+};
 
 struct FrontendTraceCommand {
     std::optional<uint32_t> level {};
@@ -413,9 +415,18 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          uint64_t n = count.empty() ? 1 : std::stoi(count);
          return FrontendScanlineCommand {n};
      }},
-    {std::regex(R"(c)"), "c", "Continue",
+    {std::regex(R"(c\s*(\w+)?)"), "c [<address>]", "Continue (optionally stop at <address>)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-         return FrontendContinueCommand {};
+         FrontendContinueCommand cmd {};
+         const std::string& addr = groups[0];
+         if (!addr.empty()) {
+             bool ok {true};
+             cmd.address = address_str_to_addr(groups[0], &ok);
+             if (!ok) {
+                 return std::nullopt;
+             }
+         }
+         return cmd;
      }},
     {std::regex(R"(trace\s*(\d+)?)"), "trace [<level>]", "Set the trace level or toggle it (output on stderr)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
@@ -684,6 +695,10 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendScanlineCommand>
 // Continue
 template <>
 std::optional<Command> DebuggerFrontend::handle_command<FrontendContinueCommand>(const FrontendContinueCommand& cmd) {
+    if (cmd.address) {
+        temporary_breakpoint = backend.add_breakpoint(*cmd.address);
+    }
+
     return ContinueCommand();
 }
 
@@ -767,6 +782,12 @@ Command DebuggerFrontend::pull_command(const ExecutionState& state) {
     std::string cmdline;
 
     reprint_ui = true;
+
+    // Eventually remove the temporary breakpoint
+    if (temporary_breakpoint) {
+        backend.remove_point(*temporary_breakpoint);
+        temporary_breakpoint = std::nullopt;
+    }
 
     // Pull command loop
     do {
@@ -1008,6 +1029,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     const auto subheader = [title](const char* c, uint16_t width) {
         return title(cyan(c), width);
+    };
+
+    const auto subheader2 = [title](const char* c, uint16_t width) {
+        return title(lightmagenta(c), width);
     };
 
     const auto hr = [title](uint16_t width) {
@@ -2292,16 +2317,24 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 1", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("Init. Length") << "   :  " << +gb.apu.nr11.initial_length_timer << endl;
-        b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
-        b << yellow("Initial Period") << " :  " << (gb.apu.nr14.period_high << 8 | gb.apu.nr13.period_low) << endl;
-        b << yellow("Period Timer") << "   :  " << +gb.apu.ch1.period_timer << endl;
-        b << yellow("Env. Timer") << "     :  " << +gb.apu.ch1.envelope_counter << endl;
-        b << yellow("Env. Dir.") << "      :  " << +gb.apu.ch1.envelope_direction << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch1.volume << endl;
-        b << yellow("Sweep Pace") << "     :  " << +gb.apu.ch1.sweep_pace << endl;
-        b << yellow("Sweep Counter") << "  :  " << +gb.apu.ch1.sweep_counter << endl;
-        b << yellow("Wave Position") << "  :  " << +gb.apu.ch1.square_wave_position << endl;
+        b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
+
+        b << subheader2("wave", width) << endl;
+
+        b << yellow("Position") << "       :  " << +gb.apu.ch1.wave.position << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch1.wave.timer << endl;
+
+        b << subheader2("volume sweep", width) << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch1.volume_sweep.direction << endl;
+        b << yellow("Pace") << "           :  " << +gb.apu.ch1.volume_sweep.pace << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch1.volume_sweep.timer << endl;
+
+        b << subheader2("period sweep", width) << endl;
+
+        b << yellow("Enabled") << "        :  " << +gb.apu.ch1.period_sweep.enabled << endl;
+        b << yellow("Period") << "         :  " << +gb.apu.ch1.period_sweep.period << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch1.period_sweep.timer << endl;
 
         return b;
     };
@@ -2312,15 +2345,18 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 2", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch2 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch2.dac ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("Init. Length") << "   :  " << +gb.apu.nr21.initial_length_timer << endl;
-        b << yellow("Length Timer") << "   :  " << +gb.apu.ch2.length_timer << endl;
-        b << yellow("Initial Period") << " :  " << (gb.apu.nr24.period_high << 8 | gb.apu.nr23.period_low) << endl;
-        b << yellow("Period Timer") << "   :  " << +gb.apu.ch2.period_timer << endl;
-        b << yellow("Env Timer") << "      :  " << +gb.apu.ch2.envelope_counter << endl;
-        b << yellow("Env Dir.") << "       :  " << +gb.apu.ch2.envelope_direction << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch2.volume << endl;
-        b << yellow("Sweep Pace") << "     :  " << +gb.apu.ch2.sweep_pace << endl;
-        b << yellow("Wave Position") << "  :  " << +gb.apu.ch2.square_wave_position << endl;
+        b << yellow("Length Timer") << "   :  " << +gb.apu.ch2.length_timer << endl;
+
+        b << subheader2("wave", width) << endl;
+
+        b << yellow("Position") << "       :  " << +gb.apu.ch2.wave.position << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch2.wave.timer << endl;
+
+        b << subheader2("volume sweep", width) << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch2.volume_sweep.direction << endl;
+        b << yellow("Pace") << "           :  " << +gb.apu.ch2.volume_sweep.pace << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch2.volume_sweep.timer << endl;
 
         return b;
     };
@@ -2331,11 +2367,13 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 3", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("Init. Length") << "   :  " << +gb.apu.nr31.initial_length_timer << endl;
+        b << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch3.length_timer << endl;
-        b << yellow("Initial Period") << " :  " << (gb.apu.nr34.period_high << 8 | gb.apu.nr33.period_low) << endl;
-        b << yellow("Period Timer") << "   :  " << +gb.apu.ch3.period_timer << endl;
-        b << yellow("Wave Position") << "  :  " << +gb.apu.ch3.wave_position << endl;
+
+        b << subheader2("wave", width) << endl;
+
+        b << yellow("Position") << "       :  " << +gb.apu.ch3.wave.position << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch3.wave.timer << endl;
 
         return b;
     };
@@ -2344,16 +2382,24 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         auto b {make_block(width)};
 
         b << subheader("channel 4", width) << endl;
-        b << yellow("Enabled") << "       :  " << (gb.apu.nr52.ch4 ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("DAC") << "           :  " << (gb.apu.ch4.dac ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("Init. Length") << "  :  " << +gb.apu.nr41.initial_length_timer << endl;
-        b << yellow("Length Timer") << "  :  " << +gb.apu.ch4.length_timer << endl;
-        b << yellow("Period Timer") << "  :  " << +gb.apu.ch4.period_timer << endl;
-        b << yellow("Env. Timer") << "    :  " << +gb.apu.ch4.envelope_counter << endl;
-        b << yellow("Env. Dir.") << "     :  " << +gb.apu.ch4.envelope_direction << endl;
-        b << yellow("Volume") << "        :  " << +gb.apu.ch4.volume << endl;
-        b << yellow("Sweep Pace") << "    :  " << +gb.apu.ch4.sweep_pace << endl;
-        b << yellow("LFSR") << "          :  " << +gb.apu.ch4.lfsr << endl;
+        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch4 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "            :  " << (gb.apu.ch4.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Volume") << "         :  " << +gb.apu.ch4.volume << endl;
+        b << yellow("Length Timer") << "   :  " << +gb.apu.ch4.length_timer << endl;
+
+        b << subheader2("wave", width) << endl;
+
+        b << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch4.wave.timer << endl;
+
+        b << subheader2("volume sweep", width) << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch4.volume_sweep.direction << endl;
+        b << yellow("Pace") << "           :  " << +gb.apu.ch4.volume_sweep.pace << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch4.volume_sweep.timer << endl;
+
+        b << subheader2("lfsr", width) << endl;
+
+        b << yellow("LFSR") << "           :  " << +gb.apu.ch4.lfsr << endl;
 
         return b;
     };

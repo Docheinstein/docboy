@@ -56,6 +56,7 @@ public:
 #endif
         core {*gb} {
         gb->lcd.set_palette(palette);
+        core.set_audio_sample_rate(32786);
     }
 
     RunnerImpl& rom(const std::string& filename) {
