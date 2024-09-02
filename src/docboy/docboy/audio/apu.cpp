@@ -466,13 +466,13 @@ void Apu::tick_t0() {
     }
 
     if (nr52.ch2) {
-        if (++ch1.wave.timer == 2048) {
+        if (++ch2.wave.timer == 2048) {
             // Advance square wave position
             ch2.wave.position = mod<8>(ch2.wave.position + 1);
 
             // Reload period timer
-            ch1.wave.timer = nr24.period_high << 8 | nr23.period_low;
-            ASSERT(ch1.wave.timer < 2048);
+            ch2.wave.timer = nr24.period_high << 8 | nr23.period_low;
+            ASSERT(ch2.wave.timer < 2048);
         }
     }
 
@@ -872,48 +872,46 @@ void Apu::write_nr14(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configuration
     if (nr14.trigger) {
-        if (!nr52.ch1) {
-            if (ch1.dac) {
-                // If the DAC is on, the channel is turned on as well
-                nr52.ch1 = true;
+        if (ch1.dac) {
+            // If the DAC is on, the channel is turned on as well
+            nr52.ch1 = true;
+        }
+
+        ch1.volume = nr12.initial_volume;
+
+        ch1.wave.timer = nr14.period_high << 8 | nr13.period_low;
+
+        ch1.volume_sweep.direction = nr12.envelope_direction;
+        ch1.volume_sweep.pace = nr12.sweep_pace;
+        ch1.volume_sweep.timer = 0;
+
+        ch1.period_sweep.enabled = nr10.pace || nr10.step;
+        ch1.period_sweep.period = nr14.period_high << 8 | nr13.period_low;
+        ch1.period_sweep.timer = 0;
+
+        // Period sweep is updated on trigger
+        // [blargg/04-sweep]
+        if (nr10.step) {
+            uint32_t new_period = compute_next_period_sweep_period();
+
+            // TODO: not sure whether write back is done or not
+            // ch1.frequency_sweep.period = new_period;
+            // nr14.period_high = get_bits_range<11, 8>(new_period);
+            // nr13.period_low = keep_bits<8>(new_period);
+
+            if (new_period >= 2048) {
+                nr52.ch1 = false;
             }
+        }
 
-            ch1.volume = nr12.initial_volume;
-
-            ch1.wave.timer = nr14.period_high << 8 | nr13.period_low;
-
-            ch1.volume_sweep.direction = nr12.envelope_direction;
-            ch1.volume_sweep.pace = nr12.sweep_pace;
-            ch1.volume_sweep.timer = 0;
-
-            ch1.period_sweep.enabled = nr10.pace || nr10.step;
-            ch1.period_sweep.period = nr14.period_high << 8 | nr13.period_low;
-            ch1.period_sweep.timer = 0;
-
-            // Period sweep is updated on trigger
-            // [blargg/04-sweep]
-            if (nr10.step) {
-                uint32_t new_period = compute_next_period_sweep_period();
-
-                // TODO: not sure whether write back is done or not
-                // ch1.frequency_sweep.period = new_period;
-                // nr14.period_high = get_bits_range<11, 8>(new_period);
-                // nr13.period_low = keep_bits<8>(new_period);
-
-                if (new_period >= 2048) {
-                    nr52.ch1 = false;
-                }
-            }
-
-            // If length timer is 0, it is reloaded with the maximum value (64) as well
-            // [blargg/03-trigger]
-            if (ch1.length_timer == 0) {
-                if (nr14.length_enable && mod<2>(div_apu) == 0) {
-                    // Reload and clocks the length timer all at once
-                    ch1.length_timer = 63;
-                } else {
-                    ch1.length_timer = 64;
-                }
+        // If length timer is 0, it is reloaded with the maximum value (64) as well
+        // [blargg/03-trigger]
+        if (ch1.length_timer == 0) {
+            if (nr14.length_enable && mod<2>(div_apu) == 0) {
+                // Reload and clocks the length timer all at once
+                ch1.length_timer = 63;
+            } else {
+                ch1.length_timer = 64;
             }
         }
     }
@@ -998,29 +996,27 @@ void Apu::write_nr24(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configuration
     if (nr24.trigger) {
-        if (!nr52.ch2) {
-            if (ch2.dac) {
-                // If the DAC is on, the channel is turned on as well
-                nr52.ch2 = true;
-            }
+        if (ch2.dac) {
+            // If the DAC is on, the channel is turned on as well
+            nr52.ch2 = true;
+        }
 
-            ch2.volume = nr22.initial_volume;
+        ch2.volume = nr22.initial_volume;
 
-            ch1.wave.timer = nr24.period_high << 8 | nr23.period_low;
+        ch2.wave.timer = nr24.period_high << 8 | nr23.period_low;
 
-            ch2.volume_sweep.direction = nr22.envelope_direction;
-            ch2.volume_sweep.pace = nr22.sweep_pace;
-            ch2.volume_sweep.timer = 0;
+        ch2.volume_sweep.direction = nr22.envelope_direction;
+        ch2.volume_sweep.pace = nr22.sweep_pace;
+        ch2.volume_sweep.timer = 0;
 
-            // If length timer is 0, it is reloaded with the maximum value (64) as well
-            // [blargg/03-trigger]
-            if (ch2.length_timer == 0) {
-                if (nr24.length_enable && mod<2>(div_apu) == 0) {
-                    // Reload and clocks the length timer all at once
-                    ch2.length_timer = 63;
-                } else {
-                    ch2.length_timer = 64;
-                }
+        // If length timer is 0, it is reloaded with the maximum value (64) as well
+        // [blargg/03-trigger]
+        if (ch2.length_timer == 0) {
+            if (nr24.length_enable && mod<2>(div_apu) == 0) {
+                // Reload and clocks the length timer all at once
+                ch2.length_timer = 63;
+            } else {
+                ch2.length_timer = 64;
             }
         }
     }
@@ -1111,23 +1107,21 @@ void Apu::write_nr34(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configurations
     if (nr34.trigger) {
-        if (!nr52.ch3) {
-            if (nr30.dac) {
-                // If the DAC is on, the channel is turned on as well
-                nr52.ch3 = true;
-            }
+        if (nr30.dac) {
+            // If the DAC is on, the channel is turned on as well
+            nr52.ch3 = true;
+        }
 
-            ch3.wave.position = 1;
+        ch3.wave.position = 1;
 
-            // If length timer is 0, it is reloaded with the maximum value (256) as well
-            // [blargg/03-trigger]
-            if (ch3.length_timer == 0) {
-                if (nr34.length_enable && mod<2>(div_apu) == 0) {
-                    // Reload and clocks the length timer all at once
-                    ch3.length_timer = 255;
-                } else {
-                    ch3.length_timer = 256;
-                }
+        // If length timer is 0, it is reloaded with the maximum value (256) as well
+        // [blargg/03-trigger]
+        if (ch3.length_timer == 0) {
+            if (nr34.length_enable && mod<2>(div_apu) == 0) {
+                // Reload and clocks the length timer all at once
+                ch3.length_timer = 255;
+            } else {
+                ch3.length_timer = 256;
             }
         }
     }
@@ -1213,29 +1207,27 @@ void Apu::write_nr44(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configurations
     if (nr44.trigger) {
-        if (!nr52.ch4) {
-            if (ch4.dac) {
-                // If the DAC is on, the channel is turned on as well
-                nr52.ch4 = true;
-            }
+        if (ch4.dac) {
+            // If the DAC is on, the channel is turned on as well
+            nr52.ch4 = true;
+        }
 
-            ch4.volume = nr42.initial_volume;
+        ch4.volume = nr42.initial_volume;
 
-            ch4.volume_sweep.direction = nr42.envelope_direction;
-            ch4.volume_sweep.pace = nr42.sweep_pace;
-            ch4.volume_sweep.timer = 0;
+        ch4.volume_sweep.direction = nr42.envelope_direction;
+        ch4.volume_sweep.pace = nr42.sweep_pace;
+        ch4.volume_sweep.timer = 0;
 
-            ch4.lfsr = 0;
+        ch4.lfsr = 0;
 
-            // If length timer is 0, it is reloaded with the maximum value (64) as well
-            // [blargg/03-trigger]
-            if (ch4.length_timer == 0) {
-                if (nr44.length_enable && mod<2>(div_apu) == 0) {
-                    // Reload and clocks the length timer all at once
-                    ch4.length_timer = 63;
-                } else {
-                    ch4.length_timer = 64;
-                }
+        // If length timer is 0, it is reloaded with the maximum value (64) as well
+        // [blargg/03-trigger]
+        if (ch4.length_timer == 0) {
+            if (nr44.length_enable && mod<2>(div_apu) == 0) {
+                // Reload and clocks the length timer all at once
+                ch4.length_timer = 63;
+            } else {
+                ch4.length_timer = 64;
             }
         }
     }
