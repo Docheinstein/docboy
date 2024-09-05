@@ -2335,6 +2335,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Enabled") << "        :  " << +gb.apu.ch1.period_sweep.enabled << endl;
         b << yellow("Period") << "         :  " << +gb.apu.ch1.period_sweep.period << endl;
         b << yellow("Timer") << "          :  " << +gb.apu.ch1.period_sweep.timer << endl;
+        b << yellow("Decreasing") << "     :  " << +gb.apu.ch1.period_sweep.decreasing << endl;
 
         return b;
     };

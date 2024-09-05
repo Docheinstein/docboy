@@ -1927,7 +1927,10 @@ TEST_CASE("emulation", "[emulation]") {
         RUN_TEST_ROMS(F {"blargg/dmg_sound/01-registers.gb", "blargg/dmg_sound/01-registers.png"},
                       F {"blargg/dmg_sound/02-len_ctr.gb", "blargg/dmg_sound/02-len_ctr.png"},
                       F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"},
-                      F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"}, );
+                      F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"},
+                      F {"blargg/dmg_sound/05-sweep_details.gb", "blargg/dmg_sound/05-sweep_details.png"},
+
+        );
     }
 
 #endif

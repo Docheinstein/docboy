@@ -213,7 +213,7 @@ private:
 
     AudioSample compute_audio_sample() const;
 
-    uint32_t compute_next_period_sweep_period() const;
+    uint32_t compute_next_period_sweep_period();
 
     Timers& timers;
 
@@ -247,7 +247,9 @@ private:
         struct {
             bool enabled {};
             uint16_t period {};
+            uint8_t pace {};
             uint8_t timer {};
+            bool decreasing {};
         } period_sweep;
     } ch1 {};
 

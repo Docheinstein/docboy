@@ -299,9 +299,15 @@ Apu::AudioSample Apu::compute_audio_sample() const {
     return sample;
 }
 
-inline uint32_t Apu::compute_next_period_sweep_period() const {
+inline uint32_t Apu::compute_next_period_sweep_period() {
     // P_t+1 = P_t ± P_t / (2^step)
     int32_t period = ch1.period_sweep.period + (nr10.direction ? -1 : 1) * (ch1.period_sweep.period >> nr10.step);
+
+    // Store whether period sweep is in decreasing mode after a recalculation
+    if (!ch1.period_sweep.decreasing) {
+        ch1.period_sweep.decreasing = nr10.direction == 1;
+    }
+
     ASSERT(period >= 0);
     return period;
 }
@@ -366,27 +372,36 @@ void Apu::tick_t0() {
 
             if (mod<4>(div_apu) == 0) {
                 // Update period sweep (CH1 only)
-                if (nr52.ch1 && ch1.period_sweep.enabled && nr10.pace) {
-                    // Compute new period
-                    uint32_t new_period = compute_next_period_sweep_period();
+                if (nr52.ch1 && ch1.period_sweep.enabled) {
+                    if (++ch1.period_sweep.timer >= ch1.period_sweep.pace) {
+                        if (nr10.pace) {
+                            // Compute new period
+                            uint32_t new_period = compute_next_period_sweep_period();
 
-                    if (new_period >= 2048) {
-                        // Period overflow: turn off the channel
-                        nr52.ch1 = false;
-                    }
+                            if (new_period >= 2048) {
+                                // Period overflow: turn off the channel
+                                nr52.ch1 = false;
+                            }
 
-                    if (nr10.step) {
-                        // Write back period to the internal period register and to NR13/NR14
-                        ch1.period_sweep.period = new_period;
+                            if (nr10.step) {
+                                // Write back period to the internal period register and to NR13/NR14
+                                ch1.period_sweep.period = new_period;
 
-                        nr14.period_high = get_bits_range<11, 8>(new_period);
-                        nr13.period_low = keep_bits<8>(new_period);
+                                nr14.period_high = get_bits_range<11, 8>(new_period);
+                                nr13.period_low = keep_bits<8>(new_period);
 
-                        // Period calculation is performed a second time for overflow check (but result is not written
-                        // back) [blargg/04-sweep]
-                        if (compute_next_period_sweep_period() >= 2048) {
-                            nr52.ch1 = false;
+                                // Period calculation is performed a second time for overflow check (but result is not
+                                // written back) [blargg/04-sweep]
+                                if (compute_next_period_sweep_period() >= 2048) {
+                                    nr52.ch1 = false;
+                                }
+                            }
                         }
+
+                        // Pace 0 is reloaded as pace 8
+                        // [blargg/05-sweep-details]
+                        ch1.period_sweep.pace = nr10.pace > 0 ? nr10.pace : 8;
+                        ch1.period_sweep.timer = 0;
                     }
                 }
 
@@ -657,8 +672,10 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch1.volume_sweep.pace);
     parcel.write_uint8(ch1.volume_sweep.timer);
     parcel.write_bool(ch1.period_sweep.enabled);
-    parcel.write_uint8(ch1.period_sweep.period);
+    parcel.write_uint16(ch1.period_sweep.period);
+    parcel.write_uint8(ch1.period_sweep.pace);
     parcel.write_uint8(ch1.period_sweep.timer);
+    parcel.write_bool(ch1.period_sweep.decreasing);
 
     parcel.write_bool(ch2.dac);
     parcel.write_uint8(ch2.volume);
@@ -752,8 +769,10 @@ void Apu::load_state(Parcel& parcel) {
     ch1.volume_sweep.pace = parcel.read_uint8();
     ch1.volume_sweep.timer = parcel.read_uint8();
     ch1.period_sweep.enabled = parcel.read_bool();
-    ch1.period_sweep.period = parcel.read_uint8();
+    ch1.period_sweep.period = parcel.read_uint16();
+    ch1.period_sweep.pace = parcel.read_uint8();
     ch1.period_sweep.timer = parcel.read_uint8();
+    ch1.period_sweep.decreasing = parcel.read_bool();
 
     ch2.dac = parcel.read_bool();
     ch2.volume = parcel.read_uint8();
@@ -791,6 +810,13 @@ void Apu::write_nr10(uint8_t value) {
     nr10.pace = get_bits_range<Specs::Bits::Audio::NR10::PACE>(value);
     nr10.direction = test_bit<Specs::Bits::Audio::NR10::DIRECTION>(value);
     nr10.step = get_bits_range<Specs::Bits::Audio::NR10::STEP>(value);
+
+    // After the period is recalculated with decreasing mode, if the sweep period mode
+    // is changed again to increasing mode, the channel is disabled instantly.
+    // [blargg/05-sweep-details]
+    if (ch1.period_sweep.decreasing && nr10.direction == 0) {
+        nr52.ch1 = false;
+    }
 }
 
 uint8_t Apu::read_nr11() const {
@@ -886,8 +912,14 @@ void Apu::write_nr14(uint8_t value) {
         ch1.volume_sweep.timer = 0;
 
         ch1.period_sweep.enabled = nr10.pace || nr10.step;
-        ch1.period_sweep.period = nr14.period_high << 8 | nr13.period_low;
+        ch1.period_sweep.period = nr14.period_high << 8 | (nr13.period_low);
+
+        // Pace 0 is reloaded as pace 8.
+        // [blargg/05-sweep-details]
+        ch1.period_sweep.pace = nr10.pace > 0 ? nr10.pace : 8;
+
         ch1.period_sweep.timer = 0;
+        ch1.period_sweep.decreasing = false;
 
         // Period sweep is updated on trigger
         // [blargg/04-sweep]
@@ -895,7 +927,7 @@ void Apu::write_nr14(uint8_t value) {
             uint32_t new_period = compute_next_period_sweep_period();
 
             // TODO: not sure whether write back is done or not
-            // ch1.frequency_sweep.period = new_period;
+            // ch1.period_sweep.period = new_period;
             // nr14.period_high = get_bits_range<11, 8>(new_period);
             // nr13.period_low = keep_bits<8>(new_period);
 
