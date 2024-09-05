@@ -4,7 +4,7 @@
 #include "testutils/catch.h"
 #include "testutils/runners.h"
 
-#define WIP_ONLY_TEST_ROMS 0
+#define WIP_ONLY_TEST_ROMS 1
 
 using F = FramebufferRunnerParams;
 using S = SerialRunnerParams;
@@ -1711,11 +1711,14 @@ TEST_CASE("emulation", "[emulation]") {
                                  {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Down}}}, );
     }
 
-    SECTION("sound") {
-        RUN_TEST_ROMS(F {"blargg/dmg_sound/01-registers.gb", "blargg/dmg_sound/01-registers.png"},
-                      F {"blargg/dmg_sound/02-len_ctr.gb", "blargg/dmg_sound/02-len_ctr.png"},
-                      F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"},
-                      F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"}, );
+    SECTION("apu") {
+        RUN_TEST_ROMS(
+            F {"blargg/dmg_sound/01-registers.gb", "blargg/dmg_sound/01-registers.png"},
+            F {"blargg/dmg_sound/02-len_ctr.gb", "blargg/dmg_sound/02-len_ctr.png"},
+            F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"},
+            F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"},
+            F {"blargg/dmg_sound/05-sweep_details.gb", "blargg/dmg_sound/05-sweep_details.png"},
+            F {"blargg/dmg_sound/06-overflow_on_trigger.gb", "blargg/dmg_sound/06-overflow_on_trigger.png"}, );
     }
 
     SECTION("integration") {
@@ -1929,6 +1932,7 @@ TEST_CASE("emulation", "[emulation]") {
                       F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"},
                       F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"},
                       F {"blargg/dmg_sound/05-sweep_details.gb", "blargg/dmg_sound/05-sweep_details.png"},
+                      F {"blargg/dmg_sound/06-overflow_on_trigger.gb", "blargg/dmg_sound/06-overflow_on_trigger.png"},
 
         );
     }
