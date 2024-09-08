@@ -4,7 +4,7 @@
 #include "testutils/catch.h"
 #include "testutils/runners.h"
 
-#define WIP_ONLY_TEST_ROMS 1
+#define WIP_ONLY_TEST_ROMS 0
 
 using F = FramebufferRunnerParams;
 using S = SerialRunnerParams;
@@ -1713,12 +1713,42 @@ TEST_CASE("emulation", "[emulation]") {
 
     SECTION("apu") {
         RUN_TEST_ROMS(
+            // blargg
             F {"blargg/dmg_sound/01-registers.gb", "blargg/dmg_sound/01-registers.png"},
             F {"blargg/dmg_sound/02-len_ctr.gb", "blargg/dmg_sound/02-len_ctr.png"},
             F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"},
             F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"},
             F {"blargg/dmg_sound/05-sweep_details.gb", "blargg/dmg_sound/05-sweep_details.png"},
-            F {"blargg/dmg_sound/06-overflow_on_trigger.gb", "blargg/dmg_sound/06-overflow_on_trigger.png"}, );
+            F {"blargg/dmg_sound/06-overflow_on_trigger.gb", "blargg/dmg_sound/06-overflow_on_trigger.png"},
+            F {"blargg/dmg_sound/07-len_sweep_period_sync.gb", "blargg/dmg_sound/07-len_sweep_period_sync.png"},
+
+            // docboy
+            F {"docboy/apu/length_timer_delay0_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay1024_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay2048_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay3072_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay4096_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay5120_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay0_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay512_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay1024_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay2048_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay3072_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay4096_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay5120_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay0_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay1024_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay2048_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay3072_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay4096_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay5120_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay0_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay512_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay1024_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay2048_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay3072_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay4096_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay5120_timing.gb", "docboy/ok.png"}, );
     }
 
     SECTION("integration") {
@@ -1927,14 +1957,40 @@ TEST_CASE("emulation", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS(F {"blargg/dmg_sound/01-registers.gb", "blargg/dmg_sound/01-registers.png"},
-                      F {"blargg/dmg_sound/02-len_ctr.gb", "blargg/dmg_sound/02-len_ctr.png"},
-                      F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"},
-                      F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"},
-                      F {"blargg/dmg_sound/05-sweep_details.gb", "blargg/dmg_sound/05-sweep_details.png"},
-                      F {"blargg/dmg_sound/06-overflow_on_trigger.gb", "blargg/dmg_sound/06-overflow_on_trigger.png"},
-
-        );
+        RUN_TEST_ROMS(
+            F {"blargg/dmg_sound/01-registers.gb", "blargg/dmg_sound/01-registers.png"},
+            F {"blargg/dmg_sound/02-len_ctr.gb", "blargg/dmg_sound/02-len_ctr.png"},
+            F {"blargg/dmg_sound/03-trigger.gb", "blargg/dmg_sound/03-trigger.png"},
+            F {"blargg/dmg_sound/04-sweep.gb", "blargg/dmg_sound/04-sweep.png"},
+            F {"blargg/dmg_sound/05-sweep_details.gb", "blargg/dmg_sound/05-sweep_details.png"},
+            F {"blargg/dmg_sound/06-overflow_on_trigger.gb", "blargg/dmg_sound/06-overflow_on_trigger.png"},
+            F {"blargg/dmg_sound/07-len_sweep_period_sync.gb", "blargg/dmg_sound/07-len_sweep_period_sync.png"},
+            F {"docboy/apu/length_timer_delay0_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay1024_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay2048_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay3072_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay4096_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_delay5120_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay0_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay512_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay1024_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay2048_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay3072_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay4096_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/length_timer_while_off_delay5120_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay0_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay1024_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay2048_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay3072_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay4096_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_delay5120_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay0_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay512_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay1024_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay2048_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay3072_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay4096_timing.gb", "docboy/ok.png"},
+            F {"docboy/apu/period_sweep_while_off_delay5120_timing.gb", "docboy/ok.png"}, );
     }
 
 #endif

@@ -2310,6 +2310,11 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("DIV") << "            :  " << (gb.apu.div_apu % 8) << endl;
         return b;
     };
+    const auto make_apu_general_block_3 = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << yellow("DIV bit 4") << "      :  " << +gb.apu.prev_div_bit_4 << endl;
+        return b;
+    };
 
     const auto make_apu_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
@@ -2888,6 +2893,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     c3r3->add_node(make_apu_general_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));
     c3r3->add_node(make_space_divider());
     c3r3->add_node(make_apu_general_block_2(COLUMN_3_ROW_3_4_PART_2_WIDTH));
+    c3r3->add_node(make_space_divider());
+    c3r3->add_node(make_apu_general_block_3(COLUMN_3_ROW_3_4_PART_3_WIDTH));
 
     auto c3r4 {make_horizontal_layout()};
     c3r4->add_node(make_apu_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));

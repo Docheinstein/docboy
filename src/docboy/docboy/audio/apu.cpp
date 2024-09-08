@@ -153,7 +153,7 @@ void Apu::reset() {
     ch4.lfsr = 0;
 
     prev_div_bit_4 = false;
-    div_apu = 0;
+    div_apu = 2;
 }
 
 Apu::AudioSample Apu::compute_audio_sample() const {
@@ -390,8 +390,9 @@ void Apu::tick_t0() {
                                 nr14.period_high = get_bits_range<11, 8>(new_period);
                                 nr13.period_low = keep_bits<8>(new_period);
 
-                                // Period calculation is performed a second time for overflow check (but result is not
-                                // written back) [blargg/04-sweep]
+                                // Period calculation is performed a second time for overflow check
+                                // (but result is not written back)
+                                // [blargg/04-sweep]
                                 if (compute_next_period_sweep_period() >= 2048) {
                                     nr52.ch1 = false;
                                 }
@@ -466,6 +467,7 @@ void Apu::tick_t0() {
             }
         }
     }
+
     prev_div_bit_4 = div_bit_4;
 
     // Advance period timer
@@ -546,6 +548,8 @@ void Apu::tick_sampler() {
 }
 
 void Apu::turn_on() {
+    prev_div_bit_4 = true; // TODO: to investigate
+    div_apu = 0;
 }
 
 void Apu::turn_off() {
@@ -849,6 +853,7 @@ void Apu::write_nr12(uint8_t value) {
     nr12.envelope_direction = test_bit<Specs::Bits::Audio::NR12::ENVELOPE_DIRECTION>(value);
     nr12.sweep_pace = get_bits_range<Specs::Bits::Audio::NR12::SWEEP_PACE>(value);
 
+    // TODO: probably done while writing to NR14
     ch1.dac = nr12.initial_volume | nr12.envelope_direction;
     if (!ch1.dac) {
         // If the DAC is turned off the channel is disabled as well
