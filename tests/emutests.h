@@ -1965,6 +1965,7 @@ TEST_CASE("emulation", "[emulation]") {
             F {"blargg/dmg_sound/05-sweep_details.gb", "blargg/dmg_sound/05-sweep_details.png"},
             F {"blargg/dmg_sound/06-overflow_on_trigger.gb", "blargg/dmg_sound/06-overflow_on_trigger.png"},
             F {"blargg/dmg_sound/07-len_sweep_period_sync.gb", "blargg/dmg_sound/07-len_sweep_period_sync.png"},
+            F {"blargg/dmg_sound/08-len_ctr_during_power.gb", "blargg/dmg_sound/08-len_ctr_during_power.png"},
             F {"docboy/apu/length_timer_delay0_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/length_timer_delay1024_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/length_timer_delay2048_timing.gb", "docboy/ok.png"},

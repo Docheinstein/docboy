@@ -118,9 +118,11 @@ void Apu::reset() {
 
     ticks = 0;
 
+    // Length timers are not reset
+    // [blargg/08-len_ctr_during_power
+
     ch1.dac = true;
     ch1.volume = 0;
-    ch1.length_timer = 0;
     ch1.wave.position = 0;
     ch1.wave.timer = nr14.period_high << 8 | nr13.period_low;
     ch1.volume_sweep.direction = false;
@@ -132,20 +134,17 @@ void Apu::reset() {
 
     ch2.dac = false;
     ch2.volume = 0;
-    ch2.length_timer = 0;
     ch2.wave.position = 0;
     ch2.wave.timer = nr24.period_high << 8 | nr23.period_low;
     ch2.volume_sweep.direction = false;
     ch2.volume_sweep.pace = 0;
     ch2.volume_sweep.timer = 0;
 
-    ch3.length_timer = 0;
     ch3.wave.position = 0;
     ch3.wave.timer = 0;
 
     ch4.dac = false;
     ch4.volume = 0;
-    ch4.length_timer = 0;
     ch4.wave.timer = 0;
     ch4.volume_sweep.direction = false;
     ch4.volume_sweep.pace = 0;
@@ -828,14 +827,16 @@ uint8_t Apu::read_nr11() const {
 }
 
 void Apu::write_nr11(uint8_t value) {
-    if (!nr52.enable) {
-        return;
+    uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER>(value);
+
+    if (nr52.enable) {
+        nr11.duty_cycle = get_bits_range<Specs::Bits::Audio::NR11::DUTY_CYCLE>(value);
+        nr11.initial_length_timer = initial_length;
     }
 
-    nr11.duty_cycle = get_bits_range<Specs::Bits::Audio::NR11::DUTY_CYCLE>(value);
-    nr11.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER>(value);
-
-    ch1.length_timer = 64 - nr11.initial_length_timer;
+    // It seems that length timer is loaded even though APU is disabled
+    // [blargg/08-len_ctr_during_power]
+    ch1.length_timer = 64 - initial_length;
 }
 
 uint8_t Apu::read_nr12() const {
@@ -959,14 +960,16 @@ uint8_t Apu::read_nr21() const {
 }
 
 void Apu::write_nr21(uint8_t value) {
-    if (!nr52.enable) {
-        return;
+    uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
+
+    if (nr52.enable) {
+        nr21.duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
+        nr21.initial_length_timer = initial_length;
     }
 
-    nr21.duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
-    nr21.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
-
-    ch2.length_timer = 64 - nr21.initial_length_timer;
+    // It seems that length timer is loaded even though APU is disabled
+    // [blargg/08-len_ctr_during_power]
+    ch2.length_timer = 64 - initial_length;
 }
 
 uint8_t Apu::read_nr22() const {
@@ -1081,13 +1084,13 @@ uint8_t Apu::read_nr31() const {
 }
 
 void Apu::write_nr31(uint8_t value) {
-    if (!nr52.enable) {
-        return;
+    if (nr52.enable) {
+        nr31.initial_length_timer = value;
     }
 
-    nr31.initial_length_timer = value;
-
-    ch3.length_timer = 256 - nr31.initial_length_timer;
+    // It seems that length timer is loaded even though APU is disabled
+    // [blargg/08-len_ctr_during_power]
+    ch3.length_timer = 256 - value;
 }
 
 uint8_t Apu::read_nr32() const {
@@ -1169,13 +1172,15 @@ uint8_t Apu::read_nr41() const {
 }
 
 void Apu::write_nr41(uint8_t value) {
-    if (!nr52.enable) {
-        return;
+    uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR41::INITIAL_LENGTH_TIMER>(value);
+
+    if (nr52.enable) {
+        nr41.initial_length_timer = initial_length;
     }
 
-    nr41.initial_length_timer = get_bits_range<Specs::Bits::Audio::NR41::INITIAL_LENGTH_TIMER>(value);
-
-    ch4.length_timer = 64 - nr41.initial_length_timer;
+    // It seems that length timer is loaded even though APU is disabled
+    // [blargg/08-len_ctr_during_power]
+    ch4.length_timer = 64 - initial_length;
 }
 
 uint8_t Apu::read_nr42() const {
