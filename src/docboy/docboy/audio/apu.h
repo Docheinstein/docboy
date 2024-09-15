@@ -106,6 +106,9 @@ public:
     uint8_t read_nr52() const;
     void write_nr52(uint8_t value);
 
+    uint8_t read_wave_ram(uint16_t address) const;
+    void write_wave_ram(uint16_t address, uint8_t value);
+
     struct Nr10 : Composite<Specs::Registers::Sound::NR11> {
         UInt8 pace {make_uint8()};
         Bool direction {make_bool()};
@@ -210,6 +213,7 @@ private:
     void turn_off();
 
     void tick_sampler();
+    void tick_ch3();
 
     AudioSample compute_audio_sample() const;
 
@@ -279,6 +283,9 @@ private:
             uint8_t position {};
             uint16_t timer {};
         } wave;
+
+        uint8_t trigger_delay {};
+        uint64_t last_read_tick {};
     } ch3 {};
 
     struct {

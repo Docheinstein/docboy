@@ -123,7 +123,8 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
 
     /* FF30 - FF3F */
     for (uint16_t i = Specs::Registers::Sound::WAVE0; i <= Specs::Registers::Sound::WAVEF; i++) {
-        memory_accessors[i] = &apu.wave_ram[i - Specs::Registers::Sound::WAVE0];
+        memory_accessors[i] = {NonTrivialRead<&Apu::read_wave_ram> {&apu},
+                               NonTrivialWrite<&Apu::write_wave_ram> {&apu}};
     }
 
     /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = {NonTrivial<&Ppu::read_lcdc> {&ppu},

@@ -2371,15 +2371,28 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         auto b {make_block(width)};
 
         b << subheader("channel 3", width) << endl;
-        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("DAC") << "            :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Enabled") << "      :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "          :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
         b << endl;
-        b << yellow("Length Timer") << "   :  " << +gb.apu.ch3.length_timer << endl;
+        b << yellow("Length Timer") << " :  " << +gb.apu.ch3.length_timer << endl;
 
         b << subheader2("wave", width) << endl;
 
-        b << yellow("Position") << "       :  " << +gb.apu.ch3.wave.position << endl;
-        b << yellow("Timer") << "          :  " << +gb.apu.ch3.wave.timer << endl;
+        b << yellow("Position") << "     :  " << +gb.apu.ch3.wave.position << endl;
+        b << yellow("Timer") << "        :  " << +gb.apu.ch3.wave.timer << endl;
+        b << yellow("Last Read") << "    :  " << +gb.apu.ch3.last_read_tick << endl;
+        b << yellow("Trig. Delay") << "  :  " << +gb.apu.ch3.trigger_delay << endl;
+
+        b << subheader2("wave ram", width) << endl;
+
+        b << yellow("Wave[0:3]") << "    :  " << hex<uint8_t>(gb.apu.wave_ram[0]) << hex<uint8_t>(gb.apu.wave_ram[1])
+          << hex<uint8_t>(gb.apu.wave_ram[2]) << hex<uint8_t>(gb.apu.wave_ram[3]) << endl;
+        b << yellow("Wave[4:7]") << "    :  " << hex<uint8_t>(gb.apu.wave_ram[4]) << hex<uint8_t>(gb.apu.wave_ram[5])
+          << hex<uint8_t>(gb.apu.wave_ram[6]) << hex<uint8_t>(gb.apu.wave_ram[7]) << endl;
+        b << yellow("Wave[8:11]") << "   :  " << hex<uint8_t>(gb.apu.wave_ram[8]) << hex<uint8_t>(gb.apu.wave_ram[9])
+          << hex<uint8_t>(gb.apu.wave_ram[10]) << hex<uint8_t>(gb.apu.wave_ram[11]) << endl;
+        b << yellow("Wave[12:15]") << "  :  " << hex<uint8_t>(gb.apu.wave_ram[12]) << hex<uint8_t>(gb.apu.wave_ram[13])
+          << hex<uint8_t>(gb.apu.wave_ram[14]) << hex<uint8_t>(gb.apu.wave_ram[15]) << endl;
 
         return b;
     };
@@ -2876,9 +2889,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     c3r2->add_node(make_space_divider());
     c3r2->add_node(make_ppu_block_2(COLUMN_3_ROW_1_2_PART_2_WIDTH));
 
-    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_1_WIDTH = 24;
-    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_2_WIDTH = 24;
-    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_3_WIDTH = 24;
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_1_WIDTH = 23;
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_2_WIDTH = 23;
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_3_WIDTH = 26;
     static constexpr uint32_t COLUMN_3_ROW_3_4_PART_4_WIDTH = 23;
 
     static constexpr uint32_t COLUMN_3_ROW_3_4_WIDTH = COLUMN_3_ROW_3_4_PART_1_WIDTH + COLUMN_3_ROW_3_4_PART_2_WIDTH +
@@ -2931,7 +2944,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     static constexpr uint32_t CODE_WIDTH = 56;
     static constexpr uint32_t CALL_STACK_WIDTH = 36;
-    static constexpr uint32_t BREAKPOINTS_WIDTH = 50;
+    static constexpr uint32_t BREAKPOINTS_WIDTH = 52;
     static constexpr uint32_t WATCHPOINTS_WIDTH = 30;
     static constexpr uint32_t DISPLAY_WIDTH =
         FULL_WIDTH - CODE_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH - 4;

@@ -311,6 +311,29 @@ inline uint32_t Apu::compute_next_period_sweep_period() {
     return period;
 }
 
+void Apu::tick_ch3() {
+    ASSERT(nr52.ch3);
+
+    // It seems that CH3 takes 4 ticks to start playing after it is triggered
+    // TODO: verify
+    if (ch3.trigger_delay) {
+        ch3.trigger_delay--;
+        return;
+    }
+
+    if (++ch3.wave.timer >= 2048) {
+        // Advance square wave position
+        ch3.wave.position = mod<32>(ch3.wave.position + 1);
+
+        // Reload period timer
+        ch3.wave.timer = nr34.period_high << 8 | nr33.period_low;
+
+        ch3.last_read_tick = ticks;
+
+        ASSERT(ch3.wave.timer < 2048);
+    }
+}
+
 void Apu::tick_t0() {
     // Do nothing if APU is off (but advance the sampler anyhow).
     if (!nr52.enable) {
@@ -493,16 +516,7 @@ void Apu::tick_t0() {
     }
 
     if (nr52.ch3) {
-        ch3.wave.timer += 2;
-        if (ch3.wave.timer >= 2048) {
-            // Advance square wave position
-            ch3.wave.position = mod<32>(ch3.wave.position + 1);
-
-            // Reload period timer
-            ch3.wave.timer = nr34.period_high << 8 | nr33.period_low;
-            //            ASSERT(mod<2>(ch3.wave.timer) == 0);
-            ASSERT(ch3.wave.timer < 2048);
-        }
+        tick_ch3();
     }
 
     if (nr52.ch4) {
@@ -528,6 +542,10 @@ void Apu::tick_t1() {
 
 void Apu::tick_t2() {
     tick_sampler();
+
+    if (nr52.ch3) {
+        tick_ch3();
+    }
 }
 
 void Apu::tick_t3() {
@@ -692,6 +710,8 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint16(ch3.length_timer);
     parcel.write_uint8(ch3.wave.position);
     parcel.write_uint16(ch3.wave.timer);
+    parcel.write_uint8(ch3.trigger_delay);
+    parcel.write_uint64(ch3.last_read_tick);
 
     parcel.write_bool(ch4.dac);
     parcel.write_uint8(ch4.volume);
@@ -789,6 +809,8 @@ void Apu::load_state(Parcel& parcel) {
     ch3.length_timer = parcel.read_uint16();
     ch3.wave.position = parcel.read_uint8();
     ch3.wave.timer = parcel.read_uint16();
+    ch3.trigger_delay = parcel.read_uint8();
+    ch3.last_read_tick = parcel.read_uint64();
 
     ch4.dac = parcel.read_bool();
     ch4.volume = parcel.read_uint8();
@@ -1152,7 +1174,9 @@ void Apu::write_nr34(uint8_t value) {
             nr52.ch3 = true;
         }
 
-        ch3.wave.position = 1;
+        ch3.wave.position = 0;
+        ch3.wave.timer = nr34.period_high << 8 | nr33.period_low;
+        ch3.trigger_delay = 4;
 
         // If length timer is 0, it is reloaded with the maximum value (256) as well
         // [blargg/03-trigger]
@@ -1329,4 +1353,27 @@ void Apu::write_nr52(uint8_t value) {
         en ? turn_on() : turn_off();
         nr52.enable = en;
     }
+}
+
+uint8_t Apu::read_wave_ram(uint16_t address) const {
+    if (!nr52.ch3) {
+        // Wave ram is accessed normally if CH3 is off.
+        return wave_ram[address - Specs::Registers::Sound::WAVE0];
+    }
+
+    const uint8_t wave_index = ch3.wave.position >> 1;
+    ASSERT(wave_index < wave_ram.Size);
+
+    // When CH3 is on, reading wave ram yields the byte CH3 is currently
+    // reading this T-cycle, or 0xFF if CH3 is not reading anything.
+    // [blargg/09-wave_read_while_on]
+    if (ticks == ch3.last_read_tick) {
+        return wave_ram[wave_index];
+    }
+
+    return 0xFF;
+}
+
+void Apu::write_wave_ram(uint16_t address, uint8_t value) {
+    wave_ram[address - Specs::Registers::Sound::WAVE0] = value;
 }
