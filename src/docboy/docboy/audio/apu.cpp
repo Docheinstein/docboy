@@ -314,16 +314,24 @@ inline uint32_t Apu::compute_next_period_sweep_period() {
 void Apu::tick_ch3() {
     ASSERT(nr52.ch3);
 
-    // It seems that CH3 takes 4 ticks to start playing after it is triggered
+    // It seems that trigger takes 5 ticks to have effect
     // TODO: verify
     if (ch3.trigger_delay) {
         ch3.trigger_delay--;
-        return;
+
+        if (ch3.trigger_delay == 0) {
+            ch3.retrigger = false;
+
+            ch3.wave.timer = nr34.period_high << 8 | nr33.period_low;
+            ch3.wave.position = 0;
+        }
     }
 
     if (++ch3.wave.timer >= 2048) {
         // Advance square wave position
         ch3.wave.position = mod<32>(ch3.wave.position + 1);
+
+        ch3.wave.buffer_position = ch3.wave.position >> 1;
 
         // Reload period timer
         ch3.wave.timer = nr34.period_high << 8 | nr33.period_low;
@@ -331,6 +339,26 @@ void Apu::tick_ch3() {
         ch3.last_read_tick = ticks;
 
         ASSERT(ch3.wave.timer < 2048);
+    }
+
+    // Re-triggering CH3 while it is reading wave ram corrupts wave ram.
+    // * If the buffer position read from wave ram is [0:3], then only the first byte
+    //   of wave ram is corrupted with the byte that is read at that moment.
+    // * If the buffer position read from wave ram is [4:15], then the first 4 bytes
+    //   of wave ram are corrupted with the (aligned) 4 bytes that are read in the moment
+    // [blargg/10-wave_trigger_while_on]
+    if (ch3.retrigger && ch3.trigger_delay == 3) {
+        if (ticks - ch3.last_read_tick == 0) {
+            if (ch3.wave.buffer_position < 4) {
+                wave_ram[0] = static_cast<uint8_t>(wave_ram[ch3.wave.buffer_position]);
+            } else {
+                const uint8_t base = ch3.wave.buffer_position / 4;
+                wave_ram[0] = static_cast<uint8_t>(wave_ram[4 * base]);
+                wave_ram[1] = static_cast<uint8_t>(wave_ram[4 * base + 1]);
+                wave_ram[2] = static_cast<uint8_t>(wave_ram[4 * base + 2]);
+                wave_ram[3] = static_cast<uint8_t>(wave_ram[4 * base + 3]);
+            }
+        }
     }
 }
 
@@ -710,6 +738,8 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint16(ch3.length_timer);
     parcel.write_uint8(ch3.wave.position);
     parcel.write_uint16(ch3.wave.timer);
+    parcel.write_uint8(ch3.wave.buffer_position);
+    parcel.write_bool(ch3.retrigger);
     parcel.write_uint8(ch3.trigger_delay);
     parcel.write_uint64(ch3.last_read_tick);
 
@@ -809,6 +839,8 @@ void Apu::load_state(Parcel& parcel) {
     ch3.length_timer = parcel.read_uint16();
     ch3.wave.position = parcel.read_uint8();
     ch3.wave.timer = parcel.read_uint16();
+    ch3.wave.buffer_position = parcel.read_uint8();
+    ch3.retrigger = parcel.read_bool();
     ch3.trigger_delay = parcel.read_uint8();
     ch3.last_read_tick = parcel.read_uint64();
 
@@ -1169,14 +1201,13 @@ void Apu::write_nr34(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configurations
     if (nr34.trigger) {
+        ch3.retrigger = nr52.ch3;
+        ch3.trigger_delay = 5;
+
         if (nr30.dac) {
             // If the DAC is on, the channel is turned on as well
             nr52.ch3 = true;
         }
-
-        ch3.wave.position = 0;
-        ch3.wave.timer = nr34.period_high << 8 | nr33.period_low;
-        ch3.trigger_delay = 4;
 
         // If length timer is 0, it is reloaded with the maximum value (256) as well
         // [blargg/03-trigger]
@@ -1361,14 +1392,11 @@ uint8_t Apu::read_wave_ram(uint16_t address) const {
         return wave_ram[address - Specs::Registers::Sound::WAVE0];
     }
 
-    const uint8_t wave_index = ch3.wave.position >> 1;
-    ASSERT(wave_index < wave_ram.Size);
-
     // When CH3 is on, reading wave ram yields the byte CH3 is currently
     // reading this T-cycle, or 0xFF if CH3 is not reading anything.
     // [blargg/09-wave_read_while_on]
     if (ticks == ch3.last_read_tick) {
-        return wave_ram[wave_index];
+        return wave_ram[ch3.wave.buffer_position];
     }
 
     return 0xFF;

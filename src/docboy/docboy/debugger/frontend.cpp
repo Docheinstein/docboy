@@ -2379,6 +2379,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader2("wave", width) << endl;
 
         b << yellow("Position") << "     :  " << +gb.apu.ch3.wave.position << endl;
+        b << yellow("Buffer Pos.") << "  :  " << +gb.apu.ch3.wave.buffer_position << endl;
         b << yellow("Timer") << "        :  " << +gb.apu.ch3.wave.timer << endl;
         b << yellow("Last Read") << "    :  " << +gb.apu.ch3.last_read_tick << endl;
         b << yellow("Trig. Delay") << "  :  " << +gb.apu.ch3.trigger_delay << endl;

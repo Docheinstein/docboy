@@ -282,8 +282,10 @@ private:
         struct {
             uint8_t position {};
             uint16_t timer {};
+            uint8_t buffer_position {};
         } wave;
 
+        bool retrigger {};
         uint8_t trigger_delay {};
         uint64_t last_read_tick {};
     } ch3 {};
