@@ -232,24 +232,36 @@ Here's the debugger!
 
 #### blargg
 
-| Test Rom                            |       Result       |
-|-------------------------------------|:------------------:|
-| blargg/cpu_instrs.gb                | :white_check_mark: |
-| blargg/cpu_instrs.gb                | :white_check_mark: |
-| blargg/cpu_instrs.gb                | :white_check_mark: |
-| blargg/cpu_instrs.gb                | :white_check_mark: |
-| blargg/cpu_instrs.gb                | :white_check_mark: |
-| blargg/halt_bug.gb                  | :white_check_mark: |
-| blargg/instr_timing.gb              | :white_check_mark: |
-| blargg/mem_timing-2.gb              | :white_check_mark: |
-| blargg/mem_timing.gb                | :white_check_mark: |
-| blargg/oam_bug/1-lcd_sync.gb        | :white_check_mark: |
-| blargg/oam_bug/2-causes.gb          | :white_check_mark: |
-| blargg/oam_bug/3-non_causes.gb      | :white_check_mark: |
-| blargg/oam_bug/4-scanline_timing.gb | :white_check_mark: |
-| blargg/oam_bug/5-timing_bug.gb      | :white_check_mark: |
-| blargg/oam_bug/6-timing_no_bug.gb   | :white_check_mark: |
-| blargg/oam_bug/8-instr_effect.gb    | :white_check_mark: |
+| Test Rom                                     |       Result       |
+|----------------------------------------------|:------------------:|
+| blargg/cpu_instrs.gb                         | :white_check_mark: |
+| blargg/cpu_instrs.gb                         | :white_check_mark: |
+| blargg/cpu_instrs.gb                         | :white_check_mark: |
+| blargg/cpu_instrs.gb                         | :white_check_mark: |
+| blargg/cpu_instrs.gb                         | :white_check_mark: |
+| blargg/halt_bug.gb                           | :white_check_mark: |
+| blargg/instr_timing.gb                       | :white_check_mark: |
+| blargg/mem_timing-2.gb                       | :white_check_mark: |
+| blargg/mem_timing.gb                         | :white_check_mark: |
+| blargg/oam_bug/1-lcd_sync.gb                 | :white_check_mark: |
+| blargg/oam_bug/2-causes.gb                   | :white_check_mark: |
+| blargg/oam_bug/3-non_causes.gb               | :white_check_mark: |
+| blargg/oam_bug/4-scanline_timing.gb          | :white_check_mark: |
+| blargg/oam_bug/5-timing_bug.gb               | :white_check_mark: |
+| blargg/oam_bug/6-timing_no_bug.gb            | :white_check_mark: |
+| blargg/oam_bug/8-instr_effect.gb             | :white_check_mark: |
+| blargg/dmg_sound/01-registers.gb             | :white_check_mark: |
+| blargg/dmg_sound/02-len_ctr.gb               | :white_check_mark: |
+| blargg/dmg_sound/03-trigger.gb               | :white_check_mark: |
+| blargg/dmg_sound/04-sweep.gb                 | :white_check_mark: |
+| blargg/dmg_sound/05-sweep_details.gb         | :white_check_mark: |
+| blargg/dmg_sound/06-overflow_on_trigger.gb   | :white_check_mark: |
+| blargg/dmg_sound/07-len_sweep_period_sync.gb | :white_check_mark: |
+| blargg/dmg_sound/08-len_ctr_during_power.gb  | :white_check_mark: |
+| blargg/dmg_sound/09-wave_read_while_on.gb    | :white_check_mark: |
+| blargg/dmg_sound/10-wave_trigger_while_on.gb | :white_check_mark: |
+| blargg/dmg_sound/11-regs_after_power.gb      | :white_check_mark: |
+| blargg/dmg_sound/12-wave_write_while_on.gb   | :white_check_mark: |
 
 
 #### dmg-acid2
