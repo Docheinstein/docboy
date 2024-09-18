@@ -345,7 +345,7 @@ void Apu::tick_ch3() {
     // * If the buffer position read from wave ram is [0:3], then only the first byte
     //   of wave ram is corrupted with the byte that is read at that moment.
     // * If the buffer position read from wave ram is [4:15], then the first 4 bytes
-    //   of wave ram are corrupted with the (aligned) 4 bytes that are read in the moment
+    //   of wave ram are corrupted with the (aligned) 4 bytes that are read at the moment
     // [blargg/10-wave_trigger_while_on]
     if (ch3.retrigger && ch3.trigger_delay == 3) {
         if (ticks - ch3.last_read_tick == 0) {
@@ -358,6 +358,18 @@ void Apu::tick_ch3() {
                 wave_ram[2] = static_cast<uint8_t>(wave_ram[4 * base + 2]);
                 wave_ram[3] = static_cast<uint8_t>(wave_ram[4 * base + 3]);
             }
+        }
+    }
+
+    // Writing to wave ram while CH3 is reading a byte corrupts it:
+    // the byte of wave ram that is currently read is wrote instead.
+    // [blargg/12-wave_write_while_on]
+    // TODO: check exact timing (I guess this should take place in write_wave_ram instead)
+    if (ch3.pending_wave_write.pending) {
+        ch3.pending_wave_write.pending = false;
+
+        if (ticks == ch3.last_read_tick) {
+            wave_ram[ch3.wave.buffer_position] = ch3.pending_wave_write.value;
         }
     }
 }
@@ -746,6 +758,8 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch3.retrigger);
     parcel.write_uint8(ch3.trigger_delay);
     parcel.write_uint64(ch3.last_read_tick);
+    parcel.write_bool(ch3.pending_wave_write.pending);
+    parcel.write_uint8(ch3.pending_wave_write.value);
 
     parcel.write_bool(ch4.dac);
     parcel.write_uint8(ch4.volume);
@@ -847,6 +861,8 @@ void Apu::load_state(Parcel& parcel) {
     ch3.retrigger = parcel.read_bool();
     ch3.trigger_delay = parcel.read_uint8();
     ch3.last_read_tick = parcel.read_uint64();
+    ch3.pending_wave_write.pending = parcel.read_bool();
+    ch3.pending_wave_write.value = parcel.read_uint8();
 
     ch4.dac = parcel.read_bool();
     ch4.volume = parcel.read_uint8();
@@ -1407,5 +1423,14 @@ uint8_t Apu::read_wave_ram(uint16_t address) const {
 }
 
 void Apu::write_wave_ram(uint16_t address, uint8_t value) {
-    wave_ram[address - Specs::Registers::Sound::WAVE0] = value;
+    if (!nr52.ch3) {
+        // Wave ram is accessed normally if CH3 is off.
+        wave_ram[address - Specs::Registers::Sound::WAVE0] = value;
+        return;
+    }
+
+    // TODO: this is a hack, check exact timing
+    //  (I guess corruption should take place here, not in tick_ch3)
+    ch3.pending_wave_write.pending = true;
+    ch3.pending_wave_write.value = value;
 }

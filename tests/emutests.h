@@ -1725,6 +1725,7 @@ TEST_CASE("emulation", "[emulation]") {
             F {"blargg/dmg_sound/09-wave_read_while_on.gb", "blargg/dmg_sound/09-wave_read_while_on.png"},
             F {"blargg/dmg_sound/10-wave_trigger_while_on.gb", "blargg/dmg_sound/10-wave_trigger_while_on.png"},
             F {"blargg/dmg_sound/11-regs_after_power.gb", "blargg/dmg_sound/11-regs_after_power.png"},
+            F {"blargg/dmg_sound/12-wave_write_while_on.gb", "blargg/dmg_sound/12-wave_write_while_on.png"},
 
             // docboy
             F {"docboy/apu/ch1/length_timer_delay0_timing.gb", "docboy/ok.png"},
@@ -1740,7 +1741,6 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/ch1/length_timer_while_off_delay3072_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/length_timer_while_off_delay4096_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/length_timer_while_off_delay5120_timing.gb", "docboy/ok.png"},
-
             F {"docboy/apu/ch1/period_sweep_delay0_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/period_sweep_delay1024_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/period_sweep_delay2048_timing.gb", "docboy/ok.png"},
@@ -1755,6 +1755,8 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/ch1/period_sweep_while_off_delay4096_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/period_sweep_while_off_delay5120_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/period_sweep_while_off_delay5120_timing.gb", "docboy/ok.png"},
+
+            F {"docboy/apu/ch1/turn_off_disable_dac.gb", "docboy/ok.png"},
 
             F {"docboy/apu/ch3/corrupt_wave_period7_delay1.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3/corrupt_wave_period7_delay2.gb", "docboy/ok.png"},
@@ -1838,7 +1840,14 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_0.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_1.gb", "docboy/ok.png"},
 
-            F {"docboy/apu/ch3/turn_off_disable_dac.gb", "docboy/ok.png"}, );
+            F {"docboy/apu/ch3/write_wave_period5_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay7.gb", "docboy/ok.png"}, );
     }
 
     SECTION("integration") {
@@ -2059,6 +2068,7 @@ TEST_CASE("emulation", "[emulation]") {
             F {"blargg/dmg_sound/09-wave_read_while_on.gb", "blargg/dmg_sound/09-wave_read_while_on.png"},
             F {"blargg/dmg_sound/10-wave_trigger_while_on.gb", "blargg/dmg_sound/10-wave_trigger_while_on.png"},
             F {"blargg/dmg_sound/11-regs_after_power.gb", "blargg/dmg_sound/11-regs_after_power.png"},
+            F {"blargg/dmg_sound/12-wave_write_while_on.gb", "blargg/dmg_sound/12-wave_write_while_on.png"},
 
             F {"docboy/apu/ch1/length_timer_delay0_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/length_timer_delay1024_timing.gb", "docboy/ok.png"},
@@ -2087,6 +2097,8 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/ch1/period_sweep_while_off_delay4096_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/period_sweep_while_off_delay5120_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/period_sweep_while_off_delay5120_timing.gb", "docboy/ok.png"},
+
+            F {"docboy/apu/ch1/turn_off_disable_dac.gb", "docboy/ok.png"},
 
             F {"docboy/apu/ch3/corrupt_wave_period7_delay1.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3/corrupt_wave_period7_delay2.gb", "docboy/ok.png"},
@@ -2170,7 +2182,14 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_0.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_1.gb", "docboy/ok.png"},
 
-            F {"docboy/apu/ch3/turn_off_disable_dac.gb", "docboy/ok.png"}, );
+            F {"docboy/apu/ch3/write_wave_period5_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay7.gb", "docboy/ok.png"}, );
     }
 
 #endif

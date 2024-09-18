@@ -288,6 +288,11 @@ private:
         bool retrigger {};
         uint8_t trigger_delay {};
         uint64_t last_read_tick {};
+
+        struct {
+            bool pending {};
+            uint8_t value {};
+        } pending_wave_write;
     } ch3 {};
 
     struct {
