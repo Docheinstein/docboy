@@ -1724,6 +1724,7 @@ TEST_CASE("emulation", "[emulation]") {
             F {"blargg/dmg_sound/08-len_ctr_during_power.gb", "blargg/dmg_sound/08-len_ctr_during_power.png"},
             F {"blargg/dmg_sound/09-wave_read_while_on.gb", "blargg/dmg_sound/09-wave_read_while_on.png"},
             F {"blargg/dmg_sound/10-wave_trigger_while_on.gb", "blargg/dmg_sound/10-wave_trigger_while_on.png"},
+            F {"blargg/dmg_sound/11-regs_after_power.gb", "blargg/dmg_sound/11-regs_after_power.png"},
 
             // docboy
             F {"docboy/apu/ch1/length_timer_delay0_timing.gb", "docboy/ok.png"},
@@ -1835,7 +1836,9 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_5.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_6.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_0.gb", "docboy/ok.png"},
-            F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_1.gb", "docboy/ok.png"}, );
+            F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_1.gb", "docboy/ok.png"},
+
+            F {"docboy/apu/ch3/turn_off_disable_dac.gb", "docboy/ok.png"}, );
     }
 
     SECTION("integration") {
@@ -2055,6 +2058,7 @@ TEST_CASE("emulation", "[emulation]") {
             F {"blargg/dmg_sound/08-len_ctr_during_power.gb", "blargg/dmg_sound/08-len_ctr_during_power.png"},
             F {"blargg/dmg_sound/09-wave_read_while_on.gb", "blargg/dmg_sound/09-wave_read_while_on.png"},
             F {"blargg/dmg_sound/10-wave_trigger_while_on.gb", "blargg/dmg_sound/10-wave_trigger_while_on.png"},
+            F {"blargg/dmg_sound/11-regs_after_power.gb", "blargg/dmg_sound/11-regs_after_power.png"},
 
             F {"docboy/apu/ch1/length_timer_delay0_timing.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1/length_timer_delay1024_timing.gb", "docboy/ok.png"},
@@ -2164,7 +2168,9 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_5.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_6.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_0.gb", "docboy/ok.png"},
-            F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_1.gb", "docboy/ok.png"}, );
+            F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_1.gb", "docboy/ok.png"},
+
+            F {"docboy/apu/ch3/turn_off_disable_dac.gb", "docboy/ok.png"}, );
     }
 
 #endif

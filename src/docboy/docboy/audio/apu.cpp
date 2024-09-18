@@ -651,6 +651,10 @@ void Apu::turn_off() {
     nr52.ch3 = false;
     nr52.ch2 = false;
     nr52.ch1 = false;
+
+    ch1.dac = false;
+    ch2.dac = false;
+    ch4.dac = false;
 }
 
 void Apu::save_state(Parcel& parcel) const {
