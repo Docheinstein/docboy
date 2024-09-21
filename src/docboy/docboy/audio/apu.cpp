@@ -581,11 +581,11 @@ void Apu::tick_t1() {
 }
 
 void Apu::tick_t2() {
-    tick_sampler();
-
     if (nr52.ch3) {
         tick_ch3();
     }
+
+    tick_sampler();
 }
 
 void Apu::tick_t3() {
@@ -1415,7 +1415,7 @@ uint8_t Apu::read_wave_ram(uint16_t address) const {
     // When CH3 is on, reading wave ram yields the byte CH3 is currently
     // reading this T-cycle, or 0xFF if CH3 is not reading anything.
     // [blargg/09-wave_read_while_on]
-    if (ticks == ch3.last_read_tick) {
+    if (ticks == ch3.last_read_tick + 1) {
         return wave_ram[ch3.wave.buffer_position];
     }
 
@@ -1433,4 +1433,83 @@ void Apu::write_wave_ram(uint16_t address, uint8_t value) {
     //  (I guess corruption should take place here, not in tick_ch3)
     ch3.pending_wave_write.pending = true;
     ch3.pending_wave_write.value = value;
+}
+
+#ifdef ENABLE_AUDIO_PCM
+void Apu::update_pcm() {
+    DigitalAudioSample digital_output = compute_digital_audio_sample();
+    pcm12 = digital_output.ch2 << 4 | digital_output.ch1;
+    pcm34 = digital_output.ch4 << 4 | digital_output.ch3;
+}
+
+uint8_t Apu::read_pcm12() const {
+    return pcm12;
+}
+
+uint8_t Apu::read_pcm34() const {
+    return pcm34;
+}
+
+#endif
+
+Apu::DigitalAudioSample Apu::compute_digital_audio_sample() const {
+    DigitalAudioSample digital_output {};
+
+    // CH1
+    {
+        if (nr52.ch1) {
+            ASSERT(ch1.dac);
+            const bool digital_amplitude = SQUARE_WAVES[nr11.duty_cycle][ch1.wave.position];
+            digital_output.ch1 = digital_amplitude * ch1.volume;
+
+            ASSERT(digital_output.ch1 <= 0xF);
+        }
+    }
+
+    // CH2
+    {
+        if (nr52.ch2) {
+            ASSERT(ch2.dac);
+            const bool digital_amplitude = SQUARE_WAVES[nr21.duty_cycle][ch2.wave.position];
+            digital_output.ch2 = digital_amplitude * ch2.volume;
+
+            ASSERT(digital_output.ch2 <= 0xF);
+        }
+    }
+
+    // CH3
+    {
+        if (nr52.ch3 && nr32.volume) {
+            ASSERT(nr30.dac);
+
+            if (mod<2>(ch3.wave.position)) {
+                // Low nibble
+                digital_output.ch3 = keep_bits<4>(wave_ram[ch3.wave.buffer_position]);
+            } else {
+                // High nibble
+                digital_output.ch3 = wave_ram[ch3.wave.buffer_position] >> 4;
+            }
+
+            ASSERT(nr32.volume > 0 && nr32.volume <= 0b11);
+
+            // Scale by volume
+            digital_output.ch3 = digital_output.ch3 >> (nr32.volume - 1);
+
+            ASSERT(digital_output.ch3 <= 0xF);
+        }
+    }
+
+    // CH4
+    {
+        if (nr52.ch4) {
+            ASSERT(ch4.dac);
+
+            const bool random_output = test_bit<0>(ch4.lfsr);
+            digital_output.ch4 = random_output ? ch4.volume : 0;
+
+            ASSERT(digital_output.ch4 <= 0xF);
+        }
+    }
+
+    return digital_output;
 }
