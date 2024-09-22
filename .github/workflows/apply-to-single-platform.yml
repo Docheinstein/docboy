@@ -48,6 +48,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
           -DBUILD_TESTS=${{ inputs.run_tests }}
           -DENABLE_SERIAL=${{ inputs.run_tests }}
+          -DENABLE_AUDIO_PCM=${{ inputs.run_tests }}
           -S ${{ github.workspace }}
 
       # Build project.
