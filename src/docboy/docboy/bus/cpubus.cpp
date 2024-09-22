@@ -183,8 +183,14 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF73 */ memory_accessors[0xFF73] = open_bus_access;
     /* FF74 */ memory_accessors[0xFF74] = open_bus_access;
     /* FF75 */ memory_accessors[0xFF75] = open_bus_access;
+
+#ifdef ENABLE_AUDIO_PCM
+    /* FF76 */ memory_accessors[Specs::Registers::Sound::PCM12] = {NonTrivial<&Apu::read_pcm12> {&apu}, write_nop};
+    /* FF76 */ memory_accessors[Specs::Registers::Sound::PCM34] = {NonTrivial<&Apu::read_pcm34> {&apu}, write_nop};
+#else
     /* FF76 */ memory_accessors[0xFF76] = open_bus_access;
     /* FF77 */ memory_accessors[0xFF77] = open_bus_access;
+#endif
     /* FF78 */ memory_accessors[0xFF78] = open_bus_access;
     /* FF79 */ memory_accessors[0xFF79] = open_bus_access;
     /* FF7A */ memory_accessors[0xFF7A] = open_bus_access;

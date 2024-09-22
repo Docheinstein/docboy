@@ -161,10 +161,18 @@ namespace Registers {
         constexpr uint16_t WAVED = 0xFF3D;
         constexpr uint16_t WAVEE = 0xFF3E;
         constexpr uint16_t WAVEF = 0xFF3F;
+#ifdef ENABLE_AUDIO_PCM
+        constexpr uint16_t PCM12 = 0xFF76;
+        constexpr uint16_t PCM34 = 0xFF77;
+#endif
         constexpr uint16_t REGISTERS[] = {NR10,  NR11,  NR12,  NR13,  NR14,  NR21,  NR22,  NR23,  NR24,  NR30,
                                           NR31,  NR32,  NR33,  NR34,  NR41,  NR42,  NR43,  NR44,  NR50,  NR51,
                                           NR52,  WAVE0, WAVE1, WAVE2, WAVE3, WAVE4, WAVE5, WAVE6, WAVE7, WAVE8,
-                                          WAVE9, WAVEA, WAVEB, WAVEC, WAVED, WAVEE, WAVEF};
+                                          WAVE9, WAVEA, WAVEB, WAVEC, WAVED, WAVEE, WAVEF,
+#ifdef ENABLE_AUDIO_PCM
+                                          PCM12, PCM34
+#endif
+        };
     } // namespace Sound
 
     namespace Video {

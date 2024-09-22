@@ -24,6 +24,7 @@ option(ENABLE_DEBUGGER "Enable debugger" OFF)
 option(ENABLE_SERIAL "Enable serial link" OFF)
 option(ENABLE_BOOTROM "Enable boot rom" OFF)
 option(ENABLE_AUDIO "Enable audio" ON)
+option(ENABLE_AUDIO_PCM "Enable audio PCM registers even for DMG" ON)
 
 option(ENABLE_ASSERTS "Enable asserts" OFF)
 

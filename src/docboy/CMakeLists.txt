@@ -139,6 +139,10 @@ if (ENABLE_AUDIO)
     target_compile_definitions(docboy PUBLIC ENABLE_AUDIO)
 endif ()
 
+if (ENABLE_AUDIO_PCM)
+    target_compile_definitions(docboy PUBLIC ENABLE_AUDIO_PCM)
+endif ()
+
 target_link_libraries(docboy PRIVATE utils)
 
 target_include_directories(docboy PUBLIC .)

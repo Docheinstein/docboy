@@ -2324,6 +2324,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("DAC") << "            :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch1.volume << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
+        b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch1.trigger_delay << endl;
 
         b << subheader2("wave", width) << endl;
 
@@ -2353,6 +2354,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("DAC") << "            :  " << (gb.apu.ch2.dac ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch2.volume << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch2.length_timer << endl;
+        b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch2.trigger_delay << endl;
 
         b << subheader2("wave", width) << endl;
 
@@ -2371,28 +2373,28 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         auto b {make_block(width)};
 
         b << subheader("channel 3", width) << endl;
-        b << yellow("Enabled") << "      :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("DAC") << "          :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Enabled") << "       :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "           :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
         b << endl;
-        b << yellow("Length Timer") << " :  " << +gb.apu.ch3.length_timer << endl;
+        b << yellow("Length Timer") << "  :  " << +gb.apu.ch3.length_timer << endl;
+        b << yellow("Trigger Delay") << " :  " << +gb.apu.ch3.trigger_delay << endl;
 
         b << subheader2("wave", width) << endl;
 
-        b << yellow("Position") << "     :  " << +gb.apu.ch3.wave.position << endl;
-        b << yellow("Buffer Pos.") << "  :  " << +gb.apu.ch3.wave.buffer_position << endl;
-        b << yellow("Timer") << "        :  " << +gb.apu.ch3.wave.timer << endl;
-        b << yellow("Last Read") << "    :  " << +gb.apu.ch3.last_read_tick << endl;
-        b << yellow("Trig. Delay") << "  :  " << +gb.apu.ch3.trigger_delay << endl;
+        b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position << endl;
+        b << yellow("Buffer Pos.") << "   :  " << +gb.apu.ch3.wave.buffer_position << endl;
+        b << yellow("Timer") << "         :  " << +gb.apu.ch3.wave.timer << endl;
+        b << yellow("Last Read") << "     :  " << +gb.apu.ch3.last_read_tick << endl;
 
         b << subheader2("wave ram", width) << endl;
 
-        b << yellow("Wave[0:3]") << "    :  " << hex<uint8_t>(gb.apu.wave_ram[0]) << hex<uint8_t>(gb.apu.wave_ram[1])
+        b << yellow("Wave[0:3]") << "     :  " << hex<uint8_t>(gb.apu.wave_ram[0]) << hex<uint8_t>(gb.apu.wave_ram[1])
           << hex<uint8_t>(gb.apu.wave_ram[2]) << hex<uint8_t>(gb.apu.wave_ram[3]) << endl;
-        b << yellow("Wave[4:7]") << "    :  " << hex<uint8_t>(gb.apu.wave_ram[4]) << hex<uint8_t>(gb.apu.wave_ram[5])
+        b << yellow("Wave[4:7]") << "     :  " << hex<uint8_t>(gb.apu.wave_ram[4]) << hex<uint8_t>(gb.apu.wave_ram[5])
           << hex<uint8_t>(gb.apu.wave_ram[6]) << hex<uint8_t>(gb.apu.wave_ram[7]) << endl;
-        b << yellow("Wave[8:11]") << "   :  " << hex<uint8_t>(gb.apu.wave_ram[8]) << hex<uint8_t>(gb.apu.wave_ram[9])
+        b << yellow("Wave[8:11]") << "    :  " << hex<uint8_t>(gb.apu.wave_ram[8]) << hex<uint8_t>(gb.apu.wave_ram[9])
           << hex<uint8_t>(gb.apu.wave_ram[10]) << hex<uint8_t>(gb.apu.wave_ram[11]) << endl;
-        b << yellow("Wave[12:15]") << "  :  " << hex<uint8_t>(gb.apu.wave_ram[12]) << hex<uint8_t>(gb.apu.wave_ram[13])
+        b << yellow("Wave[12:15]") << "   :  " << hex<uint8_t>(gb.apu.wave_ram[12]) << hex<uint8_t>(gb.apu.wave_ram[13])
           << hex<uint8_t>(gb.apu.wave_ram[14]) << hex<uint8_t>(gb.apu.wave_ram[15]) << endl;
 
         return b;

@@ -281,9 +281,14 @@ Here's the debugger!
 
 #### samesuite
 
-| Test Rom                   |       Result        |
-|----------------------------|:-------------------:|
-| samesuite/ei_delay_halt.gb | :white_check_mark:  |
+| Test Rom                                     |       Result       |
+|----------------------------------------------|:------------------:|
+| samesuite/ei_delay_halt.gb                   | :white_check_mark: |
+| samesuite/apu/div_trigger_volume_10.gb       | :white_check_mark: |
+| samesuite/apu/div_write_trigger.gb           | :white_check_mark: |
+| samesuite/apu/div_write_trigger_10.gb        | :white_check_mark: |
+| samesuite/apu/div_write_trigger_volume.gb    | :white_check_mark: |
+| samesuite/apu/div_write_trigger_volume_10.gb | :white_check_mark: |
 
 
 #### daid

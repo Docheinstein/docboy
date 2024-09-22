@@ -155,6 +155,68 @@ void Apu::reset() {
     div_apu = 2;
 }
 
+Apu::DigitalAudioSample Apu::compute_digital_audio_sample() const {
+    DigitalAudioSample digital_output {};
+
+    // CH1
+    {
+        if (nr52.ch1) {
+            ASSERT(ch1.dac);
+            const bool digital_amplitude = SQUARE_WAVES[nr11.duty_cycle][ch1.wave.position];
+            digital_output.ch1 = digital_amplitude * ch1.volume;
+
+            ASSERT(digital_output.ch1 <= 0xF);
+        }
+    }
+
+    // CH2
+    {
+        if (nr52.ch2) {
+            ASSERT(ch2.dac);
+            const bool digital_amplitude = SQUARE_WAVES[nr21.duty_cycle][ch2.wave.position];
+            digital_output.ch2 = digital_amplitude * ch2.volume;
+
+            ASSERT(digital_output.ch2 <= 0xF);
+        }
+    }
+
+    // CH3
+    {
+        if (nr52.ch3 && nr32.volume) {
+            ASSERT(nr30.dac);
+
+            if (mod<2>(ch3.wave.position)) {
+                // Low nibble
+                digital_output.ch3 = keep_bits<4>(wave_ram[ch3.wave.buffer_position]);
+            } else {
+                // High nibble
+                digital_output.ch3 = wave_ram[ch3.wave.buffer_position] >> 4;
+            }
+
+            ASSERT(nr32.volume > 0 && nr32.volume <= 0b11);
+
+            // Scale by volume
+            digital_output.ch3 = digital_output.ch3 >> (nr32.volume - 1);
+
+            ASSERT(digital_output.ch3 <= 0xF);
+        }
+    }
+
+    // CH4
+    {
+        if (nr52.ch4) {
+            ASSERT(ch4.dac);
+
+            const bool random_output = test_bit<0>(ch4.lfsr);
+            digital_output.ch4 = random_output ? ch4.volume : 0;
+
+            ASSERT(digital_output.ch4 <= 0xF);
+        }
+    }
+
+    return digital_output;
+}
+
 Apu::AudioSample Apu::compute_audio_sample() const {
     ASSERT(nr11.duty_cycle >= 0 && nr11.duty_cycle < 4);
     ASSERT(ch1.wave.position >= 0 && ch1.wave.position < 8);
@@ -164,6 +226,8 @@ Apu::AudioSample Apu::compute_audio_sample() const {
     ASSERT(ch2.wave.position >= 0 && ch2.wave.position < 8);
     ASSERT(ch2.volume <= 0xF);
 
+    DigitalAudioSample digital_output = compute_digital_audio_sample();
+
     struct {
         int16_t ch1 {};
         int16_t ch2 {};
@@ -172,94 +236,36 @@ Apu::AudioSample Apu::compute_audio_sample() const {
     } analog_output;
 
     // CH1
-    {
-        uint8_t digital_volume {};
-
-        if (nr52.ch1) {
-            ASSERT(ch1.dac);
-            const bool digital_amplitude = SQUARE_WAVES[nr11.duty_cycle][ch1.wave.position];
-            digital_volume = digital_amplitude * ch1.volume;
-        }
-
-        if (ch1.dac) {
-            // Note: DAC does its work even if channel is off.
-            const int16_t analog_volume = digital_to_analog_volume(digital_volume);
-            analog_output.ch1 = analog_volume;
-        }
+    if (ch1.dac) {
+        // Note: DAC does its work even if channel is off.
+        const int16_t analog_volume = digital_to_analog_volume(digital_output.ch1);
+        analog_output.ch1 = analog_volume;
     }
 
     // CH2
-    {
-        uint8_t digital_volume {};
-
-        if (nr52.ch2) {
-            ASSERT(ch2.dac);
-            const bool digital_amplitude = SQUARE_WAVES[nr21.duty_cycle][ch2.wave.position];
-            digital_volume = digital_amplitude * ch2.volume;
-        }
-
-        if (ch2.dac) {
-            // Note: DAC does its work even if channel is off.
-            const int16_t analog_volume = digital_to_analog_volume(digital_volume);
-            analog_output.ch2 = analog_volume;
-        }
+    if (ch2.dac) {
+        // Note: DAC does its work even if channel is off.
+        const int16_t analog_volume = digital_to_analog_volume(digital_output.ch2);
+        analog_output.ch2 = analog_volume;
     }
 
     // CH3
-    {
-        uint8_t digital_volume {};
-
-        if (nr52.ch3 && nr32.volume) {
-            ASSERT(nr30.dac);
-
-            const uint8_t wave_index = ch3.wave.position >> 1;
-            ASSERT(wave_index < wave_ram.Size);
-
-            if (mod<2>(ch3.wave.position)) {
-                // Low nibble
-                digital_volume = keep_bits<4>(wave_ram[wave_index]);
-            } else {
-                // High nibble
-                digital_volume = wave_ram[wave_index] >> 4;
-            }
-            ASSERT(digital_volume <= 0xF);
-
-            ASSERT(nr32.volume > 0 && nr32.volume <= 0b11);
-
-            // Scale by volume
-            digital_volume = digital_volume >> (nr32.volume - 1);
-        }
-
-        if (nr30.dac) {
-            // Note: DAC does its work even if channel is off.
-            const int16_t analog_volume = digital_to_analog_volume(digital_volume);
-            analog_output.ch3 = analog_volume;
-        }
+    if (nr30.dac) {
+        // Note: DAC does its work even if channel is off.
+        const int16_t analog_volume = digital_to_analog_volume(digital_output.ch3);
+        analog_output.ch3 = analog_volume;
     }
 
     // CH4
-    {
-        uint8_t digital_volume {};
-
-        if (nr52.ch4) {
-            ASSERT(ch4.dac);
-
-            const bool random_output = test_bit<0>(ch4.lfsr);
-            digital_volume = random_output ? ch4.volume : 0;
-
-            ASSERT(digital_volume <= 0xF);
-        }
-
-        if (ch4.dac) {
-            // Note: DAC does its work even if channel is off.
-            const int16_t analog_volume = digital_to_analog_volume(digital_volume);
-            analog_output.ch4 = analog_volume;
-        }
+    if (ch4.dac) {
+        // Note: DAC does its work even if channel is off.
+        const int16_t analog_volume = digital_to_analog_volume(digital_output.ch4);
+        analog_output.ch4 = analog_volume;
     }
 
     // Mix channels
     struct {
-        struct ChanneStereoAnalogOutput {
+        struct ChannelStereoAnalogOutput {
             int16_t left, right;
         } ch1, ch2, ch3, ch4;
     } analog_stereo_output {};
@@ -391,6 +397,65 @@ void Apu::tick_t0() {
         // Increase DIV-APU each time DIV[4] has a falling edge (~512Hz)
         div_apu++;
 
+        // Eventually update volume, if volume sweep is expired.
+        // This doesn't happen at the same time the volume sweep overflows,
+        // but only the next DIV_APU event.
+        // [samesuite/div_trigger_volume_10, samesuite/div_write_trigger_volume, samesuite/div_write_trigger_volume_10]
+        if (ch1.volume_sweep.expired) {
+            ch1.volume_sweep.expired = false;
+            // Increase/decrease volume (if possible)
+            if (ch1.volume_sweep.direction) {
+                if (ch1.volume < 0xF) {
+                    ++ch1.volume;
+                }
+            } else {
+                if (ch1.volume > 0) {
+                    --ch1.volume;
+                }
+            }
+
+            // Reset counter?
+            ch1.volume_sweep.timer = 0;
+        }
+
+        if (ch2.volume_sweep.expired) {
+            ch2.volume_sweep.expired = false;
+            // Increase/decrease volume (if possible)
+            if (ch2.volume_sweep.direction) {
+                if (ch2.volume < 0xF) {
+                    ++ch2.volume;
+                }
+            } else {
+                if (ch2.volume > 0) {
+                    --ch2.volume;
+                }
+            }
+
+            // Reset counter?
+            ch2.volume_sweep.timer = 0;
+        }
+
+        if (ch4.volume_sweep.expired) {
+            ch4.volume_sweep.expired = false;
+
+            // Update envelope
+            if (++ch4.volume_sweep.timer >= ch4.volume_sweep.pace) {
+                // Increase/decrease volume (if possible)
+                if (ch4.volume_sweep.direction) {
+                    if (ch4.volume < 0xF) {
+                        ++ch4.volume;
+                    }
+                } else {
+                    if (ch4.volume > 0) {
+                        --ch4.volume;
+                    }
+                }
+
+                // Reset counter?
+                ch4.volume_sweep.timer = 0;
+            }
+        }
+
         if (mod<2>(div_apu) == 0) {
             // Increase length timer
             if (nr14.length_enable) {
@@ -469,60 +534,23 @@ void Apu::tick_t0() {
                 }
 
                 if (mod<8>(div_apu) == 0) {
-                    if (nr52.ch1 && ch1.volume_sweep.pace /* 0 disables envelope */) {
-                        // Update envelope
-                        if (++ch1.volume_sweep.timer >= ch1.volume_sweep.pace) {
-                            // Increase/decrease volume (if possible)
-                            if (ch1.volume_sweep.direction) {
-                                if (ch1.volume < 0xF) {
-                                    ++ch1.volume;
-                                }
-                            } else {
-                                if (ch1.volume > 0) {
-                                    --ch1.volume;
-                                }
-                            }
+                    // Update volume sweeps
 
-                            // Reset counter?
-                            ch1.volume_sweep.timer = 0;
+                    if (nr52.ch1 && ch1.volume_sweep.pace /* 0 disables envelope */) {
+                        if (++ch1.volume_sweep.timer >= ch1.volume_sweep.pace) {
+                            ch1.volume_sweep.expired = true;
                         }
                     }
 
                     if (nr52.ch2 && ch2.volume_sweep.pace /* 0 disables envelope */) {
-                        // Update envelope
-                        if (++ch2.volume_sweep.timer >= ch2.volume_sweep.pace) {
-                            // Increase/decrease volume (if possible)
-                            if (ch2.volume_sweep.direction) {
-                                if (ch2.volume < 0xF) {
-                                    ++ch2.volume;
-                                }
-                            } else {
-                                if (ch2.volume > 0) {
-                                    --ch2.volume;
-                                }
-                            }
-
-                            // Reset counter?
-                            ch2.volume_sweep.timer = 0;
+                        if (++ch2.volume_sweep.timer >= ch1.volume_sweep.pace) {
+                            ch2.volume_sweep.expired = true;
                         }
                     }
 
                     if (nr52.ch4 && ch4.volume_sweep.pace /* 0 disables envelope */) {
-                        // Update envelope
                         if (++ch4.volume_sweep.timer >= ch4.volume_sweep.pace) {
-                            // Increase/decrease volume (if possible)
-                            if (ch4.volume_sweep.direction) {
-                                if (ch4.volume < 0xF) {
-                                    ++ch4.volume;
-                                }
-                            } else {
-                                if (ch4.volume > 0) {
-                                    --ch4.volume;
-                                }
-                            }
-
-                            // Reset counter?
-                            ch4.volume_sweep.timer = 0;
+                            ch4.volume_sweep.expired = true;
                         }
                     }
                 }
@@ -534,24 +562,34 @@ void Apu::tick_t0() {
 
     // Advance period timer
     if (nr52.ch1) {
-        if (++ch1.wave.timer == 2048) {
-            // Advance square wave position
-            ch1.wave.position = mod<8>(ch1.wave.position + 1);
+        // Wave position does not change immediately after channel's trigger.
+        if (!ch1.trigger_delay) {
+            if (++ch1.wave.timer == 2048) {
+                // Advance square wave position
+                ch1.wave.position = mod<8>(ch1.wave.position + 1);
 
-            // Reload period timer
-            ch1.wave.timer = nr14.period_high << 8 | nr13.period_low;
-            ASSERT(ch1.wave.timer < 2048);
+                // Reload period timer
+                ch1.wave.timer = nr14.period_high << 8 | nr13.period_low;
+                ASSERT(ch1.wave.timer < 2048);
+            }
+        } else {
+            --ch1.trigger_delay;
         }
     }
 
     if (nr52.ch2) {
-        if (++ch2.wave.timer == 2048) {
-            // Advance square wave position
-            ch2.wave.position = mod<8>(ch2.wave.position + 1);
+        // Wave position does not change immediately after channel's trigger.
+        if (!ch2.trigger_delay) {
+            if (++ch2.wave.timer == 2048) {
+                // Advance square wave position
+                ch2.wave.position = mod<8>(ch2.wave.position + 1);
 
-            // Reload period timer
-            ch2.wave.timer = nr24.period_high << 8 | nr23.period_low;
-            ASSERT(ch2.wave.timer < 2048);
+                // Reload period timer
+                ch2.wave.timer = nr24.period_high << 8 | nr23.period_low;
+                ASSERT(ch2.wave.timer < 2048);
+            }
+        } else {
+            --ch2.trigger_delay;
         }
     }
 
@@ -574,6 +612,10 @@ void Apu::tick_t0() {
     }
 
     tick_sampler();
+
+#ifdef ENABLE_AUDIO_PCM
+    update_pcm();
+#endif
 }
 
 void Apu::tick_t1() {
@@ -586,6 +628,10 @@ void Apu::tick_t2() {
     }
 
     tick_sampler();
+
+#ifdef ENABLE_AUDIO_PCM
+    update_pcm();
+#endif
 }
 
 void Apu::tick_t3() {
@@ -665,8 +711,17 @@ void Apu::turn_off() {
     nr52.ch1 = false;
 
     ch1.dac = false;
+    ch1.wave.position = 0;
+    ch1.volume_sweep.expired = false;
+
     ch2.dac = false;
+    ch2.wave.position = 0;
+    ch2.volume_sweep.expired = false;
+
+    ch3.wave.position = 0;
+
     ch4.dac = false;
+    ch4.volume_sweep.expired = false;
 }
 
 void Apu::save_state(Parcel& parcel) const {
@@ -731,11 +786,13 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch1.dac);
     parcel.write_uint8(ch1.volume);
     parcel.write_uint8(ch1.length_timer);
+    parcel.write_uint8(ch1.trigger_delay);
     parcel.write_uint8(ch1.wave.position);
     parcel.write_uint16(ch1.wave.timer);
     parcel.write_bool(ch1.volume_sweep.direction);
     parcel.write_uint8(ch1.volume_sweep.pace);
     parcel.write_uint8(ch1.volume_sweep.timer);
+    parcel.write_bool(ch1.volume_sweep.expired);
     parcel.write_bool(ch1.period_sweep.enabled);
     parcel.write_uint16(ch1.period_sweep.period);
     parcel.write_uint8(ch1.period_sweep.pace);
@@ -745,11 +802,13 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch2.dac);
     parcel.write_uint8(ch2.volume);
     parcel.write_uint8(ch2.length_timer);
+    parcel.write_uint8(ch2.trigger_delay);
     parcel.write_uint8(ch2.wave.position);
     parcel.write_uint16(ch2.wave.timer);
     parcel.write_bool(ch2.volume_sweep.direction);
     parcel.write_uint8(ch2.volume_sweep.pace);
     parcel.write_uint8(ch2.volume_sweep.timer);
+    parcel.write_bool(ch2.volume_sweep.expired);
 
     parcel.write_uint16(ch3.length_timer);
     parcel.write_uint8(ch3.wave.position);
@@ -768,6 +827,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch4.volume_sweep.direction);
     parcel.write_uint8(ch4.volume_sweep.pace);
     parcel.write_uint8(ch4.volume_sweep.timer);
+    parcel.write_bool(ch4.volume_sweep.expired);
     parcel.write_uint16(ch4.lfsr);
 }
 
@@ -834,11 +894,13 @@ void Apu::load_state(Parcel& parcel) {
     ch1.dac = parcel.read_bool();
     ch1.volume = parcel.read_uint8();
     ch1.length_timer = parcel.read_uint8();
+    ch1.trigger_delay = parcel.read_uint8();
     ch1.wave.position = parcel.read_uint8();
     ch1.wave.timer = parcel.read_uint16();
     ch1.volume_sweep.direction = parcel.read_bool();
     ch1.volume_sweep.pace = parcel.read_uint8();
     ch1.volume_sweep.timer = parcel.read_uint8();
+    ch1.volume_sweep.expired = parcel.read_bool();
     ch1.period_sweep.enabled = parcel.read_bool();
     ch1.period_sweep.period = parcel.read_uint16();
     ch1.period_sweep.pace = parcel.read_uint8();
@@ -848,11 +910,13 @@ void Apu::load_state(Parcel& parcel) {
     ch2.dac = parcel.read_bool();
     ch2.volume = parcel.read_uint8();
     ch2.length_timer = parcel.read_uint8();
+    ch2.trigger_delay = parcel.read_uint8();
     ch2.wave.position = parcel.read_uint8();
     ch2.wave.timer = parcel.read_uint16();
     ch2.volume_sweep.direction = parcel.read_bool();
     ch2.volume_sweep.pace = parcel.read_uint8();
     ch2.volume_sweep.timer = parcel.read_uint8();
+    ch2.volume_sweep.expired = parcel.read_bool();
 
     ch3.length_timer = parcel.read_uint16();
     ch3.wave.position = parcel.read_uint8();
@@ -871,6 +935,7 @@ void Apu::load_state(Parcel& parcel) {
     ch4.volume_sweep.direction = parcel.read_bool();
     ch4.volume_sweep.pace = parcel.read_uint8();
     ch4.volume_sweep.timer = parcel.read_uint8();
+    ch4.volume_sweep.expired = parcel.read_bool();
     ch4.lfsr = parcel.read_uint16();
 }
 
@@ -978,6 +1043,8 @@ void Apu::write_nr14(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configuration
     if (nr14.trigger) {
+        ch1.trigger_delay = !nr52.ch1 ? 3 : 2;
+
         if (ch1.dac) {
             // If the DAC is on, the channel is turned on as well
             nr52.ch1 = true;
@@ -1110,6 +1177,8 @@ void Apu::write_nr24(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configuration
     if (nr24.trigger) {
+        ch2.trigger_delay = !nr52.ch2 ? 3 : 2;
+
         if (ch2.dac) {
             // If the DAC is on, the channel is turned on as well
             nr52.ch2 = true;
@@ -1451,65 +1520,3 @@ uint8_t Apu::read_pcm34() const {
 }
 
 #endif
-
-Apu::DigitalAudioSample Apu::compute_digital_audio_sample() const {
-    DigitalAudioSample digital_output {};
-
-    // CH1
-    {
-        if (nr52.ch1) {
-            ASSERT(ch1.dac);
-            const bool digital_amplitude = SQUARE_WAVES[nr11.duty_cycle][ch1.wave.position];
-            digital_output.ch1 = digital_amplitude * ch1.volume;
-
-            ASSERT(digital_output.ch1 <= 0xF);
-        }
-    }
-
-    // CH2
-    {
-        if (nr52.ch2) {
-            ASSERT(ch2.dac);
-            const bool digital_amplitude = SQUARE_WAVES[nr21.duty_cycle][ch2.wave.position];
-            digital_output.ch2 = digital_amplitude * ch2.volume;
-
-            ASSERT(digital_output.ch2 <= 0xF);
-        }
-    }
-
-    // CH3
-    {
-        if (nr52.ch3 && nr32.volume) {
-            ASSERT(nr30.dac);
-
-            if (mod<2>(ch3.wave.position)) {
-                // Low nibble
-                digital_output.ch3 = keep_bits<4>(wave_ram[ch3.wave.buffer_position]);
-            } else {
-                // High nibble
-                digital_output.ch3 = wave_ram[ch3.wave.buffer_position] >> 4;
-            }
-
-            ASSERT(nr32.volume > 0 && nr32.volume <= 0b11);
-
-            // Scale by volume
-            digital_output.ch3 = digital_output.ch3 >> (nr32.volume - 1);
-
-            ASSERT(digital_output.ch3 <= 0xF);
-        }
-    }
-
-    // CH4
-    {
-        if (nr52.ch4) {
-            ASSERT(ch4.dac);
-
-            const bool random_output = test_bit<0>(ch4.lfsr);
-            digital_output.ch4 = random_output ? ch4.volume : 0;
-
-            ASSERT(digital_output.ch4 <= 0xF);
-        }
-    }
-
-    return digital_output;
-}

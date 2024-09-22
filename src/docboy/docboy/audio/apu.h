@@ -109,6 +109,11 @@ public:
     uint8_t read_wave_ram(uint16_t address) const;
     void write_wave_ram(uint16_t address, uint8_t value);
 
+#ifdef ENABLE_AUDIO_PCM
+    uint8_t read_pcm12() const;
+    uint8_t read_pcm34() const;
+#endif
+
     struct Nr10 : Composite<Specs::Registers::Sound::NR11> {
         UInt8 pace {make_uint8()};
         Bool direction {make_bool()};
@@ -208,13 +213,30 @@ public:
 
     Memory<Specs::Registers::Sound::WAVE0, Specs::Registers::Sound::WAVEF> wave_ram;
 
+#ifdef ENABLE_AUDIO_PCM
+    UInt8 pcm12 {make_uint8(Specs::Registers::Sound::PCM12)};
+    UInt8 pcm34 {make_uint8(Specs::Registers::Sound::PCM34)};
+#endif
+
 private:
+    struct DigitalAudioSample {
+        uint8_t ch1 {};
+        uint8_t ch2 {};
+        uint8_t ch3 {};
+        uint8_t ch4 {};
+    };
+
     void turn_on();
     void turn_off();
 
     void tick_sampler();
     void tick_ch3();
 
+#ifdef ENABLE_AUDIO_PCM
+    void update_pcm();
+#endif
+
+    DigitalAudioSample compute_digital_audio_sample() const;
     AudioSample compute_audio_sample() const;
 
     uint32_t compute_next_period_sweep_period();
@@ -237,6 +259,8 @@ private:
 
         uint8_t length_timer {};
 
+        uint8_t trigger_delay {};
+
         struct {
             uint8_t position {};
             uint16_t timer {};
@@ -246,6 +270,7 @@ private:
             bool direction {};
             uint8_t pace {};
             uint8_t timer {};
+            bool expired {};
         } volume_sweep;
 
         struct {
@@ -264,6 +289,8 @@ private:
 
         uint8_t length_timer {};
 
+        uint8_t trigger_delay {};
+
         struct {
             uint8_t position {};
             uint16_t timer {};
@@ -273,6 +300,7 @@ private:
             bool direction {};
             uint8_t pace {};
             uint8_t timer {};
+            bool expired {};
         } volume_sweep;
     } ch2 {};
 
@@ -310,6 +338,7 @@ private:
             bool direction {};
             uint8_t pace {};
             uint8_t timer {};
+            bool expired {};
         } volume_sweep;
 
         uint16_t lfsr {};
