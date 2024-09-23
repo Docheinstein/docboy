@@ -543,7 +543,7 @@ void Apu::tick_t0() {
                     }
 
                     if (nr52.ch2 && ch2.volume_sweep.pace /* 0 disables envelope */) {
-                        if (++ch2.volume_sweep.timer >= ch1.volume_sweep.pace) {
+                        if (++ch2.volume_sweep.timer >= ch2.volume_sweep.pace) {
                             ch2.volume_sweep.expired = true;
                         }
                     }
