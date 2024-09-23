@@ -1484,7 +1484,9 @@ TEST_CASE("emulation", "[emulation]") {
 
     SECTION("boot") {
         RUN_TEST_ROMS(S {"mooneye/boot_div-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+#if !ENABLE_AUDIO_PCM
                       S {"mooneye/boot_hwio-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+#endif
                       S {"mooneye/boot_regs-dmgABC.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       F {"docboy/boot/boot_div_phase_round1.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_div_phase_round2.gb", "docboy/ok.png"},
@@ -1531,11 +1533,10 @@ TEST_CASE("emulation", "[emulation]") {
                       F {"blargg/oam_bug/6-timing_no_bug.gb", "blargg/oam_bug/6-timing_no_bug.png"},
                       F {"blargg/oam_bug/8-instr_effect.gb", "blargg/oam_bug/8-instr_effect.png"}, );
     }
-
     SECTION("io") {
-        RUN_TEST_ROMS(S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}
-
-        );
+#if !ENABLE_AUDIO_PCM
+        RUN_TEST_ROMS(S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
+#endif
     }
 
     SECTION("timers") {
@@ -1883,7 +1884,11 @@ TEST_CASE("emulation", "[emulation]") {
 
     SECTION("integration") {
         RUN_TEST_ROMS(
-            F {"hacktix/bully.gb", "hacktix/bully.png"}, F {"hacktix/strikethrough.gb", "hacktix/strikethrough.png"},
+        // hacktick
+#if !ENABLE_AUDIO_PCM
+            F {"hacktix/bully.gb", "hacktix/bully.png"},
+#endif
+            F {"hacktix/strikethrough.gb", "hacktix/strikethrough.png"},
 
             // docboy
             F {"docboy/integration/rendering/change_bgp_from_boot.gb", "docboy/integration/change_bgp_from_boot.png",
