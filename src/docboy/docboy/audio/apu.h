@@ -236,10 +236,17 @@ private:
     void update_pcm();
 #endif
 
+    uint8_t compute_ch1_digital_output() const;
+    uint8_t compute_ch2_digital_output() const;
+    uint8_t compute_ch3_digital_output() const;
+    uint8_t compute_ch4_digital_output() const;
     DigitalAudioSample compute_digital_audio_sample() const;
     AudioSample compute_audio_sample() const;
 
-    uint32_t compute_next_period_sweep_period();
+    uint32_t compute_ch1_next_period_sweep_period();
+
+    void tick_ch1_period_sweep();
+    void tick_ch4();
 
     Timers& timers;
 
@@ -310,7 +317,7 @@ private:
         struct {
             uint8_t position {};
             uint16_t timer {};
-            uint8_t buffer_position {};
+            uint8_t play_position {};
         } wave;
 
         bool retrigger {};

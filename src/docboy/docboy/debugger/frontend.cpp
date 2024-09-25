@@ -2328,8 +2328,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << subheader2("wave", width) << endl;
 
-        b << yellow("Position") << "       :  " << +gb.apu.ch1.wave.position << endl;
         b << yellow("Timer") << "          :  " << +gb.apu.ch1.wave.timer << endl;
+        b << yellow("Position") << "       :  " << +gb.apu.ch1.wave.position << endl;
 
         b << subheader2("volume sweep", width) << endl;
         b << yellow("Direction") << "      :  " << +gb.apu.ch1.volume_sweep.direction << endl;
@@ -2358,8 +2358,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << subheader2("wave", width) << endl;
 
-        b << yellow("Position") << "       :  " << +gb.apu.ch2.wave.position << endl;
         b << yellow("Timer") << "          :  " << +gb.apu.ch2.wave.timer << endl;
+        b << yellow("Position") << "       :  " << +gb.apu.ch2.wave.position << endl;
 
         b << subheader2("volume sweep", width) << endl;
         b << yellow("Direction") << "      :  " << +gb.apu.ch2.volume_sweep.direction << endl;
@@ -2381,9 +2381,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << subheader2("wave", width) << endl;
 
-        b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position << endl;
-        b << yellow("Buffer Pos.") << "   :  " << +gb.apu.ch3.wave.buffer_position << endl;
         b << yellow("Timer") << "         :  " << +gb.apu.ch3.wave.timer << endl;
+        b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position << endl;
+        b << yellow("Play Position") << " :  " << +gb.apu.ch3.wave.play_position << endl;
         b << yellow("Last Read") << "     :  " << +gb.apu.ch3.last_read_tick << endl;
 
         b << subheader2("wave ram", width) << endl;
@@ -2408,11 +2408,12 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("DAC") << "            :  " << (gb.apu.ch4.dac ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch4.volume << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch4.length_timer << endl;
+        b << endl;
 
         b << subheader2("wave", width) << endl;
 
-        b << endl;
         b << yellow("Timer") << "          :  " << +gb.apu.ch4.wave.timer << endl;
+        b << endl;
 
         b << subheader2("volume sweep", width) << endl;
         b << yellow("Direction") << "      :  " << +gb.apu.ch4.volume_sweep.direction << endl;
