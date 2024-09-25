@@ -14,6 +14,7 @@ Can be used either with the standalone SDL frontend or as a libretro core (e.g. 
 ### GameBoy features
 * CPU: M-cycle accurate
 * PPU: T-cycle accurate (implements Pixel FIFO)
+* APU (audio)
 * Cartridges: NoMBC, MBC1, MBC2, MBC3, MBC5
 * Real Time Clock (RTC) emulation
 * Memory buses (EXT, CPU, OAM, VRAM) and MMU (for accurately handle read/write conflicts)
@@ -33,7 +34,6 @@ Can be used either with the standalone SDL frontend or as a libretro core (e.g. 
 * Graphical menu (SDL)
 
 ### TODO
-* Sound
 * GBC (add colors support)
 
 
