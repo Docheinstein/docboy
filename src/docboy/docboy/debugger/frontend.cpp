@@ -2332,9 +2332,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Position") << "       :  " << +gb.apu.ch1.wave.position << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Direction") << "      :  " << +gb.apu.ch1.volume_sweep.direction << endl;
-        b << yellow("Pace") << "           :  " << +gb.apu.ch1.volume_sweep.pace << endl;
         b << yellow("Timer") << "          :  " << +gb.apu.ch1.volume_sweep.timer << endl;
+        b << yellow("Pace") << "           :  " << +gb.apu.ch1.volume_sweep.pace << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch1.volume_sweep.direction << endl;
 
         b << subheader2("period sweep", width) << endl;
 
@@ -2362,9 +2362,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Position") << "       :  " << +gb.apu.ch2.wave.position << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Direction") << "      :  " << +gb.apu.ch2.volume_sweep.direction << endl;
-        b << yellow("Pace") << "           :  " << +gb.apu.ch2.volume_sweep.pace << endl;
         b << yellow("Timer") << "          :  " << +gb.apu.ch2.volume_sweep.timer << endl;
+        b << yellow("Pace") << "           :  " << +gb.apu.ch2.volume_sweep.pace << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch2.volume_sweep.direction << endl;
 
         return b;
     };
@@ -2416,9 +2416,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Direction") << "      :  " << +gb.apu.ch4.volume_sweep.direction << endl;
-        b << yellow("Pace") << "           :  " << +gb.apu.ch4.volume_sweep.pace << endl;
         b << yellow("Timer") << "          :  " << +gb.apu.ch4.volume_sweep.timer << endl;
+        b << yellow("Pace") << "           :  " << +gb.apu.ch4.volume_sweep.pace << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch4.volume_sweep.direction << endl;
 
         b << subheader2("lfsr", width) << endl;
 

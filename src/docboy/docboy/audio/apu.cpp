@@ -1333,7 +1333,7 @@ void Apu::write_nr44(uint8_t value) {
         ch4.volume_sweep.direction = nr42.envelope_direction;
         ch4.volume_sweep.pace = nr42.sweep_pace;
         ch4.volume_sweep.timer = 0;
-        ch4.volume_sweep.expired = 0;
+        ch4.volume_sweep.expired = false;
 
         ch4.lfsr = 0;
 
