@@ -2,6 +2,9 @@
 #define UTILSSTRINGS_H
 
 #include <algorithm>
+#include <cstdint>
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -62,5 +65,12 @@ std::string lpad(const std::string& s, std::size_t length, char ch = ' ');
 std::string rpad(const std::string& s, std::size_t length, char ch = ' ');
 
 bool starts_with(const std::string& heystack, const std::string& needle);
+
+template <uint8_t Precision, typename T>
+std::string to_string_with_precision(const T value) {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(Precision) << value;
+    return ss.str();
+}
 
 #endif // UTILSSTRINGS_H

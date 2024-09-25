@@ -4,6 +4,8 @@
 #include <cstring>
 
 namespace {
+constexpr uint32_t AUDIO_SAMPLE_RATE = 32768;
+
 retro_log_printf_t retro_log;
 
 retro_environment_t environ_cb;
@@ -14,9 +16,12 @@ retro_input_state_t input_state_cb;
 
 GameBoy gameboy {};
 Core core {gameboy};
-const uint16_t* framebuffer {gameboy.lcd.get_pixels()};
 
-int16_t audiobuffer[4096] {};
+const uint16_t* framebuffer {gameboy.lcd.get_pixels()};
+struct {
+    int16_t data[32768] {};
+    uint32_t index {};
+} audiobuffer;
 
 void retro_fallback_log(enum retro_log_level level, const char* fmt, ...) {
     va_list va;
@@ -24,9 +29,19 @@ void retro_fallback_log(enum retro_log_level level, const char* fmt, ...) {
     vfprintf(stderr, fmt, va);
     va_end(va);
 }
+
+void audio_sample_cb(const Apu::AudioSample sample) {
+    if (audiobuffer.index < array_size(audiobuffer.data) - 1) {
+        audiobuffer.data[audiobuffer.index++] = sample.left;
+        audiobuffer.data[audiobuffer.index++] = sample.right;
+    }
+}
+
 } // namespace
 
 void retro_init(void) {
+    core.set_audio_sample_rate(AUDIO_SAMPLE_RATE);
+    core.set_audio_sample_callback(audio_sample_cb);
 }
 
 void retro_deinit(void) {
@@ -53,6 +68,8 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
     info->geometry.max_width = Specs::Display::WIDTH;
     info->geometry.max_height = Specs::Display::HEIGHT;
     info->geometry.aspect_ratio = 0.0f;
+    info->timing.fps = Specs::FPS;
+    info->timing.sample_rate = AUDIO_SAMPLE_RATE;
 }
 
 void retro_set_environment(retro_environment_t cb) {
@@ -128,8 +145,8 @@ void retro_run(void) {
     // Draw framebuffer
     video_cb(framebuffer, Specs::Display::WIDTH, Specs::Display::HEIGHT, Specs::Display::WIDTH * sizeof(uint16_t));
 
-    // TODO: audio is needed to limit emulation at 60fps
-    audio_batch_cb(audiobuffer, 1476 / 2);
+    audio_batch_cb(audiobuffer.data, audiobuffer.index / 2);
+    audiobuffer.index = 0;
 }
 
 bool retro_load_game(const struct retro_game_info* info) {

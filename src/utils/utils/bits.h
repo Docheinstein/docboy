@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "utils/bitrange.h"
+
 // ---------- TYPES ----------
 
 template <typename ResultType>
@@ -83,7 +85,7 @@ template <uint32_t n>
 constexpr uint32_t log_2 = Log2<n>::value;
 
 template <uint64_t m>
-uint64_t mod(uint64_t n) {
+constexpr uint64_t mod(uint64_t n) {
     if constexpr (is_power_of_2<m>) {
         return n & bitmask<log_2<m>>;
     }
@@ -249,12 +251,27 @@ auto keep_bits(T&& value) {
     return value & bitmask<n>;
 }
 
-template <uint8_t from, uint8_t to, typename T, std::enable_if_t<from >= to>* = nullptr>
+template <uint8_t msb, uint8_t lsb, typename T, std::enable_if_t<msb >= lsb>* = nullptr>
 auto keep_bits_range(T&& value) {
-    static_assert(from < 8 * sizeof(T));
-    static_assert(to < 8 * sizeof(T));
-    return value & bitmask_range<from, to>;
+    static_assert(msb < 8 * sizeof(T));
+    static_assert(lsb < 8 * sizeof(T));
+    return value & bitmask_range<msb, lsb>;
 }
+
+template <const BitRange& range, typename T>
+auto keep_bits_range_r(T&& value) {
+    return keep_bits_range<range.msb, range.lsb>(std::forward<T>(value));
+};
+
+template <const BitRange& range, typename T>
+auto get_bits_range(T&& value) {
+    return keep_bits_range_r<range>(std::forward<T>(value)) >> range.lsb;
+};
+
+template <uint8_t msb, uint8_t lsb, typename T>
+auto get_bits_range(T&& value) {
+    return keep_bits_range<msb, lsb>(std::forward<T>(value)) >> lsb;
+};
 
 template <uint8_t n, typename T>
 auto discard_bits(T&& value) {

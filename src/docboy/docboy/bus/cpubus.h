@@ -12,7 +12,7 @@ class Joypad;
 class Serial;
 class Timers;
 class Interrupts;
-class Sound;
+class Apu;
 class Ppu;
 class Boot;
 
@@ -21,9 +21,9 @@ class CpuBus final : public Bus {
 public:
 #ifdef ENABLE_BOOTROM
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-           Sound& sound, Ppu& ppu, Boot& boot);
+           Apu& apu, Ppu& ppu, Boot& boot);
 #else
-    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Sound& sound, Ppu& ppu,
+    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& Ppu,
            Boot& boot);
 #endif
 
@@ -37,9 +37,9 @@ public:
     Serial& serial;
     Timers& timers;
     Interrupts& interrupts;
-    Sound& sound;
     Boot& boot;
 
+    Apu& apu;
     Ppu& ppu;
 };
 #endif // CPUBUS_H

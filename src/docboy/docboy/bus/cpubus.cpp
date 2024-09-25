@@ -1,12 +1,12 @@
 #include "docboy/bus/cpubus.h"
 
+#include "docboy/audio/apu.h"
 #include "docboy/boot/boot.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/memory/hram.h"
 #include "docboy/ppu/ppu.h"
 #include "docboy/serial/serial.h"
-#include "docboy/sound/sound.h"
 #include "docboy/timers/timers.h"
 
 #ifdef ENABLE_BOOTROM
@@ -15,12 +15,12 @@
 
 #ifdef ENABLE_BOOTROM
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-               Sound& sound, Ppu& ppu, Boot& boot) :
+               Apu& apu, Ppu& ppu, Boot& boot) :
     Bus {},
     boot_rom {boot_rom},
 #else
-CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Sound& sound,
-               Ppu& ppu, Boot& boot) :
+CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
+               Boot& boot) :
     Bus {},
 #endif
     hram {hram},
@@ -28,8 +28,8 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     serial {serial},
     timers {timers},
     interrupts {interrupts},
-    sound {sound},
     boot {boot},
+    apu {apu},
     ppu {ppu} {
 
     // clang-format off
@@ -67,29 +67,50 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF0E */ memory_accessors[0xFF0E] = open_bus_access;
     /* FF0F */ memory_accessors[Specs::Registers::Interrupts::IF] = {&interrupts.IF,
                                                                      NonTrivial<&Interrupts::write_IF> {&interrupts}};
-    /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {&sound.nr10, NonTrivial<&Sound::write_nr10> {&sound}};
-    /* FF11 */ memory_accessors[Specs::Registers::Sound::NR11] = &sound.nr11;
-    /* FF12 */ memory_accessors[Specs::Registers::Sound::NR12] = &sound.nr12;
-    /* FF13 */ memory_accessors[Specs::Registers::Sound::NR13] = &sound.nr13;
-    /* FF14 */ memory_accessors[Specs::Registers::Sound::NR14] = &sound.nr14;
+    /* FF10 */ memory_accessors[Specs::Registers::Sound::NR10] = {NonTrivial<&Apu::read_nr10> {&apu},
+                                                                  NonTrivial<&Apu::write_nr10> {&apu}};
+    /* FF11 */ memory_accessors[Specs::Registers::Sound::NR11] = {NonTrivial<&Apu::read_nr11> {&apu},
+                                                                  NonTrivial<&Apu::write_nr11> {&apu}};
+    /* FF12 */ memory_accessors[Specs::Registers::Sound::NR12] = {NonTrivial<&Apu::read_nr12> {&apu},
+                                                                  NonTrivial<&Apu::write_nr12> {&apu}};
+    /* FF13 */ memory_accessors[Specs::Registers::Sound::NR13] = {NonTrivial<&Apu::read_nr13> {&apu},
+                                                                  NonTrivial<&Apu::write_nr13> {&apu}};
+    /* FF14 */ memory_accessors[Specs::Registers::Sound::NR14] = {NonTrivial<&Apu::read_nr14> {&apu},
+                                                                  NonTrivial<&Apu::write_nr14> {&apu}};
     /* FF15 */ memory_accessors[0xFF15] = open_bus_access;
-    /* FF16 */ memory_accessors[Specs::Registers::Sound::NR21] = &sound.nr21;
-    /* FF17 */ memory_accessors[Specs::Registers::Sound::NR22] = &sound.nr22;
-    /* FF18 */ memory_accessors[Specs::Registers::Sound::NR23] = &sound.nr23;
-    /* FF19 */ memory_accessors[Specs::Registers::Sound::NR24] = &sound.nr24;
-    /* FF1A */ memory_accessors[Specs::Registers::Sound::NR30] = {&sound.nr30, NonTrivial<&Sound::write_nr30> {&sound}};
-    /* FF1B */ memory_accessors[Specs::Registers::Sound::NR31] = &sound.nr31;
-    /* FF1C */ memory_accessors[Specs::Registers::Sound::NR32] = {&sound.nr32, NonTrivial<&Sound::write_nr32> {&sound}};
-    /* FF1D */ memory_accessors[Specs::Registers::Sound::NR33] = &sound.nr33;
-    /* FF1E */ memory_accessors[Specs::Registers::Sound::NR34] = &sound.nr34;
+    /* FF16 */ memory_accessors[Specs::Registers::Sound::NR21] = {NonTrivial<&Apu::read_nr21> {&apu},
+                                                                  NonTrivial<&Apu::write_nr21> {&apu}};
+    /* FF17 */ memory_accessors[Specs::Registers::Sound::NR22] = {NonTrivial<&Apu::read_nr22> {&apu},
+                                                                  NonTrivial<&Apu::write_nr22> {&apu}};
+    /* FF18 */ memory_accessors[Specs::Registers::Sound::NR23] = {NonTrivial<&Apu::read_nr23> {&apu},
+                                                                  NonTrivial<&Apu::write_nr23> {&apu}};
+    /* FF19 */ memory_accessors[Specs::Registers::Sound::NR24] = {NonTrivial<&Apu::read_nr24> {&apu},
+                                                                  NonTrivial<&Apu::write_nr24> {&apu}};
+    /* FF1A */ memory_accessors[Specs::Registers::Sound::NR30] = {NonTrivial<&Apu::read_nr30> {&apu},
+                                                                  NonTrivial<&Apu::write_nr30> {&apu}};
+    /* FF1B */ memory_accessors[Specs::Registers::Sound::NR31] = {NonTrivial<&Apu::read_nr31> {&apu},
+                                                                  NonTrivial<&Apu::write_nr31> {&apu}};
+    /* FF1C */ memory_accessors[Specs::Registers::Sound::NR32] = {NonTrivial<&Apu::read_nr32> {&apu},
+                                                                  NonTrivial<&Apu::write_nr32> {&apu}};
+    /* FF1D */ memory_accessors[Specs::Registers::Sound::NR33] = {NonTrivial<&Apu::read_nr33> {&apu},
+                                                                  NonTrivial<&Apu::write_nr33> {&apu}};
+    /* FF1E */ memory_accessors[Specs::Registers::Sound::NR34] = {NonTrivial<&Apu::read_nr34> {&apu},
+                                                                  NonTrivial<&Apu::write_nr34> {&apu}};
     /* FF1F */ memory_accessors[0xFF1F] = open_bus_access;
-    /* FF20 */ memory_accessors[Specs::Registers::Sound::NR41] = {&sound.nr41, NonTrivial<&Sound::write_nr41> {&sound}};
-    /* FF21 */ memory_accessors[Specs::Registers::Sound::NR42] = &sound.nr42;
-    /* FF22 */ memory_accessors[Specs::Registers::Sound::NR43] = &sound.nr43;
-    /* FF23 */ memory_accessors[Specs::Registers::Sound::NR44] = {&sound.nr44, NonTrivial<&Sound::write_nr44> {&sound}};
-    /* FF24 */ memory_accessors[Specs::Registers::Sound::NR50] = &sound.nr50;
-    /* FF25 */ memory_accessors[Specs::Registers::Sound::NR51] = &sound.nr51;
-    /* FF26 */ memory_accessors[Specs::Registers::Sound::NR52] = {&sound.nr52, NonTrivial<&Sound::write_nr52> {&sound}};
+    /* FF20 */ memory_accessors[Specs::Registers::Sound::NR41] = {NonTrivial<&Apu::read_nr41> {&apu},
+                                                                  NonTrivial<&Apu::write_nr41> {&apu}};
+    /* FF21 */ memory_accessors[Specs::Registers::Sound::NR42] = {NonTrivial<&Apu::read_nr42> {&apu},
+                                                                  NonTrivial<&Apu::write_nr42> {&apu}};
+    /* FF22 */ memory_accessors[Specs::Registers::Sound::NR43] = {NonTrivial<&Apu::read_nr43> {&apu},
+                                                                  NonTrivial<&Apu::write_nr43> {&apu}};
+    /* FF23 */ memory_accessors[Specs::Registers::Sound::NR44] = {NonTrivial<&Apu::read_nr44> {&apu},
+                                                                  NonTrivial<&Apu::write_nr44> {&apu}};
+    /* FF24 */ memory_accessors[Specs::Registers::Sound::NR50] = {NonTrivial<&Apu::read_nr50> {&apu},
+                                                                  NonTrivial<&Apu::write_nr50> {&apu}};
+    /* FF25 */ memory_accessors[Specs::Registers::Sound::NR51] = {NonTrivial<&Apu::read_nr51> {&apu},
+                                                                  NonTrivial<&Apu::write_nr51> {&apu}};
+    /* FF26 */ memory_accessors[Specs::Registers::Sound::NR52] = {NonTrivial<&Apu::read_nr52> {&apu},
+                                                                  NonTrivial<&Apu::write_nr52> {&apu}};
     /* FF27 */ memory_accessors[0xFF27] = open_bus_access;
     /* FF28 */ memory_accessors[0xFF28] = open_bus_access;
     /* FF29 */ memory_accessors[0xFF29] = open_bus_access;
@@ -99,22 +120,13 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF2D */ memory_accessors[0xFF2D] = open_bus_access;
     /* FF2E */ memory_accessors[0xFF2E] = open_bus_access;
     /* FF2F */ memory_accessors[0xFF2F] = open_bus_access;
-    /* FF30 */ memory_accessors[Specs::Registers::Sound::WAVE0] = &sound.wave0;
-    /* FF31 */ memory_accessors[Specs::Registers::Sound::WAVE1] = &sound.wave1;
-    /* FF32 */ memory_accessors[Specs::Registers::Sound::WAVE2] = &sound.wave2;
-    /* FF33 */ memory_accessors[Specs::Registers::Sound::WAVE3] = &sound.wave3;
-    /* FF34 */ memory_accessors[Specs::Registers::Sound::WAVE4] = &sound.wave4;
-    /* FF35 */ memory_accessors[Specs::Registers::Sound::WAVE5] = &sound.wave5;
-    /* FF36 */ memory_accessors[Specs::Registers::Sound::WAVE6] = &sound.wave6;
-    /* FF37 */ memory_accessors[Specs::Registers::Sound::WAVE7] = &sound.wave7;
-    /* FF38 */ memory_accessors[Specs::Registers::Sound::WAVE8] = &sound.wave8;
-    /* FF39 */ memory_accessors[Specs::Registers::Sound::WAVE9] = &sound.wave9;
-    /* FF3A */ memory_accessors[Specs::Registers::Sound::WAVEA] = &sound.waveA;
-    /* FF3B */ memory_accessors[Specs::Registers::Sound::WAVEB] = &sound.waveB;
-    /* FF3C */ memory_accessors[Specs::Registers::Sound::WAVEC] = &sound.waveC;
-    /* FF3D */ memory_accessors[Specs::Registers::Sound::WAVED] = &sound.waveD;
-    /* FF3E */ memory_accessors[Specs::Registers::Sound::WAVEE] = &sound.waveE;
-    /* FF3F */ memory_accessors[Specs::Registers::Sound::WAVEF] = &sound.waveF;
+
+    /* FF30 - FF3F */
+    for (uint16_t i = Specs::Registers::Sound::WAVE0; i <= Specs::Registers::Sound::WAVEF; i++) {
+        memory_accessors[i] = {NonTrivialRead<&Apu::read_wave_ram> {&apu},
+                               NonTrivialWrite<&Apu::write_wave_ram> {&apu}};
+    }
+
     /* FF40 */ memory_accessors[Specs::Registers::Video::LCDC] = {NonTrivial<&Ppu::read_lcdc> {&ppu},
                                                                   NonTrivial<&Ppu::write_lcdc> {&ppu}};
     /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = {NonTrivial<&Ppu::read_stat> {&ppu},
@@ -171,8 +183,14 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF73 */ memory_accessors[0xFF73] = open_bus_access;
     /* FF74 */ memory_accessors[0xFF74] = open_bus_access;
     /* FF75 */ memory_accessors[0xFF75] = open_bus_access;
+
+#ifdef ENABLE_AUDIO_PCM
+    /* FF76 */ memory_accessors[Specs::Registers::Sound::PCM12] = {NonTrivial<&Apu::read_pcm12> {&apu}, write_nop};
+    /* FF76 */ memory_accessors[Specs::Registers::Sound::PCM34] = {NonTrivial<&Apu::read_pcm34> {&apu}, write_nop};
+#else
     /* FF76 */ memory_accessors[0xFF76] = open_bus_access;
     /* FF77 */ memory_accessors[0xFF77] = open_bus_access;
+#endif
     /* FF78 */ memory_accessors[0xFF78] = open_bus_access;
     /* FF79 */ memory_accessors[0xFF79] = open_bus_access;
     /* FF7A */ memory_accessors[0xFF7A] = open_bus_access;

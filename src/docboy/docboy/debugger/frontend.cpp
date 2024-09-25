@@ -55,7 +55,8 @@ struct FrontendDeleteCommand {
 };
 
 struct FrontendAutoDisassembleCommand {
-    uint16_t n {};
+    uint16_t past {};
+    uint16_t next {};
 };
 
 struct FrontendExamineCommand {
@@ -120,7 +121,9 @@ struct FrontendFrameBackCommand {
     uint64_t count {};
 };
 
-struct FrontendContinueCommand {};
+struct FrontendContinueCommand {
+    std::optional<uint16_t> address {};
+};
 
 struct FrontendTraceCommand {
     std::optional<uint32_t> level {};
@@ -279,11 +282,21 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          }
          return cmd;
      }},
-    {std::regex(R"(ad\s*(\d+)?)"), "ad <num>", "Automatically disassemble next <n> instructions (default = 10)",
+    {std::regex(R"(ad\s*(\d+)\s+(\d+))"), "ad <past> <next>",
+     "Automatically disassemble past <past> and next <next> instructions",
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         FrontendAutoDisassembleCommand cmd {};
+         const std::string& past = groups[0];
+         const std::string& next = groups[1];
+         cmd.past = std::stoi(past);
+         cmd.next = std::stoi(next);
+         return cmd;
+     }},
+    {std::regex(R"(ad\s*(\d+)?)"), "ad <num>", "Automatically disassemble next <num> instructions (default = 10)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          FrontendAutoDisassembleCommand cmd {};
          const std::string& n = groups[0];
-         cmd.n = !n.empty() ? std::stoi(n) : 10;
+         cmd.next = !n.empty() ? std::stoi(n) : 10;
          return cmd;
      }},
     {std::regex(R"(x(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "x[x][/<length><format>] <addr>",
@@ -402,9 +415,18 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          uint64_t n = count.empty() ? 1 : std::stoi(count);
          return FrontendScanlineCommand {n};
      }},
-    {std::regex(R"(c)"), "c", "Continue",
+    {std::regex(R"(c\s*(\w+)?)"), "c [<address>]", "Continue (optionally stop at <address>)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-         return FrontendContinueCommand {};
+         FrontendContinueCommand cmd {};
+         const std::string& addr = groups[0];
+         if (!addr.empty()) {
+             bool ok {true};
+             cmd.address = address_str_to_addr(groups[0], &ok);
+             if (!ok) {
+                 return std::nullopt;
+             }
+         }
+         return cmd;
      }},
     {std::regex(R"(trace\s*(\d+)?)"), "trace [<level>]", "Set the trace level or toggle it (output on stderr)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
@@ -549,7 +571,8 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendDeleteCommand>(c
 template <>
 std::optional<Command>
 DebuggerFrontend::handle_command<FrontendAutoDisassembleCommand>(const FrontendAutoDisassembleCommand& cmd) {
-    auto_disassemble_next_instructions = cmd.n;
+    auto_disassemble_instructions.past = cmd.past;
+    auto_disassemble_instructions.next = cmd.next;
     reprint_ui = true;
     return std::nullopt;
 }
@@ -672,6 +695,10 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendScanlineCommand>
 // Continue
 template <>
 std::optional<Command> DebuggerFrontend::handle_command<FrontendContinueCommand>(const FrontendContinueCommand& cmd) {
+    if (cmd.address) {
+        temporary_breakpoint = backend.add_breakpoint(*cmd.address);
+    }
+
     return ContinueCommand();
 }
 
@@ -755,6 +782,12 @@ Command DebuggerFrontend::pull_command(const ExecutionState& state) {
     std::string cmdline;
 
     reprint_ui = true;
+
+    // Eventually remove the temporary breakpoint
+    if (temporary_breakpoint) {
+        backend.remove_point(*temporary_breakpoint);
+        temporary_breakpoint = std::nullopt;
+    }
 
     // Pull command loop
     do {
@@ -996,6 +1029,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     const auto subheader = [title](const char* c, uint16_t width) {
         return title(cyan(c), width);
+    };
+
+    const auto subheader2 = [title](const char* c, uint16_t width) {
+        return title(lightmagenta(c), width);
     };
 
     const auto hr = [title](uint16_t width) {
@@ -1928,22 +1965,29 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         return b;
     };
 
+    // PPU
     const auto make_ppu_header = [&](uint32_t width) {
         auto b {make_block(width)};
         b << header("PPU", width) << endl;
         return b;
     };
 
-    // PPU
-    const auto make_ppu_block_1 = [&](uint32_t width) {
+    const auto make_ppu_general_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
 
-        b << subheader("general", width) << endl;
+        // General
+        b << yellow("On") << "                :  " << (gb.ppu.lcdc.enable ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Cycle") << "             :  " << gb.ppu.cycles << endl;
+        b << yellow("Dots") << "              :  " << gb.ppu.dots << endl;
 
-        b << yellow("On") << "               :  " << gb.ppu.lcdc.enable << endl;
-        b << yellow("Cycle") << "            :  " << gb.ppu.cycles << endl;
-        b << yellow("Dots") << "             :  " << gb.ppu.dots << endl;
-        b << yellow("Mode") << "             :  " << [this]() -> Text {
+        return b;
+    };
+
+    const auto make_ppu_general_block_2 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        // General
+        b << yellow("Mode") << "                :  " << [this]() -> Text {
             if (gb.ppu.tick_selector == &Ppu::oam_scan_even || gb.ppu.tick_selector == &Ppu::oam_scan_odd ||
                 gb.ppu.tick_selector == &Ppu::oam_scan_done || gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on)
                 return "Oam Scan";
@@ -1988,8 +2032,14 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             return "Unknown";
         }() << endl;
 
-        b << yellow("Last Stat IRQ") << "    :  " << gb.ppu.last_stat_irq << endl;
-        b << yellow("LYC_EQ_LY En.") << "    :  " << gb.ppu.enable_lyc_eq_ly_irq << endl;
+        b << yellow("Last Stat IRQ") << "       :  " << gb.ppu.last_stat_irq << endl;
+        b << yellow("LYC_EQ_LY En.") << "       :  " << gb.ppu.enable_lyc_eq_ly_irq << endl;
+
+        return b;
+    };
+
+    const auto make_ppu_block_1 = [&](uint32_t width) {
+        auto b {make_block(width)};
 
         // LCD
         const auto pixel_color = [this](uint16_t lcd_color) {
@@ -2008,9 +2058,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         };
 
         b << subheader("lcd", width) << endl;
-        b << yellow("X") << "                :  " << gb.lcd.x << endl;
-        b << yellow("Y") << "                :  " << gb.lcd.y << endl;
-        b << yellow("Last Pixels") << "      :  ";
+        b << yellow("X") << "                 :  " << gb.lcd.x << endl;
+        b << yellow("Y") << "                 :  " << gb.lcd.y << endl;
+        b << yellow("Last Pixels") << "       :  ";
         for (int32_t i = 0; i < 8; i++) {
             int32_t idx = gb.lcd.cursor - 8 + i;
             if (idx >= 0) {
@@ -2026,7 +2076,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         for (uint8_t i = 0; i < gb.ppu.bg_fifo.size(); i++) {
             bg_pixels[i] = gb.ppu.bg_fifo[i].color_index;
         }
-        b << yellow("BG Fifo Pixels") << "   :  " << hex(bg_pixels, gb.ppu.bg_fifo.size()) << endl;
+        b << yellow("BG Fifo Pixels") << "    :  " << hex(bg_pixels, gb.ppu.bg_fifo.size()) << endl;
 
         // OBJ Fifo
         uint8_t obj_pixels[8];
@@ -2044,18 +2094,19 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << subheader("obj fifo", width) << endl;
 
-        b << yellow("OBJ Fifo Pixels") << "  :  " << hex(obj_pixels, gb.ppu.obj_fifo.size()) << endl;
-        b << yellow("OBJ Fifo Number") << "  :  " << hex(obj_numbers, gb.ppu.obj_fifo.size()) << endl;
-        b << yellow("OBJ Fifo Attrs.") << "  :  " << hex(obj_attrs, gb.ppu.obj_fifo.size()) << endl;
-        b << yellow("OBJ Fifo X") << "       :  " << hex(obj_xs, gb.ppu.obj_fifo.size()) << endl;
+        b << yellow("OBJ Fifo Pixels") << "   :  " << hex(obj_pixels, gb.ppu.obj_fifo.size()) << endl;
+        b << yellow("OBJ Fifo Number") << "   :  " << hex(obj_numbers, gb.ppu.obj_fifo.size()) << endl;
+        b << yellow("OBJ Fifo Attrs.") << "   :  " << hex(obj_attrs, gb.ppu.obj_fifo.size()) << endl;
+        b << yellow("OBJ Fifo X") << "        :  " << hex(obj_xs, gb.ppu.obj_fifo.size()) << endl;
 
         // Window
         b << subheader("window", width) << endl;
-        b << yellow("Active for frame") << " :  " << gb.ppu.w.active_for_frame << endl;
-        b << yellow("WLY") << "              :  " << (gb.ppu.w.wly != UINT8_MAX ? gb.ppu.w.wly : darkgray("None"))
+        b << yellow("Active for frame") << "  :  " << (gb.ppu.w.active_for_frame ? green("ON") : darkgray("OFF"))
           << endl;
-        b << yellow("Active") << "           :  " << gb.ppu.w.active << endl;
-        b << yellow("WX Triggers") << "      :  ";
+        b << yellow("WLY") << "               :  " << (gb.ppu.w.wly != UINT8_MAX ? gb.ppu.w.wly : darkgray("None"))
+          << endl;
+        b << yellow("Active") << "            :  " << (gb.ppu.w.active ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("WX Triggers") << "       :  ";
         for (uint8_t i = 0; i < gb.ppu.w.line_triggers.size(); i++) {
             b << Text {gb.ppu.w.line_triggers[i]};
             if (i < gb.ppu.w.line_triggers.size() - 1) {
@@ -2064,68 +2115,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         }
         b << endl;
 
-        // OAM Registers
-        b << subheader("oam registers", width) << endl;
-        b << yellow("OAM A") << "            :  " << hex(gb.ppu.registers.oam.a) << endl;
-        b << yellow("OAM B") << "            :  " << hex(gb.ppu.registers.oam.b) << endl;
-
-        // OAM Scanline entries
-        const auto& oam_entries = gb.ppu.scanline_oam_entries;
-        b << subheader("oam scanline entries", width) << endl;
-
-        const auto oam_entries_info = [](const auto& v, uint8_t (*fn)(const Ppu::OamScanEntry&)) {
-            Text t {};
-            for (uint8_t i = 0; i < v.size(); i++) {
-                t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
-            }
-            return t;
-        };
-
-        b << yellow("OAM Number") << "       :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.number;
-        }) << endl;
-        b << yellow("OAM X") << "            :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.x;
-        }) << endl;
-        b << yellow("OAM Y") << "            :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.y;
-        }) << endl;
-
-        if (gb.ppu.lx < array_size(gb.ppu.oam_entries)) {
-            const auto& oam_entries_hit = gb.ppu.oam_entries[gb.ppu.lx];
-            // OAM Hit
-            b << subheader("oam hit", width) << endl;
-
-            b << yellow("OAM Number") << "       :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.number;
-                                  })
-              << endl;
-            b << yellow("OAM X") << "            :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.x;
-                                  })
-              << endl;
-            b << yellow("OAM Y") << "            :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.y;
-                                  })
-              << endl;
-        }
-
-        return b;
-    };
-
-    const auto make_ppu_block_2 = [&](uint32_t width) {
-        auto b {make_block(width)};
-
         // Pixel Transfer
         b << subheader("pixel transfer", width) << endl;
 
-        b << yellow("Fetcher Mode") << "        :  " <<
+        b << yellow("Fetcher Mode") << "      :  " <<
             [this]() {
                 if (gb.ppu.fetcher_tick_selector == &Ppu::bgwin_prefetcher_get_tile_0) {
                     return "BG/WIN Tile0";
@@ -2194,11 +2187,69 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             }()
           << endl;
 
-        b << yellow("LX") << "                  :  " << gb.ppu.lx << endl;
-        b << yellow("SCX % 8 Initial") << "     :  " << gb.ppu.pixel_transfer.initial_scx.to_discard << endl;
-        b << yellow("SCX % 8 Discard") << "     :  " << gb.ppu.pixel_transfer.initial_scx.discarded << "/"
+        b << yellow("LX") << "                :  " << gb.ppu.lx << endl;
+        b << yellow("SCX % 8 Initial") << "   :  " << gb.ppu.pixel_transfer.initial_scx.to_discard << endl;
+        b << yellow("SCX % 8 Discard") << "   :  " << gb.ppu.pixel_transfer.initial_scx.discarded << "/"
           << gb.ppu.pixel_transfer.initial_scx.to_discard << endl;
-        b << yellow("LX 0->8 Discard") << "     :  " << (gb.ppu.lx < 8 ? (Text(gb.ppu.lx) + "/8") : "8/8") << endl;
+        b << yellow("LX 0->8 Discard") << "   :  " << (gb.ppu.lx < 8 ? (Text(gb.ppu.lx) + "/8") : "8/8") << endl;
+
+        return b;
+    };
+
+    const auto make_ppu_block_2 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        // OAM Registers
+        b << subheader("oam registers", width) << endl;
+        b << yellow("OAM A") << "               :  " << hex(gb.ppu.registers.oam.a) << endl;
+        b << yellow("OAM B") << "               :  " << hex(gb.ppu.registers.oam.b) << endl;
+
+        // OAM Scanline entries
+        const auto& oam_entries = gb.ppu.scanline_oam_entries;
+        b << subheader("oam scanline entries", width) << endl;
+
+        const auto oam_entries_info = [](const auto& v, uint8_t (*fn)(const Ppu::OamScanEntry&)) {
+            Text t {};
+            for (uint8_t i = 0; i < v.size(); i++) {
+                t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
+            }
+            return t;
+        };
+
+        b << yellow("OAM Number") << "          :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
+            return e.number;
+        }) << endl;
+        b << yellow("OAM X") << "               :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
+            return e.x;
+        }) << endl;
+        b << yellow("OAM Y") << "               :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
+            return e.y;
+        }) << endl;
+
+        if (gb.ppu.lx < array_size(gb.ppu.oam_entries)) {
+            const auto& oam_entries_hit = gb.ppu.oam_entries[gb.ppu.lx];
+            // OAM Hit
+            b << subheader("oam hit", width) << endl;
+
+            b << yellow("OAM Number") << "          :  "
+              << oam_entries_info(oam_entries_hit,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.number;
+                                  })
+              << endl;
+            b << yellow("OAM X") << "               :  "
+              << oam_entries_info(oam_entries_hit,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.x;
+                                  })
+              << endl;
+            b << yellow("OAM Y") << "               :  "
+              << oam_entries_info(oam_entries_hit,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.y;
+                                  })
+              << endl;
+        }
 
         // BG/WIN Prefetcher
         b << subheader("bg/win prefetcher", width) << endl;
@@ -2239,6 +2290,143 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         return b;
     };
+
+#ifdef ENABLE_AUDIO
+    // APU
+    const auto make_apu_header = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << header("APU", width) << endl;
+        return b;
+    };
+
+    const auto make_apu_general_block_1 = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << yellow("On") << "             :  " << (gb.apu.nr52.enable ? green("ON") : darkgray("OFF")) << endl;
+        return b;
+    };
+
+    const auto make_apu_general_block_2 = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << yellow("DIV") << "            :  " << (gb.apu.div_apu % 8) << endl;
+        return b;
+    };
+    const auto make_apu_general_block_3 = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << yellow("DIV bit 4") << "      :  " << +gb.apu.prev_div_bit_4 << endl;
+        return b;
+    };
+
+    const auto make_apu_block_1 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << subheader("channel 1", width) << endl;
+        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "            :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Volume") << "         :  " << +gb.apu.ch1.volume << endl;
+        b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
+        b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch1.trigger_delay << endl;
+
+        b << subheader2("wave", width) << endl;
+
+        b << yellow("Timer") << "          :  " << +gb.apu.ch1.wave.timer << endl;
+        b << yellow("Position") << "       :  " << +gb.apu.ch1.wave.position << endl;
+
+        b << subheader2("volume sweep", width) << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch1.volume_sweep.timer << endl;
+        b << yellow("Pace") << "           :  " << +gb.apu.ch1.volume_sweep.pace << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch1.volume_sweep.direction << endl;
+
+        b << subheader2("period sweep", width) << endl;
+
+        b << yellow("Enabled") << "        :  " << +gb.apu.ch1.period_sweep.enabled << endl;
+        b << yellow("Period") << "         :  " << +gb.apu.ch1.period_sweep.period << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch1.period_sweep.timer << endl;
+        b << yellow("Decreasing") << "     :  " << +gb.apu.ch1.period_sweep.decreasing << endl;
+
+        return b;
+    };
+
+    const auto make_apu_block_2 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << subheader("channel 2", width) << endl;
+        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch2 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "            :  " << (gb.apu.ch2.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Volume") << "         :  " << +gb.apu.ch2.volume << endl;
+        b << yellow("Length Timer") << "   :  " << +gb.apu.ch2.length_timer << endl;
+        b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch2.trigger_delay << endl;
+
+        b << subheader2("wave", width) << endl;
+
+        b << yellow("Timer") << "          :  " << +gb.apu.ch2.wave.timer << endl;
+        b << yellow("Position") << "       :  " << +gb.apu.ch2.wave.position << endl;
+
+        b << subheader2("volume sweep", width) << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch2.volume_sweep.timer << endl;
+        b << yellow("Pace") << "           :  " << +gb.apu.ch2.volume_sweep.pace << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch2.volume_sweep.direction << endl;
+
+        return b;
+    };
+
+    const auto make_apu_block_3 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << subheader("channel 3", width) << endl;
+        b << yellow("Enabled") << "       :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "           :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << endl;
+        b << yellow("Length Timer") << "  :  " << +gb.apu.ch3.length_timer << endl;
+        b << yellow("Trigger Delay") << " :  " << +gb.apu.ch3.trigger_delay << endl;
+
+        b << subheader2("wave", width) << endl;
+
+        b << yellow("Timer") << "         :  " << +gb.apu.ch3.wave.timer << endl;
+        b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position << endl;
+        b << yellow("Play Position") << " :  " << +gb.apu.ch3.wave.play_position << endl;
+        b << yellow("Last Read") << "     :  " << +gb.apu.ch3.last_read_tick << endl;
+
+        b << subheader2("wave ram", width) << endl;
+
+        b << yellow("Wave[0:3]") << "     :  " << hex<uint8_t>(gb.apu.wave_ram[0]) << hex<uint8_t>(gb.apu.wave_ram[1])
+          << hex<uint8_t>(gb.apu.wave_ram[2]) << hex<uint8_t>(gb.apu.wave_ram[3]) << endl;
+        b << yellow("Wave[4:7]") << "     :  " << hex<uint8_t>(gb.apu.wave_ram[4]) << hex<uint8_t>(gb.apu.wave_ram[5])
+          << hex<uint8_t>(gb.apu.wave_ram[6]) << hex<uint8_t>(gb.apu.wave_ram[7]) << endl;
+        b << yellow("Wave[8:11]") << "    :  " << hex<uint8_t>(gb.apu.wave_ram[8]) << hex<uint8_t>(gb.apu.wave_ram[9])
+          << hex<uint8_t>(gb.apu.wave_ram[10]) << hex<uint8_t>(gb.apu.wave_ram[11]) << endl;
+        b << yellow("Wave[12:15]") << "   :  " << hex<uint8_t>(gb.apu.wave_ram[12]) << hex<uint8_t>(gb.apu.wave_ram[13])
+          << hex<uint8_t>(gb.apu.wave_ram[14]) << hex<uint8_t>(gb.apu.wave_ram[15]) << endl;
+
+        return b;
+    };
+
+    const auto make_apu_block_4 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << subheader("channel 4", width) << endl;
+        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch4 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "            :  " << (gb.apu.ch4.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Volume") << "         :  " << +gb.apu.ch4.volume << endl;
+        b << yellow("Length Timer") << "   :  " << +gb.apu.ch4.length_timer << endl;
+        b << endl;
+
+        b << subheader2("wave", width) << endl;
+
+        b << yellow("Timer") << "          :  " << +gb.apu.ch4.wave.timer << endl;
+        b << endl;
+
+        b << subheader2("volume sweep", width) << endl;
+        b << yellow("Timer") << "          :  " << +gb.apu.ch4.volume_sweep.timer << endl;
+        b << yellow("Pace") << "           :  " << +gb.apu.ch4.volume_sweep.pace << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch4.volume_sweep.direction << endl;
+
+        b << subheader2("lfsr", width) << endl;
+
+        b << yellow("LFSR") << "           :  " << +gb.apu.ch4.lfsr << endl;
+
+        return b;
+    };
+#endif
 
     // Bus
     const auto make_bus_block = [&](uint32_t width) {
@@ -2431,7 +2619,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << ios(Specs::Registers::Timers::REGISTERS, array_size(Specs::Registers::Timers::REGISTERS)) << endl;
         b << subheader("interrupts", width) << endl;
         b << ios(Specs::Registers::Interrupts::REGISTERS, array_size(Specs::Registers::Interrupts::REGISTERS)) << endl;
-        b << subheader("sound", width) << endl;
+        b << subheader("audio", width) << endl;
         b << ios(Specs::Registers::Sound::REGISTERS, array_size(Specs::Registers::Sound::REGISTERS)) << endl;
         b << subheader("video", width) << endl;
         b << ios(Specs::Registers::Video::REGISTERS, array_size(Specs::Registers::Video::REGISTERS)) << endl;
@@ -2474,10 +2662,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
             // Past instructions
             {
-                static constexpr uint8_t CODE_VIEW_PAST_INSTRUCTION_COUNT = 6;
                 uint8_t n = 0;
-                for (int32_t addr = current_instruction.address - 1; addr >= 0 && n < CODE_VIEW_PAST_INSTRUCTION_COUNT;
-                     addr--) {
+                for (int32_t addr = current_instruction.address - 1;
+                     addr >= 0 && n < auto_disassemble_instructions.past; addr--) {
                     auto instr = backend.get_disassembled_instruction(addr);
                     if (instr) {
                         code_view.emplace_front(static_cast<uint16_t>(addr), *instr,
@@ -2494,7 +2681,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             // Next instructions
             {
                 uint32_t addr = current_instruction.address + current_instruction.instruction.size();
-                for (uint16_t n = 0; n < auto_disassemble_next_instructions && addr <= 0xFFFF; n++) {
+                for (uint16_t n = 0; n < auto_disassemble_instructions.next && addr <= 0xFFFF; n++) {
                     const auto known_instr = backend.get_disassembled_instruction(addr);
                     auto instr = backend.disassemble(addr);
                     if (!instr)
@@ -2675,7 +2862,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         return b;
     };
 
-    static constexpr uint32_t COLUMN_1_WIDTH = 48;
+    static constexpr uint32_t COLUMN_1_WIDTH = 40;
     auto c1 {make_vertical_layout()};
     c1->add_node(make_gameboy_block(COLUMN_1_WIDTH));
     c1->add_node(make_space_divider());
@@ -2691,18 +2878,58 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     c2->add_node(make_space_divider());
     c2->add_node(make_dma_block(COLUMN_2_WIDTH));
 
-    static constexpr uint32_t COLUMN_3_PART_1_WIDTH = 52;
-    static constexpr uint32_t COLUMN_3_PART_2_WIDTH = 40;
-    static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_PART_1_WIDTH + COLUMN_3_PART_2_WIDTH + 1;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_PART_1_WIDTH = 45;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_PART_2_WIDTH = 52;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_WIDTH =
+        COLUMN_3_ROW_1_2_PART_1_WIDTH + COLUMN_3_ROW_1_2_PART_2_WIDTH + 1;
+
+    auto c3r1 {make_horizontal_layout()};
+    c3r1->add_node(make_ppu_general_block_1(COLUMN_3_ROW_1_2_PART_1_WIDTH));
+    c3r1->add_node(make_space_divider());
+    c3r1->add_node(make_ppu_general_block_2(COLUMN_3_ROW_1_2_PART_2_WIDTH));
 
     auto c3r2 {make_horizontal_layout()};
-    c3r2->add_node(make_ppu_block_1(COLUMN_3_PART_1_WIDTH));
+    c3r2->add_node(make_ppu_block_1(COLUMN_3_ROW_1_2_PART_1_WIDTH));
     c3r2->add_node(make_space_divider());
-    c3r2->add_node(make_ppu_block_2(COLUMN_3_PART_2_WIDTH));
+    c3r2->add_node(make_ppu_block_2(COLUMN_3_ROW_1_2_PART_2_WIDTH));
+
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_1_WIDTH = 23;
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_2_WIDTH = 23;
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_3_WIDTH = 26;
+    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_4_WIDTH = 23;
+
+    static constexpr uint32_t COLUMN_3_ROW_3_4_WIDTH = COLUMN_3_ROW_3_4_PART_1_WIDTH + COLUMN_3_ROW_3_4_PART_2_WIDTH +
+                                                       COLUMN_3_ROW_3_4_PART_3_WIDTH + COLUMN_3_ROW_3_4_PART_4_WIDTH +
+                                                       3;
+
+    static_assert(COLUMN_3_ROW_1_2_WIDTH == COLUMN_3_ROW_3_4_WIDTH);
+
+    static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_ROW_1_2_WIDTH;
+
+    auto c3r3 {make_horizontal_layout()};
+    c3r3->add_node(make_apu_general_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));
+    c3r3->add_node(make_space_divider());
+    c3r3->add_node(make_apu_general_block_2(COLUMN_3_ROW_3_4_PART_2_WIDTH));
+    c3r3->add_node(make_space_divider());
+    c3r3->add_node(make_apu_general_block_3(COLUMN_3_ROW_3_4_PART_3_WIDTH));
+
+    auto c3r4 {make_horizontal_layout()};
+    c3r4->add_node(make_apu_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));
+    c3r4->add_node(make_space_divider());
+    c3r4->add_node(make_apu_block_2(COLUMN_3_ROW_3_4_PART_2_WIDTH));
+    c3r4->add_node(make_space_divider());
+    c3r4->add_node(make_apu_block_3(COLUMN_3_ROW_3_4_PART_3_WIDTH));
+    c3r4->add_node(make_space_divider());
+    c3r4->add_node(make_apu_block_4(COLUMN_3_ROW_3_4_PART_4_WIDTH));
 
     auto c3 {make_vertical_layout()};
     c3->add_node(make_ppu_header(COLUMN_3_WIDTH));
+    c3->add_node(std::move(c3r1));
     c3->add_node(std::move(c3r2));
+    c3->add_node(make_space_divider());
+    c3->add_node(make_apu_header(COLUMN_3_WIDTH));
+    c3->add_node(std::move(c3r3));
+    c3->add_node(std::move(c3r4));
 
     static constexpr uint32_t COLUMN_4_WIDTH = 66;
     auto c4 {make_vertical_layout()};
@@ -2721,10 +2948,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     static constexpr uint32_t CODE_WIDTH = 56;
     static constexpr uint32_t CALL_STACK_WIDTH = 36;
-    static constexpr uint32_t BREAKPOINTS_WIDTH = 50;
+    static constexpr uint32_t BREAKPOINTS_WIDTH = 52;
     static constexpr uint32_t WATCHPOINTS_WIDTH = 30;
     static constexpr uint32_t DISPLAY_WIDTH =
-        FULL_WIDTH - CODE_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH;
+        FULL_WIDTH - CODE_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH - 4;
 
     auto r2 {make_horizontal_layout()};
     r2->add_node(make_code_block(CODE_WIDTH));

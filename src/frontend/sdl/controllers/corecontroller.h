@@ -27,9 +27,15 @@ public:
     // Running/Pause
     void set_paused(bool paused_) {
         paused = paused_;
+        if (paused_changed_callback) {
+            paused_changed_callback(paused);
+        }
     }
     bool is_paused() const {
         return paused;
+    }
+    void set_paused_changed_callback(std::function<void(bool)>&& callback) {
+        paused_changed_callback = std::move(callback);
     }
 
     // Save
@@ -85,6 +91,7 @@ private:
     } rom;
 
     bool paused {true};
+    std::function<void(bool)> paused_changed_callback {};
 
     std::map<SDL_Keycode, Joypad::Key> keycode_map;
     std::map<Joypad::Key, SDL_Keycode> joypad_map;

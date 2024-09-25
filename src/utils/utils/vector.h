@@ -83,6 +83,22 @@ struct Vector {
         return data[index];
     }
 
+    T* begin() {
+        return data;
+    }
+
+    T* end() {
+        return data + cursor;
+    }
+
+    const T* begin() const {
+        return data;
+    }
+
+    const T* end() const {
+        return data + cursor;
+    }
+
     T data[N] {};
     uint8_t cursor {};
 };

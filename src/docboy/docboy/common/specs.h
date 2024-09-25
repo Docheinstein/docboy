@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include "utils/bitrange.h"
+
 namespace Specs {
 namespace Display {
     constexpr uint32_t WIDTH = 160;
@@ -159,10 +161,18 @@ namespace Registers {
         constexpr uint16_t WAVED = 0xFF3D;
         constexpr uint16_t WAVEE = 0xFF3E;
         constexpr uint16_t WAVEF = 0xFF3F;
+#ifdef ENABLE_AUDIO_PCM
+        constexpr uint16_t PCM12 = 0xFF76;
+        constexpr uint16_t PCM34 = 0xFF77;
+#endif
         constexpr uint16_t REGISTERS[] = {NR10,  NR11,  NR12,  NR13,  NR14,  NR21,  NR22,  NR23,  NR24,  NR30,
                                           NR31,  NR32,  NR33,  NR34,  NR41,  NR42,  NR43,  NR44,  NR50,  NR51,
                                           NR52,  WAVE0, WAVE1, WAVE2, WAVE3, WAVE4, WAVE5, WAVE6, WAVE7, WAVE8,
-                                          WAVE9, WAVEA, WAVEB, WAVEC, WAVED, WAVEE, WAVEF};
+                                          WAVE9, WAVEA, WAVEB, WAVEC, WAVED, WAVEE, WAVEF,
+#ifdef ENABLE_AUDIO_PCM
+                                          PCM12, PCM34
+#endif
+        };
     } // namespace Sound
 
     namespace Video {
@@ -247,6 +257,98 @@ namespace Bits {
             constexpr uint8_t MODE_LOW = 0;
         } // namespace STAT
     }     // namespace Video
+
+    namespace Audio {
+        namespace NR10 {
+            constexpr BitRange PACE = {6, 4};
+            constexpr uint8_t DIRECTION = 3;
+            constexpr BitRange STEP = {2, 0};
+        } // namespace NR10
+        namespace NR11 {
+            constexpr BitRange DUTY_CYCLE = {7, 6};
+            constexpr BitRange INITIAL_LENGTH_TIMER = {5, 0};
+        } // namespace NR11
+        namespace NR12 {
+            constexpr BitRange INITIAL_VOLUME = {7, 4};
+            constexpr uint8_t ENVELOPE_DIRECTION = 3;
+            constexpr BitRange SWEEP_PACE = {2, 0};
+        } // namespace NR12
+        namespace NR14 {
+            constexpr uint8_t TRIGGER = 7;
+            constexpr uint8_t LENGTH_ENABLE = 6;
+            constexpr BitRange PERIOD = {2, 0};
+        } // namespace NR14
+
+        namespace NR21 {
+            constexpr BitRange DUTY_CYCLE = {7, 6};
+            constexpr BitRange INITIAL_LENGTH_TIMER = {5, 0};
+        } // namespace NR21
+        namespace NR22 {
+            constexpr BitRange INITIAL_VOLUME = {7, 4};
+            constexpr uint8_t ENVELOPE_DIRECTION = 3;
+            constexpr BitRange SWEEP_PACE = {2, 0};
+        } // namespace NR22
+        namespace NR24 {
+            constexpr uint8_t TRIGGER = 7;
+            constexpr uint8_t LENGTH_ENABLE = 6;
+            constexpr BitRange PERIOD = {2, 0};
+        } // namespace NR24
+
+        namespace NR30 {
+            constexpr uint8_t DAC = 7;
+        } // namespace NR30
+        namespace NR32 {
+            constexpr BitRange VOLUME = {6, 5};
+        } // namespace NR32
+        namespace NR34 {
+            constexpr uint8_t TRIGGER = 7;
+            constexpr uint8_t LENGTH_ENABLE = 6;
+            constexpr BitRange PERIOD = {2, 0};
+        } // namespace NR34
+
+        namespace NR41 {
+            constexpr BitRange INITIAL_LENGTH_TIMER = {5, 0};
+        } // namespace NR41
+        namespace NR42 {
+            constexpr BitRange INITIAL_VOLUME = {7, 4};
+            constexpr uint8_t ENVELOPE_DIRECTION = 3;
+            constexpr BitRange SWEEP_PACE = {2, 0};
+        } // namespace NR42
+        namespace NR43 {
+            constexpr BitRange CLOCK_SHIFT = {7, 4};
+            constexpr uint8_t LFSR_WIDTH = 3;
+            constexpr BitRange CLOCK_DIVIDER = {2, 0};
+        } // namespace NR43
+        namespace NR44 {
+            constexpr uint8_t TRIGGER = 7;
+            constexpr uint8_t LENGTH_ENABLE = 6;
+        } // namespace NR44
+
+        namespace NR50 {
+            constexpr uint8_t VIN_LEFT = 7;
+            constexpr BitRange VOLUME_LEFT = {6, 4};
+            constexpr uint8_t VIN_RIGHT = 3;
+            constexpr BitRange VOLUME_RIGHT = {2, 0};
+        } // namespace NR50
+        namespace NR51 {
+            constexpr uint8_t CH4_LEFT = 7;
+            constexpr uint8_t CH3_LEFT = 6;
+            constexpr uint8_t CH2_LEFT = 5;
+            constexpr uint8_t CH1_LEFT = 4;
+            constexpr uint8_t CH4_RIGHT = 3;
+            constexpr uint8_t CH3_RIGHT = 2;
+            constexpr uint8_t CH2_RIGHT = 1;
+            constexpr uint8_t CH1_RIGHT = 0;
+        } // namespace NR51
+        namespace NR52 {
+            constexpr uint8_t AUDIO_ENABLE = 7;
+            constexpr uint8_t CH4_ENABLE = 3;
+            constexpr uint8_t CH3_ENABLE = 2;
+            constexpr uint8_t CH2_ENABLE = 1;
+            constexpr uint8_t CH1_ENABLE = 0;
+        } // namespace NR52
+
+    } // namespace Audio
 
     namespace OAM {
         namespace Attributes {
@@ -373,6 +475,8 @@ namespace Cartridge {
 namespace Timers {
     constexpr uint8_t TAC_DIV_BITS_SELECTOR[] {9, 3, 5, 7};
 }
+
+constexpr double FPS = (double)Frequencies::CLOCK / Ppu::DOTS_PER_FRAME;
 } // namespace Specs
 
 #endif // SPECS_H

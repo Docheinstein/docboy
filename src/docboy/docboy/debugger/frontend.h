@@ -62,7 +62,13 @@ private:
     std::vector<DisplayEntry> display_entries;
     uint32_t trace {};
 
-    uint16_t auto_disassemble_next_instructions {10};
+    struct {
+        uint16_t past {6};
+        uint16_t next {10};
+    } auto_disassemble_instructions {};
+
+    std::optional<uint16_t> temporary_breakpoint {};
+
     bool reprint_ui {};
 
     std::function<void()> on_pulling_command_callback {};

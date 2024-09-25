@@ -48,6 +48,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
           -DBUILD_TESTS=${{ inputs.run_tests }}
           -DENABLE_SERIAL=${{ inputs.run_tests }}
+          -DENABLE_AUDIO_PCM=${{ inputs.run_tests }}
           -S ${{ github.workspace }}
 
       # Build project.
@@ -57,7 +58,7 @@ jobs:
       # Run tests [optional]
       - name: Run Tests
         if: ${{ inputs.run_tests }}
-        run: ctest --build-config ${{ inputs.build_type }}
+        run: ctest --build-config ${{ inputs.build_type }} --output-on-failure
         working-directory: ${{ github.workspace }}/build
 
       # Upload artifact [optional]

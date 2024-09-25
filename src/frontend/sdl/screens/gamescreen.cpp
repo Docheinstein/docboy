@@ -60,7 +60,10 @@ void GameScreen::render() {
     }
 
     // Copy framebuffer to rendered texture
-    copy_to_texture(game_texture, game_framebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t));
+    uint32_t* game_texture_buffer = lock_texture(game_texture);
+    copy_to_texture(game_texture_buffer, game_framebuffer,
+                    Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t));
+    unlock_texture(game_texture);
 
     // Update FPS
     if (fps.visible) {
@@ -94,7 +97,7 @@ void GameScreen::handle_event(const SDL_Event& event) {
 
     switch (event.type) {
     case SDL_EVENT_KEY_DOWN: {
-        switch (event.key.keysym.sym) {
+        switch (event.key.key) {
         case SDLK_F1:
             if (core.write_state()) {
                 draw_popup("State saved");
@@ -125,23 +128,29 @@ void GameScreen::handle_event(const SDL_Event& event) {
             }
             break;
         }
-        case SDLK_f:
+        case SDLK_F:
             fps.visible = !fps.visible;
             fps.last_sample = std::chrono::high_resolution_clock::now();
             fps.display_count = 0;
             fps.count = 0;
             redraw_overlay();
             break;
-        case SDLK_q:
+#ifdef ENABLE_AUDIO
+        case SDLK_M:
+            main.set_audio_enabled(!main.is_audio_enabled());
+            draw_popup(std::string {"Audio "} + (main.is_audio_enabled() ? "enabled" : "disabled"));
+            break;
+#endif
+        case SDLK_Q:
             main.set_speed(main.get_speed() - 1);
             redraw_overlay();
             break;
-        case SDLK_w:
+        case SDLK_W:
             main.set_speed(main.get_speed() + 1);
             redraw_overlay();
             break;
 #ifdef ENABLE_DEBUGGER
-        case SDLK_d:
+        case SDLK_D:
             if (debugger.is_debugger_attached()) {
                 if (debugger.detach_debugger()) {
                     draw_popup("Debugger detached");
@@ -164,13 +173,13 @@ void GameScreen::handle_event(const SDL_Event& event) {
             redraw();
         }
         default:
-            core.send_key(event.key.keysym.sym, Joypad::KeyState::Pressed);
+            core.send_key(event.key.key, Joypad::KeyState::Pressed);
             break;
         }
         break;
     }
     case SDL_EVENT_KEY_UP: {
-        core.send_key(event.key.keysym.sym, Joypad::KeyState::Released);
+        core.send_key(event.key.key, Joypad::KeyState::Released);
         break;
     }
     case SDL_EVENT_DROP_FILE: {
@@ -190,22 +199,27 @@ void GameScreen::draw_popup(const std::string& str) {
 void GameScreen::redraw_overlay() {
     uint32_t text_color = ui.get_current_palette().rgba8888.accent;
 
-    clear_texture(game_overlay_texture, Specs::Display::WIDTH * Specs::Display::HEIGHT);
+    uint32_t* overlay_texture_buffer = lock_texture(game_overlay_texture);
+
+    clear_texture(overlay_texture_buffer, Specs::Display::WIDTH * Specs::Display::HEIGHT);
 
     if (popup.visible) {
-        draw_text(game_overlay_texture, popup.text, 4, Specs::Display::HEIGHT - 12, text_color, Specs::Display::WIDTH);
+        draw_text(overlay_texture_buffer, Specs::Display::WIDTH, popup.text, 4, Specs::Display::HEIGHT - 12,
+                  text_color);
     }
 
     if (fps.visible) {
         const std::string fps_str = std::to_string(fps.display_count);
-        draw_text(game_overlay_texture, fps_str, Specs::Display::WIDTH - 4 - fps_str.size() * 8, 4, text_color,
-                  Specs::Display::WIDTH);
+        draw_text(overlay_texture_buffer, Specs::Display::WIDTH, fps_str,
+                  Specs::Display::WIDTH - 4 - fps_str.size() * 8, 4, text_color);
     }
 
     if (const int32_t speed {main.get_speed()}; speed != 0) {
-        draw_text(game_overlay_texture, (speed > 0 ? "x" : "/") + std::to_string((uint32_t)(pow2(abs(speed)))), 4, 4,
-                  text_color, Specs::Display::WIDTH);
+        draw_text(overlay_texture_buffer, Specs::Display::WIDTH,
+                  (speed > 0 ? "x" : "/") + std::to_string((uint32_t)(pow2(abs(speed)))), 4, 4, text_color);
     }
+
+    unlock_texture(game_overlay_texture);
 }
 
 bool GameScreen::is_in_menu() const {

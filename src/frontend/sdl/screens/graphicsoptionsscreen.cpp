@@ -3,29 +3,28 @@
 #include "controllers/navcontroller.h"
 #include "controllers/uicontroller.h"
 
+#include "components/menu/items.h"
 #include "docboy/core/core.h"
 
 GraphicsOptionsScreen::GraphicsOptionsScreen(Context context) :
     MenuScreen(context) {
 
-    items.scaling = &menu.add_item(MenuItem {"Scaling"}
-                                       .on_prev([this] {
-                                           on_decrease_scaling();
-                                       })
-                                       .on_next([this] {
-                                           on_increase_scaling();
-                                       }));
+    items.scaling = &menu.add_item(Spinner {[this] {
+                                                on_decrease_scaling();
+                                            },
+                                            [this] {
+                                                on_increase_scaling();
+                                            }});
 
-    items.palette = &menu.add_item(MenuItem {"Palette"}
-                                       .on_prev([this] {
-                                           on_prev_palette();
-                                       })
-                                       .on_next([this] {
-                                           on_next_palette();
-                                       }));
-    menu.add_item(MenuItem {"Back"}.on_enter([this] {
-        nav.pop();
-    }));
+    items.palette = &menu.add_item(Spinner {[this] {
+                                                on_prev_palette();
+                                            },
+                                            [this] {
+                                                on_next_palette();
+                                            }});
+    menu.add_item(Button {"Back", [this] {
+                              nav.pop();
+                          }});
 }
 
 void GraphicsOptionsScreen::redraw() {

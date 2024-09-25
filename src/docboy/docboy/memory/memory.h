@@ -33,7 +33,7 @@ public:
         return data[index];
     }
 
-    void save_state(Parcel& parcel) {
+    void save_state(Parcel& parcel) const {
         parcel.write_bytes(data, Size * sizeof(UInt8));
     }
     void load_state(Parcel& parcel) {

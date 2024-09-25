@@ -1,7 +1,7 @@
 #ifndef MENUSCREEN_H
 #define MENUSCREEN_H
 
-#include "components/menu.h"
+#include "components/menu/menu.h"
 #include "screens/screen.h"
 
 struct SDL_Texture;

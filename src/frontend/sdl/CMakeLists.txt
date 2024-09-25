@@ -1,12 +1,16 @@
 add_executable(docboy-sdl)
 
 target_sources(docboy-sdl PRIVATE
-    components/glyphs.cpp
-    components/glyphs.h
-    components/menu.cpp
-    components/menu.h
-    components/text.cpp
-    components/text.h
+    primitives/glyph.cpp
+    primitives/glyph.h
+    primitives/geometry.cpp
+    primitives/geometry.h
+    primitives/text.cpp
+    primitives/text.h
+    components/menu/menu.cpp
+    components/menu/menu.h
+    components/menu/item.h
+    components/menu/items.h
     controllers/corecontroller.cpp
     controllers/corecontroller.h
     controllers/maincontroller.h

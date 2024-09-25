@@ -56,6 +56,7 @@ public:
 #endif
         core {*gb} {
         gb->lcd.set_palette(palette);
+        core.set_audio_sample_rate(32786);
     }
 
     RunnerImpl& rom(const std::string& filename) {
@@ -225,14 +226,16 @@ public:
 
     void on_expectation_failed() {
         // Framebuffer not equals: figure out where's the (first) problem
-        UNSCOPED_INFO("=== " << rom_name << " ===");
+        std::stringstream output_message;
+
+        output_message << "=== " << rom_name << " ===" << std::endl;
 
         uint32_t i;
         for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
             if (last_framebuffer[i] != expected_framebuffer[i]) {
-                UNSCOPED_INFO("Framebuffer mismatch at position "
-                              << i << " (row=" << i / 160 << ", column=" << i % 160 << ": (actual) 0x"
-                              << hex(last_framebuffer[i]) << " != (expected) 0x" << hex(expected_framebuffer[i]));
+                output_message << "Framebuffer mismatch at position " << i << " (row=" << i / 160
+                               << ", column=" << i % 160 << ": (actual) 0x" << hex(last_framebuffer[i])
+                               << " != (expected) 0x" << hex(expected_framebuffer[i]) << std::endl;
                 break;
             }
         }
@@ -247,7 +250,9 @@ public:
         const auto path_expected = (tmp_path / Path {Path {rom_name}.filename() + "-expected.png"}).string();
         save_framebuffer_png(path_actual, last_framebuffer);
         save_framebuffer_png(path_expected, expected_framebuffer);
-        UNSCOPED_INFO("You can find the PNGs of the framebuffers at " << path_actual << " and " << path_expected);
+        output_message << "You can find the PNGs of the framebuffers at " << path_actual << " and " << path_expected;
+
+        UNSCOPED_INFO(output_message.str());
     }
 
 private:
