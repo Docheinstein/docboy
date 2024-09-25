@@ -20,8 +20,8 @@ class CpuBus final : public Bus {
 
 public:
 #ifdef ENABLE_BOOTROM
-    < < < < < < < HEAD CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers,
-                              Interrupts& interrupts, Apu& apu, Ppu& ppu, Boot& boot);
+    CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
+           Apu& apu, Ppu& ppu, Boot& boot);
 #else
     CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& Ppu,
            Boot& boot);

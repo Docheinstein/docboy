@@ -16,7 +16,7 @@
 #ifdef ENABLE_BOOTROM
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Apu& apu, Ppu& ppu, Boot& boot) :
-    Bus<CpuBus> {},
+    Bus {},
     boot_rom {boot_rom},
 #else
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
