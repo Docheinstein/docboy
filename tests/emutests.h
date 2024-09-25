@@ -1761,6 +1761,8 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/dmg/ch1/turn_on_div_0F.gb", "docboy/ok.png"},
             F {"docboy/apu/dmg/ch1/turn_on_div_10.gb", "docboy/ok.png"},
 
+            F {"docboy/apu/dmg/ch1/write_nrx2_turns_off_channel.gb", "docboy/ok.png"},
+
             F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay1.gb", "docboy/ok.png"},
             F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay2.gb", "docboy/ok.png"},
             F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay3.gb", "docboy/ok.png"},
@@ -2139,6 +2141,8 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/dmg/ch1/turn_off_disable_dac.gb", "docboy/ok.png"},
             F {"docboy/apu/dmg/ch1/turn_on_div_0F.gb", "docboy/ok.png"},
             F {"docboy/apu/dmg/ch1/turn_on_div_10.gb", "docboy/ok.png"},
+
+            F {"docboy/apu/dmg/ch1/write_nrx2_turns_off_channel.gb", "docboy/ok.png"},
 
             F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay1.gb", "docboy/ok.png"},
             F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay2.gb", "docboy/ok.png"},
