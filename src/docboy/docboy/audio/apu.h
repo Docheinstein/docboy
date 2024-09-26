@@ -109,7 +109,7 @@ public:
     uint8_t read_wave_ram(uint16_t address) const;
     void write_wave_ram(uint16_t address, uint8_t value);
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
     uint8_t read_pcm12() const;
     uint8_t read_pcm34() const;
 #endif
@@ -213,7 +213,7 @@ public:
 
     Memory<Specs::Registers::Sound::WAVE0, Specs::Registers::Sound::WAVEF> wave_ram;
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
     UInt8 pcm12 {make_uint8(Specs::Registers::Sound::PCM12)};
     UInt8 pcm34 {make_uint8(Specs::Registers::Sound::PCM34)};
 #endif
@@ -232,7 +232,7 @@ private:
     void tick_sampler();
     void tick_ch3();
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
     void update_pcm();
 #endif
 

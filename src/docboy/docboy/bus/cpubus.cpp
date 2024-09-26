@@ -184,7 +184,7 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF74 */ memory_accessors[0xFF74] = open_bus_access;
     /* FF75 */ memory_accessors[0xFF75] = open_bus_access;
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
     /* FF76 */ memory_accessors[Specs::Registers::Sound::PCM12] = {NonTrivial<&Apu::read_pcm12> {&apu}, write_nop};
     /* FF76 */ memory_accessors[Specs::Registers::Sound::PCM34] = {NonTrivial<&Apu::read_pcm34> {&apu}, write_nop};
 #else

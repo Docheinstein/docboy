@@ -102,7 +102,7 @@ TEST_CASE("emulation", "[emulation]") {
     SECTION("ppu") {
         RUN_TEST_ROMS(
             // dmg-acid2
-            F {"dmg-acid2/dmg-acid2.gb", "dmg-acid2/dmg-acid2.png", GREY_PALETTE},
+            F {"mattcurrie/dmg/dmg-acid2.gb", "/mattcurrie/dmg/dmg-acid2.png", GREY_PALETTE},
 
             // mooneye
             S {"mooneye/ppu/hblank_ly_scx_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1484,7 +1484,7 @@ TEST_CASE("emulation", "[emulation]") {
 
     SECTION("boot") {
         RUN_TEST_ROMS(S {"mooneye/boot_div-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-#if !ENABLE_AUDIO_PCM
+#if !ENABLE_CGB
                       S {"mooneye/boot_hwio-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
 #endif
                       S {"mooneye/boot_regs-dmgABC.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1534,7 +1534,7 @@ TEST_CASE("emulation", "[emulation]") {
                       F {"blargg/oam_bug/8-instr_effect.gb", "blargg/oam_bug/8-instr_effect.png"}, );
     }
     SECTION("io") {
-#if !ENABLE_AUDIO_PCM
+#if !ENABLE_CGB
         RUN_TEST_ROMS(S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
 #endif
     }
@@ -1854,7 +1854,7 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/dmg/ch3/write_wave_period5_delay6.gb", "docboy/ok.png"},
             F {"docboy/apu/dmg/ch3/write_wave_period5_delay7.gb", "docboy/ok.png"},
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
             F {"docboy/apu/cgb/ch1/square_position_retrigger_round1.gb", "docboy/ok.png"},
             F {"docboy/apu/cgb/ch1/square_position_retrigger_round2.gb", "docboy/ok.png"},
             F {"docboy/apu/cgb/ch1/square_position_round1.gb", "docboy/ok.png"},
@@ -1887,7 +1887,7 @@ TEST_CASE("emulation", "[emulation]") {
     SECTION("integration") {
         RUN_TEST_ROMS(
         // hacktick
-#if !ENABLE_AUDIO_PCM
+#if !ENABLE_CGB
             F {"hacktix/bully.gb", "hacktix/bully.png"},
 #endif
             F {"hacktix/strikethrough.gb", "hacktix/strikethrough.png"},
@@ -2235,7 +2235,7 @@ TEST_CASE("emulation", "[emulation]") {
             F {"docboy/apu/dmg/ch3/write_wave_period5_delay6.gb", "docboy/ok.png"},
             F {"docboy/apu/dmg/ch3/write_wave_period5_delay7.gb", "docboy/ok.png"},
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
             F {"docboy/apu/cgb/ch1/square_position_retrigger_round1.gb", "docboy/ok.png"},
             F {"docboy/apu/cgb/ch1/square_position_retrigger_round2.gb", "docboy/ok.png"},
             F {"docboy/apu/cgb/ch1/square_position_round1.gb", "docboy/ok.png"},

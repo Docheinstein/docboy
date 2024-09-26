@@ -563,7 +563,7 @@ void Apu::tick_t0() {
 
     tick_sampler();
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
     update_pcm();
 #endif
 }
@@ -579,7 +579,7 @@ void Apu::tick_t2() {
 
     tick_sampler();
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
     update_pcm();
 #endif
 }
@@ -1435,7 +1435,7 @@ void Apu::write_wave_ram(uint16_t address, uint8_t value) {
     ch3.pending_wave_write.value = value;
 }
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
 void Apu::update_pcm() {
     DigitalAudioSample digital_output = compute_digital_audio_sample();
     pcm12 = digital_output.ch2 << 4 | digital_output.ch1;

@@ -139,8 +139,8 @@ if (ENABLE_AUDIO)
     target_compile_definitions(docboy PUBLIC ENABLE_AUDIO)
 endif ()
 
-if (ENABLE_AUDIO_PCM)
-    target_compile_definitions(docboy PUBLIC ENABLE_AUDIO_PCM)
+if (ENABLE_CGB)
+    target_compile_definitions(docboy PUBLIC ENABLE_CGB)
 endif ()
 
 target_link_libraries(docboy PRIVATE utils)
