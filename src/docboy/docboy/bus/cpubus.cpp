@@ -169,10 +169,21 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF65 */ memory_accessors[0xFF65] = open_bus_access;
     /* FF66 */ memory_accessors[0xFF66] = open_bus_access;
     /* FF67 */ memory_accessors[0xFF67] = open_bus_access;
+#ifdef ENABLE_CGB
+    /* FF68 */ memory_accessors[Specs::Registers::Video::BCPS] = {NonTrivial<&Ppu::read_bcps> {&ppu},
+                                                                  NonTrivial<&Ppu::write_bcps> {&ppu}};
+    /* FF69 */ memory_accessors[Specs::Registers::Video::BCPD] = {NonTrivial<&Ppu::read_bcpd> {&ppu},
+                                                                  NonTrivial<&Ppu::write_bcpd> {&ppu}};
+    /* FF6A */ memory_accessors[Specs::Registers::Video::OCPS] = {NonTrivial<&Ppu::read_ocps> {&ppu},
+                                                                  NonTrivial<&Ppu::write_ocps> {&ppu}};
+    /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = {NonTrivial<&Ppu::read_ocpd> {&ppu},
+                                                                  NonTrivial<&Ppu::write_ocpd> {&ppu}};
+#else
     /* FF68 */ memory_accessors[0xFF68] = open_bus_access;
     /* FF69 */ memory_accessors[0xFF69] = open_bus_access;
     /* FF6A */ memory_accessors[0xFF6A] = open_bus_access;
     /* FF6B */ memory_accessors[0xFF6B] = open_bus_access;
+#endif
     /* FF6C */ memory_accessors[0xFF6C] = open_bus_access;
     /* FF6D */ memory_accessors[0xFF6D] = open_bus_access;
     /* FF6E */ memory_accessors[0xFF6E] = open_bus_access;

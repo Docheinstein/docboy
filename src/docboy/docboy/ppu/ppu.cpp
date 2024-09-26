@@ -1946,6 +1946,36 @@ void Ppu::write_stat(uint8_t value) {
     stat.hblank_int = test_bit<Specs::Bits::Video::STAT::HBLANK_INTERRUPT>(value);
 }
 
+#ifdef ENABLE_CGB
+uint8_t Ppu::read_bcps() const {
+    return 0;
+}
+
+void Ppu::write_bcps(uint8_t value) {
+}
+
+uint8_t Ppu::read_bcpd() const {
+    return 0;
+}
+
+void Ppu::write_bcpd(uint8_t value) {
+}
+
+uint8_t Ppu::read_ocps() const {
+    return 0;
+}
+
+void Ppu::write_ocps(uint8_t value) {
+}
+
+uint8_t Ppu::read_ocpd() const {
+    return 0;
+}
+
+void Ppu::write_ocpd(uint8_t value) {
+}
+#endif
+
 #ifdef ENABLE_DEBUGGER
 inline Ppu::Lcdc::Lcdc(bool watch) {
     if (!watch) {

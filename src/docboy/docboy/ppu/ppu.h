@@ -35,11 +35,25 @@ public:
     // PPU I/O registers
     void write_dma(uint8_t value);
 
+    uint8_t read_lcdc() const;
+    void write_lcdc(uint8_t value);
+
     uint8_t read_stat() const;
     void write_stat(uint8_t value);
 
-    uint8_t read_lcdc() const;
-    void write_lcdc(uint8_t value);
+#ifdef ENABLE_CGB
+    uint8_t read_bcps() const;
+    void write_bcps(uint8_t value);
+
+    uint8_t read_bcpd() const;
+    void write_bcpd(uint8_t value);
+
+    uint8_t read_ocps() const;
+    void write_ocps(uint8_t value);
+
+    uint8_t read_ocpd() const;
+    void write_ocpd(uint8_t value);
+#endif
 
     struct Lcdc : Composite<Specs::Registers::Video::LCDC> {
 #ifdef ENABLE_DEBUGGER
@@ -83,6 +97,18 @@ public:
     UInt8 obp1 {make_uint8(Specs::Registers::Video::OBP1)};
     UInt8 wy {make_uint8(Specs::Registers::Video::WY)};
     UInt8 wx {make_uint8(Specs::Registers::Video::WX)};
+
+#ifdef ENABLE_CGB
+    struct Bcps : Composite<Specs::Registers::Video::BCPS> {
+        Bool auto_increment {make_uint8()};
+        UInt8 address {make_uint8()};
+    } bcps {};
+
+    struct Ocps : Composite<Specs::Registers::Video::OCPS> {
+        Bool auto_increment {make_uint8()};
+        UInt8 address {make_uint8()};
+    } ocps {};
+#endif
 
 private:
     using TickSelector = void (Ppu::*)();

@@ -188,8 +188,17 @@ namespace Registers {
         constexpr uint16_t OBP1 = 0xFF49;
         constexpr uint16_t WY = 0xFF4A;
         constexpr uint16_t WX = 0xFF4B;
-        constexpr uint16_t REGISTERS[] = {
-            LCDC, STAT, SCY, SCX, LY, LYC, DMA, BGP, OBP0, OBP1, WY, WX,
+#ifdef ENABLE_CGB
+        constexpr uint16_t BCPS = 0xFF68;
+        constexpr uint16_t BCPD = 0xFF69;
+        constexpr uint16_t OCPS = 0xFF6A;
+        constexpr uint16_t OCPD = 0xFF69;
+#endif
+        constexpr uint16_t REGISTERS[] = {LCDC, STAT, SCY,  SCX, LY, LYC, DMA, BGP, OBP0, OBP1, WY, WX,
+#ifdef ENABLE_CGB
+                                          BCPS, BCPD, OCPS, OCPD
+#endif
+
         };
     } // namespace Video
 
