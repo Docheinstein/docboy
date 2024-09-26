@@ -28,6 +28,10 @@
 #include "docboy/stop/stopcontroller.h"
 #include "docboy/timers/timers.h"
 
+#ifdef ENABLE_CGB
+#include "docboy/bankswitch/vrambankswitch.h"
+#endif
+
 #ifdef ENABLE_BOOTROM
 #include "docboy/bootrom/bootrom.h"
 #endif
@@ -41,7 +45,12 @@ public:
 #endif
 
     // Memory
-    Vram vram {};
+    Vram vram0 {};
+
+#ifdef ENABLE_CGB
+    Vram vram1 {};
+#endif
+
     Wram1 wram1 {};
     Wram2 wram2 {};
     Oam oam {};
@@ -69,11 +78,23 @@ public:
     // Buses
     ExtBus ext_bus {cartridge_slot, wram1, wram2};
 #ifdef ENABLE_BOOTROM
+#ifdef ENABLE_CGB
+    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, apu, ppu, vram_bank_switch, boot};
+#else
     CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
+#endif
+#else
+#ifdef ENABLE_CGB
+    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, vram_bank_switch, boot};
 #else
     CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
 #endif
-    VramBus vram_bus {vram};
+#endif
+#ifdef ENABLE_CGB
+    VramBus vram_bus {vram0, vram1};
+#else
+    VramBus vram_bus {vram0};
+#endif
     OamBus oam_bus {oam};
 
     // MMU
@@ -100,6 +121,10 @@ public:
     // Power Saving
     bool stopped {};
     StopController stop_controller {stopped, joypad, timers, lcd};
+
+#ifdef ENABLE_CGB
+    VramBankSwitch vram_bank_switch {vram_bus};
+#endif
 };
 
 #endif // GAMEBOY_H

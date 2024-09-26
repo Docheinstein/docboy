@@ -9,19 +9,36 @@
 #include "docboy/serial/serial.h"
 #include "docboy/timers/timers.h"
 
+#ifdef ENABLE_CGB
+#include "docboy/bankswitch/vrambankswitch.h"
+#endif
+
 #ifdef ENABLE_BOOTROM
 #include "docboy/bootrom/bootrom.h"
 #endif
 
 #ifdef ENABLE_BOOTROM
+#ifdef ENABLE_CGB
+CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
+               Apu& apu, Ppu& ppu, VramBankSwitch& vram_bank_switch, Boot& boot) :
+#else
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Apu& apu, Ppu& ppu, Boot& boot) :
-    Bus {},
-    boot_rom {boot_rom},
+#endif
+#else
+#ifdef ENABLE_CGB
+CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
+               VramBankSwitch& vram_bank_switch, Boot& boot) :
 #else
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
                Boot& boot) :
+#endif
+#endif
+
     Bus {},
+
+#ifdef ENABLE_BOOTROM
+    boot_rom {boot_rom},
 #endif
     hram {hram},
     joypad {joypad},
@@ -29,6 +46,9 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     timers {timers},
     interrupts {interrupts},
     boot {boot},
+#ifdef ENABLE_CGB
+    vram_bank_switch {vram_bank_switch},
+#endif
     apu {apu},
     ppu {ppu} {
 
@@ -144,7 +164,13 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF4C */ memory_accessors[0xFF4C] = open_bus_access;
     /* FF4D */ memory_accessors[0xFF4D] = open_bus_access;
     /* FF4E */ memory_accessors[0xFF4E] = open_bus_access;
+#ifdef ENABLE_CGB
+    /* FF4F */ memory_accessors[Specs::Registers::BankSwitch::VBK] = {
+        NonTrivial<&VramBankSwitch::read_vbk> {&vram_bank_switch},
+        NonTrivial<&VramBankSwitch::write_vbk> {&vram_bank_switch}};
+#else
     /* FF4F */ memory_accessors[0xFF4F] = open_bus_access;
+#endif
     /* FF50 */ memory_accessors[Specs::Registers::Boot::BOOT] = {&boot.boot, NonTrivial<&Boot::write_boot> {&boot}};
     /* FF51 */ memory_accessors[0xFF51] = open_bus_access;
     /* FF52 */ memory_accessors[0xFF52] = open_bus_access;

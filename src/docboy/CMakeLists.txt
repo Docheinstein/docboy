@@ -93,6 +93,13 @@ target_sources(docboy PRIVATE
         docboy/timers/timers.h
 )
 
+if (ENABLE_CGB)
+    target_sources(docboy PRIVATE
+            docboy/bankswitch/vrambankswitch.h
+            docboy/bankswitch/vrambankswitch.cpp
+    )
+endif()
+
 if (ENABLE_BOOTROM)
     target_compile_definitions(docboy PUBLIC ENABLE_BOOTROM)
 

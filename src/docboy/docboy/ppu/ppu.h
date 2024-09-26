@@ -100,12 +100,12 @@ public:
 
 #ifdef ENABLE_CGB
     struct Bcps : Composite<Specs::Registers::Video::BCPS> {
-        Bool auto_increment {make_uint8()};
+        Bool auto_increment {make_bool()};
         UInt8 address {make_uint8()};
     } bcps {};
 
     struct Ocps : Composite<Specs::Registers::Video::OCPS> {
-        Bool auto_increment {make_uint8()};
+        Bool auto_increment {make_bool()};
         UInt8 address {make_uint8()};
     } ocps {};
 #endif

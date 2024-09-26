@@ -14,7 +14,6 @@ ExtBus::ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2& wram2) :
         memory_accessors[i] = {
             NonTrivialRead<&CartridgeSlot::read_rom> {&cartridge_slot},
             NonTrivialWrite<&CartridgeSlot::write_rom> {&cartridge_slot},
-
         };
     }
 

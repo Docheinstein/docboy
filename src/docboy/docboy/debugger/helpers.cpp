@@ -44,7 +44,7 @@ uint8_t DebuggerHelpers::read_memory_raw(const GameBoy& gb, uint16_t address) {
 
     /* 0x8000 - 0x9FFF */
     if (address <= Specs::MemoryLayout::VRAM::END) {
-        return gb.vram[address - Specs::MemoryLayout::VRAM::START];
+        return gb.vram_bus.read_bus(address);
     }
 
     /* 0xA000 - 0xBFFF */

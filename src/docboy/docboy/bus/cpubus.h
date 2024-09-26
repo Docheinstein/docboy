@@ -14,17 +14,28 @@ class Timers;
 class Interrupts;
 class Apu;
 class Ppu;
+class VramBankSwitch;
 class Boot;
 
 class CpuBus final : public Bus {
 
 public:
 #ifdef ENABLE_BOOTROM
+#ifdef ENABLE_CGB
+    CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
+           Apu& apu, Ppu& ppu, VramBankSwitch& vram_bank_switch, Boot& boot);
+#else
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
            Apu& apu, Ppu& ppu, Boot& boot);
+#endif
 #else
-    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& Ppu,
+#ifdef ENABLE_CGB
+    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
+           VramBankSwitch& vram_bank_switch, Boot& boot);
+#else
+    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
            Boot& boot);
+#endif
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -38,6 +49,10 @@ public:
     Timers& timers;
     Interrupts& interrupts;
     Boot& boot;
+
+#ifdef ENABLE_CGB
+    VramBankSwitch& vram_bank_switch;
+#endif
 
     Apu& apu;
     Ppu& ppu;

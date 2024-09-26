@@ -192,7 +192,7 @@ namespace Registers {
         constexpr uint16_t BCPS = 0xFF68;
         constexpr uint16_t BCPD = 0xFF69;
         constexpr uint16_t OCPS = 0xFF6A;
-        constexpr uint16_t OCPD = 0xFF69;
+        constexpr uint16_t OCPD = 0xFF6B;
 #endif
         constexpr uint16_t REGISTERS[] = {LCDC, STAT, SCY,  SCX, LY, LYC, DMA, BGP, OBP0, OBP1, WY, WX,
 #ifdef ENABLE_CGB
@@ -201,6 +201,12 @@ namespace Registers {
 
         };
     } // namespace Video
+
+#ifdef ENABLE_CGB
+    namespace BankSwitch {
+        constexpr uint16_t VBK = 0xFF4F;
+    }
+#endif
 
     namespace Boot {
         constexpr uint16_t BOOT = 0xFF50;

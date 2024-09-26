@@ -201,7 +201,10 @@ Parcel Core::parcelize_state() const {
     gb.ppu.save_state(p);
     gb.apu.save_state(p);
     gb.cartridge_slot.cartridge->save_state(p);
-    gb.vram.save_state(p);
+    gb.vram0.save_state(p);
+#ifdef ENABLE_CGB
+    gb.vram1.save_state(p);
+#endif
     gb.wram1.save_state(p);
     gb.wram2.save_state(p);
     gb.oam.save_state(p);
@@ -219,6 +222,10 @@ Parcel Core::parcelize_state() const {
     gb.mmu.save_state(p);
     gb.stop_controller.save_state(p);
 
+#ifdef ENABLE_CGB
+    gb.vram_bank_switch.save_state(p);
+#endif
+
     return p;
 }
 
@@ -229,7 +236,10 @@ void Core::unparcelize_state(Parcel&& parcel) {
     gb.ppu.load_state(parcel);
     gb.apu.load_state(parcel);
     gb.cartridge_slot.cartridge->load_state(parcel);
-    gb.vram.load_state(parcel);
+    gb.vram0.load_state(parcel);
+#ifdef ENABLE_CGB
+    gb.vram1.load_state(parcel);
+#endif
     gb.wram1.load_state(parcel);
     gb.wram2.load_state(parcel);
     gb.oam.load_state(parcel);
@@ -247,6 +257,10 @@ void Core::unparcelize_state(Parcel&& parcel) {
     gb.mmu.load_state(parcel);
     gb.stop_controller.load_state(parcel);
 
+#ifdef ENABLE_CGB
+    gb.vram_bank_switch.load_state(parcel);
+#endif
+
     ASSERT(parcel.get_remaining_size() == 0);
 }
 
@@ -258,7 +272,10 @@ void Core::reset() {
     gb.ppu.reset();
     gb.apu.reset();
     gb.cartridge_slot.cartridge->reset();
-    gb.vram.reset();
+    gb.vram0.reset();
+#ifdef ENABLE_CGB
+    gb.vram1.reset();
+#endif
     gb.wram1.reset();
     gb.wram2.reset();
     gb.oam.reset();
