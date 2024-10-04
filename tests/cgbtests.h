@@ -18,7 +18,7 @@ TEST_CASE("cgb", "[emulation]") {
     SECTION("boot") {
         RUN_TEST_ROMS(
             // docboy
-            // F {"docboy/boot/boot_bg_palettes.gbc", "docboy/ok.png"},
+            F {"docboy/boot/boot_bg_palettes.gbc", "docboy/ok.png"},
             F {"docboy/boot/boot_vram1.gbc", "docboy/ok.png"}, );
     }
 
@@ -28,13 +28,10 @@ TEST_CASE("cgb", "[emulation]") {
             // F {"mattcurrie/cgb-acid2.gbc", "mattcurrie/cgb-acid2.png"},
 
             // docboy
-            F {"docboy/ppu/bcpd_write_read.gbc", "docboy/ok.png"},
-            // F {"docboy/ppu/bcps_increment.gbc", "docboy/ok.png"},
-            // F {"docboy/ppu/bcps_increment_overflow.gbc", "docboy/ok.png"},
-            F {"docboy/ppu/ocpd_write_read.gbc", "docboy/ok.png"},
-            // F {"docboy/ppu/ocps_increment.gbc", "docboy/ok.png"},
-            // F {"docboy/ppu/ocps_increment_overflow.gbc", "docboy/ok.png"},
-        );
+            F {"docboy/ppu/bcpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/bcps_increment.gbc", "docboy/ok.png"},
+            F {"docboy/ppu/bcps_increment_overflow.gbc", "docboy/ok.png"},
+            F {"docboy/ppu/ocpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/ocps_increment.gbc", "docboy/ok.png"},
+            F {"docboy/ppu/ocps_increment_overflow.gbc", "docboy/ok.png"}, );
     }
 
 //    SECTION("apu") {

@@ -1968,6 +1968,28 @@ void Ppu::reset() {
     cycles = 0;
 #endif
 
+#ifdef ENABLE_CGB
+#ifndef ENABLE_BOOTROM
+    // BG palettes are all initialized as white.
+    for (uint32_t i = 0; i < 32; i++) {
+        bg_palettes[2 * i] = 0xFF;
+        bg_palettes[2 * i + 1] = 0x7F;
+    }
+    // OBJ palettes are random.
+    RandomNumberGenerator<uint32_t, 0, 255> rng /* use constant seed to be deterministic */;
+    for (uint32_t i = 0; i < 64; i++) {
+        obj_palettes[i] = rng.next();
+    }
+#else
+    for (uint32_t i = 0; i < 64; i++) {
+        obj_palettes[i] = 0;
+    }
+    for (uint32_t i = 0; i < 64; i++) {
+        obj_palettes[i] = 0;
+    }
+#endif
+#endif
+
 #ifndef ENABLE_BOOTROM
     oam.acquire();
 #endif
@@ -2037,6 +2059,9 @@ uint8_t Ppu::read_bcpd() const {
 void Ppu::write_bcpd(uint8_t value) {
     ASSERT(bcps.address < array_size(bg_palettes));
     bg_palettes[bcps.address] = value;
+    if (bcps.auto_increment) {
+        bcps.address = mod<64>(bcps.address + 1);
+    }
 }
 
 uint8_t Ppu::read_ocps() const {
@@ -2056,6 +2081,9 @@ uint8_t Ppu::read_ocpd() const {
 void Ppu::write_ocpd(uint8_t value) {
     ASSERT(ocps.address < array_size(obj_palettes));
     obj_palettes[ocps.address] = value;
+    if (ocps.auto_increment) {
+        ocps.address = mod<64>(ocps.address + 1);
+    }
 }
 #endif
 
