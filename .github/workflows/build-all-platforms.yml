@@ -37,7 +37,7 @@ jobs:
       build_type: Release
       enable_cgb: false
 
-  build-gcb-linux-gcc:
+  build-cgb-linux-gcc:
     uses: ./.github/workflows/apply-to-single-platform.yml
     with:
       os: ubuntu-latest
