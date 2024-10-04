@@ -11,7 +11,7 @@
  * Queue that supports:
  * + push_back()
  * + pop_front()
-* + fill()
+ * + fill()
 
  *  0 1 2 3 4 5 6 7
  * | | | |x|x|x|x|x|
@@ -47,9 +47,24 @@ struct FillQueue {
         cursor = 0;
     }
 
+    void fill() {
+        cursor = 0;
+    }
+
+    void push_back() {
+        ASSERT(!is_full());
+        --cursor;
+    }
+
     void push_back(T element) {
         ASSERT(!is_full());
         data[--cursor] = element;
+    }
+
+    template <typename... Args>
+    void emplace_back(Args&&... args) {
+        ASSERT(!is_full());
+        data[--cursor] = T {std::forward<Args>(args)...};
     }
 
     T pop_front() {

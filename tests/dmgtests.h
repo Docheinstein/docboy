@@ -1,100 +1,76 @@
-#ifndef EMUTESTS_H
-#define EMUTESTS_H
+#ifndef DMGTESTS_H
+#define DMGTESTS_H
 
 #include "testutils/catch.h"
 #include "testutils/runners.h"
 
+#include "utils/strings.h"
+
 #define WIP_ONLY_TEST_ROMS 0
 
-using F = FramebufferRunnerParams;
-using S = SerialRunnerParams;
-using RunnerParams = std::variant<F, S>;
-
-const std::string TEST_ROMS_PATH = TESTS_ROOT_FOLDER "/roms/";
-const std::string TEST_RESULTS_PATH = TESTS_ROOT_FOLDER "/results/";
-
-bool run_with_params(const RunnerParams& p) {
-    if (std::holds_alternative<FramebufferRunnerParams>(p)) {
-        const auto& pf = std::get<FramebufferRunnerParams>(p);
-        INFO("=== " << TEST_ROMS_PATH + pf.rom << " ===");
-        return FramebufferRunner(pf.palette.value_or(Lcd::DEFAULT_PALETTE))
-            .rom(TEST_ROMS_PATH + pf.rom)
-            .max_ticks(pf.max_ticks)
-            .check_interval_ticks(DURATION_VERY_SHORT)
-            .stop_at_instruction(pf.stop_at_instruction)
-            .expect_framebuffer(TEST_RESULTS_PATH + pf.result)
-            .force_check(pf.force_check)
-            .schedule_inputs(pf.inputs)
-            .run();
-    }
-
-    if (std::holds_alternative<SerialRunnerParams>(p)) {
-        const auto& ps = std::get<SerialRunnerParams>(p);
-        INFO("=== " << TEST_ROMS_PATH + ps.rom << " ===");
-        return SerialRunner()
-            .rom(TEST_ROMS_PATH + ps.rom)
-            .max_ticks(ps.max_ticks)
-            .check_interval_ticks(DURATION_VERY_SHORT)
-            .expect_output(ps.result)
-            .run();
-    }
-
-    ASSERT_NO_ENTRY();
-    return false;
-}
-
 #define RUN_TEST_ROMS(...)                                                                                             \
-    const auto [params] = TABLE(RunnerParams, ({__VA_ARGS__}));                                                        \
-    REQUIRE(run_with_params(params))
+    static RunnerAdapter adapter {TESTS_ROOT_FOLDER "/roms/dmg/", TESTS_ROOT_FOLDER "/results/dmg/"};                  \
+    const auto [params] = TABLE(RunnerAdapter::Params, ({__VA_ARGS__}));                                               \
+    REQUIRE(adapter.run(params))
 
-TEST_CASE("emulation", "[emulation]") {
+TEST_CASE("dmg", "[emulation]") {
 #if !WIP_ONLY_TEST_ROMS
     SECTION("cpu") {
-        RUN_TEST_ROMS(F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png", MaxTicks {DURATION_VERY_LONG}},
-                      F {"blargg/instr_timing.gb", "blargg/instr_timing.png"},
-                      F {"blargg/halt_bug.gb", "blargg/halt_bug.png", MaxTicks {DURATION_VERY_LONG}},
-                      F {"blargg/mem_timing.gb", "blargg/mem_timing.png"},
-                      F {"blargg/mem_timing-2.gb", "blargg/mem_timing-2.png"},
-                      S {"mooneye/instr/daa.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/bits/reg_f.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/add_sp_e_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/call_cc_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/call_cc_timing2.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/call_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/call_timing2.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/di_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/ei_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/jp_cc_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/jp_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/ld_hl_sp_e_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/pop_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/push_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/ret_cc_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/ret_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/reti_intr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/reti_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/rst_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/halt_ime0_ei.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/halt_ime0_nointr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/halt_ime1_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/halt_ime1_timing2-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      F {"samesuite/interrupt/ei_delay_halt.gb", "samesuite/interrupt/ei_delay_halt.png"},
-                      F {"little-things-gb/double-halt-cancel.gb", "little-things-gb/double-halt-cancel.png"},
-                      F {"docboy/cpu/cb_interrupt.gb", "docboy/ok.png"},
-                      F {"docboy/cpu/halt_ime0_interrupt0.gb", "docboy/ok.png"},
-                      F {"docboy/cpu/halt_ime0_interrupt1.gb", "docboy/ok.png"},
-                      F {"docboy/cpu/halt_ime1_interrupt0.gb", "docboy/ok.png"},
-                      F {"docboy/cpu/halt_ime1_interrupt0_ret.gb", "docboy/ok.png"},
-                      F {"docboy/cpu/halt_ime1_interrupt1_ret.gb", "docboy/ok.png"},
-                      F {"daid/stop_instr.gb", "daid/stop_instr.png", GREY_PALETTE, ForceCheck {}},
-                      F {"docboy/cpu/stop_joypad0_interrupt0.gb", "docboy/ok.png",
-                         Inputs {{BOOT_DURATION + 200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-                      F {"docboy/cpu/stop_joypad0_interrupt1.gb", "docboy/ok.png",
-                         Inputs {{BOOT_DURATION + 200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-                      F {"docboy/cpu/stop_joypad1_interrupt0.gb", "docboy/ok.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-                      F {"docboy/cpu/stop_joypad1_interrupt1.gb", "docboy/ok.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+        RUN_TEST_ROMS(
+            // blargg
+            F {"blargg/cpu_instrs.gb", "blargg/cpu_instrs.png", MaxTicks {DURATION_VERY_LONG}},
+            F {"blargg/instr_timing.gb", "blargg/instr_timing.png"},
+            F {"blargg/halt_bug.gb", "blargg/halt_bug.png", MaxTicks {DURATION_VERY_LONG}},
+            F {"blargg/mem_timing.gb", "blargg/mem_timing.png"},
+            F {"blargg/mem_timing-2.gb", "blargg/mem_timing-2.png"},
+
+            // mooneye
+            S {"mooneye/instr/daa.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/bits/reg_f.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/add_sp_e_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/call_cc_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/call_cc_timing2.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/call_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/call_timing2.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/di_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ei_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/jp_cc_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/jp_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ld_hl_sp_e_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/pop_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/push_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ret_cc_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/ret_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/reti_intr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/reti_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/rst_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/halt_ime0_ei.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/halt_ime0_nointr_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/halt_ime1_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/halt_ime1_timing2-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+
+            // samesuite
+            F {"samesuite/interrupt/ei_delay_halt.gb", "samesuite/interrupt/ei_delay_halt.png"},
+
+            // little-things-gb
+            F {"little-things-gb/double-halt-cancel.gb", "little-things-gb/double-halt-cancel.png"},
+
+            // docboy
+            F {"docboy/cpu/cb_interrupt.gb", "docboy/ok.png"},
+            F {"docboy/cpu/halt_ime0_interrupt0.gb", "docboy/ok.png"},
+            F {"docboy/cpu/halt_ime0_interrupt1.gb", "docboy/ok.png"},
+            F {"docboy/cpu/halt_ime1_interrupt0.gb", "docboy/ok.png"},
+            F {"docboy/cpu/halt_ime1_interrupt0_ret.gb", "docboy/ok.png"},
+            F {"docboy/cpu/halt_ime1_interrupt1_ret.gb", "docboy/ok.png"},
+            F {"daid/stop_instr.gb", "daid/stop_instr.png", GREY_PALETTE, ForceCheck {}},
+            F {"docboy/cpu/stop_joypad0_interrupt0.gb", "docboy/ok.png",
+               Inputs {{BOOT_DURATION + 200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+            F {"docboy/cpu/stop_joypad0_interrupt1.gb", "docboy/ok.png",
+               Inputs {{BOOT_DURATION + 200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+            F {"docboy/cpu/stop_joypad1_interrupt0.gb", "docboy/ok.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+            F {"docboy/cpu/stop_joypad1_interrupt1.gb", "docboy/ok.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
 
         );
     }
@@ -102,7 +78,7 @@ TEST_CASE("emulation", "[emulation]") {
     SECTION("ppu") {
         RUN_TEST_ROMS(
             // dmg-acid2
-            F {"mattcurrie/dmg/dmg-acid2.gb", "mattcurrie/dmg/dmg-acid2.png", GREY_PALETTE},
+            F {"mattcurrie/dmg-acid2.gb", "mattcurrie/dmg-acid2.png", GREY_PALETTE},
 
             // mooneye
             S {"mooneye/ppu/hblank_ly_scx_timing-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
@@ -1484,9 +1460,7 @@ TEST_CASE("emulation", "[emulation]") {
 
     SECTION("boot") {
         RUN_TEST_ROMS(S {"mooneye/boot_div-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-#if !ENABLE_CGB
                       S {"mooneye/boot_hwio-dmgABCmgb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-#endif
                       S {"mooneye/boot_regs-dmgABC.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
                       F {"docboy/boot/boot_div_phase_round1.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_div_phase_round2.gb", "docboy/ok.png"},
@@ -1534,9 +1508,7 @@ TEST_CASE("emulation", "[emulation]") {
                       F {"blargg/oam_bug/8-instr_effect.gb", "blargg/oam_bug/8-instr_effect.png"}, );
     }
     SECTION("io") {
-#if !ENABLE_CGB
         RUN_TEST_ROMS(S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
-#endif
     }
 
     SECTION("timers") {
@@ -1729,168 +1701,140 @@ TEST_CASE("emulation", "[emulation]") {
             F {"blargg/dmg_sound/12-wave_write_while_on.gb", "blargg/dmg_sound/12-wave_write_while_on.png"},
 
             // docboy
-            F {"docboy/apu/dmg/ch1/length_timer_delay0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_delay1024.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_delay2048.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_delay3072.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_delay4096.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_delay5120.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_while_off_delay0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_while_off_delay512.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_while_off_delay1024.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_while_off_delay2048.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_while_off_delay3072.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_while_off_delay4096.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/length_timer_while_off_delay5120.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_delay0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_delay1024.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_delay2048.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_delay3072.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_delay4096.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_delay5120.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_while_off_delay0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_while_off_delay512.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_while_off_delay1024.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_while_off_delay2048.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_while_off_delay3072.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_while_off_delay4096.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_while_off_delay5120.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/period_sweep_while_off_delay5120.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_delay1024.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_delay2048.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_delay3072.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_delay4096.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_delay5120.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_while_off_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_while_off_delay512.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_while_off_delay1024.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_while_off_delay2048.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_while_off_delay3072.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_while_off_delay4096.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/length_timer_while_off_delay5120.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_delay1024.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_delay2048.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_delay3072.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_delay4096.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_delay5120.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_while_off_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_while_off_delay512.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_while_off_delay1024.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_while_off_delay2048.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_while_off_delay3072.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_while_off_delay4096.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_while_off_delay5120.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/period_sweep_while_off_delay5120.gb", "docboy/ok.png"},
 
-            F {"docboy/apu/dmg/ch1/turn_off_disable_dac.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/turn_on_div_0F.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch1/turn_on_div_10.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/turn_off_disable_dac.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/turn_on_div_0F.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/turn_on_div_10.gb", "docboy/ok.png"},
 
-            F {"docboy/apu/dmg/ch1/write_nrx2_turns_off_channel.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/write_nrx2_turns_off_channel.gb", "docboy/ok.png"},
 
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay3.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay4.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay5.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay6.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay7.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay8.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay9.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay10.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay11.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay12.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay19.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay26.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay33.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay40.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay47.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay54.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay61.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay68.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay75.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/corrupt_wave_period7_delay82.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay7.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay8.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay9.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay10.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay11.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay12.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay19.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay26.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay33.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay40.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay47.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay54.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay61.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay68.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay75.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/corrupt_wave_period7_delay82.gb", "docboy/ok.png"},
 
-            F {"docboy/apu/dmg/ch3/read_wave_period1_delay0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period1_delay1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period1_delay2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period2_delay0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period2_delay1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period2_delay2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period2_delay3.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period2_delay4.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period3_delay0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period3_delay1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period3_delay2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period3_delay3.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period3_delay4.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period3_delay5.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period3_delay6.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay3.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay4.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay5.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay6.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay7.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay8.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay9.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay10.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/read_wave_period5_delay11.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period1_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period1_delay1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period1_delay2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period2_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period2_delay1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period2_delay2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period2_delay3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period2_delay4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period3_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period3_delay1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period3_delay2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period3_delay3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period3_delay4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period3_delay5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period3_delay6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay7.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay8.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay9.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay10.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/read_wave_period5_delay11.gb", "docboy/ok.png"},
 
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay9_0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay9_1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay9_2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay9_3.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay9_4.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay9_5.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay9_6.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay10_0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay10_1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay10_2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay10_3.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay10_4.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay10_5.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay10_6.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay11_0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay11_1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay11_2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay11_3.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay11_4.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay11_5.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay11_6.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay12_0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay12_1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay12_2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay12_3.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay12_4.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay12_5.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period5_delay12_6.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period255_delay481_0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/retrigger_read_wave_period255_delay481_1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay9_0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay9_1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay9_2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay9_3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay9_4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay9_5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay9_6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay10_0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay10_1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay10_2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay10_3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay10_4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay10_5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay10_6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay11_0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay11_1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay11_2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay11_3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay11_4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay11_5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay11_6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period5_delay12_6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/retrigger_read_wave_period255_delay481_1.gb", "docboy/ok.png"},
 
-            F {"docboy/apu/dmg/ch3/write_wave_period5_delay0.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/write_wave_period5_delay1.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/write_wave_period5_delay2.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/write_wave_period5_delay3.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/write_wave_period5_delay4.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/write_wave_period5_delay5.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/write_wave_period5_delay6.gb", "docboy/ok.png"},
-            F {"docboy/apu/dmg/ch3/write_wave_period5_delay7.gb", "docboy/ok.png"},
-
-#ifdef ENABLE_CGB
-            F {"docboy/apu/cgb/ch1/square_position_retrigger_round1.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch1/square_position_retrigger_round2.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch1/square_position_round1.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch1/square_position_round2.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch1/volume_sweep_round_1.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch1/volume_sweep_round_2.gb", "docboy/ok.png"},
-
-            F {"docboy/apu/cgb/ch2/square_position_retrigger_round1.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch2/square_position_retrigger_round2.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch2/square_position_round1.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch2/square_position_round2.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch2/volume_sweep_round_1.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch2/volume_sweep_round_2.gb", "docboy/ok.png"},
-
-            F {"docboy/apu/cgb/ch4/volume_sweep_round_1.gb", "docboy/ok.png"},
-            F {"docboy/apu/cgb/ch4/volume_sweep_round_2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay3.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay4.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay5.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay6.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3/write_wave_period5_delay7.gb", "docboy/ok.png"},
 
             // samesuite
-            F {"samesuite/apu/div_trigger_volume_10.gb", "samesuite/apu/div_trigger_volume_10.png", GREY_PALETTE},
             F {"samesuite/apu/div_write_trigger.gb", "samesuite/apu/div_write_trigger.png", GREY_PALETTE},
-            F {"samesuite/apu/div_write_trigger_10.gb", "samesuite/apu/div_write_trigger_10.png", GREY_PALETTE},
-            F {"samesuite/apu/div_write_trigger_volume.gb", "samesuite/apu/div_write_trigger_volume.png", GREY_PALETTE},
-            F {"samesuite/apu/div_write_trigger_volume_10.gb", "samesuite/apu/div_write_trigger_volume_10.png",
-               GREY_PALETTE},
-#endif
-
-        );
+            F {"samesuite/apu/div_write_trigger_10.gb", "samesuite/apu/div_write_trigger_10.png", GREY_PALETTE}, );
     }
 
     SECTION("integration") {
         RUN_TEST_ROMS(
-        // hacktick
-#if !ENABLE_CGB
-            F {"hacktix/bully.gb", "hacktix/bully.png"},
-#endif
-            F {"hacktix/strikethrough.gb", "hacktix/strikethrough.png"},
+            // hacktick
+            F {"hacktix/bully.gb", "hacktix/bully.png"}, F {"hacktix/strikethrough.gb", "hacktix/strikethrough.png"},
 
             // docboy
             F {"docboy/integration/rendering/change_bgp_from_boot.gb", "docboy/integration/change_bgp_from_boot.png",
@@ -2095,13 +2039,11 @@ TEST_CASE("emulation", "[emulation]") {
 #else
     SECTION("wip") {
         RUN_TEST_ROMS(
-#ifdef ENABLE_CGB
-            F {"mattcurrie/cgb/cgb-acid2.gbc", "mattcurrie/cgb/cgb-acid2.png"},
-#endif
+
         );
     }
 
 #endif
 }
 
-#endif // EMUTESTS_H
+#endif // DMGTESTS_H

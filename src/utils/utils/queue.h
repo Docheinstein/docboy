@@ -49,6 +49,14 @@ struct Queue {
         ++count;
     }
 
+    template <typename... Args>
+    void emplace_back(Args&&... args) {
+        ASSERT(!is_full());
+        data[end] = T {std::forward<Args>(args)...};
+        end = (end + 1) % N;
+        ++count;
+    }
+
     T pop_front() {
         ASSERT(is_not_empty());
         T out = data[start];

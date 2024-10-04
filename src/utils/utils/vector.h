@@ -62,6 +62,10 @@ struct Vector {
         --cursor;
     }
 
+    void fill() {
+        cursor = N;
+    }
+
     T& back() {
         ASSERT(is_not_empty());
         return data[cursor - 1];

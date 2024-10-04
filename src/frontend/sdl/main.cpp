@@ -42,7 +42,7 @@
 namespace {
 
 struct Preferences {
-    Lcd::Palette palette {};
+    std::array<uint16_t, 4> palette {};
     struct {
         SDL_Keycode a {};
         SDL_Keycode b {};
@@ -70,7 +70,9 @@ struct Preferences {
 
 Preferences make_default_preferences() {
     Preferences prefs {};
+#ifndef ENABLE_CGB
     prefs.palette = Lcd::DEFAULT_PALETTE;
+#endif
     prefs.keys.a = SDLK_Z;
     prefs.keys.b = SDLK_X;
     prefs.keys.start = SDLK_RETURN;

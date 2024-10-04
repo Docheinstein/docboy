@@ -60,7 +60,7 @@ target_sources(docboy PRIVATE
         docboy/memory/fwd/memoryfwd.h
         docboy/memory/fwd/oamfwd.h
         docboy/memory/fwd/randmemoryfwd.h
-        docboy/memory/fwd/vramfwd.h
+        docboy/memory/fwd/vram0fwd.h
         docboy/memory/fwd/wram1fwd.h
         docboy/memory/fwd/wram2fwd.h
         docboy/memory/hram.h
@@ -68,8 +68,8 @@ target_sources(docboy PRIVATE
         docboy/memory/oam.h
         docboy/memory/randmemory.h
         docboy/memory/traits.h
-        docboy/memory/vram.cpp
-        docboy/memory/vram.h
+        docboy/memory/vram0.cpp
+        docboy/memory/vram0.h
         docboy/memory/wram1.h
         docboy/memory/wram2.h
         docboy/mmu/mmu.cpp

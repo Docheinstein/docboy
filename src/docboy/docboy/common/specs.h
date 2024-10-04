@@ -168,11 +168,10 @@ namespace Registers {
         constexpr uint16_t REGISTERS[] = {NR10,  NR11,  NR12,  NR13,  NR14,  NR21,  NR22,  NR23,  NR24,  NR30,
                                           NR31,  NR32,  NR33,  NR34,  NR41,  NR42,  NR43,  NR44,  NR50,  NR51,
                                           NR52,  WAVE0, WAVE1, WAVE2, WAVE3, WAVE4, WAVE5, WAVE6, WAVE7, WAVE8,
-                                          WAVE9, WAVEA, WAVEB, WAVEC, WAVED, WAVEE, WAVEF,
+                                          WAVE9, WAVEA, WAVEB, WAVEC, WAVED, WAVEE, WAVEF};
 #ifdef ENABLE_CGB
-                                          PCM12, PCM34
+        constexpr uint16_t CGB_REGISTERS[] = {PCM12, PCM34};
 #endif
-        };
     } // namespace Sound
 
     namespace Video {
@@ -194,18 +193,21 @@ namespace Registers {
         constexpr uint16_t OCPS = 0xFF6A;
         constexpr uint16_t OCPD = 0xFF6B;
 #endif
-        constexpr uint16_t REGISTERS[] = {LCDC, STAT, SCY,  SCX, LY, LYC, DMA, BGP, OBP0, OBP1, WY, WX,
-#ifdef ENABLE_CGB
-                                          BCPS, BCPD, OCPS, OCPD
-#endif
 
-        };
+        constexpr uint16_t REGISTERS[] = {LCDC, STAT, SCY, SCX, LY, LYC, DMA, BGP, OBP0, OBP1, WY, WX};
+
+#ifdef ENABLE_CGB
+        constexpr uint16_t CGB_REGISTERS[] = {BCPS, BCPD, OCPS, OCPD};
+#endif
     } // namespace Video
 
 #ifdef ENABLE_CGB
     namespace BankSwitch {
         constexpr uint16_t VBK = 0xFF4F;
-    }
+
+        constexpr uint16_t CGB_REGISTERS[] = {VBK};
+
+    } // namespace BankSwitch
 #endif
 
     namespace Boot {
@@ -271,7 +273,17 @@ namespace Bits {
             constexpr uint8_t MODE_HIGH = 1;
             constexpr uint8_t MODE_LOW = 0;
         } // namespace STAT
-    }     // namespace Video
+#ifdef ENABLE_CGB
+        namespace BCPS {
+            constexpr uint8_t AUTO_INCREMENT = 7;
+            constexpr BitRange ADDRESS = {5, 0};
+        } // namespace BCPS
+        namespace OCPS {
+            constexpr uint8_t AUTO_INCREMENT = 7;
+            constexpr BitRange ADDRESS = {5, 0};
+        } // namespace OCPS
+#endif
+    } // namespace Video
 
     namespace Audio {
         namespace NR10 {
@@ -373,6 +385,16 @@ namespace Bits {
             constexpr uint8_t PALETTE_NUM = 4;
         } // namespace Attributes
     }     // namespace OAM
+
+    namespace Background {
+        namespace Attributes {
+            constexpr uint8_t PRIORITY = 7;
+            constexpr uint8_t Y_FLIP = 6;
+            constexpr uint8_t X_FLIP = 5;
+            constexpr uint8_t BANK = 3;
+            constexpr BitRange PALETTE = {2, 0};
+        } // namespace Attributes
+    }     // namespace Background
 
     namespace Serial {
         namespace SC {

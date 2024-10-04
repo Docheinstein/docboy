@@ -71,7 +71,10 @@ const std::vector<UiController::Palette>& UiController::get_palettes() const {
 void UiController::set_current_palette(size_t index) {
     ASSERT(index < palettes.size());
     current_palette = palettes[index];
+#ifndef ENABLE_CGB
+    // TODO: CGB palettes?
     core.gb.lcd.set_palette(current_palette.rgb565.palette);
+#endif
 }
 
 const UiController::Palette& UiController::get_current_palette() const {

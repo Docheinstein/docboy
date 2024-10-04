@@ -40,6 +40,12 @@ public:
         parcel.read_bytes(data, Size * sizeof(UInt8));
     }
 
+    void reset() {
+        for (uint16_t i = 0; i < Size; i++) {
+            data[i] = 0;
+        }
+    }
+
 protected:
     void set_data(const uint8_t* data_, uint16_t length) {
         ASSERT(length <= Size);

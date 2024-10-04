@@ -5,6 +5,7 @@
 #include "testutils/runners.h"
 #include "utils/casts.h"
 #include "utils/memory.h"
+#include "utils/strings.h"
 
 TEST_CASE("bits", "[bits][unit]") {
     SECTION("test bit") {
@@ -296,6 +297,79 @@ TEST_CASE("casts", "[casts][unit]") {
     }
 }
 
+TEST_CASE("strings", "[str][unit]") {
+    SECTION("trim") {
+        REQUIRE(trim("  abc ") == "abc");
+        REQUIRE(trim("abc") == "abc");
+    }
+
+    SECTION("lpad") {
+        REQUIRE(lpad("abc", 5) == "  abc");
+        REQUIRE(lpad("abc", 2) == "abc");
+    }
+
+    SECTION("rpad") {
+        REQUIRE(rpad("abc", 5) == "abc  ");
+        REQUIRE(rpad("abc", 2) == "abc");
+    }
+
+    SECTION("equals_ignore_case") {
+        REQUIRE(equals_ignore_case("abc", "ABc"));
+        REQUIRE(equals_ignore_case("abc", "abc"));
+    }
+
+    SECTION("split") {
+        std::vector<std::string> tokens;
+        split("a bc d ef", std::back_inserter(tokens));
+        REQUIRE(tokens.size() == 4);
+        REQUIRE(tokens[0] == "a");
+        REQUIRE(tokens[1] == "bc");
+        REQUIRE(tokens[2] == "d");
+        REQUIRE(tokens[3] == "ef");
+    }
+
+    SECTION("join") {
+        std::string joined = join(std::array {"a", "bc", "d", "ef"}, ",");
+        REQUIRE(joined == "a,bc,d,ef");
+    }
+
+    SECTION("starts_with") {
+        {
+            std::string haystack {"abcdefghi"};
+            std::string needle {"abc"};
+            REQUIRE(starts_with(haystack, needle));
+        }
+        {
+            std::string haystack {"abcdefghi"};
+            std::string needle {"abd"};
+            REQUIRE_FALSE(starts_with(haystack, needle));
+        }
+        {
+            std::string haystack {"abcde"};
+            std::string needle {"abcdefg"};
+            REQUIRE_FALSE(starts_with(haystack, needle));
+        }
+    }
+
+    SECTION("ends_with") {
+        {
+            std::string haystack {"abcdefghi"};
+            std::string needle {"ghi"};
+            REQUIRE(ends_with(haystack, needle));
+        }
+        {
+            std::string haystack {"abcdefghi"};
+            std::string needle {"cghi"};
+            REQUIRE_FALSE(ends_with(haystack, needle));
+        }
+        {
+            std::string haystack {"abcde"};
+            std::string needle {"abcdefg"};
+            REQUIRE_FALSE(ends_with(haystack, needle));
+        }
+    }
+}
+
 TEST_CASE("memory", "[memory][unit]") {
     SECTION("mem_find_first") {
         {
@@ -555,7 +629,7 @@ TEST_CASE("state", "[state][unit]") {
 
         {
             SimpleRunner runner {};
-            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").max_ticks(10'000).run();
+            runner.rom(TESTS_ROOT_FOLDER "/roms/dmg/blargg/cpu_instrs.gb").max_ticks(10'000).run();
             data1.resize(runner.core.get_state_size());
             runner.core.save_state(data1.data());
         }
@@ -564,7 +638,7 @@ TEST_CASE("state", "[state][unit]") {
 
         {
             SimpleRunner runner {};
-            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
+            runner.rom(TESTS_ROOT_FOLDER "/roms/dmg/blargg/cpu_instrs.gb");
             runner.core.load_state(data1.data());
             runner.core.save_state(data2.data());
         }
@@ -578,7 +652,7 @@ TEST_CASE("state", "[state][unit]") {
 
         {
             SimpleRunner runner {};
-            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
+            runner.rom(TESTS_ROOT_FOLDER "/roms/dmg/blargg/cpu_instrs.gb");
 
             runner.max_ticks(1'000'000).run();
             data1.resize(runner.core.get_state_size());
@@ -592,7 +666,7 @@ TEST_CASE("state", "[state][unit]") {
 
         {
             SimpleRunner runner {};
-            runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
+            runner.rom(TESTS_ROOT_FOLDER "/roms/dmg/blargg/cpu_instrs.gb");
 
             runner.core.load_state(data1.data());
             runner.max_ticks(2'000'000).run();
@@ -610,7 +684,7 @@ TEST_CASE("reset", "[reset][unit]") {
         std::vector<uint8_t> data1;
 
         SimpleRunner runner {};
-        runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb");
+        runner.rom(TESTS_ROOT_FOLDER "/roms/dmg/blargg/cpu_instrs.gb");
 
         data1.resize(runner.core.get_state_size());
         runner.core.save_state(data1.data());
@@ -626,7 +700,7 @@ TEST_CASE("reset", "[reset][unit]") {
         std::vector<uint8_t> data1;
 
         SimpleRunner runner {};
-        runner.rom(TESTS_ROOT_FOLDER "/roms/blargg/cpu_instrs.gb").max_ticks(10'000).run();
+        runner.rom(TESTS_ROOT_FOLDER "/roms/dmg/blargg/cpu_instrs.gb").max_ticks(10'000).run();
         data1.resize(runner.core.get_state_size());
         runner.core.save_state(data1.data());
 

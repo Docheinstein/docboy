@@ -1,7 +1,7 @@
 #include "docboy/bus/vrambus.h"
 
 #ifdef ENABLE_CGB
-VramBus::VramBus(Vram& vram0, Vram& vram1) :
+VramBus::VramBus(Vram0& vram0, Vram1& vram1) :
     VideoBus {},
     vram0 {vram0},
     vram1 {vram1} {
@@ -15,7 +15,7 @@ VramBus::VramBus(Vram& vram0, Vram& vram1) :
 }
 
 #else
-VramBus::VramBus(Vram& vram0) :
+VramBus::VramBus(Vram0& vram0) :
     VideoBus {},
     vram0 {vram0} {
     /* 0x8000 - 0x9FFF */

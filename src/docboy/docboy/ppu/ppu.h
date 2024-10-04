@@ -115,9 +115,16 @@ private:
     using FetcherTickSelector = void (Ppu::*)();
     using PixelColorIndex = uint8_t;
 
+#ifdef ENABLE_CGB
+    struct BgPixel {
+        PixelColorIndex color_index;
+        uint8_t attributes;
+    };
+#else
     struct BgPixel {
         PixelColorIndex color_index;
     };
+#endif
 
     struct ObjPixel {
         PixelColorIndex color_index;
@@ -312,6 +319,11 @@ private:
         uint8_t lx {}; // [0, 256), advances 8 by 8
         uint16_t tilemap_tile_vram_addr {};
 
+#ifdef ENABLE_CGB
+        uint16_t tilemap_attributes_vram_addr {};
+        uint8_t attributes {};
+#endif
+
 #ifdef ENABLE_DEBUGGER
         uint8_t tilemap_x {};
         uint8_t tilemap_y {};
@@ -343,6 +355,12 @@ private:
         uint8_t tile_data_low {};
         uint8_t tile_data_high {};
     } psf;
+
+#ifdef ENABLE_CGB
+    // CGB palettes
+    uint8_t bg_palettes[64] {};
+    uint8_t obj_palettes[64] {};
+#endif
 
 #ifdef ENABLE_DEBUGGER
     uint64_t cycles {};

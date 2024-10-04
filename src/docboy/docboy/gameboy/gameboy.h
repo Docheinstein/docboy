@@ -19,7 +19,8 @@
 #include "docboy/memory/hram.h"
 #include "docboy/memory/memory.h"
 #include "docboy/memory/oam.h"
-#include "docboy/memory/vram.h"
+#include "docboy/memory/vram0.h"
+#include "docboy/memory/vram1.h"
 #include "docboy/memory/wram1.h"
 #include "docboy/memory/wram2.h"
 #include "docboy/mmu/mmu.h"
@@ -45,10 +46,10 @@ public:
 #endif
 
     // Memory
-    Vram vram0 {};
+    Vram0 vram0 {};
 
 #ifdef ENABLE_CGB
-    Vram vram1 {};
+    Vram1 vram1 {};
 #endif
 
     Wram1 wram1 {};

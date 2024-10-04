@@ -1,9 +1,9 @@
-#ifndef VRAMFWD_H
-#define VRAMFWD_H
+#ifndef VRAM0FWD_H
+#define VRAM0FWD_H
 
 #include "docboy/common/specs.h"
 #include "docboy/memory/fwd/memoryfwd.h"
 
-class Vram;
+class Vram0;
 
-#endif // VRAMFWD_H
+#endif // VRAM0FWD_H

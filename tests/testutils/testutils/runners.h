@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <variant>
 
 #include "docboy/bootrom/factory.h"
@@ -20,7 +21,9 @@
 #include "utils/os.h"
 #include "utils/path.h"
 
+#ifndef ENABLE_CGB
 constexpr Lcd::Palette GREY_PALETTE {0xFFFF, 0xAD55, 0x52AA, 0x0000}; // {0xFF, 0xAA, 0x55, 0x00} in RGB565
+#endif
 
 #ifdef ENABLE_BOOTROM
 extern std::string boot_rom;
@@ -48,14 +51,20 @@ public:
         Joypad::Key key {};
     };
 
+#ifndef ENABLE_CGB
     explicit Runner(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE) :
+#else
+    explicit Runner() :
+#endif
 #ifdef ENABLE_BOOTROM
         gb {std::make_unique<GameBoy>(palette, BootRomFactory {}.create(boot_rom))},
 #else
         gb {std::make_unique<GameBoy>()},
 #endif
         core {*gb} {
+#ifndef ENABLE_CGB
         gb->lcd.set_palette(palette);
+#endif
         core.set_audio_sample_rate(32786);
     }
 
@@ -174,9 +183,14 @@ public:
 
 class FramebufferRunner : public Runner<FramebufferRunner> {
 public:
+#ifndef ENABLE_CGB
     explicit FramebufferRunner(const Lcd::Palette& palette) :
         Runner<FramebufferRunner>(palette) {
     }
+#else
+    explicit FramebufferRunner() {
+    }
+#endif
 
     FramebufferRunner& expect_framebuffer(const std::string& filename) {
         load_framebuffer_png(filename, expected_framebuffer);
@@ -314,8 +328,11 @@ struct ForceCheck {};
 using Inputs = std::vector<FramebufferRunner::JoypadInput>;
 
 struct FramebufferRunnerParams {
-    using Param = std::variant<std::monostate, Lcd::Palette, MaxTicks, StopAtInstruction, ForceCheck,
-                               std::vector<FramebufferRunner::JoypadInput>>;
+    using Param = std::variant<std::monostate,
+#ifndef ENABLE_CGB
+                               Lcd::Palette,
+#endif
+                               MaxTicks, StopAtInstruction, ForceCheck, std::vector<FramebufferRunner::JoypadInput>>;
 
     FramebufferRunnerParams(std::string&& rom, std::string&& expected, Param param1 = std::monostate {},
                             Param param2 = std::monostate {}) :
@@ -323,9 +340,12 @@ struct FramebufferRunnerParams {
         result = std::move(expected);
 
         auto parseParam = [this](Param& param) {
+#ifndef ENABLE_CGB
             if (std::holds_alternative<Lcd::Palette>(param)) {
                 palette = std::get<Lcd::Palette>(param);
-            } else if (std::holds_alternative<MaxTicks>(param)) {
+            } else
+#endif
+                if (std::holds_alternative<MaxTicks>(param)) {
                 max_ticks = std::get<MaxTicks>(param).value;
             } else if (std::holds_alternative<StopAtInstruction>(param)) {
                 stop_at_instruction = std::get<StopAtInstruction>(param).instruction;
@@ -342,7 +362,9 @@ struct FramebufferRunnerParams {
 
     std::string rom;
     std::string result;
+#ifndef ENABLE_CGB
     std::optional<Lcd::Palette> palette {};
+#endif
     uint64_t max_ticks {DEFAULT_DURATION};
     std::optional<uint8_t> stop_at_instruction {};
     bool force_check {};
@@ -360,5 +382,56 @@ struct SerialRunnerParams {
     std::vector<uint8_t> result;
     uint64_t max_ticks;
 };
+
+struct RunnerAdapter {
+    using Params = std::variant<FramebufferRunnerParams, SerialRunnerParams>;
+
+    RunnerAdapter(std::string roms_prefix, std::string results_prefix) :
+        roms_prefix {std::move(roms_prefix)},
+        results_prefix {std::move(results_prefix)} {
+    }
+
+    bool run(const Params& p) {
+        if (std::holds_alternative<FramebufferRunnerParams>(p)) {
+            const auto& pf = std::get<FramebufferRunnerParams>(p);
+            INFO("=== " << roms_prefix + pf.rom << " ===");
+#ifndef ENABLE_CGB
+            return FramebufferRunner(pf.palette.value_or(Lcd::DEFAULT_PALETTE))
+#else
+            return FramebufferRunner()
+#endif
+                .rom(roms_prefix + pf.rom)
+                .max_ticks(pf.max_ticks)
+                .check_interval_ticks(DURATION_VERY_SHORT)
+                .stop_at_instruction(pf.stop_at_instruction)
+                .expect_framebuffer(results_prefix + pf.result)
+                .force_check(pf.force_check)
+                .schedule_inputs(pf.inputs)
+                .run();
+        }
+
+        if (std::holds_alternative<SerialRunnerParams>(p)) {
+            const auto& ps = std::get<SerialRunnerParams>(p);
+
+            INFO("=== " << ps.rom << " ===");
+            return SerialRunner()
+                .rom(roms_prefix + ps.rom)
+                .max_ticks(ps.max_ticks)
+                .check_interval_ticks(DURATION_VERY_SHORT)
+                .expect_output(ps.result)
+                .run();
+        }
+
+        ASSERT_NO_ENTRY();
+        return false;
+    }
+
+private:
+    std::string roms_prefix;
+    std::string results_prefix;
+};
+
+using F = FramebufferRunnerParams;
+using S = SerialRunnerParams;
 
 #endif // RUNNERS_H

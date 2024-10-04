@@ -36,8 +36,6 @@ constexpr uint8_t NUMBER_OF_COLORS = 4;
 constexpr uint8_t BITS_PER_PIXEL = 2;
 
 constexpr uint8_t DUMMY_PIXEL = 0xFF;
-constexpr uint8_t DUMMY_TILE[8] {DUMMY_PIXEL, DUMMY_PIXEL, DUMMY_PIXEL, DUMMY_PIXEL,
-                                 DUMMY_PIXEL, DUMMY_PIXEL, DUMMY_PIXEL, DUMMY_PIXEL};
 
 inline bool is_obj_opaque(const uint8_t color_index) {
     return color_index != OBJ_COLOR_INDEX_TRANSPARENT;
@@ -46,6 +44,17 @@ inline bool is_obj_opaque(const uint8_t color_index) {
 inline uint8_t resolve_color(const uint8_t color_index, const uint8_t palette) {
     ASSERT(color_index < NUMBER_OF_COLORS);
     return keep_bits<BITS_PER_PIXEL>(palette >> (BITS_PER_PIXEL * color_index));
+}
+
+inline uint16_t /* Rgb555 */ resolve_color_cgb(const uint8_t color_index, const uint8_t* palette /* 8 bytes */) {
+    ASSERT(color_index < NUMBER_OF_COLORS);
+    // TODO: smarter way?
+    const uint8_t* palette_chunk = &palette[2 * color_index];
+    uint8_t r5 = get_bits_range<4, 0>(palette_chunk[0]);
+    uint8_t g5 = get_bits_range<7, 5>(palette_chunk[0]) | get_bits_range<1, 0>(palette_chunk[1]) << 3;
+    uint8_t b5 = get_bits_range<6, 2>(palette_chunk[1]);
+    uint16_t rgb555 = r5 << 10 | g5 << 5 | b5;
+    return rgb555;
 }
 } // namespace
 
@@ -375,7 +384,7 @@ void Ppu::pixel_transfer_dummy_lx0() {
         // The first tile fetch is used only for make the initial SCX % 8
         // alignment possible, but this data will be thrown away in any case.
         // So filling this with junk is not a problem (even for window with WX=0).
-        bg_fifo.fill(DUMMY_TILE);
+        bg_fifo.fill();
 
         // Initial SCX is not read after the beginning of Pixel Transfer.
         // It is read some T-cycles after: around here, after the first BG fetch.
@@ -435,7 +444,7 @@ void Ppu::pixel_transfer_discard_lx0_wx0_scx7() {
         // expected one with SCX=7, but the initial shifting applied
         // to the window is 6, not 7, therefore we just push a dummy pixel once
         // to fix this and proceed with the standard pixel_transfer_discard_lx0 state.
-        bg_fifo.push_back({DUMMY_PIXEL});
+        bg_fifo.push_back();
         tick_selector = &Ppu::pixel_transfer_discard_lx0;
     }
 }
@@ -482,11 +491,16 @@ void Ppu::pixel_transfer_lx8() {
 
     bool inc_lx = false;
 
-    // Push a new pixel to the LCD if if the BG fifo contains
+    // Push a new pixel to the LCD if the BG fifo contains
     // some pixels and it's not blocked by a sprite fetch
     if (is_bg_fifo_ready_to_be_popped()) {
+#ifdef ENABLE_CGB
+        static constexpr uint16_t NO_COLOR = UINT16_MAX;
+        uint16_t color {NO_COLOR};
+#else
         static constexpr uint8_t NO_COLOR = 4;
         uint8_t color {NO_COLOR};
+#endif
 
         // Pop out a pixel from BG fifo
         const BgPixel bg_pixel = bg_fifo.pop_front();
@@ -514,11 +528,19 @@ void Ppu::pixel_transfer_lx8() {
             // There is 1 T-cycle delay between BGP and the BGP value the PPU sees.
             // During this T-Cycle, the PPU sees the last BGP ORed with the new BGP.
             // [mealybug/m3_bgp_change]
+#ifdef ENABLE_CGB
+            const uint8_t bg_palette_index =
+                get_bits_range<Specs::Bits::Background::Attributes::PALETTE>(bg_pixel.attributes);
+            ASSERT(bg_palette_index < 8);
+            const uint8_t* bg_palette = &bg_palettes[8 * bg_palette_index];
+            color = lcdc_.bg_win_enable ? resolve_color_cgb(bg_pixel.color_index, bg_palette) : 0;
+            ASSERT(test_bit<15>(color) == 0);
+#else
             const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
             color = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_) : 0;
+            ASSERT(color < NUMBER_OF_COLORS);
+#endif
         }
-
-        ASSERT(color < NUMBER_OF_COLORS);
 
         lcd.push_pixel(color);
 
@@ -1020,13 +1042,21 @@ void Ppu::bg_pixel_slice_fetcher_get_tile_data_low_0() {
 
     // Note that fetcher determinate the tile data address to read both in
     // GetTileDataLow and GetTileDataHigh just before access it from VRAM.
-    // Therefore changes to SCY or BG_WIN_TILE_DATA during these phases may
+    // Therefore, changes to SCY or BG_WIN_TILE_DATA during these phases may
     // have bitplane desync effects
     // (e.g. read the low byte from a tile and the high byte from a different one).
     // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
     setup_bg_pixel_slice_fetcher_tile_data_address();
 
-    psf.tile_data_low = vram.read(psf.tile_data_vram_address);
+#ifdef ENABLE_CGB
+    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+        psf.tile_data_low = vram.read_vram1(psf.tile_data_vram_address);
+    } else {
+        psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+    }
+#else
+    psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+#endif
 
     fetcher_tick_selector = &Ppu::bg_pixel_slice_fetcher_get_tile_data_low_1;
 }
@@ -1048,7 +1078,15 @@ void Ppu::bg_pixel_slice_fetcher_get_tile_data_high_0() {
     // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
     setup_bg_pixel_slice_fetcher_tile_data_address();
 
-    psf.tile_data_high = vram.read(psf.tile_data_vram_address + 1);
+#ifdef ENABLE_CGB
+    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+        psf.tile_data_high = vram.read_vram1(psf.tile_data_vram_address + 1);
+    } else {
+        psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+    }
+#else
+    psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+#endif
 
     fetcher_tick_selector = &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1;
 }
@@ -1174,7 +1212,7 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_low_0() {
     // [mealybug/m3_lcdc_tile_sel_win_change]
     setup_win_pixel_slice_fetcher_tile_data_address();
 
-    psf.tile_data_low = vram.read(psf.tile_data_vram_address);
+    psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
 
     fetcher_tick_selector = &Ppu::win_pixel_slice_fetcher_get_tile_data_low_1;
 }
@@ -1208,7 +1246,7 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_0() {
     // [mealybug/m3_lcdc_tile_sel_win_change]
     setup_win_pixel_slice_fetcher_tile_data_address();
 
-    psf.tile_data_high = vram.read(psf.tile_data_vram_address + 1);
+    psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
 
     fetcher_tick_selector = &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1;
 }
@@ -1280,7 +1318,15 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
         }
 
         // Push pixels into bg fifo
+#ifdef ENABLE_CGB
+        ASSERT(bg_fifo.is_empty());
+        const uint8_t* pixel_data = TILE_ROW_DATA_TO_ROW_PIXELS[psf.tile_data_high << 8 | psf.tile_data_low];
+        for (int8_t i = 7; i >= 0; i--) {
+            bg_fifo.emplace_back(pixel_data[i], bwf.attributes);
+        }
+#else
         bg_fifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[psf.tile_data_high << 8 | psf.tile_data_low]);
+#endif
 
         fetcher_tick_selector = &Ppu::bgwin_prefetcher_get_tile_0;
 
@@ -1356,7 +1402,7 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_low_1() {
     // [mealybug/m3_lcdc_obj_size_change, mealybug/m3_lcdc_obj_size_change_scx]
     setup_obj_pixel_slice_fetcher_tile_data_address();
 
-    psf.tile_data_low = vram.read(psf.tile_data_vram_address);
+    psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
 
     fetcher_tick_selector = &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_0;
 }
@@ -1381,7 +1427,7 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
     // [mealybug/m3_lcdc_obj_size_change, mealybug/m3_lcdc_obj_size_change_scx]
     setup_obj_pixel_slice_fetcher_tile_data_address();
 
-    psf.tile_data_high = vram.read(psf.tile_data_vram_address + 1);
+    psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
 
     PixelColorIndex obj_pixels_colors[8];
     const uint8_t(*pixels_map_ptr)[8] =
@@ -1474,18 +1520,23 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tilemap_tile_address() {
     const uint8_t tilemap_x = mod<TILEMAP_WIDTH>((bwf.lx + scx) / TILE_WIDTH);
     const uint8_t tilemap_y = mod<TILEMAP_HEIGHT>((ly + scy) / TILE_HEIGHT);
 
-    const uint16_t tilemap_vram_addr = lcdc.bg_tile_map ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
-    bwf.tilemap_tile_vram_addr = tilemap_vram_addr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemap_y) + tilemap_x;
+    const uint16_t tilemap_vram_addr_base = lcdc.bg_tile_map ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    const uint16_t tilemap_vram_addr_slack = (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemap_y) + tilemap_x;
+    bwf.tilemap_tile_vram_addr = tilemap_vram_addr_base + tilemap_vram_addr_slack;
+
+#ifdef ENABLE_CGB
+    bwf.tilemap_attributes_vram_addr = 0x1800 + tilemap_vram_addr_slack;
+#endif
 
 #ifdef ENABLE_DEBUGGER
     bwf.tilemap_x = tilemap_x;
     bwf.tilemap_y = tilemap_y;
-    bwf.tilemap_vram_addr = tilemap_vram_addr;
+    bwf.tilemap_vram_addr = tilemap_vram_addr_base;
 #endif
 }
 
 inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
-    const uint8_t tile_number = vram.read(bwf.tilemap_tile_vram_addr);
+    const uint8_t tile_number = vram.read_vram0(bwf.tilemap_tile_vram_addr);
 
     const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
                                         ?
@@ -1497,6 +1548,10 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
     const uint8_t tile_y = mod<TILE_HEIGHT>(ly + scy);
 
     psf.tile_data_vram_address = vram_tile_addr + TILE_ROW_BYTES * tile_y;
+
+#ifdef ENABLE_CGB
+    bwf.attributes = vram.read_vram1(bwf.tilemap_attributes_vram_addr);
+#endif
 }
 
 inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
@@ -1514,7 +1569,7 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
 }
 
 inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
-    const uint8_t tile_number = vram.read(bwf.tilemap_tile_vram_addr);
+    const uint8_t tile_number = vram.read_vram0(bwf.tilemap_tile_vram_addr);
 
     const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
                                         ?
@@ -1640,6 +1695,10 @@ void Ppu::save_state(Parcel& parcel) const {
 
     parcel.write_uint8(bwf.lx);
     parcel.write_uint8(bwf.tilemap_tile_vram_addr);
+#ifdef ENABLE_CGB
+    parcel.write_uint16(bwf.tilemap_attributes_vram_addr);
+    parcel.write_uint8(bwf.attributes);
+#endif
 #ifdef ENABLE_DEBUGGER
     parcel.write_uint8(bwf.tilemap_x);
     parcel.write_uint8(bwf.tilemap_y);
@@ -1662,6 +1721,11 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_uint16(psf.tile_data_vram_address);
     parcel.write_uint8(psf.tile_data_low);
     parcel.write_uint8(psf.tile_data_high);
+
+#ifdef ENABLE_CGB
+    parcel.write_bytes(bg_palettes, sizeof(bg_palettes));
+    parcel.write_bytes(obj_palettes, sizeof(obj_palettes));
+#endif
 
 #ifdef ENABLE_DEBUGGER
     parcel.write_uint64(cycles);
@@ -1757,6 +1821,10 @@ void Ppu::load_state(Parcel& parcel) {
 
     bwf.lx = parcel.read_uint8();
     bwf.tilemap_tile_vram_addr = parcel.read_uint8();
+#ifdef ENABLE_CGB
+    bwf.tilemap_attributes_vram_addr = parcel.read_uint16();
+    bwf.attributes = parcel.read_uint8();
+#endif
 #ifdef ENABLE_DEBUGGER
     bwf.tilemap_x = parcel.read_uint8();
     bwf.tilemap_y = parcel.read_uint8();
@@ -1779,6 +1847,11 @@ void Ppu::load_state(Parcel& parcel) {
     psf.tile_data_vram_address = parcel.read_uint16();
     psf.tile_data_low = parcel.read_uint8();
     psf.tile_data_high = parcel.read_uint8();
+
+#ifdef ENABLE_CGB
+    parcel.read_bytes(bg_palettes, sizeof(bg_palettes));
+    parcel.read_bytes(obj_palettes, sizeof(obj_palettes));
+#endif
 
 #ifdef ENABLE_DEBUGGER
     cycles = parcel.read_uint64();
@@ -1948,31 +2021,41 @@ void Ppu::write_stat(uint8_t value) {
 
 #ifdef ENABLE_CGB
 uint8_t Ppu::read_bcps() const {
-    return 0;
+    return 0b01000000 | bcps.auto_increment << Specs::Bits::Video::BCPS::AUTO_INCREMENT | bcps.address;
 }
 
 void Ppu::write_bcps(uint8_t value) {
+    bcps.auto_increment = test_bit<Specs::Bits::Video::BCPS::AUTO_INCREMENT>(value);
+    bcps.address = get_bits_range<Specs::Bits::Video::BCPS::ADDRESS>(value);
 }
 
 uint8_t Ppu::read_bcpd() const {
-    return 0;
+    ASSERT(bcps.address < array_size(bg_palettes));
+    return bg_palettes[bcps.address];
 }
 
 void Ppu::write_bcpd(uint8_t value) {
+    ASSERT(bcps.address < array_size(bg_palettes));
+    bg_palettes[bcps.address] = value;
 }
 
 uint8_t Ppu::read_ocps() const {
-    return 0;
+    return 0b01000000 | ocps.auto_increment << Specs::Bits::Video::OCPS::AUTO_INCREMENT | ocps.address;
 }
 
 void Ppu::write_ocps(uint8_t value) {
+    ocps.auto_increment = test_bit<Specs::Bits::Video::OCPS::AUTO_INCREMENT>(value);
+    ocps.address = get_bits_range<Specs::Bits::Video::OCPS::ADDRESS>(value);
 }
 
 uint8_t Ppu::read_ocpd() const {
-    return 0;
+    ASSERT(ocps.address < array_size(obj_palettes));
+    return obj_palettes[ocps.address];
 }
 
 void Ppu::write_ocpd(uint8_t value) {
+    ASSERT(ocps.address < array_size(obj_palettes));
+    obj_palettes[ocps.address] = value;
 }
 #endif
 

@@ -78,6 +78,10 @@ private:
 
     void _cycle();
 
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    void load_cgb_compatibility_mode_palettes();
+#endif
+
     Parcel parcelize_state() const;
     void unparcelize_state(Parcel&& parcel);
 };

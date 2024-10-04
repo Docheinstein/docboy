@@ -2,8 +2,13 @@
 
 // ---- begin test cases ----
 
-#include "emutests.h"
 #include "unittests.h"
+
+#ifdef ENABLE_CGB
+#include "cgbtests.h"
+#else
+#include "dmgtests.h"
+#endif
 
 // ---- end test cases   ----
 

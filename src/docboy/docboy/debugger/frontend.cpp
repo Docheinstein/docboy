@@ -2041,8 +2041,25 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     const auto make_ppu_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
 
+#ifdef ENABLE_CGB
+        b << subheader("bg palettes", width) << endl;
+
+        const auto bg_palette = [this, &b](uint8_t i) -> Text {
+            return hex<uint16_t>(gb.ppu.bg_palettes[2 * i] << 8 | gb.ppu.bg_palettes[2 * i + 1]);
+        };
+
+        for (uint8_t i = 0; i < 8; i++) {
+            b << yellow("BGP") << yellow(i) << "              : " << bg_palette(i) << " " << bg_palette(i + 1) << " "
+              << bg_palette(i + 2) << " " << bg_palette(i + 3) << endl;
+        }
+#endif
+
         // LCD
-        const auto pixel_color = [this](uint16_t lcd_color) {
+        const auto pixel_color = [this](Lcd::PixelRgb565 lcd_color) {
+#ifdef ENABLE_CGB
+            // TODO: find ASCII nearest color
+            return Text {lcd_color};
+#else
             Text colors[4] {
                 color<154>("0"),
                 color<106>("1"),
@@ -2055,11 +2072,29 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 }
             }
             return color<0>("[.]"); // allowed because framebuffer could be cleared by the debugger
+#endif
         };
 
         b << subheader("lcd", width) << endl;
         b << yellow("X") << "                 :  " << gb.lcd.x << endl;
         b << yellow("Y") << "                 :  " << gb.lcd.y << endl;
+#ifdef ENABLE_CGB
+        b << yellow("Last Pixels[0:4]") << "  :  ";
+        for (int32_t i = 0; i < 4; i++) {
+            int32_t idx = gb.lcd.cursor - 8 + i;
+            if (idx >= 0) {
+                b << pixel_color(gb.lcd.pixels[idx]) << " ";
+            }
+        }
+        b << endl;
+        b << yellow("Last Pixels[5:7]") << "  :  ";
+        for (int32_t i = 4; i < 8; i++) {
+            int32_t idx = gb.lcd.cursor - 8 + i;
+            if (idx >= 0) {
+                b << pixel_color(gb.lcd.pixels[idx]) << " ";
+            }
+        }
+#else
         b << yellow("Last Pixels") << "       :  ";
         for (int32_t i = 0; i < 8; i++) {
             int32_t idx = gb.lcd.cursor - 8 + i;
@@ -2067,16 +2102,28 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 b << pixel_color(gb.lcd.pixels[idx]) << " ";
             }
         }
+#endif
         b << endl;
 
         // BG Fifo
         b << subheader("bg fifo", width) << endl;
 
         uint8_t bg_pixels[8];
+#ifdef ENABLE_CGB
+        uint8_t bg_attributes[8];
+#endif
         for (uint8_t i = 0; i < gb.ppu.bg_fifo.size(); i++) {
-            bg_pixels[i] = gb.ppu.bg_fifo[i].color_index;
+            const Ppu::BgPixel& p = gb.ppu.bg_fifo[i];
+            bg_pixels[i] = p.color_index;
+#ifdef ENABLE_CGB
+            bg_attributes[i] = p.attributes;
+#endif
         }
+
         b << yellow("BG Fifo Pixels") << "    :  " << hex(bg_pixels, gb.ppu.bg_fifo.size()) << endl;
+#ifdef ENABLE_CGB
+        b << yellow("BG Fifo Attrs.") << "    :  " << hex(bg_attributes, gb.ppu.bg_fifo.size()) << endl;
+#endif
 
         // OBJ Fifo
         uint8_t obj_pixels[8];
@@ -2199,6 +2246,19 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     const auto make_ppu_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
 
+#ifdef ENABLE_CGB
+        b << subheader("obj palettes", width) << endl;
+
+        const auto obj_palette = [this, &b](uint8_t i) -> Text {
+            return hex<uint16_t>(gb.ppu.obj_palettes[2 * i] << 8 | gb.ppu.obj_palettes[2 * i + 1]);
+        };
+
+        for (uint8_t i = 0; i < 8; i++) {
+            b << yellow("OBJP") << yellow(i) << "               : " << obj_palette(i) << " " << obj_palette(i + 1)
+              << " " << obj_palette(i + 2) << " " << obj_palette(i + 3) << endl;
+        }
+#endif
+
         // OAM Registers
         b << subheader("oam registers", width) << endl;
         b << yellow("OAM A") << "               :  " << hex(gb.ppu.registers.oam.a) << endl;
@@ -2260,6 +2320,12 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.tilemap_vram_addr) << endl;
         b << yellow("Tile Map Tile Addr.") << " :  "
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.tilemap_tile_vram_addr) << endl;
+
+#ifdef ENABLE_CGB
+        b << yellow("BG Attributes Addr.") << " :  "
+          << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.tilemap_attributes_vram_addr) << endl;
+        b << yellow("BG Attributes") << "       :  " << hex<uint16_t>(gb.ppu.bwf.attributes) << endl;
+#endif
         b << yellow("Cached Fetch") << "        :  "
           << (gb.ppu.bwf.interrupted_fetch.has_data ? hex<uint16_t>(gb.ppu.bwf.interrupted_fetch.tile_data_high << 8 |
                                                                     gb.ppu.bwf.interrupted_fetch.tile_data_low)
@@ -2624,6 +2690,17 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("video", width) << endl;
         b << ios(Specs::Registers::Video::REGISTERS, array_size(Specs::Registers::Video::REGISTERS)) << endl;
 
+#ifdef ENABLE_CGB
+        b << endl;
+        b << header("IO (CGB)", width) << endl;
+        b << subheader("audio", width) << endl;
+        b << ios(Specs::Registers::Sound::CGB_REGISTERS, array_size(Specs::Registers::Sound::CGB_REGISTERS)) << endl;
+        b << subheader("video", width) << endl;
+        b << ios(Specs::Registers::Video::CGB_REGISTERS, array_size(Specs::Registers::Video::CGB_REGISTERS)) << endl;
+        b << subheader("bank switch", width) << endl;
+        b << ios(Specs::Registers::BankSwitch::CGB_REGISTERS, array_size(Specs::Registers::BankSwitch::CGB_REGISTERS))
+          << endl;
+#endif
         return b;
     };
 
