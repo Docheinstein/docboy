@@ -8,59 +8,89 @@ on:
         required: true
 
 jobs:
-  # Build for all the platforms.
-  build-docboy-sdl-linux:
+  # Build with the following configurations:
+  # 1. DMG, Linux
+  # 2. DMG, Windows
+  # 3. CGB, Linux
+  # 4. CGB, Windows
+  build-dmg-docboy-sdl-linux:
     uses: ./.github/workflows/apply-to-single-platform.yml
     with:
       os: ubuntu-latest
       c_compiler: gcc
       cpp_compiler: g++
       build_type: Release
+      enable_cgb: false
       upload_artifact: true
-      artifact_name: docboy-sdl-linux
-      artifact_path: build/docboy-sdl
+      artifact_name: docboy-dmg-sdl-linux
+      artifact_path: build/docboy-dmg-sdl
 
-  build-docboy-sdl-windows:
+  build-dmg-docboy-sdl-windows:
     uses: ./.github/workflows/apply-to-single-platform.yml
     with:
       os: windows-latest
       c_compiler: cl
       cpp_compiler: cl
       build_type: Release
+      enable_cgb: false
       upload_artifact: true
-      artifact_name: docboy-sdl-windows
-      artifact_path: build\Release\docboy-sdl.exe
+      artifact_name: docboy-dmg-sdl-windows
+      artifact_path: build\Release\docboy-dmg-sdl.exe
+
+  build-cgb-docboy-sdl-linux:
+    uses: ./.github/workflows/apply-to-single-platform.yml
+    with:
+      os: ubuntu-latest
+      c_compiler: gcc
+      cpp_compiler: g++
+      build_type: Release
+      enable_cgb: true
+      upload_artifact: true
+      artifact_name: docboy-cgb-sdl-linux
+      artifact_path: build/docboy-cgb-sdl
+
+  build-cgb-docboy-sdl-windows:
+    uses: ./.github/workflows/apply-to-single-platform.yml
+    with:
+      os: windows-latest
+      c_compiler: cl
+      cpp_compiler: cl
+      build_type: Release
+      enable_cgb: true
+      upload_artifact: true
+      artifact_name: docboy-cgb-sdl-windows
+      artifact_path: build\Release\docboy-cgb-sdl.exe
 
   # Wait for all the builds, then bundle them and create a new release.
   deploy:
-    needs: [build-docboy-sdl-linux, build-docboy-sdl-windows]
+    needs: [build-dmg-docboy-sdl-linux, build-dmg-docboy-sdl-windows, build-cgb-docboy-sdl-linux, build-cgb-docboy-sdl-windows]
     runs-on: ubuntu-latest
     steps:
       # Download Linux build.
-      - name: Download docboy-sdl-linux
+      - name: Download docboy-dmg-sdl-linux
         uses: actions/download-artifact@v4
         with:
-          name: docboy-sdl-linux
-          path: docboy-sdl-linux
+          name: docboy-dmg-sdl-linux
+          path: docboy-dmg-sdl-linux
 
       # Download Windows build.
-      - name: Download docboy-sdl-windows
+      - name: Download docboy-dmg-sdl-windows
         uses: actions/download-artifact@v4
         with:
-          name: docboy-sdl-windows
-          path: docboy-sdl-windows
+          name: docboy-dmg-sdl-windows
+          path: docboy-dmg-sdl-windows
 
       # Package Linux build.
-      - name: Package docboy-sdl-linux
+      - name: Package docboy-cgb-sdl-linux
         run: |
-          cd docboy-sdl-linux
-          zip -r ../docboy-sdl-linux.zip .
+          cd docboy-cgb-sdl-linux
+          zip -r ../docboy-cgb-sdl-linux.zip .
 
       # Package Windows build.
-      - name: Package docboy-sdl-windows
+      - name: Package docboy-cgb-sdl-windows
         run: |
-          cd docboy-sdl-windows
-          zip -r ../docboy-sdl-windows.zip .
+          cd docboy-cgb-sdl-windows
+          zip -r ../docboy-cgb-sdl-windows.zip .
 
       - name: Display structure of downloaded files
         run: ls -laR
@@ -71,5 +101,7 @@ jobs:
           prerelease: false
           automatic_release_tag: ${{ inputs.version }}
           files: |
-            docboy-sdl-windows.zip
-            docboy-sdl-linux.zip
+            docboy-dmg-sdl-windows.zip
+            docboy-dmg-sdl-linux.zip
+            docboy-cgb-sdl-windows.zip
+            docboy-cgb-sdl-linux.zip

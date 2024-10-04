@@ -3,28 +3,63 @@ name: Build
 on: push
 
 jobs:
-  # Build with the following 3 configurations:
-  # 1. Linux, Release, gcc compiler
-  # 2. Linux, Release, clang compiler
-  # 3. Windows, Release, cl compiler
-  build-linux-gcc:
+  # Build with the following configurations:
+  # 1. DMG, Linux, Release, gcc compiler
+  # 2. DMG, Linux, Release, clang compiler
+  # 3. DMG, Windows, Release, cl compiler
+  # 4. CGB, Linux, Release, gcc compiler
+  # 5. CGB, Linux, Release, clang compiler
+  # 6. CGB, Windows, Release, cl compiler
+  build-dmg-linux-gcc:
     uses: ./.github/workflows/apply-to-single-platform.yml
     with:
       os: ubuntu-latest
       c_compiler: gcc
       cpp_compiler: g++
       build_type: Release
-  build-linux-clang:
+      enable_cgb: false
+
+  build-dmg-linux-clang:
     uses: ./.github/workflows/apply-to-single-platform.yml
     with:
       os: ubuntu-latest
       c_compiler: clang
       cpp_compiler: clang++
       build_type: Release
-  build-windows-cl:
+      enable_cgb: false
+
+  build-dmg-windows-cl:
     uses: ./.github/workflows/apply-to-single-platform.yml
     with:
       os: windows-latest
       c_compiler: cl
       cpp_compiler: cl
       build_type: Release
+      enable_cgb: false
+
+  build-gcb-linux-gcc:
+    uses: ./.github/workflows/apply-to-single-platform.yml
+    with:
+      os: ubuntu-latest
+      c_compiler: gcc
+      cpp_compiler: g++
+      build_type: Release
+      enable_cgb: true
+
+  build-cgb-linux-clang:
+    uses: ./.github/workflows/apply-to-single-platform.yml
+    with:
+      os: ubuntu-latest
+      c_compiler: clang
+      cpp_compiler: clang++
+      build_type: Release
+      enable_cgb: true
+
+  build-cgb-windows-cl:
+    uses: ./.github/workflows/apply-to-single-platform.yml
+    with:
+      os: windows-latest
+      c_compiler: cl
+      cpp_compiler: cl
+      build_type: Release
+      enable_cgb: true

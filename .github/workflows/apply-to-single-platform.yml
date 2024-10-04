@@ -13,6 +13,9 @@ on:
       build_type:
         required: true
         type: string
+      enable_cgb:
+        required: true
+        type: boolean
       run_tests:
         required: false
         type: boolean
