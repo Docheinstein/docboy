@@ -32,8 +32,14 @@ constexpr uint8_t OAM_ENTRY_BYTES = 4;
 
 constexpr uint8_t OBJ_COLOR_INDEX_TRANSPARENT = 0;
 
+#ifdef ENABLE_CGB
+constexpr uint16_t NUMBER_OF_COLORS = 32768;
+#else
 constexpr uint8_t NUMBER_OF_COLORS = 4;
+#endif
+
 constexpr uint8_t BITS_PER_PIXEL = 2;
+constexpr uint8_t NUMBER_OF_COLOR_INDEXES = 4;
 
 constexpr uint8_t DUMMY_PIXEL = 0xFF;
 
@@ -41,21 +47,18 @@ inline bool is_obj_opaque(const uint8_t color_index) {
     return color_index != OBJ_COLOR_INDEX_TRANSPARENT;
 }
 
+#ifdef ENABLE_CGB
+inline uint16_t /* BGR555 */ resolve_color(const uint8_t color_index, const uint8_t* palette /* 8 bytes */) {
+    ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
+    const uint8_t* palette_color_word = &palette[2 * color_index];
+    return keep_bits<15>(palette_color_word[0] | palette_color_word[1] << 8);
+}
+#else
 inline uint8_t resolve_color(const uint8_t color_index, const uint8_t palette) {
-    ASSERT(color_index < NUMBER_OF_COLORS);
+    ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
     return keep_bits<BITS_PER_PIXEL>(palette >> (BITS_PER_PIXEL * color_index));
 }
-
-inline uint16_t /* Rgb555 */ resolve_color_cgb(const uint8_t color_index, const uint8_t* palette /* 8 bytes */) {
-    ASSERT(color_index < NUMBER_OF_COLORS);
-    // TODO: smarter way?
-    const uint8_t* palette_chunk = &palette[2 * color_index];
-    uint8_t r5 = get_bits_range<4, 0>(palette_chunk[0]);
-    uint8_t g5 = get_bits_range<7, 5>(palette_chunk[0]) | get_bits_range<1, 0>(palette_chunk[1]) << 3;
-    uint8_t b5 = get_bits_range<6, 2>(palette_chunk[1]);
-    uint16_t rgb555 = r5 << 10 | g5 << 5 | b5;
-    return rgb555;
-}
+#endif
 } // namespace
 
 const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
@@ -520,7 +523,16 @@ void Ppu::pixel_transfer_lx8() {
             // - either BG_OVER_OBJ is disabled or the BG color is 0
             if (lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
                 (!test_bit<BG_OVER_OBJ>(obj_pixel.attributes) || bg_pixel.color_index == 0)) {
-                color = resolve_color(obj_pixel.color_index, test_bit<PALETTE_NUM>(obj_pixel.attributes) ? obp1 : obp0);
+#ifdef ENABLE_CGB
+                const uint8_t obj_palette_index =
+                    get_bits_range<Specs::Bits::OAM::Attributes::CGB_PALETTE>(obj_pixel.attributes);
+                ASSERT(obj_palette_index < 8);
+                const uint8_t* obj_palette = &obj_palettes[8 * obj_palette_index];
+
+                color = resolve_color(obj_pixel.color_index, obj_palette);
+#else
+                color = resolve_color(obj_pixel.color_index, test_bit<DMG_PALETTE>(obj_pixel.attributes) ? obp1 : obp0);
+#endif
             }
         }
 
@@ -533,14 +545,14 @@ void Ppu::pixel_transfer_lx8() {
                 get_bits_range<Specs::Bits::Background::Attributes::PALETTE>(bg_pixel.attributes);
             ASSERT(bg_palette_index < 8);
             const uint8_t* bg_palette = &bg_palettes[8 * bg_palette_index];
-            color = lcdc_.bg_win_enable ? resolve_color_cgb(bg_pixel.color_index, bg_palette) : 0;
-            ASSERT(test_bit<15>(color) == 0);
+            color = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bg_palette) : 0;
 #else
             const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
             color = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_) : 0;
-            ASSERT(color < NUMBER_OF_COLORS);
 #endif
         }
+
+        ASSERT(color < NUMBER_OF_COLORS);
 
         lcd.push_pixel(color);
 

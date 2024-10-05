@@ -71,7 +71,7 @@ struct Preferences {
 Preferences make_default_preferences() {
     Preferences prefs {};
 #ifndef ENABLE_CGB
-    prefs.palette = Lcd::DEFAULT_PALETTE;
+    prefs.palette = {0x84A0, 0x4B40, 0x2AA0, 0x1200};
 #endif
     prefs.keys.a = SDLK_Z;
     prefs.keys.b = SDLK_X;

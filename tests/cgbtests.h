@@ -28,40 +28,48 @@ TEST_CASE("cgb", "[emulation]") {
             // F {"mattcurrie/cgb-acid2.gbc", "mattcurrie/cgb-acid2.png"},
 
             // docboy
+            F {"docboy/ppu/rendering/bg_attr_bank.gbc", "docboy/ppu/bg_attr_bank.png"},
+            F {"docboy/ppu/rendering/bg_attr_palette.gbc", "docboy/ppu/bg_attr_palette.png"},
+
             F {"docboy/ppu/bcpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/bcps_increment.gbc", "docboy/ok.png"},
             F {"docboy/ppu/bcps_increment_overflow.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ocpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/ocps_increment.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ocps_increment_overflow.gbc", "docboy/ok.png"}, );
     }
 
-//    SECTION("apu") {
-//        RUN_TEST_ROMS(
-// docboy
-//            F {"docboy/apu/ch1/square_position_retrigger_round1.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch1/square_position_retrigger_round2.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch1/square_position_round1.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch1/square_position_round2.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch1/volume_sweep_round_1.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch1/volume_sweep_round_2.gb", "docboy/ok.png"},
-//
-//            F {"docboy/apu/ch2/square_position_retrigger_round1.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch2/square_position_retrigger_round2.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch2/square_position_round1.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch2/square_position_round2.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch2/volume_sweep_round_1.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch2/volume_sweep_round_2.gb", "docboy/ok.png"},
-//
-//            F {"docboy/apu/ch4/volume_sweep_round_1.gb", "docboy/ok.png"},
-//            F {"docboy/apu/ch4/volume_sweep_round_2.gb", "docboy/ok.png"},
-//
-//            // samesuite
-//            F {"samesuite/apu/div_trigger_volume_10.gb", "samesuite/apu/div_trigger_volume_10.png", GREY_PALETTE},
-//            F {"samesuite/apu/div_write_trigger_volume.gb", "samesuite/apu/div_write_trigger_volume.png",
-//            GREY_PALETTE}, F {"samesuite/apu/div_write_trigger_volume_10.gb",
-//            "samesuite/apu/div_write_trigger_volume_10.png",
-//               GREY_PALETTE},
-//            );
-//    }
+    SECTION("apu") {
+        RUN_TEST_ROMS(
+            // docboy
+            //            F {"docboy/apu/ch1/square_position_retrigger_round1.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch1/square_position_retrigger_round2.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch1/square_position_round1.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch1/square_position_round2.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch1/volume_sweep_round_1.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch1/volume_sweep_round_2.gb", "docboy/ok.png"},
+            //
+            //            F {"docboy/apu/ch2/square_position_retrigger_round1.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch2/square_position_retrigger_round2.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch2/square_position_round1.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch2/square_position_round2.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch2/volume_sweep_round_1.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch2/volume_sweep_round_2.gb", "docboy/ok.png"},
+            //
+            //            F {"docboy/apu/ch4/volume_sweep_round_1.gb", "docboy/ok.png"},
+            //            F {"docboy/apu/ch4/volume_sweep_round_2.gb", "docboy/ok.png"},
+
+            // samesuite
+            F {"samesuite/apu/div_trigger_volume_10.gb", "samesuite/apu/div_trigger_volume_10.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/div_write_trigger.gb", "samesuite/apu/div_write_trigger.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/div_write_trigger_10.gb", "samesuite/apu/div_write_trigger_10.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/div_trigger_volume_10.gb", "samesuite/apu/div_trigger_volume_10.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/div_write_trigger_volume.gb", "samesuite/apu/div_write_trigger_volume.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/div_write_trigger_volume_10.gb", "samesuite/apu/div_write_trigger_volume_10.png",
+               COLOR_TOLERANCE_MEDIUM}, );
+    }
 #else
     SECTION("wip") {
         RUN_TEST_ROMS(

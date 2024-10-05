@@ -26,5 +26,5 @@ jobs:
       cpp_compiler: g++
       build_type: Release
       enable_cgb: true
-      run_unit_tests: false
+      run_unit_tests: true
       run_emulation_tests: true

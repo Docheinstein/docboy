@@ -21,6 +21,24 @@
 #include "utils/os.h"
 #include "utils/path.h"
 
+struct ColorTolerance {
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+};
+struct MaxTicks {
+    uint64_t value;
+};
+struct StopAtInstruction {
+    uint8_t instruction;
+};
+struct ForceCheck {};
+
+#ifdef ENABLE_CGB
+constexpr ColorTolerance COLOR_TOLERANCE_LOW = {5, 5, 5};
+constexpr ColorTolerance COLOR_TOLERANCE_MEDIUM = {10, 10, 10};
+#endif
+
 #ifndef ENABLE_CGB
 constexpr Lcd::Palette GREY_PALETTE {0xFFFF, 0xAD55, 0x52AA, 0x0000}; // {0xFF, 0xAA, 0x55, 0x00} in RGB565
 #endif
@@ -51,26 +69,26 @@ public:
         Joypad::Key key {};
     };
 
-#ifndef ENABLE_CGB
-    explicit Runner(const Lcd::Palette& palette = Lcd::DEFAULT_PALETTE) :
-#else
     explicit Runner() :
-#endif
 #ifdef ENABLE_BOOTROM
-        gb {std::make_unique<GameBoy>(palette, BootRomFactory {}.create(boot_rom))},
+        gb {std::make_unique<GameBoy>(BootRomFactory {}.create(boot_rom))},
 #else
         gb {std::make_unique<GameBoy>()},
 #endif
         core {*gb} {
-#ifndef ENABLE_CGB
-        gb->lcd.set_palette(palette);
-#endif
         core.set_audio_sample_rate(32786);
     }
 
     RunnerImpl& rom(const std::string& filename) {
         rom_name = filename;
         core.load_rom(filename);
+        return static_cast<RunnerImpl&>(*this);
+    }
+
+    RunnerImpl& palette(const std::optional<Lcd::Palette>& palette) {
+        if (palette) {
+            gb->lcd.set_palette(*palette);
+        }
         return static_cast<RunnerImpl&>(*this);
     }
 
@@ -183,17 +201,19 @@ public:
 
 class FramebufferRunner : public Runner<FramebufferRunner> {
 public:
-#ifndef ENABLE_CGB
-    explicit FramebufferRunner(const Lcd::Palette& palette) :
-        Runner<FramebufferRunner>(palette) {
+    explicit FramebufferRunner() :
+        Runner<FramebufferRunner>() {
     }
-#else
-    explicit FramebufferRunner() {
-    }
-#endif
 
     FramebufferRunner& expect_framebuffer(const std::string& filename) {
         load_framebuffer_png(filename, expected_framebuffer);
+        return *this;
+    }
+
+    FramebufferRunner& color_tolerance(uint8_t red, uint8_t green, uint8_t blue) {
+        color_tolerance_.red = red;
+        color_tolerance_.green = green;
+        color_tolerance_.blue = blue;
         return *this;
     }
 
@@ -235,7 +255,12 @@ public:
 
     bool check_expectation() {
         memcpy(last_framebuffer, gb->lcd.get_pixels(), FRAMEBUFFER_SIZE);
-        return are_framebuffer_equals(last_framebuffer, expected_framebuffer);
+        if (color_tolerance_.red == 0 && color_tolerance_.green == 0 && color_tolerance_.blue == 0) {
+            return are_framebuffer_equals(last_framebuffer, expected_framebuffer);
+        } else {
+            return are_framebuffer_equals_with_tolerance(last_framebuffer, expected_framebuffer, color_tolerance_.red,
+                                                         color_tolerance_.green, color_tolerance_.blue);
+        }
     }
 
     void on_expectation_failed() {
@@ -246,10 +271,20 @@ public:
 
         uint32_t i;
         for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
-            if (last_framebuffer[i] != expected_framebuffer[i]) {
-                output_message << "Framebuffer mismatch at position " << i << " (row=" << i / 160
-                               << ", column=" << i % 160 << ": (actual) 0x" << hex(last_framebuffer[i])
-                               << " != (expected) 0x" << hex(expected_framebuffer[i]) << std::endl;
+            if (!are_pixel_equals_with_tolerance(last_framebuffer[i], expected_framebuffer[i], color_tolerance_.red,
+                                                 color_tolerance_.green, color_tolerance_.blue)) {
+                int32_t dr, dg, db;
+                compute_pixels_delta(last_framebuffer[i], expected_framebuffer[i], dr, dg, db);
+
+                output_message << "Framebuffer mismatch" << std::endl
+                               << "Position   : " << i << std::endl
+                               << "Row        : " << i / 160 << std::endl
+                               << "Column     : " << i % 160 << std::endl
+                               << "Actual     : 0x" << hex(last_framebuffer[i]) << std::endl
+                               << "Expected   : 0x" << hex(expected_framebuffer[i]) << std::endl
+                               << "Delta      : (" << dr << ", " << dg << ", " << db << ")" << std::endl
+                               << "Tolerance  : (" << +color_tolerance_.red << ", " << +color_tolerance_.green << ", "
+                               << +color_tolerance_.blue << ")" << std::endl;
                 break;
             }
         }
@@ -273,6 +308,11 @@ private:
     uint16_t last_framebuffer[FRAMEBUFFER_NUM_PIXELS] {};
     uint16_t expected_framebuffer[FRAMEBUFFER_NUM_PIXELS] {};
     bool pending_check_next_vblank {};
+    struct {
+        uint8_t red {0};
+        uint8_t green {0};
+        uint8_t blue {0};
+    } color_tolerance_;
 };
 
 class SerialRunner : public Runner<SerialRunner> {
@@ -317,14 +357,6 @@ private:
     std::vector<uint8_t> expected_output;
 };
 
-struct MaxTicks {
-    uint64_t value;
-};
-struct StopAtInstruction {
-    uint8_t instruction;
-};
-struct ForceCheck {};
-
 using Inputs = std::vector<FramebufferRunner::JoypadInput>;
 
 struct FramebufferRunnerParams {
@@ -332,7 +364,8 @@ struct FramebufferRunnerParams {
 #ifndef ENABLE_CGB
                                Lcd::Palette,
 #endif
-                               MaxTicks, StopAtInstruction, ForceCheck, std::vector<FramebufferRunner::JoypadInput>>;
+                               ColorTolerance, MaxTicks, StopAtInstruction, ForceCheck,
+                               std::vector<FramebufferRunner::JoypadInput>>;
 
     FramebufferRunnerParams(std::string&& rom, std::string&& expected, Param param1 = std::monostate {},
                             Param param2 = std::monostate {}) :
@@ -345,7 +378,9 @@ struct FramebufferRunnerParams {
                 palette = std::get<Lcd::Palette>(param);
             } else
 #endif
-                if (std::holds_alternative<MaxTicks>(param)) {
+                if (std::holds_alternative<ColorTolerance>(param)) {
+                color_tolerance = std::get<ColorTolerance>(param);
+            } else if (std::holds_alternative<MaxTicks>(param)) {
                 max_ticks = std::get<MaxTicks>(param).value;
             } else if (std::holds_alternative<StopAtInstruction>(param)) {
                 stop_at_instruction = std::get<StopAtInstruction>(param).instruction;
@@ -362,13 +397,12 @@ struct FramebufferRunnerParams {
 
     std::string rom;
     std::string result;
-#ifndef ENABLE_CGB
     std::optional<Lcd::Palette> palette {};
-#endif
     uint64_t max_ticks {DEFAULT_DURATION};
     std::optional<uint8_t> stop_at_instruction {};
     bool force_check {};
     std::vector<FramebufferRunner::JoypadInput> inputs {};
+    ColorTolerance color_tolerance {};
 };
 
 struct SerialRunnerParams {
@@ -395,16 +429,14 @@ struct RunnerAdapter {
         if (std::holds_alternative<FramebufferRunnerParams>(p)) {
             const auto& pf = std::get<FramebufferRunnerParams>(p);
             INFO("=== " << roms_prefix + pf.rom << " ===");
-#ifndef ENABLE_CGB
-            return FramebufferRunner(pf.palette.value_or(Lcd::DEFAULT_PALETTE))
-#else
             return FramebufferRunner()
-#endif
                 .rom(roms_prefix + pf.rom)
+                .palette(pf.palette)
                 .max_ticks(pf.max_ticks)
                 .check_interval_ticks(DURATION_VERY_SHORT)
                 .stop_at_instruction(pf.stop_at_instruction)
                 .expect_framebuffer(results_prefix + pf.result)
+                .color_tolerance(pf.color_tolerance.red, pf.color_tolerance.green, pf.color_tolerance.blue)
                 .force_check(pf.force_check)
                 .schedule_inputs(pf.inputs)
                 .run();

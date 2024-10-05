@@ -1,4 +1,5 @@
 #include "docboy/lcd/lcd.h"
+#include "docboy/lcd/colormap.h"
 
 #include "utils/parcel.h"
 
@@ -18,4 +19,8 @@ void Lcd::load_state(Parcel& parcel) {
     x = parcel.read_uint8();
     y = parcel.read_uint8();
 #endif
+}
+
+Lcd::Lcd() {
+    palette = DEFAULT_PALETTE;
 }

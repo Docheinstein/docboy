@@ -52,6 +52,7 @@ target_sources(docboy PRIVATE
         docboy/interrupts/interrupts.h
         docboy/joypad/joypad.cpp
         docboy/joypad/joypad.h
+        docboy/lcd/colormap.h
         docboy/lcd/lcd.cpp
         docboy/lcd/lcd.h
         docboy/memory/cell.h

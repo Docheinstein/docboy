@@ -382,10 +382,15 @@ namespace Bits {
             constexpr uint8_t BG_OVER_OBJ = 7;
             constexpr uint8_t Y_FLIP = 6;
             constexpr uint8_t X_FLIP = 5;
-            constexpr uint8_t PALETTE_NUM = 4;
+            constexpr uint8_t DMG_PALETTE = 4;
+#ifdef ENABLE_CGB
+            constexpr uint8_t BANK = 3;
+            constexpr BitRange CGB_PALETTE = {2, 0};
+#endif
         } // namespace Attributes
     }     // namespace OAM
 
+#ifdef ENABLE_CGB
     namespace Background {
         namespace Attributes {
             constexpr uint8_t PRIORITY = 7;
@@ -395,6 +400,7 @@ namespace Bits {
             constexpr BitRange PALETTE = {2, 0};
         } // namespace Attributes
     }     // namespace Background
+#endif
 
     namespace Serial {
         namespace SC {
