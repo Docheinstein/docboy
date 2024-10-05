@@ -16,7 +16,11 @@ on:
       enable_cgb:
         required: true
         type: boolean
-      run_tests:
+      run_unit_tests:
+        required: false
+        type: boolean
+        default: false
+      run_emulation_tests:
         required: false
         type: boolean
         default: false
@@ -49,8 +53,8 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ inputs.cpp_compiler }}
           -DCMAKE_C_COMPILER=${{ inputs.c_compiler }}
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
-          -DBUILD_TESTS=${{ inputs.run_tests }}
-          -DENABLE_SERIAL=${{ inputs.run_tests }}
+          -DBUILD_TESTS=${{ inputs.run_unit_tests || inputs.run_emulation_tests }}
+          -DENABLE_SERIAL=${{ inputs.run_emulation_tests }}
           -DENABLE_CGB=${{ inputs.enable_cgb }}
           -S ${{ github.workspace }}
 
@@ -58,10 +62,16 @@ jobs:
       - name: Build
         run: cmake --build ${{ github.workspace }}/build --config ${{ inputs.build_type }}
 
-      # Run tests [optional]
-      - name: Run Tests
-        if: ${{ inputs.run_tests }}
-        run: ctest --build-config ${{ inputs.build_type }} --output-on-failure
+      # Run unit tests [optional]
+      - name: Run Unit Tests
+        if: ${{ inputs.run_unit_tests }}
+        run: ctest --build-config ${{ inputs.build_type }} --output-on-failure -R docboy-unit-tests
+        working-directory: ${{ github.workspace }}/build
+
+      # Run emulation tests [optional]
+      - name: Run Emulation Tests
+        if: ${{ inputs.run_emulation_tests }}
+        run: ctest --build-config ${{ inputs.build_type }} --output-on-failure -R docboy-emulation-tests
         working-directory: ${{ github.workspace }}/build
 
       # Upload artifact [optional]

@@ -2,7 +2,8 @@ include(CTest)
 
 add_executable(docboy-tests)
 
-add_test(NAME docboy-tests COMMAND docboy-tests)
+add_test(NAME docboy-emulation-tests COMMAND docboy-tests [emulation])
+add_test(NAME docboy-unit-tests COMMAND docboy-tests [unit])
 
 target_sources(docboy-tests PRIVATE
         main.cpp
