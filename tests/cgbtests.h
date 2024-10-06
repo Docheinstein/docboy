@@ -19,7 +19,7 @@ TEST_CASE("cgb", "[emulation]") {
         RUN_TEST_ROMS(
             // docboy
             F {"docboy/boot/boot_bg_palettes.gbc", "docboy/ok.png"},
-            F {"docboy/boot/boot_vram1.gbc", "docboy/ok.png"}, );
+            F {"docboy/boot/boot_regs_cpu.gbc", "docboy/ok.png"}, F {"docboy/boot/boot_vram1.gbc", "docboy/ok.png"}, );
     }
 
     SECTION("ppu") {

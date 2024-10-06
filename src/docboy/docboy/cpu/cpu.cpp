@@ -773,12 +773,21 @@ void Cpu::load_state(Parcel& parcel) {
 }
 
 void Cpu::reset() {
+#ifdef ENABLE_CGB
+    af = if_bootrom_else(0, 0x1180);
+    bc = 0x0000;
+    de = if_bootrom_else(0, 0xFF56);
+    hl = if_bootrom_else(0, 0x000D);
+    pc = if_bootrom_else(0, 0x0100);
+    sp = if_bootrom_else(0, 0xFFFE);
+#else
     af = if_bootrom_else(0, 0x01B0);
     bc = if_bootrom_else(0, 0x0013);
     de = if_bootrom_else(0, 0x00D8);
     hl = if_bootrom_else(0, 0x014D);
     pc = if_bootrom_else(0, 0x0100);
     sp = if_bootrom_else(0, 0xFFFE);
+#endif
 
     ime = ImeState::Disabled;
     halted = false;

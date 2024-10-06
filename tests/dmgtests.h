@@ -1468,6 +1468,7 @@ TEST_CASE("dmg", "[emulation]") {
                       F {"docboy/boot/boot_ppu_phase_round2.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_ppu_phase_round3.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_ppu_phase_round4.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_regs_cpu.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_regs_interrupts.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_regs_joypad.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_regs_serial.gb", "docboy/ok.png"},
