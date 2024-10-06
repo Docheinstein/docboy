@@ -30,6 +30,10 @@ TEST_CASE("cgb", "[emulation]") {
             // docboy
             F {"docboy/ppu/rendering/bg_attr_bank.gbc", "docboy/ppu/bg_attr_bank.png"},
             F {"docboy/ppu/rendering/bg_attr_palette.gbc", "docboy/ppu/bg_attr_palette.png"},
+            F {"docboy/ppu/rendering/obj_attr_bank.gbc", "docboy/ppu/obj_attr_bank.png"},
+            F {"docboy/ppu/rendering/obj_attr_palette.gbc", "docboy/ppu/obj_attr_palette.png"},
+            F {"docboy/ppu/rendering/win_attr_bank.gbc", "docboy/ppu/win_attr_bank.png"},
+            F {"docboy/ppu/rendering/win_attr_palette.gbc", "docboy/ppu/win_attr_palette.png"},
 
             F {"docboy/ppu/bcpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/bcps_increment.gbc", "docboy/ok.png"},
             F {"docboy/ppu/bcps_increment_overflow.gbc", "docboy/ok.png"},
@@ -40,22 +44,22 @@ TEST_CASE("cgb", "[emulation]") {
     SECTION("apu") {
         RUN_TEST_ROMS(
             // docboy
-            //            F {"docboy/apu/ch1/square_position_retrigger_round1.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch1/square_position_retrigger_round2.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch1/square_position_round1.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch1/square_position_round2.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch1/volume_sweep_round_1.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch1/volume_sweep_round_2.gb", "docboy/ok.png"},
-            //
-            //            F {"docboy/apu/ch2/square_position_retrigger_round1.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch2/square_position_retrigger_round2.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch2/square_position_round1.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch2/square_position_round2.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch2/volume_sweep_round_1.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch2/volume_sweep_round_2.gb", "docboy/ok.png"},
-            //
-            //            F {"docboy/apu/ch4/volume_sweep_round_1.gb", "docboy/ok.png"},
-            //            F {"docboy/apu/ch4/volume_sweep_round_2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1/square_position_retrigger_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1/square_position_retrigger_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1/square_position_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1/square_position_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1/volume_sweep_round_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1/volume_sweep_round_2.gbc", "docboy/ok.png"},
+
+            F {"docboy/apu/ch2/square_position_retrigger_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch2/square_position_retrigger_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch2/square_position_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch2/square_position_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch2/volume_sweep_round_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch2/volume_sweep_round_2.gbc", "docboy/ok.png"},
+
+            F {"docboy/apu/ch4/volume_sweep_round_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch4/volume_sweep_round_2.gbc", "docboy/ok.png"},
 
             // samesuite
             F {"samesuite/apu/div_trigger_volume_10.gb", "samesuite/apu/div_trigger_volume_10.png",

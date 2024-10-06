@@ -1224,7 +1224,15 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_low_0() {
     // [mealybug/m3_lcdc_tile_sel_win_change]
     setup_win_pixel_slice_fetcher_tile_data_address();
 
+#ifdef ENABLE_CGB
+    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+        psf.tile_data_low = vram.read_vram1(psf.tile_data_vram_address);
+    } else {
+        psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+    }
+#else
     psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+#endif
 
     fetcher_tick_selector = &Ppu::win_pixel_slice_fetcher_get_tile_data_low_1;
 }
@@ -1258,7 +1266,15 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_0() {
     // [mealybug/m3_lcdc_tile_sel_win_change]
     setup_win_pixel_slice_fetcher_tile_data_address();
 
+#ifdef ENABLE_CGB
+    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+        psf.tile_data_high = vram.read_vram1(psf.tile_data_vram_address + 1);
+    } else {
+        psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+    }
+#else
     psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+#endif
 
     fetcher_tick_selector = &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1;
 }
@@ -1414,7 +1430,15 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_low_1() {
     // [mealybug/m3_lcdc_obj_size_change, mealybug/m3_lcdc_obj_size_change_scx]
     setup_obj_pixel_slice_fetcher_tile_data_address();
 
+#ifdef ENABLE_CGB
+    if (test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
+        psf.tile_data_low = vram.read_vram1(psf.tile_data_vram_address);
+    } else {
+        psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+    }
+#else
     psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+#endif
 
     fetcher_tick_selector = &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_0;
 }
@@ -1439,7 +1463,15 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
     // [mealybug/m3_lcdc_obj_size_change, mealybug/m3_lcdc_obj_size_change_scx]
     setup_obj_pixel_slice_fetcher_tile_data_address();
 
+#ifdef ENABLE_CGB
+    if (test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
+        psf.tile_data_high = vram.read_vram1(psf.tile_data_vram_address + 1);
+    } else {
+        psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+    }
+#else
     psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+#endif
 
     PixelColorIndex obj_pixels_colors[8];
     const uint8_t(*pixels_map_ptr)[8] =
@@ -1570,13 +1602,19 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
     // The window prefetcher has its own internal counter to determine the tile to fetch
     const uint8_t tilemap_x = wf.tilemap_x++;
     const uint8_t tilemap_y = w.wly / TILE_HEIGHT;
-    const uint16_t tilemap_vram_addr = lcdc.win_tile_map ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
-    bwf.tilemap_tile_vram_addr = tilemap_vram_addr + (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemap_y) + tilemap_x;
+
+    const uint16_t tilemap_vram_addr_base = lcdc.win_tile_map ? 0x1C00 : 0x1800; // 0x9800 or 0x9C00 (global)
+    const uint16_t tilemap_vram_addr_slack = (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemap_y) + tilemap_x;
+    bwf.tilemap_tile_vram_addr = tilemap_vram_addr_base + tilemap_vram_addr_slack;
+
+#ifdef ENABLE_CGB
+    bwf.tilemap_attributes_vram_addr = 0x1800 + tilemap_vram_addr_slack;
+#endif
 
 #ifdef ENABLE_DEBUGGER
     bwf.tilemap_x = tilemap_x;
     bwf.tilemap_y = tilemap_y;
-    bwf.tilemap_vram_addr = tilemap_vram_addr;
+    bwf.tilemap_vram_addr = tilemap_vram_addr_base;
 #endif
 }
 
@@ -1593,6 +1631,10 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
     const uint8_t tile_y = mod<TILE_HEIGHT>(w.wly);
 
     psf.tile_data_vram_address = vram_tile_addr + TILE_ROW_BYTES * tile_y;
+
+#ifdef ENABLE_CGB
+    bwf.attributes = vram.read_vram1(bwf.tilemap_attributes_vram_addr);
+#endif
 }
 
 inline void Ppu::cache_bg_win_fetch() {
