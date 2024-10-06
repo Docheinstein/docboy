@@ -17,6 +17,7 @@
 #include "docboy/debugger/backend.h"
 #include "docboy/debugger/helpers.h"
 #include "docboy/debugger/mnemonics.h"
+#include "docboy/debugger/rgbtoansi.h"
 #include "docboy/debugger/shared.h"
 
 #include "utils/formatters.h"
@@ -2056,53 +2057,19 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         // LCD
         const auto pixel_color = [this](Lcd::PixelRgb565 lcd_color) {
-#ifdef ENABLE_CGB
-            // TODO: find ASCII nearest color
-            return Text {lcd_color};
-#else
-            Text colors[4] {
-                color<154>("0"),
-                color<106>("1"),
-                color<64>("2"),
-                color<28>("3"),
-            };
-            for (uint8_t i = 0; i < 4; i++) {
-                if (lcd_color == gb.lcd.palette[i]) {
-                    return colors[i];
-                }
-            }
-            return color<0>("[.]"); // allowed because framebuffer could be cleared by the debugger
-#endif
+            return color(hex(lcd_color), RGB565_TO_ANSI_COLORS[lcd_color]);
         };
 
         b << subheader("lcd", width) << endl;
         b << yellow("X") << "                 :  " << gb.lcd.x << endl;
         b << yellow("Y") << "                 :  " << gb.lcd.y << endl;
-#ifdef ENABLE_CGB
-        b << yellow("Last Pixels[0:4]") << "  :  ";
-        for (int32_t i = 0; i < 4; i++) {
-            int32_t idx = gb.lcd.cursor - 8 + i;
-            if (idx >= 0) {
-                b << pixel_color(gb.lcd.pixels[idx]) << " ";
-            }
-        }
-        b << endl;
-        b << yellow("Last Pixels[5:7]") << "  :  ";
-        for (int32_t i = 4; i < 8; i++) {
-            int32_t idx = gb.lcd.cursor - 8 + i;
-            if (idx >= 0) {
-                b << pixel_color(gb.lcd.pixels[idx]) << " ";
-            }
-        }
-#else
         b << yellow("Last Pixels") << "       :  ";
-        for (int32_t i = 0; i < 8; i++) {
-            int32_t idx = gb.lcd.cursor - 8 + i;
+        for (int32_t i = 0; i < 4; i++) {
+            int32_t idx = gb.lcd.cursor - 4 + i;
             if (idx >= 0) {
                 b << pixel_color(gb.lcd.pixels[idx]) << " ";
             }
         }
-#endif
         b << endl;
 
         // BG Fifo

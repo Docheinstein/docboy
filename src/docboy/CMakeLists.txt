@@ -133,6 +133,7 @@ if (ENABLE_DEBUGGER)
             docboy/debugger/memwatcher.h
             docboy/debugger/mnemonics.cpp
             docboy/debugger/mnemonics.h
+            docboy/debugger/rgbtoansi.h
             docboy/debugger/shared.h
     )
 
