@@ -20,8 +20,8 @@ bool DebuggerController::attach_debugger(bool proceed_execution) {
         Lcd::PixelRgb565& next_pixel = core.gb.lcd.get_pixels()[core.gb.lcd.get_cursor()];
         const Lcd::PixelRgb565 next_pixel_color = next_pixel;
 
-        // Mark the current dot as a white pixel (useful for debug PPU)
-        next_pixel = 0xFFFF;
+        // Mark the current dot as a special pixel (useful for debug PPU)
+        next_pixel = 0xF800;
 
         // Render framebuffer
         window.render();
