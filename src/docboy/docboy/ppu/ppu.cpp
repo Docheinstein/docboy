@@ -528,7 +528,6 @@ void Ppu::pixel_transfer_lx8() {
                     get_bits_range<Specs::Bits::OAM::Attributes::CGB_PALETTE>(obj_pixel.attributes);
                 ASSERT(obj_palette_index < 8);
                 const uint8_t* obj_palette = &obj_palettes[8 * obj_palette_index];
-
                 color = resolve_color(obj_pixel.color_index, obj_palette);
 #else
                 color = resolve_color(obj_pixel.color_index, test_bit<DMG_PALETTE>(obj_pixel.attributes) ? obp1 : obp0);
@@ -545,7 +544,7 @@ void Ppu::pixel_transfer_lx8() {
                 get_bits_range<Specs::Bits::Background::Attributes::PALETTE>(bg_pixel.attributes);
             ASSERT(bg_palette_index < 8);
             const uint8_t* bg_palette = &bg_palettes[8 * bg_palette_index];
-            color = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bg_palette) : 0;
+            color = resolve_color(bg_pixel.color_index, bg_palette);
 #else
             const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
             color = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_) : 0;
