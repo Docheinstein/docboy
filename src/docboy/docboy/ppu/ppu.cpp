@@ -1347,7 +1347,12 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
         // Push pixels into bg fifo
 #ifdef ENABLE_CGB
         ASSERT(bg_fifo.is_empty());
-        const uint8_t* pixel_data = TILE_ROW_DATA_TO_ROW_PIXELS[psf.tile_data_high << 8 | psf.tile_data_low];
+
+        PixelColorIndex pixel_data[8];
+        const uint8_t(*pixels_map_ptr)[8] =
+            test_bit<X_FLIP>(bwf.attributes) ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED : TILE_ROW_DATA_TO_ROW_PIXELS;
+        memcpy(pixel_data, &pixels_map_ptr[psf.tile_data_high << 8 | psf.tile_data_low], 8);
+
         for (int8_t i = 7; i >= 0; i--) {
             bg_fifo.emplace_back(pixel_data[i], bwf.attributes);
         }
