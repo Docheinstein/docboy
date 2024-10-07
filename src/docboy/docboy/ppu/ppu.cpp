@@ -519,10 +519,21 @@ void Ppu::pixel_transfer_lx8() {
             // Take OBJ pixel instead of the BG pixel only if all are satisfied:
             // - OBJ are still enabled
             // - OBJ pixel is opaque
-            // - either BG_OVER_OBJ is disabled or the BG color is 0
-            if (lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
-                (!test_bit<Specs::Bits::OAM::Attributes::BG_OVER_OBJ>(obj_pixel.attributes) ||
-                 bg_pixel.color_index == 0)) {
+            // - either BG_OVER_OBJ is disabled (and BG priority is disabled, in CGB mode)
+            //     or t
+            //   the BG color is 0
+#ifdef ENABLE_CGB
+            const bool show_obj = lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
+                                  ((!test_bit<Specs::Bits::OAM::Attributes::BG_OVER_OBJ>(obj_pixel.attributes) &&
+                                    !test_bit<Specs::Bits::Background::Attributes::PRIORITY>(bg_pixel.attributes)) ||
+                                   bg_pixel.color_index == 0);
+#else
+            const bool show_obj = lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
+                                  (!test_bit<Specs::Bits::OAM::Attributes::BG_OVER_OBJ>(obj_pixel.attributes) ||
+                                   bg_pixel.color_index == 0);
+#endif
+
+            if (show_obj) {
 #ifdef ENABLE_CGB
                 const uint8_t obj_palette_index =
                     get_bits_range<Specs::Bits::OAM::Attributes::CGB_PALETTE>(obj_pixel.attributes);
