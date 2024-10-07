@@ -13,7 +13,6 @@
 
 using namespace Specs::Bits::Video::LCDC;
 using namespace Specs::Bits::Video::STAT;
-using namespace Specs::Bits::OAM::Attributes;
 
 using namespace Specs::Ppu::Modes;
 
@@ -522,7 +521,8 @@ void Ppu::pixel_transfer_lx8() {
             // - OBJ pixel is opaque
             // - either BG_OVER_OBJ is disabled or the BG color is 0
             if (lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
-                (!test_bit<BG_OVER_OBJ>(obj_pixel.attributes) || bg_pixel.color_index == 0)) {
+                (!test_bit<Specs::Bits::OAM::Attributes::BG_OVER_OBJ>(obj_pixel.attributes) ||
+                 bg_pixel.color_index == 0)) {
 #ifdef ENABLE_CGB
                 const uint8_t obj_palette_index =
                     get_bits_range<Specs::Bits::OAM::Attributes::CGB_PALETTE>(obj_pixel.attributes);
@@ -1349,8 +1349,9 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
         ASSERT(bg_fifo.is_empty());
 
         PixelColorIndex pixel_data[8];
-        const uint8_t(*pixels_map_ptr)[8] =
-            test_bit<X_FLIP>(bwf.attributes) ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED : TILE_ROW_DATA_TO_ROW_PIXELS;
+        const uint8_t(*pixels_map_ptr)[8] = test_bit<Specs::Bits::Background::Attributes::X_FLIP>(bwf.attributes)
+                                                ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
+                                                : TILE_ROW_DATA_TO_ROW_PIXELS;
         memcpy(pixel_data, &pixels_map_ptr[psf.tile_data_high << 8 | psf.tile_data_low], 8);
 
         for (int8_t i = 7; i >= 0; i--) {
@@ -1478,8 +1479,9 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
 #endif
 
     PixelColorIndex obj_pixels_colors[8];
-    const uint8_t(*pixels_map_ptr)[8] =
-        test_bit<X_FLIP>(of.attributes) ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED : TILE_ROW_DATA_TO_ROW_PIXELS;
+    const uint8_t(*pixels_map_ptr)[8] = test_bit<Specs::Bits::OAM::Attributes::X_FLIP>(of.attributes)
+                                            ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
+                                            : TILE_ROW_DATA_TO_ROW_PIXELS;
     memcpy(obj_pixels_colors, &pixels_map_ptr[psf.tile_data_high << 8 | psf.tile_data_low], 8);
 
     ObjPixel obj_pixels[8];
@@ -1552,9 +1554,10 @@ inline void Ppu::setup_obj_pixel_slice_fetcher_tile_data_address() {
     // The OBJ tileY is always mapped within the range [0:objHeight).
     uint8_t tile_y = (ly - obj_y) & height_mask;
 
-    if (test_bit<Y_FLIP>(of.attributes))
+    if (test_bit<Specs::Bits::OAM::Attributes::Y_FLIP>(of.attributes)) {
         // Take the opposite row within objHeight.
         tile_y ^= height_mask;
+    }
 
     // Last bit is ignored for 8x16 OBJs.
     const uint8_t tile_number = (is_double_height ? (of.tile_number & 0xFE) : of.tile_number);
@@ -1584,6 +1587,10 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tilemap_tile_address() {
 }
 
 inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
+#ifdef ENABLE_CGB
+    bwf.attributes = vram.read_vram1(bwf.tilemap_attributes_vram_addr);
+#endif
+
     const uint8_t tile_number = vram.read_vram0(bwf.tilemap_tile_vram_addr);
 
     const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
@@ -1593,13 +1600,16 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
                                         :
                                         // signed addressing mode with 0x9000 as (global) base address
                                         0x1000 + TILE_BYTES * to_signed(tile_number);
-    const uint8_t tile_y = mod<TILE_HEIGHT>(ly + scy);
+    uint8_t tile_y = mod<TILE_HEIGHT>(ly + scy);
+
+    if (test_bit<Specs::Bits::Background::Attributes::Y_FLIP>(bwf.attributes)) {
+        // Take the opposite row within tile height.
+        tile_y ^= 0x7;
+    }
+
+    ASSERT(tile_y < 8);
 
     psf.tile_data_vram_address = vram_tile_addr + TILE_ROW_BYTES * tile_y;
-
-#ifdef ENABLE_CGB
-    bwf.attributes = vram.read_vram1(bwf.tilemap_attributes_vram_addr);
-#endif
 }
 
 inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
