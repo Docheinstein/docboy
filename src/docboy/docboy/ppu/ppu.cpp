@@ -542,7 +542,9 @@ void Ppu::pixel_transfer_lx8() {
                 const uint8_t* obj_palette = &obj_palettes[8 * obj_palette_index];
                 color = resolve_color(obj_pixel.color_index, obj_palette);
 #else
-                color = resolve_color(obj_pixel.color_index, test_bit<DMG_PALETTE>(obj_pixel.attributes) ? obp1 : obp0);
+                color = resolve_color(obj_pixel.color_index,
+                                      test_bit<Specs::Bits::OAM::Attributes::DMG_PALETTE>(obj_pixel.attributes) ? obp1
+                                                                                                                : obp0);
 #endif
             }
         }
@@ -1614,10 +1616,12 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
                                         0x1000 + TILE_BYTES * to_signed(tile_number);
     uint8_t tile_y = mod<TILE_HEIGHT>(ly + scy);
 
+#ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::Background::Attributes::Y_FLIP>(bwf.attributes)) {
         // Take the opposite row within tile height.
         tile_y ^= 0x7;
     }
+#endif
 
     ASSERT(tile_y < 8);
 
