@@ -2046,7 +2046,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("bg palettes", width) << endl;
 
         const auto bg_palette = [this, &b](uint8_t i) -> Text {
-            return hex<uint16_t>(gb.ppu.bg_palettes[2 * i] << 8 | gb.ppu.bg_palettes[2 * i + 1]);
+            uint16_t rgb555 = gb.ppu.bg_palettes[2 * i] << 8 | gb.ppu.bg_palettes[2 * i + 1];
+            return color(hex(rgb555), RGB555_TO_ANSI_COLORS[rgb555]);
         };
 
         for (uint8_t i = 0; i < 8; i++) {
@@ -2217,7 +2218,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("obj palettes", width) << endl;
 
         const auto obj_palette = [this, &b](uint8_t i) -> Text {
-            return hex<uint16_t>(gb.ppu.obj_palettes[2 * i] << 8 | gb.ppu.obj_palettes[2 * i + 1]);
+            uint16_t rgb555 = gb.ppu.obj_palettes[2 * i] << 8 | gb.ppu.obj_palettes[2 * i + 1];
+            return color(hex(rgb555), RGB555_TO_ANSI_COLORS[rgb555]);
         };
 
         for (uint8_t i = 0; i < 8; i++) {
@@ -2289,8 +2291,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.tilemap_tile_vram_addr) << endl;
 
 #ifdef ENABLE_CGB
-        b << yellow("BG Attributes Addr.") << " :  "
-          << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.tilemap_attributes_vram_addr) << endl;
         b << yellow("BG Attributes") << "       :  " << hex<uint16_t>(gb.ppu.bwf.attributes) << endl;
 #endif
         b << yellow("Cached Fetch") << "        :  "

@@ -320,7 +320,7 @@ private:
         uint16_t tilemap_tile_vram_addr {};
 
 #ifdef ENABLE_CGB
-        uint16_t tilemap_attributes_vram_addr {};
+        bool attributes_enabled {};
         uint8_t attributes {};
 #endif
 

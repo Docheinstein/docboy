@@ -1273,7 +1273,7 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_0() {
 
     // Note that fetcher determinate the tile data address to read both in
     // GetTileDataLow and GetTiledataHigh just before access it from VRAM.
-    // Therefore changes to (WY or?) BG_WIN_TILE_DATA during these phases may
+    // Therefore, changes to (WY or?) BG_WIN_TILE_DATA during these phases may
     // have bitplane desync effects
     // (e.g. read the low byte from a tile and the high byte from a different one).
     // [mealybug/m3_lcdc_tile_sel_win_change]
@@ -1589,10 +1589,6 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tilemap_tile_address() {
     const uint16_t tilemap_vram_addr_slack = (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemap_y) + tilemap_x;
     bwf.tilemap_tile_vram_addr = tilemap_vram_addr_base + tilemap_vram_addr_slack;
 
-#ifdef ENABLE_CGB
-    bwf.tilemap_attributes_vram_addr = 0x1800 + tilemap_vram_addr_slack;
-#endif
-
 #ifdef ENABLE_DEBUGGER
     bwf.tilemap_x = tilemap_x;
     bwf.tilemap_y = tilemap_y;
@@ -1602,7 +1598,7 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tilemap_tile_address() {
 
 inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
 #ifdef ENABLE_CGB
-    bwf.attributes = vram.read_vram1(bwf.tilemap_attributes_vram_addr);
+    bwf.attributes = vram.read_vram1(bwf.tilemap_tile_vram_addr);
 #endif
 
     const uint8_t tile_number = vram.read_vram0(bwf.tilemap_tile_vram_addr);
@@ -1637,10 +1633,6 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
     const uint16_t tilemap_vram_addr_slack = (TILEMAP_WIDTH * TILEMAP_CELL_BYTES * tilemap_y) + tilemap_x;
     bwf.tilemap_tile_vram_addr = tilemap_vram_addr_base + tilemap_vram_addr_slack;
 
-#ifdef ENABLE_CGB
-    bwf.tilemap_attributes_vram_addr = 0x1800 + tilemap_vram_addr_slack;
-#endif
-
 #ifdef ENABLE_DEBUGGER
     bwf.tilemap_x = tilemap_x;
     bwf.tilemap_y = tilemap_y;
@@ -1649,6 +1641,10 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
 }
 
 inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
+#ifdef ENABLE_CGB
+    bwf.attributes = vram.read_vram1(bwf.tilemap_tile_vram_addr);
+#endif
+
     const uint8_t tile_number = vram.read_vram0(bwf.tilemap_tile_vram_addr);
 
     const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
@@ -1658,13 +1654,19 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
                                         :
                                         // signed addressing mode with 0x9000 as (global) base address
                                         0x1000 + TILE_BYTES * to_signed(tile_number);
-    const uint8_t tile_y = mod<TILE_HEIGHT>(w.wly);
 
-    psf.tile_data_vram_address = vram_tile_addr + TILE_ROW_BYTES * tile_y;
+    uint8_t tile_y = mod<TILE_HEIGHT>(w.wly);
 
 #ifdef ENABLE_CGB
-    bwf.attributes = vram.read_vram1(bwf.tilemap_attributes_vram_addr);
+    if (test_bit<Specs::Bits::Background::Attributes::Y_FLIP>(bwf.attributes)) {
+        // Take the opposite row within objHeight.
+        tile_y ^= 0x7;
+    }
 #endif
+
+    ASSERT(tile_y < 8);
+
+    psf.tile_data_vram_address = vram_tile_addr + TILE_ROW_BYTES * tile_y;
 }
 
 inline void Ppu::cache_bg_win_fetch() {
@@ -1780,7 +1782,6 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_uint8(bwf.lx);
     parcel.write_uint8(bwf.tilemap_tile_vram_addr);
 #ifdef ENABLE_CGB
-    parcel.write_uint16(bwf.tilemap_attributes_vram_addr);
     parcel.write_uint8(bwf.attributes);
 #endif
 #ifdef ENABLE_DEBUGGER
@@ -1906,7 +1907,6 @@ void Ppu::load_state(Parcel& parcel) {
     bwf.lx = parcel.read_uint8();
     bwf.tilemap_tile_vram_addr = parcel.read_uint8();
 #ifdef ENABLE_CGB
-    bwf.tilemap_attributes_vram_addr = parcel.read_uint16();
     bwf.attributes = parcel.read_uint8();
 #endif
 #ifdef ENABLE_DEBUGGER
