@@ -1520,11 +1520,22 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
 
         // Overwrite pixel in fifo with pixel in sprite if:
         // 1. Pixel in sprite is opaque and pixel in fifo is transparent
-        // 2. Both pixels in sprite and fifo are opaque but pixel in sprite
-        //    has either lower x or, if x is equal, lowest oam number.
-        if ((is_obj_opaque(obj_pixel.color_index) && !is_obj_opaque(fifo_obj_pixel.color_index)) ||
+        // 2. Both pixels in sprite and fifo are opaque but pixel in sprite has:
+        //    > [lower x, or if x is equal, in CGB mode]
+        //    > lowest oam number.
+#ifdef ENABLE_CGB
+        const bool overwrite_obj_pixel =
+            (is_obj_opaque(obj_pixel.color_index) && !is_obj_opaque(fifo_obj_pixel.color_index)) ||
             ((is_obj_opaque(obj_pixel.color_index) && is_obj_opaque(fifo_obj_pixel.color_index)) &&
-             (obj_pixel.x == fifo_obj_pixel.x && obj_pixel.number < fifo_obj_pixel.number))) {
+             (obj_pixel.number < fifo_obj_pixel.number));
+#else
+        const bool overwrite_obj_pixel =
+            (is_obj_opaque(obj_pixel.color_index) && !is_obj_opaque(fifo_obj_pixel.color_index)) ||
+            ((is_obj_opaque(obj_pixel.color_index) && is_obj_opaque(fifo_obj_pixel.color_index)) &&
+             (obj_pixel.x == fifo_obj_pixel.x && obj_pixel.number < fifo_obj_pixel.number));
+#endif
+
+        if (overwrite_obj_pixel) {
             obj_fifo[i] = obj_pixel;
         }
 
