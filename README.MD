@@ -264,11 +264,12 @@ Here's the debugger!
 | blargg/dmg_sound/12-wave_write_while_on.gb   | :white_check_mark: |
 
 
-#### dmg-acid2
+#### mattcurrie
 
-| Test Rom                                      |       Result       |
-|-----------------------------------------------|:------------------:|
-| dmg-acid2/dmg-acid2.gb                        | :white_check_mark: |
+| Test Rom                  |       Result       |
+|---------------------------|:------------------:|
+| mattcurrie/dmg-acid2.gb   | :white_check_mark: |
+| mattcurrie/cgb-acid2.gb   | :white_check_mark: |
 
 
 #### hacktix
@@ -277,6 +278,15 @@ Here's the debugger!
 |--------------------------|:-------------------:|
 | hacktix/bully.gb         | :white_check_mark:  |
 | hacktix/strikethrough.gb | :white_check_mark:  |
+
+
+
+#### magen
+
+| Test Rom                                |       Result       |
+|-----------------------------------------|:------------------:|
+| magen/bg_oam_priority.gb                | :white_check_mark: |
+| magen/oam_internal_priority.gb          | :white_check_mark: |
 
 
 #### samesuite

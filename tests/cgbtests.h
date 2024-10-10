@@ -27,6 +27,10 @@ TEST_CASE("cgb", "[emulation]") {
             // mattcurrie
             F {"mattcurrie/cgb-acid2.gbc", "mattcurrie/cgb-acid2.png"},
 
+            // magen
+            F {"magen/bg_oam_priority.gbc", "magen/bg_oam_priority.png"},
+            F {"magen/oam_internal_priority.gbc", "magen/oam_internal_priority.png"},
+
             // docboy
             F {"docboy/ppu/rendering/bg_attr_bank.gbc", "docboy/ppu/bg_attr_bank.png"},
             F {"docboy/ppu/rendering/bg_attr_horizontal_flip.gbc", "docboy/ppu/bg_attr_horizontal_flip.png"},
