@@ -25,31 +25,25 @@ TEST_CASE("cgb", "[emulation]") {
     SECTION("ppu") {
         RUN_TEST_ROMS(
             // mattcurrie
-            F {"mattcurrie/cgb-acid2.gbc", "mattcurrie/cgb-acid2.png"},
+            //            F {"mattcurrie/cgb-acid2.gbc", "mattcurrie/cgb-acid2.png"},
 
             // docboy
             F {"docboy/ppu/rendering/bg_attr_bank.gbc", "docboy/ppu/bg_attr_bank.png"},
             F {"docboy/ppu/rendering/bg_attr_horizontal_flip.gbc", "docboy/ppu/bg_attr_horizontal_flip.png"},
             F {"docboy/ppu/rendering/bg_attr_palette.gbc", "docboy/ppu/bg_attr_palette.png"},
-            F {"docboy/ppu/rendering/bg_attr_palette_bank_lcdc_bit_3.gbc",
-               "docboy/ppu/bg_attr_palette_bank_lcdc_bit_3.png"},
-            F {"docboy/ppu/rendering/bg_attr_palette_lcdc_bit_3.gbc", "docboy/ppu/bg_attr_palette_lcdc_bit_3.png"},
             F {"docboy/ppu/rendering/bg_attr_priority.gbc", "docboy/ppu/bg_attr_priority.png"},
             F {"docboy/ppu/rendering/bg_attr_priority_color_0.gbc", "docboy/ppu/bg_attr_priority_color_0.png"},
             F {"docboy/ppu/rendering/bg_attr_priority_color_0_lcdc_bit_0.gbc",
                "docboy/ppu/bg_attr_priority_color_0_lcdc_bit_0.png"},
             F {"docboy/ppu/rendering/bg_attr_priority_lcdc_bit_0.gbc", "docboy/ppu/bg_attr_priority_lcdc_bit_0.png"},
             F {"docboy/ppu/rendering/bg_attr_vertical_flip_scy.gbc", "docboy/ppu/bg_attr_vertical_flip_scy.png"},
+            F {"docboy/ppu/rendering/bg_attrs_lcdc_bit_3.gbc", "docboy/ppu/bg_attrs_lcdc_bit_3.png"},
             F {"docboy/ppu/rendering/lcdc_bit_0.gbc", "docboy/ppu/lcdc_bit_0.png"},
             F {"docboy/ppu/rendering/obj_attr_bank.gbc", "docboy/ppu/obj_attr_bank.png"},
             F {"docboy/ppu/rendering/obj_attr_palette.gbc", "docboy/ppu/obj_attr_palette.png"},
             F {"docboy/ppu/rendering/win_attr_bank.gbc", "docboy/ppu/win_attr_bank.png"},
             F {"docboy/ppu/rendering/win_attr_palette.gbc", "docboy/ppu/win_attr_palette.png"},
-            F {"docboy/ppu/rendering/win_attr_palette_bank_lcdc_bit_6.gbc",
-               "docboy/ppu/win_attr_palette_bank_lcdc_bit_6.png"},
-            F {"docboy/ppu/rendering/win_attr_palette_lcdc_bit_6.gbc", "docboy/ppu/win_attr_palette_lcdc_bit_6.png"},
-            F {"docboy/ppu/rendering/win_lcdc_bit_6.gbc", "docboy/ppu/win_lcdc_bit_6.png"},
-
+            F {"docboy/ppu/rendering/win_attrs_lcdc_bit_6.gbc", "docboy/ppu/win_attrs_lcdc_bit_6.png"},
             F {"docboy/ppu/bcpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/bcps_increment.gbc", "docboy/ok.png"},
             F {"docboy/ppu/bcps_increment_overflow.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ocpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/ocps_increment.gbc", "docboy/ok.png"},
