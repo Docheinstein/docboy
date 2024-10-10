@@ -1349,14 +1349,17 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
     // otherwise wait in push state until bg fifo is emptied
     const bool can_push_to_bg_fifo = bg_fifo.is_empty();
     if (can_push_to_bg_fifo) {
+#ifndef ENABLE_CGB
         // If window activation conditions were met in the frame, then a
         // glitch can occur: if this push stage happens when LX == WX,
         // than a 00 pixel is pushed into the bg fifo instead of the fetched tile.
         // Therefore, the push of the tile that was about to happen is postponed by 1 dot
+        // TODO: verify this for CGB.
         if (w.active_for_frame && lx == last_wx && lx > 8 /* TODO: not sure about this */) {
             bg_fifo.push_back(BgPixel {0});
             return;
         }
+#endif
 
         // Push pixels into bg fifo
 #ifdef ENABLE_CGB

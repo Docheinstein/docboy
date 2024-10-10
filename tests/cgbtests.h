@@ -25,7 +25,7 @@ TEST_CASE("cgb", "[emulation]") {
     SECTION("ppu") {
         RUN_TEST_ROMS(
             // mattcurrie
-            //            F {"mattcurrie/cgb-acid2.gbc", "mattcurrie/cgb-acid2.png"},
+            F {"mattcurrie/cgb-acid2.gbc", "mattcurrie/cgb-acid2.png"},
 
             // docboy
             F {"docboy/ppu/rendering/bg_attr_bank.gbc", "docboy/ppu/bg_attr_bank.png"},
