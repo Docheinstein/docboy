@@ -34,6 +34,12 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/banks/wram_bank_switch.gbc", "docboy/ok.png"});
     }
 
+    SECTION("ir") {
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/ir/rp_write_read.gbc", "docboy/ok.png"}, );
+    }
+
     SECTION("ppu") {
         RUN_TEST_ROMS(
             // mattcurrie

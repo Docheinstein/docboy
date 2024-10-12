@@ -17,17 +17,10 @@ public:
     uint8_t read_vbk() const;
     void write_vbk(uint8_t value);
 
-    void save_state(Parcel& parcel) const {
-        parcel.write_bool(vbk.bank);
-    }
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
-    void load_state(Parcel& parcel) {
-        vbk.bank = parcel.read_bool();
-    }
-
-    void reset() {
-        vbk.bank = false;
-    }
+    void reset();
 
     struct Vbk : Composite<Specs::Registers::Banks::VBK> {
         UInt8 bank {make_bool()};

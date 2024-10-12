@@ -11,4 +11,8 @@ struct BitRange {
     uint8_t lsb {};
 };
 
+inline uint8_t operator<<(uint8_t v, BitRange r) {
+    return v << r.lsb;
+}
+
 #endif // UTILSBITRANGE_H

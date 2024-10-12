@@ -22,17 +22,10 @@ public:
 
     void write_boot(uint8_t value);
 
-    void save_state(Parcel& parcel) const {
-        parcel.write_uint8(boot);
-    }
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
-    void load_state(Parcel& parcel) {
-        boot = parcel.read_uint8();
-    }
-
-    void reset() {
-        boot = if_bootrom_else(0b11111110, 0b11111111);
-    }
+    void reset();
 
     UInt8 boot {make_uint8(Specs::Registers::Boot::BOOT)};
 

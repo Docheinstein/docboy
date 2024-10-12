@@ -31,6 +31,7 @@
 #ifdef ENABLE_CGB
 #include "docboy/banks/vrambankcontroller.h"
 #include "docboy/banks/wrambankcontroller.h"
+#include "docboy/ir/infrared.h"
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -86,14 +87,15 @@ public:
 #ifdef ENABLE_CGB
     CpuBus cpu_bus {*boot_rom,  hram, joypad, serial_port,          timers,
                     interrupts, apu,  ppu,    vram_bank_controller, wram_bank_controller,
-                    boot};
+                    infrared,   boot};
 #else
     CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
 #endif
 #else
 #ifdef ENABLE_CGB
-    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, vram_bank_controller, wram_bank_controller,
-                    boot};
+    CpuBus cpu_bus {
+        hram,     joypad, serial_port, timers, interrupts, apu, ppu, vram_bank_controller, wram_bank_controller,
+        infrared, boot};
 #else
     CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
 #endif
@@ -129,6 +131,8 @@ public:
 #ifdef ENABLE_CGB
     VramBankController vram_bank_controller {vram_bus};
     WramBankController wram_bank_controller {ext_bus};
+
+    Infrared infrared {};
 #endif
 };
 

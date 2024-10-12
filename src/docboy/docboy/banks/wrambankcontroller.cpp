@@ -10,3 +10,15 @@ void WramBankController::write_svbk(uint8_t value) {
     svbk.bank = keep_bits<3>(value);
     ext_bus.set_wram2_bank(svbk.bank);
 }
+
+void WramBankController::save_state(Parcel& parcel) const {
+    parcel.write_uint8(svbk.bank);
+}
+
+void WramBankController::load_state(Parcel& parcel) {
+    svbk.bank = parcel.read_uint8();
+}
+
+void WramBankController::reset() {
+    write_svbk(0);
+}

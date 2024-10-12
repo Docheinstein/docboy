@@ -29,10 +29,6 @@ inline int16_t scale_analog_volume_by_master_volume(int16_t input_analog_volume,
     return static_cast<int16_t>(output_analog_volume);
 }
 
-inline uint8_t operator<<(uint8_t v, BitRange r) {
-    return v << r.lsb;
-}
-
 template <typename Channel, typename ChannelOnFlag>
 inline void tick_channel_length_timer(Channel& ch, ChannelOnFlag& ch_on) {
     if (ch.length_timer > 0) {

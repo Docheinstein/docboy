@@ -12,6 +12,7 @@
 #ifdef ENABLE_CGB
 #include "docboy/banks/vrambankcontroller.h"
 #include "docboy/banks/wrambankcontroller.h"
+#include "docboy/ir/infrared.h"
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -22,7 +23,7 @@
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Apu& apu, Ppu& ppu, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
-               Boot& boot) :
+               Infrared& infrared, Boot& boot) :
 #else
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Apu& apu, Ppu& ppu, Boot& boot) :
@@ -30,7 +31,8 @@ CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Ti
 #else
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
-               VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Boot& boot) :
+               VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Infrared& infrared,
+               Boot& boot) :
 #else
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
                Boot& boot) :
@@ -51,6 +53,7 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
 #ifdef ENABLE_CGB
     vram_bank_controller {vram_bank_controller},
     wram_bank_controller {wram_bank_controller},
+    infrared {infrared},
 #endif
     apu {apu},
     ppu {ppu} {
@@ -180,7 +183,12 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF53 */ memory_accessors[0xFF53] = open_bus_access;
     /* FF54 */ memory_accessors[0xFF54] = open_bus_access;
     /* FF55 */ memory_accessors[0xFF55] = open_bus_access;
+#ifdef ENABLE_CGB
+    /* FF56 */ memory_accessors[Specs::Registers::Infrared::RP] = {NonTrivial<&Infrared::read_rp> {&infrared},
+                                                                   NonTrivial<&Infrared::write_rp> {&infrared}};
+#else
     /* FF56 */ memory_accessors[0xFF56] = open_bus_access;
+#endif
     /* FF57 */ memory_accessors[0xFF57] = open_bus_access;
     /* FF58 */ memory_accessors[0xFF58] = open_bus_access;
     /* FF59 */ memory_accessors[0xFF59] = open_bus_access;

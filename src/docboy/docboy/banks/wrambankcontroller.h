@@ -17,17 +17,10 @@ public:
     uint8_t read_svbk() const;
     void write_svbk(uint8_t value);
 
-    void save_state(Parcel& parcel) const {
-        parcel.write_uint8(svbk.bank);
-    }
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
-    void load_state(Parcel& parcel) {
-        svbk.bank = parcel.read_uint8();
-    }
-
-    void reset() {
-        svbk.bank = 0;
-    }
+    void reset();
 
     struct Svbk : Composite<Specs::Registers::Banks::SVBK> {
         UInt8 bank {make_uint8()};

@@ -229,6 +229,8 @@ Parcel Core::parcelize_state() const {
 #ifdef ENABLE_CGB
     gb.vram_bank_controller.save_state(p);
     gb.wram_bank_controller.save_state(p);
+
+    gb.infrared.save_state(p);
 #endif
 
     return p;
@@ -266,6 +268,8 @@ void Core::unparcelize_state(Parcel&& parcel) {
 #ifdef ENABLE_CGB
     gb.vram_bank_controller.load_state(parcel);
     gb.wram_bank_controller.load_state(parcel);
+
+    gb.infrared.load_state(parcel);
 #endif
 
     ASSERT(parcel.get_remaining_size() == 0);
@@ -301,6 +305,13 @@ void Core::reset() {
     gb.dma.reset();
     gb.mmu.reset();
     gb.stop_controller.reset();
+
+#ifdef ENABLE_CGB
+    gb.vram_bank_controller.reset();
+    gb.wram_bank_controller.reset();
+
+    gb.infrared.reset();
+#endif
 }
 
 #ifdef ENABLE_AUDIO

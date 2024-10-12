@@ -202,6 +202,11 @@ namespace Registers {
     } // namespace Video
 
 #ifdef ENABLE_CGB
+    namespace Infrared {
+        constexpr uint16_t RP = 0xFF56;
+        constexpr uint16_t CGB_REGISTERS[] = {RP};
+    } // namespace Infrared
+
     namespace Banks {
         constexpr uint16_t VBK = 0xFF4F;
         constexpr uint16_t SVBK = 0xFF70;
@@ -417,6 +422,14 @@ namespace Bits {
             constexpr uint8_t DAY = 0;
         } // namespace DH
     }     // namespace Rtc
+
+#ifdef ENABLE_CGB
+    namespace Infrared {
+        constexpr BitRange READ_ENABLE = {7, 6};
+        constexpr uint8_t RECEIVING = 1;
+        constexpr uint8_t EMITTING = 0;
+    } // namespace Infrared
+#endif
 } // namespace Bits
 
 namespace Bytes {
