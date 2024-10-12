@@ -32,6 +32,7 @@
 #include "docboy/banks/vrambankcontroller.h"
 #include "docboy/banks/wrambankcontroller.h"
 #include "docboy/ir/infrared.h"
+#include "docboy/undoc/undocregs.h"
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -85,17 +86,36 @@ public:
     ExtBus ext_bus {cartridge_slot, wram1, wram2};
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
-    CpuBus cpu_bus {*boot_rom,  hram, joypad, serial_port,          timers,
-                    interrupts, apu,  ppu,    vram_bank_controller, wram_bank_controller,
-                    infrared,   boot};
+    CpuBus cpu_bus {*boot_rom,
+                    hram,
+                    joypad,
+                    serial_port,
+                    timers,
+                    interrupts,
+                    apu,
+                    ppu,
+                    vram_bank_controller,
+                    wram_bank_controller,
+                    infrared,
+                    undocumented_registers,
+                    boot};
 #else
     CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
 #endif
 #else
 #ifdef ENABLE_CGB
-    CpuBus cpu_bus {
-        hram,     joypad, serial_port, timers, interrupts, apu, ppu, vram_bank_controller, wram_bank_controller,
-        infrared, boot};
+    CpuBus cpu_bus {hram,
+                    joypad,
+                    serial_port,
+                    timers,
+                    interrupts,
+                    apu,
+                    ppu,
+                    vram_bank_controller,
+                    wram_bank_controller,
+                    infrared,
+                    undocumented_registers,
+                    boot};
 #else
     CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
 #endif
@@ -133,6 +153,7 @@ public:
     WramBankController wram_bank_controller {ext_bus};
 
     Infrared infrared {};
+    UndocumentedRegisters undocumented_registers {};
 #endif
 };
 

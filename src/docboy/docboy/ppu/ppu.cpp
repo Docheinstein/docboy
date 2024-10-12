@@ -1726,6 +1726,16 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_uint8(wy);
     parcel.write_uint8(wx);
 
+#ifdef ENABLE_CGB
+    parcel.write_bool(bcps.auto_increment);
+    parcel.write_uint8(bcps.address);
+
+    parcel.write_bool(ocps.auto_increment);
+    parcel.write_uint8(ocps.address);
+
+    parcel.write_bool(opri.priority_mode);
+#endif
+
     {
         uint8_t i = 0;
 
@@ -1859,6 +1869,16 @@ void Ppu::load_state(Parcel& parcel) {
     obp1 = parcel.read_uint8();
     wy = parcel.read_uint8();
     wx = parcel.read_uint8();
+
+#ifdef ENABLE_CGB
+    bcps.auto_increment = parcel.read_bool();
+    bcps.address = parcel.read_uint8();
+
+    ocps.auto_increment = parcel.read_bool();
+    ocps.address = parcel.read_uint8();
+
+    opri.priority_mode = parcel.read_bool();
+#endif
 
     const uint8_t tick_selector_number = parcel.read_uint8();
     ASSERT(tick_selector_number < array_size(TICK_SELECTORS));
@@ -1999,6 +2019,16 @@ void Ppu::reset() {
     obp1 = 0;
     wy = 0;
     wx = 0;
+
+#ifdef ENABLE_CGB
+    bcps.auto_increment = true;
+    bcps.address = 0;
+
+    ocps.auto_increment = true;
+    ocps.address = 1;
+
+    opri.priority_mode = false;
+#endif
 
 #ifdef ENABLE_CGB
     // TODO: with bootrom
@@ -2207,6 +2237,15 @@ void Ppu::write_ocpd(uint8_t value) {
         ocps.address = mod<64>(ocps.address + 1);
     }
 }
+
+uint8_t Ppu::read_opri() const {
+    return 0xFE | opri.priority_mode;
+}
+
+void Ppu::write_opri(uint8_t value) {
+    opri.priority_mode = test_bit<Specs::Bits::Video::OPRI::PRIORITY_MODE>(value);
+}
+
 #endif
 
 #ifdef ENABLE_DEBUGGER

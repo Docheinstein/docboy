@@ -103,6 +103,8 @@ if (ENABLE_CGB)
             docboy/banks/wrambankcontroller.h
             docboy/ir/infrared.cpp
             docboy/ir/infrared.h
+            docboy/undoc/undocregs.cpp
+            docboy/undoc/undocregs.h
     )
 endif()
 

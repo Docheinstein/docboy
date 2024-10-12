@@ -13,6 +13,7 @@
 #include "docboy/banks/vrambankcontroller.h"
 #include "docboy/banks/wrambankcontroller.h"
 #include "docboy/ir/infrared.h"
+#include "docboy/undoc/undocregs.h"
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -23,7 +24,7 @@
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Apu& apu, Ppu& ppu, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
-               Infrared& infrared, Boot& boot) :
+               Infrared& infrared, UndocumentedRegisters& undocumented_registers, Boot& boot) :
 #else
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Apu& apu, Ppu& ppu, Boot& boot) :
@@ -32,7 +33,7 @@ CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Ti
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
                VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Infrared& infrared,
-               Boot& boot) :
+               UndocumentedRegisters& undocumented_registers, Boot& boot) :
 #else
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
                Boot& boot) :
@@ -54,6 +55,7 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     vram_bank_controller {vram_bank_controller},
     wram_bank_controller {wram_bank_controller},
     infrared {infrared},
+    undocumented_registers {undocumented_registers},
 #endif
     apu {apu},
     ppu {ppu} {
@@ -215,13 +217,15 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
                                                                   NonTrivial<&Ppu::write_ocps> {&ppu}};
     /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = {NonTrivial<&Ppu::read_ocpd> {&ppu},
                                                                   NonTrivial<&Ppu::write_ocpd> {&ppu}};
+    /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = {NonTrivial<&Ppu::read_opri> {&ppu},
+                                                                  NonTrivial<&Ppu::write_opri> {&ppu}};
 #else
     /* FF68 */ memory_accessors[0xFF68] = open_bus_access;
     /* FF69 */ memory_accessors[0xFF69] = open_bus_access;
     /* FF6A */ memory_accessors[0xFF6A] = open_bus_access;
     /* FF6B */ memory_accessors[0xFF6B] = open_bus_access;
-#endif
     /* FF6C */ memory_accessors[0xFF6C] = open_bus_access;
+#endif
     /* FF6D */ memory_accessors[0xFF6D] = open_bus_access;
     /* FF6E */ memory_accessors[0xFF6E] = open_bus_access;
     /* FF6F */ memory_accessors[0xFF6F] = open_bus_access;
@@ -234,10 +238,19 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
 #endif
 
     /* FF71 */ memory_accessors[0xFF71] = open_bus_access;
+
+#ifdef ENABLE_CGB
+    /* FF72 */ memory_accessors[Specs::Registers::Undocumented::FF72] = &undocumented_registers.ff72;
+    /* FF73 */ memory_accessors[Specs::Registers::Undocumented::FF73] = &undocumented_registers.ff73;
+    /* FF74 */ memory_accessors[Specs::Registers::Undocumented::FF74] = &undocumented_registers.ff74;
+    /* FF75 */ memory_accessors[Specs::Registers::Undocumented::FF75] = {
+        &undocumented_registers.ff75, NonTrivial<&UndocumentedRegisters::write_ff75> {&undocumented_registers}};
+#else
     /* FF72 */ memory_accessors[0xFF72] = open_bus_access;
     /* FF73 */ memory_accessors[0xFF73] = open_bus_access;
     /* FF74 */ memory_accessors[0xFF74] = open_bus_access;
     /* FF75 */ memory_accessors[0xFF75] = open_bus_access;
+#endif
 
 #ifdef ENABLE_CGB
     /* FF76 */ memory_accessors[Specs::Registers::Sound::PCM12] = {NonTrivial<&Apu::read_pcm12> {&apu}, write_nop};

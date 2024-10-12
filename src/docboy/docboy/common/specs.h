@@ -192,12 +192,13 @@ namespace Registers {
         constexpr uint16_t BCPD = 0xFF69;
         constexpr uint16_t OCPS = 0xFF6A;
         constexpr uint16_t OCPD = 0xFF6B;
+        constexpr uint16_t OPRI = 0xFF6C;
 #endif
 
         constexpr uint16_t REGISTERS[] = {LCDC, STAT, SCY, SCX, LY, LYC, DMA, BGP, OBP0, OBP1, WY, WX};
 
 #ifdef ENABLE_CGB
-        constexpr uint16_t CGB_REGISTERS[] = {BCPS, BCPD, OCPS, OCPD};
+        constexpr uint16_t CGB_REGISTERS[] = {BCPS, BCPD, OCPS, OCPD, OPRI};
 #endif
     } // namespace Video
 
@@ -212,8 +213,17 @@ namespace Registers {
         constexpr uint16_t SVBK = 0xFF70;
 
         constexpr uint16_t CGB_REGISTERS[] = {VBK, SVBK};
-
     } // namespace Banks
+
+    namespace Undocumented {
+        constexpr uint16_t FF72 = 0xFF72;
+        constexpr uint16_t FF73 = 0xFF73;
+        constexpr uint16_t FF74 = 0xFF74;
+        constexpr uint16_t FF75 = 0xFF75;
+
+        constexpr uint16_t CGB_REGISTERS[] = {FF72, FF73, FF74, FF75};
+    } // namespace Undocumented
+
 #endif
 
     namespace Boot {
@@ -288,6 +298,9 @@ namespace Bits {
             constexpr uint8_t AUTO_INCREMENT = 7;
             constexpr BitRange ADDRESS = {5, 0};
         } // namespace OCPS
+        namespace OPRI {
+            constexpr uint8_t PRIORITY_MODE = 0;
+        } // namespace OPRI
 #endif
     } // namespace Video
 

@@ -2669,6 +2669,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("ir", width) << endl;
         b << ios(Specs::Registers::Infrared::CGB_REGISTERS, array_size(Specs::Registers::Infrared::CGB_REGISTERS))
           << endl;
+        b << subheader("undocumented", width) << endl;
+        b << ios(Specs::Registers::Undocumented::CGB_REGISTERS,
+                 array_size(Specs::Registers::Undocumented::CGB_REGISTERS))
+          << endl;
 #endif
         return b;
     };

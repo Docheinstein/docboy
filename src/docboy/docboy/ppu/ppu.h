@@ -53,6 +53,9 @@ public:
 
     uint8_t read_ocpd() const;
     void write_ocpd(uint8_t value);
+
+    uint8_t read_opri() const;
+    void write_opri(uint8_t value);
 #endif
 
     struct Lcdc : Composite<Specs::Registers::Video::LCDC> {
@@ -108,6 +111,10 @@ public:
         Bool auto_increment {make_bool()};
         UInt8 address {make_uint8()};
     } ocps {};
+
+    struct Opri : Composite<Specs::Registers::Video::OPRI> {
+        Bool priority_mode {make_bool()};
+    } opri {};
 #endif
 
 private:

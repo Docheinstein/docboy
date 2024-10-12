@@ -231,6 +231,7 @@ Parcel Core::parcelize_state() const {
     gb.wram_bank_controller.save_state(p);
 
     gb.infrared.save_state(p);
+    gb.undocumented_registers.save_state(p);
 #endif
 
     return p;
@@ -270,6 +271,7 @@ void Core::unparcelize_state(Parcel&& parcel) {
     gb.wram_bank_controller.load_state(parcel);
 
     gb.infrared.load_state(parcel);
+    gb.undocumented_registers.load_state(parcel);
 #endif
 
     ASSERT(parcel.get_remaining_size() == 0);
@@ -311,6 +313,7 @@ void Core::reset() {
     gb.wram_bank_controller.reset();
 
     gb.infrared.reset();
+    gb.undocumented_registers.reset();
 #endif
 }
 

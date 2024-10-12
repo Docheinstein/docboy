@@ -40,6 +40,15 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/ir/rp_write_read.gbc", "docboy/ok.png"}, );
     }
 
+    SECTION("undocumented") {
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/undocumented/ff72_write_read.gbc", "docboy/ok.png"},
+            F {"docboy/undocumented/ff73_write_read.gbc", "docboy/ok.png"},
+            F {"docboy/undocumented/ff74_write_read.gbc", "docboy/ok.png"},
+            F {"docboy/undocumented/ff75_write_read.gbc", "docboy/ok.png"});
+    }
+
     SECTION("ppu") {
         RUN_TEST_ROMS(
             // mattcurrie
@@ -75,6 +84,7 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/ppu/ly_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ocpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/ocps_increment.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ocps_increment_overflow.gbc", "docboy/ok.png"},
+            F {"docboy/ppu/opri_write_read.gbc", "docboy/ok.png"},
 
         );
     }
