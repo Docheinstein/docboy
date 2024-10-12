@@ -202,12 +202,13 @@ namespace Registers {
     } // namespace Video
 
 #ifdef ENABLE_CGB
-    namespace BankSwitch {
+    namespace Banks {
         constexpr uint16_t VBK = 0xFF4F;
+        constexpr uint16_t SVBK = 0xFF70;
 
-        constexpr uint16_t CGB_REGISTERS[] = {VBK};
+        constexpr uint16_t CGB_REGISTERS[] = {VBK, SVBK};
 
-    } // namespace BankSwitch
+    } // namespace Banks
 #endif
 
     namespace Boot {

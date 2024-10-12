@@ -2291,7 +2291,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.tilemap_tile_vram_addr) << endl;
 
 #ifdef ENABLE_CGB
-        b << yellow("BG Attributes") << "       :  " << hex<uint16_t>(gb.ppu.bwf.attributes) << endl;
+        b << yellow("BG Attributes") << "       :  " << hex<uint8_t>(gb.ppu.bwf.attributes) << endl;
 #endif
         b << yellow("Cached Fetch") << "        :  "
           << (gb.ppu.bwf.interrupted_fetch.has_data ? hex<uint16_t>(gb.ppu.bwf.interrupted_fetch.tile_data_high << 8 |
@@ -2303,7 +2303,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("obj prefetcher", width) << endl;
         b << yellow("OAM Number") << "          :  " << gb.ppu.of.entry.number << endl;
         b << yellow("Tile Number") << "         :  " << gb.ppu.of.tile_number << endl;
-        b << yellow("OBJ Attributes") << "      :  " << gb.ppu.of.attributes << endl;
+        b << yellow("OBJ Attributes") << "      :  " << hex<uint8_t>(gb.ppu.of.attributes) << endl;
 
         // Pixel Slice Fetcher
         b << subheader("pixel slice fetcher", width) << endl;
@@ -2665,8 +2665,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("video", width) << endl;
         b << ios(Specs::Registers::Video::CGB_REGISTERS, array_size(Specs::Registers::Video::CGB_REGISTERS)) << endl;
         b << subheader("bank switch", width) << endl;
-        b << ios(Specs::Registers::BankSwitch::CGB_REGISTERS, array_size(Specs::Registers::BankSwitch::CGB_REGISTERS))
-          << endl;
+        b << ios(Specs::Registers::Banks::CGB_REGISTERS, array_size(Specs::Registers::Banks::CGB_REGISTERS)) << endl;
 #endif
         return b;
     };

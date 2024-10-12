@@ -1,12 +1,10 @@
 #ifndef VRAM0_H
 #define VRAM0_H
 
-#include "docboy/memory/fwd/vram0fwd.h"
-#include "docboy/memory/memory.h"
+#include <cstdint>
 
-class Vram0 : public Memory<Specs::MemoryLayout::VRAM::START, Specs::MemoryLayout::VRAM::END> {
-public:
-    void reset();
-};
+#include "docboy/common/specs.h"
+
+extern const uint8_t VRAM0_INITIAL_DATA[Specs::MemoryLayout::VRAM::SIZE];
 
 #endif // VRAM0_H

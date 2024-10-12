@@ -40,6 +40,8 @@ target_sources(docboy PRIVATE
         docboy/cartridge/slot.cpp
         docboy/cartridge/slot.h
         docboy/common/macros.h
+        docboy/common/randomdata.cpp
+        docboy/common/randomdata.h
         docboy/common/specs.h
         docboy/core/core.cpp
         docboy/core/core.h
@@ -60,15 +62,14 @@ target_sources(docboy PRIVATE
         docboy/memory/fwd/hramfwd.h
         docboy/memory/fwd/memoryfwd.h
         docboy/memory/fwd/oamfwd.h
-        docboy/memory/fwd/randmemoryfwd.h
-        docboy/memory/fwd/vram0fwd.h
+        docboy/memory/fwd/vramfwd.h
         docboy/memory/fwd/wram1fwd.h
         docboy/memory/fwd/wram2fwd.h
         docboy/memory/hram.h
         docboy/memory/memory.h
         docboy/memory/oam.h
-        docboy/memory/randmemory.h
         docboy/memory/traits.h
+        docboy/memory/vram.h
         docboy/memory/vram0.cpp
         docboy/memory/vram0.h
         docboy/memory/wram1.h
@@ -96,8 +97,10 @@ target_sources(docboy PRIVATE
 
 if (ENABLE_CGB)
     target_sources(docboy PRIVATE
-            docboy/bankswitch/vrambankswitch.h
-            docboy/bankswitch/vrambankswitch.cpp
+            docboy/banks/vrambankcontroller.cpp
+            docboy/banks/vrambankcontroller.h
+            docboy/banks/wrambankcontroller.cpp
+            docboy/banks/wrambankcontroller.h
     )
 endif()
 

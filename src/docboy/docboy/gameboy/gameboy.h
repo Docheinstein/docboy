@@ -19,8 +19,7 @@
 #include "docboy/memory/hram.h"
 #include "docboy/memory/memory.h"
 #include "docboy/memory/oam.h"
-#include "docboy/memory/vram0.h"
-#include "docboy/memory/vram1.h"
+#include "docboy/memory/vram.h"
 #include "docboy/memory/wram1.h"
 #include "docboy/memory/wram2.h"
 #include "docboy/mmu/mmu.h"
@@ -30,7 +29,8 @@
 #include "docboy/timers/timers.h"
 
 #ifdef ENABLE_CGB
-#include "docboy/bankswitch/vrambankswitch.h"
+#include "docboy/banks/vrambankcontroller.h"
+#include "docboy/banks/wrambankcontroller.h"
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -46,14 +46,18 @@ public:
 #endif
 
     // Memory
-    Vram0 vram0 {};
-
 #ifdef ENABLE_CGB
-    Vram1 vram1 {};
+    Vram vram[2] {};
+#else
+    Vram vram[1] {};
 #endif
 
     Wram1 wram1 {};
-    Wram2 wram2 {};
+#ifdef ENABLE_CGB
+    Wram2 wram2[8] {};
+#else
+    Wram2 wram2[1] {};
+#endif
     Oam oam {};
     Hram hram {};
 
@@ -80,22 +84,21 @@ public:
     ExtBus ext_bus {cartridge_slot, wram1, wram2};
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
-    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, apu, ppu, vram_bank_switch, boot};
+    CpuBus cpu_bus {*boot_rom,  hram, joypad, serial_port,          timers,
+                    interrupts, apu,  ppu,    vram_bank_controller, wram_bank_controller,
+                    boot};
 #else
     CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
 #endif
 #else
 #ifdef ENABLE_CGB
-    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, vram_bank_switch, boot};
+    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, vram_bank_controller, wram_bank_controller,
+                    boot};
 #else
     CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
 #endif
 #endif
-#ifdef ENABLE_CGB
-    VramBus vram_bus {vram0, vram1};
-#else
-    VramBus vram_bus {vram0};
-#endif
+    VramBus vram_bus {vram};
     OamBus oam_bus {oam};
 
     // MMU
@@ -124,7 +127,8 @@ public:
     StopController stop_controller {stopped, joypad, timers, lcd};
 
 #ifdef ENABLE_CGB
-    VramBankSwitch vram_bank_switch {vram_bus};
+    VramBankController vram_bank_controller {vram_bus};
+    WramBankController wram_bank_controller {ext_bus};
 #endif
 };
 

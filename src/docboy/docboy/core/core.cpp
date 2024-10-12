@@ -1,7 +1,10 @@
 #include <iostream>
 
-#include "docboy/cartridge/factory.h"
 #include "docboy/core/core.h"
+
+#include "docboy/cartridge/factory.h"
+#include "docboy/common/randomdata.h"
+#include "docboy/memory/vram0.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "docboy/debugger/backend.h"
@@ -201,12 +204,13 @@ Parcel Core::parcelize_state() const {
     gb.ppu.save_state(p);
     gb.apu.save_state(p);
     gb.cartridge_slot.cartridge->save_state(p);
-    gb.vram0.save_state(p);
-#ifdef ENABLE_CGB
-    gb.vram1.save_state(p);
-#endif
+    for (std::size_t i = 0; i < array_size(gb.vram); i++) {
+        gb.vram[i].save_state(p);
+    }
     gb.wram1.save_state(p);
-    gb.wram2.save_state(p);
+    for (std::size_t i = 0; i < array_size(gb.wram2); i++) {
+        gb.wram2[i].save_state(p);
+    }
     gb.oam.save_state(p);
     gb.hram.save_state(p);
     gb.ext_bus.save_state(p);
@@ -223,7 +227,8 @@ Parcel Core::parcelize_state() const {
     gb.stop_controller.save_state(p);
 
 #ifdef ENABLE_CGB
-    gb.vram_bank_switch.save_state(p);
+    gb.vram_bank_controller.save_state(p);
+    gb.wram_bank_controller.save_state(p);
 #endif
 
     return p;
@@ -236,12 +241,13 @@ void Core::unparcelize_state(Parcel&& parcel) {
     gb.ppu.load_state(parcel);
     gb.apu.load_state(parcel);
     gb.cartridge_slot.cartridge->load_state(parcel);
-    gb.vram0.load_state(parcel);
-#ifdef ENABLE_CGB
-    gb.vram1.load_state(parcel);
-#endif
+    for (std::size_t i = 0; i < array_size(gb.vram); i++) {
+        gb.vram[i].load_state(parcel);
+    }
     gb.wram1.load_state(parcel);
-    gb.wram2.load_state(parcel);
+    for (std::size_t i = 0; i < array_size(gb.wram2); i++) {
+        gb.wram2[i].load_state(parcel);
+    }
     gb.oam.load_state(parcel);
     gb.hram.load_state(parcel);
     gb.ext_bus.load_state(parcel);
@@ -258,7 +264,8 @@ void Core::unparcelize_state(Parcel&& parcel) {
     gb.stop_controller.load_state(parcel);
 
 #ifdef ENABLE_CGB
-    gb.vram_bank_switch.load_state(parcel);
+    gb.vram_bank_controller.load_state(parcel);
+    gb.wram_bank_controller.load_state(parcel);
 #endif
 
     ASSERT(parcel.get_remaining_size() == 0);
@@ -272,14 +279,16 @@ void Core::reset() {
     gb.ppu.reset();
     gb.apu.reset();
     gb.cartridge_slot.cartridge->reset();
-    gb.vram0.reset();
+    gb.vram[0].reset(VRAM0_INITIAL_DATA);
 #ifdef ENABLE_CGB
-    gb.vram1.reset();
+    gb.vram[1].reset();
 #endif
-    gb.wram1.reset();
-    gb.wram2.reset();
-    gb.oam.reset();
-    gb.hram.reset();
+    gb.wram1.reset(RANDOM_DATA);
+    for (std::size_t i = 0; i < array_size(gb.wram2); i++) {
+        gb.wram2[i].reset(RANDOM_DATA);
+    }
+    gb.oam.reset(RANDOM_DATA);
+    gb.hram.reset(RANDOM_DATA);
     gb.ext_bus.reset();
     gb.cpu_bus.reset();
     gb.vram_bus.reset();

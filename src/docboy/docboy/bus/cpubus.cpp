@@ -10,7 +10,8 @@
 #include "docboy/timers/timers.h"
 
 #ifdef ENABLE_CGB
-#include "docboy/bankswitch/vrambankswitch.h"
+#include "docboy/banks/vrambankcontroller.h"
+#include "docboy/banks/wrambankcontroller.h"
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -20,7 +21,8 @@
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-               Apu& apu, Ppu& ppu, VramBankSwitch& vram_bank_switch, Boot& boot) :
+               Apu& apu, Ppu& ppu, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
+               Boot& boot) :
 #else
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Apu& apu, Ppu& ppu, Boot& boot) :
@@ -28,7 +30,7 @@ CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Ti
 #else
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
-               VramBankSwitch& vram_bank_switch, Boot& boot) :
+               VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Boot& boot) :
 #else
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
                Boot& boot) :
@@ -47,7 +49,8 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     interrupts {interrupts},
     boot {boot},
 #ifdef ENABLE_CGB
-    vram_bank_switch {vram_bank_switch},
+    vram_bank_controller {vram_bank_controller},
+    wram_bank_controller {wram_bank_controller},
 #endif
     apu {apu},
     ppu {ppu} {
@@ -165,9 +168,9 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF4D */ memory_accessors[0xFF4D] = open_bus_access;
     /* FF4E */ memory_accessors[0xFF4E] = open_bus_access;
 #ifdef ENABLE_CGB
-    /* FF4F */ memory_accessors[Specs::Registers::BankSwitch::VBK] = {
-        NonTrivial<&VramBankSwitch::read_vbk> {&vram_bank_switch},
-        NonTrivial<&VramBankSwitch::write_vbk> {&vram_bank_switch}};
+    /* FF4F */ memory_accessors[Specs::Registers::Banks::VBK] = {
+        NonTrivial<&VramBankController::read_vbk> {&vram_bank_controller},
+        NonTrivial<&VramBankController::write_vbk> {&vram_bank_controller}};
 #else
     /* FF4F */ memory_accessors[0xFF4F] = open_bus_access;
 #endif
@@ -214,7 +217,14 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF6D */ memory_accessors[0xFF6D] = open_bus_access;
     /* FF6E */ memory_accessors[0xFF6E] = open_bus_access;
     /* FF6F */ memory_accessors[0xFF6F] = open_bus_access;
+#ifdef ENABLE_CGB
+    /* FF70 */ memory_accessors[Specs::Registers::Banks::SVBK] = {
+        NonTrivial<&WramBankController::read_svbk> {&wram_bank_controller},
+        NonTrivial<&WramBankController::write_svbk> {&wram_bank_controller}};
+#else
     /* FF70 */ memory_accessors[0xFF70] = open_bus_access;
+#endif
+
     /* FF71 */ memory_accessors[0xFF71] = open_bus_access;
     /* FF72 */ memory_accessors[0xFF72] = open_bus_access;
     /* FF73 */ memory_accessors[0xFF73] = open_bus_access;

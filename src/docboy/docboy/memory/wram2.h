@@ -2,6 +2,6 @@
 #define WRAM2_H
 
 #include "docboy/memory/fwd/wram2fwd.h"
-#include "docboy/memory/randmemory.h"
+#include "docboy/memory/memory.h"
 
 #endif // WRAM2_H

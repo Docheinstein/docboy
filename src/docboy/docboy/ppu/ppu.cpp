@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "docboy/bootrom/helpers.h"
+#include "docboy/common/randomdata.h"
 #include "docboy/dma/dma.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
@@ -1075,12 +1076,12 @@ void Ppu::bg_pixel_slice_fetcher_get_tile_data_low_0() {
 
 #ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
-        psf.tile_data_low = vram.read_vram1(psf.tile_data_vram_address);
+        psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
     } else {
-        psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+        psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
     }
 #else
-    psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+    psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
 #endif
 
     fetcher_tick_selector = &Ppu::bg_pixel_slice_fetcher_get_tile_data_low_1;
@@ -1105,12 +1106,12 @@ void Ppu::bg_pixel_slice_fetcher_get_tile_data_high_0() {
 
 #ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
-        psf.tile_data_high = vram.read_vram1(psf.tile_data_vram_address + 1);
+        psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
     } else {
-        psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+        psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
     }
 #else
-    psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+    psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
 #endif
 
     fetcher_tick_selector = &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1;
@@ -1239,12 +1240,12 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_low_0() {
 
 #ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
-        psf.tile_data_low = vram.read_vram1(psf.tile_data_vram_address);
+        psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
     } else {
-        psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+        psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
     }
 #else
-    psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+    psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
 #endif
 
     fetcher_tick_selector = &Ppu::win_pixel_slice_fetcher_get_tile_data_low_1;
@@ -1281,12 +1282,12 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_0() {
 
 #ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
-        psf.tile_data_high = vram.read_vram1(psf.tile_data_vram_address + 1);
+        psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
     } else {
-        psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+        psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
     }
 #else
-    psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+    psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
 #endif
 
     fetcher_tick_selector = &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1;
@@ -1454,12 +1455,12 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_low_1() {
 
 #ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
-        psf.tile_data_low = vram.read_vram1(psf.tile_data_vram_address);
+        psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
     } else {
-        psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+        psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
     }
 #else
-    psf.tile_data_low = vram.read_vram0(psf.tile_data_vram_address);
+    psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
 #endif
 
     fetcher_tick_selector = &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_0;
@@ -1487,12 +1488,12 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
 
 #ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
-        psf.tile_data_high = vram.read_vram1(psf.tile_data_vram_address + 1);
+        psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
     } else {
-        psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+        psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
     }
 #else
-    psf.tile_data_high = vram.read_vram0(psf.tile_data_vram_address + 1);
+    psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
 #endif
 
     PixelColorIndex obj_pixels_colors[8];
@@ -1612,10 +1613,10 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tilemap_tile_address() {
 
 inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
 #ifdef ENABLE_CGB
-    bwf.attributes = vram.read_vram1(bwf.tilemap_tile_vram_addr);
+    bwf.attributes = vram.read<1>(bwf.tilemap_tile_vram_addr);
 #endif
 
-    const uint8_t tile_number = vram.read_vram0(bwf.tilemap_tile_vram_addr);
+    const uint8_t tile_number = vram.read<0>(bwf.tilemap_tile_vram_addr);
 
     const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
                                         ?
@@ -1656,10 +1657,10 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
 
 inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
 #ifdef ENABLE_CGB
-    bwf.attributes = vram.read_vram1(bwf.tilemap_tile_vram_addr);
+    bwf.attributes = vram.read<1>(bwf.tilemap_tile_vram_addr);
 #endif
 
-    const uint8_t tile_number = vram.read_vram0(bwf.tilemap_tile_vram_addr);
+    const uint8_t tile_number = vram.read<0>(bwf.tilemap_tile_vram_addr);
 
     const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
                                         ?
@@ -2100,10 +2101,7 @@ void Ppu::reset() {
         bg_palettes[2 * i + 1] = 0x7F;
     }
     // OBJ palettes are random.
-    RandomNumberGenerator<uint32_t, 0, 255> rng /* use constant seed to be deterministic */;
-    for (uint32_t i = 0; i < 64; i++) {
-        obj_palettes[i] = rng.next();
-    }
+    memcpy(obj_palettes, RANDOM_DATA, sizeof(obj_palettes));
 #else
     for (uint32_t i = 0; i < 64; i++) {
         obj_palettes[i] = 0;

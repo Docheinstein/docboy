@@ -2,8 +2,7 @@
 #define VRAMBUS_H
 
 #include "docboy/bus/videobus.h"
-#include "docboy/memory/fwd/vram0fwd.h"
-#include "docboy/memory/fwd/vram1fwd.h"
+#include "docboy/memory/fwd/vramfwd.h"
 
 class VramBus final : public VideoBus<VramBus> {
 public:
@@ -14,31 +13,20 @@ public:
             VideoBusView<VramBus, Dev>(bus) {
         }
 
-        uint8_t read_vram0(uint16_t address) const;
-#ifdef ENABLE_CGB
-        uint8_t read_vram1(uint16_t address) const;
-#endif
+        template <uint8_t Bank>
+        uint8_t read(uint16_t address) const;
     };
 
-#ifdef ENABLE_CGB
-    VramBus(Vram0& vram0, Vram1& vram1);
-#else
-    explicit VramBus(Vram0& vram);
-#endif
+    explicit VramBus(Vram* vram);
 
-    template <Device::Type Dev>
-    uint8_t read_vram0(uint16_t vram_address) const;
-
-#ifdef ENABLE_CGB
-    template <Device::Type Dev>
-    uint8_t read_vram1(uint16_t vram_address) const;
-#endif
+    template <Device::Type Dev, uint8_t Bank>
+    uint8_t read(uint16_t vram_address) const;
 
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
 
 #ifdef ENABLE_CGB
-    void switch_bank(bool bank);
+    void set_vram_bank(bool bank);
 #endif
 
 private:
@@ -47,11 +35,9 @@ private:
     void write_vram(uint16_t address, uint8_t value);
 #endif
 
-    Vram0& vram0;
+    Vram* vram;
 
 #ifdef ENABLE_CGB
-    Vram1& vram1;
-
     bool vram_bank {};
 #endif
 };

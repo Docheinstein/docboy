@@ -1,25 +1,18 @@
-#include "docboy/memory/vram0.h"
+#include "docboy/memory/vram.h"
 
-template<Device::Type Dev>
-uint8_t VramBus::read_vram0(uint16_t vram_address) const {
-    return vram0[vram_address];
-}
-
+template<Device::Type Dev, uint8_t Bank>
+uint8_t VramBus::read(uint16_t vram_address) const {
 #ifdef ENABLE_CGB
-template<Device::Type Dev>
-uint8_t VramBus::read_vram1(uint16_t vram_address) const {
-    return vram1[vram_address];
-}
+    static_assert(Bank < 2);
+#else
+    static_assert(Bank < 1);
 #endif
-
-template<Device::Type Dev>
-uint8_t VramBus::View<Dev>::read_vram0(uint16_t address) const {
-    return this->bus.template read_vram0<Dev>(address);
+    return vram[Bank][vram_address];
 }
 
-#ifdef ENABLE_CGB
+
 template<Device::Type Dev>
-uint8_t VramBus::View<Dev>::read_vram1(uint16_t address) const {
-    return this->bus.template read_vram1<Dev>(address);
+template<uint8_t Bank>
+uint8_t VramBus::View<Dev>::read(uint16_t address) const {
+    return this->bus.template read<Dev, Bank>(address);
 }
-#endif

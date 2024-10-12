@@ -1,13 +1,16 @@
-#ifndef VRAMBANKSWITCH_H
-#define VRAMBANKSWITCH_H
+#ifndef VRANBANKCONTROLLER_H
+#define VRANBANKCONTROLLER_H
 
-#include "docboy/boot/boot.h"
-#include "docboy/bus/vrambus.h"
+#include "docboy/common/specs.h"
 #include "docboy/memory/cell.h"
 
-class VramBankSwitch {
+#include "utils/parcel.h"
+
+class VramBus;
+
+class VramBankController {
 public:
-    explicit VramBankSwitch(VramBus& vram_bus) :
+    explicit VramBankController(VramBus& vram_bus) :
         vram_bus {vram_bus} {
     }
 
@@ -26,7 +29,7 @@ public:
         vbk.bank = false;
     }
 
-    struct Vbk : Composite<Specs::Registers::BankSwitch::VBK> {
+    struct Vbk : Composite<Specs::Registers::Banks::VBK> {
         UInt8 bank {make_bool()};
     } vbk {};
 
@@ -34,4 +37,4 @@ private:
     VramBus& vram_bus;
 };
 
-#endif // VRAMBANKSWITCH_H
+#endif // VRANBANKCONTROLLER_H

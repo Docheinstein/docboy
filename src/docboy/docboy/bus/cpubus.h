@@ -14,7 +14,8 @@ class Timers;
 class Interrupts;
 class Apu;
 class Ppu;
-class VramBankSwitch;
+class VramBankController;
+class WramBankController;
 class Boot;
 
 class CpuBus final : public Bus {
@@ -23,7 +24,8 @@ public:
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-           Apu& apu, Ppu& ppu, VramBankSwitch& vram_bank_switch, Boot& boot);
+           Apu& apu, Ppu& ppu, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
+           Boot& boot);
 #else
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
            Apu& apu, Ppu& ppu, Boot& boot);
@@ -31,7 +33,7 @@ public:
 #else
 #ifdef ENABLE_CGB
     CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
-           VramBankSwitch& vram_bank_switch, Boot& boot);
+           VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Boot& boot);
 #else
     CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
            Boot& boot);
@@ -51,7 +53,8 @@ public:
     Boot& boot;
 
 #ifdef ENABLE_CGB
-    VramBankSwitch& vram_bank_switch;
+    VramBankController& vram_bank_controller;
+    WramBankController& wram_bank_controller;
 #endif
 
     Apu& apu;
