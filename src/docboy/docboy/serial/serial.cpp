@@ -16,5 +16,9 @@ void Serial::load_state(Parcel& parcel) {
 
 void Serial::reset() {
     sb = 0;
-    sc = 0b01111110;
+#ifdef ENABLE_CGB
+    sc = 0x7F;
+#else
+    sc = 0x7E;
+#endif
 }

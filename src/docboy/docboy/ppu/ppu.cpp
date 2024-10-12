@@ -1970,27 +1970,53 @@ void Ppu::reset() {
     stat.oam_int = false;
     stat.vblank_int = false;
     stat.hblank_int = false;
+#ifdef ENABLE_CGB
+    // TODO: with bootrom
+    stat.lyc_eq_ly = false;
+    stat.mode = VBLANK;
+#else
     stat.lyc_eq_ly = if_bootrom_else(false, true);
     stat.mode = if_bootrom_else(HBLANK, VBLANK);
+#endif
 
     scy = 0;
     scx = 0;
+#ifdef ENABLE_CGB
+    // TODO: with bootrom
+    ly = 0x90;
+#else
     ly = 0;
+#endif
     lyc = 0;
+#ifdef ENABLE_CGB
+    dma = 0;
+#else
     dma = 0xFF;
+#endif
     bgp = if_bootrom_else(0, 0xFC);
     obp0 = 0;
     obp1 = 0;
     wy = 0;
     wx = 0;
 
+#ifdef ENABLE_CGB
+    // TODO: with bootrom
+    tick_selector = &Ppu::vblank;
+#else
     tick_selector = if_bootrom_else(&Ppu::oam_scan_even, &Ppu::vblank_last_line_7);
+#endif
     fetcher_tick_selector = &Ppu::bg_prefetcher_get_tile_0;
 
     last_stat_irq = false;
     enable_lyc_eq_ly_irq = true;
 
+#ifdef ENABLE_CGB
+    // TODO: with bootrom
+    // TODO: more accurate timing: should be between 163 and 166
+    dots = if_bootrom_else(0, 164);
+#else
     dots = if_bootrom_else(0, 395);
+#endif
     lx = 0;
 
     last_bgp = if_bootrom_else(0, 0xFC);

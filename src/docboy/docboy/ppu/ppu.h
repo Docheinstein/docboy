@@ -79,11 +79,11 @@ public:
     };
 
     struct Stat : Composite<Specs::Registers::Video::STAT> {
-        UInt8 lyc_eq_ly_int {make_uint8()};
-        UInt8 oam_int {make_uint8()};
-        UInt8 vblank_int {make_uint8()};
-        UInt8 hblank_int {make_uint8()};
-        UInt8 lyc_eq_ly {make_uint8()};
+        Bool lyc_eq_ly_int {make_bool()};
+        Bool oam_int {make_bool()};
+        Bool vblank_int {make_bool()};
+        Bool hblank_int {make_bool()};
+        Bool lyc_eq_ly {make_bool()};
         UInt8 mode {make_uint8()};
     } stat {};
 

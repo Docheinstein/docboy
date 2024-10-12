@@ -19,7 +19,12 @@ TEST_CASE("cgb", "[emulation]") {
         RUN_TEST_ROMS(
             // docboy
             F {"docboy/boot/boot_bg_palettes.gbc", "docboy/ok.png"},
-            F {"docboy/boot/boot_regs_cpu.gbc", "docboy/ok.png"}, F {"docboy/boot/boot_vram1.gbc", "docboy/ok.png"}, );
+            F {"docboy/boot/boot_regs_interrupts.gbc", "docboy/ok.png"},
+            F {"docboy/boot/boot_regs_joypad.gbc", "docboy/ok.png"},
+            F {"docboy/boot/boot_regs_serial.gbc", "docboy/ok.png"},
+            F {"docboy/boot/boot_regs_timers.gbc", "docboy/ok.png"},
+            F {"docboy/boot/boot_regs_video.gbc", "docboy/ok.png"},
+            F {"docboy/boot/boot_vram1.gbc", "docboy/ok.png"}, );
     }
 
     SECTION("ppu") {
@@ -53,6 +58,8 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/ppu/rendering/win_attrs_lcdc_bit_6.gbc", "docboy/ppu/win_attrs_lcdc_bit_6.png"},
             F {"docboy/ppu/bcpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/bcps_increment.gbc", "docboy/ok.png"},
             F {"docboy/ppu/bcps_increment_overflow.gbc", "docboy/ok.png"},
+            F {"docboy/ppu/ly_timing_round0.gbc", "docboy/ok.png"},
+            F {"docboy/ppu/ly_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ocpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/ocps_increment.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ocps_increment_overflow.gbc", "docboy/ok.png"},
 
