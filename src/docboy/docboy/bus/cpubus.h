@@ -16,6 +16,7 @@ class Apu;
 class Ppu;
 class VramBankController;
 class WramBankController;
+class Hdma;
 class Infrared;
 class UndocumentedRegisters;
 class Boot;
@@ -27,7 +28,7 @@ public:
 #ifdef ENABLE_CGB
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
            Apu& apu, Ppu& ppu, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
-           Infrared& infrared, UndocumentedRegisters& undocumented_registers, Boot& boot);
+           Hdma& hdma, Infrared& infrared, UndocumentedRegisters& undocumented_registers, Boot& boot);
 #else
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
            Apu& apu, Ppu& ppu, Boot& boot);
@@ -35,8 +36,8 @@ public:
 #else
 #ifdef ENABLE_CGB
     CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
-           VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Infrared& infrared,
-           UndocumentedRegisters& undocumented_registers, Boot& boot);
+           VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Hdma& hdma,
+           Infrared& infrared, UndocumentedRegisters& undocumented_registers, Boot& boot);
 #else
     CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
            Boot& boot);
@@ -59,6 +60,7 @@ public:
     VramBankController& vram_bank_controller;
     WramBankController& wram_bank_controller;
 
+    Hdma& hdma;
     Infrared& infrared;
     UndocumentedRegisters& undocumented_registers;
 #endif

@@ -101,6 +101,8 @@ if (ENABLE_CGB)
             docboy/banks/vrambankcontroller.h
             docboy/banks/wrambankcontroller.cpp
             docboy/banks/wrambankcontroller.h
+            docboy/hdma/hdma.cpp
+            docboy/hdma/hdma.h
             docboy/ir/infrared.cpp
             docboy/ir/infrared.h
             docboy/undoc/undocregs.cpp

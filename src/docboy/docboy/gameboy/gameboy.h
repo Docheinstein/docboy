@@ -31,6 +31,7 @@
 #ifdef ENABLE_CGB
 #include "docboy/banks/vrambankcontroller.h"
 #include "docboy/banks/wrambankcontroller.h"
+#include "docboy/hdma/hdma.h"
 #include "docboy/ir/infrared.h"
 #include "docboy/undoc/undocregs.h"
 #endif
@@ -113,6 +114,7 @@ public:
                     ppu,
                     vram_bank_controller,
                     wram_bank_controller,
+                    hdma,
                     infrared,
                     undocumented_registers,
                     boot};
@@ -152,6 +154,7 @@ public:
     VramBankController vram_bank_controller {vram_bus};
     WramBankController wram_bank_controller {ext_bus};
 
+    Hdma hdma {};
     Infrared infrared {};
     UndocumentedRegisters undocumented_registers {};
 #endif

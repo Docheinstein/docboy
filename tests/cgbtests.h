@@ -34,6 +34,16 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/banks/wram_bank_switch.gbc", "docboy/ok.png"});
     }
 
+    SECTION("hdma") {
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/hdma/hdma1_write_read.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma2_write_read.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma3_write_read.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma4_write_read.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma5_write_read.gbc", "docboy/ok.png"}, );
+    }
+
     SECTION("ir") {
         RUN_TEST_ROMS(
             // docboy
