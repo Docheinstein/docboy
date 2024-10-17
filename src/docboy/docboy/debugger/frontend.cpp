@@ -2481,6 +2481,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         const auto bus_requests = [bus_request](uint8_t requests) {
             return bus_request(Device::Cpu, requests).lpad(Text::Length {5}) + " | " +
                    bus_request(Device::Dma, requests).lpad(Text::Length {5}) + " | " +
+#ifdef ENABLE_CGB
+                   bus_request(Device::Hdma, requests).lpad(Text::Length {5}) + " | " +
+#endif
                    bus_request(Device::Ppu, requests).lpad(Text::Length {5});
         };
 
@@ -2491,6 +2494,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         const auto bus_acquirers = [bus_acquired](uint8_t acquirers) {
             return " " + bus_acquired(Device::Cpu, acquirers).lpad(Text::Length {3}) + "  |  " +
                    bus_acquired(Device::Dma, acquirers).lpad(Text::Length {3}) + "  |  " +
+#ifdef ENABLE_CGB
+                   bus_acquired(Device::Hdma, acquirers).lpad(Text::Length {3}) + "  |  " +
+#endif
                    bus_acquired(Device::Ppu, acquirers).lpad(Text::Length {3});
         };
 
@@ -2498,7 +2504,13 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             return requests ? hex(address) : darkgray(hex(address));
         };
 
+#ifdef ENABLE_CGB
+        b << "                     " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("HDMA")
+          << " |  " << magenta("PPU")
+#else
         b << "                     " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("PPU")
+#endif
+
           << endl;
         b << cyan("EXT Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << bus_requests(gb.ext_bus.requests) << endl;
@@ -2664,6 +2676,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << ios(Specs::Registers::Sound::CGB_REGISTERS, array_size(Specs::Registers::Sound::CGB_REGISTERS)) << endl;
         b << subheader("video", width) << endl;
         b << ios(Specs::Registers::Video::CGB_REGISTERS, array_size(Specs::Registers::Video::CGB_REGISTERS)) << endl;
+        b << subheader("hdma", width) << endl;
+        b << ios(Specs::Registers::Hdma::CGB_REGISTERS, array_size(Specs::Registers::Hdma::CGB_REGISTERS)) << endl;
         b << subheader("banks", width) << endl;
         b << ios(Specs::Registers::Banks::CGB_REGISTERS, array_size(Specs::Registers::Banks::CGB_REGISTERS)) << endl;
         b << subheader("ir", width) << endl;

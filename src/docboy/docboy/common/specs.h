@@ -203,6 +203,15 @@ namespace Registers {
     } // namespace Video
 
 #ifdef ENABLE_CGB
+    namespace Hdma {
+        constexpr uint16_t HDMA1 = 0xFF51;
+        constexpr uint16_t HDMA2 = 0xFF52;
+        constexpr uint16_t HDMA3 = 0xFF53;
+        constexpr uint16_t HDMA4 = 0xFF54;
+        constexpr uint16_t HDMA5 = 0xFF55;
+        constexpr uint16_t CGB_REGISTERS[] = {HDMA1, HDMA2, HDMA3, HDMA4, HDMA5};
+    } // namespace Hdma
+
     namespace Infrared {
         constexpr uint16_t RP = 0xFF56;
         constexpr uint16_t CGB_REGISTERS[] = {RP};

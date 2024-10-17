@@ -36,31 +36,70 @@ Core::Core(GameBoy& gb) :
 }
 
 inline void Core::tick_t0() const {
+#ifdef ENABLE_CGB
+    if (!gb.hdma.is_transferring()) {
+        gb.cpu.tick_t0();
+    }
+#else
     gb.cpu.tick_t0();
+#endif
     gb.ppu.tick();
+#ifdef ENABLE_CGB
+    gb.hdma.tick_t0();
+#endif
     gb.apu.tick_t0();
 }
 
 inline void Core::tick_t1() const {
-    gb.cpu.tick_t1();
+#ifdef ENABLE_CGB
+    if (!gb.hdma.is_transferring()) {
+        gb.cpu.tick_t1();
+    }
+#else
+    gb.cpu.tick_t0();
+#endif
+
     gb.ppu.tick();
     gb.dma.tick_t1();
+#ifdef ENABLE_CGB
+    gb.hdma.tick_t1();
+#endif
     gb.apu.tick_t1();
 }
 
 inline void Core::tick_t2() const {
-    gb.cpu.tick_t2();
+#ifdef ENABLE_CGB
+    if (!gb.hdma.is_transferring()) {
+        gb.cpu.tick_t2();
+    }
+#else
+    gb.cpu.tick_t0();
+#endif
+
     gb.ppu.tick();
+#ifdef ENABLE_CGB
+    gb.hdma.tick_t2();
+#endif
     gb.apu.tick_t2();
 }
 
 inline void Core::tick_t3() const {
-    gb.cpu.tick_t3();
+#ifdef ENABLE_CGB
+    if (!gb.hdma.is_transferring()) {
+        gb.cpu.tick_t3();
+    }
+#else
+    gb.cpu.tick_t0();
+#endif
+
     if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3) {
         gb.serial_port.tick();
     }
     gb.timers.tick_t3();
     gb.ppu.tick();
+#ifdef ENABLE_CGB
+    gb.hdma.tick_t3();
+#endif
     gb.dma.tick_t3();
     gb.stop_controller.tick();
     gb.cartridge_slot.tick();

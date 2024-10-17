@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include "docboy/bus/oambus.h"
+#include "docboy/bus/vrambus.h"
 #include "docboy/common/macros.h"
 #include "docboy/mmu/mmu.h"
 
@@ -14,23 +14,33 @@ class Hdma {
     DEBUGGABLE_CLASS()
 
 public:
-    explicit Hdma();
+    explicit Hdma(Mmu::View<Device::Hdma> mmu, VramBus::View<Device::Hdma> vram_bus);
+
+    void start_transfer(uint16_t source, uint16_t destination, uint16_t length);
+
+    void tick_t0();
+    void tick_t1();
+    void tick_t2();
+    void tick_t3();
 
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
 
     void reset();
 
-    void write_hdma1(uint8_t value);
+    bool is_transferring() const {
+        return transferring;
+    }
 
-    void write_hdma2(uint8_t value);
+private:
+    Mmu::View<Device::Hdma> mmu;
+    VramBus::View<Device::Hdma> vram;
 
-    void write_hdma3(uint8_t value);
-
-    void write_hdma4(uint8_t value);
-
-    uint8_t read_hdma5() const;
-    void write_hdma5(uint8_t value);
+    bool transferring {};
+    uint16_t source {};
+    uint16_t destination {};
+    uint16_t length {};
+    uint16_t cursor {};
 };
 
 #endif // HDMA_H

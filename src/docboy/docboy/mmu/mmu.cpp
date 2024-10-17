@@ -113,6 +113,9 @@ template <typename Bus>
 void Mmu::init_accessors(uint16_t address, Bus* bus) {
     bus_accessors[Device::Cpu][address] = make_accessors<Device::Cpu>(bus);
     bus_accessors[Device::Dma][address] = make_accessors<Device::Dma>(bus);
+#ifdef ENABLE_CGB
+    bus_accessors[Device::Hdma][address] = make_accessors<Device::Hdma>(bus);
+#endif
 }
 
 #ifdef ENABLE_BOOTROM

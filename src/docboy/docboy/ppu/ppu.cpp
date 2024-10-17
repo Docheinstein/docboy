@@ -5,6 +5,7 @@
 #include "docboy/bootrom/helpers.h"
 #include "docboy/common/randomdata.h"
 #include "docboy/dma/dma.h"
+#include "docboy/hdma/hdma.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/memory/memory.h"
@@ -108,11 +109,19 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_0,
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo};
 
+#ifdef ENABLE_CGB
+Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
+         OamBus::View<Device::Ppu> oam_bus) :
+#else
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
          OamBus::View<Device::Ppu> oam_bus) :
+#endif
     lcd {lcd},
     interrupts {interrupts},
     dma_controller {dma},
+#ifdef ENABLE_CGB
+    hdma_controller {hdma},
+#endif
     vram {vram_bus},
     oam {oam_bus} {
 }
@@ -2021,6 +2030,13 @@ void Ppu::reset() {
     wx = 0;
 
 #ifdef ENABLE_CGB
+    hdma1 = 0;
+    hdma2 = 0;
+    hdma3 = 0;
+    hdma4 = 0;
+    hdma5.hblank_transfer = false;
+    hdma5.length = 0;
+
     bcps.auto_increment = true;
     bcps.address = 0;
 
@@ -2194,6 +2210,34 @@ void Ppu::write_stat(uint8_t value) {
 }
 
 #ifdef ENABLE_CGB
+void Ppu::write_hdma1(uint8_t value) {
+    hdma1 = value;
+}
+
+void Ppu::write_hdma2(uint8_t value) {
+    hdma2 = discard_bits<4>(value);
+}
+
+void Ppu::write_hdma3(uint8_t value) {
+    hdma3 = keep_bits<5>(value);
+}
+
+void Ppu::write_hdma4(uint8_t value) {
+    hdma4 = discard_bits<4>(value);
+}
+
+uint8_t Ppu::read_hdma5() const {
+    // TODO
+    return 0xFF;
+}
+
+void Ppu::write_hdma5(uint8_t value) {
+    const uint16_t source_address = hdma1 << 8 | hdma2;
+    const uint16_t destination_address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
+    const uint16_t transfer_length = 16 * (keep_bits<7>(value) + 1);
+    hdma_controller.start_transfer(source_address, destination_address, transfer_length);
+}
+
 uint8_t Ppu::read_bcps() const {
     return 0b01000000 | bcps.auto_increment << Specs::Bits::Video::BCPS::AUTO_INCREMENT | bcps.address;
 }

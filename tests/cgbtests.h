@@ -6,7 +6,7 @@
 
 #include "utils/strings.h"
 
-#define WIP_ONLY_TEST_ROMS 0
+#define WIP_ONLY_TEST_ROMS 1
 
 #define RUN_TEST_ROMS(...)                                                                                             \
     static RunnerAdapter adapter {TESTS_ROOT_FOLDER "/roms/cgb/", TESTS_ROOT_FOLDER "/results/cgb/"};                  \
@@ -37,11 +37,33 @@ TEST_CASE("cgb", "[emulation]") {
     SECTION("hdma") {
         RUN_TEST_ROMS(
             // docboy
+            F {"docboy/hdma/gdma_basic_transfer.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_dest_bits.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_halts_cpu_round1.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_halts_cpu_round2.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_halts_ppu_round1.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_bits.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_transfer_length.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_transfer_max_length.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_transfer_read_ff.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma1_write_read.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma2_write_read.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma3_write_read.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma4_write_read.gbc", "docboy/ok.png"},
-            F {"docboy/hdma/hdma5_write_read.gbc", "docboy/ok.png"}, );
+            F {"docboy/hdma/hdma5_write_read.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_basic_transfer.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_off_round1.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_off_round2.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_off_round3.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_off_round4.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_off_round5.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_off_round6.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_round1.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_round2.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_round3.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_round4.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_round5.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_remaining_length_round6.gbc", "docboy/ok.png"}, );
     }
 
     SECTION("ir") {
@@ -134,9 +156,12 @@ TEST_CASE("cgb", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS(
-
-        );
+        RUN_TEST_ROMS(F {"docboy/hdma/gdma_basic_transfer.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma1_write_read.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma2_write_read.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma3_write_read.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma4_write_read.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma5_write_read.gbc", "docboy/ok.png"}, );
     }
 #endif
 }

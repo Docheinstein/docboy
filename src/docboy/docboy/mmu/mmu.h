@@ -95,7 +95,11 @@ private:
 #endif
     };
 
-    static constexpr uint8_t NUM_DEVICES = 2;
+#ifdef ENABLE_CGB
+    static constexpr uint8_t NUM_DEVICES = 3 /* Cpu, Dma, Hdma */;
+#else
+    static constexpr uint8_t NUM_DEVICES = 2 /* Cpu, Dma */;
+#endif
 
     template <Device::Type Dev, typename Bus>
     static BusAccess make_accessors(Bus* bus);

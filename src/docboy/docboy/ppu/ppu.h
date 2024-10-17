@@ -16,14 +16,20 @@
 class Lcd;
 class Interrupts;
 class Dma;
+class Hdma;
 class Parcel;
 
 class Ppu {
     DEBUGGABLE_CLASS()
 
 public:
+#ifdef ENABLE_CGB
+    Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
+        OamBus::View<Device::Ppu> oam_bus);
+#else
     Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
         OamBus::View<Device::Ppu> oam_bus);
+#endif
 
     void tick();
 
@@ -42,6 +48,17 @@ public:
     void write_stat(uint8_t value);
 
 #ifdef ENABLE_CGB
+    void write_hdma1(uint8_t value);
+
+    void write_hdma2(uint8_t value);
+
+    void write_hdma3(uint8_t value);
+
+    void write_hdma4(uint8_t value);
+
+    uint8_t read_hdma5() const;
+    void write_hdma5(uint8_t value);
+
     uint8_t read_bcps() const;
     void write_bcps(uint8_t value);
 
@@ -102,6 +119,16 @@ public:
     UInt8 wx {make_uint8(Specs::Registers::Video::WX)};
 
 #ifdef ENABLE_CGB
+    UInt8 hdma1 {make_uint8(Specs::Registers::Hdma::HDMA1)};
+    UInt8 hdma2 {make_uint8(Specs::Registers::Hdma::HDMA2)};
+    UInt8 hdma3 {make_uint8(Specs::Registers::Hdma::HDMA3)};
+    UInt8 hdma4 {make_uint8(Specs::Registers::Hdma::HDMA4)};
+
+    struct Hdma5 : Composite<Specs::Registers::Hdma::HDMA5> {
+        Bool hblank_transfer {make_bool()};
+        UInt8 length {make_uint8()};
+    } hdma5 {};
+
     struct Bcps : Composite<Specs::Registers::Video::BCPS> {
         Bool auto_increment {make_bool()};
         UInt8 address {make_uint8()};
@@ -253,6 +280,9 @@ private:
     Lcd& lcd;
     Interrupts& interrupts;
     Dma& dma_controller;
+#ifdef ENABLE_CGB
+    Hdma& hdma_controller;
+#endif
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;
 

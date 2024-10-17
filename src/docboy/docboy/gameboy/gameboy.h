@@ -114,7 +114,6 @@ public:
                     ppu,
                     vram_bank_controller,
                     wram_bank_controller,
-                    hdma,
                     infrared,
                     undocumented_registers,
                     boot};
@@ -141,7 +140,11 @@ public:
 
     // Video
     Lcd lcd {};
+#ifdef ENABLE_CGB
+    Ppu ppu {lcd, interrupts, dma, hdma, vram_bus, oam_bus};
+#else
     Ppu ppu {lcd, interrupts, dma, vram_bus, oam_bus};
+#endif
 
     // Audio
     Apu apu {timers};
@@ -154,7 +157,7 @@ public:
     VramBankController vram_bank_controller {vram_bus};
     WramBankController wram_bank_controller {ext_bus};
 
-    Hdma hdma {};
+    Hdma hdma {mmu, vram_bus};
     Infrared infrared {};
     UndocumentedRegisters undocumented_registers {};
 #endif

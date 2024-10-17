@@ -25,7 +25,7 @@
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Apu& apu, Ppu& ppu, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
-               Hdma& hdma, Infrared& infrared, UndocumentedRegisters& undocumented_registers, Boot& boot) :
+               Infrared& infrared, UndocumentedRegisters& undocumented_registers, Boot& boot) :
 #else
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Apu& apu, Ppu& ppu, Boot& boot) :
@@ -33,8 +33,8 @@ CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Ti
 #else
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
-               VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Hdma& hdma,
-               Infrared& infrared, UndocumentedRegisters& undocumented_registers, Boot& boot) :
+               VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Infrared& infrared,
+               UndocumentedRegisters& undocumented_registers, Boot& boot) :
 #else
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
                Boot& boot) :
@@ -55,7 +55,6 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
 #ifdef ENABLE_CGB
     vram_bank_controller {vram_bank_controller},
     wram_bank_controller {wram_bank_controller},
-    hdma {hdma},
     infrared {infrared},
     undocumented_registers {undocumented_registers},
 #endif
@@ -183,12 +182,11 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
 #endif
     /* FF50 */ memory_accessors[Specs::Registers::Boot::BOOT] = {&boot.boot, NonTrivial<&Boot::write_boot> {&boot}};
 #ifdef ENABLE_CGB
-    /* FF51 */ memory_accessors[0xFF51] = {read_ff, NonTrivial<&Hdma::write_hdma1> {&hdma}};
-    /* FF52 */ memory_accessors[0xFF52] = {read_ff, NonTrivial<&Hdma::write_hdma2> {&hdma}};
-    /* FF53 */ memory_accessors[0xFF53] = {read_ff, NonTrivial<&Hdma::write_hdma3> {&hdma}};
-    /* FF54 */ memory_accessors[0xFF54] = {read_ff, NonTrivial<&Hdma::write_hdma4> {&hdma}};
-    /* FF55 */ memory_accessors[0xFF55] = {NonTrivial<&Hdma::read_hdma5> {&hdma},
-                                           NonTrivial<&Hdma::write_hdma5> {&hdma}};
+    /* FF51 */ memory_accessors[0xFF51] = {read_ff, NonTrivial<&Ppu::write_hdma1> {&ppu}};
+    /* FF52 */ memory_accessors[0xFF52] = {read_ff, NonTrivial<&Ppu::write_hdma2> {&ppu}};
+    /* FF53 */ memory_accessors[0xFF53] = {read_ff, NonTrivial<&Ppu::write_hdma3> {&ppu}};
+    /* FF54 */ memory_accessors[0xFF54] = {read_ff, NonTrivial<&Ppu::write_hdma4> {&ppu}};
+    /* FF55 */ memory_accessors[0xFF55] = {NonTrivial<&Ppu::read_hdma5> {&ppu}, NonTrivial<&Ppu::write_hdma5> {&ppu}};
 #else
     /* FF51 */ memory_accessors[0xFF51] = open_bus_access;
     /* FF52 */ memory_accessors[0xFF52] = open_bus_access;
