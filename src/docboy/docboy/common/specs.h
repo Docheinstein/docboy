@@ -430,6 +430,15 @@ namespace Bits {
     }     // namespace Background
 #endif
 
+#ifdef ENABLE_CGB
+    namespace Hdma {
+        namespace HDMA5 {
+            constexpr uint8_t HBLANK_TRANSFER = 7;
+            constexpr BitRange TRANSFER_LENGTH = {6, 0};
+        } // namespace HDMA5
+    }     // namespace Hdma
+#endif
+
     namespace Serial {
         namespace SC {
             constexpr uint8_t TRANSFER_START = 7;

@@ -887,6 +887,10 @@ inline void Ppu::enter_hblank() {
 
     vram.release();
     oam.release();
+
+#ifdef ENABLE_CGB
+    hdma_controller.resume_hdma_transfer();
+#endif
 }
 
 void Ppu::enter_vblank() {
@@ -2232,10 +2236,18 @@ uint8_t Ppu::read_hdma5() const {
 }
 
 void Ppu::write_hdma5(uint8_t value) {
+    hdma5.length = get_bits_range<Specs::Bits::Hdma::HDMA5::TRANSFER_LENGTH>(value); /* TODO: probably can be omitted */
+    hdma5.hblank_transfer = test_bit<Specs::Bits::Hdma::HDMA5::HBLANK_TRANSFER>(value);
+
     const uint16_t source_address = hdma1 << 8 | hdma2;
     const uint16_t destination_address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
-    const uint16_t transfer_length = 16 * (keep_bits<7>(value) + 1);
-    hdma_controller.start_transfer(source_address, destination_address, transfer_length);
+    const uint16_t transfer_length = 16 * (hdma5.length + 1);
+
+    if (!hdma5.hblank_transfer) {
+        hdma_controller.start_gdma_transfer(source_address, destination_address, transfer_length);
+    } else {
+        hdma_controller.start_hdma_transfer(source_address, destination_address, transfer_length);
+    }
 }
 
 uint8_t Ppu::read_bcps() const {

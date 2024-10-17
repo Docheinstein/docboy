@@ -16,7 +16,10 @@ class Hdma {
 public:
     explicit Hdma(Mmu::View<Device::Hdma> mmu, VramBus::View<Device::Hdma> vram_bus);
 
-    void start_transfer(uint16_t source, uint16_t destination, uint16_t length);
+    void start_hdma_transfer(uint16_t source, uint16_t destination, uint16_t length);
+    void start_gdma_transfer(uint16_t source, uint16_t destination, uint16_t length);
+
+    void resume_hdma_transfer();
 
     void tick_t0();
     void tick_t1();
@@ -29,14 +32,22 @@ public:
     void reset();
 
     bool is_transferring() const {
-        return transferring;
+        return transfer_state >= TransferState::HdmaTransferring;
     }
 
 private:
     Mmu::View<Device::Hdma> mmu;
     VramBus::View<Device::Hdma> vram;
 
-    bool transferring {};
+    struct TransferState {
+        using Type = uint8_t;
+        static constexpr Type None = 0;
+        static constexpr Type HdmaPaused = 1;
+        static constexpr Type HdmaTransferring = 2;
+        static constexpr Type GdmaTransferring = 3;
+    };
+
+    TransferState::Type transfer_state {};
     uint16_t source {};
     uint16_t destination {};
     uint16_t length {};
