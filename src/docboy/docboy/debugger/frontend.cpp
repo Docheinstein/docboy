@@ -2015,18 +2015,23 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 return t;
             }
             if (gb.ppu.tick_selector == &Ppu::hblank || gb.ppu.tick_selector == &Ppu::hblank_453 ||
-                gb.ppu.tick_selector == &Ppu::hblank_454 || gb.ppu.tick_selector == &Ppu::hblank_455 ||
-                gb.ppu.tick_selector == &Ppu::hblank_last_line || gb.ppu.tick_selector == &Ppu::hblank_last_line_454 ||
+                gb.ppu.tick_selector == &Ppu::hblank_454 || gb.ppu.tick_selector == &Ppu::hblank_455) {
+                return "HBlank";
+            }
+            if (gb.ppu.tick_selector == &Ppu::hblank_last_line || gb.ppu.tick_selector == &Ppu::hblank_last_line_454 ||
                 gb.ppu.tick_selector == &Ppu::hblank_last_line_455) {
-                return "Horizontal Blank";
+                return "HBlank (Last Line)";
+            }
+            if (gb.ppu.tick_selector == &Ppu::hblank_first_line_after_turn_on) {
+                return "HBlank (Glitched Line 0)";
             }
             if (gb.ppu.tick_selector == &Ppu::vblank || gb.ppu.tick_selector == &Ppu::vblank_454) {
-                return "Vertical Blank";
+                return "VBlank";
             }
             if (gb.ppu.tick_selector == &Ppu::vblank_last_line || gb.ppu.tick_selector == &Ppu::vblank_last_line_2 ||
                 gb.ppu.tick_selector == &Ppu::vblank_last_line_7 ||
                 gb.ppu.tick_selector == &Ppu::vblank_last_line_454) {
-                return "Vertical Blank (Last Line)";
+                return "VBlank (Last Line)";
             }
 
             ASSERT_NO_ENTRY();
@@ -2544,7 +2549,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << header("DMA", width) << endl;
 
         if (gb.dma.request.state != Dma::RequestState::None || gb.dma.transferring) {
-            b << yellow("DMA Request") << "   :  ";
+            b << yellow("Request") << "      :  ";
             b <<
                 [this]() {
                     switch (gb.dma.request.state) {
@@ -2560,16 +2565,17 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 }()
               << endl;
 
-            b << yellow("DMA Transfer") << "  :  ";
+            b << yellow("Transfer") << "     :  ";
             b << (gb.dma.transferring ? green("In Progress") : "None");
             b << endl;
 
-            b << yellow("DMA Source") << "    :  " << hex(gb.dma.source) << endl;
-            b << yellow("DMA Progress") << "  :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
+            b << yellow("Source") << "       :  " << hex(gb.dma.source) << endl;
+            b << yellow("Destination") << "  :  " << hex(gb.dma.source) << endl;
+            b << yellow("Progress") << "     :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
               << hex<uint16_t>(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << gb.dma.cursor << "/"
               << "159]" << endl;
         } else {
-            b << yellow("DMA Transfer") << "  :  " << darkgray("None") << endl;
+            b << yellow("State") << "        :  " << darkgray("None") << endl;
         }
 
         return b;

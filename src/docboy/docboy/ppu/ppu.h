@@ -205,6 +205,7 @@ private:
     void hblank_last_line();
     void hblank_last_line_454();
     void hblank_last_line_455();
+    void hblank_first_line_after_turn_on();
 
     void vblank();
     void vblank_454();
@@ -312,6 +313,9 @@ private:
 #endif
 
     bool is_fetching_sprite {};
+
+    bool is_first_line_after_turn_on {};
+    uint8_t first_line_after_turn_on_hblank_delay {}; // [0, 2]
 
 #ifdef ENABLE_DEBUGGER
     struct {

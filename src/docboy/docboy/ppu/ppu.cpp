@@ -5,11 +5,14 @@
 #include "docboy/bootrom/helpers.h"
 #include "docboy/common/randomdata.h"
 #include "docboy/dma/dma.h"
-#include "docboy/hdma/hdma.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/memory/memory.h"
 #include "docboy/ppu/pixelmap.h"
+
+#ifdef ENABLE_CGB
+#include "docboy/hdma/hdma.h"
+#endif
 
 #include "utils/casts.h"
 
@@ -79,6 +82,7 @@ const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
     &Ppu::hblank_last_line,
     &Ppu::hblank_last_line_454,
     &Ppu::hblank_last_line_455,
+    &Ppu::hblank_first_line_after_turn_on,
     &Ppu::vblank,
     &Ppu::vblank_454,
     &Ppu::vblank_last_line,
@@ -208,9 +212,11 @@ void Ppu::turn_off() {
 #endif
 
     // The first line after PPU is turn on behaves differently.
-    // STAT's mode remains in HBLANK, OAM Bus is not acquired and
-    // OAM Scan does not check for any sprite.
+    // STAT's mode remains in HBLANK during OAM Scan, OAM Bus is not acquired,
+    // OAM Scan does not check for any sprite and STAT's update for HBLANK is late by 2 T-cycles.
     tick_selector = &Ppu::oam_scan_after_turn_on;
+
+    is_first_line_after_turn_on = true;
 
     // STAT's mode goes to HBLANK, even if the PPU will start with OAM scan
     update_mode<HBLANK>();
@@ -682,6 +688,24 @@ void Ppu::hblank_last_line_455() {
     enter_vblank();
 }
 
+void Ppu::hblank_first_line_after_turn_on() {
+    ASSERT(is_first_line_after_turn_on);
+    ASSERT(stat.mode == PIXEL_TRANSFER);
+    ASSERT(ly == 0);
+
+    ++dots;
+
+    if (++first_line_after_turn_on_hblank_delay == 2) {
+        // STAT is updated to HBlank mode 2 dots later the first line PPU is turned on.
+        update_mode<HBLANK>();
+
+        tick_selector = &Ppu::hblank;
+
+        // Not necessary for anything else: reset this.
+        is_first_line_after_turn_on = false;
+    }
+}
+
 void Ppu::vblank() {
     ASSERT(ly >= 144 && ly < 154);
     if (++dots == 454) {
@@ -881,9 +905,18 @@ inline void Ppu::enter_hblank() {
 #ifdef ENABLE_DEBUGGER
     timings.pixel_transfer = dots - timings.oam_scan;
 #endif
-    tick_selector = ly == 143 ? &Ppu::hblank_last_line : &Ppu::hblank;
 
-    update_mode<HBLANK>();
+    if (is_first_line_after_turn_on) {
+        // HBlank mode is delayed by 2 dots the first line PPU is turned on.
+        // It seems that only STAT is delayed by 2 dots; but bus are released now anyhow.
+        tick_selector = &Ppu::hblank_first_line_after_turn_on;
+
+        first_line_after_turn_on_hblank_delay = 0;
+    } else {
+        tick_selector = ly == 143 ? &Ppu::hblank_last_line : &Ppu::hblank;
+
+        update_mode<HBLANK>();
+    }
 
     vram.release();
     oam.release();
@@ -1798,6 +1831,9 @@ void Ppu::save_state(Parcel& parcel) const {
 
     parcel.write_bool(is_fetching_sprite);
 
+    parcel.write_bool(is_first_line_after_turn_on);
+    parcel.write_uint8(first_line_after_turn_on_hblank_delay);
+
     parcel.write_uint8(registers.oam.a);
     parcel.write_uint8(registers.oam.b);
 
@@ -1932,6 +1968,9 @@ void Ppu::load_state(Parcel& parcel) {
 #endif
 
     is_fetching_sprite = parcel.read_bool();
+
+    is_first_line_after_turn_on = parcel.read_bool();
+    first_line_after_turn_on_hblank_delay = parcel.read_uint8();
 
     registers.oam.a = parcel.read_uint8();
     registers.oam.b = parcel.read_uint8();
