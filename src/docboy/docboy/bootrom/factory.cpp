@@ -12,7 +12,7 @@ std::unique_ptr<BootRom> BootRomFactory::create(const std::string& filename) {
         FATAL("failed to read file");
     }
 
-    ASSERT(data.size() < UINT16_MAX);
+    ASSERT(data.size() == BootRom::Size);
 
-    return std::make_unique<BootRom>(data.data(), static_cast<uint16_t>(data.size()));
+    return std::make_unique<BootRom>(data.data());
 }

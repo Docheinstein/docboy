@@ -21,6 +21,11 @@ public:
 #endif
     }
 
+    explicit Memory(const uint8_t* data_) :
+        Memory {} {
+        reset(data_);
+    }
+
     const UInt8& operator[](uint16_t index) const {
         return data[index];
     }

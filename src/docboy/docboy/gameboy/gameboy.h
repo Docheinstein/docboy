@@ -105,7 +105,7 @@ public:
         undocumented_registers,
     };
 #else
-    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, boot, apu, ppu};
+    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, boot, apu, ppu, dma};
 #endif
 #else
 #ifdef ENABLE_CGB
