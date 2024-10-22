@@ -87,21 +87,25 @@ public:
     ExtBus ext_bus {cartridge_slot, wram1, wram2};
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
-    CpuBus cpu_bus {*boot_rom,
-                    hram,
-                    joypad,
-                    serial_port,
-                    timers,
-                    interrupts,
-                    apu,
-                    ppu,
-                    vram_bank_controller,
-                    wram_bank_controller,
-                    infrared,
-                    undocumented_registers,
-                    boot};
+    CpuBus cpu_bus {
+        *boot_rom,
+        hram,
+        joypad,
+        serial_port,
+        timers,
+        interrupts,
+        boot,
+        apu,
+        ppu,
+        dma,
+        hdma,
+        vram_bank_controller,
+        wram_bank_controller,
+        infrared,
+        undocumented_registers,
+    };
 #else
-    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
+    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, boot, apu, ppu};
 #endif
 #else
 #ifdef ENABLE_CGB
@@ -110,15 +114,17 @@ public:
                     serial_port,
                     timers,
                     interrupts,
+                    boot,
                     apu,
                     ppu,
+                    dma,
+                    hdma,
                     vram_bank_controller,
                     wram_bank_controller,
                     infrared,
-                    undocumented_registers,
-                    boot};
+                    undocumented_registers};
 #else
-    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
+    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, boot, apu, ppu, dma};
 #endif
 #endif
     VramBus vram_bus {vram};
@@ -141,9 +147,9 @@ public:
     // Video
     Lcd lcd {};
 #ifdef ENABLE_CGB
-    Ppu ppu {lcd, interrupts, dma, hdma, vram_bus, oam_bus};
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus};
 #else
-    Ppu ppu {lcd, interrupts, dma, vram_bus, oam_bus};
+    Ppu ppu {lcd, interrupts, vram_bus, oam_bus};
 #endif
 
     // Audio

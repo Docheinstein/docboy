@@ -556,21 +556,37 @@ Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& j
 }
 
 void Cpu::tick_t0() {
+#ifdef ENABLE_ASSERTS
+    assert_tick<3>();
+#endif
+
     check_interrupt<3>();
     tick();
 }
 
 void Cpu::tick_t1() {
+#ifdef ENABLE_ASSERTS
+    assert_tick<0>();
+#endif
+
     check_interrupt<0>();
     flush_write();
     idu.tick_t1();
 }
 
 void Cpu::tick_t2() {
+#ifdef ENABLE_ASSERTS
+    assert_tick<1>();
+#endif
+
     check_interrupt<1>();
 }
 
 void Cpu::tick_t3() {
+#ifdef ENABLE_ASSERTS
+    assert_tick<2>();
+#endif
+
     check_interrupt<2>();
     flush_read();
 
@@ -2932,3 +2948,11 @@ template <uint8_t n, Cpu::Register16 rr>
 void Cpu::set_arr_m2() {
     fetch();
 }
+
+#ifdef ENABLE_ASSERTS
+template <uint8_t t>
+void Cpu::assert_tick() {
+    ASSERT(last_tick == t);
+    last_tick = mod<4>(t + 1);
+}
+#endif

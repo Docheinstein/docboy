@@ -12,6 +12,7 @@ class Joypad;
 class Serial;
 class Timers;
 class Interrupts;
+class Dma;
 class Apu;
 class Ppu;
 class VramBankController;
@@ -27,20 +28,20 @@ public:
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-           Apu& apu, Ppu& ppu, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
-           Infrared& infrared, UndocumentedRegisters& undocumented_registers, Boot& boot);
+           Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, Hdma& hdma, VramBankController& vram_bank_controller,
+           WramBankController& wram_bank_controller, Infrared& infrared, UndocumentedRegisters& undocumented_registers);
 #else
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-           Apu& apu, Ppu& ppu, Boot& boot);
+           Boot& boot, Apu& apu, Ppu& ppu, Dma& dma);
 #endif
 #else
 #ifdef ENABLE_CGB
-    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
-           VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Infrared& infrared,
-           UndocumentedRegisters& undocumented_registers, Boot& boot);
+    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
+           Ppu& ppu, Dma& dma, Hdma& hdma, VramBankController& vram_bank_controller,
+           WramBankController& wram_bank_controller, Infrared& infrared, UndocumentedRegisters& undocumented_registers);
 #else
-    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
-           Boot& boot);
+    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
+           Ppu& ppu, Dma& dma);
 #endif
 #endif
 
@@ -56,15 +57,19 @@ public:
     Interrupts& interrupts;
     Boot& boot;
 
+    Apu& apu;
+    Ppu& ppu;
+
+    Dma& dma;
+
 #ifdef ENABLE_CGB
+    Hdma& hdma;
+
     VramBankController& vram_bank_controller;
     WramBankController& wram_bank_controller;
 
     Infrared& infrared;
     UndocumentedRegisters& undocumented_registers;
 #endif
-
-    Apu& apu;
-    Ppu& ppu;
 };
 #endif // CPUBUS_H

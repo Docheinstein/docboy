@@ -4,7 +4,6 @@
 
 #include "docboy/bootrom/helpers.h"
 #include "docboy/common/randomdata.h"
-#include "docboy/dma/dma.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/memory/memory.h"
@@ -114,17 +113,15 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo};
 
 #ifdef ENABLE_CGB
-Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
+Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
          OamBus::View<Device::Ppu> oam_bus) :
 #else
-Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
-         OamBus::View<Device::Ppu> oam_bus) :
+Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus) :
 #endif
     lcd {lcd},
     interrupts {interrupts},
-    dma_controller {dma},
 #ifdef ENABLE_CGB
-    hdma_controller {hdma},
+    hdma {hdma},
 #endif
     vram {vram_bus},
     oam {oam_bus} {
@@ -699,6 +696,8 @@ void Ppu::hblank_first_line_after_turn_on() {
         // STAT is updated to HBlank mode 2 dots later the first line PPU is turned on.
         update_mode<HBLANK>();
 
+        // TODO: is HDMA resume done here?
+
         tick_selector = &Ppu::hblank;
 
         // Not necessary for anything else: reset this.
@@ -922,7 +921,7 @@ inline void Ppu::enter_hblank() {
     oam.release();
 
 #ifdef ENABLE_CGB
-    hdma_controller.resume_hdma_transfer();
+    hdma.resume();
 #endif
 }
 
@@ -1765,7 +1764,6 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_uint8(scx);
     parcel.write_uint8(ly);
     parcel.write_uint8(lyc);
-    parcel.write_uint8(dma);
     parcel.write_uint8(bgp);
     parcel.write_uint8(obp0);
     parcel.write_uint8(obp1);
@@ -1912,7 +1910,6 @@ void Ppu::load_state(Parcel& parcel) {
     scx = parcel.read_uint8();
     ly = parcel.read_uint8();
     lyc = parcel.read_uint8();
-    dma = parcel.read_uint8();
     bgp = parcel.read_uint8();
     obp0 = parcel.read_uint8();
     obp1 = parcel.read_uint8();
@@ -2061,11 +2058,6 @@ void Ppu::reset() {
     ly = 0;
 #endif
     lyc = 0;
-#ifdef ENABLE_CGB
-    dma = 0;
-#else
-    dma = 0xFF;
-#endif
     bgp = if_bootrom_else(0, 0xFC);
     obp0 = 0;
     obp1 = 0;
@@ -2073,13 +2065,6 @@ void Ppu::reset() {
     wx = 0;
 
 #ifdef ENABLE_CGB
-    hdma1 = 0;
-    hdma2 = 0;
-    hdma3 = 0;
-    hdma4 = 0;
-    hdma5.hblank_transfer = false;
-    hdma5.length = 0;
-
     bcps.auto_increment = true;
     bcps.address = 0;
 
@@ -2206,11 +2191,6 @@ void Ppu::reset() {
 #endif
 }
 
-void Ppu::write_dma(uint8_t value) {
-    dma = value;
-    dma_controller.start_transfer(dma << 8);
-}
-
 uint8_t Ppu::read_lcdc() const {
     return lcdc.enable << Specs::Bits::Video::LCDC::LCD_ENABLE |
            lcdc.win_tile_map << Specs::Bits::Video::LCDC::WIN_TILE_MAP |
@@ -2253,42 +2233,6 @@ void Ppu::write_stat(uint8_t value) {
 }
 
 #ifdef ENABLE_CGB
-void Ppu::write_hdma1(uint8_t value) {
-    hdma1 = value;
-}
-
-void Ppu::write_hdma2(uint8_t value) {
-    hdma2 = discard_bits<4>(value);
-}
-
-void Ppu::write_hdma3(uint8_t value) {
-    hdma3 = keep_bits<5>(value);
-}
-
-void Ppu::write_hdma4(uint8_t value) {
-    hdma4 = discard_bits<4>(value);
-}
-
-uint8_t Ppu::read_hdma5() const {
-    // TODO
-    return 0xFF;
-}
-
-void Ppu::write_hdma5(uint8_t value) {
-    hdma5.length = get_bits_range<Specs::Bits::Hdma::HDMA5::TRANSFER_LENGTH>(value); /* TODO: probably can be omitted */
-    hdma5.hblank_transfer = test_bit<Specs::Bits::Hdma::HDMA5::HBLANK_TRANSFER>(value);
-
-    const uint16_t source_address = hdma1 << 8 | hdma2;
-    const uint16_t destination_address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
-    const uint16_t transfer_length = 16 * (hdma5.length + 1);
-
-    if (!hdma5.hblank_transfer) {
-        hdma_controller.start_gdma_transfer(source_address, destination_address, transfer_length);
-    } else {
-        hdma_controller.start_hdma_transfer(source_address, destination_address, transfer_length);
-    }
-}
-
 uint8_t Ppu::read_bcps() const {
     return 0b01000000 | bcps.auto_increment << Specs::Bits::Video::BCPS::AUTO_INCREMENT | bcps.address;
 }

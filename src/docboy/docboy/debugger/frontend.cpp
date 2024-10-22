@@ -2549,7 +2549,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << header("DMA", width) << endl;
 
         if (gb.dma.request.state != Dma::RequestState::None || gb.dma.transferring) {
-            b << yellow("Request") << "      :  ";
+            b << yellow("Request") << "       :  ";
             b <<
                 [this]() {
                     switch (gb.dma.request.state) {
@@ -2558,28 +2558,116 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                     case Dma::RequestState::Pending:
                         return green("Pending");
                     case Dma::RequestState::None:
-                        return Text {"None"};
+                        return darkgray("None");
                     }
                     ASSERT_NO_ENTRY();
                     return Text {};
                 }()
               << endl;
 
-            b << yellow("Transfer") << "     :  ";
-            b << (gb.dma.transferring ? green("In Progress") : "None");
-            b << endl;
-
-            b << yellow("Source") << "       :  " << hex(gb.dma.source) << endl;
-            b << yellow("Destination") << "  :  " << hex(gb.dma.source) << endl;
-            b << yellow("Progress") << "     :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
+            b << yellow("Transfer") << "      :  " << (gb.dma.transferring ? green("In Progress") : darkgray("None"))
+              << endl;
+            b << yellow("Source") << "        :  " << hex(gb.dma.source) << endl;
+            b << yellow("Destination") << "   :  " << hex(gb.dma.source) << endl;
+            b << yellow("Progress") << "      :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
               << hex<uint16_t>(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << gb.dma.cursor << "/"
               << "159]" << endl;
         } else {
-            b << yellow("State") << "        :  " << darkgray("None") << endl;
+            b << yellow("State") << "         :  " << darkgray("None") << endl;
         }
 
         return b;
     };
+
+#ifdef ENABLE_CGB
+    // HDMA
+    const auto make_hdma_block = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("HDMA", width) << endl;
+
+        if (gb.hdma.request != Hdma::RequestState::None || gb.hdma.pause != Hdma::PauseState::None ||
+            gb.hdma.remaining_chunks.state != Hdma::RemainingChunksUpdateState::None || gb.hdma.transferring) {
+
+            b << yellow("Request") << "       :  ";
+            b <<
+                [this]() {
+                    switch (gb.hdma.request) {
+                    case Hdma::RequestState::Requested:
+                        return green("Requested");
+                    case Hdma::RequestState::Pending:
+                        return green("Pending");
+                    case Hdma::RequestState::None:
+                        return darkgray("None");
+                    }
+                    ASSERT_NO_ENTRY();
+                    return Text {};
+                }()
+              << endl;
+
+            b << yellow("Transfer") << "      :  " << (gb.hdma.transferring ? green("In Progress") : darkgray("None"))
+              << endl;
+
+            b << yellow("Mode") << "          :  ";
+            b <<
+                [this]() {
+                    switch (gb.hdma.mode) {
+                    case Hdma::TransferMode::GeneralPurpose:
+                        return Text {"General Purpose"};
+                    case Hdma::TransferMode::HBlank:
+                        return Text {"HBlank"};
+                    }
+                    ASSERT_NO_ENTRY();
+                    return Text {};
+                }()
+              << endl;
+
+            b << yellow("Pause") << "         :  ";
+            b <<
+                [this]() {
+                    switch (gb.hdma.pause) {
+                    case Hdma::PauseState::ResumeRequested:
+                        return green("Resume Requested");
+                    case Hdma::PauseState::ResumePending:
+                        return green("Resume Pending");
+                    case Hdma::PauseState::None:
+                        return darkgray("None");
+                    case Hdma::PauseState::Paused:
+                        return green("Paused");
+                    }
+                    ASSERT_NO_ENTRY();
+                    return Text {};
+                }()
+              << endl;
+
+            b << yellow("Source") << "        :  " << hex(gb.hdma.source) << endl;
+            b << yellow("Destination") << "   :  " << hex(gb.hdma.destination) << endl;
+            b << yellow("Progress") << "      :  " << hex<uint16_t>(gb.hdma.source + gb.hdma.cursor) << " => "
+              << hex<uint16_t>(gb.hdma.destination + gb.hdma.cursor) << " [" << gb.hdma.cursor << "/" << gb.hdma.length
+              << "]" << endl;
+
+            b << yellow("Chunk Update") << "  :  ";
+            b <<
+                [this]() {
+                    switch (gb.hdma.mode) {
+                    case Hdma::RemainingChunksUpdateState::Requested:
+                        return green("Requested");
+                    case Hdma::RemainingChunksUpdateState::Pending:
+                        return green("Pending");
+                    case Hdma::RemainingChunksUpdateState::None:
+                        return darkgray("None");
+                    }
+                    ASSERT_NO_ENTRY();
+                    return Text {};
+                }()
+              << endl;
+        } else {
+            b << yellow("State") << "         :  " << darkgray("None") << endl;
+        }
+
+        return b;
+    };
+#endif
 
     // Timers
     const auto make_timers_block = [&](uint32_t width) {
@@ -2947,6 +3035,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     c2->add_node(make_bus_block(COLUMN_2_WIDTH));
     c2->add_node(make_space_divider());
     c2->add_node(make_dma_block(COLUMN_2_WIDTH));
+#ifdef ENABLE_CGB
+    c2->add_node(make_hdma_block(COLUMN_2_WIDTH));
+#endif
 
     static constexpr uint32_t COLUMN_3_ROW_1_2_PART_1_WIDTH = 45;
     static constexpr uint32_t COLUMN_3_ROW_1_2_PART_2_WIDTH = 52;

@@ -16,16 +16,20 @@
 Dma::Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oam_bus) :
     mmu {mmu},
     oam {oam_bus} {
+    reset();
 }
 
-void Dma::start_transfer(uint16_t address) {
-    request.state = RequestState::Requested;
+void Dma::write_dma(uint8_t value) {
+    dma = value;
+
+    uint16_t address = dma << 8;
 
     // DMA source cannot exceed 0xDF00
     if (address >= 0xE000) {
         reset_bit<13>(address);
     }
 
+    request.state = RequestState::Requested;
     request.source = address;
 }
 
@@ -72,6 +76,7 @@ void Dma::tick_t3() {
 }
 
 void Dma::save_state(Parcel& parcel) const {
+    parcel.write_uint8(dma);
     parcel.write_uint8(request.state);
     parcel.write_uint16(request.source);
     parcel.write_bool(transferring);
@@ -80,6 +85,7 @@ void Dma::save_state(Parcel& parcel) const {
 }
 
 void Dma::load_state(Parcel& parcel) {
+    dma = parcel.read_uint8();
     request.state = parcel.read_uint8();
     request.source = parcel.read_uint16();
     transferring = parcel.read_bool();
@@ -88,6 +94,12 @@ void Dma::load_state(Parcel& parcel) {
 }
 
 void Dma::reset() {
+#ifdef ENABLE_CGB
+    dma = 0;
+#else
+    dma = 0xFF;
+#endif
+
     request.state = RequestState::None;
     request.source = 0;
     transferring = false;

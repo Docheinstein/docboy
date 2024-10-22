@@ -2,6 +2,7 @@
 
 #include "docboy/audio/apu.h"
 #include "docboy/boot/boot.h"
+#include "docboy/dma/dma.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/memory/hram.h"
@@ -24,20 +25,22 @@
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-               Apu& apu, Ppu& ppu, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
-               Infrared& infrared, UndocumentedRegisters& undocumented_registers, Boot& boot) :
+               Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, Hdma& hdma, VramBankController& vram_bank_controller,
+               WramBankController& wram_bank_controller, Infrared& infrared,
+               UndocumentedRegisters& undocumented_registers) :
 #else
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-               Apu& apu, Ppu& ppu, Boot& boot) :
+               Boot& boot, Apu& apu, Ppu& ppu, Dma& dma) :
 #endif
 #else
 #ifdef ENABLE_CGB
-CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
-               VramBankController& vram_bank_controller, WramBankController& wram_bank_controller, Infrared& infrared,
-               UndocumentedRegisters& undocumented_registers, Boot& boot) :
+CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
+               Ppu& ppu, Dma& dma, Hdma& hdma, VramBankController& vram_bank_controller,
+               WramBankController& wram_bank_controller, Infrared& infrared,
+               UndocumentedRegisters& undocumented_registers) :
 #else
-CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& ppu,
-               Boot& boot) :
+CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
+               Ppu& ppu, Dma& dma) :
 #endif
 #endif
 
@@ -52,14 +55,18 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     timers {timers},
     interrupts {interrupts},
     boot {boot},
+    apu {apu},
+    ppu {ppu},
+    dma {dma}
 #ifdef ENABLE_CGB
+    ,
+    hdma {hdma},
     vram_bank_controller {vram_bank_controller},
     wram_bank_controller {wram_bank_controller},
     infrared {infrared},
-    undocumented_registers {undocumented_registers},
+    undocumented_registers {undocumented_registers}
 #endif
-    apu {apu},
-    ppu {ppu} {
+{
 
     // clang-format off
     const NonTrivialReadFunctor read_ff {[](void*, uint16_t) -> uint8_t { return 0xFF;}, nullptr};
@@ -164,7 +171,7 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF43 */ memory_accessors[Specs::Registers::Video::SCX] = &ppu.scx;
     /* FF44 */ memory_accessors[Specs::Registers::Video::LY] = {&ppu.ly, write_nop};
     /* FF45 */ memory_accessors[Specs::Registers::Video::LYC] = &ppu.lyc;
-    /* FF46 */ memory_accessors[Specs::Registers::Video::DMA] = {&ppu.dma, NonTrivial<&Ppu::write_dma> {&ppu}};
+    /* FF46 */ memory_accessors[Specs::Registers::Video::DMA] = {&dma.dma, NonTrivial<&Dma::write_dma> {&dma}};
     /* FF47 */ memory_accessors[Specs::Registers::Video::BGP] = &ppu.bgp;
     /* FF48 */ memory_accessors[Specs::Registers::Video::OBP0] = &ppu.obp0;
     /* FF49 */ memory_accessors[Specs::Registers::Video::OBP1] = &ppu.obp1;
@@ -182,11 +189,12 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
 #endif
     /* FF50 */ memory_accessors[Specs::Registers::Boot::BOOT] = {&boot.boot, NonTrivial<&Boot::write_boot> {&boot}};
 #ifdef ENABLE_CGB
-    /* FF51 */ memory_accessors[0xFF51] = {read_ff, NonTrivial<&Ppu::write_hdma1> {&ppu}};
-    /* FF52 */ memory_accessors[0xFF52] = {read_ff, NonTrivial<&Ppu::write_hdma2> {&ppu}};
-    /* FF53 */ memory_accessors[0xFF53] = {read_ff, NonTrivial<&Ppu::write_hdma3> {&ppu}};
-    /* FF54 */ memory_accessors[0xFF54] = {read_ff, NonTrivial<&Ppu::write_hdma4> {&ppu}};
-    /* FF55 */ memory_accessors[0xFF55] = {NonTrivial<&Ppu::read_hdma5> {&ppu}, NonTrivial<&Ppu::write_hdma5> {&ppu}};
+    /* FF51 */ memory_accessors[0xFF51] = {read_ff, NonTrivial<&Hdma::write_hdma1> {&hdma}};
+    /* FF52 */ memory_accessors[0xFF52] = {read_ff, NonTrivial<&Hdma::write_hdma2> {&hdma}};
+    /* FF53 */ memory_accessors[0xFF53] = {read_ff, NonTrivial<&Hdma::write_hdma3> {&hdma}};
+    /* FF54 */ memory_accessors[0xFF54] = {read_ff, NonTrivial<&Hdma::write_hdma4> {&hdma}};
+    /* FF55 */ memory_accessors[0xFF55] = {NonTrivial<&Hdma::read_hdma5> {&hdma},
+                                           NonTrivial<&Hdma::write_hdma5> {&hdma}};
 #else
     /* FF51 */ memory_accessors[0xFF51] = open_bus_access;
     /* FF52 */ memory_accessors[0xFF52] = open_bus_access;

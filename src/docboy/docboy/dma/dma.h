@@ -16,7 +16,7 @@ class Dma {
 public:
     explicit Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oam_bus);
 
-    void start_transfer(uint16_t address);
+    void write_dma(uint8_t value);
 
     void tick_t1();
     void tick_t3();
@@ -25,6 +25,8 @@ public:
     void load_state(Parcel& parcel);
 
     void reset();
+
+    UInt8 dma {make_uint8(Specs::Registers::Video::DMA)};
 
 private:
     struct RequestState {

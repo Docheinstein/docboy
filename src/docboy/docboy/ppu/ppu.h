@@ -15,7 +15,6 @@
 
 class Lcd;
 class Interrupts;
-class Dma;
 class Hdma;
 class Parcel;
 
@@ -24,11 +23,10 @@ class Ppu {
 
 public:
 #ifdef ENABLE_CGB
-    Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
+    Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
         OamBus::View<Device::Ppu> oam_bus);
 #else
-    Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
-        OamBus::View<Device::Ppu> oam_bus);
+    Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus);
 #endif
 
     void tick();
@@ -39,8 +37,6 @@ public:
     void reset();
 
     // PPU I/O registers
-    void write_dma(uint8_t value);
-
     uint8_t read_lcdc() const;
     void write_lcdc(uint8_t value);
 
@@ -48,17 +44,6 @@ public:
     void write_stat(uint8_t value);
 
 #ifdef ENABLE_CGB
-    void write_hdma1(uint8_t value);
-
-    void write_hdma2(uint8_t value);
-
-    void write_hdma3(uint8_t value);
-
-    void write_hdma4(uint8_t value);
-
-    uint8_t read_hdma5() const;
-    void write_hdma5(uint8_t value);
-
     uint8_t read_bcps() const;
     void write_bcps(uint8_t value);
 
@@ -110,7 +95,6 @@ public:
     UInt8 scy {make_uint8(Specs::Registers::Video::SCY)};
     UInt8 scx {make_uint8(Specs::Registers::Video::SCX)};
     UInt8 ly {make_uint8(Specs::Registers::Video::LY)};
-    UInt8 dma {make_uint8(Specs::Registers::Video::DMA)};
     UInt8 lyc {make_uint8(Specs::Registers::Video::LYC)};
     UInt8 bgp {make_uint8(Specs::Registers::Video::BGP)};
     UInt8 obp0 {make_uint8(Specs::Registers::Video::OBP0)};
@@ -119,16 +103,6 @@ public:
     UInt8 wx {make_uint8(Specs::Registers::Video::WX)};
 
 #ifdef ENABLE_CGB
-    UInt8 hdma1 {make_uint8(Specs::Registers::Hdma::HDMA1)};
-    UInt8 hdma2 {make_uint8(Specs::Registers::Hdma::HDMA2)};
-    UInt8 hdma3 {make_uint8(Specs::Registers::Hdma::HDMA3)};
-    UInt8 hdma4 {make_uint8(Specs::Registers::Hdma::HDMA4)};
-
-    struct Hdma5 : Composite<Specs::Registers::Hdma::HDMA5> {
-        Bool hblank_transfer {make_bool()};
-        UInt8 length {make_uint8()};
-    } hdma5 {};
-
     struct Bcps : Composite<Specs::Registers::Video::BCPS> {
         Bool auto_increment {make_bool()};
         UInt8 address {make_uint8()};
@@ -280,9 +254,8 @@ private:
 
     Lcd& lcd;
     Interrupts& interrupts;
-    Dma& dma_controller;
 #ifdef ENABLE_CGB
-    Hdma& hdma_controller;
+    Hdma& hdma;
 #endif
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;

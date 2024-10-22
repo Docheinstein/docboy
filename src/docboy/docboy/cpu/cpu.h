@@ -610,6 +610,11 @@ private:
     template <uint8_t n, Register16 r>
     void set_arr_m2();
 
+#ifdef ENABLE_ASSERTS
+    template <uint8_t t>
+    void assert_tick();
+#endif
+
     Idu& idu;
     Interrupts& interrupts;
     Mmu::View<Device::Cpu> mmu;
@@ -683,6 +688,10 @@ private:
 
 #ifdef ENABLE_DEBUGGER
     uint64_t cycles {};
+#endif
+
+#ifdef ENABLE_ASSERTS
+    uint8_t last_tick {3};
 #endif
 };
 

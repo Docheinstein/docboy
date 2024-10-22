@@ -37,7 +37,7 @@ Core::Core(GameBoy& gb) :
 
 inline void Core::tick_t0() const {
 #ifdef ENABLE_CGB
-    if (!gb.hdma.is_transferring()) {
+    if (!gb.hdma.is_active()) {
         gb.cpu.tick_t0();
     }
 #else
@@ -52,11 +52,11 @@ inline void Core::tick_t0() const {
 
 inline void Core::tick_t1() const {
 #ifdef ENABLE_CGB
-    if (!gb.hdma.is_transferring()) {
+    if (!gb.hdma.is_active()) {
         gb.cpu.tick_t1();
     }
 #else
-    gb.cpu.tick_t0();
+    gb.cpu.tick_t1();
 #endif
 
     gb.ppu.tick();
@@ -69,11 +69,11 @@ inline void Core::tick_t1() const {
 
 inline void Core::tick_t2() const {
 #ifdef ENABLE_CGB
-    if (!gb.hdma.is_transferring()) {
+    if (!gb.hdma.is_active()) {
         gb.cpu.tick_t2();
     }
 #else
-    gb.cpu.tick_t0();
+    gb.cpu.tick_t2();
 #endif
 
     gb.ppu.tick();
@@ -85,11 +85,11 @@ inline void Core::tick_t2() const {
 
 inline void Core::tick_t3() const {
 #ifdef ENABLE_CGB
-    if (!gb.hdma.is_transferring()) {
+    if (!gb.hdma.is_active()) {
         gb.cpu.tick_t3();
     }
 #else
-    gb.cpu.tick_t0();
+    gb.cpu.tick_t3();
 #endif
 
     if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3) {
@@ -332,7 +332,11 @@ void Core::reset() {
     for (std::size_t i = 0; i < array_size(gb.wram2); i++) {
         gb.wram2[i].reset(RANDOM_DATA);
     }
+#ifdef ENABLE_CGB
+    gb.oam.reset();
+#else
     gb.oam.reset(RANDOM_DATA);
+#endif
     gb.hram.reset(RANDOM_DATA);
     gb.ext_bus.reset();
     gb.cpu_bus.reset();
