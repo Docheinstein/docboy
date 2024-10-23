@@ -23,35 +23,42 @@ void Hdma::write_hdma4(uint8_t value) {
 }
 
 uint8_t Hdma::read_hdma5() const {
-    if (!transferring && pause == PauseState::None) {
-        // Neither transferring nor in pause: just reads FF
-        return 0xFF;
-    }
-
-    return remaining_chunks.count - 1;
+    return (has_active_transfer() ? 0x00 : 0x80) | keep_bits<7>(remaining_chunks.count);
 }
 
 void Hdma::write_hdma5(uint8_t value) {
-    hdma5.hblank_mode = test_bit<Specs::Bits::Hdma::HDMA5::HBLANK_TRANSFER>(value);
-    hdma5.length = get_bits_range<Specs::Bits::Hdma::HDMA5::TRANSFER_LENGTH>(value); /* TODO: probably can be omitted */
+    const bool hblank_mode = test_bit<Specs::Bits::Hdma::HDMA5::HBLANK_TRANSFER>(value);
+    remaining_chunks.count = get_bits_range<Specs::Bits::Hdma::HDMA5::TRANSFER_LENGTH>(value);
+
+    if (has_active_transfer()) {
+        ASSERT(request == RequestState::None);
+        ASSERT(mode == TransferMode::HBlank);
+
+        if (!hblank_mode) {
+            // Aborts current HDMA transfer
+            pause = PauseState::None;
+        } else {
+            // Not implemented yet
+            ASSERT_NO_ENTRY();
+        }
+    } else {
+        if (hblank_mode) {
+            request = RequestState::None;
+            mode = TransferMode::HBlank;
+            pause = PauseState::Paused;
+        } else {
+            request = RequestState::Requested;
+            mode = TransferMode::GeneralPurpose;
+            pause = PauseState::None;
+        }
+    }
 
     transferring = false;
 
     source = hdma1 << 8 | hdma2;
     destination = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
-    remaining_chunks.count = hdma5.length + 1;
-    length = 16 * remaining_chunks.count;
+    length = 16 * (remaining_chunks.count + 1);
     cursor = 0;
-
-    if (hdma5.hblank_mode) {
-        request = RequestState::None;
-        mode = TransferMode::HBlank;
-        pause = PauseState::Paused;
-    } else {
-        request = RequestState::Requested;
-        mode = TransferMode::GeneralPurpose;
-        pause = PauseState::None;
-    }
 
     ASSERT(source < Specs::MemoryLayout::VRAM::START ||
            (source >= Specs::MemoryLayout::RAM::START && source <= Specs::MemoryLayout::WRAM2::END));
@@ -64,6 +71,10 @@ void Hdma::resume() {
         // Schedule the resume of the transfer
         pause = PauseState::ResumeRequested;
     }
+}
+
+inline bool Hdma::has_active_transfer() const {
+    return transferring || pause != PauseState::None;
 }
 
 void Hdma::tick_t0() {
@@ -115,6 +126,9 @@ void Hdma::tick_t3() {
         if (cursor >= length) {
             // Transfer completed
             transferring = false;
+
+            // TODO: maybe this is also scheduled? Anyway it's not observable since CPU is halted in the meantime.
+            remaining_chunks.count = 0xFF;
         } else if (mode == TransferMode::HBlank) {
             // HDMA pauses each 16 bytes
             if (mod<16>(cursor) == 0) {
@@ -155,8 +169,6 @@ void Hdma::save_state(Parcel& parcel) const {
     parcel.write_uint8(hdma2);
     parcel.write_uint8(hdma3);
     parcel.write_uint8(hdma4);
-    parcel.write_bool(hdma5.hblank_mode);
-    parcel.write_uint8(hdma5.length);
     parcel.write_uint8(request);
     parcel.write_uint8(mode);
     parcel.write_uint8(pause);
@@ -174,8 +186,6 @@ void Hdma::load_state(Parcel& parcel) {
     hdma2 = parcel.read_uint8();
     hdma3 = parcel.read_uint8();
     hdma4 = parcel.read_uint8();
-    hdma5.hblank_mode = parcel.read_bool();
-    hdma5.length = parcel.read_uint8();
     request = parcel.read_uint8();
     mode = parcel.read_uint8();
     pause = parcel.read_uint8();
@@ -193,8 +203,6 @@ void Hdma::reset() {
     hdma2 = 0;
     hdma3 = 0;
     hdma4 = 0;
-    hdma5.hblank_mode = false;
-    hdma5.length = 0;
     request = RequestState::None;
     mode = TransferMode::GeneralPurpose;
     pause = PauseState::None;
@@ -204,5 +212,5 @@ void Hdma::reset() {
     length = 0;
     cursor = 0;
     remaining_chunks.state = RemainingChunksUpdateState::None;
-    remaining_chunks.count = 0;
+    remaining_chunks.count = 0xFF;
 }

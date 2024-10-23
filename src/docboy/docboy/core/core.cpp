@@ -37,7 +37,7 @@ Core::Core(GameBoy& gb) :
 
 inline void Core::tick_t0() const {
 #ifdef ENABLE_CGB
-    if (!gb.hdma.is_active()) {
+    if (!gb.hdma.has_active_or_pending_transfer()) {
         gb.cpu.tick_t0();
     }
 #else
@@ -52,7 +52,7 @@ inline void Core::tick_t0() const {
 
 inline void Core::tick_t1() const {
 #ifdef ENABLE_CGB
-    if (!gb.hdma.is_active()) {
+    if (!gb.hdma.has_active_or_pending_transfer()) {
         gb.cpu.tick_t1();
     }
 #else
@@ -69,7 +69,7 @@ inline void Core::tick_t1() const {
 
 inline void Core::tick_t2() const {
 #ifdef ENABLE_CGB
-    if (!gb.hdma.is_active()) {
+    if (!gb.hdma.has_active_or_pending_transfer()) {
         gb.cpu.tick_t2();
     }
 #else
@@ -85,7 +85,7 @@ inline void Core::tick_t2() const {
 
 inline void Core::tick_t3() const {
 #ifdef ENABLE_CGB
-    if (!gb.hdma.is_active()) {
+    if (!gb.hdma.has_active_or_pending_transfer()) {
         gb.cpu.tick_t3();
     }
 #else

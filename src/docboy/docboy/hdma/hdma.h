@@ -24,21 +24,23 @@ public:
     uint8_t read_hdma5() const;
     void write_hdma5(uint8_t value);
 
-    void resume();
-
     void tick_t0();
     void tick_t1();
     void tick_t2();
     void tick_t3();
 
+    void resume();
+
+    bool has_active_or_pending_transfer() const {
+        return transferring || request == RequestState::Pending || pause == PauseState::ResumePending;
+    }
+
+    bool has_active_transfer() const;
+
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
 
     void reset();
-
-    bool is_active() const {
-        return transferring || request == RequestState::Pending || pause == PauseState::ResumePending;
-    }
 
 private:
     struct RequestState {
@@ -76,11 +78,6 @@ private:
     UInt8 hdma2 {make_uint8(Specs::Registers::Hdma::HDMA2)};
     UInt8 hdma3 {make_uint8(Specs::Registers::Hdma::HDMA3)};
     UInt8 hdma4 {make_uint8(Specs::Registers::Hdma::HDMA4)};
-
-    struct Hdma5 : Composite<Specs::Registers::Hdma::HDMA5> {
-        Bool hblank_mode {make_bool()};
-        UInt8 length {make_uint8()};
-    } hdma5 {};
 
     RequestState::Type request {};
     TransferMode::Type mode {};
