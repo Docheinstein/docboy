@@ -38,8 +38,9 @@ void Hdma::write_hdma5(uint8_t value) {
             // Aborts current HDMA transfer
             pause = PauseState::None;
         } else {
-            // Not implemented yet
-            ASSERT_NO_ENTRY();
+            // Continue current HDMA transfer, but update the remaining amount of bytes to transfer.
+            // Note that the cursor is not reset in this case, therefore the transfer will continue
+            // from the address it was.
         }
     } else {
         if (hblank_mode) {
@@ -51,19 +52,19 @@ void Hdma::write_hdma5(uint8_t value) {
             mode = TransferMode::GeneralPurpose;
             pause = PauseState::None;
         }
+
+        source = hdma1 << 8 | hdma2;
+        destination = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
+        cursor = 0;
     }
 
     transferring = false;
-
-    source = hdma1 << 8 | hdma2;
-    destination = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
-    length = 16 * (remaining_chunks.count + 1);
-    cursor = 0;
+    remaining_bytes = 16 * (remaining_chunks.count + 1);
 
     ASSERT(source < Specs::MemoryLayout::VRAM::START ||
            (source >= Specs::MemoryLayout::RAM::START && source <= Specs::MemoryLayout::WRAM2::END));
     ASSERT(destination >= Specs::MemoryLayout::VRAM::START && destination <= Specs::MemoryLayout::VRAM::END);
-    ASSERT(length <= 0x800);
+    ASSERT(remaining_bytes <= 0x800);
 }
 
 void Hdma::resume() {
@@ -96,8 +97,10 @@ void Hdma::tick_t1() {
         vram.flush_write_request(src_data);
 
         cursor++;
+        remaining_bytes--;
 
         ASSERT(mod<2>(cursor) == 1);
+        ASSERT(mod<2>(remaining_bytes) == 1);
     }
 }
 
@@ -120,10 +123,12 @@ void Hdma::tick_t3() {
         vram.flush_write_request(src_data);
 
         cursor++;
+        remaining_bytes--;
 
         ASSERT(mod<2>(cursor) == 0);
+        ASSERT(mod<2>(remaining_bytes) == 0);
 
-        if (cursor >= length) {
+        if (remaining_bytes == 0) {
             // Transfer completed
             transferring = false;
 
@@ -175,8 +180,8 @@ void Hdma::save_state(Parcel& parcel) const {
     parcel.write_bool(transferring);
     parcel.write_uint16(source);
     parcel.write_uint16(destination);
-    parcel.write_uint16(length);
     parcel.write_uint16(cursor);
+    parcel.write_uint16(remaining_bytes);
     parcel.write_uint8(remaining_chunks.state);
     parcel.write_uint8(remaining_chunks.count);
 }
@@ -192,8 +197,8 @@ void Hdma::load_state(Parcel& parcel) {
     transferring = parcel.read_bool();
     source = parcel.read_uint16();
     destination = parcel.read_uint16();
-    length = parcel.read_uint16();
     cursor = parcel.read_uint16();
+    remaining_bytes = parcel.read_uint16();
     remaining_chunks.state = parcel.read_uint8();
     remaining_chunks.count = parcel.read_uint8();
 }
@@ -209,8 +214,8 @@ void Hdma::reset() {
     transferring = false;
     source = 0;
     destination = 0;
-    length = 0;
     cursor = 0;
+    remaining_bytes = 0;
     remaining_chunks.state = RemainingChunksUpdateState::None;
     remaining_chunks.count = 0xFF;
 }

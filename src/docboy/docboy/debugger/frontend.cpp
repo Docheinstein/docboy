@@ -2642,9 +2642,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
             b << yellow("Source") << "        :  " << hex(gb.hdma.source) << endl;
             b << yellow("Destination") << "   :  " << hex(gb.hdma.destination) << endl;
+            b << yellow("Cursor") << "        :  " << gb.hdma.cursor << endl;
+            b << yellow("Remaining") << "     :  " << gb.hdma.remaining_bytes << endl;
             b << yellow("Progress") << "      :  " << hex<uint16_t>(gb.hdma.source + gb.hdma.cursor) << " => "
-              << hex<uint16_t>(gb.hdma.destination + gb.hdma.cursor) << " [" << gb.hdma.cursor << "/" << gb.hdma.length
-              << "]" << endl;
+              << hex<uint16_t>(gb.hdma.destination + gb.hdma.cursor) << endl;
 
             b << yellow("Chunk Update") << "  :  ";
             b <<

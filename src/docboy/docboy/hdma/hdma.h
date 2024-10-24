@@ -87,12 +87,12 @@ private:
 
     uint16_t source {};
     uint16_t destination {};
-    uint16_t length {};
     uint16_t cursor {};
+    uint16_t remaining_bytes {};
 
     struct {
         RemainingChunksUpdateState::Type state {};
-        uint8_t count {};
+        uint16_t count {};
     } remaining_chunks;
 };
 

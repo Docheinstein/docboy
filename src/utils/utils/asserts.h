@@ -8,7 +8,7 @@
 #define ASSERT2(condition, message) (static_cast<bool>(condition) ? ((void)0) : FATALX(#condition + " : " + message))
 #define ASSERTN(_2, _1, func, ...) func
 #define ASSERT(...) ASSERTN(__VA_ARGS__, ASSERT2, ASSERT1)(__VA_ARGS__)
-#define ASSERT_NO_ENTRY() FATALX("CHECK_NO_ENTRY failed")
+#define ASSERT_NO_ENTRY() FATALX("ASSERT_NO_ENTRY failed")
 #define ASSERT_CODE(code)                                                                                              \
     do                                                                                                                 \
     code while (0)
