@@ -87,7 +87,7 @@ public:
 
     RunnerImpl& palette(const std::optional<Lcd::Palette>& palette) {
         if (palette) {
-            gb->lcd.set_palette(*palette);
+            gb->lcd.set_palette(Lcd::Palette {*palette});
         }
         return static_cast<RunnerImpl&>(*this);
     }

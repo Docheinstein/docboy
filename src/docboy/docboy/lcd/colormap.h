@@ -1,6 +1,7 @@
 #ifndef COLORMAP_H
 #define COLORMAP_H
 
+#include <array>
 #include <cstdint>
 
 #ifdef ENABLE_CGB

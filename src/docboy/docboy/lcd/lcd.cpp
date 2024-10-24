@@ -22,5 +22,5 @@ void Lcd::load_state(Parcel& parcel) {
 }
 
 Lcd::Lcd() {
-    palette = DEFAULT_PALETTE;
+    palette.assign(DEFAULT_PALETTE.begin(), DEFAULT_PALETTE.end());
 }

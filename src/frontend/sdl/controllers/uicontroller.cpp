@@ -73,7 +73,8 @@ void UiController::set_current_palette(size_t index) {
     current_palette = palettes[index];
 #ifndef ENABLE_CGB
     // TODO: CGB palettes?
-    core.gb.lcd.set_palette(current_palette.rgb565.palette);
+    core.gb.lcd.set_palette(
+        std::vector<uint16_t> {current_palette.rgb565.palette.begin(), current_palette.rgb565.palette.end()});
 #endif
 }
 
