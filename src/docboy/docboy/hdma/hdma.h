@@ -85,9 +85,16 @@ private:
 
     bool transferring {};
 
-    uint16_t source {};
-    uint16_t destination {};
-    uint16_t cursor {};
+    struct {
+        uint16_t address {};
+        uint16_t cursor {};
+    } source;
+
+    struct {
+        uint16_t address {};
+        uint16_t cursor {};
+    } destination;
+
     uint16_t remaining_bytes {};
 
     struct {

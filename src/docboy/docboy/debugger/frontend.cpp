@@ -2640,12 +2640,13 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 }()
               << endl;
 
-            b << yellow("Source") << "        :  " << hex(gb.hdma.source) << endl;
-            b << yellow("Destination") << "   :  " << hex(gb.hdma.destination) << endl;
-            b << yellow("Cursor") << "        :  " << gb.hdma.cursor << endl;
+            b << yellow("Source") << "        :  " << hex(gb.hdma.source.address) << endl;
+            b << yellow("Destination") << "   :  " << hex(gb.hdma.destination.address) << endl;
+            b << yellow("Src. Cursor") << "   :  " << gb.hdma.source.cursor << endl;
+            b << yellow("Dst. Cursor") << "   :  " << gb.hdma.destination.cursor << endl;
             b << yellow("Remaining") << "     :  " << gb.hdma.remaining_bytes << endl;
-            b << yellow("Progress") << "      :  " << hex<uint16_t>(gb.hdma.source + gb.hdma.cursor) << " => "
-              << hex<uint16_t>(gb.hdma.destination + gb.hdma.cursor) << endl;
+            b << yellow("Progress") << "      :  " << hex<uint16_t>(gb.hdma.source.address + gb.hdma.source.cursor)
+              << " => " << hex<uint16_t>(gb.hdma.destination.address + gb.hdma.destination.cursor) << endl;
 
             b << yellow("Chunk Update") << "  :  ";
             b <<

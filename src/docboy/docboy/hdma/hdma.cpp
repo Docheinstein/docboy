@@ -38,9 +38,23 @@ void Hdma::write_hdma5(uint8_t value) {
             // Aborts current HDMA transfer
             pause = PauseState::None;
         } else {
-            // Continue current HDMA transfer, but update the remaining amount of bytes to transfer.
-            // Note that the cursor is not reset in this case, therefore the transfer will continue
-            // from the address it was.
+            // Continue current HDMA transfer.
+
+            // Update the source address.
+            // The source cursor is reset only if the source address changes.
+            const uint16_t new_source = hdma1 << 8 | hdma2;
+            if (source.address != new_source) {
+                source.address = new_source;
+                source.cursor = 0;
+            }
+
+            // Update the destination address.
+            // The destination cursor is reset only if the destination address changes.
+            const uint16_t new_destination = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
+            if (destination.address != new_destination) {
+                destination.address = new_destination;
+                destination.cursor = 0;
+            }
         }
     } else {
         if (hblank_mode) {
@@ -53,17 +67,19 @@ void Hdma::write_hdma5(uint8_t value) {
             pause = PauseState::None;
         }
 
-        source = hdma1 << 8 | hdma2;
-        destination = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
-        cursor = 0;
+        source.address = hdma1 << 8 | hdma2;
+        source.cursor = 0;
+        destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
+        destination.cursor = 0;
     }
 
     transferring = false;
     remaining_bytes = 16 * (remaining_chunks.count + 1);
 
-    ASSERT(source < Specs::MemoryLayout::VRAM::START ||
-           (source >= Specs::MemoryLayout::RAM::START && source <= Specs::MemoryLayout::WRAM2::END));
-    ASSERT(destination >= Specs::MemoryLayout::VRAM::START && destination <= Specs::MemoryLayout::VRAM::END);
+    ASSERT(source.address < Specs::MemoryLayout::VRAM::START ||
+           (source.address >= Specs::MemoryLayout::RAM::START && source.address <= Specs::MemoryLayout::WRAM2::END));
+    ASSERT(destination.address >= Specs::MemoryLayout::VRAM::START &&
+           destination.address <= Specs::MemoryLayout::VRAM::END);
     ASSERT(remaining_bytes <= 0x800);
 }
 
@@ -81,10 +97,10 @@ inline bool Hdma::has_active_transfer() const {
 void Hdma::tick_t0() {
     if (transferring) {
         // Start read request for source data
-        mmu.read_request(source + cursor);
+        mmu.read_request(source.address + source.cursor);
 
         // Start write request for VRAM
-        vram.write_request(destination + cursor);
+        vram.write_request(destination.address + destination.cursor);
     }
 }
 
@@ -96,10 +112,13 @@ void Hdma::tick_t1() {
         // Actually write to VRAM
         vram.flush_write_request(src_data);
 
-        cursor++;
+        source.cursor++;
+        destination.cursor++;
+
         remaining_bytes--;
 
-        ASSERT(mod<2>(cursor) == 1);
+        ASSERT(mod<2>(source.cursor) == 1);
+        ASSERT(mod<2>(destination.cursor) == 1);
         ASSERT(mod<2>(remaining_bytes) == 1);
     }
 }
@@ -107,10 +126,10 @@ void Hdma::tick_t1() {
 void Hdma::tick_t2() {
     if (transferring) {
         // Start read request for source data
-        mmu.read_request(source + cursor);
+        mmu.read_request(source.address + source.cursor);
 
         // Start write request for VRAM
-        vram.write_request(destination + cursor);
+        vram.write_request(destination.address + destination.cursor);
     }
 }
 
@@ -122,10 +141,13 @@ void Hdma::tick_t3() {
         // Actually write to VRAM
         vram.flush_write_request(src_data);
 
-        cursor++;
+        source.cursor++;
+        destination.cursor++;
+
         remaining_bytes--;
 
-        ASSERT(mod<2>(cursor) == 0);
+        ASSERT(mod<2>(source.cursor) == 0);
+        ASSERT(mod<2>(destination.cursor) == 0);
         ASSERT(mod<2>(remaining_bytes) == 0);
 
         if (remaining_bytes == 0) {
@@ -136,7 +158,11 @@ void Hdma::tick_t3() {
             remaining_chunks.count = 0xFF;
         } else if (mode == TransferMode::HBlank) {
             // HDMA pauses each 16 bytes
-            if (mod<16>(cursor) == 0) {
+            if (mod<16>(source.cursor) == 0) {
+                // TODO: source and dest diverge?
+                //  Don't think so but write_hdma5 should take it into account for this not to happen.
+                ASSERT(mod<16>(destination.cursor) == 0);
+
                 // Pause transfer
                 transferring = false;
                 pause = PauseState::Paused;
@@ -178,9 +204,10 @@ void Hdma::save_state(Parcel& parcel) const {
     parcel.write_uint8(mode);
     parcel.write_uint8(pause);
     parcel.write_bool(transferring);
-    parcel.write_uint16(source);
-    parcel.write_uint16(destination);
-    parcel.write_uint16(cursor);
+    parcel.write_uint16(source.address);
+    parcel.write_uint16(source.cursor);
+    parcel.write_uint16(destination.address);
+    parcel.write_uint16(destination.cursor);
     parcel.write_uint16(remaining_bytes);
     parcel.write_uint8(remaining_chunks.state);
     parcel.write_uint8(remaining_chunks.count);
@@ -195,9 +222,10 @@ void Hdma::load_state(Parcel& parcel) {
     mode = parcel.read_uint8();
     pause = parcel.read_uint8();
     transferring = parcel.read_bool();
-    source = parcel.read_uint16();
-    destination = parcel.read_uint16();
-    cursor = parcel.read_uint16();
+    source.address = parcel.read_uint16();
+    source.cursor = parcel.read_uint16();
+    destination.address = parcel.read_uint16();
+    destination.cursor = parcel.read_uint16();
     remaining_bytes = parcel.read_uint16();
     remaining_chunks.state = parcel.read_uint8();
     remaining_chunks.count = parcel.read_uint8();
@@ -212,9 +240,10 @@ void Hdma::reset() {
     mode = TransferMode::GeneralPurpose;
     pause = PauseState::None;
     transferring = false;
-    source = 0;
-    destination = 0;
-    cursor = 0;
+    source.address = 0xFFFF;
+    source.cursor = 0;
+    destination.address = 0xFFFF;
+    destination.cursor = 0;
     remaining_bytes = 0;
     remaining_chunks.state = RemainingChunksUpdateState::None;
     remaining_chunks.count = 0xFF;
