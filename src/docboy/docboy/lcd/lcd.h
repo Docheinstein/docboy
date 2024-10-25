@@ -1,8 +1,8 @@
 #ifndef LCD_H
 #define LCD_H
 
+#include <array>
 #include <cstring>
-#include <vector>
 
 #include "docboy/common/macros.h"
 #include "docboy/common/specs.h"
@@ -33,17 +33,16 @@ public:
     static constexpr uint16_t PIXEL_COUNT = Specs::Display::WIDTH * Specs::Display::HEIGHT;
     static constexpr uint32_t PIXEL_BUFFER_SIZE = PIXEL_COUNT * sizeof(PixelRgb565);
 
-    // Note: do not use std::array here, as a big local variable is likely to cause stack overflow.
-    using Palette = std::vector<uint16_t>;
+    using Palette = std::array<uint16_t, NUM_COLORS>;
 
     Lcd();
 
-    explicit Lcd(Palette&& palette) :
-        palette {std::move(palette)} {
+    explicit Lcd(const Palette& palette) :
+        palette {palette} {
     }
 
-    void set_palette(Palette&& palette_) {
-        palette = std::move(palette_);
+    void set_palette(const Palette& palette_) {
+        palette = palette_;
     }
 
     void push_pixel(Pixel pixel) {

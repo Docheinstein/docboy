@@ -85,9 +85,9 @@ public:
         return static_cast<RunnerImpl&>(*this);
     }
 
-    RunnerImpl& palette(const std::optional<Lcd::Palette>& palette) {
+    RunnerImpl& palette(const Lcd::Palette* palette) {
         if (palette) {
-            gb->lcd.set_palette(Lcd::Palette {*palette});
+            gb->lcd.set_palette(*palette);
         }
         return static_cast<RunnerImpl&>(*this);
     }
@@ -362,7 +362,7 @@ using Inputs = std::vector<FramebufferRunner::JoypadInput>;
 struct FramebufferRunnerParams {
     using Param = std::variant<std::monostate,
 #ifndef ENABLE_CGB
-                               Lcd::Palette,
+                               const Lcd::Palette*,
 #endif
                                ColorTolerance, MaxTicks, StopAtInstruction, ForceCheck,
                                std::vector<FramebufferRunner::JoypadInput>>;
@@ -374,8 +374,8 @@ struct FramebufferRunnerParams {
 
         auto parseParam = [this](Param& param) {
 #ifndef ENABLE_CGB
-            if (std::holds_alternative<Lcd::Palette>(param)) {
-                palette = std::get<Lcd::Palette>(param);
+            if (std::holds_alternative<const Lcd::Palette*>(param)) {
+                palette = std::get<const Lcd::Palette*>(param);
             } else
 #endif
                 if (std::holds_alternative<ColorTolerance>(param)) {
@@ -397,7 +397,7 @@ struct FramebufferRunnerParams {
 
     std::string rom;
     std::string result;
-    std::optional<Lcd::Palette> palette {};
+    const Lcd::Palette* palette {};
     uint64_t max_ticks {DEFAULT_DURATION};
     std::optional<uint8_t> stop_at_instruction {};
     bool force_check {};
