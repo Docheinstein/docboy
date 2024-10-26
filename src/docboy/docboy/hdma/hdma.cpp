@@ -8,23 +8,35 @@ Hdma::Hdma(Mmu::View<Device::Hdma> mmu, VramBus::View<Device::Hdma> vram_bus) :
 
 void Hdma::write_hdma1(uint8_t value) {
     hdma1 = value;
+
+    // Reload new source address
     source.address = hdma1 << 8 | hdma2;
 }
 
 void Hdma::write_hdma2(uint8_t value) {
     hdma2 = discard_bits<4>(value);
+
+    // Reload new source address
     source.address = hdma1 << 8 | hdma2;
+
+    // Reset source cursor
     source.cursor = 0;
 }
 
 void Hdma::write_hdma3(uint8_t value) {
     hdma3 = keep_bits<5>(value);
+
+    // Reload new destination address
     destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
 }
 
 void Hdma::write_hdma4(uint8_t value) {
     hdma4 = discard_bits<4>(value);
+
+    // Reload new destination address
     destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
+
+    // Reset destination cursor.
     destination.cursor = 0;
 }
 
@@ -56,16 +68,17 @@ void Hdma::write_hdma5(uint8_t value) {
             mode = TransferMode::GeneralPurpose;
             pause = PauseState::None;
         }
-
-        source.address = hdma1 << 8 | hdma2;
-        source.cursor = 0;
-        destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
-        destination.cursor = 0;
     }
+
+    // Note that source and destination cursors are not reset here.
+    // They are just reset when writing HDMA2 (source) or HDMA4 (destination).
+    // Therefore, writing to HDMA5 without a previous writing to HDMA2/HDMA4 will
+    // proceed to transfer accordingly with the current cursors.
 
     transferring = false;
     remaining_bytes = 16 * (remaining_chunks.count + 1);
 
+    // TODO: source in VRAM?
     ASSERT(source.address < Specs::MemoryLayout::VRAM::START ||
            (source.address >= Specs::MemoryLayout::RAM::START && source.address <= Specs::MemoryLayout::WRAM2::END));
     ASSERT(destination.address >= Specs::MemoryLayout::VRAM::START &&
@@ -222,17 +235,17 @@ void Hdma::load_state(Parcel& parcel) {
 }
 
 void Hdma::reset() {
-    hdma1 = 0;
-    hdma2 = 0;
-    hdma3 = 0;
-    hdma4 = 0;
+    hdma1 = 0xD4;
+    hdma2 = 0x30;
+    hdma3 = 0x99;
+    hdma4 = 0xD0;
     request = RequestState::None;
     mode = TransferMode::GeneralPurpose;
     pause = PauseState::None;
     transferring = false;
-    source.address = 0xFFFF;
+    source.address = 0xD430;
     source.cursor = 0;
-    destination.address = 0xFFFF;
+    destination.address = 0x99D0;
     destination.cursor = 0;
     remaining_bytes = 0;
     remaining_chunks.state = RemainingChunksUpdateState::None;
