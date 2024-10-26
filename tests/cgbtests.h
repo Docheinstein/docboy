@@ -87,9 +87,26 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_restart_after_1_chunks_transferred_bytes_round0.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_after_1_chunks_transferred_bytes_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_after_1_chunks_transferred_bytes_round2.gbc", "docboy/ok.png"},
-            F {"docboy/hdma/hdma_restart_change_destination_address.gbc", "docboy/ok.png"},
-            F {"docboy/hdma/hdma_restart_change_source_address.gbc", "docboy/ok.png"},
-            F {"docboy/hdma/hdma_restart_change_source_and_destination_address.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_change_destination.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_change_source.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_change_source_and_destination.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_change_destination.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_change_source.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_change_source_and_destination.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_source_hdma1_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_source_hdma1_diff_revert.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_source_hdma1_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_source_hdma1_same_hdma2_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_source_hdma1_same_hdma2_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_source_hdma2_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_source_hdma2_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_destination_hdma3_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_destination_hdma3_diff_revert.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_destination_hdma3_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_destination_hdma3_same_hdma4_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_destination_hdma3_same_hdma4_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_destination_hdma4_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_restart_write_destination_hdma4_same.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_tima_timing_is_not_affected_by_instr_length_4_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_tima_timing_is_not_affected_by_instr_length_4_round2.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_tima_timing_is_not_affected_by_instr_length_12_round1.gbc", "docboy/ok.png"},
@@ -103,7 +120,15 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_tima_timing_is_not_affected_by_scx3_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_tima_timing_is_not_affected_by_scx3_round2.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_tima_timing_is_not_affected_by_scx4_round1.gbc", "docboy/ok.png"},
-            F {"docboy/hdma/hdma_tima_timing_is_not_affected_by_scx4_round2.gbc", "docboy/ok.png"}, );
+            F {"docboy/hdma/hdma_tima_timing_is_not_affected_by_scx4_round2.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_write_source_hdma1_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_write_source_hdma1_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_write_source_hdma2_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_write_source_hdma2_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_write_destination_hdma3_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_write_destination_hdma3_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_write_destination_hdma4_diff.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_write_destination_hdma4_same.gbc", "docboy/ok.png"}, );
     }
 
     SECTION("ir") {
@@ -211,9 +236,32 @@ TEST_CASE("cgb", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS(
+        RUN_TEST_ROMS(F {"docboy/hdma/hdma_restart_change_destination.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_change_source.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_change_source_and_destination.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_source_hdma1_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_source_hdma1_diff_revert.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_source_hdma1_same.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_source_hdma1_same_hdma2_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_source_hdma1_same_hdma2_same.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_source_hdma2_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_source_hdma2_same.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_write_source_hdma1_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_write_source_hdma1_same.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_write_source_hdma2_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_write_source_hdma2_same.gbc", "docboy/ok.png"},
 
-        );
+                      F {"docboy/hdma/hdma_restart_write_destination_hdma3_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_destination_hdma3_diff_revert.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_destination_hdma3_same.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_destination_hdma3_same_hdma4_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_destination_hdma3_same_hdma4_same.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_destination_hdma4_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_restart_write_destination_hdma4_same.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_write_destination_hdma3_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_write_destination_hdma3_same.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_write_destination_hdma4_diff.gbc", "docboy/ok.png"},
+                      F {"docboy/hdma/hdma_write_destination_hdma4_same.gbc", "docboy/ok.png"}, );
     }
 #endif
 }

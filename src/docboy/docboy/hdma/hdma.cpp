@@ -8,18 +8,24 @@ Hdma::Hdma(Mmu::View<Device::Hdma> mmu, VramBus::View<Device::Hdma> vram_bus) :
 
 void Hdma::write_hdma1(uint8_t value) {
     hdma1 = value;
+    source.address = hdma1 << 8 | hdma2;
 }
 
 void Hdma::write_hdma2(uint8_t value) {
     hdma2 = discard_bits<4>(value);
+    source.address = hdma1 << 8 | hdma2;
+    source.cursor = 0;
 }
 
 void Hdma::write_hdma3(uint8_t value) {
     hdma3 = keep_bits<5>(value);
+    destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
 }
 
 void Hdma::write_hdma4(uint8_t value) {
     hdma4 = discard_bits<4>(value);
+    destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
+    destination.cursor = 0;
 }
 
 uint8_t Hdma::read_hdma5() const {
@@ -39,22 +45,6 @@ void Hdma::write_hdma5(uint8_t value) {
             pause = PauseState::None;
         } else {
             // Continue current HDMA transfer.
-
-            // Update the source address.
-            // The source cursor is reset only if the source address changes.
-            const uint16_t new_source = hdma1 << 8 | hdma2;
-            if (source.address != new_source) {
-                source.address = new_source;
-                source.cursor = 0;
-            }
-
-            // Update the destination address.
-            // The destination cursor is reset only if the destination address changes.
-            const uint16_t new_destination = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
-            if (destination.address != new_destination) {
-                destination.address = new_destination;
-                destination.cursor = 0;
-            }
         }
     } else {
         if (hblank_mode) {
