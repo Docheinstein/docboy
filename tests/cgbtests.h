@@ -103,6 +103,8 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_restart_write_source_hdma1_same_hdma2_same.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_write_source_hdma2_diff.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_write_source_hdma2_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_switch_destination_vram_bank.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_switch_source_wram_bank.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_write_destination_hdma3_diff.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_write_destination_hdma3_diff_revert.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_write_destination_hdma3_same.gbc", "docboy/ok.png"},
