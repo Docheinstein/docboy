@@ -57,7 +57,7 @@ public:
 
     Wram1 wram1 {};
 #ifdef ENABLE_CGB
-    Wram2 wram2[8] {};
+    Wram2 wram2[7] {};
 #else
     Wram2 wram2[1] {};
 #endif

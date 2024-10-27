@@ -52,6 +52,7 @@ ExtBus::ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2* wram2) :
 
 #ifdef ENABLE_CGB
 void ExtBus::set_wram2_bank(uint8_t bank) {
+    ASSERT(bank < 8);
     wram2_bank = bank;
 }
 

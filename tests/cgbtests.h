@@ -66,6 +66,7 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_abort_after_0_chunks_remaining_length.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_abort_after_0_chunks_transferred_bytes.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_abort_after_1_chunks_remaining_length.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_abort_after_1_chunks_restart.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_abort_after_1_chunks_transferred_bytes.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_basic_transfer.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_hblank_timing_scx0_round1.gbc", "docboy/ok.png"},
