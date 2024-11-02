@@ -919,10 +919,6 @@ inline void Ppu::enter_hblank() {
 
     vram.release();
     oam.release();
-
-#ifdef ENABLE_CGB
-    hdma.resume();
-#endif
 }
 
 void Ppu::enter_vblank() {

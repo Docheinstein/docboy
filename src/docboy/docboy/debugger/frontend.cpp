@@ -2549,7 +2549,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << header("DMA", width) << endl;
 
         if (gb.dma.request.state != Dma::RequestState::None || gb.dma.transferring) {
-            b << yellow("Request") << "       :  ";
+            b << yellow("Request") << "            :  ";
             b <<
                 [this]() {
                     switch (gb.dma.request.state) {
@@ -2565,15 +2565,15 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 }()
               << endl;
 
-            b << yellow("Transfer") << "      :  " << (gb.dma.transferring ? green("In Progress") : darkgray("None"))
-              << endl;
-            b << yellow("Source") << "        :  " << hex(gb.dma.source) << endl;
-            b << yellow("Destination") << "   :  " << hex(gb.dma.source) << endl;
-            b << yellow("Progress") << "      :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
+            b << yellow("Transfer") << "           :  "
+              << (gb.dma.transferring ? green("Transferring") : darkgray("None")) << endl;
+            b << yellow("Source") << "             :  " << hex(gb.dma.source) << endl;
+            b << yellow("Destination") << "        :  " << hex(gb.dma.source) << endl;
+            b << yellow("Progress") << "           :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
               << hex<uint16_t>(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << gb.dma.cursor << "/"
               << "159]" << endl;
         } else {
-            b << yellow("State") << "         :  " << darkgray("None") << endl;
+            b << yellow("Transfer") << "           :  " << darkgray("None") << endl;
         }
 
         return b;
@@ -2586,29 +2586,27 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << header("HDMA", width) << endl;
 
-        if (gb.hdma.request != Hdma::RequestState::None || gb.hdma.pause != Hdma::PauseState::None ||
-            gb.hdma.remaining_chunks.state != Hdma::RemainingChunksUpdateState::None || gb.hdma.transferring) {
+        if (gb.hdma.has_active_transfer()) {
 
-            b << yellow("Request") << "       :  ";
+            b << yellow("Request Delay") << "      :  " << +gb.hdma.request_delay << endl;
+
+            b << yellow("Transfer") << "           :  ";
             b <<
                 [this]() {
-                    switch (gb.hdma.request) {
-                    case Hdma::RequestState::Requested:
-                        return green("Requested");
-                    case Hdma::RequestState::Pending:
-                        return green("Pending");
-                    case Hdma::RequestState::None:
-                        return darkgray("None");
+                    switch (gb.hdma.state) {
+                    case Hdma::TransferState::Transferring:
+                        return green("Transferring");
+                    case Hdma::TransferState::Paused:
+                        return green("Paused");
+                    case Hdma::TransferState::None:
+                        return Text {"None"};
                     }
                     ASSERT_NO_ENTRY();
                     return Text {};
                 }()
               << endl;
 
-            b << yellow("Transfer") << "      :  " << (gb.hdma.transferring ? green("In Progress") : darkgray("None"))
-              << endl;
-
-            b << yellow("Mode") << "          :  ";
+            b << yellow("Mode") << "               :  ";
             b <<
                 [this]() {
                     switch (gb.hdma.mode) {
@@ -2622,51 +2620,32 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 }()
               << endl;
 
-            b << yellow("Pause") << "         :  ";
+            b << yellow("Phase") << "              :  ";
             b <<
                 [this]() {
-                    switch (gb.hdma.pause) {
-                    case Hdma::PauseState::ResumeRequested:
-                        return green("Resume Requested");
-                    case Hdma::PauseState::ResumePending:
-                        return green("Resume Pending");
-                    case Hdma::PauseState::None:
-                        return darkgray("None");
-                    case Hdma::PauseState::Paused:
-                        return green("Paused");
+                    switch (gb.hdma.phase) {
+                    case Hdma::TransferPhase::Read:
+                        return Text {"Read"};
+                    case Hdma::TransferPhase::Write:
+                        return Text {"Write"};
                     }
                     ASSERT_NO_ENTRY();
                     return Text {};
                 }()
               << endl;
 
-            b << yellow("Source") << "        :  " << hex(gb.hdma.source.address) << endl;
-            b << yellow("Destination") << "   :  " << hex(gb.hdma.destination.address) << endl;
-            b << yellow("Src. Cursor") << "   :  " << gb.hdma.source.cursor << endl;
-            b << yellow("Dst. Cursor") << "   :  " << gb.hdma.destination.cursor << endl;
-            b << yellow("Remaining") << "     :  " << gb.hdma.remaining_bytes << endl;
-            b << yellow("Progress") << "      :  " << hex<uint16_t>(gb.hdma.source.address + gb.hdma.source.cursor)
+            b << yellow("Source") << "             :  " << hex(gb.hdma.source.address) << endl;
+            b << yellow("Destination") << "        :  " << hex(gb.hdma.destination.address) << endl;
+            b << yellow("Source Cursor") << "      :  " << gb.hdma.source.cursor << endl;
+            b << yellow("Dest. Cursor") << "       :  " << gb.hdma.destination.cursor << endl;
+            b << yellow("Rem. Bytes") << "         :  " << gb.hdma.remaining_bytes << endl;
+            b << yellow("Progress") << "           :  " << hex<uint16_t>(gb.hdma.source.address + gb.hdma.source.cursor)
               << " => " << hex<uint16_t>(gb.hdma.destination.address + gb.hdma.destination.cursor) << endl;
-
-            b << yellow("Chunk Update") << "  :  ";
-            b <<
-                [this]() {
-                    switch (gb.hdma.mode) {
-                    case Hdma::RemainingChunksUpdateState::Requested:
-                        return green("Requested");
-                    case Hdma::RemainingChunksUpdateState::Pending:
-                        return green("Pending");
-                    case Hdma::RemainingChunksUpdateState::None:
-                        return darkgray("None");
-                    }
-                    ASSERT_NO_ENTRY();
-                    return Text {};
-                }()
-              << endl;
+            b << yellow("Rem. Chunks") << "        :  " << +gb.hdma.remaining_chunks.count << endl;
+            b << yellow("Rem. Chunks Delay") << "  :  " << +gb.hdma.remaining_chunks.delay << endl;
         } else {
-            b << yellow("State") << "         :  " << darkgray("None") << endl;
+            b << yellow("Transfer") << "           :  " << darkgray("None") << endl;
         }
-
         return b;
     };
 #endif

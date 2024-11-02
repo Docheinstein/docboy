@@ -163,7 +163,7 @@ public:
     VramBankController vram_bank_controller {vram_bus};
     WramBankController wram_bank_controller {ext_bus};
 
-    Hdma hdma {mmu, vram_bus};
+    Hdma hdma {mmu, vram_bus, ppu.stat.mode};
     Infrared infrared {};
     UndocumentedRegisters undocumented_registers {};
 #endif
