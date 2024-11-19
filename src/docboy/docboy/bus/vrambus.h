@@ -14,20 +14,28 @@ public:
         }
 
         template <uint8_t Bank>
-        uint8_t read(uint16_t address) const;
+        uint8_t read(uint16_t address);
     };
 
     explicit VramBus(Vram* vram);
 
     template <Device::Type Dev, uint8_t Bank>
-    uint8_t read(uint16_t vram_address) const;
+    uint8_t read(uint16_t vram_address);
 
-    void save_state(Parcel& parcel) const;
-    void load_state(Parcel& parcel);
+    template <Device::Type Dev>
+    void write_request(uint16_t addr);
+
+    template <Device::Type Dev>
+    void flush_write_request(uint8_t value);
+
+    void tick();
 
 #ifdef ENABLE_CGB
     void set_vram_bank(bool bank);
 #endif
+
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
 
 private:
 #if ENABLE_CGB
@@ -36,6 +44,8 @@ private:
 #endif
 
     Vram* vram;
+
+    uint8_t readers {};
 
 #ifdef ENABLE_CGB
     bool vram_bank {};

@@ -1,8 +1,8 @@
 #include "docboy/hdma/hdma.h"
 
 namespace {
-constexpr uint8_t TRANSFER_REQUEST_DELAY = 5;
-constexpr uint8_t REMAINING_CHUNKS_UPDATE_DELAY = 11;
+int TRANSFER_REQUEST_DELAY = 7;
+int REMAINING_CHUNKS_UPDATE_DELAY = 9;
 } // namespace
 
 Hdma::Hdma(Mmu::View<Device::Hdma> mmu, VramBus::View<Device::Hdma> vram_bus, const UInt8& stat_mode) :
@@ -196,7 +196,7 @@ void Hdma::tick_t3() {
 
     // Update the state of the transfer at the end of each M-Cycle.
     // The CPU will be stalled if a transfer is either active or pending.
-    active_or_pending_transfer = state == TransferState::Transferring || request_delay > 0;
+    active_or_pending_transfer = state == TransferState::Transferring || (request_delay > 0 && request_delay < 5);
 }
 
 void Hdma::save_state(Parcel& parcel) const {
