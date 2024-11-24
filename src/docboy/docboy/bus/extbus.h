@@ -9,7 +9,12 @@ class CartridgeSlot;
 
 class ExtBus final : public Bus {
 public:
+    template <Device::Type Dev>
+    using View = BusView<ExtBus, Dev>;
+
     ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2* wram2);
+
+    void reset();
 
 #ifdef ENABLE_CGB
     void set_wram2_bank(uint8_t bank);

@@ -47,8 +47,11 @@ inline void Core::tick_t0() const {
 #ifdef ENABLE_CGB
     gb.hdma.tick_t0();
 #endif
-    gb.vram_bus.tick();
     gb.apu.tick_t0();
+    gb.ext_bus.tick();
+    gb.cpu_bus.tick();
+    gb.oam_bus.tick();
+    gb.vram_bus.tick();
 }
 
 inline void Core::tick_t1() const {
@@ -65,8 +68,11 @@ inline void Core::tick_t1() const {
 #ifdef ENABLE_CGB
     gb.hdma.tick_t1();
 #endif
-    gb.vram_bus.tick();
     gb.apu.tick_t1();
+    gb.ext_bus.tick();
+    gb.cpu_bus.tick();
+    gb.oam_bus.tick();
+    gb.vram_bus.tick();
 }
 
 inline void Core::tick_t2() const {
@@ -82,8 +88,11 @@ inline void Core::tick_t2() const {
 #ifdef ENABLE_CGB
     gb.hdma.tick_t2();
 #endif
-    gb.vram_bus.tick();
     gb.apu.tick_t2();
+    gb.ext_bus.tick();
+    gb.cpu_bus.tick();
+    gb.oam_bus.tick();
+    gb.vram_bus.tick();
 }
 
 inline void Core::tick_t3() const {
@@ -103,11 +112,14 @@ inline void Core::tick_t3() const {
 #ifdef ENABLE_CGB
     gb.hdma.tick_t3();
 #endif
-    gb.vram_bus.tick();
     gb.dma.tick_t3();
     gb.stop_controller.tick();
     gb.cartridge_slot.tick();
     gb.apu.tick_t3();
+    gb.ext_bus.tick();
+    gb.cpu_bus.tick();
+    gb.oam_bus.tick();
+    gb.vram_bus.tick();
 }
 
 void Core::_cycle() {

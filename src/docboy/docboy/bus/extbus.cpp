@@ -48,6 +48,15 @@ ExtBus::ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2* wram2) :
     for (uint16_t i = Specs::MemoryLayout::ECHO_RAM::START; i <= Specs::MemoryLayout::ECHO_RAM::END; i++) {
         memory_accessors[i] = &wram1[i - Specs::MemoryLayout::ECHO_RAM::START];
     }
+
+    reset();
+}
+
+void ExtBus::reset() {
+    Bus::reset();
+#ifdef ENABLE_CGB
+    wram2_bank = 0;
+#endif
 }
 
 #ifdef ENABLE_CGB

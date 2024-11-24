@@ -30,12 +30,14 @@ public:
 
     void tick();
 
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
+
+    void reset();
+
 #ifdef ENABLE_CGB
     void set_vram_bank(bool bank);
 #endif
-
-    void save_state(Parcel& parcel) const;
-    void load_state(Parcel& parcel);
 
 private:
 #if ENABLE_CGB

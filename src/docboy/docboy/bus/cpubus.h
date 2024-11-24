@@ -25,6 +25,9 @@ class Boot;
 class CpuBus final : public Bus {
 
 public:
+    template <Device::Type Dev>
+    using View = BusView<CpuBus, Dev>;
+
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,

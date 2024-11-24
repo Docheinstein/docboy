@@ -153,6 +153,16 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/gdma_ppu_on_pixel_transfer_conflict_relaxed_128_bytes_scx6.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_ppu_on_pixel_transfer_conflict_relaxed_128_bytes_scx7.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_source_bits.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_echo_ram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_from_vram_to_ram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_hram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_io.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_not_usable.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_oam.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_vram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_vram_call_in_hram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_vram_corruption.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_vram_jp_in_hram.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_tima_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_tima_timing_round2.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_transfer_length.gbc", "docboy/ok.png"},
@@ -291,6 +301,14 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_restart_write_source_hdma1_same_hdma2_same.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_write_source_hdma2_diff.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_write_source_hdma2_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx0.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx1.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx2.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx3.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx4.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx5.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx6.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx7.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_ly0_hblank_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_ly0_hblank_timing_round2.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_ly1_hblank_timing_round1.gbc", "docboy/ok.png"},
@@ -442,7 +460,6 @@ TEST_CASE("cgb", "[emulation]") {
 #else
     SECTION("wip") {
         RUN_TEST_ROMS(
-#if HDMA_TEST
             F {"docboy/hdma/gdma_basic_transfer.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_dest_bits.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_hblank_timing_scx0_round1.gbc", "docboy/ok.png"},
@@ -559,6 +576,16 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/gdma_ppu_on_pixel_transfer_conflict_relaxed_128_bytes_scx6.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_ppu_on_pixel_transfer_conflict_relaxed_128_bytes_scx7.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_source_bits.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_echo_ram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_from_vram_to_ram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_hram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_io.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_not_usable.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_oam.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_vram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_vram_call_in_hram.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_vram_corruption.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/gdma_source_vram_jp_in_hram.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_tima_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_tima_timing_round2.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_transfer_length.gbc", "docboy/ok.png"},
@@ -697,6 +724,14 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_restart_write_source_hdma1_same_hdma2_same.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_write_source_hdma2_diff.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_restart_write_source_hdma2_same.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx0.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx1.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx2.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx3.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx4.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx5.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx6.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_source_vram_scx7.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_ly0_hblank_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_ly0_hblank_timing_round2.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_ly1_hblank_timing_round1.gbc", "docboy/ok.png"},
@@ -736,9 +771,7 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_write_source_hdma1_diff.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_write_source_hdma1_same.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_write_source_hdma2_diff.gbc", "docboy/ok.png"},
-            F {"docboy/hdma/hdma_write_source_hdma2_same.gbc", "docboy/ok.png"},
-#endif
-        );
+            F {"docboy/hdma/hdma_write_source_hdma2_same.gbc", "docboy/ok.png"}, );
     }
 #endif
 }

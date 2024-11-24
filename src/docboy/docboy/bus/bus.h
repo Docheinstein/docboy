@@ -14,21 +14,26 @@ class Parcel;
 
 class IBus {};
 
-template <typename Bus, Device::Type Dev>
+template <typename BusType, Device::Type Dev>
 class BusView;
 
 class Bus : public IBus {
     DEBUGGABLE_CLASS()
 
 public:
-    template <typename Bus, Device::Type Dev>
-    using View = BusView<Bus, Dev>;
+    Bus();
+
+    template <typename BusType, Device::Type Dev>
+    using View = BusView<BusType, Dev>;
 
     template <Device::Type Dev>
     void read_request(uint16_t addr);
 
     template <Device::Type Dev>
     uint8_t flush_read_request();
+
+    template <Device::Type Dev>
+    uint8_t open_bus_read();
 
     template <Device::Type Dev>
     void write_request(uint16_t addr);
@@ -41,6 +46,8 @@ public:
     void write_bus(uint16_t address, uint8_t value);
 #endif
 
+    void tick();
+
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
 
@@ -48,6 +55,8 @@ public:
 
     uint8_t requests {};
     uint16_t address {};
+    uint8_t data {};
+    uint8_t decay {};
 
 protected:
     template <typename Function>
@@ -116,20 +125,22 @@ protected:
     MemoryAccess memory_accessors[UINT16_MAX + 1] {};
 };
 
-template <typename Bus, Device::Type Dev>
+template <typename BusType, Device::Type Dev>
 class BusView {
 public:
-    explicit BusView(Bus& bus) :
+    /* implicit */ BusView(BusType& bus) :
         bus(bus) {
     }
 
     void read_request(uint16_t addr);
     uint8_t flush_read_request();
+    uint8_t open_bus_read();
+
     void write_request(uint16_t addr);
     void flush_write_request(uint8_t value);
 
 protected:
-    Bus& bus;
+    BusType& bus;
 };
 
 #include "docboy/bus/bus.tpp"

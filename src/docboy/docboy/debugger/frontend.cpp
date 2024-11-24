@@ -2509,6 +2509,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             return requests ? hex(address) : darkgray(hex(address));
         };
 
+        const auto decay_time = [](uint8_t decay) {
+            return decay ? Text {decay} : darkgray(decay);
+        };
+
 #ifdef ENABLE_CGB
         b << "                     " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("HDMA")
           << " |  " << magenta("PPU")
@@ -2520,23 +2524,31 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << cyan("EXT Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << bus_requests(gb.ext_bus.requests) << endl;
         b << "  " << yellow("Address") << "   :  " << bus_address(gb.ext_bus.address, gb.ext_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.ext_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.ext_bus.decay) << endl;
         b << endl;
 
         b << cyan("CPU Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << bus_requests(gb.cpu_bus.requests) << endl;
         b << "  " << yellow("Address") << "   :  " << bus_address(gb.cpu_bus.address, gb.cpu_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.cpu_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.cpu_bus.decay) << endl;
         b << endl;
 
         b << cyan("VRAM Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << bus_requests(gb.vram_bus.requests) << endl;
         b << "  " << yellow("Acquired") << "  :       " << bus_acquirers(gb.vram_bus.acquirers) << endl;
         b << "  " << yellow("Address") << "   :  " << bus_address(gb.vram_bus.address, gb.vram_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.vram_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.vram_bus.decay) << endl;
         b << endl;
 
         b << cyan("OAM Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << bus_requests(gb.oam_bus.requests) << endl;
         b << "  " << yellow("Acquired") << "  :       " << bus_acquirers(gb.oam_bus.acquirers) << endl;
         b << "  " << yellow("Address") << "   :  " << bus_address(gb.oam_bus.address, gb.oam_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.oam_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.oam_bus.decay) << endl;
         b << endl;
 
         return b;
@@ -2586,8 +2598,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << header("HDMA", width) << endl;
 
-        if (gb.hdma.has_active_transfer()) {
-
+        if (gb.hdma.has_active_transfer() || gb.hdma.has_active_or_pending_transfer()) {
+            b << yellow("Blocking CPU") << "       :  " << +gb.hdma.has_active_or_pending_transfer() << endl;
             b << yellow("Request Delay") << "      :  " << +gb.hdma.request_delay << endl;
 
             b << yellow("Transfer") << "           :  ";

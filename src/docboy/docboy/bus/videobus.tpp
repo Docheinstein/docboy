@@ -74,23 +74,23 @@ void VideoBus<Impl>::reset() {
     acquirers = 0;
 }
 
-template<typename Bus, Device::Type Dev>
-void VideoBusView<Bus, Dev>::acquire() {
+template<typename BusType, Device::Type Dev>
+void VideoBusView<BusType, Dev>::acquire() {
     this->bus.template acquire<Dev>();
 }
 
-template<typename Bus, Device::Type Dev>
-void VideoBusView<Bus, Dev>::release() {
+template<typename BusType, Device::Type Dev>
+void VideoBusView<BusType, Dev>::release() {
     this->bus.template release<Dev>();
 }
 
-template<typename Bus, Device::Type Dev>
+template<typename BusType, Device::Type Dev>
 template<Device::Type SomeDev>
-bool VideoBusView<Bus, Dev>::is_acquired_by() const {
+bool VideoBusView<BusType, Dev>::is_acquired_by() const {
     return this->bus.template is_acquired_by<SomeDev>();
 }
 
-template<typename Bus, Device::Type Dev>
-bool VideoBusView<Bus, Dev>::is_acquired_by_this() const {
+template<typename BusType, Device::Type Dev>
+bool VideoBusView<BusType, Dev>::is_acquired_by_this() const {
     return this->bus.template is_acquired_by<Dev>();
 }

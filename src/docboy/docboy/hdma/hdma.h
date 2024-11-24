@@ -3,18 +3,18 @@
 
 #include <cstdint>
 
+#include "docboy/bus/extbus.h"
 #include "docboy/bus/vrambus.h"
 #include "docboy/common/macros.h"
 #include "docboy/mmu/mmu.h"
 
-class OamBus;
 class Parcel;
 
 class Hdma {
     DEBUGGABLE_CLASS()
 
 public:
-    explicit Hdma(Mmu::View<Device::Hdma> mmu, VramBus::View<Device::Hdma> vram_bus, const UInt8& stat_mode);
+    Hdma(ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus, const UInt8& stat_mode);
 
     void write_hdma1(uint8_t value);
     void write_hdma2(uint8_t value);
@@ -62,7 +62,7 @@ private:
 
     bool has_active_transfer() const;
 
-    Mmu::View<Device::Hdma> mmu;
+    ExtBus::View<Device::Hdma> ext_bus;
     VramBus::View<Device::Hdma> vram;
 
     const UInt8& stat_mode;
@@ -84,6 +84,7 @@ private:
     struct {
         uint16_t address {};
         uint16_t cursor {};
+        bool valid {};
     } source;
 
     struct {

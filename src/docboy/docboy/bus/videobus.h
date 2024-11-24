@@ -5,7 +5,7 @@
 
 class Parcel;
 
-template <typename Bus, Device::Type Dev>
+template <typename BusType, Device::Type Dev>
 class VideoBusView;
 
 template <typename Impl>
@@ -42,11 +42,11 @@ private:
     uint8_t acquirers {};
 };
 
-template <typename Bus, Device::Type Dev>
-class VideoBusView : public BusView<Bus, Dev> {
+template <typename BusType, Device::Type Dev>
+class VideoBusView : public BusView<BusType, Dev> {
 public:
-    /* implicit */ VideoBusView(Bus& bus) :
-        BusView<Bus, Dev>(bus) {
+    /* implicit */ VideoBusView(BusType& bus) :
+        BusView<BusType, Dev>(bus) {
     }
 
     void acquire();

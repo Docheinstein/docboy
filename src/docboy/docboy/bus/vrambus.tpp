@@ -15,6 +15,7 @@ uint8_t VramBus::read(uint16_t vram_address) {
 
 template <Device::Type Dev>
 void VramBus::flush_write_request(uint8_t value) {
+#ifdef ENABLE_CGB
     if constexpr (Dev == Device::Hdma) {
         // HDMA fails to write if PPU is reading from VRAM.
         if (!test_bit<W<Device::Hdma>>(requests)) {
@@ -28,12 +29,13 @@ void VramBus::flush_write_request(uint8_t value) {
             return;
         }
     }
-
+#endif
     VideoBus<VramBus>::flush_write_request<Dev>(value);
 }
 
 template <Device::Type Dev>
 void VramBus::write_request(uint16_t addr) {
+#ifdef ENABLE_CGB
     if constexpr (Dev == Device::Hdma) {
         // TODO: sometimes write happens and goes to a different address instead.
         if (test_bit<Device::Ppu>(readers)) {
@@ -41,7 +43,7 @@ void VramBus::write_request(uint16_t addr) {
             return;
         }
     }
-
+#endif
     VideoBus<VramBus>::write_request<Dev>(addr);
 }
 

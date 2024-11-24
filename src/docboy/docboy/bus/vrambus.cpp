@@ -16,13 +16,9 @@ VramBus::VramBus(Vram* vram) :
         memory_accessors[i] = &vram[0][i - Specs::MemoryLayout::VRAM::START];
     }
 #endif
-}
 
-#ifdef ENABLE_CGB
-void VramBus::set_vram_bank(bool bank) {
-    vram_bank = bank;
+    reset();
 }
-#endif
 
 void VramBus::save_state(Parcel& parcel) const {
     VideoBus::save_state(parcel);
@@ -39,6 +35,20 @@ void VramBus::load_state(Parcel& parcel) {
     vram_bank = parcel.read_bool();
 #endif
 }
+
+void VramBus::reset() {
+    VideoBus::reset();
+    readers = 0;
+#ifdef ENABLE_CGB
+    vram_bank = false;
+#endif
+}
+
+#ifdef ENABLE_CGB
+void VramBus::set_vram_bank(bool bank) {
+    vram_bank = bank;
+}
+#endif
 
 #ifdef ENABLE_CGB
 uint8_t VramBus::read_vram(uint16_t address) const {

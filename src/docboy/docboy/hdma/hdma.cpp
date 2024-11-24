@@ -1,12 +1,12 @@
 #include "docboy/hdma/hdma.h"
 
 namespace {
-int TRANSFER_REQUEST_DELAY = 7;
-int REMAINING_CHUNKS_UPDATE_DELAY = 9;
+constexpr int TRANSFER_REQUEST_DELAY = 7;
+constexpr int REMAINING_CHUNKS_UPDATE_DELAY = 9;
 } // namespace
 
-Hdma::Hdma(Mmu::View<Device::Hdma> mmu, VramBus::View<Device::Hdma> vram_bus, const UInt8& stat_mode) :
-    mmu {mmu},
+Hdma::Hdma(ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus, const UInt8& stat_mode) :
+    ext_bus {ext_bus},
     vram {vram_bus},
     stat_mode {stat_mode} {
     reset();
@@ -70,12 +70,12 @@ void Hdma::write_hdma5(uint8_t value) {
 
             if (stat_mode == Specs::Ppu::Modes::HBLANK) {
                 // Start instantly
-                request_delay = TRANSFER_REQUEST_DELAY; /* 4-7 */
+                request_delay = TRANSFER_REQUEST_DELAY;
             }
         } else {
             state = TransferState::None;
             mode = TransferMode::GeneralPurpose;
-            request_delay = TRANSFER_REQUEST_DELAY; /* 4-7 */
+            request_delay = TRANSFER_REQUEST_DELAY;
         }
     }
 
@@ -86,9 +86,7 @@ void Hdma::write_hdma5(uint8_t value) {
 
     remaining_bytes = 16 * (remaining_chunks.count + 1);
 
-    // TODO: source in VRAM?
-    ASSERT(source.address < Specs::MemoryLayout::VRAM::START ||
-           (source.address >= Specs::MemoryLayout::RAM::START && source.address <= Specs::MemoryLayout::WRAM2::END));
+    // TODO: destination outside VRAM
     ASSERT(destination.address >= Specs::MemoryLayout::VRAM::START &&
            destination.address <= Specs::MemoryLayout::VRAM::END);
     ASSERT(remaining_bytes <= 0x800);
@@ -103,8 +101,18 @@ inline bool Hdma::has_active_transfer() const {
 void Hdma::tick() {
     if (phase == TransferPhase::Read) {
         if (state == TransferState::Transferring) {
-            // Start read request for source data
-            mmu.read_request(source.address + source.cursor);
+            // Start read request for source data.
+            // HDMA reads from EXT bus at the current source address only if the source address
+            // is within a valid range, either [0x0000, 0x7FFF] or [0xA000, 0xDFF0].
+            // Otherwise, it reads the open bus data from EXT bus.
+            const uint16_t source_address = source.address + source.cursor;
+            source.valid = source_address < Specs::MemoryLayout::VRAM::START ||
+                           (source_address >= Specs::MemoryLayout::RAM::START &&
+                            source_address <= Specs::MemoryLayout::WRAM2::END);
+
+            if (source.valid) {
+                ext_bus.read_request(source.address + source.cursor);
+            }
 
             // Start write request for VRAM
             vram.write_request(destination.address + destination.cursor);
@@ -117,7 +125,7 @@ void Hdma::tick() {
 
         if (state == TransferState::Transferring) {
             // Complete read request and actually read source data
-            const uint8_t src_data = mmu.flush_read_request();
+            const uint8_t src_data = source.valid ? ext_bus.flush_read_request() : ext_bus.open_bus_read();
 
             // Actually write to VRAM
             vram.flush_write_request(src_data);
@@ -196,7 +204,9 @@ void Hdma::tick_t3() {
 
     // Update the state of the transfer at the end of each M-Cycle.
     // The CPU will be stalled if a transfer is either active or pending.
-    active_or_pending_transfer = state == TransferState::Transferring || (request_delay > 0 && request_delay < 5);
+    // TODO: this timing works but seems too complex, check further what happens inside.
+    active_or_pending_transfer = state == TransferState::Transferring || (request_delay > 0 && request_delay < 4) ||
+                                 (remaining_chunks.delay > 7);
 }
 
 void Hdma::save_state(Parcel& parcel) const {
@@ -212,6 +222,7 @@ void Hdma::save_state(Parcel& parcel) const {
     parcel.write_uint8(phase);
     parcel.write_uint16(source.address);
     parcel.write_uint16(source.cursor);
+    parcel.write_bool(source.valid);
     parcel.write_uint16(destination.address);
     parcel.write_uint16(destination.cursor);
     parcel.write_uint16(remaining_bytes);
@@ -233,6 +244,7 @@ void Hdma::load_state(Parcel& parcel) {
     phase = parcel.read_uint8();
     source.address = parcel.read_uint16();
     source.cursor = parcel.read_uint16();
+    source.valid = parcel.read_bool();
     destination.address = parcel.read_uint16();
     destination.cursor = parcel.read_uint16();
     remaining_bytes = parcel.read_uint16();
@@ -254,6 +266,7 @@ void Hdma::reset() {
     phase = TransferPhase::Read;
     source.address = 0xD430;
     source.cursor = 0;
+    source.valid = false;
     destination.address = 0x99D0;
     destination.cursor = 0;
     remaining_bytes = 0;
