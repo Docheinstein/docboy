@@ -1,6 +1,6 @@
 #include "docboy/banks/wrambankcontroller.h"
 
-#include "docboy/bus/extbus.h"
+#include "docboy/bus/wrambus.h"
 
 uint8_t WramBankController::read_svbk() const {
     return 0xF8 | svbk.bank;
@@ -12,7 +12,7 @@ void WramBankController::write_svbk(uint8_t value) {
     // Note: both SVBK=0 and SVBK=1 are mapped to the same WRAM2 bank
     const uint8_t wram2_bank = svbk.bank > 0 ? svbk.bank - 1 : 0;
 
-    ext_bus.set_wram2_bank(wram2_bank);
+    wram_bus.set_wram2_bank(wram2_bank);
 }
 
 void WramBankController::save_state(Parcel& parcel) const {

@@ -31,6 +31,7 @@
 #ifdef ENABLE_CGB
 #include "docboy/banks/vrambankcontroller.h"
 #include "docboy/banks/wrambankcontroller.h"
+#include "docboy/bus/wrambus.h"
 #include "docboy/hdma/hdma.h"
 #include "docboy/ir/infrared.h"
 #include "docboy/undoc/undocregs.h"
@@ -84,7 +85,16 @@ public:
     Interrupts interrupts {};
 
     // Buses
+#ifdef ENABLE_CGB
+    ExtBus ext_bus {cartridge_slot};
+#else
     ExtBus ext_bus {cartridge_slot, wram1, wram2};
+#endif
+
+#ifdef ENABLE_CGB
+    WramBus wram_bus {wram1, wram2};
+#endif
+
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
     CpuBus cpu_bus {
@@ -132,9 +142,17 @@ public:
 
     // MMU
 #if ENABLE_BOOTROM
+#ifdef ENABLE_CGB
+    Mmu mmu {*boot_rom, ext_bus, wram_bus, cpu_bus, vram_bus, oam_bus};
+#else
     Mmu mmu {*boot_rom, ext_bus, cpu_bus, vram_bus, oam_bus};
+#endif
+#else
+#ifdef ENABLE_CGB
+    Mmu mmu {ext_bus, wram_bus, cpu_bus, vram_bus, oam_bus};
 #else
     Mmu mmu {ext_bus, cpu_bus, vram_bus, oam_bus};
+#endif
 #endif
 
     // DMA
@@ -161,9 +179,9 @@ public:
 
 #ifdef ENABLE_CGB
     VramBankController vram_bank_controller {vram_bus};
-    WramBankController wram_bank_controller {ext_bus};
+    WramBankController wram_bank_controller {wram_bus};
 
-    Hdma hdma {ext_bus, vram_bus, ppu.stat.mode};
+    Hdma hdma {mmu, ext_bus, vram_bus, ppu.stat.mode};
     Infrared infrared {};
     UndocumentedRegisters undocumented_registers {};
 #endif

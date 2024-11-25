@@ -5,7 +5,9 @@ constexpr int TRANSFER_REQUEST_DELAY = 7;
 constexpr int REMAINING_CHUNKS_UPDATE_DELAY = 9;
 } // namespace
 
-Hdma::Hdma(ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus, const UInt8& stat_mode) :
+Hdma::Hdma(Mmu::View<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
+           const UInt8& stat_mode) :
+    mmu {mmu},
     ext_bus {ext_bus},
     vram {vram_bus},
     stat_mode {stat_mode} {
@@ -102,8 +104,8 @@ void Hdma::tick() {
     if (phase == TransferPhase::Read) {
         if (state == TransferState::Transferring) {
             // Start read request for source data.
-            // HDMA reads from EXT bus at the current source address only if the source address
-            // is within a valid range, either [0x0000, 0x7FFF] or [0xA000, 0xDFF0].
+            // HDMA reads real data only if the source address is within a valid range,
+            // either [0x0000, 0x7FFF] or [0xA000, 0xDFF0].
             // Otherwise, it reads the open bus data from EXT bus.
             const uint16_t source_address = source.address + source.cursor;
             source.valid = source_address < Specs::MemoryLayout::VRAM::START ||
@@ -111,7 +113,7 @@ void Hdma::tick() {
                             source_address <= Specs::MemoryLayout::WRAM2::END);
 
             if (source.valid) {
-                ext_bus.read_request(source.address + source.cursor);
+                mmu.read_request(source.address + source.cursor);
             }
 
             // Start write request for VRAM
@@ -125,7 +127,7 @@ void Hdma::tick() {
 
         if (state == TransferState::Transferring) {
             // Complete read request and actually read source data
-            const uint8_t src_data = source.valid ? ext_bus.flush_read_request() : ext_bus.open_bus_read();
+            const uint8_t src_data = source.valid ? mmu.flush_read_request() : ext_bus.open_bus_read();
 
             // Actually write to VRAM
             vram.flush_write_request(src_data);

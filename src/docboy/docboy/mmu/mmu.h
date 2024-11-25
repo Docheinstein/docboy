@@ -11,6 +11,7 @@
 
 class ExtBus;
 class CpuBus;
+class WramBus;
 class OamBus;
 class VramBus;
 class Parcel;
@@ -27,9 +28,17 @@ public:
     using View = MmuView<Dev>;
 
 #ifdef ENABLE_BOOTROM
+#ifdef ENABLE_CGB
+    Mmu(BootRom& boot_rom, ExtBus& ext_bus, WramBus& wram_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
+#else
     Mmu(BootRom& boot_rom, ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
+#endif
+#else
+#ifdef ENABLE_CGB
+    Mmu(ExtBus& ext_bus, WramBus& wram_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
 #else
     Mmu(ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
+#endif
 #endif
 
     template <Device::Type>
@@ -113,6 +122,9 @@ private:
 #endif
 
     ExtBus& ext_bus;
+#ifdef ENABLE_CGB
+    WramBus& wram_bus;
+#endif
     CpuBus& cpu_bus;
     VramBus& vram_bus;
     OamBus& oam_bus;

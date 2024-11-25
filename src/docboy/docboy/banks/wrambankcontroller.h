@@ -6,12 +6,12 @@
 
 #include "utils/parcel.h"
 
-class ExtBus;
+class WramBus;
 
 class WramBankController {
 public:
-    explicit WramBankController(ExtBus& ext_bus) :
-        ext_bus {ext_bus} {
+    explicit WramBankController(WramBus& wram_bus) :
+        wram_bus {wram_bus} {
     }
 
     uint8_t read_svbk() const;
@@ -27,7 +27,7 @@ public:
     } svbk {};
 
 private:
-    ExtBus& ext_bus;
+    WramBus& wram_bus;
 };
 
 #endif // VRANBANKCONTROLLER_H

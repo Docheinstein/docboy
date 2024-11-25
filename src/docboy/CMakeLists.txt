@@ -20,6 +20,8 @@ target_sources(docboy PRIVATE
         docboy/bus/vrambus.cpp
         docboy/bus/vrambus.h
         docboy/bus/vrambus.tpp
+        docboy/bus/wrambus.cpp
+        docboy/bus/wrambus.h
         docboy/cartridge/cartridge.h
         docboy/cartridge/factory.cpp
         docboy/cartridge/factory.h

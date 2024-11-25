@@ -6,6 +6,7 @@
 #include "docboy/bus/extbus.h"
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
+#include "docboy/bus/wrambus.h"
 
 #include "utils/arrays.h"
 #include "utils/parcel.h"
@@ -19,12 +20,24 @@ constexpr uint8_t STATE_REQUEST_OAM_BUS = 4;
 } // namespace
 
 #ifdef ENABLE_BOOTROM
+#ifdef ENABLE_CGB
+Mmu::Mmu(BootRom& boot_rom, ExtBus& ext_bus, WramBus& wram_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus) :
+    boot_rom {boot_rom},
+#else
 Mmu::Mmu(BootRom& boot_rom, ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus) :
     boot_rom {boot_rom},
+#endif
+#else
+#ifdef ENABLE_CGB
+Mmu::Mmu(ExtBus& ext_bus, WramBus& wram_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus) :
 #else
 Mmu::Mmu(ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus) :
 #endif
+#endif
     ext_bus {ext_bus},
+#ifdef ENABLE_CGB
+    wram_bus {wram_bus},
+#endif
     cpu_bus {cpu_bus},
     vram_bus {vram_bus},
     oam_bus {oam_bus} {
@@ -58,17 +71,29 @@ Mmu::Mmu(ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus) :
 
     /* 0xC000 - 0xCFFF */
     for (uint16_t i = Specs::MemoryLayout::WRAM1::START; i <= Specs::MemoryLayout::WRAM1::END; i++) {
+#ifdef ENABLE_CGB
+        init_accessors(i, &wram_bus);
+#else
         init_accessors(i, &ext_bus);
+#endif
     }
 
     /* 0xD000 - 0xDFFF */
     for (uint16_t i = Specs::MemoryLayout::WRAM2::START; i <= Specs::MemoryLayout::WRAM2::END; i++) {
+#ifdef ENABLE_CGB
+        init_accessors(i, &wram_bus);
+#else
         init_accessors(i, &ext_bus);
+#endif
     }
 
     /* 0xE000 - 0xFDFF */
     for (uint16_t i = Specs::MemoryLayout::ECHO_RAM::START; i <= Specs::MemoryLayout::ECHO_RAM::END; i++) {
+#ifdef ENABLE_CGB
+        init_accessors(i, &wram_bus);
+#else
         init_accessors(i, &ext_bus);
+#endif
     }
 
     /* 0xFE00 - 0xFE9F */

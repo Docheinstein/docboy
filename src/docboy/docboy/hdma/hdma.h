@@ -14,7 +14,8 @@ class Hdma {
     DEBUGGABLE_CLASS()
 
 public:
-    Hdma(ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus, const UInt8& stat_mode);
+    Hdma(MmuView<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
+         const UInt8& stat_mode);
 
     void write_hdma1(uint8_t value);
     void write_hdma2(uint8_t value);
@@ -62,6 +63,7 @@ private:
 
     bool has_active_transfer() const;
 
+    Mmu::View<Device::Hdma> mmu;
     ExtBus::View<Device::Hdma> ext_bus;
     VramBus::View<Device::Hdma> vram;
 
