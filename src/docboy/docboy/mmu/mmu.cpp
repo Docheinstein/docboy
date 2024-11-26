@@ -17,6 +17,9 @@ constexpr uint8_t STATE_REQUEST_EXT_BUS = 1;
 constexpr uint8_t STATE_REQUEST_CPU_BUS = 2;
 constexpr uint8_t STATE_REQUEST_VRAM_BUS = 3;
 constexpr uint8_t STATE_REQUEST_OAM_BUS = 4;
+#ifdef ENABLE_CGB
+constexpr uint8_t STATE_REQUEST_WRAM_BUS = 5;
+#endif
 } // namespace
 
 #ifdef ENABLE_BOOTROM
@@ -174,6 +177,11 @@ void Mmu::save_state(Parcel& parcel) const {
             if (bus == &oam_bus) {
                 return STATE_REQUEST_OAM_BUS;
             }
+#ifdef ENABLE_CGB
+            if (bus == &wram_bus) {
+                return STATE_REQUEST_WRAM_BUS;
+            }
+#endif
 
             ASSERT_NO_ENTRY();
             return (uint8_t)0;
@@ -196,7 +204,7 @@ void Mmu::load_state(Parcel& parcel) {
                 return nullptr;
             }
             if (value == STATE_REQUEST_EXT_BUS) {
-                return &bus_accessors[device][Specs::MemoryLayout::WRAM1::START];
+                return &bus_accessors[device][Specs::MemoryLayout::ROM0::START];
             }
             if (value == STATE_REQUEST_CPU_BUS) {
                 return &bus_accessors[device][Specs::MemoryLayout::HRAM::START];
@@ -207,7 +215,11 @@ void Mmu::load_state(Parcel& parcel) {
             if (value == STATE_REQUEST_OAM_BUS) {
                 return &bus_accessors[device][Specs::MemoryLayout::OAM::START];
             }
-
+#ifdef ENABLE_CGB
+            if (value == STATE_REQUEST_WRAM_BUS) {
+                return &bus_accessors[device][Specs::MemoryLayout::WRAM1::START];
+            }
+#endif
             ASSERT_NO_ENTRY();
             return nullptr;
         }(parcel.read_uint8());
