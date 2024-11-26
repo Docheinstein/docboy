@@ -87,10 +87,6 @@ void Hdma::write_hdma5(uint8_t value) {
     // proceed to transfer accordingly with the current cursors.
 
     remaining_bytes = 16 * (remaining_chunks.count + 1);
-
-    // TODO: destination outside VRAM
-    ASSERT(destination.address >= Specs::MemoryLayout::VRAM::START &&
-           destination.address <= Specs::MemoryLayout::VRAM::END);
     ASSERT(remaining_bytes <= 0x800);
 }
 
@@ -113,11 +109,16 @@ void Hdma::tick() {
                             source_address <= Specs::MemoryLayout::WRAM2::END);
 
             if (source.valid) {
-                mmu.read_request(source.address + source.cursor);
+                mmu.read_request(source_address);
             }
 
-            // Start write request for VRAM
-            vram.write_request(destination.address + destination.cursor);
+            // Start write request for VRAM.
+            // Destination address overflows with modulo 0x2000.
+            const uint16_t destination_address_slack = (destination.address + destination.cursor) & 0x1FFF;
+            const uint16_t destination_address = Specs::MemoryLayout::VRAM::START | destination_address_slack;
+            ASSERT(destination_address >= Specs::MemoryLayout::VRAM::START &&
+                   destination_address <= Specs::MemoryLayout::VRAM::END);
+            vram.write_request(destination_address);
 
             phase = TransferPhase::Write;
         }

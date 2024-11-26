@@ -2580,7 +2580,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             b << yellow("Transfer") << "           :  "
               << (gb.dma.transferring ? green("Transferring") : darkgray("None")) << endl;
             b << yellow("Source") << "             :  " << hex(gb.dma.source) << endl;
-            b << yellow("Destination") << "        :  " << hex(gb.dma.source) << endl;
             b << yellow("Progress") << "           :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
               << hex<uint16_t>(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << gb.dma.cursor << "/"
               << "159]" << endl;
@@ -2648,8 +2647,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
             b << yellow("Source") << "             :  " << hex(gb.hdma.source.address) << endl;
             b << yellow("Destination") << "        :  " << hex(gb.hdma.destination.address) << endl;
-            b << yellow("Source Cursor") << "      :  " << gb.hdma.source.cursor << endl;
-            b << yellow("Dest. Cursor") << "       :  " << gb.hdma.destination.cursor << endl;
             b << yellow("Rem. Bytes") << "         :  " << gb.hdma.remaining_bytes << endl;
             b << yellow("Progress") << "           :  " << hex<uint16_t>(gb.hdma.source.address + gb.hdma.source.cursor)
               << " => " << hex<uint16_t>(gb.hdma.destination.address + gb.hdma.destination.cursor) << endl;
