@@ -43,6 +43,10 @@
 
 class GameBoy {
 public:
+    // Status
+    bool halted {};
+    bool stopped {};
+
 #ifdef ENABLE_BOOTROM
     explicit GameBoy(std::unique_ptr<BootRom> boot_rom) :
         boot_rom {std::move(boot_rom)} {
@@ -160,7 +164,7 @@ public:
 
     // CPU
     Idu idu {oam_bus};
-    Cpu cpu {idu, interrupts, mmu, joypad, stop_controller};
+    Cpu cpu {idu, interrupts, mmu, joypad, halted, stop_controller};
 
     // Video
     Lcd lcd {};
@@ -174,14 +178,13 @@ public:
     Apu apu {timers};
 
     // Power Saving
-    bool stopped {};
     StopController stop_controller {stopped, joypad, timers, lcd};
 
 #ifdef ENABLE_CGB
     VramBankController vram_bank_controller {vram_bus};
     WramBankController wram_bank_controller {wram_bus};
 
-    Hdma hdma {mmu, ext_bus, vram_bus, ppu.stat.mode};
+    Hdma hdma {mmu, ext_bus, vram_bus, ppu.stat.mode, halted, stopped};
     Infrared infrared {};
     UndocumentedRegisters undocumented_registers {};
 #endif

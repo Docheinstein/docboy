@@ -45,13 +45,16 @@ void StopController::eventually_exit_stop_mode() {
 }
 
 void StopController::save_state(Parcel& parcel) const {
+    parcel.write_bool(stopped);
     parcel.write_bool(requested);
 }
 
 void StopController::load_state(Parcel& parcel) {
-    requested = parcel.read_uint8();
+    stopped = parcel.read_bool();
+    requested = parcel.read_bool();
 }
 
 void StopController::reset() {
+    stopped = false;
     requested = false;
 }

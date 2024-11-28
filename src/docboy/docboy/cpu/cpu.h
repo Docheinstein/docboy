@@ -17,7 +17,8 @@ class Cpu {
     TESTABLE_CLASS()
 
 public:
-    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller);
+    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& halted,
+        StopController& stop_controller);
 
     void tick();
     void tick_t0();
@@ -619,6 +620,7 @@ private:
     Interrupts& interrupts;
     Mmu::View<Device::Cpu> mmu;
     Joypad& joypad;
+    bool& halted;
     StopController& stop_controller;
 
     Instruction instructions[256];
@@ -635,8 +637,6 @@ private:
     uint16_t sp {};
 
     ImeState ime {};
-
-    bool halted {};
 
     struct {
         InterruptState state {};

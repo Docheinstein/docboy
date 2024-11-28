@@ -18,12 +18,13 @@ constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
 constexpr uint8_t STATE_INSTRUCTION_FLAG_NONE = 255;
 } // namespace
 
-Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad,
+Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& halted,
          StopController& stop_controller) :
     idu {idu},
     interrupts {interrupts},
     mmu {mmu},
     joypad {joypad},
+    halted {halted},
     stop_controller {stop_controller},
     // clang-format off
     instructions {
@@ -668,6 +669,8 @@ inline void Cpu::tick() {
 }
 
 void Cpu::save_state(Parcel& parcel) const {
+    parcel.write_bool(halted);
+
     parcel.write_uint16(af);
     parcel.write_uint16(bc);
     parcel.write_uint16(de);
@@ -676,8 +679,6 @@ void Cpu::save_state(Parcel& parcel) const {
     parcel.write_uint16(sp);
 
     parcel.write_uint8((uint8_t)ime);
-
-    parcel.write_bool(halted);
 
     parcel.write_uint8((uint8_t)interrupt.state);
     parcel.write_uint8(interrupt.remaining_ticks);
@@ -730,6 +731,8 @@ void Cpu::save_state(Parcel& parcel) const {
 }
 
 void Cpu::load_state(Parcel& parcel) {
+    halted = parcel.read_bool();
+
     af = parcel.read_int16();
     bc = parcel.read_int16();
     de = parcel.read_int16();
@@ -738,8 +741,6 @@ void Cpu::load_state(Parcel& parcel) {
     sp = parcel.read_int16();
 
     ime = (ImeState)(parcel.read_uint8());
-
-    halted = parcel.read_bool();
 
     interrupt.state = (InterruptState)parcel.read_uint8();
     interrupt.remaining_ticks = parcel.read_uint8();
@@ -789,6 +790,8 @@ void Cpu::load_state(Parcel& parcel) {
 }
 
 void Cpu::reset() {
+    halted = false;
+
 #ifdef ENABLE_CGB
     af = if_bootrom_else(0, 0x1180);
     bc = 0x0000;
@@ -806,7 +809,6 @@ void Cpu::reset() {
 #endif
 
     ime = ImeState::Disabled;
-    halted = false;
     interrupt.state = InterruptState::None;
     interrupt.remaining_ticks = 0;
 

@@ -15,7 +15,7 @@ class Hdma {
 
 public:
     Hdma(MmuView<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
-         const UInt8& stat_mode);
+         const UInt8& stat_mode, const bool& halted, const bool& stopped);
 
     void write_hdma1(uint8_t value);
     void write_hdma2(uint8_t value);
@@ -66,9 +66,12 @@ private:
     Mmu::View<Device::Hdma> mmu;
     ExtBus::View<Device::Hdma> ext_bus;
     VramBus::View<Device::Hdma> vram;
-
     const UInt8& stat_mode;
+    const bool& halted;
+    const bool& stopped;
+
     uint8_t last_stat_mode {};
+    bool last_halted {};
 
     UInt8 hdma1 {make_uint8(Specs::Registers::Hdma::HDMA1)};
     UInt8 hdma2 {make_uint8(Specs::Registers::Hdma::HDMA2)};

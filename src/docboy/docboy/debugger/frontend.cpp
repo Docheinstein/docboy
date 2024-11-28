@@ -1065,6 +1065,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("T-Cycle") << "  :  " << core.ticks << endl;
         b << yellow("M-Cycle") << "  :  " << core.ticks / 4 << endl;
 
+        b << yellow("Halted") << "   :  " << gb.halted << endl;
+        b << yellow("Stopped") << "  :  " << gb.stopped << endl;
+
         b << yellow("Phase") << "    :  ";
         for (uint8_t t = 0; t < 4; t++) {
             Text phase {"T" + std::to_string(t)};
@@ -1088,7 +1091,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         // State
         b << yellow("Cycle") << "   :  " << gb.cpu.cycles << endl;
-        b << yellow("Halted") << "  :  " << gb.cpu.halted << endl;
 
         // Registers
         const auto reg = [](uint16_t value) {
@@ -1980,7 +1982,22 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("On") << "                :  " << (gb.ppu.lcdc.enable ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("Cycle") << "             :  " << gb.ppu.cycles << endl;
         b << yellow("Dots") << "              :  " << gb.ppu.dots << endl;
-
+        b << yellow("Mode") << "              :  " << [this]() -> Text {
+            if (gb.ppu.stat.mode == Specs::Ppu::Modes::OAM_SCAN) {
+                return "Oam Scan";
+            }
+            if (gb.ppu.stat.mode == Specs::Ppu::Modes::PIXEL_TRANSFER) {
+                return "Pixel Transfer";
+            }
+            if (gb.ppu.stat.mode == Specs::Ppu::Modes::HBLANK) {
+                return "HBlank";
+            }
+            if (gb.ppu.stat.mode == Specs::Ppu::Modes::VBLANK) {
+                return "VBlank";
+            }
+            ASSERT_NO_ENTRY();
+            return "Unknown";
+        }() << endl;
         return b;
     };
 
@@ -1988,7 +2005,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         auto b {make_block(width)};
 
         // General
-        b << yellow("Mode") << "                :  " << [this]() -> Text {
+        b << yellow("Phase") << "               :  " << [this]() -> Text {
             if (gb.ppu.tick_selector == &Ppu::oam_scan_even || gb.ppu.tick_selector == &Ppu::oam_scan_odd ||
                 gb.ppu.tick_selector == &Ppu::oam_scan_done || gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on)
                 return "Oam Scan";
@@ -2037,7 +2054,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             ASSERT_NO_ENTRY();
             return "Unknown";
         }() << endl;
-
         b << yellow("Last Stat IRQ") << "       :  " << gb.ppu.last_stat_irq << endl;
         b << yellow("LYC_EQ_LY En.") << "       :  " << gb.ppu.enable_lyc_eq_ly_irq << endl;
 
@@ -2138,7 +2154,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         // Pixel Transfer
         b << subheader("pixel transfer", width) << endl;
 
-        b << yellow("Fetcher Mode") << "      :  " <<
+        b << yellow("Fetcher Phase") << "     :  " <<
             [this]() {
                 if (gb.ppu.fetcher_tick_selector == &Ppu::bgwin_prefetcher_get_tile_0) {
                     return "BG/WIN Tile0";

@@ -6,11 +6,13 @@ constexpr int REMAINING_CHUNKS_UPDATE_DELAY = 9;
 } // namespace
 
 Hdma::Hdma(Mmu::View<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
-           const UInt8& stat_mode) :
+           const UInt8& stat_mode, const bool& halted, const bool& stopped) :
     mmu {mmu},
     ext_bus {ext_bus},
     vram {vram_bus},
-    stat_mode {stat_mode} {
+    stat_mode {stat_mode},
+    halted {halted},
+    stopped {stopped} {
     reset();
 }
 
@@ -164,8 +166,13 @@ void Hdma::tick() {
     }
 
     if (state == TransferState::Paused) {
-        // Check STAT change
-        if (last_stat_mode != Specs::Ppu::Modes::HBLANK && stat_mode == Specs::Ppu::Modes::HBLANK) {
+        // Check STAT change.
+        // Request is ignored if GB is either halted or stopped.
+        // It seems that HDMA sees the HALT state with a delay of 1 T-Cycle.
+        // Whereas STOP timing seems to be non deterministic.
+        // TODO: further investigations.
+        if (last_stat_mode != Specs::Ppu::Modes::HBLANK && stat_mode == Specs::Ppu::Modes::HBLANK && (!last_halted) &&
+            (!stopped)) {
             // Schedule the transfer of the next chunk
             request_delay = TRANSFER_REQUEST_DELAY;
         }
@@ -188,6 +195,9 @@ void Hdma::tick() {
     }
 
     last_stat_mode = stat_mode;
+
+    // It seems that there is window of 1 T-Cycle that HDMA HBlank can start before GB is actually halted.
+    last_halted = halted;
 }
 
 void Hdma::tick_t0() {
@@ -214,6 +224,7 @@ void Hdma::tick_t3() {
 
 void Hdma::save_state(Parcel& parcel) const {
     parcel.write_uint8(last_stat_mode);
+    parcel.write_bool(last_halted);
     parcel.write_uint8(hdma1);
     parcel.write_uint8(hdma2);
     parcel.write_uint8(hdma3);
@@ -236,6 +247,7 @@ void Hdma::save_state(Parcel& parcel) const {
 
 void Hdma::load_state(Parcel& parcel) {
     last_stat_mode = parcel.read_uint8();
+    last_halted = parcel.read_bool();
     hdma1 = parcel.read_uint8();
     hdma2 = parcel.read_uint8();
     hdma3 = parcel.read_uint8();
@@ -258,6 +270,7 @@ void Hdma::load_state(Parcel& parcel) {
 
 void Hdma::reset() {
     last_stat_mode = 0;
+    last_halted = false;
     hdma1 = 0xD4;
     hdma2 = 0x30;
     hdma3 = 0x99;
