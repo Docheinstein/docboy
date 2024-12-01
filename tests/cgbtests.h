@@ -34,6 +34,50 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/banks/wram_bank_switch.gbc", "docboy/ok.png"});
     }
 
+    SECTION("dma") {
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/dma/dma_source_ext_routine_cpu_read_cpu.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_cpu_read_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_cpu_read_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_cpu_read_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_vram_read_cpu.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_vram_read_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_vram_read_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_vram_read_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_wram_read_cpu.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_wram_read_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_wram_read_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_ext_routine_wram_read_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_cpu_read_cpu.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_cpu_read_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_cpu_read_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_cpu_read_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_ext_read_cpu.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_ext_read_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_ext_read_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_ext_read_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_wram_read_cpu.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_wram_read_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_wram_read_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_vram_routine_wram_read_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_cpu_read_cpu.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_cpu_read_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_cpu_read_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_cpu_read_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_ext_read_cpu.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_ext_read_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_ext_read_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_ext_read_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_vram_read_cpu.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_vram_read_ext.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_vram_read_vram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_vram_read_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_source_wram_routine_wram.gbc", "docboy/ok.png"}, );
+    }
+
     SECTION("hdma") {
         RUN_TEST_ROMS(
             // docboy
