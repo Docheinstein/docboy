@@ -18,12 +18,13 @@ constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
 constexpr uint8_t STATE_INSTRUCTION_FLAG_NONE = 255;
 } // namespace
 
-Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& halted,
+Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
          StopController& stop_controller) :
     idu {idu},
     interrupts {interrupts},
     mmu {mmu},
     joypad {joypad},
+    fetching {fetching},
     halted {halted},
     stop_controller {stop_controller},
     // clang-format off
@@ -593,10 +594,11 @@ void Cpu::tick_t3() {
 
 #ifdef ENABLE_DEBUGGER
     // Update instruction's debug information
+    // TODO: verify this
     if (!halted) {
-        if (fetcher.fetching) {
+        if (fetching) {
             instruction.address = pc - 1;
-            instruction.cycle_microop = fetcher.instructions == instructions_cb ? 1 : 0;
+            instruction.cycle_microop = 0;
         } else {
             instruction.cycle_microop++;
         }
@@ -604,7 +606,7 @@ void Cpu::tick_t3() {
 #endif
 
 #ifdef ENABLE_TESTS
-    if (fetcher.fetching) {
+    if (fetching) {
         instruction.opcode = io.data;
     }
 #endif
@@ -619,14 +621,12 @@ inline void Cpu::tick() {
         }
 
         // Handle it if the countdown is finished (but only at the beginning of a new instruction)
-        if (interrupt.remaining_ticks == 0 &&
-            // TODO: handle CB fetch internally and use fetcher.fetching here instead
-            instruction.microop.counter == 0) {
+        if (interrupt.remaining_ticks == 0 && instruction.microop.counter == 0) {
             ASSERT(halted || ime == ImeState::Enabled);
 
             halted = false;
 
-            // Serve the interrupt if ime is enabled
+            // Serve the interrupt if IME is enabled
             if (ime == ImeState::Enabled) {
                 interrupt.state = InterruptState::Serving;
                 serve_interrupt();
@@ -644,9 +644,12 @@ inline void Cpu::tick() {
     }
 
     // Eventually fetch a new instruction
-    if (fetcher.fetching) {
-        fetcher.fetching = false;
-        instruction.microop.selector = &fetcher.instructions[io.data][0];
+    if (fetching) {
+        fetching = false;
+        instruction.microop.selector = &instructions[io.data][0];
+    } else if (fetching_cb) {
+        fetching_cb = false;
+        instruction.microop.selector = &instructions_cb[io.data][0];
     }
 
     const MicroOperation microop = *instruction.microop.selector;
@@ -658,7 +661,7 @@ inline void Cpu::tick() {
     // Execute current micro operation
     (this->*microop)();
 
-    // Eventually advance ime state (only at the end of an instruction).
+    // Eventually advance IME state (only at the end of an instruction).
     if (instruction.microop.counter == 0 && ime > ImeState::Disabled && ime < ImeState::Enabled) {
         ime = static_cast<ImeState>(static_cast<uint8_t>(ime) + 1);
     }
@@ -669,6 +672,7 @@ inline void Cpu::tick() {
 }
 
 void Cpu::save_state(Parcel& parcel) const {
+    parcel.write_bool(fetching);
     parcel.write_bool(halted);
 
     parcel.write_uint16(af);
@@ -683,15 +687,7 @@ void Cpu::save_state(Parcel& parcel) const {
     parcel.write_uint8((uint8_t)interrupt.state);
     parcel.write_uint8(interrupt.remaining_ticks);
 
-    parcel.write_bool(fetcher.fetching);
-
-    if (fetcher.instructions == instructions) {
-        parcel.write_uint8(STATE_INSTRUCTION_FLAG_NORMAL);
-    } else if (fetcher.instructions == instructions_cb) {
-        parcel.write_uint8(STATE_INSTRUCTION_FLAG_CB);
-    } else {
-        parcel.write_uint8(STATE_INSTRUCTION_FLAG_NONE);
-    }
+    parcel.write_bool(fetching_cb);
 
     if (static_cast<size_t>(instruction.microop.selector - &instructions[0][0]) <
         array_size(instructions) * INSTR_LEN) {
@@ -731,6 +727,7 @@ void Cpu::save_state(Parcel& parcel) const {
 }
 
 void Cpu::load_state(Parcel& parcel) {
+    fetching = parcel.read_bool();
     halted = parcel.read_bool();
 
     af = parcel.read_int16();
@@ -745,14 +742,7 @@ void Cpu::load_state(Parcel& parcel) {
     interrupt.state = (InterruptState)parcel.read_uint8();
     interrupt.remaining_ticks = parcel.read_uint8();
 
-    fetcher.fetching = parcel.read_bool();
-
-    const uint8_t instructions_flag = parcel.read_uint8();
-    if (instructions_flag == STATE_INSTRUCTION_FLAG_NORMAL) {
-        fetcher.instructions = instructions;
-    } else if (instructions_flag == STATE_INSTRUCTION_FLAG_CB) {
-        fetcher.instructions = instructions_cb;
-    }
+    fetching_cb = parcel.read_bool();
 
     const uint8_t instruction_flag = parcel.read_uint8();
     const uint16_t offset = parcel.read_int16();
@@ -790,6 +780,7 @@ void Cpu::load_state(Parcel& parcel) {
 }
 
 void Cpu::reset() {
+    fetching = false;
     halted = false;
 
 #ifdef ENABLE_CGB
@@ -812,8 +803,7 @@ void Cpu::reset() {
     interrupt.state = InterruptState::None;
     interrupt.remaining_ticks = 0;
 
-    fetcher.fetching = false;
-    fetcher.instructions = nullptr;
+    fetching_cb = false;
 
     instruction.microop.selector = nop;
     instruction.microop.counter = 0;
@@ -946,25 +936,23 @@ inline uint8_t Cpu::get_pending_interrupts() const {
 }
 
 void Cpu::serve_interrupt() {
-    ASSERT(fetcher.fetching);
+    ASSERT(fetching);
     ASSERT(interrupt.state == InterruptState::Serving);
-    fetcher.fetching = false;
+    fetching = false;
     instruction.microop.counter = 0;
     instruction.microop.selector = &isr[0];
 }
 
 inline void Cpu::fetch() {
     instruction.microop.counter = 0;
-    fetcher.fetching = true;
-    fetcher.instructions = instructions;
+    fetching = true;
     read(pc);
     idu.increment(pc);
 }
 
 inline void Cpu::fetch_cb() {
     ASSERT(instruction.microop.counter == 1);
-    fetcher.fetching = true;
-    fetcher.instructions = instructions_cb;
+    fetching_cb = true;
     read(pc);
     idu.increment(pc);
 }
@@ -1256,7 +1244,7 @@ void Cpu::stop_m0() {
     // TODO: not sure about what happens in the hardware internally.
     if (has_pending_interrupts) {
         // Standard fetch.
-        fetcher.fetching = true;
+        fetching = true;
     } else {
         // This effectively makes STOP use one more byte
         // as it resumes with a NOP that fetches again.
@@ -1276,8 +1264,7 @@ void Cpu::halt_m0() {
 
     // Fetch (eventually without PC increment, read below).
     instruction.microop.counter = 0;
-    fetcher.fetching = true;
-    fetcher.instructions = instructions;
+    fetching = true;
     read(pc);
 
     // Handle HALT bug.

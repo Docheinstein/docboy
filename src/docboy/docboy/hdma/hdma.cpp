@@ -1,16 +1,12 @@
 #include "docboy/hdma/hdma.h"
 
-namespace {
-constexpr int TRANSFER_REQUEST_DELAY = 7;
-constexpr int REMAINING_CHUNKS_UPDATE_DELAY = 9;
-} // namespace
-
 Hdma::Hdma(Mmu::View<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
-           const UInt8& stat_mode, const bool& halted, const bool& stopped) :
+           const UInt8& stat_mode, const bool& fetching, const bool& halted, const bool& stopped) :
     mmu {mmu},
     ext_bus {ext_bus},
     vram {vram_bus},
     stat_mode {stat_mode},
+    fetching {fetching},
     halted {halted},
     stopped {stopped} {
     reset();
@@ -46,40 +42,37 @@ void Hdma::write_hdma4(uint8_t value) {
     // Reload new destination address
     destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
 
-    // Reset destination cursor.
+    // Reset destination cursor
     destination.cursor = 0;
 }
 
 uint8_t Hdma::read_hdma5() const {
-    return (has_active_transfer() ? 0x00 : 0x80) | keep_bits<7>(remaining_chunks.count);
+    return (state != TransferState::None ? 0x00 : 0x80) | keep_bits<7>(remaining_chunks.count);
 }
 
 void Hdma::write_hdma5(uint8_t value) {
     const bool hblank_mode = test_bit<Specs::Bits::Hdma::HDMA5::HBLANK_TRANSFER>(value);
     remaining_chunks.count = get_bits_range<Specs::Bits::Hdma::HDMA5::TRANSFER_LENGTH>(value);
 
-    if (has_active_transfer()) {
+    remaining_bytes = 16 * (remaining_chunks.count + 1);
+    ASSERT(remaining_bytes <= 0x800);
+
+    if (state != TransferState::None) {
         ASSERT(mode == TransferMode::HBlank);
 
         if (!hblank_mode) {
             // Aborts current HDMA transfer
             state = TransferState::None;
-        } else {
-            // Continue current HDMA transfer
         }
     } else {
         if (hblank_mode) {
-            state = TransferState::Paused;
             mode = TransferMode::HBlank;
 
-            if (stat_mode == Specs::Ppu::Modes::HBLANK) {
-                // Start instantly
-                request_delay = TRANSFER_REQUEST_DELAY;
-            }
+            // Transfer is started instantly if STAT's mode is HBlank
+            state = stat_mode == Specs::Ppu::Modes::HBLANK ? TransferState::Requested : TransferState::Paused;
         } else {
-            state = TransferState::None;
             mode = TransferMode::GeneralPurpose;
-            request_delay = TRANSFER_REQUEST_DELAY;
+            state = TransferState::Requested;
         }
     }
 
@@ -87,20 +80,11 @@ void Hdma::write_hdma5(uint8_t value) {
     // They are just reset when writing HDMA2 (source) or HDMA4 (destination).
     // Therefore, writing to HDMA5 without a previous writing to HDMA2/HDMA4 will
     // proceed to transfer accordingly with the current cursors.
-
-    remaining_bytes = 16 * (remaining_chunks.count + 1);
-    ASSERT(remaining_bytes <= 0x800);
-}
-
-inline bool Hdma::has_active_transfer() const {
-    const bool active = state != TransferState::None || remaining_chunks.delay > 0;
-    ASSERT(!active || (remaining_chunks.count != 0xFF));
-    return active;
 }
 
 void Hdma::tick() {
-    if (phase == TransferPhase::Read) {
-        if (state == TransferState::Transferring) {
+    if (state == TransferState::Transferring) {
+        if (phase == TransferPhase::Tick) {
             // Start read request for source data.
             // HDMA reads real data only if the source address is within a valid range,
             // either [0x0000, 0x7FFF] or [0xA000, 0xDFF0].
@@ -122,46 +106,42 @@ void Hdma::tick() {
                    destination_address <= Specs::MemoryLayout::VRAM::END);
             vram.write_request(destination_address);
 
-            phase = TransferPhase::Write;
-        }
+            phase = TransferPhase::Tock;
+        } else {
+            ASSERT(phase == TransferPhase::Tock);
 
-    } else {
-        ASSERT(phase == TransferPhase::Write);
-
-        if (state == TransferState::Transferring) {
             // Complete read request and actually read source data
             const uint8_t src_data = source.valid ? mmu.flush_read_request() : ext_bus.open_bus_read();
 
             // Actually write to VRAM
             vram.flush_write_request(src_data);
 
+            // Advance cursors
             source.cursor++;
             destination.cursor++;
+            remaining_bytes--;
 
-            if (--remaining_bytes == 0) {
-                // Transfer completed
-                state = TransferState::None;
+            if (mod<16>(remaining_bytes) == 0) {
+                // A chunk of 16 bytes has been completed
 
-                // Schedule the update of the remaining chunks (it does not happen immediately)
-                remaining_chunks.delay = REMAINING_CHUNKS_UPDATE_DELAY;
-                remaining_chunks.scheduled = 0xFF;
-            } else if (mode == TransferMode::HBlank) {
-                // HDMA pauses each 16 bytes
-                if (mod<16>(source.cursor) == 0) {
-                    // TODO: can source and dest cursors diverge?
-                    //  Don't think so, but write_hdma5 should take it into account for this not to happen.
-                    ASSERT(mod<16>(destination.cursor) == 0);
+                ASSERT(mod<16>(source.cursor) == 0);
+                ASSERT(mod<16>(destination.cursor) == 0);
 
-                    // Pause transfer
-                    state = TransferState::Paused;
-
-                    // Schedule the update of the remaining chunks (it does not happen immediately)
-                    remaining_chunks.delay = REMAINING_CHUNKS_UPDATE_DELAY;
-                    remaining_chunks.scheduled = remaining_chunks.count - 1;
+                if (remaining_bytes == 0) {
+                    // Transfer completed
+                    state = TransferState::None;
+                } else {
+                    // HBlank HDMA transfer is paused at the completion of a 16 bytes chunk
+                    if (mode == TransferMode::HBlank) {
+                        state = TransferState::Paused;
+                    }
                 }
+
+                // Schedule the update of the remaining chunks for the next T3
+                remaining_chunks.state = RemainingChunksUpdateState::Requested;
             }
 
-            phase = TransferPhase::Read;
+            phase = TransferPhase::Tick;
         }
     }
 
@@ -171,37 +151,27 @@ void Hdma::tick() {
         // It seems that HDMA sees the HALT state with a delay of 1 T-Cycle.
         // Whereas STOP timing seems to be non deterministic.
         // TODO: further investigations.
-        if (last_stat_mode != Specs::Ppu::Modes::HBLANK && stat_mode == Specs::Ppu::Modes::HBLANK && (!last_halted) &&
-            (!stopped)) {
+        if (last_stat_mode != Specs::Ppu::Modes::HBLANK && stat_mode == Specs::Ppu::Modes::HBLANK && !last_halted &&
+            !stopped) {
             // Schedule the transfer of the next chunk
-            request_delay = TRANSFER_REQUEST_DELAY;
-        }
-    }
-
-    if (request_delay > 0) {
-        // Advance the transfer request state
-        if (--request_delay == 0) {
-            // Start the transfer
-            state = TransferState::Transferring;
-        }
-    }
-
-    if (remaining_chunks.delay > 0) {
-        // Advance the remaining chunks register
-        if (--remaining_chunks.delay == 0) {
-            // Update the register with the scheduled value
-            remaining_chunks.count = remaining_chunks.scheduled;
+            state = TransferState::Requested;
         }
     }
 
     last_stat_mode = stat_mode;
 
-    // It seems that there is window of 1 T-Cycle that HDMA HBlank can start before GB is actually halted.
+    // It seems that there is window of 1 T-Cycle that HDMA HBlank can start before GB is actually halted
     last_halted = halted;
 }
 
 void Hdma::tick_t0() {
     tick();
+
+    // HDMA is actually ready to start just after the first T0 that happens after the trigger
+    // (that could be either a writing to HDMA5, or STAT's mode changing to HBlank, in HBlank mode).
+    if (state == TransferState::Requested) {
+        state = TransferState::Ready;
+    }
 }
 
 void Hdma::tick_t1() {
@@ -215,22 +185,48 @@ void Hdma::tick_t2() {
 void Hdma::tick_t3() {
     tick();
 
-    // Update the state of the transfer at the end of each M-Cycle.
-    // The CPU will be stalled if a transfer is either active or pending.
-    // TODO: this timing works but seems too complex, check further what happens inside.
-    active_or_pending_transfer = state == TransferState::Transferring || (request_delay > 0 && request_delay < 4) ||
-                                 (remaining_chunks.delay > 7);
+    if (state == TransferState::Ready) {
+        if (fetching) {
+            // Actually start the HDMA if is ready (at least a T0 is passed from the trigger)
+            // and this is the last micro-operation of the CPU instruction.
+            state = Hdma::TransferState::Transferring;
+            active = true;
+        }
+    } else {
+        ASSERT(
+            !(unblock == UnblockState::Requested && remaining_chunks.state == RemainingChunksUpdateState::Requested));
+
+        if (unblock == UnblockState::Requested) {
+            ASSERT(state == TransferState::None || state == TransferState::Paused);
+            ASSERT(active);
+
+            // Unblock the CPU
+            unblock = UnblockState::None;
+            active = false;
+        } else if (remaining_chunks.state == RemainingChunksUpdateState::Requested) {
+            ASSERT(state == TransferState::None || state == TransferState::Paused ||
+                   state == TransferState::Transferring);
+
+            // Decrease the remaining chunk count
+            remaining_chunks.state = RemainingChunksUpdateState::None;
+            remaining_chunks.count--;
+
+            // Schedule the unblocking of the CPU for the end of the next M-cycle
+            if (mode == Hdma::TransferMode::HBlank || remaining_chunks.count == 0xFF /* General Purpose Mode */) {
+                unblock = UnblockState::Requested;
+            }
+        }
+    }
 }
 
 void Hdma::save_state(Parcel& parcel) const {
-    parcel.write_uint8(last_stat_mode);
-    parcel.write_bool(last_halted);
     parcel.write_uint8(hdma1);
     parcel.write_uint8(hdma2);
     parcel.write_uint8(hdma3);
     parcel.write_uint8(hdma4);
-    parcel.write_uint8(active_or_pending_transfer);
-    parcel.write_uint8(request_delay);
+    parcel.write_uint8(last_stat_mode);
+    parcel.write_bool(last_halted);
+    parcel.write_bool(active);
     parcel.write_uint8(state);
     parcel.write_uint8(mode);
     parcel.write_uint8(phase);
@@ -240,20 +236,19 @@ void Hdma::save_state(Parcel& parcel) const {
     parcel.write_uint16(destination.address);
     parcel.write_uint16(destination.cursor);
     parcel.write_uint16(remaining_bytes);
+    parcel.write_uint8(remaining_chunks.state);
     parcel.write_uint8(remaining_chunks.count);
-    parcel.write_uint8(remaining_chunks.scheduled);
-    parcel.write_uint8(remaining_chunks.delay);
+    parcel.write_uint8(unblock);
 }
 
 void Hdma::load_state(Parcel& parcel) {
-    last_stat_mode = parcel.read_uint8();
-    last_halted = parcel.read_bool();
     hdma1 = parcel.read_uint8();
     hdma2 = parcel.read_uint8();
     hdma3 = parcel.read_uint8();
     hdma4 = parcel.read_uint8();
-    active_or_pending_transfer = parcel.read_bool();
-    request_delay = parcel.read_uint8();
+    last_stat_mode = parcel.read_uint8();
+    last_halted = parcel.read_bool();
+    active = parcel.read_bool();
     state = parcel.read_uint8();
     mode = parcel.read_uint8();
     phase = parcel.read_uint8();
@@ -263,30 +258,29 @@ void Hdma::load_state(Parcel& parcel) {
     destination.address = parcel.read_uint16();
     destination.cursor = parcel.read_uint16();
     remaining_bytes = parcel.read_uint16();
+    remaining_chunks.state = parcel.read_uint8();
     remaining_chunks.count = parcel.read_uint8();
-    remaining_chunks.scheduled = parcel.read_uint8();
-    remaining_chunks.delay = parcel.read_uint8();
+    unblock = parcel.read_uint8();
 }
 
 void Hdma::reset() {
-    last_stat_mode = 0;
-    last_halted = false;
     hdma1 = 0xD4;
     hdma2 = 0x30;
     hdma3 = 0x99;
     hdma4 = 0xD0;
-    active_or_pending_transfer = false;
-    request_delay = 0;
+    last_stat_mode = 0;
+    last_halted = false;
+    active = false;
     state = TransferState::None;
     mode = TransferMode::GeneralPurpose;
-    phase = TransferPhase::Read;
+    phase = TransferPhase::Tick;
     source.address = 0xD430;
     source.cursor = 0;
     source.valid = false;
     destination.address = 0x99D0;
     destination.cursor = 0;
     remaining_bytes = 0;
+    remaining_chunks.state = RemainingChunksUpdateState::None;
     remaining_chunks.count = 0xFF;
-    remaining_chunks.scheduled = 0xFF;
-    remaining_chunks.delay = 0;
+    unblock = UnblockState::None;
 }

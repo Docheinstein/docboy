@@ -2613,9 +2613,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << header("HDMA", width) << endl;
 
-        if (gb.hdma.has_active_transfer() || gb.hdma.has_active_or_pending_transfer()) {
-            b << yellow("Blocking CPU") << "       :  " << +gb.hdma.has_active_or_pending_transfer() << endl;
-            b << yellow("Request Delay") << "      :  " << +gb.hdma.request_delay << endl;
+        if (gb.hdma.active || gb.hdma.state != Hdma::TransferState::None) {
+            b << yellow("Blocking CPU") << "       :  " << +gb.hdma.active << endl;
 
             b << yellow("Transfer") << "           :  ";
             b <<
@@ -2651,10 +2650,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             b <<
                 [this]() {
                     switch (gb.hdma.phase) {
-                    case Hdma::TransferPhase::Read:
-                        return Text {"Read"};
-                    case Hdma::TransferPhase::Write:
-                        return Text {"Write"};
+                    case Hdma::TransferPhase::Tick:
+                        return Text {"Tick"};
+                    case Hdma::TransferPhase::Tock:
+                        return Text {"Tock"};
                     }
                     ASSERT_NO_ENTRY();
                     return Text {};
@@ -2667,7 +2666,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             b << yellow("Progress") << "           :  " << hex<uint16_t>(gb.hdma.source.address + gb.hdma.source.cursor)
               << " => " << hex<uint16_t>(gb.hdma.destination.address + gb.hdma.destination.cursor) << endl;
             b << yellow("Rem. Chunks") << "        :  " << +gb.hdma.remaining_chunks.count << endl;
-            b << yellow("Rem. Chunks Delay") << "  :  " << +gb.hdma.remaining_chunks.delay << endl;
+            b << yellow("Rem. Chunks Req.") << "   :  "
+              << (gb.hdma.remaining_chunks.state == Hdma::RemainingChunksUpdateState::Requested) << endl;
+            b << yellow("Unblock Request") << "    :  "
+              << (gb.hdma.unblock == Hdma::RemainingChunksUpdateState::Requested) << endl;
         } else {
             b << yellow("Transfer") << "           :  " << darkgray("None") << endl;
         }

@@ -15,7 +15,7 @@ class Hdma {
 
 public:
     Hdma(MmuView<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
-         const UInt8& stat_mode, const bool& halted, const bool& stopped);
+         const UInt8& stat_mode, const bool& fetching, const bool& halted, const bool& stopped);
 
     void write_hdma1(uint8_t value);
     void write_hdma2(uint8_t value);
@@ -32,8 +32,8 @@ public:
 
     void tick();
 
-    bool has_active_or_pending_transfer() const {
-        return active_or_pending_transfer;
+    bool is_active() const {
+        return active;
     }
 
     void save_state(Parcel& parcel) const;
@@ -44,43 +44,54 @@ public:
 private:
     struct TransferMode {
         using Type = uint8_t;
-        static constexpr Type GeneralPurpose = 1;
         static constexpr Type HBlank = 0;
+        static constexpr Type GeneralPurpose = 1;
     };
 
     struct TransferPhase {
         using Type = uint8_t;
-        static constexpr Type Read = 0;
-        static constexpr Type Write = 1;
+        static constexpr Type Tick = 0;
+        static constexpr Type Tock = 1;
     };
 
     struct TransferState {
         using Type = uint8_t;
-        static constexpr Type Paused = 2;
-        static constexpr Type Transferring = 1;
         static constexpr Type None = 0;
+        static constexpr Type Requested = 1;
+        static constexpr Type Ready = 2;
+        static constexpr Type Transferring = 3;
+        static constexpr Type Paused = 4;
     };
 
-    bool has_active_transfer() const;
+    struct RemainingChunksUpdateState {
+        using Type = uint8_t;
+        static constexpr Type None = 0;
+        static constexpr Type Requested = 1;
+    };
+
+    struct UnblockState {
+        using Type = uint8_t;
+        static constexpr Type None = 0;
+        static constexpr Type Requested = 1;
+    };
 
     Mmu::View<Device::Hdma> mmu;
     ExtBus::View<Device::Hdma> ext_bus;
     VramBus::View<Device::Hdma> vram;
     const UInt8& stat_mode;
+    const bool& fetching;
     const bool& halted;
     const bool& stopped;
-
-    uint8_t last_stat_mode {};
-    bool last_halted {};
 
     UInt8 hdma1 {make_uint8(Specs::Registers::Hdma::HDMA1)};
     UInt8 hdma2 {make_uint8(Specs::Registers::Hdma::HDMA2)};
     UInt8 hdma3 {make_uint8(Specs::Registers::Hdma::HDMA3)};
     UInt8 hdma4 {make_uint8(Specs::Registers::Hdma::HDMA4)};
 
-    bool active_or_pending_transfer {};
+    uint8_t last_stat_mode {};
+    bool last_halted {};
 
-    uint8_t request_delay {};
+    bool active {};
 
     TransferState::Type state {};
     TransferMode::Type mode {};
@@ -100,10 +111,11 @@ private:
     uint16_t remaining_bytes {};
 
     struct {
+        RemainingChunksUpdateState::Type state {};
         uint8_t count {};
-        uint8_t scheduled {};
-        uint8_t delay {};
     } remaining_chunks;
+
+    UnblockState::Type unblock {};
 };
 
 #endif // HDMA_H

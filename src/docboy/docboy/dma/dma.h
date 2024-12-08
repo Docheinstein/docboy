@@ -31,9 +31,9 @@ public:
 private:
     struct RequestState {
         using Type = uint8_t;
-        static constexpr Type Requested = 2;
-        static constexpr Type Pending = 1;
         static constexpr Type None = 0;
+        static constexpr Type Pending = 1;
+        static constexpr Type Requested = 2;
     };
 
     Mmu::View<Device::Dma> mmu;

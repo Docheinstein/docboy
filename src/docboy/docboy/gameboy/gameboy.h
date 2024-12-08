@@ -44,6 +44,7 @@
 class GameBoy {
 public:
     // Status
+    bool fetching {};
     bool halted {};
     bool stopped {};
 
@@ -164,7 +165,7 @@ public:
 
     // CPU
     Idu idu {oam_bus};
-    Cpu cpu {idu, interrupts, mmu, joypad, halted, stop_controller};
+    Cpu cpu {idu, interrupts, mmu, joypad, fetching, halted, stop_controller};
 
     // Video
     Lcd lcd {};
@@ -184,7 +185,7 @@ public:
     VramBankController vram_bank_controller {vram_bus};
     WramBankController wram_bank_controller {wram_bus};
 
-    Hdma hdma {mmu, ext_bus, vram_bus, ppu.stat.mode, halted, stopped};
+    Hdma hdma {mmu, ext_bus, vram_bus, ppu.stat.mode, fetching, halted, stopped};
     Infrared infrared {};
     UndocumentedRegisters undocumented_registers {};
 #endif

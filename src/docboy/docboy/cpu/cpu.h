@@ -17,7 +17,7 @@ class Cpu {
     TESTABLE_CLASS()
 
 public:
-    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& halted,
+    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
         StopController& stop_controller);
 
     void tick();
@@ -620,6 +620,7 @@ private:
     Interrupts& interrupts;
     Mmu::View<Device::Cpu> mmu;
     Joypad& joypad;
+    bool& fetching;
     bool& halted;
     StopController& stop_controller;
 
@@ -642,11 +643,6 @@ private:
         InterruptState state {};
         uint8_t remaining_ticks {};
     } interrupt;
-
-    struct {
-        bool fetching {};
-        Instruction* instructions {};
-    } fetcher;
 
     struct {
         struct {
@@ -674,6 +670,8 @@ private:
         State state {};
         uint8_t data {};
     } io;
+
+    bool fetching_cb {};
 
     // scratchpad
     struct {
