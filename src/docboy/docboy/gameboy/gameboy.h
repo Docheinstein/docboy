@@ -170,9 +170,9 @@ public:
     // Video
     Lcd lcd {};
 #ifdef ENABLE_CGB
-    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus};
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma};
 #else
-    Ppu ppu {lcd, interrupts, vram_bus, oam_bus};
+    Ppu ppu {lcd, interrupts, vram_bus, oam_bus, dma};
 #endif
 
     // Audio

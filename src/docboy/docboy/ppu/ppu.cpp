@@ -4,6 +4,7 @@
 
 #include "docboy/bootrom/helpers.h"
 #include "docboy/common/randomdata.h"
+#include "docboy/dma/dma.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/memory/memory.h"
@@ -114,9 +115,10 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
 
 #ifdef ENABLE_CGB
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-         OamBus::View<Device::Ppu> oam_bus) :
+         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller) :
 #else
-Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus) :
+Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
+         Dma& dma_controller) :
 #endif
     lcd {lcd},
     interrupts {interrupts},
@@ -124,12 +126,14 @@ Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, 
     hdma {hdma},
 #endif
     vram {vram_bus},
-    oam {oam_bus} {
+    oam {oam_bus},
+    dma_controller {dma_controller} {
 }
 
 void Ppu::tick() {
     // Do nothing if PPU is off
     if (!lcdc.enable) {
+        stat.mode = mode;
         return;
     }
 
@@ -159,9 +163,6 @@ void Ppu::tick() {
     //        [mealybug/m3_lcdc_obj_en_change]
     last_lcdc = lcdc;
 
-    // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt
-    tick_stat();
-
     // Check for window activation (the state holds for entire frame).
     // The activation conditions are checked every dot,
     // (not only during pixel transfer or at LY == WX).
@@ -170,6 +171,10 @@ void Ppu::tick() {
     // push stage if at some point in the entire frame the condition
     // WY = LY was satisfied.
     tick_window();
+
+    // Update STAT's mode accordingly to PPU mode.
+    // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt.
+    tick_stat();
 
     ASSERT(dots < 456);
 
@@ -232,6 +237,17 @@ inline bool Ppu::is_lyc_eq_ly() const {
 }
 
 inline void Ppu::tick_stat() {
+    // Update STAT's mode accordingly to current PPU mode.
+    // During DMA transfer, STAT's mode appears as HBlank during OAM Scan.
+    // STAT's mode is restored as soon as DMA transfer finishes (therefore, if it finishes
+    // during OAM Scan, STAT's mode is restored to OAM Scan again).
+    // This change to STAT does not trigger eventual HBlank STAT interrupt, though.
+    if (dma_controller.is_active() && mode == OAM_SCAN) {
+        stat.mode = HBLANK;
+    } else {
+        stat.mode = mode;
+    }
+
     // STAT interrupt request is checked every dot (not only during modes or lines transitions).
     // OAM Stat interrupt seems to be an exception to this rule:
     // it is raised only as a consequence of a transition of mode, not always
@@ -241,10 +257,10 @@ inline void Ppu::tick_stat() {
     const bool lyc_eq_ly = is_lyc_eq_ly();
     const bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && lyc_eq_ly;
 
-    const bool hblank_irq = stat.hblank_int && stat.mode == HBLANK;
+    const bool hblank_irq = stat.hblank_int && mode == HBLANK;
 
     // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
-    const bool vblank_irq = (stat.vblank_int || stat.oam_int) && stat.mode == VBLANK;
+    const bool vblank_irq = (stat.vblank_int || stat.oam_int) && mode == VBLANK;
 
     // Eventually raise STAT interrupt.
     update_state_irq(lyc_eq_ly_irq || hblank_irq || vblank_irq);
@@ -379,7 +395,7 @@ void Ppu::oam_scan_done() {
 
 void Ppu::oam_scan_after_turn_on() {
     ASSERT(!oam.is_acquired_by_this());
-    ASSERT(stat.mode == HBLANK);
+    ASSERT(mode == HBLANK);
 
     // First OAM Scan after PPU turn on does nothing.
     ++dots;
@@ -687,7 +703,7 @@ void Ppu::hblank_last_line_455() {
 
 void Ppu::hblank_first_line_after_turn_on() {
     ASSERT(is_first_line_after_turn_on);
-    ASSERT(stat.mode == PIXEL_TRANSFER);
+    ASSERT(mode == PIXEL_TRANSFER);
     ASSERT(ly == 0);
 
     ++dots;
@@ -928,7 +944,7 @@ void Ppu::enter_vblank() {
 
     tick_selector = &Ppu::vblank;
 
-    ASSERT(stat.mode == VBLANK);
+    ASSERT(mode == VBLANK);
 
     interrupts.raise_Interrupt<Interrupts::InterruptType::VBlank>();
 
@@ -973,7 +989,7 @@ void Ppu::reset_fetcher() {
 template <uint8_t Mode>
 inline void Ppu::update_mode() {
     ASSERT(Mode <= 0b11);
-    stat.mode = Mode;
+    mode = Mode;
 }
 
 inline void Ppu::increase_lx() {
@@ -1046,7 +1062,7 @@ inline void Ppu::setup_fetcher_for_window() {
 }
 
 inline void Ppu::handle_oam_scan_buses_oddities() {
-    ASSERT(stat.mode == OAM_SCAN);
+    ASSERT(mode == OAM_SCAN);
 
     if (dots == 76) {
         // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
@@ -1761,6 +1777,7 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_uint8(scx);
     parcel.write_uint8(ly);
     parcel.write_uint8(lyc);
+    parcel.write_uint8(dma);
     parcel.write_uint8(bgp);
     parcel.write_uint8(obp0);
     parcel.write_uint8(obp1);
@@ -1796,6 +1813,7 @@ void Ppu::save_state(Parcel& parcel) const {
 
     parcel.write_bool(last_stat_irq);
     parcel.write_bool(enable_lyc_eq_ly_irq);
+    parcel.write_uint8(mode);
     parcel.write_uint16(dots);
     parcel.write_uint8(lx);
     parcel.write_uint8(last_bgp);
@@ -1907,6 +1925,7 @@ void Ppu::load_state(Parcel& parcel) {
     scx = parcel.read_uint8();
     ly = parcel.read_uint8();
     lyc = parcel.read_uint8();
+    dma = parcel.read_uint8();
     bgp = parcel.read_uint8();
     obp0 = parcel.read_uint8();
     obp1 = parcel.read_uint8();
@@ -1933,6 +1952,7 @@ void Ppu::load_state(Parcel& parcel) {
 
     last_stat_irq = parcel.read_bool();
     enable_lyc_eq_ly_irq = parcel.read_bool();
+    mode = parcel.read_uint8();
     dots = parcel.read_uint16();
     lx = parcel.read_uint8();
     last_bgp = parcel.read_uint8();
@@ -2055,6 +2075,11 @@ void Ppu::reset() {
     ly = 0;
 #endif
     lyc = 0;
+#ifdef ENABLE_CGB
+    dma = 0;
+#else
+    dma = 0xFF;
+#endif
     bgp = if_bootrom_else(0, 0xFC);
     obp0 = 0;
     obp1 = 0;
@@ -2081,6 +2106,8 @@ void Ppu::reset() {
 
     last_stat_irq = false;
     enable_lyc_eq_ly_irq = true;
+
+    mode = stat.mode;
 
 #ifdef ENABLE_CGB
     // TODO: with bootrom
@@ -2227,6 +2254,11 @@ void Ppu::write_stat(uint8_t value) {
     stat.oam_int = test_bit<Specs::Bits::Video::STAT::OAM_INTERRUPT>(value);
     stat.vblank_int = test_bit<Specs::Bits::Video::STAT::VBLANK_INTERRUPT>(value);
     stat.hblank_int = test_bit<Specs::Bits::Video::STAT::HBLANK_INTERRUPT>(value);
+}
+
+void Ppu::write_dma(uint8_t value) {
+    dma = value;
+    dma_controller.start_transfer(dma);
 }
 
 #ifdef ENABLE_CGB

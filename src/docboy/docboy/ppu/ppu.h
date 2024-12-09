@@ -5,7 +5,6 @@
 
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
-#include "docboy/dma/dma.h"
 
 #include "utils/arrays.h"
 #include "utils/asserts.h"
@@ -15,6 +14,7 @@
 
 class Lcd;
 class Interrupts;
+class Dma;
 class Hdma;
 class Parcel;
 
@@ -24,9 +24,10 @@ class Ppu {
 public:
 #ifdef ENABLE_CGB
     Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-        OamBus::View<Device::Ppu> oam_bus);
+        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller);
 #else
-    Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus);
+    Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
+        Dma& dma_controller);
 #endif
 
     void tick();
@@ -42,6 +43,8 @@ public:
 
     uint8_t read_stat() const;
     void write_stat(uint8_t value);
+
+    void write_dma(uint8_t value);
 
 #ifdef ENABLE_CGB
     uint8_t read_bcps() const;
@@ -96,6 +99,7 @@ public:
     UInt8 scx {make_uint8(Specs::Registers::Video::SCX)};
     UInt8 ly {make_uint8(Specs::Registers::Video::LY)};
     UInt8 lyc {make_uint8(Specs::Registers::Video::LYC)};
+    UInt8 dma {make_uint8(Specs::Registers::Video::DMA)};
     UInt8 bgp {make_uint8(Specs::Registers::Video::BGP)};
     UInt8 obp0 {make_uint8(Specs::Registers::Video::OBP0)};
     UInt8 obp1 {make_uint8(Specs::Registers::Video::OBP1)};
@@ -259,12 +263,15 @@ private:
 #endif
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;
+    Dma& dma_controller;
 
     TickSelector tick_selector {};
     FetcherTickSelector fetcher_tick_selector {&Ppu::bg_prefetcher_get_tile_0};
 
     bool last_stat_irq {};
     bool enable_lyc_eq_ly_irq {true};
+
+    uint8_t mode {}; // STAT mode
 
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)

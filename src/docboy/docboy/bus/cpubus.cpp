@@ -171,7 +171,7 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF43 */ memory_accessors[Specs::Registers::Video::SCX] = &ppu.scx;
     /* FF44 */ memory_accessors[Specs::Registers::Video::LY] = {&ppu.ly, write_nop};
     /* FF45 */ memory_accessors[Specs::Registers::Video::LYC] = &ppu.lyc;
-    /* FF46 */ memory_accessors[Specs::Registers::Video::DMA] = {&dma.dma, NonTrivial<&Dma::write_dma> {&dma}};
+    /* FF46 */ memory_accessors[Specs::Registers::Video::DMA] = {&ppu.dma, NonTrivial<&Ppu::write_dma> {&ppu}};
     /* FF47 */ memory_accessors[Specs::Registers::Video::BGP] = &ppu.bgp;
     /* FF48 */ memory_accessors[Specs::Registers::Video::OBP0] = &ppu.obp0;
     /* FF49 */ memory_accessors[Specs::Registers::Video::OBP1] = &ppu.obp1;
