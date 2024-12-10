@@ -5,9 +5,8 @@ OamBus::OamBus(Oam& oam) :
     oam {oam} {
 
     // clang-format off
-    const NonTrivialReadFunctor read_ff {[](void*, uint16_t) -> uint8_t { return 0xFF;}, nullptr};
+    const NonTrivialReadFunctor read_00 {[](void*, uint16_t) -> uint8_t { return 0x00;}, nullptr};
     const NonTrivialWriteFunctor write_nop {[](void*, uint16_t, uint8_t) {}, nullptr};
-    const MemoryAccess open_bus_access {read_ff, write_nop};
     // clang-format on
 
     /* 0xFE00 - 0xFE9F */
@@ -17,6 +16,6 @@ OamBus::OamBus(Oam& oam) :
 
     /* 0xFEA0 - 0xFEFF */
     for (uint16_t i = Specs::MemoryLayout::NOT_USABLE::START; i <= Specs::MemoryLayout::NOT_USABLE::END; i++) {
-        memory_accessors[i] = open_bus_access;
+        memory_accessors[i] = {read_00, write_nop};
     }
 }

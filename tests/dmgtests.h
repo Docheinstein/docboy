@@ -1501,12 +1501,52 @@ TEST_CASE("dmg", "[emulation]") {
                       F {"docboy/boot/boot_vram_tile_map.gb", "docboy/ok.png"}, );
     }
 
+    SECTION("memory") {
+        RUN_TEST_ROMS(F {"docboy/memory/not_usable_read_hblank.gb", "docboy/ok.png"},
+                      F {"docboy/memory/not_usable_read_oam_scan.gb", "docboy/ok.png"},
+                      F {"docboy/memory/not_usable_read_pixel_transfer.gb", "docboy/ok.png"},
+                      F {"docboy/memory/not_usable_read_ppu_off.gb", "docboy/ok.png"},
+                      F {"docboy/memory/not_usable_read_vblank.gb", "docboy/ok.png"},
+                      F {"docboy/memory/oam_read_hblank.gb", "docboy/ok.png"},
+                      F {"docboy/memory/oam_read_oam_scan.gb", "docboy/ok.png"},
+                      F {"docboy/memory/oam_read_pixel_transfer.gb", "docboy/ok.png"},
+                      F {"docboy/memory/oam_read_ppu_off.gb", "docboy/ok.png"},
+                      F {"docboy/memory/oam_read_vblank.gb", "docboy/ok.png"},
+                      F {"docboy/memory/oam_write_hblank.gb", "docboy/ok.png"},
+                      F {"docboy/memory/oam_write_oam_scan.gb", "docboy/ok.png"},
+                      F {"docboy/memory/oam_write_pixel_transfer.gb", "docboy/ok.png"},
+                      F {"docboy/memory/oam_write_vblank.gb", "docboy/ok.png"},
+                      F {"docboy/memory/vram_read_hblank.gb", "docboy/ok.png"},
+                      F {"docboy/memory/vram_read_oam_scan.gb", "docboy/ok.png"},
+                      F {"docboy/memory/vram_read_pixel_transfer.gb", "docboy/ok.png"},
+                      F {"docboy/memory/vram_read_ppu_off.gb", "docboy/ok.png"},
+                      F {"docboy/memory/vram_read_vblank.gb", "docboy/ok.png"},
+                      F {"docboy/memory/vram_write_hblank.gb", "docboy/ok.png"},
+                      F {"docboy/memory/vram_write_oam_scan.gb", "docboy/ok.png"},
+                      F {"docboy/memory/vram_write_pixel_transfer.gb", "docboy/ok.png"},
+                      F {"docboy/memory/vram_write_vblank.gb", "docboy/ok.png"}, );
+    }
+
     SECTION("oam") {
         RUN_TEST_ROMS(S {"mooneye/bits/mem_oam.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
     }
 
     SECTION("oam_bug") {
-        RUN_TEST_ROMS(F {"docboy/oam_bug/oam_bug_write_nops0.gb", "docboy/ok.png"},
+        RUN_TEST_ROMS(F {"docboy/oam_bug/oam_bug_not_usable_write_nops0.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops1.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops2.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops3.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops4.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops5.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops6.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops7.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops8.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops9.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops10.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops11.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops13.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops14.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_write_nops0.gb", "docboy/ok.png"},
                       F {"docboy/oam_bug/oam_bug_write_nops1.gb", "docboy/ok.png"},
                       F {"docboy/oam_bug/oam_bug_write_nops2.gb", "docboy/ok.png"},
                       F {"docboy/oam_bug/oam_bug_write_nops3.gb", "docboy/ok.png"},
@@ -1702,11 +1742,6 @@ TEST_CASE("dmg", "[emulation]") {
                       F {"docboy/dma/dma_transfer.gb", "docboy/ok.png"},
                       F {"docboy/dma/dma_transfer_ff00.gb", "docboy/ok.png"},
                       F {"docboy/dma/rendering/dma_blocks_oam_scan.gb", "docboy/dma/dma_blocks_oam_scan.png"}, );
-    }
-
-    SECTION("bus") {
-        RUN_TEST_ROMS(F {"docboy/bus/read_oam_in_pixel_transfer.gb", "docboy/ok.png"},
-                      F {"docboy/bus/read_vram_in_pixel_transfer.gb", "docboy/ok.png"});
     }
 
     SECTION("serial") {
