@@ -38,6 +38,12 @@ TEST_CASE("cgb", "[emulation]") {
     SECTION("memory") {
         RUN_TEST_ROMS(
             // docboy
+            F {"docboy/memory/not_usable_area_write.gbc", "docboy/ok.png"},
+            F {"docboy/memory/not_usable_area_write_fea0_16_bytes.gbc", "docboy/ok.png"},
+            F {"docboy/memory/not_usable_area_write_feb0_16_bytes.gbc", "docboy/ok.png"},
+            F {"docboy/memory/not_usable_area_write_fec0_16_bytes.gbc", "docboy/ok.png"},
+            F {"docboy/memory/not_usable_area_write_fed0_16_bytes.gbc", "docboy/ok.png"},
+            F {"docboy/memory/not_usable_area_write_fee0_16_bytes.gbc", "docboy/ok.png"},
             F {"docboy/memory/not_usable_read_hblank.gbc", "docboy/ok.png"},
             F {"docboy/memory/not_usable_read_oam_scan.gbc", "docboy/ok.png"},
             F {"docboy/memory/not_usable_read_pixel_transfer.gbc", "docboy/ok.png"},

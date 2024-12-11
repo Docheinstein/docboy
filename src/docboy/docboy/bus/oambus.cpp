@@ -26,11 +26,21 @@ OamBus::OamBus(Oam& oam) :
     }
 
     /* 0xFEA0 - 0xFEFF */
-    for (uint16_t i = Specs::MemoryLayout::NOT_USABLE::START; i <= Specs::MemoryLayout::NOT_USABLE::END; i++) {
 #ifdef ENABLE_CGB
+    // On my CGB-E, it seems that the first 2 chunks of 16 bytes are fully readable/writable (from FEA0 to FEBF),
+    // while the next 16 bytes chunks (FEC0 - FECF, FED0 - FEDF, FEE0 - FEEF, FEF0 - FEFF) are all mapped to the
+    // the 16 byte chunk FEC0 - FECF.
+    // TODO: is this pattern model specific?
+    for (uint16_t i = Specs::MemoryLayout::NOT_USABLE::START; i < Specs::MemoryLayout::NOT_USABLE::START + 32; i++) {
         memory_accessors[i] = &not_usable[i - Specs::MemoryLayout::NOT_USABLE::START];
-#else
-        memory_accessors[i] = {read_00, write_nop};
-#endif
     }
+
+    for (uint16_t i = Specs::MemoryLayout::NOT_USABLE::START + 32; i <= Specs::MemoryLayout::NOT_USABLE::END; i++) {
+        memory_accessors[i] = &not_usable[32 + mod<16>(i)];
+    }
+#else
+    for (uint16_t i = Specs::MemoryLayout::NOT_USABLE::START; i <= Specs::MemoryLayout::NOT_USABLE::END; i++) {
+        memory_accessors[i] = {read_00, write_nop};
+    }
+#endif
 }
