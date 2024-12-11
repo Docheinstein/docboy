@@ -34,6 +34,7 @@
 #include "docboy/bus/wrambus.h"
 #include "docboy/hdma/hdma.h"
 #include "docboy/ir/infrared.h"
+#include "docboy/memory/notusable.h"
 #include "docboy/undoc/undocregs.h"
 #endif
 
@@ -68,6 +69,10 @@ public:
     Wram2 wram2[1] {};
 #endif
     Oam oam {};
+#ifdef ENABLE_CGB
+    NotUsable not_usable {};
+#endif
+
     Hram hram {};
 
     // Boot ROM
@@ -143,7 +148,12 @@ public:
 #endif
 #endif
     VramBus vram_bus {vram};
+
+#ifdef ENABLE_CGB
+    OamBus oam_bus {oam, not_usable};
+#else
     OamBus oam_bus {oam};
+#endif
 
     // MMU
 #if ENABLE_BOOTROM

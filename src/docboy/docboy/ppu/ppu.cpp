@@ -749,7 +749,7 @@ void Ppu::vblank_last_line() {
         // LY is reset to 0
         ly = 0;
 
-        // Altough LY is set to 0, LYC_EQ_LY IRQ is disabled (i.e. does not trigger for LY=0).
+        // Although LY is set to 0, LYC_EQ_LY IRQ is disabled (i.e. does not trigger for LY=0).
         enable_lyc_eq_ly_irq = false;
 
         tick_selector = &Ppu::vblank_last_line_2;

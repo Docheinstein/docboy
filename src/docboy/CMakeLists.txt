@@ -63,12 +63,14 @@ target_sources(docboy PRIVATE
         docboy/memory/fwd/cellfwd.h
         docboy/memory/fwd/hramfwd.h
         docboy/memory/fwd/memoryfwd.h
+        docboy/memory/fwd/notusablefwd.h
         docboy/memory/fwd/oamfwd.h
         docboy/memory/fwd/vramfwd.h
         docboy/memory/fwd/wram1fwd.h
         docboy/memory/fwd/wram2fwd.h
         docboy/memory/hram.h
         docboy/memory/memory.h
+        docboy/memory/notusable.h
         docboy/memory/oam.h
         docboy/memory/traits.h
         docboy/memory/vram.h

@@ -2,6 +2,7 @@
 #define OAMBUS_H
 
 #include "docboy/bus/videobus.h"
+#include "docboy/memory/fwd/notusablefwd.h"
 #include "docboy/memory/fwd/oamfwd.h"
 
 class OamBus final : public VideoBus<OamBus> {
@@ -22,7 +23,11 @@ public:
         Word flush_read_word_request();
     };
 
+#ifdef ENABLE_CGB
+    OamBus(Oam& oam, NotUsable& not_usable);
+#else
     explicit OamBus(Oam& oam);
+#endif
 
     template <Device::Type Dev>
     void clear_write_request();
@@ -35,6 +40,9 @@ public:
 
 private:
     Oam& oam;
+#ifdef ENABLE_CGB
+    NotUsable& not_usable;
+#endif
 };
 
 #include "docboy/bus/oambus.tpp"

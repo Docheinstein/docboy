@@ -1498,7 +1498,9 @@ TEST_CASE("dmg", "[emulation]") {
                       F {"docboy/boot/boot_stat_lyc_eq_ly_round1.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_stat_lyc_eq_ly_round2.gb", "docboy/ok.png"},
                       F {"docboy/boot/boot_vram_tile_data.gb", "docboy/ok.png"},
-                      F {"docboy/boot/boot_vram_tile_map.gb", "docboy/ok.png"}, );
+                      F {"docboy/boot/boot_vram_tile_map.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_write_oam.gb", "docboy/ok.png"},
+                      F {"docboy/boot/boot_write_vram.gb", "docboy/ok.png"}, );
     }
 
     SECTION("memory") {
