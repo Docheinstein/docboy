@@ -1,5 +1,7 @@
 #include "docboy/bus/bus.h"
 
+bool hdma_transferring {};
+
 Bus::Bus() {
     reset();
 }
@@ -8,9 +10,7 @@ void Bus::load_state(Parcel& parcel) {
     requests = parcel.read_uint8();
     address = parcel.read_uint16();
     data = parcel.read_uint8();
-    ;
     decay = parcel.read_uint8();
-    ;
 }
 
 void Bus::save_state(Parcel& parcel) const {

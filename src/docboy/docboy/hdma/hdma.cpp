@@ -1,10 +1,13 @@
 #include "docboy/hdma/hdma.h"
+#include "docboy/dma/dma.h"
 
 Hdma::Hdma(Mmu::View<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
-           const UInt8& stat_mode, const bool& fetching, const bool& halted, const bool& stopped) :
+           OamBus::View<Device::Hdma> oam_bus, const UInt8& stat_mode, const bool& fetching, const bool& halted,
+           const bool& stopped) :
     mmu {mmu},
     ext_bus {ext_bus},
     vram {vram_bus},
+    oam {oam_bus},
     stat_mode {stat_mode},
     fetching {fetching},
     halted {halted},
@@ -82,90 +85,9 @@ void Hdma::write_hdma5(uint8_t value) {
     // proceed to transfer accordingly with the current cursors.
 }
 
-void Hdma::tick() {
-    if (state == TransferState::Transferring) {
-        if (phase == TransferPhase::Tick) {
-            // Start read request for source data.
-            // HDMA reads real data only if the source address is within a valid range,
-            // either [0x0000, 0x7FFF] or [0xA000, 0xDFF0].
-            // Otherwise, it reads the open bus data from EXT bus.
-            const uint16_t source_address = source.address + source.cursor;
-            source.valid = source_address < Specs::MemoryLayout::VRAM::START ||
-                           (source_address >= Specs::MemoryLayout::RAM::START &&
-                            source_address <= Specs::MemoryLayout::WRAM2::END);
-
-            if (source.valid) {
-                mmu.read_request(source_address);
-            }
-
-            // Start write request for VRAM.
-            // Destination address overflows with modulo 0x2000.
-            const uint16_t destination_address_slack = (destination.address + destination.cursor) & 0x1FFF;
-            const uint16_t destination_address = Specs::MemoryLayout::VRAM::START | destination_address_slack;
-            ASSERT(destination_address >= Specs::MemoryLayout::VRAM::START &&
-                   destination_address <= Specs::MemoryLayout::VRAM::END);
-            vram.write_request(destination_address);
-
-            phase = TransferPhase::Tock;
-        } else {
-            ASSERT(phase == TransferPhase::Tock);
-
-            // Complete read request and actually read source data
-            const uint8_t src_data = source.valid ? mmu.flush_read_request() : ext_bus.open_bus_read();
-
-            // Actually write to VRAM
-            vram.flush_write_request(src_data);
-
-            // Advance cursors
-            source.cursor++;
-            destination.cursor++;
-            remaining_bytes--;
-
-            if (mod<16>(remaining_bytes) == 0) {
-                // A chunk of 16 bytes has been completed
-
-                ASSERT(mod<16>(source.cursor) == 0);
-                ASSERT(mod<16>(destination.cursor) == 0);
-
-                if (remaining_bytes == 0) {
-                    // Transfer completed
-                    state = TransferState::None;
-                } else {
-                    // HBlank HDMA transfer is paused at the completion of a 16 bytes chunk
-                    if (mode == TransferMode::HBlank) {
-                        state = TransferState::Paused;
-                    }
-                }
-
-                // Schedule the update of the remaining chunks for the next T3
-                remaining_chunks.state = RemainingChunksUpdateState::Requested;
-            }
-
-            phase = TransferPhase::Tick;
-        }
-    }
-
-    if (state == TransferState::Paused) {
-        // Check STAT change.
-        // Request is ignored if GB is either halted or stopped.
-        // It seems that HDMA sees the HALT state with a delay of 1 T-Cycle.
-        // Whereas STOP timing seems to be non deterministic.
-        // TODO: further investigations.
-        if (last_stat_mode != Specs::Ppu::Modes::HBLANK && stat_mode == Specs::Ppu::Modes::HBLANK && !last_halted &&
-            !stopped) {
-            // Schedule the transfer of the next chunk
-            state = TransferState::Requested;
-        }
-    }
-
-    last_stat_mode = stat_mode;
-
-    // It seems that there is window of 1 T-Cycle that HDMA HBlank can start before GB is actually halted
-    last_halted = halted;
-}
-
 void Hdma::tick_t0() {
-    tick();
+    tick_even();
+    tick_state();
 
     // HDMA is actually ready to start just after the first T0 that happens after the trigger
     // (that could be either a writing to HDMA5, or STAT's mode changing to HBlank, in HBlank mode).
@@ -175,15 +97,18 @@ void Hdma::tick_t0() {
 }
 
 void Hdma::tick_t1() {
-    tick();
+    tick_odd();
+    tick_state();
 }
 
 void Hdma::tick_t2() {
-    tick();
+    tick_even();
+    tick_state();
 }
 
 void Hdma::tick_t3() {
-    tick();
+    tick_odd();
+    tick_state();
 
     if (state == TransferState::Ready) {
         if (fetching) {
@@ -191,6 +116,10 @@ void Hdma::tick_t3() {
             // and this is the last micro-operation of the CPU instruction.
             state = Hdma::TransferState::Transferring;
             active = true;
+
+            // Acquire video buses
+            oam.acquire();
+            vram.acquire();
         }
     } else {
         ASSERT(
@@ -219,6 +148,104 @@ void Hdma::tick_t3() {
     }
 }
 
+void Hdma::tick_even() {
+    if (state == TransferState::Transferring) {
+        // Start read request for source data.
+        // HDMA reads real data only if the source address is within a valid range,
+        // either [0x0000, 0x7FFF] or [0xA000, 0xDFF0].
+        // Otherwise, it reads the open bus data from EXT bus.
+        const uint16_t source_address = source.address + source.cursor;
+        source.valid =
+            source_address < Specs::MemoryLayout::VRAM::START ||
+            (source_address >= Specs::MemoryLayout::RAM::START && source_address <= Specs::MemoryLayout::WRAM2::END);
+
+        if (source.valid) {
+            mmu.read_request(source_address);
+        }
+
+        // If DMA is transferring concurrently with HDMA, the byte HDMA is writing will be written
+        // to OAM too, at the address given by the modulo 256 of the current HDMA source address.
+        // This seems to happen once each two bytes.
+        dma_oam_conflict = oam.is_acquired_by<Device::Dma>() && mod<2>(source.cursor) == 1;
+
+        if (dma_oam_conflict) {
+            oam.write_request(Specs::MemoryLayout::OAM::START + mod<256>(source_address));
+        }
+
+        // Start write request for VRAM.
+        // Destination address overflows with modulo 0x2000.
+        const uint16_t destination_address_slack = (destination.address + destination.cursor) & 0x1FFF;
+        const uint16_t destination_address = Specs::MemoryLayout::VRAM::START | destination_address_slack;
+        ASSERT(destination_address >= Specs::MemoryLayout::VRAM::START &&
+               destination_address <= Specs::MemoryLayout::VRAM::END);
+        vram.write_request(destination_address);
+    }
+}
+
+void Hdma::tick_odd() {
+    if (state == TransferState::Transferring) {
+        // Complete read request and actually read source data
+        const uint8_t src_data = source.valid ? mmu.flush_read_request() : ext_bus.open_bus_read();
+
+        // Actually write to VRAM
+        vram.flush_write_request(src_data);
+
+        // Eventually write to OAM too if DMA is currently transferring
+        if (dma_oam_conflict) {
+            oam.flush_write_request(src_data);
+        }
+
+        // Advance cursors
+        source.cursor++;
+        destination.cursor++;
+        remaining_bytes--;
+
+        if (mod<16>(remaining_bytes) == 0) {
+            // A chunk of 16 bytes has been completed
+
+            ASSERT(mod<16>(source.cursor) == 0);
+            ASSERT(mod<16>(destination.cursor) == 0);
+
+            if (remaining_bytes == 0) {
+                // Transfer completed
+                state = TransferState::None;
+            } else if (mode == TransferMode::HBlank) {
+                // HBlank HDMA transfer is paused at the completion of a 16 bytes chunk
+                state = TransferState::Paused;
+            }
+
+            if (state != TransferState::Transferring) {
+                // Release buses
+                oam.release();
+                vram.release();
+            }
+
+            // Schedule the update of the remaining chunks for the next T3
+            remaining_chunks.state = RemainingChunksUpdateState::Requested;
+        }
+    }
+}
+
+void Hdma::tick_state() {
+    if (state == TransferState::Paused) {
+        // Check STAT change.
+        // Request is ignored if GB is either halted or stopped.
+        // It seems that HDMA sees the HALT state with a delay of 1 T-Cycle.
+        // Whereas STOP timing seems to be non deterministic.
+        // TODO: further investigations.
+        if (last_stat_mode != Specs::Ppu::Modes::HBLANK && stat_mode == Specs::Ppu::Modes::HBLANK && !last_halted &&
+            !stopped) {
+            // Schedule the transfer of the next chunk
+            state = TransferState::Requested;
+        }
+    }
+
+    last_stat_mode = stat_mode;
+
+    // It seems that there is window of 1 T-Cycle that HDMA HBlank can start before GB is actually halted
+    last_halted = halted;
+}
+
 void Hdma::save_state(Parcel& parcel) const {
     parcel.write_uint8(hdma1);
     parcel.write_uint8(hdma2);
@@ -229,7 +256,6 @@ void Hdma::save_state(Parcel& parcel) const {
     parcel.write_bool(active);
     parcel.write_uint8(state);
     parcel.write_uint8(mode);
-    parcel.write_uint8(phase);
     parcel.write_uint16(source.address);
     parcel.write_uint16(source.cursor);
     parcel.write_bool(source.valid);
@@ -239,6 +265,7 @@ void Hdma::save_state(Parcel& parcel) const {
     parcel.write_uint8(remaining_chunks.state);
     parcel.write_uint8(remaining_chunks.count);
     parcel.write_uint8(unblock);
+    parcel.write_bool(dma_oam_conflict);
 }
 
 void Hdma::load_state(Parcel& parcel) {
@@ -251,7 +278,6 @@ void Hdma::load_state(Parcel& parcel) {
     active = parcel.read_bool();
     state = parcel.read_uint8();
     mode = parcel.read_uint8();
-    phase = parcel.read_uint8();
     source.address = parcel.read_uint16();
     source.cursor = parcel.read_uint16();
     source.valid = parcel.read_bool();
@@ -261,6 +287,7 @@ void Hdma::load_state(Parcel& parcel) {
     remaining_chunks.state = parcel.read_uint8();
     remaining_chunks.count = parcel.read_uint8();
     unblock = parcel.read_uint8();
+    dma_oam_conflict = parcel.read_bool();
 }
 
 void Hdma::reset() {
@@ -273,7 +300,6 @@ void Hdma::reset() {
     active = false;
     state = TransferState::None;
     mode = TransferMode::GeneralPurpose;
-    phase = TransferPhase::Tick;
     source.address = 0xD430;
     source.cursor = 0;
     source.valid = false;
@@ -283,4 +309,5 @@ void Hdma::reset() {
     remaining_chunks.state = RemainingChunksUpdateState::None;
     remaining_chunks.count = 0xFF;
     unblock = UnblockState::None;
+    dma_oam_conflict = false;
 }

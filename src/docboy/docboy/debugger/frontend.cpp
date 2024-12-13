@@ -2567,6 +2567,14 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << "  " << yellow("Decay") << "     :  " << decay_time(gb.oam_bus.decay) << endl;
         b << endl;
 
+#ifdef ENABLE_CGB
+        b << cyan("WRAM Bus") << "      " << endl;
+        b << "  " << yellow("Request") << "   :       " << bus_requests(gb.wram_bus.requests) << endl;
+        b << "  " << yellow("Address") << "   :  " << bus_address(gb.wram_bus.address, gb.wram_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.wram_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.wram_bus.decay) << endl;
+        b << endl;
+#endif
         return b;
     };
 
@@ -2620,12 +2628,16 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             b <<
                 [this]() {
                     switch (gb.hdma.state) {
+                    case Hdma::TransferState::None:
+                        return Text {"None"};
+                    case Hdma::TransferState::Requested:
+                        return green("Requested");
+                    case Hdma::TransferState::Ready:
+                        return green("Ready");
                     case Hdma::TransferState::Transferring:
                         return green("Transferring");
                     case Hdma::TransferState::Paused:
                         return green("Paused");
-                    case Hdma::TransferState::None:
-                        return Text {"None"};
                     }
                     ASSERT_NO_ENTRY();
                     return Text {};
@@ -2640,20 +2652,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                         return Text {"General Purpose"};
                     case Hdma::TransferMode::HBlank:
                         return Text {"HBlank"};
-                    }
-                    ASSERT_NO_ENTRY();
-                    return Text {};
-                }()
-              << endl;
-
-            b << yellow("Phase") << "              :  ";
-            b <<
-                [this]() {
-                    switch (gb.hdma.phase) {
-                    case Hdma::TransferPhase::Tick:
-                        return Text {"Tick"};
-                    case Hdma::TransferPhase::Tock:
-                        return Text {"Tock"};
                     }
                     ASSERT_NO_ENTRY();
                     return Text {};

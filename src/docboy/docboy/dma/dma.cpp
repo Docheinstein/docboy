@@ -34,10 +34,12 @@ void Dma::start_transfer(uint8_t value) {
 void Dma::tick_t1() {
     if (transferring) {
         // Complete read request and actually read source data
-        const uint8_t src_data = mmu.flush_read_request();
+        if (!is_oam_blocked()) {
+            const uint8_t src_data = mmu.flush_read_request();
 
-        // Actually write to OAM
-        oam.flush_write_request(src_data);
+            // Actually write to OAM
+            oam.flush_write_request(src_data);
+        }
 
         cursor++;
     }
@@ -57,14 +59,16 @@ void Dma::tick_t3() {
     if (transferring) {
         if (cursor < Specs::MemoryLayout::OAM::SIZE) {
             // Start a read request for the source data
-            mmu.read_request(source + cursor);
+            if (!is_oam_blocked()) {
+                mmu.read_request(source + cursor);
 
-            // Start a write request to the OAM bus.
-            // Note that the request is initiated here: this means that if the PPU
-            // will access OAM during the next t0 and t1, conflicts will happen
-            // (likely PPU will read from the address written by DMA now).
-            // [hacktix/strikethrough]
-            oam.write_request(Specs::MemoryLayout::OAM::START + cursor);
+                // Start a write request to the OAM bus.
+                // Note that the request is initiated here: this means that if the PPU
+                // will access OAM during the next t0 and t1, conflicts will happen
+                // (likely PPU will read from the address written by DMA now).
+                // [hacktix/strikethrough]
+                oam.write_request(Specs::MemoryLayout::OAM::START + cursor);
+            }
         } else {
             // DMA transfer completed: release OAM bus
             oam.release();
@@ -95,4 +99,13 @@ void Dma::reset() {
     transferring = false;
     source = 0;
     cursor = 0;
+}
+
+inline bool Dma::is_oam_blocked() const {
+#ifdef ENABLE_CGB
+    // DMA fails to read or write if a HDMA transfer is in progress
+    return oam.is_acquired_by<Device::Hdma>();
+#else
+    return false;
+#endif
 }

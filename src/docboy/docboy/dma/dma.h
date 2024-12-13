@@ -38,6 +38,8 @@ private:
         static constexpr Type Requested = 2;
     };
 
+    bool is_oam_blocked() const;
+
     Mmu::View<Device::Dma> mmu;
     OamBus::View<Device::Dma> oam;
 

@@ -12,6 +12,7 @@ OamBus::Word OamBus::View<Dev>::flush_read_word_request() {
 
 template <Device::Type Dev>
 void OamBus::clear_write_request() {
+    // TODO: this seems incorrect from an hardware point of view: consider use decay time
     reset_bit<W<Dev>>(requests);
 }
 

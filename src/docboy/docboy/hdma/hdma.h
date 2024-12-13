@@ -4,18 +4,21 @@
 #include <cstdint>
 
 #include "docboy/bus/extbus.h"
+#include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
 #include "docboy/common/macros.h"
 #include "docboy/mmu/mmu.h"
 
 class Parcel;
+class Dma;
 
 class Hdma {
     DEBUGGABLE_CLASS()
 
 public:
     Hdma(MmuView<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
-         const UInt8& stat_mode, const bool& fetching, const bool& halted, const bool& stopped);
+         OamBus::View<Device::Hdma> oam_bus, const UInt8& stat_mode, const bool& fetching, const bool& halted,
+         const bool& stopped);
 
     void write_hdma1(uint8_t value);
     void write_hdma2(uint8_t value);
@@ -29,8 +32,6 @@ public:
     void tick_t1();
     void tick_t2();
     void tick_t3();
-
-    void tick();
 
     bool is_active() const {
         return active;
@@ -46,12 +47,6 @@ private:
         using Type = uint8_t;
         static constexpr Type HBlank = 0;
         static constexpr Type GeneralPurpose = 1;
-    };
-
-    struct TransferPhase {
-        using Type = uint8_t;
-        static constexpr Type Tick = 0;
-        static constexpr Type Tock = 1;
     };
 
     struct TransferState {
@@ -75,9 +70,15 @@ private:
         static constexpr Type Requested = 1;
     };
 
+    void tick_even();
+    void tick_odd();
+    void tick_state();
+
     Mmu::View<Device::Hdma> mmu;
     ExtBus::View<Device::Hdma> ext_bus;
     VramBus::View<Device::Hdma> vram;
+    OamBus::View<Device::Hdma> oam;
+
     const UInt8& stat_mode;
     const bool& fetching;
     const bool& halted;
@@ -95,7 +96,6 @@ private:
 
     TransferState::Type state {};
     TransferMode::Type mode {};
-    TransferPhase::Type phase {};
 
     struct {
         uint16_t address {};
@@ -116,6 +116,8 @@ private:
     } remaining_chunks;
 
     UnblockState::Type unblock {};
+
+    bool dma_oam_conflict {};
 };
 
 #endif // HDMA_H
