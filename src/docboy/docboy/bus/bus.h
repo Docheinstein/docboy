@@ -41,7 +41,7 @@ public:
     template <Device::Type Dev>
     void flush_write_request(uint8_t value);
 
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
     uint8_t read_bus(uint16_t address) const;
     void write_bus(uint16_t address, uint8_t value);
 #endif
@@ -117,7 +117,7 @@ protected:
     template <Device::Type Dev>
     static constexpr uint8_t W = 2 * Dev + 1;
 
-#ifndef ENABLE_DEBUGGER
+#if !(defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS))
     uint8_t read_bus(uint16_t address) const;
     void write_bus(uint16_t address, uint8_t value);
 #endif

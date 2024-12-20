@@ -67,7 +67,7 @@ void Mmu::BusAccess::flush_write_request(IBus* bus, uint8_t value) {
     static_cast<Bus*>(bus)->template flush_write_request<Dev>(value);
 }
 
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
 template <typename Bus>
 uint8_t Mmu::BusAccess::read_bus(const IBus* bus, uint16_t address) {
     return static_cast<const Bus*>(bus)->read_bus(address);
@@ -90,7 +90,7 @@ inline void Mmu::BusAccess::flush_write_request(uint8_t value) {
     vtable.flush_write_request(bus, value);
 }
 
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
 inline uint8_t Mmu::BusAccess::read_bus(uint16_t address) const {
     return vtable.read_bus(bus, address);
 }

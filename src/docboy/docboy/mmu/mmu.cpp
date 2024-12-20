@@ -125,7 +125,7 @@ Mmu::Mmu(ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus) :
 
 template <Device::Type Dev, typename Bus>
 Mmu::BusAccess Mmu::make_accessors(Bus* bus) {
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
     return BusAccess {bus,
                       {BusAccess::read_request<Bus, Dev>, BusAccess::flush_read_request<Bus, Dev>,
                        BusAccess::write_request<Bus, Dev>, BusAccess::flush_write_request<Bus, Dev>,

@@ -72,7 +72,7 @@ private:
             void (*write_request)(IBus*, uint16_t) {};
             void (*flush_write_request)(IBus*, uint8_t) {};
 
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
             uint8_t (*read_bus)(const IBus*, uint16_t) {};
 #endif
         } vtable;
@@ -89,7 +89,7 @@ private:
         template <typename Bus, Device::Type Dev>
         static void flush_write_request(IBus* bus, uint8_t value);
 
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
         template <typename Bus>
         static uint8_t read_bus(const IBus* bus, uint16_t address);
 #endif
@@ -99,7 +99,7 @@ private:
         void write_request(uint16_t);
         void flush_write_request(uint8_t);
 
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
         uint8_t read_bus(uint16_t) const;
 #endif
     };

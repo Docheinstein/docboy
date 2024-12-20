@@ -20,6 +20,7 @@
 #include "utils/formatters.h"
 #include "utils/os.h"
 #include "utils/path.h"
+#include "utils/strings.h"
 
 struct ColorTolerance {
     uint8_t red;
@@ -121,7 +122,7 @@ public:
         can_run = true;
 
         auto* impl = static_cast<RunnerImpl*>(this);
-        impl->onRun();
+        impl->on_run();
 
         bool has_ever_checked {false};
 
@@ -184,7 +185,7 @@ public:
         Runner<SimpleRunner>() {
     }
 
-    void onRun() {
+    void on_run() {
     }
     bool should_ever_check_expectation() {
         return false;
@@ -217,7 +218,7 @@ public:
         return *this;
     }
 
-    void onRun() {
+    void on_run() {
     }
 
     bool should_ever_check_expectation() {
@@ -326,7 +327,7 @@ public:
         return *this;
     }
 
-    void onRun() {
+    void on_run() {
         serial_link.plug1.attach(serial_buffer);
         core.attach_serial_link(serial_link.plug2);
     }
@@ -355,6 +356,73 @@ private:
     SerialLink serial_link;
     std::vector<uint8_t> last_output;
     std::vector<uint8_t> expected_output;
+};
+
+class MemoryRunner : public Runner<MemoryRunner> {
+public:
+    explicit MemoryRunner() :
+        Runner<MemoryRunner>() {
+    }
+
+    MemoryRunner& expect_output(const std::vector<std::pair<uint16_t, uint8_t>>& output) {
+        expected_output = output;
+        return *this;
+    }
+
+    void on_run() {
+    }
+
+    bool should_ever_check_expectation() {
+        return true;
+    }
+
+    bool should_check_expectation() {
+        return tick > 0 && tick % check_interval_ticks_ == 0;
+    }
+
+    bool check_expectation() {
+        bool match = true;
+
+        last_output.clear();
+
+        for (const auto& [address, value] : expected_output) {
+            uint8_t real_value = gb->mmu.bus_accessors[Device::Cpu][address].read_bus(address);
+            match = match && (real_value == value);
+            last_output.emplace_back(address, real_value);
+        }
+
+        return match;
+    }
+
+    void on_expectation_failed() {
+        UNSCOPED_INFO("=== " << rom_name << " ===");
+
+        std::string expected_output_str = "[" +
+                                          join(expected_output, ",",
+                                               [](const std::pair<uint16_t, uint8_t>& address_to_value) {
+                                                   std::stringstream str;
+                                                   str << "{" << hex(address_to_value.first) << ", "
+                                                       << hex(address_to_value.second) << "}";
+                                                   return str.str();
+                                               }) +
+                                          "]";
+        std::string last_output_str = "[" +
+                                      join(last_output, ",",
+                                           [](const std::pair<uint16_t, uint8_t>& address_to_value) {
+                                               std::stringstream str;
+                                               str << "{" << hex(address_to_value.first) << ", "
+                                                   << hex(address_to_value.second) << "}";
+                                               return str.str();
+                                           }) +
+                                      "]";
+
+        UNSCOPED_INFO("Expected output: " << expected_output_str);
+        UNSCOPED_INFO("Actual output  : " << last_output_str);
+    }
+
+private:
+    std::vector<std::pair<uint16_t, uint8_t>> last_output;
+    std::vector<std::pair<uint16_t, uint8_t>> expected_output;
 };
 
 using Inputs = std::vector<FramebufferRunner::JoypadInput>;
@@ -417,8 +485,21 @@ struct SerialRunnerParams {
     uint64_t max_ticks;
 };
 
+struct MemoryRunnerParams {
+    MemoryRunnerParams(std::string&& rom, std::vector<std::pair<uint16_t, uint8_t>>&& expected,
+                       uint64_t maxTicks_ = DURATION_MEDIUM) :
+        rom(std::move(rom)) {
+        result = std::move(expected);
+        max_ticks = maxTicks_;
+    }
+
+    std::string rom;
+    std::vector<std::pair<uint16_t, uint8_t>> result;
+    uint64_t max_ticks;
+};
+
 struct RunnerAdapter {
-    using Params = std::variant<FramebufferRunnerParams, SerialRunnerParams>;
+    using Params = std::variant<FramebufferRunnerParams, SerialRunnerParams, MemoryRunnerParams>;
 
     RunnerAdapter(std::string roms_prefix, std::string results_prefix) :
         roms_prefix {std::move(roms_prefix)},
@@ -454,6 +535,18 @@ struct RunnerAdapter {
                 .run();
         }
 
+        if (std::holds_alternative<MemoryRunnerParams>(p)) {
+            const auto& pm = std::get<MemoryRunnerParams>(p);
+
+            INFO("=== " << pm.rom << " ===");
+            return MemoryRunner()
+                .rom(roms_prefix + pm.rom)
+                .max_ticks(pm.max_ticks)
+                .check_interval_ticks(DURATION_VERY_SHORT)
+                .expect_output(pm.result)
+                .run();
+        }
+
         ASSERT_NO_ENTRY();
         return false;
     }
@@ -465,5 +558,6 @@ private:
 
 using F = FramebufferRunnerParams;
 using S = SerialRunnerParams;
+using M = MemoryRunnerParams;
 
 #endif // RUNNERS_H

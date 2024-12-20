@@ -12,7 +12,9 @@ class DebuggerBackend;
 #endif // ENABLE_DEBUGGER
 
 #ifdef ENABLE_TESTS
-#define TESTABLE_CLASS() friend class FramebufferRunner;
+#define TESTABLE_CLASS()                                                                                               \
+    friend class FramebufferRunner;                                                                                    \
+    friend class MemoryRunner;
 #else
 #define TESTABLE_CLASS()
 #endif
