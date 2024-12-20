@@ -774,6 +774,10 @@ void Ppu::vblank_last_line_7() {
     if (++dots == 454) {
         // It seems that STAT's mode is reset the last cycle (to investigate)
         update_mode<HBLANK>();
+
+        // OAM is acquired too.
+        oam.acquire();
+
         tick_selector = &Ppu::vblank_last_line_454;
     }
 }
