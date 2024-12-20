@@ -72,6 +72,10 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/cpu/stop_joypad1_interrupt1.gb", "docboy/ok.png",
                Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
 
+            // gbmicrotest
+            M {"gbmicrotest/halt/halt_bug.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/halt/halt_op_dupe.gb", {{0xFF82, 0x01}}},
+
         );
     }
 
