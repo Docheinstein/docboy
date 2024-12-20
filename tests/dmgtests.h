@@ -6,7 +6,7 @@
 
 #include "utils/strings.h"
 
-#define WIP_ONLY_TEST_ROMS 1
+#define WIP_ONLY_TEST_ROMS 0
 
 #define RUN_TEST_ROMS(...)                                                                                             \
     static RunnerAdapter adapter {TESTS_ROOT_FOLDER "/roms/dmg/", TESTS_ROOT_FOLDER "/results/dmg/"};                  \
@@ -1406,41 +1406,54 @@ TEST_CASE("dmg", "[emulation]") {
 
     SECTION("mbc") {
         SECTION("mbc1") {
-            RUN_TEST_ROMS(S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/bits_bank2.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/bits_mode.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/bits_ramg.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/multicart_rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/ram_64kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/ram_256kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/rom_2Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/rom_4Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc1/rom_16Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
+            RUN_TEST_ROMS(
+                // mooneye
+                S {"mooneye/mbc/mbc1/bits_bank1.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/bits_bank2.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/bits_mode.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/bits_ramg.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/multicart_rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/ram_64kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/ram_256kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/rom_2Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/rom_4Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc1/rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {
+                    "mooneye/mbc/mbc1/rom_16Mb.gb", {
+                        0x03, 0x05, 0x08, 0x0D, 0x15, 0x22
+                    }
+                }
+
+                // gbmicrotest
+                M {"gbmicrotest/mbc/mbc1_ram_banks.gb", {{0xFF82, 0x01}}}, );
         }
 
         SECTION("mbc2") {
-            RUN_TEST_ROMS(F {"mooneye/mbc/mbc2/bits_ramg.gb", "mooneye/ok.png", MaxTicks {300'000'000}},
-                          F {"mooneye/mbc/mbc2/bits_romb.gb", "mooneye/ok.png"},
-                          F {"mooneye/mbc/mbc2/bits_unused.gb", "mooneye/ok.png"},
-                          F {"mooneye/mbc/mbc2/ram.gb", "mooneye/ok.png"},
-                          F {"mooneye/mbc/mbc2/rom_1Mb.gb", "mooneye/ok.png"},
-                          F {"mooneye/mbc/mbc2/rom_2Mb.gb", "mooneye/ok.png"},
-                          F {"mooneye/mbc/mbc2/rom_512kb.gb", "mooneye/ok.png"});
+            RUN_TEST_ROMS(
+                // mooneye
+                F {"mooneye/mbc/mbc2/bits_ramg.gb", "mooneye/ok.png", MaxTicks {300'000'000}},
+                F {"mooneye/mbc/mbc2/bits_romb.gb", "mooneye/ok.png"},
+                F {"mooneye/mbc/mbc2/bits_unused.gb", "mooneye/ok.png"},
+                F {"mooneye/mbc/mbc2/ram.gb", "mooneye/ok.png"}, F {"mooneye/mbc/mbc2/rom_1Mb.gb", "mooneye/ok.png"},
+                F {"mooneye/mbc/mbc2/rom_2Mb.gb", "mooneye/ok.png"},
+                F {"mooneye/mbc/mbc2/rom_512kb.gb", "mooneye/ok.png"});
         }
 
         SECTION("mbc3") {
             RUN_TEST_ROMS(
+                // aaaaaa123456789
                 F {"aaaaaa123456789/rtc3test-1.gb", "aaaaaa123456789/rtc3test-1.png"},
                 F {"aaaaaa123456789/rtc3test-2.gb", "aaaaaa123456789/rtc3test-2.png"},
                 F {"aaaaaa123456789/rtc3test-3.gb", "aaaaaa123456789/rtc3test-3.png", MaxTicks {DURATION_VERY_LONG}},
 
+                // cpp
                 F {"cpp/latch-rtc-test.gb", "cpp/latch-rtc-test.png", &GREY_PALETTE},
                 F {"cpp/ramg-mbc3-test.gb", "cpp/ramg-mbc3-test.png", &GREY_PALETTE},
                 F {"cpp/rtc-invalid-banks-test.gb", "cpp/rtc-invalid-banks-test.png", &GREY_PALETTE},
 
+                // docboy
                 F {"docboy/mbc/mbc3/no_rtc.gb", "docboy/ok.png"},
                 F {"docboy/mbc/mbc3/rtc_default_enabled.gb", "docboy/ok.png"},
                 F {"docboy/mbc/mbc3/rtc_latch01.gb", "docboy/ok.png"},
@@ -1472,14 +1485,16 @@ TEST_CASE("dmg", "[emulation]") {
         }
 
         SECTION("mbc5") {
-            RUN_TEST_ROMS(S {"mooneye/mbc/mbc5/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc5/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc5/rom_2Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc5/rom_4Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc5/rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc5/rom_16Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc5/rom_32Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                          S {"mooneye/mbc/mbc5/rom_64Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
+            RUN_TEST_ROMS(
+                // mooneye
+                S {"mooneye/mbc/mbc5/rom_512kb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc5/rom_1Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc5/rom_2Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc5/rom_4Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc5/rom_8Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc5/rom_16Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc5/rom_32Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+                S {"mooneye/mbc/mbc5/rom_64Mb.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
         }
     }
 
@@ -1575,97 +1590,110 @@ TEST_CASE("dmg", "[emulation]") {
     }
 
     SECTION("memory") {
-        RUN_TEST_ROMS(F {"docboy/memory/not_usable_read_hblank.gb", "docboy/ok.png"},
-                      F {"docboy/memory/not_usable_read_oam_scan.gb", "docboy/ok.png"},
-                      F {"docboy/memory/not_usable_read_pixel_transfer.gb", "docboy/ok.png"},
-                      F {"docboy/memory/not_usable_read_ppu_off.gb", "docboy/ok.png"},
-                      F {"docboy/memory/not_usable_read_vblank.gb", "docboy/ok.png"},
-                      F {"docboy/memory/oam_read_hblank.gb", "docboy/ok.png"},
-                      F {"docboy/memory/oam_read_oam_scan.gb", "docboy/ok.png"},
-                      F {"docboy/memory/oam_read_pixel_transfer.gb", "docboy/ok.png"},
-                      F {"docboy/memory/oam_read_ppu_off.gb", "docboy/ok.png"},
-                      F {"docboy/memory/oam_read_vblank.gb", "docboy/ok.png"},
-                      F {"docboy/memory/oam_write_hblank.gb", "docboy/ok.png"},
-                      F {"docboy/memory/oam_write_oam_scan.gb", "docboy/ok.png"},
-                      F {"docboy/memory/oam_write_pixel_transfer.gb", "docboy/ok.png"},
-                      F {"docboy/memory/oam_write_vblank.gb", "docboy/ok.png"},
-                      F {"docboy/memory/vram_read_hblank.gb", "docboy/ok.png"},
-                      F {"docboy/memory/vram_read_oam_scan.gb", "docboy/ok.png"},
-                      F {"docboy/memory/vram_read_pixel_transfer.gb", "docboy/ok.png"},
-                      F {"docboy/memory/vram_read_ppu_off.gb", "docboy/ok.png"},
-                      F {"docboy/memory/vram_read_vblank.gb", "docboy/ok.png"},
-                      F {"docboy/memory/vram_write_hblank.gb", "docboy/ok.png"},
-                      F {"docboy/memory/vram_write_oam_scan.gb", "docboy/ok.png"},
-                      F {"docboy/memory/vram_write_pixel_transfer.gb", "docboy/ok.png"},
-                      F {"docboy/memory/vram_write_vblank.gb", "docboy/ok.png"}, );
+        RUN_TEST_ROMS(
+            // memory
+            F {"docboy/memory/not_usable_read_hblank.gb", "docboy/ok.png"},
+            F {"docboy/memory/not_usable_read_oam_scan.gb", "docboy/ok.png"},
+            F {"docboy/memory/not_usable_read_pixel_transfer.gb", "docboy/ok.png"},
+            F {"docboy/memory/not_usable_read_ppu_off.gb", "docboy/ok.png"},
+            F {"docboy/memory/not_usable_read_vblank.gb", "docboy/ok.png"},
+            F {"docboy/memory/oam_read_hblank.gb", "docboy/ok.png"},
+            F {"docboy/memory/oam_read_oam_scan.gb", "docboy/ok.png"},
+            F {"docboy/memory/oam_read_pixel_transfer.gb", "docboy/ok.png"},
+            F {"docboy/memory/oam_read_ppu_off.gb", "docboy/ok.png"},
+            F {"docboy/memory/oam_read_vblank.gb", "docboy/ok.png"},
+            F {"docboy/memory/oam_write_hblank.gb", "docboy/ok.png"},
+            F {"docboy/memory/oam_write_oam_scan.gb", "docboy/ok.png"},
+            F {"docboy/memory/oam_write_pixel_transfer.gb", "docboy/ok.png"},
+            F {"docboy/memory/oam_write_vblank.gb", "docboy/ok.png"},
+            F {"docboy/memory/vram_read_hblank.gb", "docboy/ok.png"},
+            F {"docboy/memory/vram_read_oam_scan.gb", "docboy/ok.png"},
+            F {"docboy/memory/vram_read_pixel_transfer.gb", "docboy/ok.png"},
+            F {"docboy/memory/vram_read_ppu_off.gb", "docboy/ok.png"},
+            F {"docboy/memory/vram_read_vblank.gb", "docboy/ok.png"},
+            F {"docboy/memory/vram_write_hblank.gb", "docboy/ok.png"},
+            F {"docboy/memory/vram_write_oam_scan.gb", "docboy/ok.png"},
+            F {"docboy/memory/vram_write_pixel_transfer.gb", "docboy/ok.png"},
+            F {"docboy/memory/vram_write_vblank.gb", "docboy/ok.png"}, );
     }
 
     SECTION("oam") {
-        RUN_TEST_ROMS(S {"mooneye/bits/mem_oam.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
+        RUN_TEST_ROMS(
+            // mooneye
+            S {"mooneye/bits/mem_oam.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}}, );
     }
 
     SECTION("oam_bug") {
-        RUN_TEST_ROMS(F {"docboy/oam_bug/oam_bug_not_usable_write_nops0.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops1.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops2.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops3.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops4.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops5.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops6.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops7.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops8.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops9.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops10.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops11.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops13.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_not_usable_write_nops14.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops0.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops1.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops2.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops3.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops4.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops5.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops6.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops7.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops8.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops9.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops10.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops11.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops13.gb", "docboy/ok.png"},
-                      F {"docboy/oam_bug/oam_bug_write_nops14.gb", "docboy/ok.png"},
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops0.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops1.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops2.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops3.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops4.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops5.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops6.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops7.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops8.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops9.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops10.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops11.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops13.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_not_usable_write_nops14.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops0.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops1.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops2.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops3.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops4.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops5.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops6.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops7.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops8.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops9.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops10.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops11.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops13.gb", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_write_nops14.gb", "docboy/ok.png"},
 
-                      F {"blargg/oam_bug/1-lcd_sync.gb", "blargg/oam_bug/1-lcd_sync.png"},
-                      F {"blargg/oam_bug/2-causes.gb", "blargg/oam_bug/2-causes.png"},
-                      F {"blargg/oam_bug/3-non_causes.gb", "blargg/oam_bug/3-non_causes.png"},
-                      F {"blargg/oam_bug/4-scanline_timing.gb", "blargg/oam_bug/4-scanline_timing.png"},
-                      F {"blargg/oam_bug/5-timing_bug.gb", "blargg/oam_bug/5-timing_bug.png"},
-                      F {"blargg/oam_bug/6-timing_no_bug.gb", "blargg/oam_bug/6-timing_no_bug.png"},
-                      F {"blargg/oam_bug/8-instr_effect.gb", "blargg/oam_bug/8-instr_effect.png"}, );
+            // blargg
+            F {"blargg/oam_bug/1-lcd_sync.gb", "blargg/oam_bug/1-lcd_sync.png"},
+            F {"blargg/oam_bug/2-causes.gb", "blargg/oam_bug/2-causes.png"},
+            F {"blargg/oam_bug/3-non_causes.gb", "blargg/oam_bug/3-non_causes.png"},
+            F {"blargg/oam_bug/4-scanline_timing.gb", "blargg/oam_bug/4-scanline_timing.png"},
+            F {"blargg/oam_bug/5-timing_bug.gb", "blargg/oam_bug/5-timing_bug.png"},
+            F {"blargg/oam_bug/6-timing_no_bug.gb", "blargg/oam_bug/6-timing_no_bug.png"},
+            F {"blargg/oam_bug/8-instr_effect.gb", "blargg/oam_bug/8-instr_effect.png"}, );
     }
     SECTION("io") {
-        RUN_TEST_ROMS(S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
+        RUN_TEST_ROMS(
+            // mooneye
+            S {"mooneye/bits/unused_hwio-GS.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}});
     }
 
     SECTION("timers") {
-        RUN_TEST_ROMS(S {"mooneye/timers/div_write.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/rapid_toggle.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tim00.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tim00_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tim01.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tim01_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tim10.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tim10_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tim11.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tim11_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tima_reload.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tima_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/timers/tma_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      S {"mooneye/div_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
-                      F {"docboy/timers/div_timing_round1.gb", "docboy/ok.png"},
-                      F {"docboy/timers/div_timing_round2.gb", "docboy/ok.png"},
-                      F {"docboy/timers/timer_interrupt_flag_timing.gb", "docboy/ok.png"},
-                      F {"docboy/timers/write_tima_while_reloading_uses_tima.gb", "docboy/ok.png"},
-                      F {"docboy/timers/write_tima_while_reloading_aborts_interrupt.gb", "docboy/ok.png"}, );
+        RUN_TEST_ROMS(
+            // mooneye
+            S {"mooneye/timers/div_write.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/rapid_toggle.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tim00.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tim00_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tim01.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tim01_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tim10.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tim10_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tim11.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tim11_div_trigger.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tima_reload.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tima_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/timers/tma_write_reloading.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+            S {"mooneye/div_timing.gb", {0x03, 0x05, 0x08, 0x0D, 0x15, 0x22}},
+
+            // docboy
+            F {"docboy/timers/div_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/timers/div_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/timers/timer_interrupt_flag_timing.gb", "docboy/ok.png"},
+            F {"docboy/timers/write_tima_while_reloading_uses_tima.gb", "docboy/ok.png"},
+            F {"docboy/timers/write_tima_while_reloading_aborts_interrupt.gb", "docboy/ok.png"}, );
     }
 
     SECTION("interrupts") {
@@ -1836,52 +1864,56 @@ TEST_CASE("dmg", "[emulation]") {
     }
 
     SECTION("serial") {
-        RUN_TEST_ROMS(F {"mooneye/serial/boot_sclk_align-dmgABCmgb.gb", "mooneye/boot_sclk_align-dmgABCmgb.png"});
+        RUN_TEST_ROMS(
+            // mooneye
+            F {"mooneye/serial/boot_sclk_align-dmgABCmgb.gb", "mooneye/boot_sclk_align-dmgABCmgb.png"});
     }
 
     SECTION("joypad") {
-        RUN_TEST_ROMS(F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png"},
-                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_a.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::A}}},
-                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_b.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::B}}},
-                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_select.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Select}}},
-                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_start.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Start}}},
-                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::A},
-                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::A}}},
-                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::B},
-                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::B}}},
-                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Select},
-                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Select}}},
-                      F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Start},
-                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Start}}},
-                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png"},
-                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_right.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Right}}},
-                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_left.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Left}}},
-                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_up.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_down.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Down}}},
-                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Right},
-                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Right}}},
-                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Left},
-                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Left}}},
-                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up},
-                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Up}}},
-                      F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
-                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Down},
-                                 {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Down}}}, );
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png"},
+            F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_a.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_b.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::B}}},
+            F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_select.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Select}}},
+            F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_start.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Start}}},
+            F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::A},
+                       {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::A}}},
+            F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::B},
+                       {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::B}}},
+            F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Select},
+                       {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Select}}},
+            F {"docboy/joypad/joypad_buttons.gb", "docboy/joypad/joypad_buttons_idle.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Start},
+                       {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Start}}},
+            F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png"},
+            F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_right.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Right}}},
+            F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_left.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Left}}},
+            F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_up.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+            F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_down.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Down}}},
+            F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Right},
+                       {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Right}}},
+            F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Left},
+                       {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Left}}},
+            F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up},
+                       {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Up}}},
+            F {"docboy/joypad/joypad_dpad.gb", "docboy/joypad/joypad_dpad_idle.png",
+               Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Down},
+                       {BOOT_DURATION + 4, Joypad::KeyState::Released, Joypad::Key::Down}}}, );
     }
 
     SECTION("apu") {
