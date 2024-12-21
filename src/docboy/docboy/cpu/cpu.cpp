@@ -622,8 +622,6 @@ inline void Cpu::tick() {
 
         // Handle it if the countdown is finished (but only at the beginning of a new instruction)
         if (interrupt.remaining_ticks == 0 && instruction.microop.counter == 0) {
-            ASSERT(halted || ime == ImeState::Enabled);
-
             halted = false;
 
             // Serve the interrupt if IME is enabled
@@ -869,20 +867,20 @@ void Cpu::check_interrupt() {
     static constexpr uint8_t INTERRUPTS_TIMINGS[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
         /*  0 : None */ {{U, U, U, U}, {U, U, U, U}},
         /*  1 : VBlank */ {{1, 1, U, U}, {1, U, U, U}},
-        /*  2 : STAT */ {{1, 1, 2, 2}, {2, 2, 2, 2}},
-        /*  3 : STAT + VBlank */ {{1, 1, 2, 2}, {1, 2, 2, 2}},
+        /*  2 : STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
+        /*  3 : STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /*  4 : Timer */ {{1, 1, U, 2}, {U, U, U, 3}},
         /*  5 : Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
-        /*  6 : Timer + STAT */ {{1, 1, 2, 2}, {2, 2, 2, 2}},
-        /*  7 : Timer + STAT + VBlank */ {{1, 1, 2, 2}, {1, 2, 2, 2}},
+        /*  6 : Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
+        /*  7 : Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /*  8 : Serial */ {{1, 1, U, 2}, {U, U, U, 3}},
         /*  9 : Serial + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
-        /* 10 : Serial + STAT */ {{1, 1, 2, 2}, {2, 2, 2, 2}},
-        /* 11 : Serial + STAT + VBlank */ {{1, 1, 2, 2}, {1, 2, 2, 2}},
+        /* 10 : Serial + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
+        /* 11 : Serial + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /* 12 : Serial + Timer */ {{1, 1, U, 2}, {U, U, U, 3}},
         /* 13 : Serial + Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
-        /* 14 : Serial + Timer + STAT */ {{1, 1, 2, 2}, {2, 2, 2, 2}},
-        /* 15 : Serial + Timer + STAT + VBlank */ {{1, 1, 2, 2}, {1, 2, 2, 2}},
+        /* 14 : Serial + Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
+        /* 15 : Serial + Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /* 16 : Joypad */ {{J, J, J, J}, {J, J, J, J}},
         /* 17 : Joypad + VBlank */ {{J, J, J, J}, {J, J, J, J}},
         /* 18 : Joypad + STAT */ {{J, J, J, J}, {J, J, J, J}},

@@ -241,25 +241,31 @@ inline void Ppu::tick_stat() {
     // Note that the interrupt request is done only on raising edge
     // [mooneye/stat_irq_blocking, mooneye/stat_lyc_onoff].
     const bool lyc_eq_ly = is_lyc_eq_ly();
-    const bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && lyc_eq_ly;
 
-    const bool hblank_irq = stat.hblank_int && stat.mode == HBLANK;
+    if (pending_stat_irq) {
+        // Actually raise STAT interrupt.
+        interrupts.raise_Interrupt<Interrupts::InterruptType::Stat>();
+        pending_stat_irq = false;
+    } else {
+        const bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && lyc_eq_ly;
 
-    // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
-    const bool vblank_irq = (stat.vblank_int || stat.oam_int) && stat.mode == VBLANK;
+        const bool hblank_irq = stat.hblank_int && stat.mode == HBLANK;
 
-    // Eventually raise STAT interrupt.
-    update_state_irq(lyc_eq_ly_irq || hblank_irq || vblank_irq);
+        // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
+        const bool vblank_irq = (stat.vblank_int || stat.oam_int) && stat.mode == VBLANK;
+
+        // Eventually schedule raise of STAT interrupt.
+        update_stat_irq(lyc_eq_ly_irq || hblank_irq || vblank_irq);
+    }
 
     // Update STAT's LYC=LY Flag according to the current comparison
     stat.lyc_eq_ly = lyc_eq_ly;
 }
 
-inline void Ppu::update_state_irq(bool irq) {
-    // Raise STAT interrupt request only on rising edge
-    if (last_stat_irq < irq) {
-        interrupts.raise_Interrupt<Interrupts::InterruptType::Stat>();
-    }
+inline void Ppu::update_stat_irq(bool irq) {
+    // Raise STAT interrupt request only on rising edge.
+    // It seems that STAT interrupt is triggered with a delay of 1 T-Cycle.
+    pending_stat_irq = last_stat_irq < irq;
     last_stat_irq = irq;
 }
 
@@ -268,7 +274,7 @@ void Ppu::update_stat_irq_for_oam_mode() {
     // Furthermore, it seems that having a pending LYC_EQ_LY signal high prevents the STAT IRQ to go low.
     // [daid/ppu_scanline_bgp]
     bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && is_lyc_eq_ly();
-    update_state_irq(stat.oam_int || lyc_eq_ly_irq);
+    update_stat_irq(stat.oam_int || lyc_eq_ly_irq);
 }
 
 inline void Ppu::tick_window() {
@@ -655,6 +661,7 @@ void Ppu::hblank_455() {
 void Ppu::hblank_last_line() {
     ASSERT(lx == 168);
     ASSERT(ly == 143);
+
     if (++dots == 454) {
         ++ly;
 
@@ -759,6 +766,7 @@ void Ppu::vblank_last_line_7() {
 
     if (++dots == 454) {
         // It seems that STAT's mode is reset the last cycle (to investigate)
+        // TODO: should be update_mode<OAM>()
         update_mode<HBLANK>();
 
         // OAM is acquired too.
@@ -1803,6 +1811,7 @@ void Ppu::save_state(Parcel& parcel) const {
 
     parcel.write_bool(last_stat_irq);
     parcel.write_bool(enable_lyc_eq_ly_irq);
+    parcel.write_bool(pending_stat_irq);
     parcel.write_uint16(dots);
     parcel.write_uint8(lx);
     parcel.write_uint8(last_bgp);
@@ -1941,6 +1950,7 @@ void Ppu::load_state(Parcel& parcel) {
 
     last_stat_irq = parcel.read_bool();
     enable_lyc_eq_ly_irq = parcel.read_bool();
+    pending_stat_irq = parcel.read_bool();
     dots = parcel.read_uint16();
     lx = parcel.read_uint8();
     last_bgp = parcel.read_uint8();
@@ -2094,6 +2104,7 @@ void Ppu::reset() {
 
     last_stat_irq = false;
     enable_lyc_eq_ly_irq = true;
+    pending_stat_irq = false;
 
 #ifdef ENABLE_CGB
     // TODO: with bootrom

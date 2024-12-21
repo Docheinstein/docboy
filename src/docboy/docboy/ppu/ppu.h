@@ -160,7 +160,7 @@ private:
     bool is_lyc_eq_ly() const;
 
     void tick_stat();
-    void update_state_irq(bool irq);
+    void update_stat_irq(bool irq);
 
     void tick_window();
 
@@ -270,6 +270,7 @@ private:
 
     bool last_stat_irq {};
     bool enable_lyc_eq_ly_irq {true};
+    bool pending_stat_irq {};
 
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
