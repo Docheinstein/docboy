@@ -1983,16 +1983,16 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Cycle") << "             :  " << gb.ppu.cycles << endl;
         b << yellow("Dots") << "              :  " << gb.ppu.dots << endl;
         b << yellow("Mode") << "              :  " << [this]() -> Text {
-            if (gb.ppu.mode == Specs::Ppu::Modes::OAM_SCAN) {
+            if (gb.ppu.stat.mode == Specs::Ppu::Modes::OAM_SCAN) {
                 return "Oam Scan";
             }
-            if (gb.ppu.mode == Specs::Ppu::Modes::PIXEL_TRANSFER) {
+            if (gb.ppu.stat.mode == Specs::Ppu::Modes::PIXEL_TRANSFER) {
                 return "Pixel Transfer";
             }
-            if (gb.ppu.mode == Specs::Ppu::Modes::HBLANK) {
+            if (gb.ppu.stat.mode == Specs::Ppu::Modes::HBLANK) {
                 return "HBlank";
             }
-            if (gb.ppu.mode == Specs::Ppu::Modes::VBLANK) {
+            if (gb.ppu.stat.mode == Specs::Ppu::Modes::VBLANK) {
                 return "VBlank";
             }
             ASSERT_NO_ENTRY();

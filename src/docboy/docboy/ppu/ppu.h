@@ -271,8 +271,6 @@ private:
     bool last_stat_irq {};
     bool enable_lyc_eq_ly_irq {true};
 
-    uint8_t mode {}; // STAT mode
-
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
 
@@ -294,8 +292,8 @@ private:
 
     bool is_fetching_sprite {};
 
-    bool is_first_line_after_turn_on {};
-    uint8_t first_line_after_turn_on_hblank_delay {}; // [0, 2]
+    bool is_glitched_line_0 {};
+    uint8_t glitched_line_0_hblank_delay {}; // [0, 2]
 
 #ifdef ENABLE_DEBUGGER
     struct {

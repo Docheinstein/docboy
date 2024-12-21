@@ -133,7 +133,6 @@ Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, 
 void Ppu::tick() {
     // Do nothing if PPU is off
     if (!lcdc.enable) {
-        stat.mode = mode;
         return;
     }
 
@@ -172,7 +171,6 @@ void Ppu::tick() {
     // WY = LY was satisfied.
     tick_window();
 
-    // Update STAT's mode accordingly to PPU mode.
     // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt.
     tick_stat();
 
@@ -218,10 +216,9 @@ void Ppu::turn_off() {
     // OAM Scan does not check for any sprite and STAT's update for HBLANK is late by 2 T-cycles.
     tick_selector = &Ppu::oam_scan_after_turn_on;
 
-    is_first_line_after_turn_on = true;
+    is_glitched_line_0 = true;
 
-    // STAT's mode goes to HBLANK, even if the PPU will start with OAM scan
-    update_mode<HBLANK>();
+    update_mode<OAM_SCAN>();
 
     vram.release();
     oam.release();
@@ -237,17 +234,6 @@ inline bool Ppu::is_lyc_eq_ly() const {
 }
 
 inline void Ppu::tick_stat() {
-    // Update STAT's mode accordingly to current PPU mode.
-    // During DMA transfer, STAT's mode appears as HBlank during OAM Scan.
-    // STAT's mode is restored as soon as DMA transfer finishes (therefore, if it finishes
-    // during OAM Scan, STAT's mode is restored to OAM Scan again).
-    // This change to STAT does not trigger eventual HBlank STAT interrupt, though.
-    if (dma_controller.is_active() && mode == OAM_SCAN) {
-        stat.mode = HBLANK;
-    } else {
-        stat.mode = mode;
-    }
-
     // STAT interrupt request is checked every dot (not only during modes or lines transitions).
     // OAM Stat interrupt seems to be an exception to this rule:
     // it is raised only as a consequence of a transition of mode, not always
@@ -257,10 +243,10 @@ inline void Ppu::tick_stat() {
     const bool lyc_eq_ly = is_lyc_eq_ly();
     const bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && lyc_eq_ly;
 
-    const bool hblank_irq = stat.hblank_int && mode == HBLANK;
+    const bool hblank_irq = stat.hblank_int && stat.mode == HBLANK;
 
     // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
-    const bool vblank_irq = (stat.vblank_int || stat.oam_int) && mode == VBLANK;
+    const bool vblank_irq = (stat.vblank_int || stat.oam_int) && stat.mode == VBLANK;
 
     // Eventually raise STAT interrupt.
     update_state_irq(lyc_eq_ly_irq || hblank_irq || vblank_irq);
@@ -395,7 +381,7 @@ void Ppu::oam_scan_done() {
 
 void Ppu::oam_scan_after_turn_on() {
     ASSERT(!oam.is_acquired_by_this());
-    ASSERT(mode == HBLANK);
+    ASSERT(stat.mode == OAM_SCAN);
 
     // First OAM Scan after PPU turn on does nothing.
     ++dots;
@@ -702,13 +688,13 @@ void Ppu::hblank_last_line_455() {
 }
 
 void Ppu::hblank_first_line_after_turn_on() {
-    ASSERT(is_first_line_after_turn_on);
-    ASSERT(mode == PIXEL_TRANSFER);
+    ASSERT(is_glitched_line_0);
+    ASSERT(stat.mode == PIXEL_TRANSFER);
     ASSERT(ly == 0);
 
     ++dots;
 
-    if (++first_line_after_turn_on_hblank_delay == 2) {
+    if (++glitched_line_0_hblank_delay == 2) {
         // STAT is updated to HBlank mode 2 dots later the first line PPU is turned on.
         update_mode<HBLANK>();
 
@@ -717,7 +703,7 @@ void Ppu::hblank_first_line_after_turn_on() {
         tick_selector = &Ppu::hblank;
 
         // Not necessary for anything else: reset this.
-        is_first_line_after_turn_on = false;
+        is_glitched_line_0 = false;
     }
 }
 
@@ -925,12 +911,12 @@ inline void Ppu::enter_hblank() {
     timings.pixel_transfer = dots - timings.oam_scan;
 #endif
 
-    if (is_first_line_after_turn_on) {
+    if (is_glitched_line_0) {
         // HBlank mode is delayed by 2 dots the first line PPU is turned on.
         // It seems that only STAT is delayed by 2 dots; but bus are released now anyhow.
         tick_selector = &Ppu::hblank_first_line_after_turn_on;
 
-        first_line_after_turn_on_hblank_delay = 0;
+        glitched_line_0_hblank_delay = 0;
     } else {
         tick_selector = ly == 143 ? &Ppu::hblank_last_line : &Ppu::hblank;
 
@@ -948,7 +934,7 @@ void Ppu::enter_vblank() {
 
     tick_selector = &Ppu::vblank;
 
-    ASSERT(mode == VBLANK);
+    ASSERT(stat.mode == VBLANK);
 
     interrupts.raise_Interrupt<Interrupts::InterruptType::VBlank>();
 
@@ -993,7 +979,7 @@ void Ppu::reset_fetcher() {
 template <uint8_t Mode>
 inline void Ppu::update_mode() {
     ASSERT(Mode <= 0b11);
-    mode = Mode;
+    stat.mode = Mode;
 }
 
 inline void Ppu::increase_lx() {
@@ -1066,7 +1052,7 @@ inline void Ppu::setup_fetcher_for_window() {
 }
 
 inline void Ppu::handle_oam_scan_buses_oddities() {
-    ASSERT(mode == OAM_SCAN);
+    ASSERT(stat.mode == OAM_SCAN);
 
     if (dots == 76) {
         // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
@@ -1817,7 +1803,6 @@ void Ppu::save_state(Parcel& parcel) const {
 
     parcel.write_bool(last_stat_irq);
     parcel.write_bool(enable_lyc_eq_ly_irq);
-    parcel.write_uint8(mode);
     parcel.write_uint16(dots);
     parcel.write_uint8(lx);
     parcel.write_uint8(last_bgp);
@@ -1848,8 +1833,8 @@ void Ppu::save_state(Parcel& parcel) const {
 
     parcel.write_bool(is_fetching_sprite);
 
-    parcel.write_bool(is_first_line_after_turn_on);
-    parcel.write_uint8(first_line_after_turn_on_hblank_delay);
+    parcel.write_bool(is_glitched_line_0);
+    parcel.write_uint8(glitched_line_0_hblank_delay);
 
     parcel.write_uint8(registers.oam.a);
     parcel.write_uint8(registers.oam.b);
@@ -1956,7 +1941,6 @@ void Ppu::load_state(Parcel& parcel) {
 
     last_stat_irq = parcel.read_bool();
     enable_lyc_eq_ly_irq = parcel.read_bool();
-    mode = parcel.read_uint8();
     dots = parcel.read_uint16();
     lx = parcel.read_uint8();
     last_bgp = parcel.read_uint8();
@@ -1987,8 +1971,8 @@ void Ppu::load_state(Parcel& parcel) {
 
     is_fetching_sprite = parcel.read_bool();
 
-    is_first_line_after_turn_on = parcel.read_bool();
-    first_line_after_turn_on_hblank_delay = parcel.read_uint8();
+    is_glitched_line_0 = parcel.read_bool();
+    glitched_line_0_hblank_delay = parcel.read_uint8();
 
     registers.oam.a = parcel.read_uint8();
     registers.oam.b = parcel.read_uint8();
@@ -2110,8 +2094,6 @@ void Ppu::reset() {
 
     last_stat_irq = false;
     enable_lyc_eq_ly_irq = true;
-
-    mode = stat.mode;
 
 #ifdef ENABLE_CGB
     // TODO: with bootrom
@@ -2246,11 +2228,23 @@ void Ppu::write_lcdc(uint8_t value) {
 }
 
 uint8_t Ppu::read_stat() const {
+    uint8_t stat_mode;
+
+    // Usually, reading from STAT yield the correct PPU mode.
+    // There are a few exceptions, though:
+    // 1) For the first line after PPU is turned off, STAT's mode appears as HBlank during OAM Scan.
+    // 2) During DMA transfer, STAT's mode appears as HBlank during OAM Scan.
+    if ((is_glitched_line_0 && stat.mode == OAM_SCAN) || (dma_controller.is_active() && stat.mode == OAM_SCAN)) {
+        stat_mode = HBLANK;
+    } else {
+        stat_mode = stat.mode;
+    }
+
     return 0b10000000 | stat.lyc_eq_ly_int << Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT |
            stat.oam_int << Specs::Bits::Video::STAT::OAM_INTERRUPT |
            stat.vblank_int << Specs::Bits::Video::STAT::VBLANK_INTERRUPT |
            stat.hblank_int << Specs::Bits::Video::STAT::HBLANK_INTERRUPT |
-           stat.lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY | stat.mode;
+           stat.lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY | stat_mode;
 }
 
 void Ppu::write_stat(uint8_t value) {
