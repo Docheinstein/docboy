@@ -6,7 +6,7 @@
 
 #include "utils/strings.h"
 
-#define WIP_ONLY_TEST_ROMS 1
+#define WIP_ONLY_TEST_ROMS 0
 
 #define RUN_TEST_ROMS(...)                                                                                             \
     static RunnerAdapter adapter {TESTS_ROOT_FOLDER "/roms/dmg/", TESTS_ROOT_FOLDER "/results/dmg/"};                  \
@@ -197,7 +197,31 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/ppu/hblank_stat_scx6_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_stat_scx6_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/hblank_stat_scx7_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/hblank_stat_scx7_round2.gb", "docboy/ok.png"}, F {"docboy/ppu/ly_154.gb", "docboy/ok.png"},
+            F {"docboy/ppu/hblank_stat_scx7_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_ly_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_ly_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_lyc_eq_ly_stat_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_lyc_eq_ly_stat_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_if_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_if_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_if_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_stat_clears_irq.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_stat_clears_irq_b.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_hblank_stat_if_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_hblank_stat_if_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_ly_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_ly_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_lyc_eq_ly_stat_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_lyc_eq_ly_stat_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_if_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_if_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_if_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_stat_clears_irq.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_stat_clears_irq_b.gb", "docboy/ok.png"}, F {"docboy/ppu/ly_154.gb", "docboy/ok.png"},
             F {"docboy/ppu/ly_154_lyc_eq_ly_timing_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/ly_154_lyc_eq_ly_timing_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/ly_154_lyc_eq_ly_timing_round3.gb", "docboy/ok.png"},
@@ -2428,6 +2452,31 @@ TEST_CASE("dmg", "[emulation]") {
 #else
     SECTION("wip") {
         RUN_TEST_ROMS(
+
+            F {"docboy/ppu/ly_143_ly_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_ly_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_lyc_eq_ly_stat_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_lyc_eq_ly_stat_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_if_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_if_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_if_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_oam_stat_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_stat_clears_irq.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_143_stat_clears_irq_b.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_hblank_stat_if_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_hblank_stat_if_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_ly_timing_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_ly_timing_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_lyc_eq_ly_stat_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_lyc_eq_ly_stat_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_if_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_if_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_if_round3.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_oam_stat_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_stat_clears_irq.gb", "docboy/ok.png"},
+            F {"docboy/ppu/ly_144_stat_clears_irq_b.gb", "docboy/ok.png"},
 
 #if 0
 M{"gbmicrotest/ppu/hblank_int_di_timing_a.gb", {{0xFF82, 0x01}}},

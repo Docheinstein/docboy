@@ -80,6 +80,7 @@ const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
     &Ppu::hblank_454,
     &Ppu::hblank_455,
     &Ppu::hblank_last_line,
+    &Ppu::hblank_last_line_453,
     &Ppu::hblank_last_line_454,
     &Ppu::hblank_last_line_455,
     &Ppu::hblank_first_line_after_turn_on,
@@ -214,11 +215,11 @@ void Ppu::turn_off() {
     // The first line after PPU is turn on behaves differently.
     // STAT's mode remains in HBLANK during OAM Scan, OAM Bus is not acquired,
     // OAM Scan does not check for any sprite and STAT's update for HBLANK is late by 2 T-cycles.
+    update_mode<OAM_SCAN>();
+
     tick_selector = &Ppu::oam_scan_after_turn_on;
 
     is_glitched_line_0 = true;
-
-    update_mode<OAM_SCAN>();
 
     vram.release();
     oam.release();
@@ -269,12 +270,18 @@ inline void Ppu::update_stat_irq(bool irq) {
     last_stat_irq = irq;
 }
 
-void Ppu::update_stat_irq_for_oam_mode() {
+inline void Ppu::update_stat_irq_for_oam_mode() {
     // OAM mode interrupt is not checked every dot: it is checked only here during mode transition.
     // Furthermore, it seems that having a pending LYC_EQ_LY signal high prevents the STAT IRQ to go low.
     // [daid/ppu_scanline_bgp]
     bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && is_lyc_eq_ly();
     update_stat_irq(stat.oam_int || lyc_eq_ly_irq);
+}
+
+inline void Ppu::update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq() {
+    bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && is_lyc_eq_ly();
+    bool irq = stat.oam_int || lyc_eq_ly_irq;
+    pending_stat_irq = last_stat_irq < irq;
 }
 
 inline void Ppu::tick_window() {
@@ -662,14 +669,29 @@ void Ppu::hblank_last_line() {
     ASSERT(lx == 168);
     ASSERT(ly == 143);
 
-    if (++dots == 454) {
-        ++ly;
+    if (++dots == 453) {
+        // Eventually raise OAM interrupt
 
-        // LYC_EQ_LY IRQ is disabled for dot 454.
-        enable_lyc_eq_ly_irq = false;
+        // It seems that last_stat_irq is not reset by this attempt to raise an interrupt.
+        // (e.g. even if LY=LYC, LYC_EQ_LY STAT interrupt does not happen for the next line).
+        // TODO: investigate further: seems strange.
+        update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq();
 
-        tick_selector = &Ppu::hblank_last_line_454;
+        tick_selector = &Ppu::hblank_last_line_453;
     }
+}
+
+void Ppu::hblank_last_line_453() {
+    ASSERT(dots == 453);
+
+    ++dots;
+
+    ++ly;
+
+    // LYC_EQ_LY IRQ is disabled for dot 454.
+    enable_lyc_eq_ly_irq = false;
+
+    tick_selector = &Ppu::hblank_last_line_454;
 }
 
 void Ppu::hblank_last_line_454() {
@@ -681,16 +703,17 @@ void Ppu::hblank_last_line_454() {
     ASSERT(!enable_lyc_eq_ly_irq);
     enable_lyc_eq_ly_irq = true;
 
-    tick_selector = &Ppu::hblank_last_line_455;
-
     // VBlank mode is set at dot 455 (though I'm not sure about it)
     update_mode<VBLANK>();
+
+    tick_selector = &Ppu::hblank_last_line_455;
 }
 
 void Ppu::hblank_last_line_455() {
     ASSERT(dots == 455);
 
     dots = 0;
+
     enter_vblank();
 }
 
@@ -769,10 +792,10 @@ void Ppu::vblank_last_line_7() {
         // TODO: should be update_mode<OAM>()
         update_mode<HBLANK>();
 
+        tick_selector = &Ppu::vblank_last_line_454;
+
         // OAM is acquired too.
         oam.acquire();
-
-        tick_selector = &Ppu::vblank_last_line_454;
     }
 }
 
@@ -808,9 +831,9 @@ void Ppu::enter_oam_scan() {
 
     oam_scan.count = 0;
 
-    tick_selector = &Ppu::oam_scan_even;
-
     update_mode<OAM_SCAN>();
+
+    tick_selector = &Ppu::oam_scan_even;
 
     ASSERT(!vram.is_acquired_by_this());
     oam.acquire();
@@ -840,9 +863,9 @@ void Ppu::enter_pixel_transfer() {
 
     reset_fetcher();
 
-    tick_selector = &Ppu::pixel_transfer_dummy_lx0;
-
     update_mode<PIXEL_TRANSFER>();
+
+    tick_selector = &Ppu::pixel_transfer_dummy_lx0;
 
     vram.acquire();
     oam.acquire();
@@ -926,9 +949,9 @@ inline void Ppu::enter_hblank() {
 
         glitched_line_0_hblank_delay = 0;
     } else {
-        tick_selector = ly == 143 ? &Ppu::hblank_last_line : &Ppu::hblank;
-
         update_mode<HBLANK>();
+
+        tick_selector = ly == 143 ? &Ppu::hblank_last_line : &Ppu::hblank;
     }
 
     vram.release();

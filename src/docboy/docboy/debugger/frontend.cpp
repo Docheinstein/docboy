@@ -2035,7 +2035,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 gb.ppu.tick_selector == &Ppu::hblank_454 || gb.ppu.tick_selector == &Ppu::hblank_455) {
                 return "HBlank";
             }
-            if (gb.ppu.tick_selector == &Ppu::hblank_last_line || gb.ppu.tick_selector == &Ppu::hblank_last_line_454 ||
+            if (gb.ppu.tick_selector == &Ppu::hblank_last_line || gb.ppu.tick_selector == &Ppu::hblank_last_line_453 ||
+                gb.ppu.tick_selector == &Ppu::hblank_last_line_454 ||
                 gb.ppu.tick_selector == &Ppu::hblank_last_line_455) {
                 return "HBlank (Last Line)";
             }

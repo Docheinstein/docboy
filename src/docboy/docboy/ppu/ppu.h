@@ -181,6 +181,7 @@ private:
     void hblank_454();
     void hblank_455();
     void hblank_last_line();
+    void hblank_last_line_453();
     void hblank_last_line_454();
     void hblank_last_line_455();
     void hblank_first_line_after_turn_on();
@@ -206,6 +207,7 @@ private:
     void update_mode();
 
     void update_stat_irq_for_oam_mode();
+    void update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq();
 
     void increase_lx();
 
