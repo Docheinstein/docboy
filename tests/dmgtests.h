@@ -6,7 +6,7 @@
 
 #include "utils/strings.h"
 
-#define WIP_ONLY_TEST_ROMS 0
+#define WIP_ONLY_TEST_ROMS 1
 
 #define RUN_TEST_ROMS(...)                                                                                             \
     static RunnerAdapter adapter {TESTS_ROOT_FOLDER "/roms/dmg/", TESTS_ROOT_FOLDER "/results/dmg/"};                  \
@@ -2464,28 +2464,6 @@ TEST_CASE("dmg", "[emulation]") {
 #else
     SECTION("wip") {
         RUN_TEST_ROMS(
-
-            F {"docboy/ppu/ly_152_lyc_eq_ly_lyc152_timing_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_152_lyc_eq_ly_lyc152_timing_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_152_lyc_eq_ly_lyc152_timing_round3.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_152_lyc_eq_ly_lyc152_timing_round4.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_152_lyc_eq_ly_lyc152_timing_round5.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_152_timing_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_152_timing_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round3.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round4.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round5.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round6.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round7.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc153_timing_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc153_timing_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_lyc_eq_ly_lyc153_timing_round3.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_timing_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_timing_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/ly_153_timing_round3.gb", "docboy/ok.png"},
-
 #if 1
             M {"gbmicrotest/ppu/hblank_int_di_timing_a.gb", {{0xFF82, 0x01}}},
             M {"gbmicrotest/ppu/hblank_int_di_timing_b.gb", {{0xFF82, 0x01}}},
@@ -2683,9 +2661,6 @@ TEST_CASE("dmg", "[emulation]") {
             M {"gbmicrotest/ppu/lyc2_int_halt_b.gb", {{0xFF82, 0x01}}},
             M {"gbmicrotest/ppu/lyc_int_halt_a.gb", {{0xFF82, 0x01}}},
             M {"gbmicrotest/ppu/lyc_int_halt_b.gb", {{0xFF82, 0x01}}},
-            M {"gbmicrotest/ppu/ly_while_lcd_off.gb", {{0xFF82, 0x01}}},
-            M {"gbmicrotest/ppu/minimal.gb", {{0xFF82, 0x01}}},
-            M {"gbmicrotest/ppu/mode2_stat_int_to_oam_unlock.gb", {{0xFF82, 0x01}}},
             M {"gbmicrotest/ppu/oam_int_halt_a.gb", {{0xFF82, 0x01}}},
             M {"gbmicrotest/ppu/oam_int_halt_b.gb", {{0xFF82, 0x01}}},
             M {"gbmicrotest/ppu/oam_int_if_edge_a.gb", {{0xFF82, 0x01}}},

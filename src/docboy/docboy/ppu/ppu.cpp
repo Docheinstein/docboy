@@ -182,6 +182,9 @@ void Ppu::tick() {
     // the very same T-cycle LY is 0 (but was 153 the T-cycle before).
     last_ly = ly;
 
+    // It seems that there is a 1 T-cycle delay for the LYC value used for the comparison LYC == LY.
+    last_lyc = lyc;
+
     ASSERT(dots < 456);
 
 #ifdef ENABLE_DEBUGGER
@@ -193,6 +196,8 @@ void Ppu::tick() {
 
 void Ppu::turn_on() {
     ASSERT(ly == 0);
+
+    last_lyc = lyc;
 
     // STAT's LYC_EQ_LY is updated properly (but interrupt is not raised)
     stat.lyc_eq_ly = is_lyc_eq_ly();
@@ -240,12 +245,7 @@ inline bool Ppu::is_lyc_eq_ly() const {
     // * The last scanline (LY = 153 = 0) the LY values differs from what LYC_EQ_LY reads and from the related IRQ.
     // [mooneye/lcdon_timing, daid/ppu_scanline_bgp]
 
-    // It seems that there is a 1 T-cycle delay for the LY value used for the comparison LYC == LY.
-    // This is supported by the fact that for LY = 153, LYC_EQ_LY STAT flag is raised for LYC = 153
-    // the very same T-cycle LY is 0 (but was 153 the T-cycle before).
-    // TODO: further researches
-
-    return (lyc == last_ly && enable_lyc_eq_ly_irq);
+    return (last_lyc == last_ly && enable_lyc_eq_ly_irq);
 }
 
 inline void Ppu::tick_stat() {
@@ -1882,6 +1882,7 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_uint16(dots);
     parcel.write_uint8(lx);
     parcel.write_uint8(last_ly);
+    parcel.write_uint8(last_lyc);
     parcel.write_uint8(last_bgp);
     parcel.write_uint8(last_wx);
 
@@ -2022,6 +2023,7 @@ void Ppu::load_state(Parcel& parcel) {
     dots = parcel.read_uint16();
     lx = parcel.read_uint8();
     last_ly = parcel.read_uint8();
+    last_lyc = parcel.read_uint8();
     last_bgp = parcel.read_uint8();
     last_wx = parcel.read_uint8();
 
@@ -2185,6 +2187,7 @@ void Ppu::reset() {
     lx = 0;
 
     last_ly = ly;
+    last_lyc = lyc;
     last_bgp = if_bootrom_else(0, 0xFC);
     last_wx = 0;
 

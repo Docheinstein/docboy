@@ -280,6 +280,7 @@ private:
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
 
     uint8_t last_ly {};  // LY delayed by 1 t-cycle
+    uint8_t last_lyc {}; // LYC delayed by 1 t-cycle
     uint8_t last_bgp {}; // BGP delayed by 1 t-cycle
     uint8_t last_wx {};  // WX delayed by 1 t-cycle
     Lcdc last_lcdc {};   // LCDC delayed by 1 t-cycle
