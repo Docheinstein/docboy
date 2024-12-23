@@ -188,8 +188,10 @@ private:
 
     void vblank();
     void vblank_454();
+    void vblank_455();
     void vblank_last_line();
     void vblank_last_line_2();
+    void vblank_last_line_3();
     void vblank_last_line_7();
     void vblank_last_line_454();
 
@@ -277,6 +279,7 @@ private:
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
 
+    uint8_t last_ly {};  // LY delayed by 1 t-cycle
     uint8_t last_bgp {}; // BGP delayed by 1 t-cycle
     uint8_t last_wx {};  // WX delayed by 1 t-cycle
     Lcdc last_lcdc {};   // LCDC delayed by 1 t-cycle

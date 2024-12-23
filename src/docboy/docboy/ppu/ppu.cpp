@@ -86,8 +86,10 @@ const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
     &Ppu::hblank_first_line_after_turn_on,
     &Ppu::vblank,
     &Ppu::vblank_454,
+    &Ppu::vblank_455,
     &Ppu::vblank_last_line,
     &Ppu::vblank_last_line_2,
+    &Ppu::vblank_last_line_3,
     &Ppu::vblank_last_line_7,
     &Ppu::vblank_last_line_454,
 };
@@ -140,6 +142,18 @@ void Ppu::tick() {
     // Tick PPU by one dot
     (this->*(tick_selector))();
 
+    // Check for window activation (the state holds for entire frame).
+    // The activation conditions are checked every dot,
+    // (not only during pixel transfer or at LY == WX).
+    // This is also reflected in the fact that window glitches for
+    // the rest of the frame by pushing 00 pixels if WX == LX during the fetched
+    // push stage if at some point in the entire frame the condition
+    // WY = LY was satisfied.
+    tick_window();
+
+    // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt.
+    tick_stat();
+
     // There is 1 T-cycle delay between BGP and the BGP value the PPU sees.
     // During this T-Cycle, the PPU sees the last BGP ORed with the new one.
     // Therefore, we store the last BGP value here so that we can use (BGP | LAST_BGP)
@@ -163,17 +177,10 @@ void Ppu::tick() {
     //        [mealybug/m3_lcdc_obj_en_change]
     last_lcdc = lcdc;
 
-    // Check for window activation (the state holds for entire frame).
-    // The activation conditions are checked every dot,
-    // (not only during pixel transfer or at LY == WX).
-    // This is also reflected in the fact that window glitches for
-    // the rest of the frame by pushing 00 pixels if WX == LX during the fetched
-    // push stage if at some point in the entire frame the condition
-    // WY = LY was satisfied.
-    tick_window();
-
-    // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt.
-    tick_stat();
+    // It seems that there is a 1 T-cycle delay for the LY value used for the comparison LYC == LY.
+    // This is supported by the fact that for LY = 153, LYC_EQ_LY STAT flag is raised for LYC = 153
+    // the very same T-cycle LY is 0 (but was 153 the T-cycle before).
+    last_ly = ly;
 
     ASSERT(dots < 456);
 
@@ -194,6 +201,7 @@ void Ppu::turn_on() {
 void Ppu::turn_off() {
     dots = 0;
     ly = 0;
+    last_ly = 0;
     lcd.reset_cursor();
 
     // Clear oam entries eventually still there
@@ -231,7 +239,13 @@ inline bool Ppu::is_lyc_eq_ly() const {
     // * LYC_EQ_LY is always 0 at dot 454
     // * The last scanline (LY = 153 = 0) the LY values differs from what LYC_EQ_LY reads and from the related IRQ.
     // [mooneye/lcdon_timing, daid/ppu_scanline_bgp]
-    return (lyc == ly) && enable_lyc_eq_ly_irq;
+
+    // It seems that there is a 1 T-cycle delay for the LY value used for the comparison LYC == LY.
+    // This is supported by the fact that for LY = 153, LYC_EQ_LY STAT flag is raised for LYC = 153
+    // the very same T-cycle LY is 0 (but was 153 the T-cycle before).
+    // TODO: further researches
+
+    return (lyc == last_ly && enable_lyc_eq_ly_irq);
 }
 
 inline void Ppu::tick_stat() {
@@ -638,6 +652,7 @@ void Ppu::hblank_453() {
     ++ly;
 
     // LYC_EQ_LY IRQ is disabled for dot 454.
+    ASSERT(enable_lyc_eq_ly_irq);
     enable_lyc_eq_ly_irq = false;
 
     tick_selector = &Ppu::hblank_454;
@@ -689,6 +704,7 @@ void Ppu::hblank_last_line_453() {
     ++ly;
 
     // LYC_EQ_LY IRQ is disabled for dot 454.
+    ASSERT(enable_lyc_eq_ly_irq);
     enable_lyc_eq_ly_irq = false;
 
     tick_selector = &Ppu::hblank_last_line_454;
@@ -739,10 +755,12 @@ void Ppu::hblank_first_line_after_turn_on() {
 
 void Ppu::vblank() {
     ASSERT(ly >= 144 && ly < 154);
+
     if (++dots == 454) {
         ++ly;
 
         // LYC_EQ_LY IRQ is disabled for dot 454.
+        ASSERT(enable_lyc_eq_ly_irq);
         enable_lyc_eq_ly_irq = false;
 
         tick_selector = &Ppu::vblank_454;
@@ -750,12 +768,25 @@ void Ppu::vblank() {
 }
 
 void Ppu::vblank_454() {
-    ASSERT(dots >= 454);
+    ASSERT(ly >= 144 && ly < 154);
+    ASSERT(dots == 454);
 
-    if (++dots == 456) {
-        dots = 0;
-        tick_selector = ly == 153 ? &Ppu::vblank_last_line : &Ppu::vblank;
-    }
+    ++dots;
+
+    // Enable LYC_EQ_LY IRQ again.
+    ASSERT(!enable_lyc_eq_ly_irq);
+    enable_lyc_eq_ly_irq = true;
+
+    tick_selector = &Ppu::vblank_455;
+}
+
+void Ppu::vblank_455() {
+    ASSERT(ly >= 144 && ly < 154);
+    ASSERT(dots == 455);
+
+    dots = 0;
+
+    tick_selector = ly == 153 ? &Ppu::vblank_last_line : &Ppu::vblank;
 }
 
 void Ppu::vblank_last_line() {
@@ -765,20 +796,34 @@ void Ppu::vblank_last_line() {
         // LY is reset to 0
         ly = 0;
 
-        // Although LY is set to 0, LYC_EQ_LY IRQ is disabled (i.e. does not trigger for LY=0).
-        enable_lyc_eq_ly_irq = false;
-
         tick_selector = &Ppu::vblank_last_line_2;
     }
 }
 
 void Ppu::vblank_last_line_2() {
     ASSERT(ly == 0);
-    ASSERT(dots >= 2);
+    ASSERT(dots == 2);
+
+    ++dots;
+
+    // LYC_EQ_LY IRQ is disabled for dot 2 through 6.
+    // TODO: why is LYC_EQ_LY disabled for 4 dots for LY==153,
+    //       while just for 1 dot for the other scanlines?
+    ASSERT(enable_lyc_eq_ly_irq);
+    enable_lyc_eq_ly_irq = false;
+
+    tick_selector = &Ppu::vblank_last_line_3;
+}
+
+void Ppu::vblank_last_line_3() {
+    ASSERT(ly == 0);
+    ASSERT(dots >= 3);
 
     if (++dots == 7) {
         // Enable LYC_EQ_LY IRQ again.
+        ASSERT(!enable_lyc_eq_ly_irq);
         enable_lyc_eq_ly_irq = true;
+
         tick_selector = &Ppu::vblank_last_line_7;
     }
 }
@@ -789,7 +834,6 @@ void Ppu::vblank_last_line_7() {
 
     if (++dots == 454) {
         // It seems that STAT's mode is reset the last cycle (to investigate)
-        // TODO: should be update_mode<OAM>()
         update_mode<HBLANK>();
 
         tick_selector = &Ppu::vblank_last_line_454;
@@ -1837,6 +1881,7 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_bool(pending_stat_irq);
     parcel.write_uint16(dots);
     parcel.write_uint8(lx);
+    parcel.write_uint8(last_ly);
     parcel.write_uint8(last_bgp);
     parcel.write_uint8(last_wx);
 
@@ -1976,6 +2021,7 @@ void Ppu::load_state(Parcel& parcel) {
     pending_stat_irq = parcel.read_bool();
     dots = parcel.read_uint16();
     lx = parcel.read_uint8();
+    last_ly = parcel.read_uint8();
     last_bgp = parcel.read_uint8();
     last_wx = parcel.read_uint8();
 
@@ -2138,6 +2184,7 @@ void Ppu::reset() {
 #endif
     lx = 0;
 
+    last_ly = ly;
     last_bgp = if_bootrom_else(0, 0xFC);
     last_wx = 0;
 
