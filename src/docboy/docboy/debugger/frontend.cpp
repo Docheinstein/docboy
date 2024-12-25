@@ -1142,7 +1142,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << subheader("interrupts", width) << endl;
 
-        b << yellow("State") << "   :  " <<
+        b << yellow("State") << "    :  " <<
             [this]() {
                 switch (gb.cpu.interrupt.state) {
                 case Cpu::InterruptState::None:
@@ -1157,15 +1157,25 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             }()
           << endl;
 
+        b << yellow("Blocked") << "  :  " <<
+            [this]() {
+                if (gb.interrupts.block_interrupts) {
+                    return Text {"1"};
+                }
+
+                return darkgray("0");
+            }()
+          << endl;
+
         if (gb.cpu.interrupt.state == Cpu::InterruptState::Pending) {
-            b << yellow("Ticks") << "   :  " << gb.cpu.interrupt.remaining_ticks << endl;
+            b << yellow("Ticks") << "    :  " << gb.cpu.interrupt.remaining_ticks << endl;
         }
 
         Text t {hr(width)};
 
         b << hr(width) << endl;
 
-        b << red("IME") << "     :  " <<
+        b << red("IME") << "      :  " <<
             [this]() {
                 switch (gb.cpu.ime) {
                 case Cpu::ImeState::Enabled:
@@ -1182,27 +1192,27 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             }()
           << endl;
 
-        b << red("IE ") << "     :  " << bin(IE) << " (" << hex(IE) << ")" << endl;
-        b << red("IF ") << "     :  " << bin(IF) << " (" << hex(IF) << ")" << endl;
+        b << red("IE ") << "      :  " << bin(IE) << " (" << hex(IE) << ")" << endl;
+        b << red("IF ") << "      :  " << bin(IF) << " (" << hex(IF) << ")" << endl;
 
         const auto intr = [colorbool](bool IME, bool IE, bool IF) {
             return "IE : " + colorbool(IE) + "    IF : " + colorbool(IF) + "    " +
                    ((IME && IE && IF) ? green("ON ") : darkgray("OFF"));
         };
 
-        b << red("VBLANK") << "  :  "
+        b << red("VBLANK") << "   :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::VBLANK>(IE), test_bit<Specs::Bits::Interrupts::VBLANK>(IF))
           << endl;
-        b << red("STAT") << "    :  "
+        b << red("STAT") << "     :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::STAT>(IE), test_bit<Specs::Bits::Interrupts::STAT>(IF))
           << endl;
-        b << red("TIMER") << "   :  "
+        b << red("TIMER") << "    :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::TIMER>(IE), test_bit<Specs::Bits::Interrupts::TIMER>(IF))
           << endl;
-        b << red("JOYPAD") << "  :  "
+        b << red("JOYPAD") << "   :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::JOYPAD>(IE), test_bit<Specs::Bits::Interrupts::JOYPAD>(IF))
           << endl;
-        b << red("SERIAL") << "  :  "
+        b << red("SERIAL") << "   :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::SERIAL>(IE), test_bit<Specs::Bits::Interrupts::SERIAL>(IF))
           << endl;
 

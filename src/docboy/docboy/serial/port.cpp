@@ -37,5 +37,5 @@ uint8_t SerialPort::serial_read() {
 void SerialPort::serial_write(uint8_t data) {
     sb = data;
     reset_bit<Specs::Bits::Serial::SC::TRANSFER_START>(sc);
-    interrupts.raise_Interrupt<Interrupts::InterruptType::Serial>();
+    interrupts.raise_interrupt<Interrupts::InterruptType::Serial>();
 }

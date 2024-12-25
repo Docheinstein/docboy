@@ -259,7 +259,7 @@ inline void Ppu::tick_stat() {
 
     if (pending_stat_irq) {
         // Actually raise STAT interrupt.
-        interrupts.raise_Interrupt<Interrupts::InterruptType::Stat>();
+        interrupts.raise_interrupt<Interrupts::InterruptType::Stat>();
         pending_stat_irq = false;
     } else {
         const bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && lyc_eq_ly;
@@ -1011,7 +1011,7 @@ void Ppu::enter_vblank() {
 
     ASSERT(stat.mode == VBLANK);
 
-    interrupts.raise_Interrupt<Interrupts::InterruptType::VBlank>();
+    interrupts.raise_interrupt<Interrupts::InterruptType::VBlank>();
 
     ASSERT(!vram.is_acquired_by_this());
     ASSERT(!oam.is_acquired_by_this());

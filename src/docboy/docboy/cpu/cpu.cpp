@@ -624,8 +624,10 @@ inline void Cpu::tick() {
         if (interrupt.remaining_ticks == 0 && instruction.microop.counter == 0) {
             halted = false;
 
-            // Serve the interrupt if IME is enabled
-            if (ime == ImeState::Enabled) {
+            // Serve the interrupt if IME is enabled.
+            // Note that if either IE or IF is changed during the time the interrupt is pending so that no more
+            // interrupts should be served (IE & IF & 0b11111 == 0), then the interrupt is aborted.
+            if (ime == ImeState::Enabled && get_pending_interrupts()) {
                 interrupt.state = InterruptState::Serving;
                 serve_interrupt();
             } else {

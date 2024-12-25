@@ -113,6 +113,7 @@ inline void Core::tick_t3() const {
     gb.hdma.tick_t3();
 #endif
     gb.dma.tick_t3();
+    gb.interrupts.tick_t3();
     gb.stop_controller.tick();
     gb.cartridge_slot.tick();
     gb.apu.tick_t3();

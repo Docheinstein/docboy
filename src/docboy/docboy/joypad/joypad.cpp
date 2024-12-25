@@ -12,7 +12,7 @@ void Joypad::set_key_state(Key key, KeyState state) {
         (state == KeyState::Pressed) && (p1.select_dpad ? key <= Key::Start : key >= Key::Right);
 
     if (raise_interrupt) {
-        interrupts.raise_Interrupt<Interrupts::InterruptType::Joypad>();
+        interrupts.raise_interrupt<Interrupts::InterruptType::Joypad>();
     }
 }
 

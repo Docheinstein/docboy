@@ -119,7 +119,7 @@ inline void Timers::handle_pending_tima_reload() {
     if (tima_state != TimaReloadState::None) {
         if (--tima_state == TimaReloadState::Reload) {
             tima = (uint8_t)tma;
-            interrupts.raise_Interrupt<Interrupts::InterruptType::Timer>();
+            interrupts.raise_interrupt<Interrupts::InterruptType::Timer>();
         }
     }
 }
