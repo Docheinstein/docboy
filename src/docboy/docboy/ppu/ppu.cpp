@@ -182,16 +182,16 @@ void Ppu::tick() {
 
         // It seems that there is a 1 T-cycle delay for the LYC value used for the comparison LYC == LY.
         last_lyc = lyc;
+
+#ifdef ENABLE_DEBUGGER
+        ++cycles;
+#endif
     }
 
     // Update STAT's mode (usually it matches the "internal" PPu mode, but there are a few exceptions).
     tick_stat();
 
     ASSERT(dots < 456);
-
-#ifdef ENABLE_DEBUGGER
-    ++cycles;
-#endif
 }
 
 // ------- PPU helpers -------
