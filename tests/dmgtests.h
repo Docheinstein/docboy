@@ -2245,6 +2245,7 @@ TEST_CASE("dmg", "[emulation]") {
 
             // docboy
             F {"docboy/interrupts/ei_timing.gb", "docboy/ok.png"},
+            F {"docboy/interrupts/hblank_stat_during_dma_transfer_oam_scan.gb", "docboy/ok.png"},
             F {"docboy/interrupts/hblank_stat_interrupt_reset_ie_scx0_round1.gb", "docboy/ok.png"},
             F {"docboy/interrupts/hblank_stat_interrupt_reset_ie_scx0_round2.gb", "docboy/ok.png"},
             F {"docboy/interrupts/hblank_stat_interrupt_reset_ie_scx1_round1.gb", "docboy/ok.png"},

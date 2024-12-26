@@ -135,56 +135,57 @@ Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, 
 
 void Ppu::tick() {
     // Do nothing if PPU is off
-    if (!lcdc.enable) {
-        ASSERT(!stat_write.pending);
-        return;
+    if (lcdc.enable) {
+
+        // Tick PPU by one dot
+        (this->*(tick_selector))();
+
+        // Check for window activation (the state holds for entire frame).
+        // The activation conditions are checked every dot,
+        // (not only during pixel transfer or at LY == WX).
+        // This is also reflected in the fact that window glitches for
+        // the rest of the frame by pushing 00 pixels if WX == LX during the fetched
+        // push stage if at some point in the entire frame the condition
+        // WY = LY was satisfied.
+        tick_window();
+
+        // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt.
+        raise_stat_irq();
+
+        // There is 1 T-cycle delay between BGP and the BGP value the PPU sees.
+        // During this T-Cycle, the PPU sees the last BGP ORed with the new one.
+        // Therefore, we store the last BGP value here so that we can use (BGP | LAST_BGP)
+        // for resolving BG color.
+        // [mealybug/m3_bgp_change]
+        last_bgp = bgp;
+
+        // It seems that there is 1 T-cycle delay between WX and the WX value the PPU sees.
+        // Therefore, we store the last WX here and we use it for the next T-cycle.
+        // (TODO: Still not sure about this)
+        // [mealybug/m3_wx_5_change]
+        last_wx = wx;
+
+        // This is needed for:
+        // 1) LCDC.WIN_ENABLE, because it seems that the t-cycle window is turned on
+        //    (and it was off), window is activated also for LX == WX + 1, not only for LX == WX.
+        //    [mealybug/m3_lcdc_win_en_change_multiple_wx]
+        // 2) LCDC.BG_WIN_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
+        //    [mealybug/m3_lcdc_bg_en_change]
+        // 3) LCDC.OBJ_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
+        //        [mealybug/m3_lcdc_obj_en_change]
+        last_lcdc = lcdc;
+
+        // It seems that there is a 1 T-cycle delay for the LY value used for the comparison LYC == LY.
+        // This is supported by the fact that for LY = 153, LYC_EQ_LY STAT flag is raised for LYC = 153
+        // the very same T-cycle LY is 0 (but was 153 the T-cycle before).
+        last_ly = ly;
+
+        // It seems that there is a 1 T-cycle delay for the LYC value used for the comparison LYC == LY.
+        last_lyc = lyc;
     }
 
-    // Tick PPU by one dot
-    (this->*(tick_selector))();
-
-    // Check for window activation (the state holds for entire frame).
-    // The activation conditions are checked every dot,
-    // (not only during pixel transfer or at LY == WX).
-    // This is also reflected in the fact that window glitches for
-    // the rest of the frame by pushing 00 pixels if WX == LX during the fetched
-    // push stage if at some point in the entire frame the condition
-    // WY = LY was satisfied.
-    tick_window();
-
-    // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt.
+    // Update STAT's mode (usually it matches the "internal" PPu mode, but there are a few exceptions).
     tick_stat();
-
-    // There is 1 T-cycle delay between BGP and the BGP value the PPU sees.
-    // During this T-Cycle, the PPU sees the last BGP ORed with the new one.
-    // Therefore, we store the last BGP value here so that we can use (BGP | LAST_BGP)
-    // for resolving BG color.
-    // [mealybug/m3_bgp_change]
-    last_bgp = bgp;
-
-    // It seems that there is 1 T-cycle delay between WX and the WX value the PPU sees.
-    // Therefore, we store the last WX here and we use it for the next T-cycle.
-    // (TODO: Still not sure about this)
-    // [mealybug/m3_wx_5_change]
-    last_wx = wx;
-
-    // This is needed for:
-    // 1) LCDC.WIN_ENABLE, because it seems that the t-cycle window is turned on
-    //    (and it was off), window is activated also for LX == WX + 1, not only for LX == WX.
-    //    [mealybug/m3_lcdc_win_en_change_multiple_wx]
-    // 2) LCDC.BG_WIN_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
-    //    [mealybug/m3_lcdc_bg_en_change]
-    // 3) LCDC.OBJ_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
-    //        [mealybug/m3_lcdc_obj_en_change]
-    last_lcdc = lcdc;
-
-    // It seems that there is a 1 T-cycle delay for the LY value used for the comparison LYC == LY.
-    // This is supported by the fact that for LY = 153, LYC_EQ_LY STAT flag is raised for LYC = 153
-    // the very same T-cycle LY is 0 (but was 153 the T-cycle before).
-    last_ly = ly;
-
-    // It seems that there is a 1 T-cycle delay for the LYC value used for the comparison LYC == LY.
-    last_lyc = lyc;
 
     ASSERT(dots < 456);
 
@@ -249,7 +250,7 @@ inline bool Ppu::is_lyc_eq_ly() const {
     return (last_lyc == last_ly && enable_lyc_eq_ly_irq);
 }
 
-inline void Ppu::tick_stat() {
+inline void Ppu::raise_stat_irq() {
     // STAT interrupt request is checked every dot (not only during modes or lines transitions).
     // OAM Stat interrupt seems to be an exception to this rule:
     // it is raised only as a consequence of a transition of mode, not always
@@ -265,10 +266,10 @@ inline void Ppu::tick_stat() {
     } else {
         const bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && lyc_eq_ly;
 
-        const bool hblank_irq = stat.hblank_int && stat.mode == HBLANK;
+        const bool hblank_irq = stat.hblank_int && mode == HBLANK;
 
         // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
-        const bool vblank_irq = (stat.vblank_int || stat.oam_int) && stat.mode == VBLANK;
+        const bool vblank_irq = (stat.vblank_int || stat.oam_int) && mode == VBLANK;
 
         // Eventually schedule raise of STAT interrupt.
         update_stat_irq(lyc_eq_ly_irq || hblank_irq || vblank_irq);
@@ -276,14 +277,27 @@ inline void Ppu::tick_stat() {
 
     // Update STAT's LYC=LY Flag according to the current comparison
     stat.lyc_eq_ly = lyc_eq_ly;
+}
 
+inline void Ppu::tick_stat() {
 #ifndef ENABLE_CGB
-    // STAT write takes 1 T-Cycle to have effect (DMG only).
+    // On DMG, STAT write takes 1 T-Cycle to have effect.
     if (stat_write.pending) {
         stat_write.pending = false;
         write_stat_real(stat_write.value);
     }
 #endif
+
+    // Usually, reading from STAT yields the correct "internal" PPU mode.
+    // There are a few exceptions, though:
+    // 1) For the first line after PPU is turned off, STAT's mode appears as HBlank during OAM Scan.
+    // 2) During DMA transfer, STAT's mode appears as HBlank during OAM Scan.
+    // Note that the "internal" PPU mode remains the same (e.g. STAT interrupt does not take into account this quirk).
+    if (mode == OAM_SCAN && (is_glitched_line_0 || dma_controller.is_active())) {
+        stat.mode = HBLANK;
+    } else {
+        stat.mode = mode;
+    }
 }
 
 inline void Ppu::update_stat_irq(bool irq) {
@@ -424,7 +438,7 @@ void Ppu::oam_scan_done() {
 
 void Ppu::oam_scan_after_turn_on() {
     ASSERT(!oam.is_acquired_by_this());
-    ASSERT(stat.mode == OAM_SCAN);
+    ASSERT(mode == OAM_SCAN);
 
     // First OAM Scan after PPU turn on does nothing.
     ++dots;
@@ -751,7 +765,7 @@ void Ppu::hblank_last_line_455() {
 
 void Ppu::hblank_first_line_after_turn_on() {
     ASSERT(is_glitched_line_0);
-    ASSERT(stat.mode == PIXEL_TRANSFER);
+    ASSERT(mode == PIXEL_TRANSFER);
     ASSERT(ly == 0);
 
     ++dots;
@@ -1025,7 +1039,7 @@ void Ppu::enter_vblank() {
 
     tick_selector = &Ppu::vblank;
 
-    ASSERT(stat.mode == VBLANK);
+    ASSERT(mode == VBLANK);
 
     interrupts.raise_interrupt<Interrupts::InterruptType::VBlank>();
 
@@ -1070,7 +1084,7 @@ void Ppu::reset_fetcher() {
 template <uint8_t Mode>
 inline void Ppu::update_mode() {
     ASSERT(Mode <= 0b11);
-    stat.mode = Mode;
+    mode = Mode;
 }
 
 inline void Ppu::increase_lx() {
@@ -1143,7 +1157,7 @@ inline void Ppu::setup_fetcher_for_window() {
 }
 
 inline void Ppu::handle_oam_scan_buses_oddities() {
-    ASSERT(stat.mode == OAM_SCAN);
+    ASSERT(mode == OAM_SCAN);
 
     if (dots == 76) {
         // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
@@ -1901,6 +1915,7 @@ void Ppu::save_state(Parcel& parcel) const {
 #endif
     parcel.write_uint16(dots);
     parcel.write_uint8(lx);
+    parcel.write_uint8(mode);
     parcel.write_uint8(last_ly);
     parcel.write_uint8(last_lyc);
     parcel.write_uint8(last_bgp);
@@ -2046,6 +2061,7 @@ void Ppu::load_state(Parcel& parcel) {
 #endif
     dots = parcel.read_uint16();
     lx = parcel.read_uint8();
+    mode = parcel.read_uint8();
     last_ly = parcel.read_uint8();
     last_lyc = parcel.read_uint8();
     last_bgp = parcel.read_uint8();
@@ -2210,6 +2226,8 @@ void Ppu::reset() {
 #endif
     lx = 0;
 
+    mode = stat.mode;
+
     last_ly = ly;
     last_lyc = lyc;
     last_bgp = if_bootrom_else(0, 0xFC);
@@ -2281,10 +2299,6 @@ void Ppu::reset() {
     psf.tile_data_low = 0;
     psf.tile_data_high = 0;
 
-#ifdef ENABLE_DEBUGGER
-    cycles = 0;
-#endif
-
 #ifdef ENABLE_CGB
 #ifndef ENABLE_BOOTROM
     // BG palettes are all initialized as white.
@@ -2340,45 +2354,26 @@ uint8_t Ppu::read_stat() const {
     ASSERT(!stat_write.pending);
 #endif
 
-    uint8_t stat_mode;
-
-    // Usually, reading from STAT yield the correct PPU mode.
-    // There are a few exceptions, though:
-    // 1) For the first line after PPU is turned off, STAT's mode appears as HBlank during OAM Scan.
-    // 2) During DMA transfer, STAT's mode appears as HBlank during OAM Scan.
-    if ((is_glitched_line_0 && stat.mode == OAM_SCAN) || (dma_controller.is_active() && stat.mode == OAM_SCAN)) {
-        stat_mode = HBLANK;
-    } else {
-        stat_mode = stat.mode;
-    }
-
     return 0b10000000 | stat.lyc_eq_ly_int << Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT |
            stat.oam_int << Specs::Bits::Video::STAT::OAM_INTERRUPT |
            stat.vblank_int << Specs::Bits::Video::STAT::VBLANK_INTERRUPT |
            stat.hblank_int << Specs::Bits::Video::STAT::HBLANK_INTERRUPT |
-           stat.lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY | stat_mode;
+           stat.lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY | stat.mode;
 }
 
 void Ppu::write_stat(uint8_t value) {
 #ifdef ENABLE_CGB
     write_stat_real(value);
 #else
-    if (lcdc.enable) {
-        // STAT write takes effect 1 T-Cycle later on DMG, and during this T-Cycle it behaves as if FF
-        // would have been written, i.e. all the STAT interrupts are enabled.
-        stat_write.pending = lcdc.enable;
+    // STAT write takes effect 1 T-Cycle later on DMG, and during this T-Cycle it behaves as if FF
+    // would have been written, i.e. all the STAT interrupts are enabled.
+    stat_write.pending = true;
+    stat_write.value = value;
 
-        stat_write.pending = true;
-        stat_write.value = value;
-
-        stat.lyc_eq_ly_int = true;
-        stat.oam_int = true;
-        stat.vblank_int = true;
-        stat.hblank_int = true;
-    } else {
-        // Write STAT normally if PPU is off, since there's no way an interrupt would be raised from PPU anyway.
-        write_stat_real(value);
-    }
+    stat.lyc_eq_ly_int = true;
+    stat.oam_int = true;
+    stat.vblank_int = true;
+    stat.hblank_int = true;
 #endif
 }
 

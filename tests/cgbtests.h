@@ -501,6 +501,7 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_start_during_ly0_hblank_timing_round2.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_ly1_hblank_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_ly1_hblank_timing_round2.gbc", "docboy/ok.png"},
+            F {"docboy/hdma/hdma_start_during_oam_scan_with_dma_running.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_stop_resume_47_nops_scx0.gbc", "docboy/ok.png",
                Inputs {{BOOT_DURATION + 20000, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
             F {"docboy/hdma/hdma_stop_resume_wait_hblanks.gbc", "docboy/ok.png",
@@ -765,6 +766,7 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/ppu/rendering/win_attrs_lcdc_bit_6.gbc", "docboy/ppu/win_attrs_lcdc_bit_6.png"},
             F {"docboy/ppu/bcpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/bcps_increment.gbc", "docboy/ok.png"},
             F {"docboy/ppu/bcps_increment_overflow.gbc", "docboy/ok.png"},
+            F {"docboy/ppu/ly0_stat_hblank_interrupt.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ly_timing_round0.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ly_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/ppu/ocpd_write_read.gbc", "docboy/ok.png"}, F {"docboy/ppu/ocps_increment.gbc", "docboy/ok.png"},
@@ -789,7 +791,8 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/ppu/pixel_transfer_timing_9_sprites_x32_round1.gbc", "docboy/ok.png"},
             F {"docboy/ppu/pixel_transfer_timing_9_sprites_x32_round2.gbc", "docboy/ok.png"},
             F {"docboy/ppu/pixel_transfer_timing_10_sprites_x32_round2.gbc", "docboy/ok.png"},
-            F {"docboy/ppu/pixel_transfer_timing_10_sprites_x32_round2.gbc", "docboy/ok.png"}, );
+            F {"docboy/ppu/pixel_transfer_timing_10_sprites_x32_round2.gbc", "docboy/ok.png"},
+            F {"docboy/ppu/turn_off_read_stat.gbc", "docboy/ok.png"}, );
     }
 
     SECTION("apu") {

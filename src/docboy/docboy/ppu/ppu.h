@@ -159,9 +159,11 @@ private:
 
     bool is_lyc_eq_ly() const;
 
-    void tick_stat();
-    void update_stat_irq(bool irq);
+    void raise_stat_irq();
 
+    void tick_stat();
+
+    void update_stat_irq(bool irq);
     void update_stat_irq_for_oam_mode();
     void update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq();
 
@@ -287,6 +289,8 @@ private:
 
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
+
+    uint8_t mode {};
 
     uint8_t last_ly {};  // LY delayed by 1 t-cycle
     uint8_t last_lyc {}; // LYC delayed by 1 t-cycle
