@@ -262,15 +262,9 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/ppu/oam_irq_clears_stat_irq_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_if_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_if_round2.gb", "docboy/ok.png"},
-
-            // TODO: handle this ly = 0 exception
-            // F {"docboy/ppu/oam_stat_interrupt_flag_ly0.gb", "docboy/ok.png"},
-
             F {"docboy/ppu/oam_stat_interrupt_flag_ly1.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_interrupt_flag_ly1_timing_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_interrupt_flag_ly1_timing_round2.gb", "docboy/ok.png"},
-            F {"docboy/ppu/oam_stat_interrupt_flag_timing_round1.gb", "docboy/ok.png"},
-            F {"docboy/ppu/oam_stat_interrupt_flag_timing_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_interrupt_halt_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_interrupt_halt_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_stat_interrupt_ly_timing_round1.gb", "docboy/ok.png"},
@@ -450,6 +444,10 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/ppu/turn_off_ly2_lyc1_stat.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_off_ly2_lyc2_stat.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_off_read_stat.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_off_read_stat_ly0_lyc0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_off_read_stat_ly0_lyc1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_off_read_stat_ly1_lyc0.gb", "docboy/ok.png"},
+            F {"docboy/ppu/turn_off_read_stat_ly1_lyc1.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_on_hblank_stat_if_scx0_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_on_hblank_stat_if_scx0_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/turn_on_hblank_stat_if_scx1_round1.gb", "docboy/ok.png"},
@@ -2102,6 +2100,52 @@ TEST_CASE("dmg", "[emulation]") {
             F {"blargg/oam_bug/6-timing_no_bug.gb", "blargg/oam_bug/6-timing_no_bug.png"},
             F {"blargg/oam_bug/8-instr_effect.gb", "blargg/oam_bug/8-instr_effect.png"}, );
     }
+
+    SECTION("stat_write_bug") {
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx0_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx0_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx1_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx1_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx2_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx2_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx3_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx3_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx4_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx4_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx5_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx5_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx6_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx6_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx7_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_hblank_scx7_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_lyc_eq_ly.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_oam_scan_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_oam_scan_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_ppu_off.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_vblank_round0.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_vblank_round1.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_vblank_round2.gb", "docboy/ok.png"},
+            F {"docboy/stat_write_bug/stat_write_bug_vblank_round3.gb", "docboy/ok.png"},
+
+            // gbmicrotest
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l0_a.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l0_b.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l0_c.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l1_a.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l1_b.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l1_c.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l1_d.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l143_a.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l143_b.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l143_c.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l143_d.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l154_a.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l154_b.gb", {{0xFF82, 0x01}}},
+            M {"gbmicrotest/stat_write_bug/stat_write_glitch_l154_c.gb", {{0xFF82, 0x01}}}, );
+    }
+
     SECTION("io") {
         RUN_TEST_ROMS(
             // mooneye
@@ -2857,7 +2901,9 @@ TEST_CASE("dmg", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS();
+        RUN_TEST_ROMS(
+
+        );
     }
 
 #endif

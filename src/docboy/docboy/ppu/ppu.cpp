@@ -136,6 +136,7 @@ Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, 
 void Ppu::tick() {
     // Do nothing if PPU is off
     if (!lcdc.enable) {
+        ASSERT(!stat_write.pending);
         return;
     }
 
@@ -275,6 +276,14 @@ inline void Ppu::tick_stat() {
 
     // Update STAT's LYC=LY Flag according to the current comparison
     stat.lyc_eq_ly = lyc_eq_ly;
+
+#ifndef ENABLE_CGB
+    // STAT write takes 1 T-Cycle to have effect (DMG only).
+    if (stat_write.pending) {
+        stat_write.pending = false;
+        write_stat_real(stat_write.value);
+    }
+#endif
 }
 
 inline void Ppu::update_stat_irq(bool irq) {
@@ -296,6 +305,13 @@ inline void Ppu::update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq() {
     bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && is_lyc_eq_ly();
     bool irq = stat.oam_int || lyc_eq_ly_irq;
     pending_stat_irq = last_stat_irq < irq;
+}
+
+inline void Ppu::write_stat_real(uint8_t value) {
+    stat.lyc_eq_ly_int = test_bit<Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT>(value);
+    stat.oam_int = test_bit<Specs::Bits::Video::STAT::OAM_INTERRUPT>(value);
+    stat.vblank_int = test_bit<Specs::Bits::Video::STAT::VBLANK_INTERRUPT>(value);
+    stat.hblank_int = test_bit<Specs::Bits::Video::STAT::HBLANK_INTERRUPT>(value);
 }
 
 inline void Ppu::tick_window() {
@@ -1879,6 +1895,10 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_bool(last_stat_irq);
     parcel.write_bool(enable_lyc_eq_ly_irq);
     parcel.write_bool(pending_stat_irq);
+#ifndef ENABLE_CGB
+    parcel.write_bool(stat_write.pending);
+    parcel.write_uint8(stat_write.value);
+#endif
     parcel.write_uint16(dots);
     parcel.write_uint8(lx);
     parcel.write_uint8(last_ly);
@@ -2020,6 +2040,10 @@ void Ppu::load_state(Parcel& parcel) {
     last_stat_irq = parcel.read_bool();
     enable_lyc_eq_ly_irq = parcel.read_bool();
     pending_stat_irq = parcel.read_bool();
+#ifndef ENABLE_CGB
+    stat_write.pending = parcel.read_bool();
+    stat_write.value = parcel.read_uint8();
+#endif
     dots = parcel.read_uint16();
     lx = parcel.read_uint8();
     last_ly = parcel.read_uint8();
@@ -2312,6 +2336,10 @@ void Ppu::write_lcdc(uint8_t value) {
 }
 
 uint8_t Ppu::read_stat() const {
+#ifndef ENABLE_CGB
+    ASSERT(!stat_write.pending);
+#endif
+
     uint8_t stat_mode;
 
     // Usually, reading from STAT yield the correct PPU mode.
@@ -2332,10 +2360,26 @@ uint8_t Ppu::read_stat() const {
 }
 
 void Ppu::write_stat(uint8_t value) {
-    stat.lyc_eq_ly_int = test_bit<Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT>(value);
-    stat.oam_int = test_bit<Specs::Bits::Video::STAT::OAM_INTERRUPT>(value);
-    stat.vblank_int = test_bit<Specs::Bits::Video::STAT::VBLANK_INTERRUPT>(value);
-    stat.hblank_int = test_bit<Specs::Bits::Video::STAT::HBLANK_INTERRUPT>(value);
+#ifdef ENABLE_CGB
+    write_stat_real(value);
+#else
+    if (lcdc.enable) {
+        // STAT write takes effect 1 T-Cycle later on DMG, and during this T-Cycle it behaves as if FF
+        // would have been written, i.e. all the STAT interrupts are enabled.
+        stat_write.pending = lcdc.enable;
+
+        stat_write.pending = true;
+        stat_write.value = value;
+
+        stat.lyc_eq_ly_int = true;
+        stat.oam_int = true;
+        stat.vblank_int = true;
+        stat.hblank_int = true;
+    } else {
+        // Write STAT normally if PPU is off, since there's no way an interrupt would be raised from PPU anyway.
+        write_stat_real(value);
+    }
+#endif
 }
 
 void Ppu::write_dma(uint8_t value) {

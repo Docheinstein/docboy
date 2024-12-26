@@ -73,6 +73,12 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/memory/vram_write_vblank.gbc", "docboy/ok.png"}, );
     }
 
+    SECTION("stat_write_bug") {
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/stat_write_bug/stat_write_bug_hblank.gbc", "docboy/ok.png"}, );
+    }
+
     SECTION("dma") {
         RUN_TEST_ROMS(
             // docboy
