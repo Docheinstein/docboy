@@ -174,6 +174,7 @@ private:
     // PPU states
     void oam_scan_even();
     void oam_scan_odd();
+    void oam_scan_77();
     void oam_scan_done();
     void oam_scan_after_turn_on();
 
@@ -200,7 +201,9 @@ private:
     void vblank_last_line_2();
     void vblank_last_line_3();
     void vblank_last_line_7();
+    void vblank_last_line_453();
     void vblank_last_line_454();
+    void vblank_last_line_455();
 
     // PPU states helpers
     void enter_oam_scan();
@@ -223,7 +226,10 @@ private:
     void check_window_activation();
     void setup_fetcher_for_window();
 
-    void handle_oam_scan_buses_oddities();
+    void reset_oam_scan_entries();
+    void oam_scan_read_request();
+    void oam_scan_flush_read_request();
+    void handle_oam_scan_entry();
 
     // Fetcher states
     void bgwin_prefetcher_get_tile_0();
@@ -330,6 +336,7 @@ private:
     // Oam Scan
     struct {
         uint8_t count {}; // [0, 10]
+        uint8_t index {}; // [0, 40]
     } oam_scan;
 
     // Pixel Transfer

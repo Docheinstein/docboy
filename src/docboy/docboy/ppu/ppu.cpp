@@ -45,8 +45,6 @@ constexpr uint8_t NUMBER_OF_COLORS = 4;
 constexpr uint8_t BITS_PER_PIXEL = 2;
 constexpr uint8_t NUMBER_OF_COLOR_INDEXES = 4;
 
-constexpr uint8_t DUMMY_PIXEL = 0xFF;
-
 inline bool is_obj_opaque(const uint8_t color_index) {
     return color_index != OBJ_COLOR_INDEX_TRANSPARENT;
 }
@@ -68,6 +66,7 @@ inline uint8_t resolve_color(const uint8_t color_index, const uint8_t palette) {
 const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
     &Ppu::oam_scan_even,
     &Ppu::oam_scan_odd,
+    &Ppu::oam_scan_77,
     &Ppu::oam_scan_done,
     &Ppu::oam_scan_after_turn_on,
     &Ppu::pixel_transfer_dummy_lx0,
@@ -91,7 +90,9 @@ const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
     &Ppu::vblank_last_line_2,
     &Ppu::vblank_last_line_3,
     &Ppu::vblank_last_line_7,
+    &Ppu::vblank_last_line_453,
     &Ppu::vblank_last_line_454,
+    &Ppu::vblank_last_line_455,
 };
 
 const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
@@ -341,97 +342,58 @@ inline void Ppu::tick_window() {
 
 void Ppu::oam_scan_even() {
     ASSERT(dots % 2 == 0);
-    ASSERT(oam_scan.count < 10);
+    ASSERT(dots <= 76);
     ASSERT(oam.is_acquired_by_this() || dots == 76 /* oam bus seems released this cycle */);
 
-    // Read two bytes from OAM (Y and X).
-    // Note that PPU cannot access OAM while DMA transfer is in progress;
-    // in that case it does not read at all and the oam registers
-    // will hold their old values.
-    if (!oam.is_acquired_by<Device::Dma>()) {
-        registers.oam = oam.flush_read_word_request();
+    // Flush the read request for the next OAM entry.
+    oam_scan_flush_read_request();
+
+    if (++dots == 77) {
+        tick_selector = &Ppu::oam_scan_77;
+    } else {
+        tick_selector = &Ppu::oam_scan_odd;
     }
-
-    tick_selector = &Ppu::oam_scan_odd;
-
-    ++dots;
 }
 
 void Ppu::oam_scan_odd() {
     ASSERT(dots % 2 == 1);
-    ASSERT(oam_scan.count < 10);
-    ASSERT(oam.is_acquired_by_this() || dots == 77 /* oam bus seems released this cycle */);
+    ASSERT(dots <= 76);
+    ASSERT(oam.is_acquired_by_this());
 
-    // Read oam entry height
-    const uint8_t obj_height = TILE_WIDTH << lcdc.obj_size;
+    // Submit a read request to read two bytes from OAM (Y and X) for the next OAM entry.
+    oam_scan_read_request();
 
-    // Check if the sprite is upon this scanline
-    const uint8_t oam_entry_y = registers.oam.a;
-    const int32_t obj_y = oam_entry_y - TILE_DOUBLE_HEIGHT;
-
-    if (obj_y <= ly && ly < obj_y + obj_height) {
-        const uint8_t oam_entry_x = registers.oam.b;
-
-        // Push oam entry
-        if (oam_entry_x < 168) {
-            oam_entries[oam_entry_x].emplace_back(
-#if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
-                static_cast<uint8_t>(dots / 2), oam_entry_y, oam_entry_x
-#else
-                static_cast<uint8_t>(dots / 2), oam_entry_y
-#endif
-            );
-
-#ifdef ENABLE_DEBUGGER
-            scanline_oam_entries.emplace_back(
-
-#ifdef ENABLE_ASSERTS
-                static_cast<uint8_t>(dots / 2), oam_entry_y, oam_entry_x
-#else
-                static_cast<uint8_t>(dots / 2), oam_entry_y
-#endif
-            );
-#endif
-
-#ifdef ENABLE_ASSERTS
-            ++oam_entries_count;
-#endif
-        }
-
-        ++oam_scan.count;
+    if (dots == 75) {
+        // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
+        // [mooneye/lcdon_write_timing]
+        oam.release();
     }
 
     ++dots;
 
-    handle_oam_scan_buses_oddities();
+    tick_selector = &Ppu::oam_scan_even;
+}
 
-    if (dots == 80) {
-        enter_pixel_transfer();
-    } else {
-        // Check if there is room for other oam entries in this scanline
-        // if that's not the case, complete oam scan now
-        if (oam_scan.count == 10) {
-            tick_selector = &Ppu::oam_scan_done;
-        } else {
-            // Submit a read request for the next OAM entry of the next T-cycle.
-            // This is necessary to properly emulate OAM Bug on DMG, since CPU issues
-            // write requests at T0 and flushes them at T1, but PPU OAM Scan Even
-            // would occur at T1 only after CPU write request are flushed
-            // (and that would make impossible to be aware of CPU writes).
-            oam.read_word_request(Specs::MemoryLayout::OAM::START + OAM_ENTRY_BYTES * dots / 2);
-            tick_selector = &Ppu::oam_scan_even;
-        }
-    }
+void Ppu::oam_scan_77() {
+    ASSERT(dots == 77);
+
+    // OAM bus is re-acquired this cycle
+    // [mooneye/lcdon_write_timing]
+    oam.acquire();
+
+    // VRAM bus is acquired one cycle before STAT is updated
+    // [mooneye/lcdon_timing]
+    vram.acquire();
+
+    dots = 78;
+
+    tick_selector = &Ppu::oam_scan_done;
 }
 
 void Ppu::oam_scan_done() {
-    ASSERT(oam_scan.count == 10);
+    ASSERT(dots >= 78);
 
-    ++dots;
-
-    handle_oam_scan_buses_oddities();
-
-    if (dots == 80) {
+    if (++dots == 80) {
         enter_pixel_transfer();
     }
 }
@@ -441,9 +403,7 @@ void Ppu::oam_scan_after_turn_on() {
     ASSERT(mode == OAM_SCAN);
 
     // First OAM Scan after PPU turn on does nothing.
-    ++dots;
-
-    if (dots == 80) {
+    if (++dots == 80) {
         enter_pixel_transfer();
     }
 }
@@ -677,33 +637,44 @@ void Ppu::hblank() {
 void Ppu::hblank_453() {
     ASSERT(dots == 453);
 
-    ++dots;
+    // OAM bus is acquired here.
+    oam.acquire();
 
-    ++ly;
+    reset_oam_scan_entries();
 
-    // LYC_EQ_LY IRQ is disabled for dot 454.
+    // It seems that the first OAM entry is read here, at dot 453, before the beginning of OAM Scan.
+    oam_scan_read_request();
+
+    // LYC_EQ_LY IRQ is disabled for dot 453.
     ASSERT(enable_lyc_eq_ly_irq);
     enable_lyc_eq_ly_irq = false;
 
-    tick_selector = &Ppu::hblank_454;
+    ++ly;
 
-    oam.acquire();
+    dots = 454;
+
+    tick_selector = &Ppu::hblank_454;
 }
 
 void Ppu::hblank_454() {
     ASSERT(dots == 454);
 
-    ++dots;
+    // Flush the read request for the first OAM entry.
+    oam_scan_flush_read_request();
 
     // Enable LYC_EQ_LY IRQ again.
     ASSERT(!enable_lyc_eq_ly_irq);
     enable_lyc_eq_ly_irq = true;
+
+    dots = 455;
 
     tick_selector = &Ppu::hblank_455;
 }
 
 void Ppu::hblank_455() {
     ASSERT(dots == 455);
+
+    oam_scan_read_request();
 
     dots = 0;
 
@@ -729,13 +700,13 @@ void Ppu::hblank_last_line() {
 void Ppu::hblank_last_line_453() {
     ASSERT(dots == 453);
 
-    ++dots;
+    // LYC_EQ_LY IRQ is disabled for dot 453.
+    ASSERT(enable_lyc_eq_ly_irq);
+    enable_lyc_eq_ly_irq = false;
 
     ++ly;
 
-    // LYC_EQ_LY IRQ is disabled for dot 454.
-    ASSERT(enable_lyc_eq_ly_irq);
-    enable_lyc_eq_ly_irq = false;
+    dots = 454;
 
     tick_selector = &Ppu::hblank_last_line_454;
 }
@@ -743,11 +714,11 @@ void Ppu::hblank_last_line_453() {
 void Ppu::hblank_last_line_454() {
     ASSERT(dots == 454);
 
-    ++dots;
-
     // Enable LYC_EQ_LY IRQ again.
     ASSERT(!enable_lyc_eq_ly_irq);
     enable_lyc_eq_ly_irq = true;
+
+    dots = 455;
 
     // VBlank mode is set at dot 455 (though I'm not sure about it)
     update_mode<VBLANK>();
@@ -801,7 +772,7 @@ void Ppu::vblank_454() {
     ASSERT(ly >= 144 && ly < 154);
     ASSERT(dots == 454);
 
-    ++dots;
+    dots = 455;
 
     // Enable LYC_EQ_LY IRQ again.
     ASSERT(!enable_lyc_eq_ly_irq);
@@ -862,58 +833,63 @@ void Ppu::vblank_last_line_7() {
     ASSERT(ly == 0);
     ASSERT(dots >= 7);
 
-    if (++dots == 454) {
-        // It seems that STAT's mode is reset the last cycle (to investigate)
-        update_mode<HBLANK>();
-
-        tick_selector = &Ppu::vblank_last_line_454;
-
-        // OAM is acquired too.
-        oam.acquire();
+    if (++dots == 453) {
+        tick_selector = &Ppu::vblank_last_line_453;
     }
+}
+
+void Ppu::vblank_last_line_453() {
+    ASSERT(ly == 0);
+    ASSERT(dots == 453);
+
+    // OAM bus is acquired here.
+    oam.acquire();
+
+    reset_oam_scan_entries();
+
+    // It seems that the first OAM entry is read here, at dot 453, before the beginning of OAM Scan.
+    oam_scan_read_request();
+
+    // It seems that STAT's mode is reset the last cycle (to investigate)
+    update_mode<HBLANK>();
+
+    dots = 454;
+
+    tick_selector = &Ppu::vblank_last_line_454;
 }
 
 void Ppu::vblank_last_line_454() {
     ASSERT(ly == 0);
-    ASSERT(dots >= 454);
+    ASSERT(dots == 454);
 
-    if (++dots == 456) {
-        dots = 0;
-        // end of vblank
-        enter_new_frame();
-    }
+    // Flush the read request for the first OAM entry.
+    oam_scan_flush_read_request();
+
+    dots = 455;
+
+    tick_selector = &Ppu::vblank_last_line_455;
+}
+
+void Ppu::vblank_last_line_455() {
+    ASSERT(ly == 0);
+    ASSERT(dots == 455);
+
+    oam_scan_read_request();
+
+    dots = 0;
+
+    enter_new_frame();
 }
 
 // ------- PPU states helpers ---------
 
 void Ppu::enter_oam_scan() {
-    ASSERT_CODE({
-        for (uint32_t i = 0; i < array_size(oam_entries); i++) {
-            ASSERT(oam_entries[i].is_empty());
-        }
-    });
-
-#ifdef ENABLE_ASSERTS
-    oam_entries_count = 0;
-    oam_entries_not_served_count = 0;
-#endif
-
-#ifdef ENABLE_DEBUGGER
-    scanline_oam_entries.clear();
-    timings.hblank = 456 - (timings.oam_scan + timings.pixel_transfer);
-#endif
-
-    oam_scan.count = 0;
-
     update_mode<OAM_SCAN>();
 
     tick_selector = &Ppu::oam_scan_even;
 
     ASSERT(!vram.is_acquired_by_this());
-    oam.acquire();
-
-    // Submit a read request for the first OAM entry of the next T-cycle.
-    oam.read_word_request(Specs::MemoryLayout::OAM::START);
+    ASSERT(oam.is_acquired_by_this());
 }
 
 void Ppu::enter_pixel_transfer() {
@@ -1111,7 +1087,7 @@ inline bool Ppu::is_bg_fifo_ready_to_be_popped() const {
 
 inline bool Ppu::is_obj_ready_to_be_fetched() const {
     // The condition for which a obj fetch can be served are:
-    // - there is at least a pending oam entry for the current LX
+    // - there is at least a pending OAM entry for the current LX
     // - obj are enabled in LCDC
     return oam_entries[lx].is_not_empty() && lcdc.obj_enable;
 }
@@ -1156,22 +1132,84 @@ inline void Ppu::setup_fetcher_for_window() {
     fetcher_tick_selector = &Ppu::win_prefetcher_activating;
 }
 
-inline void Ppu::handle_oam_scan_buses_oddities() {
-    ASSERT(mode == OAM_SCAN);
+void Ppu::reset_oam_scan_entries() {
+    ASSERT_CODE({
+        for (uint32_t i = 0; i < array_size(oam_entries); i++) {
+            ASSERT(oam_entries[i].is_empty());
+        }
+    });
 
-    if (dots == 76) {
-        // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
-        // [mooneye/lcdon_write_timing]
-        oam.release();
-    } else if (dots == 78) {
-        // OAM bus is re-acquired this cycle
-        // [mooneye/lcdon_write_timing]
-        oam.acquire();
+#ifdef ENABLE_ASSERTS
+    oam_entries_count = 0;
+    oam_entries_not_served_count = 0;
+#endif
 
-        // VRAM bus is acquired one cycle before STAT is updated
-        // [mooneye/lcdon_timing]
-        vram.acquire();
+#ifdef ENABLE_DEBUGGER
+    scanline_oam_entries.clear();
+    timings.hblank = 456 - (timings.oam_scan + timings.pixel_transfer);
+#endif
+
+    oam_scan.count = 0;
+    oam_scan.index = 0;
+}
+
+inline void Ppu::oam_scan_read_request() {
+    ASSERT(oam_scan.index < 40);
+    oam.read_word_request(Specs::MemoryLayout::OAM::START + OAM_ENTRY_BYTES * oam_scan.index);
+}
+
+inline void Ppu::oam_scan_flush_read_request() {
+    // Note that PPU cannot access OAM while DMA transfer is in progress; in that case
+    // it does not read at all and the oam registers will hold their old values.
+    if (!oam.is_acquired_by<Device::Dma>()) {
+        registers.oam = oam.flush_read_word_request();
     }
+
+    // Handle the new OAM entry
+    handle_oam_scan_entry();
+}
+
+inline void Ppu::handle_oam_scan_entry() {
+    // Do nothing if 10 OAM entries have already been found
+    if (oam_scan.count < 10) {
+        // Read OAM entry height
+        const uint8_t obj_height = TILE_WIDTH << lcdc.obj_size;
+
+        // Check if the sprite is upon this scanline
+        const uint8_t oam_entry_y = registers.oam.a;
+        const int32_t obj_y = oam_entry_y - TILE_DOUBLE_HEIGHT;
+
+        if (obj_y <= ly && ly < obj_y + obj_height) {
+            const uint8_t oam_entry_x = registers.oam.b;
+
+            // Push OAM entry
+            if (oam_entry_x < 168) {
+                oam_entries[oam_entry_x].emplace_back(oam_scan.index, oam_entry_y
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
+                                                      ,
+                                                      oam_entry_x
+#endif
+                );
+
+#ifdef ENABLE_DEBUGGER
+                scanline_oam_entries.emplace_back(oam_scan.index, oam_entry_y
+#ifdef ENABLE_ASSERTS
+                                                  ,
+                                                  oam_entry_x
+#endif
+                );
+#endif
+
+#ifdef ENABLE_ASSERTS
+                ++oam_entries_count;
+#endif
+            }
+
+            ++oam_scan.count;
+        }
+    }
+
+    ++oam_scan.index;
 }
 
 // -------- Fetcher states ---------
@@ -1953,6 +1991,7 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_uint8(registers.oam.b);
 
     parcel.write_uint8(oam_scan.count);
+    parcel.write_uint8(oam_scan.index);
 
     parcel.write_uint8(pixel_transfer.initial_scx.to_discard);
     parcel.write_uint8(pixel_transfer.initial_scx.discarded);
@@ -2099,6 +2138,7 @@ void Ppu::load_state(Parcel& parcel) {
     registers.oam.b = parcel.read_uint8();
 
     oam_scan.count = parcel.read_uint8();
+    oam_scan.index = parcel.read_uint8();
 
     pixel_transfer.initial_scx.to_discard = parcel.read_uint8();
     pixel_transfer.initial_scx.discarded = parcel.read_uint8();
@@ -2261,6 +2301,7 @@ void Ppu::reset() {
     registers.oam.a = 0;
 
     oam_scan.count = 0;
+    oam_scan.index = 0;
 
     pixel_transfer.initial_scx.to_discard = 0;
     pixel_transfer.initial_scx.discarded = 0;

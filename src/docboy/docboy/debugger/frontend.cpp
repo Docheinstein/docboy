@@ -2017,7 +2017,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         // General
         b << yellow("Phase") << "               :  " << [this]() -> Text {
             if (gb.ppu.tick_selector == &Ppu::oam_scan_even || gb.ppu.tick_selector == &Ppu::oam_scan_odd ||
-                gb.ppu.tick_selector == &Ppu::oam_scan_done || gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on)
+                gb.ppu.tick_selector == &Ppu::oam_scan_77 || gb.ppu.tick_selector == &Ppu::oam_scan_done ||
+                gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on)
                 return "Oam Scan";
             if (gb.ppu.tick_selector == &Ppu::pixel_transfer_dummy_lx0 ||
                 gb.ppu.tick_selector == &Ppu::pixel_transfer_discard_lx0 ||
@@ -2058,7 +2059,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             }
             if (gb.ppu.tick_selector == &Ppu::vblank_last_line || gb.ppu.tick_selector == &Ppu::vblank_last_line_2 ||
                 gb.ppu.tick_selector == &Ppu::vblank_last_line_7 ||
-                gb.ppu.tick_selector == &Ppu::vblank_last_line_454) {
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_453 ||
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_454 ||
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_455) {
                 return "VBlank (Last Line)";
             }
 
@@ -2269,47 +2272,52 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         const auto& oam_entries = gb.ppu.scanline_oam_entries;
         b << subheader("oam scanline entries", width) << endl;
 
-        const auto oam_entries_info = [](const auto& v, uint8_t (*fn)(const Ppu::OamScanEntry&)) {
+        const auto oam_entries_info = [](const auto& v, uint8_t from, uint8_t to,
+                                         uint8_t (*fn)(const Ppu::OamScanEntry&)) {
             Text t {};
-            for (uint8_t i = 0; i < v.size(); i++) {
+            for (uint8_t i = from; i < v.size() && i < to; i++) {
                 t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
             }
             return t;
         };
 
-        b << yellow("OAM Number") << "          :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.number;
-        }) << endl;
-        b << yellow("OAM X") << "               :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.x;
-        }) << endl;
-        b << yellow("OAM Y") << "               :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.y;
-        }) << endl;
+        const auto oam_entries_section = [&b, &oam_entries_info](const auto& v, uint8_t from, uint8_t to) {
+            b << yellow("OAM Number") << "          :  "
+              << oam_entries_info(v, from, to,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.number;
+                                  })
+              << endl;
+            b << yellow("OAM X") << "               :  "
+              << oam_entries_info(v, from, to,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.x;
+                                  })
+              << endl;
+            b << yellow("OAM Y") << "               :  "
+              << oam_entries_info(v, from, to,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.y;
+                                  })
+              << endl;
+        };
+
+        oam_entries_section(oam_entries, 0, 5);
+        if (oam_entries.size() > 5) {
+            b << hr(width) << endl;
+            oam_entries_section(oam_entries, 5, 10);
+        }
 
         if (gb.ppu.lx < array_size(gb.ppu.oam_entries)) {
             const auto& oam_entries_hit = gb.ppu.oam_entries[gb.ppu.lx];
             // OAM Hit
             b << subheader("oam hit", width) << endl;
 
-            b << yellow("OAM Number") << "          :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.number;
-                                  })
-              << endl;
-            b << yellow("OAM X") << "               :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.x;
-                                  })
-              << endl;
-            b << yellow("OAM Y") << "               :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.y;
-                                  })
-              << endl;
+            oam_entries_section(oam_entries_hit, 0, 5);
+            if (oam_entries_hit.size() > 5) {
+                b << hr(width) << endl;
+                oam_entries_section(oam_entries_hit, 5, 10);
+            }
         }
 
         // BG/WIN Prefetcher
