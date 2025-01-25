@@ -15,10 +15,13 @@ OamBus::Word OamBus::View<Dev>::flush_read_word_request() {
 template <Device::Type Dev>
 void OamBus::flush_write_request(uint8_t value) {
     if constexpr (Dev == Device::Cpu) {
+        // Caching the data that was there before the write is necessary
+        // to properly emulate OAM Bug for the very first OAM Scan read.
+        // Indeed, some corruption patterns takes into consideration also the
+        // value that has been written by the CPU the T-Cycle before the PPU's read.
         mcycle_write.happened = true;
         mcycle_write.previous_data = oam[address - Specs::MemoryLayout::OAM::START];
     }
-    // TODO: else: what if DMA is writing instead?
 
     VideoBus::flush_write_request<Dev>(value);
 }

@@ -294,6 +294,8 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/ppu/oam_scan_blocked_by_dma_nops121_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_scan_blocked_by_dma_nops122_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_scan_blocked_by_dma_nops122_round2.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_scan_blocked_by_dma_round1.gb", "docboy/ok.png"},
+            F {"docboy/ppu/oam_scan_blocked_by_dma_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_scan_blocked_by_idu_write_round1.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_scan_blocked_by_idu_write_round2.gb", "docboy/ok.png"},
             F {"docboy/ppu/oam_scan_lcdc_obj_size_change_a_round1.gb", "docboy/ok.png"},
@@ -2108,6 +2110,7 @@ TEST_CASE("dmg", "[emulation]") {
                       F {"docboy/oam_bug/oam_bug_bounds_upper_round_a2.gb", "docboy/ok.png"},
                       F {"docboy/oam_bug/oam_bug_bounds_upper_round_b1.gb", "docboy/ok.png"},
                       F {"docboy/oam_bug/oam_bug_bounds_upper_round_b2.gb", "docboy/ok.png"},
+                      F {"docboy/oam_bug/oam_bug_dma.gb", "docboy/ok.png"},
 
                       F {"docboy/oam_bug/oam_bug_inc_round0.gb", "docboy/ok.png"},
                       F {"docboy/oam_bug/oam_bug_inc_round1.gb", "docboy/ok.png"},
