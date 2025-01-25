@@ -64,7 +64,7 @@ template <Device::Type Dev>
 void Bus::write_request(uint16_t addr) {
     set_bit<W<Dev>>(requests);
 
-    if constexpr (Dev == Device::Cpu) {
+    if constexpr (Dev == Device::Cpu || Dev == Device::Idu) {
         if (test_bits_or<R<Device::Dma>, W<Device::Dma>>(requests)) {
             return;
         }
@@ -77,6 +77,7 @@ template <Device::Type Dev>
 void Bus::flush_write_request(uint8_t value) {
     ASSERT(test_bit<W<Dev>>(requests));
     reset_bit<W<Dev>>(requests);
+
     write_bus(address, value);
 
     data = value;

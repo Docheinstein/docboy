@@ -53,7 +53,7 @@ public:
 
     void reset();
 
-    uint8_t requests {};
+    uint16_t requests {};
     uint16_t address {};
     uint8_t data {};
     uint8_t decay {};

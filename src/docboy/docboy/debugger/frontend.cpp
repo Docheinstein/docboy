@@ -2518,16 +2518,17 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             return darkgray("Idle");
         };
 
-        const auto bus_requests = [bus_request](uint8_t requests) {
+        const auto bus_requests = [bus_request](uint16_t requests) {
             return bus_request(Device::Cpu, requests).lpad(Text::Length {5}) + " | " +
                    bus_request(Device::Dma, requests).lpad(Text::Length {5}) + " | " +
 #ifdef ENABLE_CGB
                    bus_request(Device::Hdma, requests).lpad(Text::Length {5}) + " | " +
 #endif
-                   bus_request(Device::Ppu, requests).lpad(Text::Length {5});
+                   bus_request(Device::Ppu, requests).lpad(Text::Length {5}) + " | " +
+                   bus_request(Device::Idu, requests).lpad(Text::Length {5});
         };
 
-        const auto bus_acquired = [](Device::Type dev, uint8_t acquirers) {
+        const auto bus_acquired = [](Device::Type dev, uint16_t acquirers) {
             return test_bit(acquirers, dev) ? green("YES") : darkgray("NO");
         };
 
@@ -2537,10 +2538,11 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 #ifdef ENABLE_CGB
                    bus_acquired(Device::Hdma, acquirers).lpad(Text::Length {3}) + "  |  " +
 #endif
-                   bus_acquired(Device::Ppu, acquirers).lpad(Text::Length {3});
+                   bus_acquired(Device::Ppu, acquirers).lpad(Text::Length {3}) + "  |  " +
+                   bus_acquired(Device::Idu, acquirers).lpad(Text::Length {3});
         };
 
-        const auto bus_address = [bus_request](uint16_t address, uint8_t requests) {
+        const auto bus_address = [bus_request](uint16_t address, uint16_t requests) {
             return requests ? hex(address) : darkgray(hex(address));
         };
 
@@ -2550,9 +2552,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
 #ifdef ENABLE_CGB
         b << "                     " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("HDMA")
-          << " |  " << magenta("PPU")
+          << " |  " << magenta("PPU") << "  |  " << magenta("IDU")
 #else
         b << "                     " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("PPU")
+          << "  |  " << magenta("IDU")
 #endif
 
           << endl;
@@ -3053,7 +3056,11 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     c1->add_node(make_space_divider());
     c1->add_node(make_timers_block(COLUMN_1_WIDTH));
 
+#ifdef ENABLE_CGB
+    static constexpr uint32_t COLUMN_2_WIDTH = 58;
+#else
     static constexpr uint32_t COLUMN_2_WIDTH = 49;
+#endif
     auto c2 {make_vertical_layout()};
     c2->add_node(make_cartridge_block(COLUMN_2_WIDTH));
     c2->add_node(make_space_divider());

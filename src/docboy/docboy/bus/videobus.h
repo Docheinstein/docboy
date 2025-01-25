@@ -39,7 +39,7 @@ public:
     void reset();
 
 private:
-    uint8_t acquirers {};
+    uint16_t acquirers {}; // TODO: can be uint8_t if OAM BUG for IDU should not be handled in CGB
 };
 
 template <typename BusType, Device::Type Dev>

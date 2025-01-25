@@ -59,13 +59,13 @@ bool VideoBus<Impl>::is_acquired_by() const {
 template<typename Impl>
 void VideoBus<Impl>::save_state(Parcel &parcel) const {
     Bus::save_state(parcel);
-    parcel.write_uint8(acquirers);
+    parcel.write_uint16(acquirers);
 }
 
 template<typename Impl>
 void VideoBus<Impl>::load_state(Parcel &parcel) {
     Bus::load_state(parcel);
-    acquirers = parcel.read_uint8();
+    acquirers = parcel.read_uint16();
 }
 
 template <typename Impl>

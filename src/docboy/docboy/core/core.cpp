@@ -91,7 +91,7 @@ inline void Core::tick_t2() const {
     gb.apu.tick_t2();
     gb.ext_bus.tick();
     gb.cpu_bus.tick();
-    gb.oam_bus.tick();
+    gb.oam_bus.tick_t2();
     gb.vram_bus.tick();
 }
 

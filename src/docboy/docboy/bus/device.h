@@ -11,6 +11,7 @@ struct Device {
     static constexpr Type Hdma = 2;
 #endif
     static constexpr Type Ppu = 3;
+    static constexpr Type Idu = 4;
 }; // namespace Device
 
 #endif // DEVICE_H

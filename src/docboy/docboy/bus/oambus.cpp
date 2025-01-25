@@ -43,4 +43,27 @@ OamBus::OamBus(Oam& oam) :
         memory_accessors[i] = {read_00, write_nop};
     }
 #endif
+
+    reset();
+}
+
+void OamBus::save_state(Parcel& parcel) const {
+    VideoBus::save_state(parcel);
+
+    parcel.write_bool(mcycle_write.happened);
+    parcel.write_uint8(mcycle_write.previous_data);
+}
+
+void OamBus::load_state(Parcel& parcel) {
+    VideoBus::load_state(parcel);
+
+    mcycle_write.happened = parcel.read_bool();
+    mcycle_write.previous_data = parcel.read_uint8();
+}
+
+void OamBus::reset() {
+    VideoBus::reset();
+
+    mcycle_write.happened = false;
+    mcycle_write.previous_data = {};
 }
