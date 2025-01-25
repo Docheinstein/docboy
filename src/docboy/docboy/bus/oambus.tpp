@@ -122,9 +122,7 @@ void OamBus::read_word_request(uint16_t addr) {
     // PPU does not overwrite the address in the address bus.
     // i.e. if DMA write is in progress we end up reading from such address instead.
     // [hacktix/strikethrough]
-    // TODO: is this actually true also if CPU is writing (i.e. when there's OAM BUG?)
-    // TODO: should add Device::Idu to the list too?
-    if (!test_bits_or<W<Device::Dma>, W<Device::Cpu>>(requests)) {
+    if (!test_bits_or<W<Device::Cpu>, W<Device::Dma>, W<Device::Idu>>(requests)) {
         address = addr;
     }
 }
