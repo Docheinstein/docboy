@@ -2359,6 +2359,8 @@ void Ppu::reset() {
 #endif
 #endif
 
+    cycles = 0;
+
 #ifndef ENABLE_BOOTROM
     oam.acquire();
 #endif

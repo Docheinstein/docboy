@@ -624,6 +624,18 @@ TEST_CASE("parcel", "[parcel][unit]") {
 }
 
 TEST_CASE("state", "[state][unit]") {
+    SECTION("Save/Load: Round 0") {
+        std::vector<uint8_t> data1;
+
+        SimpleRunner runner {};
+        runner.rom(TESTS_ROOT_FOLDER "/roms/dmg/blargg/cpu_instrs.gb");
+        data1.resize(runner.core.get_state_size());
+        runner.core.save_state(data1.data());
+        runner.core.load_state(data1.data());
+
+        // (Parcel should not raise asserts because of save/load types mismatch)
+    }
+
     SECTION("Save/Load: Round 1") {
         std::vector<uint8_t> data1;
 
@@ -676,8 +688,6 @@ TEST_CASE("state", "[state][unit]") {
         REQUIRE(memcmp(data2.data(), data3.data(), data2.size()) == 0);
     }
 }
-
-#include "utils/io.h"
 
 TEST_CASE("reset", "[reset][unit]") {
     SECTION("Reset: Round 1") {

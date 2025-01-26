@@ -2,6 +2,10 @@
 
 #include "utils/bits.h"
 
+Infrared::Infrared() {
+    reset();
+}
+
 void Infrared::write_rp(uint8_t value) {
     rp.read_enable = get_bits_range<Specs::Bits::Infrared::READ_ENABLE>(value);
     rp.emitting = test_bit<Specs::Bits::Infrared::EMITTING>(value);
@@ -20,8 +24,8 @@ void Infrared::save_state(Parcel& parcel) const {
 
 void Infrared::load_state(Parcel& parcel) {
     rp.read_enable = parcel.read_uint8();
-    rp.receiving = parcel.read_uint8();
-    rp.emitting = parcel.read_uint8();
+    rp.receiving = parcel.read_bool();
+    rp.emitting = parcel.read_bool();
 }
 
 void Infrared::reset() {

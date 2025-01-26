@@ -730,12 +730,12 @@ void Cpu::load_state(Parcel& parcel) {
     fetching = parcel.read_bool();
     halted = parcel.read_bool();
 
-    af = parcel.read_int16();
-    bc = parcel.read_int16();
-    de = parcel.read_int16();
-    hl = parcel.read_int16();
-    pc = parcel.read_int16();
-    sp = parcel.read_int16();
+    af = parcel.read_uint16();
+    bc = parcel.read_uint16();
+    de = parcel.read_uint16();
+    hl = parcel.read_uint16();
+    pc = parcel.read_uint16();
+    sp = parcel.read_uint16();
 
     ime = (ImeState)(parcel.read_uint8());
 
@@ -745,7 +745,7 @@ void Cpu::load_state(Parcel& parcel) {
     fetching_cb = parcel.read_bool();
 
     const uint8_t instruction_flag = parcel.read_uint8();
-    const uint16_t offset = parcel.read_int16();
+    const uint16_t offset = parcel.read_uint16();
 
     if (instruction_flag == STATE_INSTRUCTION_FLAG_NORMAL) {
         instruction.microop.selector = &instructions[offset / INSTR_LEN][offset % INSTR_LEN];

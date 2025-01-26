@@ -8,6 +8,8 @@
 
 class Infrared {
 public:
+    Infrared();
+
     void write_rp(uint8_t value);
     uint8_t read_rp() const;
 
