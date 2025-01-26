@@ -52,20 +52,41 @@ uint8_t DebuggerHelpers::read_memory_raw(const GameBoy& gb, uint16_t address) {
         return gb.ext_bus.read_bus(address);
     }
 
+#ifdef ENABLE_CGB
+    /* 0xC000 - 0xCFFF */
+    if (address <= Specs::MemoryLayout::WRAM1::END) {
+        return gb.wram_bus.read_bus(address);
+    }
+#else
     /* 0xC000 - 0xCFFF */
     if (address <= Specs::MemoryLayout::WRAM1::END) {
         return gb.ext_bus.read_bus(address);
     }
+#endif
 
+#ifdef ENABLE_CGB
+    /* 0xD000 - 0xDFFF */
+    if (address <= Specs::MemoryLayout::WRAM2::END) {
+        return gb.wram_bus.read_bus(address);
+    }
+#else
     /* 0xD000 - 0xDFFF */
     if (address <= Specs::MemoryLayout::WRAM2::END) {
         return gb.ext_bus.read_bus(address);
     }
+#endif
 
+#ifdef ENABLE_CGB
+    /* 0xE000 - 0xFDFF */
+    if (address <= Specs::MemoryLayout::ECHO_RAM::END) {
+        return gb.wram_bus.read_bus(address);
+    }
+#else
     /* 0xE000 - 0xFDFF */
     if (address <= Specs::MemoryLayout::ECHO_RAM::END) {
         return gb.ext_bus.read_bus(address);
     }
+#endif
 
     /* 0xFE00 - 0xFE9F */
     if (address <= Specs::MemoryLayout::OAM::END) {
