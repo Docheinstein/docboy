@@ -17,6 +17,7 @@ class Apu;
 class Ppu;
 class VramBankController;
 class WramBankController;
+class SpeedSwitch;
 class Hdma;
 class Infrared;
 class UndocumentedRegisters;
@@ -31,8 +32,9 @@ public:
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-           Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, Hdma& hdma, VramBankController& vram_bank_controller,
-           WramBankController& wram_bank_controller, Infrared& infrared, UndocumentedRegisters& undocumented_registers);
+           Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller,
+           WramBankController& wram_bank_controller, Hdma& hdma, SpeedSwitch& speedswitch, Infrared& infrared,
+           UndocumentedRegisters& undocumented_registers);
 #else
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
            Boot& boot, Apu& apu, Ppu& ppu, Dma& dma);
@@ -40,8 +42,8 @@ public:
 #else
 #ifdef ENABLE_CGB
     CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
-           Ppu& ppu, Dma& dma, Hdma& hdma, VramBankController& vram_bank_controller,
-           WramBankController& wram_bank_controller, Infrared& infrared, UndocumentedRegisters& undocumented_registers);
+           Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
+           Hdma& hdma, SpeedSwitch& speedswitch, Infrared& infrared, UndocumentedRegisters& undocumented_registers);
 #else
     CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
            Ppu& ppu, Dma& dma);
@@ -66,10 +68,12 @@ public:
     Dma& dma;
 
 #ifdef ENABLE_CGB
-    Hdma& hdma;
-
     VramBankController& vram_bank_controller;
     WramBankController& wram_bank_controller;
+
+    Hdma& hdma;
+
+    SpeedSwitch& speed_switch;
 
     Infrared& infrared;
     UndocumentedRegisters& undocumented_registers;

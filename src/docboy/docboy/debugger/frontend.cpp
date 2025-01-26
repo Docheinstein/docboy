@@ -2802,6 +2802,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << ios(Specs::Registers::Hdma::CGB_REGISTERS, array_size(Specs::Registers::Hdma::CGB_REGISTERS)) << endl;
         b << subheader("banks", width) << endl;
         b << ios(Specs::Registers::Banks::CGB_REGISTERS, array_size(Specs::Registers::Banks::CGB_REGISTERS)) << endl;
+        b << subheader("speedswitch", width) << endl;
+        b << ios(Specs::Registers::SpeedSwitch::CGB_REGISTERS, array_size(Specs::Registers::SpeedSwitch::CGB_REGISTERS))
+          << endl;
         b << subheader("ir", width) << endl;
         b << ios(Specs::Registers::Infrared::CGB_REGISTERS, array_size(Specs::Registers::Infrared::CGB_REGISTERS))
           << endl;

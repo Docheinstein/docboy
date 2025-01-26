@@ -2359,7 +2359,9 @@ void Ppu::reset() {
 #endif
 #endif
 
+#ifdef ENABLE_DEBUGGER
     cycles = 0;
+#endif
 
 #ifndef ENABLE_BOOTROM
     oam.acquire();

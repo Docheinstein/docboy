@@ -203,6 +203,11 @@ namespace Registers {
     } // namespace Video
 
 #ifdef ENABLE_CGB
+    namespace SpeedSwitch {
+        constexpr uint16_t KEY1 = 0xFF4D;
+        constexpr uint16_t CGB_REGISTERS[] = {KEY1};
+    } // namespace SpeedSwitch
+
     namespace Hdma {
         constexpr uint16_t HDMA1 = 0xFF51;
         constexpr uint16_t HDMA2 = 0xFF52;
@@ -453,6 +458,13 @@ namespace Bits {
             constexpr uint8_t DAY = 0;
         } // namespace DH
     }     // namespace Rtc
+
+#ifdef ENABLE_CGB
+    namespace SpeedSwitch {
+        constexpr uint8_t CURRENT_SPEED = 7;
+        constexpr uint8_t SPEED_SWITCH = 0;
+    } // namespace SpeedSwitch
+#endif
 
 #ifdef ENABLE_CGB
     namespace Infrared {

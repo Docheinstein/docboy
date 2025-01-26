@@ -258,7 +258,10 @@ Parcel Core::parcelize_state() const {
 
     gb.cpu.save_state(p);
     gb.ppu.save_state(p);
+    gb.lcd.save_state(p);
+    gb.dma.save_state(p);
     gb.apu.save_state(p);
+    gb.stop_controller.save_state(p);
     gb.cartridge_slot.cartridge->save_state(p);
     for (std::size_t i = 0; i < array_size(gb.vram); i++) {
         gb.vram[i].save_state(p);
@@ -268,24 +271,28 @@ Parcel Core::parcelize_state() const {
         gb.wram2[i].save_state(p);
     }
     gb.oam.save_state(p);
+#ifdef ENABLE_CGB
+    gb.not_usable.save_state(p);
+#endif
     gb.hram.save_state(p);
-    gb.ext_bus.save_state(p);
-    gb.cpu_bus.save_state(p);
-    gb.vram_bus.save_state(p);
-    gb.oam_bus.save_state(p);
     gb.boot.save_state(p);
     gb.serial_port.save_state(p);
     gb.timers.save_state(p);
     gb.interrupts.save_state(p);
-    gb.lcd.save_state(p);
-    gb.dma.save_state(p);
+    gb.ext_bus.save_state(p);
+#ifdef ENABLE_CGB
+    gb.wram_bus.save_state(p);
+#endif
+    gb.cpu_bus.save_state(p);
+    gb.vram_bus.save_state(p);
+    gb.oam_bus.save_state(p);
     gb.mmu.save_state(p);
-    gb.stop_controller.save_state(p);
 
 #ifdef ENABLE_CGB
     gb.vram_bank_controller.save_state(p);
     gb.wram_bank_controller.save_state(p);
-
+    gb.hdma.save_state(p);
+    gb.speed_switch.save_state(p);
     gb.infrared.save_state(p);
     gb.undocumented_registers.save_state(p);
 #endif
@@ -293,53 +300,64 @@ Parcel Core::parcelize_state() const {
     return p;
 }
 
-void Core::unparcelize_state(Parcel&& parcel) {
-    ticks = parcel.read_uint64();
+void Core::unparcelize_state(Parcel&& p) {
+    ticks = p.read_uint64();
 
-    gb.cpu.load_state(parcel);
-    gb.ppu.load_state(parcel);
-    gb.apu.load_state(parcel);
-    gb.cartridge_slot.cartridge->load_state(parcel);
+    gb.cpu.load_state(p);
+    gb.ppu.load_state(p);
+    gb.lcd.load_state(p);
+    gb.dma.load_state(p);
+    gb.apu.load_state(p);
+    gb.stop_controller.load_state(p);
+    gb.cartridge_slot.cartridge->load_state(p);
     for (std::size_t i = 0; i < array_size(gb.vram); i++) {
-        gb.vram[i].load_state(parcel);
+        gb.vram[i].load_state(p);
     }
-    gb.wram1.load_state(parcel);
+    gb.wram1.load_state(p);
     for (std::size_t i = 0; i < array_size(gb.wram2); i++) {
-        gb.wram2[i].load_state(parcel);
+        gb.wram2[i].load_state(p);
     }
-    gb.oam.load_state(parcel);
-    gb.hram.load_state(parcel);
-    gb.ext_bus.load_state(parcel);
-    gb.cpu_bus.load_state(parcel);
-    gb.vram_bus.load_state(parcel);
-    gb.oam_bus.load_state(parcel);
-    gb.boot.load_state(parcel);
-    gb.serial_port.load_state(parcel);
-    gb.timers.load_state(parcel);
-    gb.interrupts.load_state(parcel);
-    gb.lcd.load_state(parcel);
-    gb.dma.load_state(parcel);
-    gb.mmu.load_state(parcel);
-    gb.stop_controller.load_state(parcel);
+    gb.oam.load_state(p);
+#ifdef ENABLE_CGB
+    gb.not_usable.load_state(p);
+#endif
+    gb.hram.load_state(p);
+    gb.boot.load_state(p);
+    gb.serial_port.load_state(p);
+    gb.timers.load_state(p);
+    gb.interrupts.load_state(p);
+    gb.ext_bus.load_state(p);
+#ifdef ENABLE_CGB
+    gb.wram_bus.load_state(p);
+#endif
+    gb.cpu_bus.load_state(p);
+    gb.vram_bus.load_state(p);
+    gb.oam_bus.load_state(p);
+    gb.mmu.load_state(p);
 
 #ifdef ENABLE_CGB
-    gb.vram_bank_controller.load_state(parcel);
-    gb.wram_bank_controller.load_state(parcel);
-
-    gb.infrared.load_state(parcel);
-    gb.undocumented_registers.load_state(parcel);
+    gb.vram_bank_controller.load_state(p);
+    gb.wram_bank_controller.load_state(p);
+    gb.hdma.load_state(p);
+    gb.speed_switch.load_state(p);
+    gb.infrared.load_state(p);
+    gb.undocumented_registers.load_state(p);
 #endif
 
-    ASSERT(parcel.get_remaining_size() == 0);
+    ASSERT(p.get_remaining_size() == 0);
 }
 
 void Core::reset() {
     rom_state_size = STATE_SAVE_SIZE_UNKNOWN;
+
     ticks = 0;
 
     gb.cpu.reset();
     gb.ppu.reset();
+    gb.lcd.reset();
+    gb.dma.reset();
     gb.apu.reset();
+    gb.stop_controller.reset();
     gb.cartridge_slot.cartridge->reset();
     gb.vram[0].reset(VRAM0_INITIAL_DATA);
 #ifdef ENABLE_CGB
@@ -354,24 +372,28 @@ void Core::reset() {
 #else
     gb.oam.reset(RANDOM_DATA);
 #endif
+#ifdef ENABLE_CGB
+    gb.not_usable.reset();
+#endif
     gb.hram.reset(RANDOM_DATA);
-    gb.ext_bus.reset();
-    gb.cpu_bus.reset();
-    gb.vram_bus.reset();
-    gb.oam_bus.reset();
     gb.boot.reset();
     gb.serial_port.reset();
     gb.timers.reset();
     gb.interrupts.reset();
-    gb.lcd.reset();
-    gb.dma.reset();
+    gb.ext_bus.reset();
+#ifdef ENABLE_CGB
+    gb.wram_bus.reset();
+#endif
+    gb.cpu_bus.reset();
+    gb.vram_bus.reset();
+    gb.oam_bus.reset();
     gb.mmu.reset();
-    gb.stop_controller.reset();
 
 #ifdef ENABLE_CGB
     gb.vram_bank_controller.reset();
     gb.wram_bank_controller.reset();
-
+    gb.hdma.reset();
+    gb.speed_switch.reset();
     gb.infrared.reset();
     gb.undocumented_registers.reset();
 #endif

@@ -35,6 +35,7 @@
 #include "docboy/hdma/hdma.h"
 #include "docboy/ir/infrared.h"
 #include "docboy/memory/notusable.h"
+#include "docboy/speedswitch/speedswitch.h"
 #include "docboy/undoc/undocregs.h"
 #endif
 
@@ -44,16 +45,40 @@
 
 class GameBoy {
 public:
-    // Status
-    bool fetching {};
-    bool halted {};
-    bool stopped {};
-
 #ifdef ENABLE_BOOTROM
     explicit GameBoy(std::unique_ptr<BootRom> boot_rom) :
         boot_rom {std::move(boot_rom)} {
     }
 #endif
+
+    // CPU
+    Cpu cpu {idu, interrupts, mmu, joypad, fetching, halted, stop_controller};
+    Idu idu {oam_bus};
+
+    // Video
+#ifdef ENABLE_CGB
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma};
+#else
+    Ppu ppu {lcd, interrupts, vram_bus, oam_bus, dma};
+#endif
+    Lcd lcd {};
+
+    // DMA
+    Dma dma {mmu, oam_bus};
+
+    // Audio
+    Apu apu {timers};
+
+    // Power Saving
+    StopController stop_controller {stopped, joypad, timers, lcd};
+
+    // Boot ROM
+#ifdef ENABLE_BOOTROM
+    std::unique_ptr<BootRom> boot_rom {};
+#endif
+
+    // Cartridge
+    CartridgeSlot cartridge_slot {};
 
     // Memory
 #ifdef ENABLE_CGB
@@ -63,25 +88,20 @@ public:
 #endif
 
     Wram1 wram1 {};
+
 #ifdef ENABLE_CGB
     Wram2 wram2[7] {};
 #else
     Wram2 wram2[1] {};
 #endif
+
     Oam oam {};
+
 #ifdef ENABLE_CGB
     NotUsable not_usable {};
 #endif
 
     Hram hram {};
-
-    // Boot ROM
-#ifdef ENABLE_BOOTROM
-    std::unique_ptr<BootRom> boot_rom {};
-#endif
-
-    // Cartridge
-    CartridgeSlot cartridge_slot {};
 
     // IO
 #ifdef ENABLE_BOOTROM
@@ -118,9 +138,10 @@ public:
         apu,
         ppu,
         dma,
-        hdma,
         vram_bank_controller,
         wram_bank_controller,
+        hdma,
+        speedswitch,
         infrared,
         undocumented_registers,
     };
@@ -138,9 +159,10 @@ public:
                     apu,
                     ppu,
                     dma,
-                    hdma,
                     vram_bank_controller,
                     wram_bank_controller,
+                    hdma,
+                    speed_switch,
                     infrared,
                     undocumented_registers};
 #else
@@ -170,35 +192,26 @@ public:
 #endif
 #endif
 
-    // DMA
-    Dma dma {mmu, oam_bus};
-
-    // CPU
-    Idu idu {oam_bus};
-    Cpu cpu {idu, interrupts, mmu, joypad, fetching, halted, stop_controller};
-
-    // Video
-    Lcd lcd {};
 #ifdef ENABLE_CGB
-    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma};
-#else
-    Ppu ppu {lcd, interrupts, vram_bus, oam_bus, dma};
-#endif
-
-    // Audio
-    Apu apu {timers};
-
-    // Power Saving
-    StopController stop_controller {stopped, joypad, timers, lcd};
-
-#ifdef ENABLE_CGB
+    // Bank Controllers
     VramBankController vram_bank_controller {vram_bus};
     WramBankController wram_bank_controller {wram_bus};
 
+    // HDMA
     Hdma hdma {mmu, ext_bus, vram_bus, oam_bus, ppu.stat.mode, fetching, halted, stopped};
+
+    // Speed Switch
+    SpeedSwitch speed_switch {};
+
+    // Other CGB
     Infrared infrared {};
     UndocumentedRegisters undocumented_registers {};
 #endif
+
+    // Status
+    bool fetching {};
+    bool halted {};
+    bool stopped {};
 };
 
 #endif // GAMEBOY_H

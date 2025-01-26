@@ -19,6 +19,7 @@ TEST_CASE("cgb", "[emulation]") {
         RUN_TEST_ROMS(
             // docboy
             F {"docboy/boot/boot_bg_palettes.gbc", "docboy/ok.png"}, F {"docboy/boot/boot_oam.gbc", "docboy/ok.png"},
+            F {"docboy/boot/boot_regs_cgb.gbc", "docboy/ok.png"}, F {"docboy/boot/boot_regs_cpu.gbc", "docboy/ok.png"},
             F {"docboy/boot/boot_regs_interrupts.gbc", "docboy/ok.png"},
             F {"docboy/boot/boot_regs_joypad.gbc", "docboy/ok.png"},
             F {"docboy/boot/boot_regs_serial.gbc", "docboy/ok.png"},
@@ -728,6 +729,12 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_write_source_hdma1_same.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_write_source_hdma2_diff.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_write_source_hdma2_same.gbc", "docboy/ok.png"}, );
+    }
+
+    SECTION("speed_switch") {
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/speed_switch/key1_read_write.gbc", "docboy/ok.png"}, );
     }
 
     SECTION("ir") {

@@ -15,6 +15,7 @@
 #include "docboy/banks/wrambankcontroller.h"
 #include "docboy/hdma/hdma.h"
 #include "docboy/ir/infrared.h"
+#include "docboy/speedswitch/speedswitch.h"
 #include "docboy/undoc/undocregs.h"
 #endif
 
@@ -25,8 +26,8 @@
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-               Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, Hdma& hdma, VramBankController& vram_bank_controller,
-               WramBankController& wram_bank_controller, Infrared& infrared,
+               Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller,
+               WramBankController& wram_bank_controller, Hdma& hdma, SpeedSwitch& speedswitch, Infrared& infrared,
                UndocumentedRegisters& undocumented_registers) :
 #else
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
@@ -35,8 +36,8 @@ CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Ti
 #else
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
-               Ppu& ppu, Dma& dma, Hdma& hdma, VramBankController& vram_bank_controller,
-               WramBankController& wram_bank_controller, Infrared& infrared,
+               Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
+               Hdma& hdma, SpeedSwitch& speed_switch, Infrared& infrared,
                UndocumentedRegisters& undocumented_registers) :
 #else
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
@@ -60,9 +61,10 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     dma {dma}
 #ifdef ENABLE_CGB
     ,
-    hdma {hdma},
     vram_bank_controller {vram_bank_controller},
     wram_bank_controller {wram_bank_controller},
+    hdma {hdma},
+    speed_switch {speed_switch},
     infrared {infrared},
     undocumented_registers {undocumented_registers}
 #endif
@@ -178,7 +180,12 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF4A */ memory_accessors[Specs::Registers::Video::WY] = &ppu.wy;
     /* FF4B */ memory_accessors[Specs::Registers::Video::WX] = &ppu.wx;
     /* FF4C */ memory_accessors[0xFF4C] = open_bus_access;
-    /* FF4D */ memory_accessors[0xFF4D] = open_bus_access;
+#ifdef ENABLE_CGB
+    /* FF4D */ memory_accessors[Specs::Registers::SpeedSwitch::KEY1] = {
+        NonTrivial<&SpeedSwitch::read_key1> {&speed_switch}, NonTrivial<&SpeedSwitch::write_key1> {&speed_switch}};
+#else
+    /* FF4C */ memory_accessors[0xFF4C] = open_bus_access;
+#endif
     /* FF4E */ memory_accessors[0xFF4E] = open_bus_access;
 #ifdef ENABLE_CGB
     /* FF4F */ memory_accessors[Specs::Registers::Banks::VBK] = {
