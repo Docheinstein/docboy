@@ -1,6 +1,5 @@
 #include "docboy/memory/oam.h"
 #include "oambus.h"
-#include "utils/hexdump.h"
 
 template <Device::Type Dev>
 void OamBus::View<Dev>::read_word_request(uint16_t addr) {
@@ -14,6 +13,7 @@ OamBus::Word OamBus::View<Dev>::flush_read_word_request() {
 
 template <Device::Type Dev>
 void OamBus::flush_write_request(uint8_t value) {
+#ifndef ENABLE_CGB
     if constexpr (Dev == Device::Cpu) {
         // Caching the data that was there before the write is necessary
         // to properly emulate OAM Bug for the very first OAM Scan read.
@@ -22,6 +22,7 @@ void OamBus::flush_write_request(uint8_t value) {
         mcycle_write.happened = true;
         mcycle_write.previous_data = oam[address - Specs::MemoryLayout::OAM::START];
     }
+#endif
 
     VideoBus::flush_write_request<Dev>(value);
 }
@@ -38,6 +39,7 @@ void OamBus::read_word_request(uint16_t addr) {
 
     set_bit<R<Dev>>(requests);
 
+#ifndef ENABLE_CGB
     // If PPU is reading while CPU is accessing OAM, OAM Bug Corruption might happen.
     // There are several corruption patterns based on the following conditions:
     // - whether CPU is reading/writing
@@ -121,6 +123,7 @@ void OamBus::read_word_request(uint16_t addr) {
             oam_bug_write(row_addr);
         }
     }
+#endif
 
     // PPU does not overwrite the address in the address bus.
     // i.e. if DMA write is in progress we end up reading from such address instead.
@@ -143,10 +146,13 @@ OamBus::Word OamBus::flush_read_word_request() {
 }
 
 inline void OamBus::tick_t2() {
+#ifndef ENABLE_CGB
     mcycle_write.happened = false;
+#endif
     tick();
 }
 
+#ifndef ENABLE_CGB
 inline uint16_t OamBus::read_word(const uint8_t addr) const {
     ASSERT(mod<2>(addr) == 0);
     return concat(oam[addr], oam[addr + 1]);
@@ -653,3 +659,4 @@ inline void OamBus::oam_bug_write_9c_6() {
 
     write_row(target_row_addr, n0, n1, f, g);
 }
+#endif

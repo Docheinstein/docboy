@@ -50,20 +50,26 @@ OamBus::OamBus(Oam& oam) :
 void OamBus::save_state(Parcel& parcel) const {
     VideoBus::save_state(parcel);
 
+#ifndef ENABLE_CGB
     parcel.write_bool(mcycle_write.happened);
     parcel.write_uint8(mcycle_write.previous_data);
+#endif
 }
 
 void OamBus::load_state(Parcel& parcel) {
     VideoBus::load_state(parcel);
 
+#ifndef ENABLE_CGB
     mcycle_write.happened = parcel.read_bool();
     mcycle_write.previous_data = parcel.read_uint8();
+#endif
 }
 
 void OamBus::reset() {
     VideoBus::reset();
 
+#ifndef ENABLE_CGB
     mcycle_write.happened = false;
     mcycle_write.previous_data = {};
+#endif
 }

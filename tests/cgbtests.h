@@ -73,6 +73,16 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/memory/vram_write_vblank.gbc", "docboy/ok.png"}, );
     }
 
+    SECTION("oam_bug") {
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/oam_bug/oam_bug_inc.gbc", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_ld_a_hl.gbc", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_ld_hl_a.gbc", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_pop.gbc", "docboy/ok.png"},
+            F {"docboy/oam_bug/oam_bug_push.gbc", "docboy/ok.png"}, );
+    }
+
     SECTION("stat_write_bug") {
         RUN_TEST_ROMS(
             // docboy

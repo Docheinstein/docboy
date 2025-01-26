@@ -49,6 +49,7 @@ public:
     void reset();
 
 private:
+#ifndef ENABLE_CGB
     uint16_t read_word(uint8_t) const;
     void write_word(uint8_t row_addr, uint16_t word);
 
@@ -81,16 +82,19 @@ private:
 
     // OAM corruption bugs: read/write
     void oam_bug_read_write(uint8_t row_addr);
+#endif
 
     Oam& oam;
 #ifdef ENABLE_CGB
     NotUsable& not_usable;
 #endif
 
+#ifndef ENABLE_CGB
     struct {
         bool happened {};
         uint8_t previous_data {};
     } mcycle_write;
+#endif
 };
 
 #include "docboy/bus/oambus.tpp"
