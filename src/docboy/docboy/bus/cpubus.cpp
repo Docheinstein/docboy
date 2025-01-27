@@ -184,7 +184,7 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF4D */ memory_accessors[Specs::Registers::SpeedSwitch::KEY1] = {
         NonTrivial<&SpeedSwitch::read_key1> {&speed_switch}, NonTrivial<&SpeedSwitch::write_key1> {&speed_switch}};
 #else
-    /* FF4C */ memory_accessors[0xFF4C] = open_bus_access;
+    /* FF4D */ memory_accessors[0xFF4D] = open_bus_access;
 #endif
     /* FF4E */ memory_accessors[0xFF4E] = open_bus_access;
 #ifdef ENABLE_CGB
