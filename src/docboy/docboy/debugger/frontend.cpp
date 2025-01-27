@@ -2054,7 +2054,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             if (gb.ppu.tick_selector == &Ppu::hblank_first_line_after_turn_on) {
                 return "HBlank (Glitched Line 0)";
             }
-            if (gb.ppu.tick_selector == &Ppu::vblank || gb.ppu.tick_selector == &Ppu::vblank_454) {
+            if (gb.ppu.tick_selector == &Ppu::vblank || gb.ppu.tick_selector == &Ppu::vblank_454 ||
+                gb.ppu.tick_selector == &Ppu::vblank_455) {
                 return "VBlank";
             }
             if (gb.ppu.tick_selector == &Ppu::vblank_last_line || gb.ppu.tick_selector == &Ppu::vblank_last_line_2 ||
