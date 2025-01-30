@@ -94,7 +94,7 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
                                                                    NonTrivial<&Timers::write_tima> {&timers}};
     /* FF06 */ memory_accessors[Specs::Registers::Timers::TMA] = {&timers.tma,
                                                                   NonTrivial<&Timers::write_tma> {&timers}};
-    /* FF07 */ memory_accessors[Specs::Registers::Timers::TAC] = {&timers.tac,
+    /* FF07 */ memory_accessors[Specs::Registers::Timers::TAC] = {NonTrivial<&Timers::read_tac> {&timers},
                                                                   NonTrivial<&Timers::write_tac> {&timers}};
     /* FF08 */ memory_accessors[0xFF08] = open_bus_access;
     /* FF09 */ memory_accessors[0xFF09] = open_bus_access;

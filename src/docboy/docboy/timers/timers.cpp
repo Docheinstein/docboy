@@ -30,7 +30,8 @@ void Timers::save_state(Parcel& parcel) const {
     parcel.write_uint16(div16);
     parcel.write_uint8(tima);
     parcel.write_uint8(tma);
-    parcel.write_uint8(tac);
+    parcel.write_bool(tac.enable);
+    parcel.write_uint8(tac.clock_selector);
     parcel.write_uint8(tima_state);
     parcel.write_bool(last_div_bit_and_tac_enable);
 }
@@ -39,7 +40,8 @@ void Timers::load_state(Parcel& parcel) {
     div16 = parcel.read_uint16();
     tima = parcel.read_uint8();
     tma = parcel.read_uint8();
-    tac = parcel.read_uint8();
+    tac.enable = parcel.read_bool();
+    tac.clock_selector = parcel.read_uint8();
     tima_state = parcel.read_uint8();
     last_div_bit_and_tac_enable = parcel.read_bool();
 }
@@ -48,7 +50,8 @@ void Timers::reset() {
     div16 = if_bootrom_else(0x0008, 0xABCC); // [mooneye/boot_div-dmgABCmgb.gb]
     tima = 0;
     tma = 0;
-    tac = 0b11111000;
+    tac.enable = false;
+    tac.clock_selector = 0;
 
     tima_state = TimaReloadState::None;
     last_div_bit_and_tac_enable = false;
@@ -86,8 +89,14 @@ void Timers::write_tma(uint8_t value) {
     }
 }
 
+uint8_t Timers::read_tac() const {
+    return 0b11111000 | tac.enable << Specs::Bits::Timers::TAC::ENABLE |
+           tac.clock_selector << Specs::Bits::Timers::TAC::CLOCK_SELECTOR;
+}
+
 void Timers::write_tac(uint8_t value) {
-    tac = 0b11111000 | value;
+    tac.enable = test_bit<Specs::Bits::Timers::TAC::ENABLE>(value);
+    tac.clock_selector = keep_bits_range_r<Specs::Bits::Timers::TAC::CLOCK_SELECTOR>(value);
     on_falling_edge_inc_tima();
 }
 
@@ -106,9 +115,8 @@ inline void Timers::inc_tima() {
 inline void Timers::on_falling_edge_inc_tima() {
     // TIMA is incremented if (DIV bit selected by TAC && TAC enable)
     // was true and now it's false (on falling edge)
-    const bool tac_div_bit = test_bit(div16, Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(tac)]);
-    const bool tac_enable = test_bit<Specs::Bits::Timers::TAC::ENABLE>(tac);
-    const bool div_bit_and_tac_enable = tac_div_bit && tac_enable;
+    const bool tac_div_bit = test_bit(div16, Specs::Timers::TAC_DIV_BITS_SELECTOR[tac.clock_selector]);
+    const bool div_bit_and_tac_enable = tac_div_bit && tac.enable;
     if (last_div_bit_and_tac_enable > div_bit_and_tac_enable) {
         inc_tima();
     }

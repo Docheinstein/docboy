@@ -519,7 +519,8 @@ uint32_t DebuggerBackend::state_hash() const {
     h = hash_combine(h, gb.timers.div16);
     h = hash_combine(h, gb.timers.tima);
     h = hash_combine(h, gb.timers.tma);
-    h = hash_combine(h, gb.timers.tac);
+    h = hash_combine(h, gb.timers.tac.enable);
+    h = hash_combine(h, gb.timers.tac.clock_selector);
     h = hash_combine(h, memory_hash);
 
     return h;

@@ -86,6 +86,11 @@ struct FrontendDisplayCommand {
 
 struct FrontendUndisplayCommand {};
 
+struct FrontendKeyCommand {
+    Joypad::Key key {};
+    Joypad::KeyState event {};
+};
+
 struct FrontendTickCommand {
     uint64_t count {};
 };
@@ -141,10 +146,10 @@ using FrontendCommand =
     std::variant<FrontendBreakpointCommand, FrontendWatchpointCommand, FrontendDeleteCommand,
                  FrontendAutoDisassembleCommand, FrontendExamineCommand, FrontendSearchBytesCommand,
                  FrontendSearchInstructionsCommand, FrontendDisplayCommand, FrontendUndisplayCommand,
-                 FrontendTickCommand, FrontendDotCommand, FrontendStepCommand, FrontendMicroStepCommand,
-                 FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand, FrontendScanlineCommand,
-                 FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand, FrontendChecksumCommand,
-                 FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
+                 FrontendKeyCommand, FrontendTickCommand, FrontendDotCommand, FrontendStepCommand,
+                 FrontendMicroStepCommand, FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand,
+                 FrontendScanlineCommand, FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand,
+                 FrontendChecksumCommand, FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
     std::regex regex;
@@ -357,6 +362,44 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
     {std::regex(R"(undisplay)"), "undisplay", "Undisplay expressions set with display",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          FrontendUndisplayCommand cmd {};
+         return cmd;
+     }},
+    {std::regex(R"(key (press|release) (down|up|left|right|start|select|a|b))"), "key <press|release> <key>",
+     "Send 'press' or 'release' event for <key> (<key>: a, b, start, select, up, down, left, right)",
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         FrontendKeyCommand cmd {};
+
+         const std::string& event = groups[0];
+         const std::string& key = groups[1];
+
+         if (event == "press") {
+             cmd.event = Joypad::KeyState::Pressed;
+         } else if (event == "release") {
+             cmd.event = Joypad::KeyState::Released;
+         } else {
+             return std::nullopt;
+         }
+
+         if (key == "down") {
+             cmd.key = Joypad::Key::Down;
+         } else if (key == "up") {
+             cmd.key = Joypad::Key::Up;
+         } else if (key == "left") {
+             cmd.key = Joypad::Key::Left;
+         } else if (key == "right") {
+             cmd.key = Joypad::Key::Right;
+         } else if (key == "start") {
+             cmd.key = Joypad::Key::Start;
+         } else if (key == "select") {
+             cmd.key = Joypad::Key::Select;
+         } else if (key == "a") {
+             cmd.key = Joypad::Key::A;
+         } else if (key == "b") {
+             cmd.key = Joypad::Key::B;
+         } else {
+             return std::nullopt;
+         }
+
          return cmd;
      }},
     {std::regex(R"(t\s*(\d+)?)"), "t [<count>]", "Continue running for <count> clock ticks (default = 1)",
@@ -639,6 +682,13 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendUndisplayCommand
     return std::nullopt;
 }
 
+// Key
+template <>
+std::optional<Command> DebuggerFrontend::handle_command<FrontendKeyCommand>(const FrontendKeyCommand& cmd) {
+    core.set_key(cmd.key, cmd.event);
+    return std::nullopt;
+}
+
 // Tick
 template <>
 std::optional<Command> DebuggerFrontend::handle_command<FrontendTickCommand>(const FrontendTickCommand& cmd) {
@@ -862,6 +912,8 @@ Command DebuggerFrontend::pull_command(const ExecutionState& state) {
             cmd_to_send = handle_command(std::get<FrontendDisplayCommand>(cmd));
         } else if (std::holds_alternative<FrontendUndisplayCommand>(cmd)) {
             cmd_to_send = handle_command(std::get<FrontendUndisplayCommand>(cmd));
+        } else if (std::holds_alternative<FrontendKeyCommand>(cmd)) {
+            cmd_to_send = handle_command(std::get<FrontendKeyCommand>(cmd));
         } else if (std::holds_alternative<FrontendTickCommand>(cmd)) {
             cmd_to_send = handle_command(std::get<FrontendTickCommand>(cmd));
         } else if (std::holds_alternative<FrontendDotCommand>(cmd)) {
@@ -2720,7 +2772,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << red("DIV (16)") << "   :  " << [this]() -> Text {
             uint16_t div = gb.timers.div16;
             Text t {};
-            uint8_t highlight_bit = Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(gb.timers.tac)];
+            uint8_t highlight_bit = Specs::Timers::TAC_DIV_BITS_SELECTOR[gb.timers.tac.clock_selector];
             for (int8_t b = 15; b >= 0; b--) {
                 bool high = test_bit(div, b);
                 t += ((b == highlight_bit) ? yellow(Text {high}) : Text {high});
