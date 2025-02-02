@@ -19,12 +19,14 @@ public:
 
     explicit Timers(Interrupts& interrupts);
 
-    void tick_t3();
+    void tick();
 
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
 
     void reset();
+
+    void set_div(uint16_t value);
 
     uint8_t read_div() const;
     void write_div(uint8_t value);
@@ -53,7 +55,6 @@ private:
         static constexpr Type Pending = 2;
     };
 
-    void set_div(uint16_t value);
     void inc_tima();
     void on_falling_edge_inc_tima();
     void handle_pending_tima_reload();

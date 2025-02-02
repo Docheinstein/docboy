@@ -63,6 +63,15 @@ inline void Core::tick_t1() const {
     gb.cpu.tick_t1();
 #endif
 
+#ifdef ENABLE_CGB
+    gb.speed_switch_controller.tick();
+
+    if (gb.speed_switch_controller.is_double_speed_mode() &&
+        !gb.speed_switch_controller.is_blocking_timers() /* TODO: ok? */) {
+        gb.timers.tick();
+    }
+#endif
+
     gb.ppu.tick();
     gb.dma.tick_t1();
 #ifdef ENABLE_CGB
@@ -107,7 +116,13 @@ inline void Core::tick_t3() const {
     if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3) {
         gb.serial_port.tick();
     }
-    gb.timers.tick_t3();
+
+#ifdef ENABLE_CGB
+    gb.speed_switch_controller.tick();
+#endif
+
+    gb.timers.tick();
+
     gb.ppu.tick();
 #ifdef ENABLE_CGB
     gb.hdma.tick_t3();
@@ -293,6 +308,7 @@ Parcel Core::parcelize_state() const {
     gb.wram_bank_controller.save_state(p);
     gb.hdma.save_state(p);
     gb.speed_switch.save_state(p);
+    gb.speed_switch_controller.save_state(p);
     gb.infrared.save_state(p);
     gb.undocumented_registers.save_state(p);
 #endif
@@ -340,6 +356,7 @@ void Core::unparcelize_state(Parcel&& p) {
     gb.wram_bank_controller.load_state(p);
     gb.hdma.load_state(p);
     gb.speed_switch.load_state(p);
+    gb.speed_switch_controller.load_state(p);
     gb.infrared.load_state(p);
     gb.undocumented_registers.load_state(p);
 #endif
@@ -394,6 +411,7 @@ void Core::reset() {
     gb.wram_bank_controller.reset();
     gb.hdma.reset();
     gb.speed_switch.reset();
+    gb.speed_switch_controller.reset();
     gb.infrared.reset();
     gb.undocumented_registers.reset();
 #endif

@@ -10,6 +10,8 @@ class Idu;
 class Interrupts;
 class Joypad;
 class StopController;
+class SpeedSwitch;
+class SpeedSwitchController;
 class Parcel;
 
 class Cpu {
@@ -17,8 +19,13 @@ class Cpu {
     TESTABLE_CLASS()
 
 public:
+#ifdef ENABLE_CGB
+    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
+        StopController& stop_controller, SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller);
+#else
     Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
         StopController& stop_controller);
+#endif
 
     void tick();
     void tick_t0();
@@ -623,6 +630,11 @@ private:
     bool& fetching;
     bool& halted;
     StopController& stop_controller;
+#ifdef ENABLE_CGB
+    // TODO: architectural: should CPU know them?
+    SpeedSwitch& speed_switch;
+    SpeedSwitchController& speed_switch_controller;
+#endif
 
     Instruction instructions[256];
     Instruction instructions_cb[256];

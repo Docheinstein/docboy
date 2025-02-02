@@ -6,6 +6,11 @@
 #include "docboy/mmu/mmu.h"
 #include "docboy/stop/stopcontroller.h"
 
+#ifdef ENABLE_CGB
+#include "docboy/speedswitch/speedswitch.h"
+#include "docboy/speedswitch/speedswitchcontroller.h"
+#endif
+
 #include "utils/arrays.h"
 #include "utils/asserts.h"
 #include "utils/casts.h"
@@ -18,8 +23,13 @@ constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
 constexpr uint8_t STATE_INSTRUCTION_FLAG_NONE = 255;
 } // namespace
 
+#ifdef ENABLE_CGB
+Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
+         StopController& stop_controller, SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller) :
+#else
 Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
          StopController& stop_controller) :
+#endif
     idu {idu},
     interrupts {interrupts},
     mmu {mmu},
@@ -27,6 +37,10 @@ Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& j
     fetching {fetching},
     halted {halted},
     stop_controller {stop_controller},
+#ifdef ENABLE_CGB
+    speed_switch {speed_switch},
+    speed_switch_controller {speed_switch_controller},
+#endif
     // clang-format off
     instructions {
         /* 00 */ { &Cpu::nop_m0 },
@@ -573,7 +587,37 @@ void Cpu::tick_t1() {
 
     check_interrupt<0>();
     flush_write();
+
+#ifdef ENABLE_CGB
+    if (speed_switch_controller.is_double_speed_mode()) {
+        flush_read();
+    }
+#endif
+
     idu.tick_t1();
+
+#ifdef ENABLE_CGB
+    if (speed_switch_controller.is_double_speed_mode()) {
+#ifdef ENABLE_DEBUGGER
+        // Update instruction's debug information
+        // TODO: verify this
+        if (!halted) {
+            if (fetching) {
+                instruction.address = pc - 1;
+                instruction.cycle_microop = 0;
+            } else {
+                instruction.cycle_microop++;
+            }
+        }
+#endif
+
+#ifdef ENABLE_TESTS
+        if (fetching) {
+            instruction.opcode = io.data;
+        }
+    }
+#endif
+#endif
 }
 
 void Cpu::tick_t2() {
@@ -582,6 +626,12 @@ void Cpu::tick_t2() {
 #endif
 
     check_interrupt<1>();
+
+#ifdef ENABLE_CGB
+    if (speed_switch_controller.is_double_speed_mode()) {
+        tick();
+    }
+#endif
 }
 
 void Cpu::tick_t3() {
@@ -590,6 +640,13 @@ void Cpu::tick_t3() {
 #endif
 
     check_interrupt<2>();
+
+#ifdef ENABLE_CGB
+    if (speed_switch_controller.is_double_speed_mode()) {
+        flush_write();
+        idu.tick_t1();
+    }
+#endif
     flush_read();
 
 #ifdef ENABLE_DEBUGGER
@@ -613,6 +670,16 @@ void Cpu::tick_t3() {
 }
 
 inline void Cpu::tick() {
+#ifdef ENABLE_CGB
+    // TODO: this check should not be here: probably halted state is enough
+    if (speed_switch_controller.is_switching_speed()) {
+#ifdef ENABLE_DEBUGGER
+        ++cycles;
+#endif
+        return;
+    }
+#endif
+
     // Eventually handle pending interrupt
     if (interrupt.state == InterruptState::Pending) {
         // Decrease the remaining ticks for the pending interrupt
@@ -1221,28 +1288,41 @@ void Cpu::nop_m0() {
 }
 
 void Cpu::stop_m0() {
-    // STOP behavior on DMG varies accordingly to the table below.
-    //
-    //   Joypad | Interrupts  ||  Mode  |   DIV   |  Instr. Length
-    // ----------------------------------------------------------------
-    //     0    |      0      ||  STOP  |  Reset  |       2
-    //     0    |      1      ||  STOP  |  Reset  |       1
-    //     1    |      0      ||  HALT  |  -----  |       2
-    //     1    |      1      ||  ----  |  ------ |       1
+    // STOP behavior varies accordingly to the table below.
+    // -----------------------------------------------------------------------------------------------------------------
+    //   CGB && KEY1 | Joypad | Interrupts  ||  Stopped  |  Halted  |  Speed Switch  |  DIV Reset |  Stop is 2 Bytes
+    // -----------------------------------------------------------------------------------------------------------------
+    //        0      |   0    |      0      ||     1     |     0    |       0        |      1     |         1
+    //        0      |   0    |      1      ||     1     |     0    |       0        |      1     |         0
+    //        0      |   1    |      0      ||     0     |     1    |       0        |      0     |         1
+    //        0      |   1    |      1      ||     0     |     0    |       0        |      0     |         0
+    //        1      |   0    |      0      ||     0     |     0    |       1        |      1     |         1
+    //        1      |   0    |      1      ||     0     |     0    |       1        |      1     |         0
+    //        1      |   1    |      0      ||     0     |     1    |       0        |      0     |         1
+    //        1      |   1    |      1      ||     0     |     0    |       0        |      0     |         0
+    // -----------------------------------------------------------------------------------------------------------------
 
-    bool has_joypad_input = keep_bits<4>(joypad.read_p1()) == bitmask<4>;
-    bool has_pending_interrupts = get_pending_interrupts();
+    const bool joypad_input = keep_bits<4>(joypad.read_p1()) != bitmask<4>;
+    const bool pending_interrupts = get_pending_interrupts();
 
-    if (has_joypad_input) {
-        stop_controller.stop();
+    if (joypad_input) {
+        halted = !pending_interrupts;
     } else {
-        halted = !has_pending_interrupts;
+#ifdef ENABLE_CGB
+        if (speed_switch.key1.switch_speed) {
+            speed_switch_controller.switch_speed();
+        } else {
+            stop_controller.stop();
+        }
+#else
+        stop_controller.stop();
+#endif
     }
 
     instruction.microop.counter = 0;
 
     // TODO: not sure about what happens in the hardware internally.
-    if (has_pending_interrupts) {
+    if (pending_interrupts) {
         // Standard fetch.
         fetching = true;
     } else {

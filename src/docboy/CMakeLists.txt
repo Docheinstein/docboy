@@ -111,6 +111,8 @@ if (ENABLE_CGB)
             docboy/ir/infrared.h
             docboy/speedswitch/speedswitch.cpp
             docboy/speedswitch/speedswitch.h
+            docboy/speedswitch/speedswitchcontroller.cpp
+            docboy/speedswitch/speedswitchcontroller.h
             docboy/undoc/undocregs.cpp
             docboy/undoc/undocregs.h
     )

@@ -731,12 +731,6 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_write_source_hdma2_same.gbc", "docboy/ok.png"}, );
     }
 
-    SECTION("speed_switch") {
-        RUN_TEST_ROMS(
-            // docboy
-            F {"docboy/speed_switch/key1_read_write.gbc", "docboy/ok.png"}, );
-    }
-
     SECTION("ir") {
         RUN_TEST_ROMS(
             // docboy
@@ -845,9 +839,126 @@ TEST_CASE("cgb", "[emulation]") {
             F {"samesuite/apu/div_write_trigger_volume_10.gb", "samesuite/apu/div_write_trigger_volume_10.png",
                COLOR_TOLERANCE_MEDIUM}, );
     }
+
+    SECTION("double_speed") {
+        RUN_TEST_ROMS(F {"docboy/double_speed/double_speed_cpu_speed.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/double_speed_ppu_speed.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/double_speed_timers_speed.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/key1_read_write.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_4.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_8.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_16.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_32.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_64.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_128.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_256.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_512.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_1024.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_2048.gbc", "docboy/ok.png"},
+                      // TODO
+                      // F {"docboy/double_speed/speed_switch_duration_apu_ch4.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_ly_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_ly_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_read_key1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_switch_after_wait.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_switch_straight.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_div_a_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_div_a_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_div_b_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_div_b_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_reset_div.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_reset_tima.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_4khz_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_4khz_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_16khz_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_16khz_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_65khz_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_65khz_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_262khz_round1.gbc", "docboy/ok.png"},
+                      // TODO: (strange)
+                      // F {"docboy/double_speed/speed_switch_timers_tima_262khz_round2.gbc", "docboy/ok.png"},
+
+                      F {"docboy/double_speed/stop_key0_joypad0_interrupt0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key0_joypad0_interrupt1.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key0_joypad1_interrupt0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key0_joypad1_interrupt1.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad0_interrupt0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad0_interrupt1_ime0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad0_interrupt1_ime1.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad1_interrupt0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad1_interrupt1.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}}, );
+    }
+
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS();
+        RUN_TEST_ROMS(F {"docboy/double_speed/double_speed_cpu_speed.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/double_speed_ppu_speed.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/double_speed_timers_speed.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/key1_read_write.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_4.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_8.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_16.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_32.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_64.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_128.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_256.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_512.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_1024.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_apu_ch3_period_2048.gbc", "docboy/ok.png"},
+                      // TODO
+                      // F {"docboy/double_speed/speed_switch_duration_apu_ch4.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_ly_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_duration_ly_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_read_key1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_switch_after_wait.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_switch_straight.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_div_a_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_div_a_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_div_b_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_div_b_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_reset_div.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_reset_tima.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_4khz_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_4khz_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_16khz_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_16khz_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_65khz_round1.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_65khz_round2.gbc", "docboy/ok.png"},
+                      F {"docboy/double_speed/speed_switch_timers_tima_262khz_round1.gbc", "docboy/ok.png"},
+                      // TODO: (strange)
+                      // F {"docboy/double_speed/speed_switch_timers_tima_262khz_round2.gbc", "docboy/ok.png"},
+
+                      F {"docboy/double_speed/stop_key0_joypad0_interrupt0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key0_joypad0_interrupt1.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key0_joypad1_interrupt0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key0_joypad1_interrupt1.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad0_interrupt0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad0_interrupt1_ime0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad0_interrupt1_ime1.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad1_interrupt0.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+                      F {"docboy/double_speed/stop_key1_joypad1_interrupt1.gbc", "docboy/ok.png",
+                         Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}}, );
     }
 #endif
 }

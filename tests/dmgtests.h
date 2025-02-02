@@ -64,9 +64,9 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/cpu/halt_ime1_interrupt1_ret.gb", "docboy/ok.png"},
             F {"daid/stop_instr.gb", "daid/stop_instr.png", &GREY_PALETTE, ForceCheck {}},
             F {"docboy/cpu/stop_joypad0_interrupt0.gb", "docboy/ok.png",
-               Inputs {{BOOT_DURATION + 200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+               Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
             F {"docboy/cpu/stop_joypad0_interrupt1.gb", "docboy/ok.png",
-               Inputs {{BOOT_DURATION + 200, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+               Inputs {{BOOT_DURATION + 8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
             F {"docboy/cpu/stop_joypad1_interrupt0.gb", "docboy/ok.png",
                Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
             F {"docboy/cpu/stop_joypad1_interrupt1.gb", "docboy/ok.png",
@@ -74,9 +74,7 @@ TEST_CASE("dmg", "[emulation]") {
 
             // gbmicrotest
             M {"gbmicrotest/halt/halt_bug.gb", {{0xFF82, 0x01}}},
-            M {"gbmicrotest/halt/halt_op_dupe.gb", {{0xFF82, 0x01}}},
-
-        );
+            M {"gbmicrotest/halt/halt_op_dupe.gb", {{0xFF82, 0x01}}}, );
     }
 
     SECTION("ppu") {
@@ -3071,7 +3069,6 @@ TEST_CASE("dmg", "[emulation]") {
 
         );
     }
-
 #endif
 }
 

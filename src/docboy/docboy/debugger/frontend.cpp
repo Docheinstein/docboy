@@ -1135,6 +1135,24 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         return b;
     };
 
+#ifdef ENABLE_CGB
+    // Double Speed
+    const auto make_double_speed_block = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("DOUBLE SPEED", width) << endl;
+
+        // State
+        b << yellow("Double Speed") << "  :  " << +gb.speed_switch_controller.is_double_speed_mode() << endl;
+        b << yellow("Switching") << "     :  " << (gb.speed_switch_controller.speed_switch_countdown > 0) << endl;
+        if (gb.speed_switch_controller.speed_switch_countdown) {
+            b << yellow("Switch Delay") << "  :  " << +gb.speed_switch_controller.speed_switch_countdown << endl;
+        }
+
+        return b;
+    };
+#endif
+
     // CPU
     const auto make_cpu_block = [&](uint32_t width) {
         auto b {make_block(width)};
@@ -3108,6 +3126,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     auto c1 {make_vertical_layout()};
     c1->add_node(make_gameboy_block(COLUMN_1_WIDTH));
     c1->add_node(make_space_divider());
+#ifdef ENABLE_CGB
+    c1->add_node(make_double_speed_block(COLUMN_1_WIDTH));
+#endif
     c1->add_node(make_cpu_block(COLUMN_1_WIDTH));
     c1->add_node(make_space_divider());
     c1->add_node(make_timers_block(COLUMN_1_WIDTH));

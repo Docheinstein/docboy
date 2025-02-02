@@ -36,6 +36,7 @@
 #include "docboy/ir/infrared.h"
 #include "docboy/memory/notusable.h"
 #include "docboy/speedswitch/speedswitch.h"
+#include "docboy/speedswitch/speedswitchcontroller.h"
 #include "docboy/undoc/undocregs.h"
 #endif
 
@@ -52,7 +53,11 @@ public:
 #endif
 
     // CPU
+#ifdef ENABLE_CGB
+    Cpu cpu {idu, interrupts, mmu, joypad, fetching, halted, stop_controller, speed_switch, speed_switch_controller};
+#else
     Cpu cpu {idu, interrupts, mmu, joypad, fetching, halted, stop_controller};
+#endif
     Idu idu {oam_bus};
 
     // Video
@@ -200,8 +205,11 @@ public:
     // HDMA
     Hdma hdma {mmu, ext_bus, vram_bus, oam_bus, ppu.stat.mode, fetching, halted, stopped};
 
+#ifdef ENABLE_CGB
     // Speed Switch
     SpeedSwitch speed_switch {};
+    SpeedSwitchController speed_switch_controller {speed_switch, timers, halted};
+#endif
 
     // Other CGB
     Infrared infrared {};

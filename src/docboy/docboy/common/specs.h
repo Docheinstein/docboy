@@ -280,8 +280,9 @@ namespace Bits {
     namespace Timers {
         namespace TAC {
             constexpr uint8_t ENABLE = 2;
-        }
-    } // namespace Timers
+            constexpr BitRange CLOCK_SELECTOR = {1, 0};
+        } // namespace TAC
+    }     // namespace Timers
 
     namespace Video {
         namespace LCDC {

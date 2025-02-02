@@ -21,7 +21,7 @@ Timers::Timers(Interrupts& interrupts) :
     interrupts {interrupts} {
 }
 
-void Timers::tick_t3() {
+void Timers::tick() {
     handle_pending_tima_reload();
     set_div(div16 + 4);
 }
@@ -100,7 +100,7 @@ void Timers::write_tac(uint8_t value) {
     on_falling_edge_inc_tima();
 }
 
-inline void Timers::set_div(uint16_t value) {
+void Timers::set_div(uint16_t value) {
     div16 = value;
     on_falling_edge_inc_tima();
 }

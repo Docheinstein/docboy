@@ -60,10 +60,14 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
         ASSERT(history.size() <= MAX_HISTORY_SIZE);
     }
 
-    bool is_m_cycle = (tick % 4) == 0;
+    bool is_aligned_with_instruction = (tick % 4) == 0;
+#ifdef ENABLE_CGB
+    is_aligned_with_instruction =
+        is_aligned_with_instruction || (tick % 2 == 0 && core.gb.speed_switch_controller.is_double_speed_mode());
+#endif
 
     // Handle new CPU instruction (check breakpoints, call stack, ...)
-    if (is_m_cycle) {
+    if (is_aligned_with_instruction) {
         if (!DebuggerHelpers::is_in_isr(cpu) && cpu.instruction.microop.counter == 0) {
             if (last_instruction) {
                 const uint8_t last_opcode = last_instruction->instruction[0];
@@ -156,7 +160,7 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
         handle_command<FrameBackCommand, FrameBackCommandState>();
     } else if (std::holds_alternative<ScanlineCommand>(cmd)) {
         handle_command<ScanlineCommand, ScanlineCommandState>();
-    } else if (is_m_cycle) {
+    } else if (is_aligned_with_instruction) {
         // M-Cycle commands (CPU)
         if (std::holds_alternative<DotCommand>(cmd)) {
             handle_command<DotCommand, DotCommandState>();

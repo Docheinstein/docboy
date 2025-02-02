@@ -18,7 +18,7 @@ public:
 
     void reset();
 
-    struct Stat : Composite<Specs::Registers::SpeedSwitch::KEY1> {
+    struct Key1 : Composite<Specs::Registers::SpeedSwitch::KEY1> {
         Bool current_speed {make_bool()};
         Bool switch_speed {make_bool()};
     } key1 {};
