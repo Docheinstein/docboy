@@ -54,6 +54,8 @@ private:
                             bool raw) const;
     std::string dump_display_entry(const DisplayEntry& d) const;
 
+    void reset();
+
     DebuggerBackend& backend;
     const Core& core;
     const GameBoy& gb;

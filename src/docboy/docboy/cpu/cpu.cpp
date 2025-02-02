@@ -898,6 +898,10 @@ void Cpu::reset() {
 #ifdef ENABLE_DEBUGGER
     cycles = 0;
 #endif
+
+#ifdef ENABLE_ASSERTS
+    last_tick = 3;
+#endif
 }
 
 template <uint8_t t>

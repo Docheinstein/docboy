@@ -13,13 +13,19 @@
     if (debugger) {                                                                                                    \
         debugger->notify_tick(n);                                                                                      \
     }
-#define RETURN_ON_QUIT_REQUEST()                                                                                       \
-    if (debugger && debugger->is_asking_to_quit()) {                                                                   \
+#define RETURN_FROM_CYCLE_ON_QUIT_OR_RESET_REQUEST()                                                                   \
+    if (is_asking_to_quit() || resetting) {                                                                            \
+        return;                                                                                                        \
+    }
+#define RETURN_ON_QUIT_OR_RESET_REQUEST()                                                                              \
+    if (is_asking_to_quit() || resetting) {                                                                            \
+        resetting = false;                                                                                             \
         return;                                                                                                        \
     }
 #else
 #define TICK_DEBUGGER(n) (void)(0)
-#define RETURN_ON_QUIT_REQUEST() (void)(0)
+#define RETURN_FROM_CYCLE_ON_QUIT_OR_RESET_REQUEST() (void)(0)
+#define RETURN_ON_QUIT_OR_RESET_REQUEST() (void)(0)
 #endif
 
 namespace {
@@ -142,22 +148,22 @@ void Core::_cycle() {
     ASSERT(mod<4>(ticks) == 0);
 
     TICK_DEBUGGER(ticks);
-    RETURN_ON_QUIT_REQUEST();
+    RETURN_FROM_CYCLE_ON_QUIT_OR_RESET_REQUEST();
     tick_t0();
     ++ticks;
 
     TICK_DEBUGGER(ticks);
-    RETURN_ON_QUIT_REQUEST();
+    RETURN_FROM_CYCLE_ON_QUIT_OR_RESET_REQUEST();
     tick_t1();
     ++ticks;
 
     TICK_DEBUGGER(ticks);
-    RETURN_ON_QUIT_REQUEST();
+    RETURN_FROM_CYCLE_ON_QUIT_OR_RESET_REQUEST();
     tick_t2();
     ++ticks;
 
     TICK_DEBUGGER(ticks);
-    RETURN_ON_QUIT_REQUEST();
+    RETURN_FROM_CYCLE_ON_QUIT_OR_RESET_REQUEST();
     tick_t3();
     ++ticks;
 }
@@ -187,12 +193,11 @@ void Core::frame() {
     if (!gb.ppu.lcdc.enable) {
         for (uint16_t c = 0; c < LCD_VBLANK_CYCLES; c++) {
             _cycle();
-            ASSERT(gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK);
-
             if (gb.stopped) {
                 return;
             }
-            RETURN_ON_QUIT_REQUEST();
+            RETURN_ON_QUIT_OR_RESET_REQUEST();
+            ASSERT(gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK);
         }
 
         // LCD still disabled: quit.
@@ -209,7 +214,7 @@ void Core::frame() {
         if (!gb.ppu.lcdc.enable || gb.stopped) {
             return;
         }
-        RETURN_ON_QUIT_REQUEST();
+        RETURN_ON_QUIT_OR_RESET_REQUEST();
     }
 
     ASSERT(gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK);
@@ -219,7 +224,7 @@ void Core::frame() {
         _cycle();
         if (!gb.ppu.lcdc.enable || gb.stopped)
             return;
-        RETURN_ON_QUIT_REQUEST();
+        RETURN_ON_QUIT_OR_RESET_REQUEST();
     }
 }
 
@@ -426,6 +431,9 @@ void Core::set_audio_sample_callback(std::function<void(const Apu::AudioSample)>
 #ifdef ENABLE_DEBUGGER
 void Core::attach_debugger(DebuggerBackend& dbg) {
     debugger = &dbg;
+    debugger->set_on_reset_callback([this] {
+        resetting = true;
+    });
 }
 
 void Core::detach_debugger() {

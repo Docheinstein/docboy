@@ -135,9 +135,9 @@ struct FrontendTraceCommand {
     std::optional<uint32_t> level {};
 };
 
-struct FrontendChecksumCommand {};
-
 struct FrontendDumpDisassembleCommand {};
+
+struct FrontendResetCommand {};
 
 struct FrontendHelpCommand {};
 struct FrontendQuitCommand {};
@@ -149,7 +149,7 @@ using FrontendCommand =
                  FrontendKeyCommand, FrontendTickCommand, FrontendDotCommand, FrontendStepCommand,
                  FrontendMicroStepCommand, FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand,
                  FrontendScanlineCommand, FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand,
-                 FrontendChecksumCommand, FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
+                 FrontendDumpDisassembleCommand, FrontendResetCommand, FrontendHelpCommand, FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
     std::regex regex;
@@ -485,14 +485,19 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          return FrontendDumpDisassembleCommand {};
      }},
+    {std::regex(R"(r)"), "r", "Reset the emulator to its initial state",
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         return FrontendResetCommand {};
+     }},
     {std::regex(R"(h(?:elp)?)"), "h", "Display help",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          return FrontendHelpCommand {};
      }},
     {std::regex(R"(q)"), "q", "Quit",
-     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-         return FrontendQuitCommand {};
-     }},
+     [](const std::vector<std::string>& groups) -> std::
+                                                    optional<FrontendCommand> {
+                                                        return FrontendQuitCommand {};
+                                                    }},
 };
 
 std::optional<FrontendCommand> parse_cmdline(const std::string& s) {
@@ -806,6 +811,15 @@ DebuggerFrontend::handle_command<FrontendDumpDisassembleCommand>(const FrontendD
     return std::nullopt;
 }
 
+// Reset
+template <>
+std::optional<Command> DebuggerFrontend::handle_command<FrontendResetCommand>(const FrontendResetCommand& cmd) {
+    backend.reset();
+    reset();
+    reprint_ui = true;
+    return std::nullopt;
+}
+
 // Help
 template <>
 std::optional<Command> DebuggerFrontend::handle_command<FrontendHelpCommand>(const FrontendHelpCommand& cmd) {
@@ -938,6 +952,8 @@ Command DebuggerFrontend::pull_command(const ExecutionState& state) {
             cmd_to_send = handle_command(std::get<FrontendTraceCommand>(cmd));
         } else if (std::holds_alternative<FrontendDumpDisassembleCommand>(cmd)) {
             cmd_to_send = handle_command(std::get<FrontendDumpDisassembleCommand>(cmd));
+        } else if (std::holds_alternative<FrontendResetCommand>(cmd)) {
+            cmd_to_send = handle_command(std::get<FrontendResetCommand>(cmd));
         } else if (std::holds_alternative<FrontendHelpCommand>(cmd)) {
             cmd_to_send = handle_command(std::get<FrontendHelpCommand>(cmd));
         } else if (std::holds_alternative<FrontendQuitCommand>(cmd)) {
@@ -3299,4 +3315,14 @@ std::string DebuggerFrontend::dump_display_entry(const DebuggerFrontend::Display
         ss << dump_memory(dx.address, dx.length, dx.format, dx.format_arg, dx.raw);
     }
     return ss.str();
+}
+
+void DebuggerFrontend::reset() {
+    last_cmdline = {};
+    display_entries.clear();
+    trace = 0;
+    auto_disassemble_instructions.past = 6;
+    auto_disassemble_instructions.next = 10;
+    temporary_breakpoint = std::nullopt;
+    reprint_ui = false;
 }

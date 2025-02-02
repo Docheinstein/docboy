@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <optional>
 
 #include "docboy/debugger/shared.h"
@@ -57,6 +58,8 @@ public:
     void notify_memory_read(uint16_t address);
     void notify_memory_write(uint16_t address);
 
+    void set_on_reset_callback(std::function<void()>&& callback);
+
     bool is_asking_to_quit() const;
 
     const CartridgeInfo& get_cartridge_info();
@@ -88,6 +91,8 @@ public:
 
     void proceed();
     void interrupt();
+
+    void reset();
 
     const Core& get_core() const;
 
@@ -136,6 +141,8 @@ private:
     std::vector<DisassembledInstructionReference> call_stack;
 
     uint32_t memory_hash {};
+
+    std::function<void()> on_reset_callback {};
 };
 
 #endif // BACKEND_H

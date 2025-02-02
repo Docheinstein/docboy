@@ -10,6 +10,7 @@ class DebuggerBackend;
 
 class Core {
     DEBUGGABLE_CLASS()
+    TESTABLE_CLASS()
 
 public:
     explicit Core(GameBoy& gb);
@@ -36,6 +37,7 @@ public:
     void set_audio_sample_rate(double sample_rate) const {
         gb.apu.set_sample_rate(sample_rate);
     }
+
     void set_audio_volume(float volume) const {
         gb.apu.set_volume(volume);
     }
@@ -64,12 +66,6 @@ public:
 
     GameBoy& gb;
 
-    uint64_t ticks {};
-
-#ifdef ENABLE_DEBUGGER
-    DebuggerBackend* debugger {};
-#endif
-
 private:
     void tick_t0() const;
     void tick_t1() const;
@@ -78,12 +74,16 @@ private:
 
     void _cycle();
 
-#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
-    void load_cgb_compatibility_mode_palettes();
-#endif
-
     Parcel parcelize_state() const;
     void unparcelize_state(Parcel&& parcel);
+
+    uint64_t ticks {};
+
+#ifdef ENABLE_DEBUGGER
+    DebuggerBackend* debugger {};
+
+    bool resetting {};
+#endif
 };
 
 #endif // CORE_H

@@ -184,6 +184,36 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
     }
 }
 
+void DebuggerBackend::reset() {
+    // Reset core
+    core.reset();
+
+    // Reset debugger state
+    command = std::nullopt;
+    command_state = std::nullopt;
+    run = true;
+    interrupted = false;
+    cartridge_info = std::nullopt;
+    breakpoints.clear();
+    watchpoints.clear();
+    memset(watchpoints_at_address, 0, sizeof(watchpoints_at_address));
+    for (uint32_t i = 0; i < array_size(disassembled_instructions); i++) {
+        disassembled_instructions[i] = std::nullopt;
+    }
+    watchpoint_hit = std::nullopt;
+    next_point_id = 0;
+    allow_memory_callbacks = true;
+    history.clear();
+    last_instruction = std::nullopt;
+    call_stack.clear();
+    memory_hash = 0;
+
+    // Eventually notify observers
+    if (on_reset_callback) {
+        on_reset_callback();
+    }
+}
+
 void DebuggerBackend::notify_memory_read(uint16_t address) {
     if (!has_watchpoint(address)) {
         return;
@@ -240,6 +270,10 @@ void DebuggerBackend::notify_memory_write(uint16_t address) {
         watchpoint_hit->access_type = WatchpointHit::AccessType::Write;
         watchpoint_hit->old_value = read_memory_raw(address);
     }
+}
+
+void DebuggerBackend::set_on_reset_callback(std::function<void()>&& callback) {
+    on_reset_callback = std::move(callback);
 }
 
 bool DebuggerBackend::is_asking_to_quit() const {

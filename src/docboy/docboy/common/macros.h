@@ -13,7 +13,10 @@ class DebuggerBackend;
 
 #ifdef ENABLE_TESTS
 #define TESTABLE_CLASS()                                                                                               \
+    template <typename T>                                                                                              \
+    friend class Runner;                                                                                               \
     friend class FramebufferRunner;                                                                                    \
+    friend class SerialRunner;                                                                                         \
     friend class MemoryRunner;
 #else
 #define TESTABLE_CLASS()
