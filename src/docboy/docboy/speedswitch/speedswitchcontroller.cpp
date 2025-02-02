@@ -15,7 +15,12 @@ void SpeedSwitchController::switch_speed() {
     speed_switch.key1.current_speed = !speed_switch.key1.current_speed;
 
     speed_switch_countdown = 16386 * 2;
-    speed_switch_timers_block_countdown = 6; // TODO: ok? is it blocked at the beginning or at the end of speed switch?
+    speed_switch_timers_block_countdown = 4;
+
+    if (!speed_switch.key1.current_speed) {
+        speed_switch_countdown = 16386 * 4 - 5;
+        speed_switch_timers_block_countdown = 2; // TODO: which is right? [2,3,4] seems equally valid
+    }
 }
 
 void SpeedSwitchController::save_state(Parcel& parcel) const {

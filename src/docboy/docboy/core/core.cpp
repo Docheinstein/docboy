@@ -127,7 +127,9 @@ inline void Core::tick_t3() const {
     gb.speed_switch_controller.tick();
 #endif
 
-    gb.timers.tick();
+    if (!gb.speed_switch_controller.is_blocking_timers() /* TODO: ok? */) {
+        gb.timers.tick();
+    }
 
     gb.ppu.tick();
 #ifdef ENABLE_CGB
