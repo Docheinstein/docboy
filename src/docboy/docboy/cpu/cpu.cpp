@@ -615,8 +615,8 @@ void Cpu::tick_t1() {
         if (fetching) {
             instruction.opcode = io.data;
         }
-    }
 #endif
+    }
 #endif
 }
 

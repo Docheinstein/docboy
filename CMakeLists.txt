@@ -55,6 +55,12 @@ if (BUILD_LIBRETRO_CORE)
     message(STATUS "Frontend: libretro core (Android)")
 endif()
 
+message(STATUS "Feature: Debugger: ${ENABLE_DEBUGGER}")
+message(STATUS "Feature: Serial: ${ENABLE_SERIAL}")
+message(STATUS "Feature: Boot room: ${ENABLE_BOOTROM}")
+message(STATUS "Feature: Audio: ${ENABLE_AUDIO}")
+message(STATUS "Feature: GameBoy Color: ${ENABLE_CGB}")
+
 if (BUILD_LIBRETRO_CORE_ANDROID)
     add_subdirectory(src/frontend/libretro/android)
     return() # android compiles by itself with ndk-build
