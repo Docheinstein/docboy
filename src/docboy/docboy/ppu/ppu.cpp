@@ -12,6 +12,7 @@
 
 #ifdef ENABLE_CGB
 #include "docboy/hdma/hdma.h"
+#include "docboy/speedswitch/speedswitchcontroller.h"
 #endif
 
 #include "utils/casts.h"
@@ -119,7 +120,7 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
 
 #ifdef ENABLE_CGB
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller) :
+         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller) :
 #else
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
          Dma& dma_controller) :
@@ -131,7 +132,12 @@ Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, 
 #endif
     vram {vram_bus},
     oam {oam_bus},
-    dma_controller {dma_controller} {
+    dma_controller {dma_controller}
+#ifdef ENABLE_CGB
+    ,
+    speed_switch_controller {speed_switch_controller}
+#endif
+{
 }
 
 void Ppu::tick() {
@@ -204,6 +210,13 @@ void Ppu::turn_on() {
 
     // STAT's LYC_EQ_LY is updated properly (but interrupt is not raised)
     stat.lyc_eq_ly = is_lyc_eq_ly();
+
+#ifdef ENABLE_CGB
+    if (speed_switch_controller.is_double_speed_mode()) {
+        // TODO: to investigate why
+        dots = 1;
+    }
+#endif
 }
 
 void Ppu::turn_off() {

@@ -578,6 +578,13 @@ void Cpu::tick_t0() {
 
     check_interrupt<3>();
     tick();
+
+#ifdef ENABLE_CGB
+    if (speed_switch_controller.is_double_speed_mode()) {
+        // TODO: check if flush_write is done here or in T1
+        flush_write();
+    }
+#endif
 }
 
 void Cpu::tick_t1() {
@@ -586,7 +593,7 @@ void Cpu::tick_t1() {
 #endif
 
     check_interrupt<0>();
-    flush_write();
+    flush_write(); // TODO not doublespeed
 
 #ifdef ENABLE_CGB
     if (speed_switch_controller.is_double_speed_mode()) {
@@ -632,6 +639,13 @@ void Cpu::tick_t2() {
         tick();
     }
 #endif
+
+#ifdef ENABLE_CGB
+    if (speed_switch_controller.is_double_speed_mode()) {
+        // TODO: check if flush_write is done here or in T1
+        flush_write();
+    }
+#endif
 }
 
 void Cpu::tick_t3() {
@@ -641,12 +655,6 @@ void Cpu::tick_t3() {
 
     check_interrupt<2>();
 
-#ifdef ENABLE_CGB
-    if (speed_switch_controller.is_double_speed_mode()) {
-        flush_write();
-        idu.tick_t1();
-    }
-#endif
     flush_read();
 
 #ifdef ENABLE_DEBUGGER
@@ -971,12 +979,57 @@ void Cpu::check_interrupt() {
         /* 30 : Joypad + Serial + Timer + STAT */ {{J, J, J, J}, {J, J, J, J}},
         /* 31 : Joypad + Serial + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
     };
+
+static constexpr uint8_t INTERRUPTS_TIMINGS_DOUBLE_SPEED[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
+        /*  0 : None */ {{U, U, U, U}, {U, U, U, U}},
+        /*  1 : VBlank */ {{1, U, 1, U}, {U, U, U, U}},
+        /*  2 : STAT */ {{1, 2, 1, 2}, {U, U, U, U}},
+        /*  3 : STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},
+        /*  4 : Timer */ {{1, 2, 1, 2}, {U, U, U, U}},
+        /*  5 : Timer + VBlank */ {{U, U, U, U}, {U, U, U, U}},
+        /*  6 : Timer + STAT */ {{U, U, U, U}, {U, U, U, U}},
+        /*  7 : Timer + STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},
+        /*  8 : Serial */ {{1, U, 1, U}, {U, U, U, U}},
+        /*  9 : Serial + VBlank */ {{U, U, U, U}, {U, U, U, U}},
+        /* 10 : Serial + STAT */ {{U, U, U, U}, {U, U, U, U}},
+        /* 11 : Serial + STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},
+        /* 12 : Serial + Timer */ {{U, U, U, U}, {U, U, U, U}},
+        /* 13 : Serial + Timer + VBlank */ {{U, U, U, U}, {U, U, U, U}},
+        /* 14 : Serial + Timer + STAT */ {{U, U, U, U}, {U, U, U, U}},
+        /* 15 : Serial + Timer + STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},
+        /* 16 : Joypad */ {{1, U, 1, U}, {J, J, J, J}},
+        /* 17 : Joypad + VBlank */ {{J, J, J, J}, {J, J, J, J}},
+        /* 18 : Joypad + STAT */ {{J, J, J, J}, {J, J, J, J}},
+        /* 19 : Joypad + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
+        /* 20 : Joypad + Timer */ {{J, J, J, J}, {J, J, J, J}},
+        /* 21 : Joypad + Timer + VBlank */ {{J, J, J, J}, {J, J, J, J}},
+        /* 22 : Joypad + Timer + STAT */ {{J, J, J, J}, {J, J, J, J}},
+        /* 23 : Joypad + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
+        /* 24 : Joypad + Serial */ {{J, J, J, J}, {J, J, J, J}},
+        /* 25 : Joypad + Serial + VBlank */ {{J, J, J, J}, {J, J, J, J}},
+        /* 26 : Joypad + Serial + STAT */ {{J, J, J, J}, {J, J, J, J}},
+        /* 27 : Joypad + Serial + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
+        /* 28 : Joypad + Serial + Timer */ {{J, J, J, J}, {J, J, J, J}},
+        /* 29 : Joypad + Serial + Timer + VBlank */ {{J, J, J, J}, {J, J, J, J}},
+        /* 30 : Joypad + Serial + Timer + STAT */ {{J, J, J, J}, {J, J, J, J}},
+        /* 31 : Joypad + Serial + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
+    };
     // clang-format on
 
     if (interrupt.state == InterruptState::None && (halted || ime == ImeState::Enabled)) {
         if (const uint8_t pending_interrupts = get_pending_interrupts()) {
             interrupt.state = InterruptState::Pending;
+
+#ifdef ENABLE_CGB
+            if (speed_switch_controller.is_double_speed_mode()) {
+                interrupt.remaining_ticks = INTERRUPTS_TIMINGS_DOUBLE_SPEED[pending_interrupts][halted][t];
+            } else {
+                interrupt.remaining_ticks = INTERRUPTS_TIMINGS[pending_interrupts][halted][t];
+            }
+#else
             interrupt.remaining_ticks = INTERRUPTS_TIMINGS[pending_interrupts][halted][t];
+#endif
+
             ASSERT_CODE({
                 if (interrupt.remaining_ticks == UNKNOWN_INTERRUPT_TIMING) {
                     std::cerr << "---- UNKNOWN INTERRUPT TIMING ----" << std::endl;

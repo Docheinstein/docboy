@@ -62,7 +62,7 @@ public:
 
     // Video
 #ifdef ENABLE_CGB
-    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma};
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, speed_switch_controller};
 #else
     Ppu ppu {lcd, interrupts, vram_bus, oam_bus, dma};
 #endif

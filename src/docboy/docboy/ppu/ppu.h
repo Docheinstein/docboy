@@ -17,6 +17,7 @@ class Interrupts;
 class Dma;
 class Hdma;
 class Parcel;
+class SpeedSwitchController;
 
 class Ppu {
     DEBUGGABLE_CLASS()
@@ -24,7 +25,7 @@ class Ppu {
 public:
 #ifdef ENABLE_CGB
     Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller);
+        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller);
 #else
     Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
         Dma& dma_controller);
@@ -278,6 +279,10 @@ private:
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;
     Dma& dma_controller;
+#ifdef ENABLE_CGB
+    // TODO: bad: PPU shouldn't know speed_switch_controller
+    SpeedSwitchController& speed_switch_controller;
+#endif
 
     TickSelector tick_selector {};
     FetcherTickSelector fetcher_tick_selector {&Ppu::bg_prefetcher_get_tile_0};

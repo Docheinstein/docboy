@@ -47,3 +47,7 @@ bool starts_with(const std::string& heystack, const std::string& needle) {
 bool ends_with(const std::string& heystack, const std::string& needle) {
     return heystack.find(needle) == heystack.size() - needle.size();
 }
+
+bool contains(const std::string& heystack, const std::string& needle) {
+    return heystack.find(needle) != std::string::npos;
+}
