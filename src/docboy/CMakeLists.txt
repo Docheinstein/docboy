@@ -87,8 +87,6 @@ target_sources(docboy PRIVATE
         docboy/ppu/ppu.cpp
         docboy/ppu/ppu.h
         docboy/serial/endpoint.h
-        docboy/serial/link.cpp
-        docboy/serial/link.h
         docboy/serial/port.cpp
         docboy/serial/port.h
         docboy/serial/serial.cpp
@@ -155,10 +153,6 @@ if (ENABLE_DEBUGGER)
     )
 
     target_link_libraries(docboy PRIVATE tui)
-endif ()
-
-if (ENABLE_SERIAL)
-    target_compile_definitions(docboy PUBLIC ENABLE_SERIAL)
 endif ()
 
 if (ENABLE_AUDIO)

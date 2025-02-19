@@ -8,6 +8,7 @@
 
 class Serial {
 public:
+    uint8_t read_sc() const;
     void write_sc(uint8_t value);
 
     void save_state(Parcel& parcel) const;
@@ -16,7 +17,14 @@ public:
     void reset();
 
     UInt8 sb {make_uint8(Specs::Registers::Serial::SB)};
-    UInt8 sc {make_uint8(Specs::Registers::Serial::SC)};
+
+    struct Sc : Composite<Specs::Registers::Serial::SC> {
+        Bool transfer_enable {make_bool()};
+#ifdef ENABLE_CGB
+        Bool clock_speed {make_bool()};
+#endif
+        Bool clock_select {make_bool()};
+    } sc {};
 };
 
 #endif // SERIAL_H

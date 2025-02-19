@@ -54,7 +54,6 @@ jobs:
           -DCMAKE_C_COMPILER=${{ inputs.c_compiler }}
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
           -DBUILD_TESTS=${{ inputs.run_unit_tests || inputs.run_emulation_tests }}
-          -DENABLE_SERIAL=${{ inputs.run_emulation_tests }}
           -DENABLE_CGB=${{ inputs.enable_cgb }}
           -S ${{ github.workspace }}
 

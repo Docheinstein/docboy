@@ -115,7 +115,7 @@ public:
     Boot boot {};
 #endif
     Joypad joypad {interrupts};
-    SerialPort serial_port {interrupts};
+    SerialPort serial_port {timers, interrupts};
     Timers timers {interrupts};
     Interrupts interrupts {};
 

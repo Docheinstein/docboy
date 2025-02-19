@@ -1,5 +1,5 @@
-#ifndef CONSOLE_H
-#define CONSOLE_H
+#ifndef SERIALCONSOLE_H
+#define SERIALCONSOLE_H
 
 #include <iosfwd>
 
@@ -10,7 +10,8 @@ public:
     explicit SerialConsole(std::ostream& output, uint32_t bufsize = UINT32_MAX);
     ~SerialConsole() override = default;
 
-    void serial_write(uint8_t) override;
+    void serial_write_bit(bool bit) override;
+
     void flush();
 
 private:
@@ -18,4 +19,4 @@ private:
     uint32_t bufsize;
 };
 
-#endif // CONSOLE_H
+#endif // SERIALCONSOLE_H

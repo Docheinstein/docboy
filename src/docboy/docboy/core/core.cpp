@@ -30,8 +30,6 @@
 
 namespace {
 constexpr uint16_t LCD_VBLANK_CYCLES = 16416;
-constexpr uint16_t SERIAL_PERIOD = 8 /* bits */ * Specs::Frequencies::CLOCK / Specs::Frequencies::SERIAL;
-constexpr uint64_t SERIAL_PHASE_OFFSET = if_bootrom_else(1036, 4048); // [mooneye/boot_sclk_align-dmgABCmgb.gb]
 constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
 
 uint32_t rom_state_size = STATE_SAVE_SIZE_UNKNOWN;
@@ -119,10 +117,6 @@ inline void Core::tick_t3() const {
     gb.cpu.tick_t3();
 #endif
 
-    if (mod<SERIAL_PERIOD>(ticks + SERIAL_PHASE_OFFSET) == 3) {
-        gb.serial_port.tick();
-    }
-
 #ifdef ENABLE_CGB
     gb.speed_switch_controller.tick();
 #endif
@@ -134,6 +128,8 @@ inline void Core::tick_t3() const {
 #else
     gb.timers.tick();
 #endif
+
+    gb.serial_port.tick();
 
     gb.ppu.tick();
 #ifdef ENABLE_CGB
@@ -239,8 +235,8 @@ void Core::load_rom(const std::string& filename) {
     reset();
 }
 
-void Core::attach_serial_link(SerialLink::Plug& plug) const {
-    gb.serial_port.attach(plug);
+void Core::attach_serial_link(ISerialEndpoint& endpoint) const {
+    gb.serial_port.attach(endpoint);
 }
 
 bool Core::can_save_ram() const {

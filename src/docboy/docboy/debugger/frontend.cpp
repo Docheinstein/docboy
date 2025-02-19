@@ -481,7 +481,7 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          }
          return cmd;
      }},
-    {std::regex(R"(dump)"), "dump", "Dump the disassemble (output on stderr)",
+    {std::regex(R"(d)"), "d", "Dump the disassemble (output on stderr)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          return FrontendDumpDisassembleCommand {};
      }},
@@ -2903,6 +2903,33 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         return b;
     };
 
+    // Serial
+    const auto make_serial_block = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("SERIAL", width) << endl;
+
+        b << yellow("Transfer") << "  :  " << (gb.serial_port.transferring ? green("Transferring") : darkgray("None"))
+          << endl;
+
+        if (gb.serial_port.transferring) {
+            uint8_t transferred_bits = gb.serial_port.progress / 2;
+
+            b << yellow("Progress") << "  :  " << +transferred_bits << "/8 (" << +gb.serial_port.progress << "/16)"
+              << endl;
+            b << yellow("SB") << "        :  " << [this, transferred_bits]() -> Text {
+                Text t {};
+                for (int8_t b = 7; b >= 0; b--) {
+                    bool high = test_bit(gb.serial_port.sb, b);
+                    t += ((b >= transferred_bits) ? Text {high} : yellow(Text {high}));
+                }
+                return t;
+            }() << endl;
+        }
+
+        return b;
+    };
+
     // Code
     const auto make_code_block = [&](uint32_t width) {
         auto b {make_block(width)};
@@ -3148,6 +3175,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     c1->add_node(make_cpu_block(COLUMN_1_WIDTH));
     c1->add_node(make_space_divider());
     c1->add_node(make_timers_block(COLUMN_1_WIDTH));
+    c1->add_node(make_serial_block(COLUMN_1_WIDTH));
 
 #ifdef ENABLE_CGB
     static constexpr uint32_t COLUMN_2_WIDTH = 58;

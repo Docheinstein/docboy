@@ -23,7 +23,7 @@ public:
     void load_rom(const std::string& filename);
 
     // Serial
-    void attach_serial_link(SerialLink::Plug& plug) const;
+    void attach_serial_link(ISerialEndpoint& endpoint) const;
 
     // Input
     void set_key(Joypad::Key key, Joypad::KeyState state) const {

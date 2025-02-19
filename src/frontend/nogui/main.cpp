@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
 
     core.load_rom(args.rom);
 
-#ifdef ENABLE_SERIAL
+    // Serial
     std::unique_ptr<SerialConsole> serial_console;
     std::unique_ptr<SerialLink> serial_link;
     if (args.serial) {
@@ -126,7 +126,6 @@ int main(int argc, char* argv[]) {
         serial_link->plug1.attach(*serial_console);
         core.attach_serial_link(serial_link->plug2);
     }
-#endif
 
     const auto start = std::chrono::high_resolution_clock::now();
     for (uint64_t tick = 0; tick < args.ticks_to_run; tick += 4) {
@@ -146,11 +145,9 @@ int main(int argc, char* argv[]) {
         std::cout << "SpeedUp: " << 1000.0 * (double)seconds_to_run / (double)elapsed_millis << std::endl;
     }
 
-#ifdef ENABLE_SERIAL
     if (serial_console) {
         serial_console->flush();
     }
-#endif
 
     return 0;
 }

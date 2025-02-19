@@ -447,8 +447,11 @@ namespace Bits {
 
     namespace Serial {
         namespace SC {
-            constexpr uint8_t TRANSFER_START = 7;
-            constexpr uint8_t CLOCK = 0;
+            constexpr uint8_t TRANSFER_ENABLE = 7;
+#ifdef ENABLE_CGB
+            constexpr uint8_t CLOCK_SPEED = 1;
+#endif
+            constexpr uint8_t CLOCK_SELECT = 0;
         } // namespace SC
     }     // namespace Serial
 

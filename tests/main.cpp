@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Please set the boot ROM with with 'DOCBOY_DMG_BIOS' environment variable." << std::endl;
         return 1;
     }
-    bootRom = var;
+    boot_rom = var;
 #endif
 
     return Catch::Session().run(argc, argv);

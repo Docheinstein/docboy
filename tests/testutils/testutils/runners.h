@@ -72,7 +72,7 @@ public:
 
     explicit Runner() :
 #ifdef ENABLE_BOOTROM
-        gb {std::make_unique<GameBoy>(BootRomFactory {}.create(boot_rom))},
+        gb {std::make_unique<GameBoy>(BootRomFactory::create(boot_rom))},
 #else
         gb {std::make_unique<GameBoy>()},
 #endif
@@ -328,8 +328,7 @@ public:
     }
 
     void on_run() {
-        serial_link.plug1.attach(serial_buffer);
-        core.attach_serial_link(serial_link.plug2);
+        core.attach_serial_link(serial_buffer);
     }
 
     bool should_ever_check_expectation() {
@@ -353,7 +352,6 @@ public:
 
 private:
     SerialBuffer serial_buffer;
-    SerialLink serial_link;
     std::vector<uint8_t> last_output;
     std::vector<uint8_t> expected_output;
 };

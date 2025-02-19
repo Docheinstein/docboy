@@ -1,9 +1,22 @@
 #include "extra/serial/endpoints/buffer.h"
 
-void SerialBuffer::serial_write(uint8_t data) {
-    buffer.push_back(data);
+bool SerialBuffer::serial_read_bit() const {
+    return true;
 }
 
-uint8_t SerialBuffer::serial_read() {
-    return 0xFF;
+void SerialBuffer::serial_write_bit(bool bit) {
+    serial_write_bit_(bit);
+}
+
+bool SerialBuffer::serial_write_bit_(bool bit) {
+    data.value = (data.value << 1) | bit;
+
+    if (++data.count == 8) {
+        // A full byte has been transferred: push it to the buffer
+        buffer.push_back(data.value);
+        data.count = 0;
+        return true;
+    }
+
+    return false;
 }

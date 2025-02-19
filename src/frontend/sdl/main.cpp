@@ -323,9 +323,7 @@ int main(int argc, char* argv[]) {
 #endif
     args_parser.add_argument(args.rom, "rom").required(false).help("ROM");
     args_parser.add_argument(args.config, "--config", "-c").help("Read configuration file");
-#ifdef ENABLE_SERIAL
     args_parser.add_argument(args.serial, "--serial", "-s").help("Display serial console");
-#endif
     args_parser.add_argument(args.scaling, "--scaling", "-z").help("Scaling factor");
     args_parser.add_argument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
 #ifdef ENABLE_DEBUGGER
@@ -452,17 +450,12 @@ int main(int argc, char* argv[]) {
     }
     ui_controller.set_current_palette(palette->index);
 
-#ifdef ENABLE_SERIAL
     // Eventually attach serial
     std::unique_ptr<SerialConsole> serial_console;
-    std::unique_ptr<SerialLink> serial_link;
     if (args.serial) {
         serial_console = std::make_unique<SerialConsole>(std::cerr, 16);
-        serial_link = std::make_unique<SerialLink>();
-        serial_link->plug1.attach(*serial_console);
-        core.attach_serial_link(serial_link->plug2);
+        core.attach_serial_link(*serial_console);
     }
-#endif
 
 #ifdef ENABLE_DEBUGGER
     // Eventually attach debugger
@@ -737,11 +730,10 @@ int main(int argc, char* argv[]) {
 
     write_preferences(pref_path, prefs);
 
-#ifdef ENABLE_SERIAL
+    // Eventually flush serial
     if (serial_console) {
         serial_console->flush();
     }
-#endif
 
 #ifdef ENABLE_AUDIO
     // Release audio resources

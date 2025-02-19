@@ -1,5 +1,5 @@
-#ifndef BUFFER_H
-#define BUFFER_H
+#ifndef SERIALBUFFER_H
+#define SERIALBUFFER_H
 
 #include <vector>
 
@@ -7,10 +7,19 @@
 
 class SerialBuffer : public ISerialEndpoint {
 public:
-    uint8_t serial_read() override;
-    void serial_write(uint8_t) override;
+    bool serial_read_bit() const override;
+    void serial_write_bit(bool bit) override;
 
     std::vector<uint8_t> buffer;
+
+protected:
+    bool serial_write_bit_(bool bit);
+
+private:
+    struct {
+        uint8_t count {};
+        uint8_t value {};
+    } data;
 };
 
-#endif // BUFFER_H
+#endif // SERIALBUFFER_H

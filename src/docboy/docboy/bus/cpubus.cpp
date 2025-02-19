@@ -86,7 +86,8 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF00 */ memory_accessors[Specs::Registers::Joypad::P1] = {NonTrivial<&Joypad::read_p1> {&joypad},
                                                                  NonTrivial<&Joypad::write_p1> {&joypad}};
     /* FF01 */ memory_accessors[Specs::Registers::Serial::SB] = &serial.sb;
-    /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {&serial.sc, NonTrivial<&Serial::write_sc> {&serial}};
+    /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {NonTrivial<&Serial::read_sc> {&serial},
+                                                                 NonTrivial<&Serial::write_sc> {&serial}};
     /* FF03 */ memory_accessors[0xFF03] = open_bus_access;
     /* FF04 */ memory_accessors[Specs::Registers::Timers::DIV] = {NonTrivial<&Timers::read_div> {&timers},
                                                                   NonTrivial<&Timers::write_div> {&timers}};
