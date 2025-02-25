@@ -22,6 +22,8 @@ template <typename T, uint8_t N>
 struct Queue {
     static_assert(std::is_trivially_copyable_v<T>);
 
+    static constexpr uint8_t Size = N;
+
     bool is_empty() const {
         return count == 0;
     }

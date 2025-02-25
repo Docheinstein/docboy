@@ -2014,9 +2014,8 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_bool(w.just_activated);
 
 #if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
-    parcel.write_uint8(w.line_triggers.size());
-    for (uint8_t i = 0; i < w.line_triggers.size(); i++) {
-        parcel.write_uint8(w.line_triggers[i]);
+    for (uint8_t i = 0; i < decltype(w.line_triggers)::Size; i++) {
+        parcel.write_uint8(i < w.line_triggers.size() ? w.line_triggers[i] : UINT8_MAX);
     }
 #endif
 
@@ -2161,9 +2160,11 @@ void Ppu::load_state(Parcel& parcel) {
     w.just_activated = parcel.read_bool();
 
 #if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
-    uint8_t line_triggers = parcel.read_uint8();
-    for (uint8_t i = 0; i < line_triggers; i++) {
-        w.line_triggers.push_back(parcel.read_uint8());
+    w.line_triggers.clear();
+    for (uint8_t i = 0; i < decltype(w.line_triggers)::Size; i++) {
+        if (uint8_t line_trigger = parcel.read_uint8(); line_trigger != UINT8_MAX) {
+            w.line_triggers.push_back(line_trigger);
+        }
     }
 #endif
 
