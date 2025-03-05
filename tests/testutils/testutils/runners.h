@@ -71,12 +71,11 @@ public:
     };
 
     explicit Runner() :
-#ifdef ENABLE_BOOTROM
-        gb {std::make_unique<GameBoy>(BootRomFactory::create(boot_rom))},
-#else
         gb {std::make_unique<GameBoy>()},
-#endif
         core {*gb} {
+#ifdef ENABLE_BOOTROM
+        core.load_boot_rom(boot_rom);
+#endif
         core.set_audio_sample_rate(32786);
     }
 
@@ -127,10 +126,6 @@ public:
         bool has_ever_checked {false};
 
         for (tick = core.ticks; tick <= max_ticks_ && can_run; tick += 4) {
-            if (tick != core.ticks) {
-                tick += 4;
-                tick -= 4;
-            }
             // Eventually submit scheduled Joypad input.
             if (!inputs_.empty()) {
                 for (auto it = inputs_.begin(); it != inputs_.end(); it++) {
@@ -144,6 +139,7 @@ public:
 
             // Advance emulation.
             core.cycle();
+            impl->on_cycle();
 
             // Check expectation.
             if (impl->should_check_expectation()) {
@@ -187,15 +183,22 @@ public:
 
     void on_run() {
     }
+
+    void on_cycle() {
+    }
+
     bool should_ever_check_expectation() {
         return false;
     }
+
     bool should_check_expectation() {
         return false;
     }
+
     bool check_expectation() {
         return true;
     }
+
     void on_expectation_failed() {
     }
 };
@@ -219,6 +222,9 @@ public:
     }
 
     void on_run() {
+    }
+
+    void on_cycle() {
     }
 
     bool should_ever_check_expectation() {
@@ -331,6 +337,9 @@ public:
         core.attach_serial_link(serial_buffer);
     }
 
+    void on_cycle() {
+    }
+
     bool should_ever_check_expectation() {
         return true;
     }
@@ -368,6 +377,9 @@ public:
     }
 
     void on_run() {
+    }
+
+    void on_cycle() {
     }
 
     bool should_ever_check_expectation() {
@@ -423,6 +435,157 @@ private:
     std::vector<std::pair<uint16_t, uint8_t>> expected_output;
 };
 
+class TwoPlayersFramebufferRunner : public Runner<TwoPlayersFramebufferRunner> {
+public:
+    explicit TwoPlayersFramebufferRunner() :
+        Runner<TwoPlayersFramebufferRunner>(),
+        gb2 {std::make_unique<GameBoy>()},
+        core2 {*gb2} {
+    }
+
+    TwoPlayersFramebufferRunner& rom2(const std::string& filename) {
+        rom_name2 = filename;
+        core2.load_rom(filename);
+        return *this;
+    }
+
+    TwoPlayersFramebufferRunner& expect_framebuffer1(const std::string& filename) {
+        load_framebuffer_png(filename, expected_framebuffer1);
+        return *this;
+    }
+
+    TwoPlayersFramebufferRunner& expect_framebuffer2(const std::string& filename) {
+        load_framebuffer_png(filename, expected_framebuffer2);
+        return *this;
+    }
+
+    TwoPlayersFramebufferRunner& color_tolerance(uint8_t red, uint8_t green, uint8_t blue) {
+        color_tolerance_.red = red;
+        color_tolerance_.green = green;
+        color_tolerance_.blue = blue;
+        return *this;
+    }
+
+    void on_run() {
+        core.attach_serial_link(gb2->serial);
+        core2.attach_serial_link(gb->serial);
+    }
+
+    void on_cycle() {
+        core2.cycle();
+    }
+
+    bool should_ever_check_expectation() {
+        return true;
+    }
+
+    bool should_check_expectation() {
+        // Schedule a check for the next VBlank if we have passed the check interval
+        if (tick > 0 && tick % check_interval_ticks_ == 0) {
+            pending_check_next_vblank = true;
+        }
+
+        // Check if we are in VBlank with a pending check
+        if (pending_check_next_vblank && gb->ppu.stat.mode == Specs::Ppu::Modes::VBLANK) {
+            pending_check_next_vblank = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool check_expectation() {
+        memcpy(last_framebuffer1, gb->lcd.get_pixels(), FRAMEBUFFER_SIZE);
+        memcpy(last_framebuffer2, gb2->lcd.get_pixels(), FRAMEBUFFER_SIZE);
+        if (color_tolerance_.red == 0 && color_tolerance_.green == 0 && color_tolerance_.blue == 0) {
+            return are_framebuffer_equals(last_framebuffer1, expected_framebuffer1) &&
+                   are_framebuffer_equals(last_framebuffer2, expected_framebuffer2);
+        } else {
+            return are_framebuffer_equals_with_tolerance(last_framebuffer1, expected_framebuffer1, color_tolerance_.red,
+                                                         color_tolerance_.green, color_tolerance_.blue) &&
+                   are_framebuffer_equals_with_tolerance(last_framebuffer1, expected_framebuffer2, color_tolerance_.red,
+                                                         color_tolerance_.green, color_tolerance_.blue);
+        }
+    }
+
+    void on_expectation_failed() {
+        // Framebuffer not equals: figure out where's the (first) problem
+        std::stringstream output_message;
+
+        output_message << "=== " << rom_name << "," << rom_name2 << "===" << std::endl;
+
+        const auto compare_framebuffers = [&output_message, this](uint16_t* last_framebuffer,
+                                                                  uint16_t* expected_framebuffer) {
+            uint32_t i;
+            for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
+                if (!are_pixel_equals_with_tolerance(last_framebuffer[i], expected_framebuffer[i], color_tolerance_.red,
+                                                     color_tolerance_.green, color_tolerance_.blue)) {
+                    int32_t dr, dg, db;
+                    compute_pixels_delta(last_framebuffer[i], expected_framebuffer[i], dr, dg, db);
+
+                    output_message << "Framebuffer mismatch" << std::endl
+                                   << "Position   : " << i << std::endl
+                                   << "Row        : " << i / 160 << std::endl
+                                   << "Column     : " << i % 160 << std::endl
+                                   << "Actual     : 0x" << hex(last_framebuffer[i]) << std::endl
+                                   << "Expected   : 0x" << hex(expected_framebuffer[i]) << std::endl
+                                   << "Delta      : (" << dr << ", " << dg << ", " << db << ")" << std::endl
+                                   << "Tolerance  : (" << +color_tolerance_.red << ", " << +color_tolerance_.green
+                                   << ", " << +color_tolerance_.blue << ")" << std::endl;
+                    return false;
+                }
+            }
+
+            return true;
+        };
+
+        bool ok1 = compare_framebuffers(last_framebuffer1, expected_framebuffer1);
+        bool ok2 = compare_framebuffers(last_framebuffer2, expected_framebuffer2);
+
+        // Dump framebuffers
+
+        const auto tmp_path = temp_directory_path() / "docboy";
+        create_directory(tmp_path.string());
+
+        if (!ok1) {
+            const auto path_actual = (tmp_path / Path {Path {rom_name}.filename() + "-actual.png"}).string();
+            const auto path_expected = (tmp_path / Path {Path {rom_name}.filename() + "-expected.png"}).string();
+            save_framebuffer_png(path_actual, last_framebuffer1);
+            save_framebuffer_png(path_expected, expected_framebuffer1);
+            output_message << "You can find the PNGs of the framebuffers at " << path_actual << " and " << path_expected
+                           << std::endl;
+        }
+
+        if (!ok2) {
+            const auto path_actual = (tmp_path / Path {Path {rom_name2}.filename() + "-actual.png"}).string();
+            const auto path_expected = (tmp_path / Path {Path {rom_name2}.filename() + "-expected.png"}).string();
+            save_framebuffer_png(path_actual, last_framebuffer2);
+            save_framebuffer_png(path_expected, expected_framebuffer2);
+            output_message << "You can find the PNGs of the framebuffers at " << path_actual << " and " << path_expected
+                           << std::endl;
+        }
+
+        UNSCOPED_INFO(output_message.str());
+    }
+
+private:
+    std::unique_ptr<GameBoy> gb2 {};
+    Core core2;
+
+    std::string rom_name2 {};
+
+    uint16_t last_framebuffer1[FRAMEBUFFER_NUM_PIXELS] {};
+    uint16_t last_framebuffer2[FRAMEBUFFER_NUM_PIXELS] {};
+    uint16_t expected_framebuffer1[FRAMEBUFFER_NUM_PIXELS] {};
+    uint16_t expected_framebuffer2[FRAMEBUFFER_NUM_PIXELS] {};
+    bool pending_check_next_vblank {};
+    struct {
+        uint8_t red {0};
+        uint8_t green {0};
+        uint8_t blue {0};
+    } color_tolerance_;
+};
+
 using Inputs = std::vector<FramebufferRunner::JoypadInput>;
 
 struct FramebufferRunnerParams {
@@ -435,8 +598,8 @@ struct FramebufferRunnerParams {
 
     FramebufferRunnerParams(std::string&& rom, std::string&& expected, Param param1 = std::monostate {},
                             Param param2 = std::monostate {}) :
-        rom(std::move(rom)) {
-        result = std::move(expected);
+        rom(std::move(rom)),
+        result {std::move(expected)} {
 
         auto parseParam = [this](Param& param) {
 #ifndef ENABLE_CGB
@@ -473,9 +636,9 @@ struct FramebufferRunnerParams {
 
 struct SerialRunnerParams {
     SerialRunnerParams(std::string&& rom, std::vector<uint8_t>&& expected, uint64_t maxTicks_ = DURATION_MEDIUM) :
-        rom(std::move(rom)) {
-        result = std::move(expected);
-        max_ticks = maxTicks_;
+        rom(std::move(rom)),
+        result {std::move(expected)},
+        max_ticks {maxTicks_} {
     }
 
     std::string rom;
@@ -486,9 +649,9 @@ struct SerialRunnerParams {
 struct MemoryRunnerParams {
     MemoryRunnerParams(std::string&& rom, std::vector<std::pair<uint16_t, uint8_t>>&& expected,
                        uint64_t maxTicks_ = DURATION_MEDIUM) :
-        rom(std::move(rom)) {
-        result = std::move(expected);
-        max_ticks = maxTicks_;
+        rom(std::move(rom)),
+        result {std::move(expected)},
+        max_ticks {maxTicks_} {
     }
 
     std::string rom;
@@ -496,8 +659,50 @@ struct MemoryRunnerParams {
     uint64_t max_ticks;
 };
 
+struct TwoPlayersFramebufferRunnerParams {
+    using Param = std::variant<std::monostate,
+#ifndef ENABLE_CGB
+                               const Lcd::Palette*,
+#endif
+                               ColorTolerance, MaxTicks>;
+
+    TwoPlayersFramebufferRunnerParams(std::string&& rom, std::string&& expected, std::string&& rom2,
+                                      std::string&& expected2, Param param1 = std::monostate {},
+                                      Param param2 = std::monostate {}) :
+        rom(std::move(rom)),
+        result {std::move(expected)},
+        rom2 {std::move(rom2)},
+        result2 {std::move(expected2)} {
+
+        auto parseParam = [this](Param& param) {
+#ifndef ENABLE_CGB
+            if (std::holds_alternative<const Lcd::Palette*>(param)) {
+                palette = std::get<const Lcd::Palette*>(param);
+            } else
+#endif
+                if (std::holds_alternative<ColorTolerance>(param)) {
+                color_tolerance = std::get<ColorTolerance>(param);
+            } else if (std::holds_alternative<MaxTicks>(param)) {
+                max_ticks = std::get<MaxTicks>(param).value;
+            }
+        };
+
+        parseParam(param1);
+        parseParam(param2);
+    }
+
+    std::string rom;
+    std::string result;
+    std::string rom2;
+    std::string result2;
+    const Lcd::Palette* palette {};
+    uint64_t max_ticks {DEFAULT_DURATION};
+    ColorTolerance color_tolerance {};
+};
+
 struct RunnerAdapter {
-    using Params = std::variant<FramebufferRunnerParams, SerialRunnerParams, MemoryRunnerParams>;
+    using Params = std::variant<FramebufferRunnerParams, SerialRunnerParams, MemoryRunnerParams,
+                                TwoPlayersFramebufferRunnerParams>;
 
     RunnerAdapter(std::string roms_prefix, std::string results_prefix) :
         roms_prefix {std::move(roms_prefix)},
@@ -545,6 +750,22 @@ struct RunnerAdapter {
                 .run();
         }
 
+        if (std::holds_alternative<TwoPlayersFramebufferRunnerParams>(p)) {
+            const auto& pf2p = std::get<TwoPlayersFramebufferRunnerParams>(p);
+
+            INFO("=== " << pf2p.rom << "," << pf2p.rom2 << " ===");
+            return TwoPlayersFramebufferRunner()
+                .rom(roms_prefix + pf2p.rom)
+                .rom2(roms_prefix + pf2p.rom2)
+                .palette(pf2p.palette)
+                .max_ticks(pf2p.max_ticks)
+                .check_interval_ticks(DURATION_VERY_SHORT)
+                .expect_framebuffer1(results_prefix + pf2p.result)
+                .expect_framebuffer2(results_prefix + pf2p.result2)
+                .color_tolerance(pf2p.color_tolerance.red, pf2p.color_tolerance.green, pf2p.color_tolerance.blue)
+                .run();
+        }
+
         ASSERT_NO_ENTRY();
         return false;
     }
@@ -557,5 +778,7 @@ private:
 using F = FramebufferRunnerParams;
 using S = SerialRunnerParams;
 using M = MemoryRunnerParams;
+
+using F2P = TwoPlayersFramebufferRunnerParams;
 
 #endif // RUNNERS_H

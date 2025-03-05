@@ -24,7 +24,7 @@
 #include "docboy/memory/wram2.h"
 #include "docboy/mmu/mmu.h"
 #include "docboy/ppu/ppu.h"
-#include "docboy/serial/port.h"
+#include "docboy/serial/serial.h"
 #include "docboy/stop/stopcontroller.h"
 #include "docboy/timers/timers.h"
 
@@ -46,12 +46,6 @@
 
 class GameBoy {
 public:
-#ifdef ENABLE_BOOTROM
-    explicit GameBoy(std::unique_ptr<BootRom> boot_rom) :
-        boot_rom {std::move(boot_rom)} {
-    }
-#endif
-
     // CPU
 #ifdef ENABLE_CGB
     Cpu cpu {idu, interrupts, mmu, joypad, fetching, halted, stop_controller, speed_switch, speed_switch_controller};
@@ -79,7 +73,7 @@ public:
 
     // Boot ROM
 #ifdef ENABLE_BOOTROM
-    std::unique_ptr<BootRom> boot_rom {};
+    BootRom boot_rom {};
 #endif
 
     // Cartridge
@@ -115,7 +109,7 @@ public:
     Boot boot {};
 #endif
     Joypad joypad {interrupts};
-    SerialPort serial_port {timers, interrupts};
+    Serial serial {timers, interrupts};
     Timers timers {interrupts};
     Interrupts interrupts {};
 
@@ -133,10 +127,10 @@ public:
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
     CpuBus cpu_bus {
-        *boot_rom,
+        boot_rom,
         hram,
         joypad,
-        serial_port,
+        serial,
         timers,
         interrupts,
         boot,
@@ -146,18 +140,18 @@ public:
         vram_bank_controller,
         wram_bank_controller,
         hdma,
-        speedswitch,
+        speed_switch,
         infrared,
         undocumented_registers,
     };
 #else
-    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, boot, apu, ppu, dma};
+    CpuBus cpu_bus {boot_rom, hram, joypad, serial, timers, interrupts, boot, apu, ppu, dma};
 #endif
 #else
 #ifdef ENABLE_CGB
     CpuBus cpu_bus {hram,
                     joypad,
-                    serial_port,
+                    serial,
                     timers,
                     interrupts,
                     boot,
@@ -171,7 +165,7 @@ public:
                     infrared,
                     undocumented_registers};
 #else
-    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, boot, apu, ppu, dma};
+    CpuBus cpu_bus {hram, joypad, serial, timers, interrupts, boot, apu, ppu, dma};
 #endif
 #endif
     VramBus vram_bus {vram};
@@ -185,9 +179,9 @@ public:
     // MMU
 #if ENABLE_BOOTROM
 #ifdef ENABLE_CGB
-    Mmu mmu {*boot_rom, ext_bus, wram_bus, cpu_bus, vram_bus, oam_bus};
+    Mmu mmu {boot_rom, ext_bus, wram_bus, cpu_bus, vram_bus, oam_bus};
 #else
-    Mmu mmu {*boot_rom, ext_bus, cpu_bus, vram_bus, oam_bus};
+    Mmu mmu {boot_rom, ext_bus, cpu_bus, vram_bus, oam_bus};
 #endif
 #else
 #ifdef ENABLE_CGB

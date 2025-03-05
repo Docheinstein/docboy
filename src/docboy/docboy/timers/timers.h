@@ -5,12 +5,11 @@
 #include "docboy/common/specs.h"
 #include "docboy/memory/cell.h"
 
-#include "utils/parcel.h"
-
 #ifdef ENABLE_DEBUGGER
 #include "docboy/debugger/memwatcher.h"
 #endif
 
+class Parcel;
 class Interrupts;
 
 class Timers {

@@ -1,5 +1,7 @@
 #include "docboy/speedswitch/speedswitchcontroller.h"
 
+#include "utils/parcel.h"
+
 SpeedSwitchController::SpeedSwitchController(SpeedSwitch& speed_switch, Timers& timers, bool& halted) :
     speed_switch {speed_switch},
     timers {timers},

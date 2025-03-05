@@ -1,10 +1,12 @@
 #include "docboy/bootrom/factory.h"
 
+#include <cstring>
+
 #include "docboy/bootrom/bootrom.h"
 
 #include "utils/io.h"
 
-std::unique_ptr<BootRom> BootRomFactory::create(const std::string& filename) {
+void BootRomFactory::load(BootRom& boot_rom, const std::string& filename) {
     bool ok;
 
     std::vector<uint8_t> data = read_file(filename, &ok);
@@ -14,5 +16,5 @@ std::unique_ptr<BootRom> BootRomFactory::create(const std::string& filename) {
 
     ASSERT(data.size() == BootRom::Size);
 
-    return std::make_unique<BootRom>(data.data());
+    memcpy(boot_rom.data, data.data(), data.size());
 }

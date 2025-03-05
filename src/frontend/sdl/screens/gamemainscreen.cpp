@@ -4,30 +4,76 @@
 #include "controllers/corecontroller.h"
 #include "controllers/maincontroller.h"
 #include "controllers/navcontroller.h"
+#include "controllers/runcontroller.h"
 #include "screens/helpscreen.h"
 #include "screens/optionsscreen.h"
+
+#include "screens/playerselectscreen.h"
 
 #include "utils/rompicker.h"
 
 GameMainScreen::GameMainScreen(Context ctx) :
     MenuScreen {ctx} {
 
-    ASSERT(core.is_rom_loaded());
+    ASSERT(runner.get_core1().is_rom_loaded());
 
     menu.add_item(Button {"Save state", [this] {
-                              core.write_state();
-                              nav.pop();
+                              if (runner.is_two_players_mode()) {
+                                  nav.push(std::make_unique<PlayerSelectScreen>(
+                                      context,
+                                      [this]() {
+                                          runner.get_core1().write_state();
+                                          nav.pop();
+                                      },
+                                      [this]() {
+                                          runner.get_core2().write_state();
+                                          nav.pop();
+                                      }));
+                              } else {
+                                  runner.get_core1().write_state();
+                                  nav.pop();
+                              }
                           }});
     menu.add_item(Button {"Load state", [this] {
-                              core.load_state();
-                              nav.pop();
+                              if (runner.is_two_players_mode()) {
+                                  nav.push(std::make_unique<PlayerSelectScreen>(
+                                      context,
+                                      [this]() {
+                                          runner.get_core1().load_state();
+                                          nav.pop();
+                                      },
+                                      [this]() {
+                                          runner.get_core2().load_state();
+                                          nav.pop();
+                                      }));
+                              } else {
+                                  runner.get_core1().load_state();
+                                  nav.pop();
+                              }
                           }});
 
 #ifdef NFD
     menu.add_item(Button {"Open ROM", [this] {
-                              if (const auto rom = open_rom_picker()) {
-                                  core.load_rom(*rom);
-                                  nav.pop();
+                              if (runner.is_two_players_mode()) {
+                                  nav.push(std::make_unique<PlayerSelectScreen>(
+                                      context,
+                                      [this]() {
+                                          if (const auto rom = open_rom_picker()) {
+                                              runner.get_core1().load_rom(*rom);
+                                              nav.pop();
+                                          }
+                                      },
+                                      [this]() {
+                                          if (const auto rom = open_rom_picker()) {
+                                              runner.get_core2().load_rom(*rom);
+                                              nav.pop();
+                                          }
+                                      }));
+                              } else {
+                                  if (const auto rom = open_rom_picker()) {
+                                      runner.get_core1().load_rom(*rom);
+                                      nav.pop();
+                                  }
                               }
                           }});
 #endif

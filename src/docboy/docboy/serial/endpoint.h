@@ -7,7 +7,7 @@ class ISerialEndpoint {
 public:
     virtual ~ISerialEndpoint() = default;
 
-    virtual bool serial_read_bit() const = 0;
+    virtual bool serial_read_bit() = 0;
     virtual void serial_write_bit(bool) = 0;
 };
 

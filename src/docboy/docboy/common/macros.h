@@ -17,7 +17,8 @@ class DebuggerBackend;
     friend class Runner;                                                                                               \
     friend class FramebufferRunner;                                                                                    \
     friend class SerialRunner;                                                                                         \
-    friend class MemoryRunner;
+    friend class MemoryRunner;                                                                                         \
+    friend class TwoPlayersFramebufferRunner;
 #else
 #define TESTABLE_CLASS()
 #endif

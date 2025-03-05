@@ -167,9 +167,10 @@ enum TraceFlag : uint32_t {
     TraceFlagStack = 1 << 5,
     TraceFlagMemory = 1 << 6,
     TraceFlagPpu = 1 << 7,
-    TraceFlagHash = 1 << 8,
-    TraceFlagMCycle = 1 << 9,
-    TraceFlagTCycle = 1 << 10,
+    TraceFlagSerial = 1 << 8,
+    TraceFlagHash = 1 << 9,
+    TraceFlagMCycle = 1 << 10,
+    TraceFlagTCycle = 1 << 11,
     MaxTraceFlag = (TraceFlagTCycle << 1) - 1,
 };
 
@@ -551,6 +552,8 @@ std::string to_string(const DisassembledInstructionReference& instr) {
     return ss.str();
 }
 
+constexpr uint32_t TRACE_BUFFER_CAPACITY = 100'000;
+
 #ifdef TERM_SUPPORTS_UNICODE
 constexpr const char* PIPE = "|";
 constexpr const char* DASH = "—";
@@ -784,12 +787,21 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendTraceCommand>(co
               << TraceFlagMemory << std::endl;
     std::cout << "> PPU          : " << (static_cast<bool>(trace & TraceFlagPpu) ? "ON " : "OFF") << " | "
               << TraceFlagPpu << std::endl;
+    std::cout << "> Serial       : " << (static_cast<bool>(trace & TraceFlagSerial) ? "ON " : "OFF") << " | "
+              << TraceFlagSerial << std::endl;
     std::cout << "> Hash         : " << (static_cast<bool>(trace & TraceFlagHash) ? "ON " : "OFF") << " | "
               << TraceFlagHash << std::endl;
     std::cout << "> M-Cycles     : " << (static_cast<bool>(trace & TraceFlagMCycle) ? "ON " : "OFF") << " | "
               << TraceFlagMCycle << std::endl;
     std::cout << "> T-Cycles     : " << (static_cast<bool>(trace & TraceFlagTCycle) ? "ON " : "OFF") << " | "
               << TraceFlagTCycle << std::endl;
+
+    if (trace) {
+        // Allocate enough space for the trace buffer (only the first time).
+        if (trace_buffer.capacity() < TRACE_BUFFER_CAPACITY) {
+            trace_buffer.reserve(TRACE_BUFFER_CAPACITY);
+        }
+    }
 
     return std::nullopt;
 }
@@ -978,7 +990,9 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
             return;
         }
 
-        std::cerr << std::left << std::setw(12) << "[" + std::to_string(tick) + "] ";
+        std::stringstream ss;
+
+        ss << std::left << std::setw(12) << "[" + std::to_string(tick) + "] ";
 
         if (trace & TraceFlagInstruction) {
             std::string instr_str;
@@ -997,63 +1011,74 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
                 }
             }
 
-            std::cerr << std::left << std::setw(28) << instr_str << "  ";
+            ss << std::left << std::setw(28) << instr_str << "  ";
         }
 
         if (trace & TraceFlagRegisters) {
-            std::cerr << "AF:" << hex(cpu.af) << " BC:" << hex(cpu.bc) << " DE:" << hex(cpu.de) << " HL:" << hex(cpu.hl)
-                      << " SP:" << hex(cpu.sp) << " PC:" << hex((uint16_t)(cpu.pc)) << "  ";
+            ss << "AF:" << hex(cpu.af) << " BC:" << hex(cpu.bc) << " DE:" << hex(cpu.de) << " HL:" << hex(cpu.hl)
+               << " SP:" << hex(cpu.sp) << " PC:" << hex((uint16_t)(cpu.pc)) << "  ";
         }
 
         if (trace & TraceFlagInterrupts) {
             const Interrupts& interrupts = gb.interrupts;
-            std::cerr << "IME:"
-                      << (cpu.ime == Cpu::ImeState::Enabled
-                              ? "1"
-                              : ((cpu.ime == Cpu::ImeState::Pending || cpu.ime == Cpu::ImeState::Requested) ? "!"
-                                                                                                            : "0"))
-                      << " IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF) << "  ";
+            ss << "IME:"
+               << (cpu.ime == Cpu::ImeState::Enabled
+                       ? "1"
+                       : ((cpu.ime == Cpu::ImeState::Pending || cpu.ime == Cpu::ImeState::Requested) ? "!" : "0"))
+               << " IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF) << "  ";
         }
 
         if (trace & TraceFlagDma) {
-            std::cerr << "DMA:" << std::setw(3) << (gb.dma.transferring ? std::to_string(gb.dma.cursor) : "OFF")
-                      << "  ";
+            ss << "DMA:" << std::setw(3) << (gb.dma.transferring ? std::to_string(gb.dma.cursor) : "OFF") << "  ";
         }
 
         if (trace & TraceFlagTimers) {
-            std::cerr << "DIV16:" << hex(gb.timers.div16)
-                      << " DIV:" << hex(backend.read_memory(Specs::Registers::Timers::DIV))
-                      << " TIMA:" << hex(backend.read_memory(Specs::Registers::Timers::TIMA))
-                      << " TMA:" << hex(backend.read_memory(Specs::Registers::Timers::TMA))
-                      << " TAC:" << hex(backend.read_memory(Specs::Registers::Timers::TAC)) << "  ";
+            ss << "DIV16:" << hex(gb.timers.div16) << " DIV:" << hex(backend.read_memory(Specs::Registers::Timers::DIV))
+               << " TIMA:" << hex(backend.read_memory(Specs::Registers::Timers::TIMA))
+               << " TMA:" << hex(backend.read_memory(Specs::Registers::Timers::TMA))
+               << " TAC:" << hex(backend.read_memory(Specs::Registers::Timers::TAC)) << "  ";
         }
 
         if (trace & TraceFlagStack) {
-            std::cerr << "[SP+1]:" << hex(backend.read_memory(cpu.sp + 1)) << " "
-                      << "[SP]:" << hex(backend.read_memory(cpu.sp)) << " "
-                      << "[SP-1]:" << hex(backend.read_memory(cpu.sp - 1)) << "  ";
+            ss << "[SP+1]:" << hex(backend.read_memory(cpu.sp + 1)) << " "
+               << "[SP]:" << hex(backend.read_memory(cpu.sp)) << " "
+               << "[SP-1]:" << hex(backend.read_memory(cpu.sp - 1)) << "  ";
         }
 
         if (trace & TraceFlagMemory) {
-            std::cerr << "[BC]:" << hex(backend.read_memory(cpu.bc)) << " "
-                      << "[DE]:" << hex(backend.read_memory(cpu.de)) << " "
-                      << "[HL]:" << hex(backend.read_memory(cpu.hl)) << "  ";
+            ss << "[BC]:" << hex(backend.read_memory(cpu.bc)) << " "
+               << "[DE]:" << hex(backend.read_memory(cpu.de)) << " "
+               << "[HL]:" << hex(backend.read_memory(cpu.hl)) << "  ";
+        }
+
+        if (trace & TraceFlagSerial) {
+            ss << "SB:" << hex((uint8_t)gb.serial.sb) << " SC:" << hex((uint8_t)gb.serial.read_sc())
+               << " Progress:" << +gb.serial.progress << " ";
         }
 
         if (trace & TraceFlagPpu) {
             const Ppu& ppu = gb.ppu;
-            std::cerr << "Mode:" << +gb.ppu.stat.mode << " Dots:" << std::setw(12) << ppu.dots << "  ";
+            ss << "Mode:" << +gb.ppu.stat.mode << " Dots:" << std::setw(12) << ppu.dots << "  ";
         }
 
         if (trace & TraceFlagHash) {
-            std::cerr << "Hash:" << hex(static_cast<uint16_t>(backend.state_hash())) << "  ";
+            ss << "Hash:" << hex(static_cast<uint16_t>(backend.state_hash())) << "  ";
         }
 
-        std::cerr << std::endl;
+        ss << std::endl;
+
+        // Append the trace entry to the buffer.
+        trace_buffer.push_back(ss.str());
+
+        // Flush the trace buffer if it is full.
+        if (trace_buffer.size() == TRACE_BUFFER_CAPACITY) {
+            flush_trace_buffer();
+        }
     }
 
     if (sigint_trigger) {
         sigint_trigger = 0;
+        flush_trace_buffer();
         backend.interrupt();
     }
 }
@@ -2909,22 +2934,28 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << header("SERIAL", width) << endl;
 
-        b << yellow("Transfer") << "  :  " << (gb.serial_port.transferring ? green("Transferring") : darkgray("None"))
-          << endl;
+        bool is_transferring = (gb.serial.sc.transfer_enable && gb.serial.sc.clock_select) || (gb.serial.progress > 0);
+        b << yellow("Transfer") << "  :  " << (is_transferring ? green("Transferring") : darkgray("None")) << endl;
 
-        if (gb.serial_port.transferring) {
-            uint8_t transferred_bits = gb.serial_port.progress / 2;
+        if (is_transferring) {
+            bool is_master = gb.serial.sc.transfer_enable && gb.serial.sc.clock_select;
+            b << yellow("Role    ") << "  :  " << (is_master ? "Master" : "Slave") << endl;
 
-            b << yellow("Progress") << "  :  " << +transferred_bits << "/8 (" << +gb.serial_port.progress << "/16)"
-              << endl;
-            b << yellow("SB") << "        :  " << [this, transferred_bits]() -> Text {
+            b << yellow("Progress") << "  :  " << +gb.serial.progress << "/8";
+            if (is_master) {
+                b << " " << (gb.serial.master_transfer_toggle ? "(High)" : "(Low)");
+            }
+            b << endl;
+
+            b << yellow("SB") << "        :  " << [this]() -> Text {
                 Text t {};
                 for (int8_t b = 7; b >= 0; b--) {
-                    bool high = test_bit(gb.serial_port.sb, b);
-                    t += ((b >= transferred_bits) ? Text {high} : yellow(Text {high}));
+                    bool high = test_bit(gb.serial.sb, b);
+                    t += ((b >= gb.serial.progress) ? Text {high} : yellow(Text {high}));
                 }
                 return t;
-            }() << endl;
+            }() << " ("
+                << hex<uint8_t>(gb.serial.sb) << ")" << endl;
         }
 
         return b;
@@ -3345,10 +3376,18 @@ std::string DebuggerFrontend::dump_display_entry(const DebuggerFrontend::Display
     return ss.str();
 }
 
+void DebuggerFrontend::flush_trace_buffer() {
+    for (const auto& s : trace_buffer) {
+        std::cerr << s;
+    }
+    trace_buffer.clear();
+}
+
 void DebuggerFrontend::reset() {
     last_cmdline = {};
     display_entries.clear();
     trace = 0;
+    trace_buffer.clear();
     auto_disassemble_instructions.past = 6;
     auto_disassemble_instructions.next = 10;
     temporary_breakpoint = std::nullopt;

@@ -11,6 +11,8 @@ class Window;
 class Core;
 struct SDL_Renderer;
 
+class RunController;
+
 class UiController {
 public:
     struct Palette {
@@ -26,7 +28,11 @@ public:
         std::size_t index {};
     };
 
-    explicit UiController(Window& window, Core& core);
+    explicit UiController(Window& window, RunController& runner);
+
+    // Size
+    uint32_t get_width() const;
+    uint32_t get_height() const;
 
     // Scaling
     void set_scaling(uint32_t scaling);
@@ -46,7 +52,7 @@ public:
 
 private:
     Window& window;
-    Core& core;
+    RunController& runner;
 
     Palette current_palette {};
     std::vector<Palette> palettes;

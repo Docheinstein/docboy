@@ -63,7 +63,12 @@ bool CoreController::write_save() const {
     bool ok;
     write_file(get_save_path(), data.data(), data.size(), &ok);
 
-    return ok;
+    if (!ok) {
+        std::cerr << "WARN: failed to write save to '" << get_save_path() << "'" << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 bool CoreController::load_save() const {
@@ -73,7 +78,9 @@ bool CoreController::load_save() const {
 
     bool ok;
     std::vector<uint8_t> data = read_file(get_save_path(), &ok);
+
     if (!ok) {
+        std::cerr << "WARN: failed to load save from '" << get_save_path() << "'" << std::endl;
         return false;
     }
 
@@ -88,23 +95,33 @@ bool CoreController::write_state() const {
     bool ok;
     write_file(get_state_path(), data.data(), data.size(), &ok);
 
-    return ok;
+    if (!ok) {
+        std::cerr << "WARN: failed to write state to '" << get_state_path() << "'" << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 bool CoreController::load_state() const {
     bool ok;
     std::vector<uint8_t> data = read_file(get_state_path(), &ok);
+
     if (!ok) {
+        std::cerr << "WARN: failed to load state from '" << get_state_path() << "'" << std::endl;
         return false;
     }
 
     if (data.size() != core.get_state_size()) {
+        std::cerr << "WARN: failed to load state: wrong size (expected=" << core.get_state_size()
+                  << ", actual=" << data.size() << ")." << std::endl;
+        std::cerr << "Maybe you saved with a different emulator version?" << std::endl;
         return false;
     }
 
     core.load_state(data.data());
 
-    return ok;
+    return true;
 }
 
 #ifdef ENABLE_DEBUGGER
@@ -157,6 +174,10 @@ const Lcd::PixelRgb565* CoreController::get_framebuffer() const {
     return core.gb.lcd.get_pixels();
 }
 
+void CoreController::set_palette(const Lcd::Palette& palette) {
+    core.gb.lcd.set_palette(palette);
+}
+
 void CoreController::set_key_mapping(SDL_Keycode keycode, Joypad::Key joypad_key) {
     // Remove previously bound keycode.
     if (const auto prev_keycode = joypad_map.find(joypad_key); prev_keycode != joypad_map.end()) {
@@ -176,3 +197,21 @@ std::string CoreController::get_state_path() const {
     ASSERT(is_rom_loaded());
     return rom.path.with_extension("state").string();
 }
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+void CoreController::attach_serial_link(ISerialEndpoint& endpoint) {
+    core.attach_serial_link(endpoint);
+}
+
+void CoreController::detach_serial_link() {
+    core.detach_serial_link();
+}
+
+bool CoreController::is_serial_link_attached() const {
+    return core.gb.serial.is_attached();
+}
+
+ISerialEndpoint& CoreController::get_serial_endpoint() {
+    return core.gb.serial;
+}
+#endif

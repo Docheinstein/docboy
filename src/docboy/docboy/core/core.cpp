@@ -2,6 +2,7 @@
 
 #include "docboy/core/core.h"
 
+#include "docboy/bootrom/factory.h"
 #include "docboy/cartridge/factory.h"
 #include "docboy/common/randomdata.h"
 #include "docboy/memory/vram0.h"
@@ -17,20 +18,22 @@
     if (is_asking_to_quit() || resetting) {                                                                            \
         return;                                                                                                        \
     }
-#define RETURN_ON_QUIT_OR_RESET_REQUEST()                                                                              \
+#define RETURN_ON_QUIT_OR_RESET_REQUEST(ret)                                                                           \
     if (is_asking_to_quit() || resetting) {                                                                            \
         resetting = false;                                                                                             \
-        return;                                                                                                        \
+        return ret;                                                                                                    \
     }
+
 #else
 #define TICK_DEBUGGER(n) (void)(0)
 #define RETURN_FROM_CYCLE_ON_QUIT_OR_RESET_REQUEST() (void)(0)
-#define RETURN_ON_QUIT_OR_RESET_REQUEST() (void)(0)
+#define RETURN_ON_QUIT_OR_RESET_REQUEST(ret) (void)(0)
 #endif
 
 namespace {
 constexpr uint16_t LCD_VBLANK_CYCLES = 16416;
 constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
+constexpr uint32_t STATE_WATERMARK = 0xABCDDCBA;
 
 uint32_t rom_state_size = STATE_SAVE_SIZE_UNKNOWN;
 } // namespace
@@ -129,7 +132,7 @@ inline void Core::tick_t3() const {
     gb.timers.tick();
 #endif
 
-    gb.serial_port.tick();
+    gb.serial.tick();
 
     gb.ppu.tick();
 #ifdef ENABLE_CGB
@@ -224,11 +227,96 @@ void Core::frame() {
     // Proceed until next VBlank.
     while (gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK) {
         _cycle();
-        if (!gb.ppu.lcdc.enable || gb.stopped)
+        if (!gb.ppu.lcdc.enable || gb.stopped) {
             return;
+        }
         RETURN_ON_QUIT_OR_RESET_REQUEST();
     }
 }
+
+bool Core::run_for_cycles(uint32_t cycles_to_run) {
+    uint8_t cycle_count {};
+
+    if (gb.stopped) {
+        // Just handle joypad input in STOP mode: all the components are idle.
+        TICK_DEBUGGER(ticks);
+        gb.stop_controller.handle_stop_mode();
+        return true;
+    }
+
+    // If LCD is disabled we risk to never reach VBlank (which would stall the UI and prevent inputs).
+    // Therefore, proceed for the cycles needed to render an entire frame and quit
+    // if the LCD is still disabled even after that.
+    if (!gb.ppu.lcdc.enable) {
+        for (uint16_t c = cycles_with_lcd_off; c < LCD_VBLANK_CYCLES; c++) {
+            if (++cycle_count > cycles_to_run) {
+                // No more cycles to run for this burst.
+                return false;
+            }
+
+            _cycle();
+
+            if (gb.stopped) {
+                cycles_with_lcd_off = 0;
+                return true;
+            }
+
+            RETURN_ON_QUIT_OR_RESET_REQUEST(true);
+            ASSERT(gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK);
+        }
+
+        // LCD still disabled: quit.
+        if (!gb.ppu.lcdc.enable) {
+            cycles_with_lcd_off = 0;
+            return true;
+        }
+    }
+
+    ASSERT(gb.ppu.lcdc.enable);
+
+    // Eventually go out of current VBlank.
+    while (gb.ppu.stat.mode == Specs::Ppu::Modes::VBLANK) {
+        if (++cycle_count > cycles_to_run) {
+            // No more cycles to run for this burst.
+            return false;
+        }
+
+        _cycle();
+
+        if (!gb.ppu.lcdc.enable || gb.stopped) {
+            return true;
+        }
+
+        RETURN_ON_QUIT_OR_RESET_REQUEST(true);
+    }
+
+    ASSERT(gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK);
+
+    // Proceed until next VBlank.
+    while (gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK) {
+        if (++cycle_count > cycles_to_run) {
+            // No more cycles to run for this burst.
+            return false;
+        }
+
+        _cycle();
+
+        if (!gb.ppu.lcdc.enable || gb.stopped) {
+            return true;
+        }
+
+        RETURN_ON_QUIT_OR_RESET_REQUEST(true);
+    }
+
+    // Frame completed.
+    return true;
+}
+
+#ifdef ENABLE_BOOTROM
+void Core::load_boot_rom(const std::string& filename) {
+    BootRomFactory::load(gb.boot_rom, filename);
+}
+#endif
 
 void Core::load_rom(const std::string& filename) {
     gb.cartridge_slot.attach(CartridgeFactory::create(filename));
@@ -236,7 +324,11 @@ void Core::load_rom(const std::string& filename) {
 }
 
 void Core::attach_serial_link(ISerialEndpoint& endpoint) const {
-    gb.serial_port.attach(endpoint);
+    gb.serial.attach(endpoint);
+}
+
+void Core::detach_serial_link() const {
+    gb.serial.detach();
 }
 
 bool Core::can_save_ram() const {
@@ -276,6 +368,8 @@ void Core::load_state(const void* data) {
 Parcel Core::parcelize_state() const {
     Parcel p;
 
+    p.write_uint32(STATE_WATERMARK);
+
     p.write_uint64(ticks);
 
     gb.cpu.save_state(p);
@@ -298,7 +392,7 @@ Parcel Core::parcelize_state() const {
 #endif
     gb.hram.save_state(p);
     gb.boot.save_state(p);
-    gb.serial_port.save_state(p);
+    gb.serial.save_state(p);
     gb.timers.save_state(p);
     gb.interrupts.save_state(p);
     gb.ext_bus.save_state(p);
@@ -324,6 +418,9 @@ Parcel Core::parcelize_state() const {
 }
 
 void Core::unparcelize_state(Parcel&& p) {
+    [[maybe_unused]] const uint32_t watermark = p.read_uint32();
+    ASSERT(watermark == STATE_WATERMARK);
+
     ticks = p.read_uint64();
 
     gb.cpu.load_state(p);
@@ -346,7 +443,7 @@ void Core::unparcelize_state(Parcel&& p) {
 #endif
     gb.hram.load_state(p);
     gb.boot.load_state(p);
-    gb.serial_port.load_state(p);
+    gb.serial.load_state(p);
     gb.timers.load_state(p);
     gb.interrupts.load_state(p);
     gb.ext_bus.load_state(p);
@@ -401,7 +498,7 @@ void Core::reset() {
 #endif
     gb.hram.reset(RANDOM_DATA);
     gb.boot.reset();
-    gb.serial_port.reset();
+    gb.serial.reset();
     gb.timers.reset();
     gb.interrupts.reset();
     gb.ext_bus.reset();

@@ -1,6 +1,6 @@
 #include "extra/serial/endpoints/buffer.h"
 
-bool SerialBuffer::serial_read_bit() const {
+bool SerialBuffer::serial_read_bit() {
     return true;
 }
 

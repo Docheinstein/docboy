@@ -19,11 +19,17 @@ public:
     void cycle();
     void frame();
 
+    bool run_for_cycles(uint32_t cycles);
+
     // Load ROM
+#ifdef ENABLE_BOOTROM
+    void load_boot_rom(const std::string& filename);
+#endif
     void load_rom(const std::string& filename);
 
     // Serial
     void attach_serial_link(ISerialEndpoint& endpoint) const;
+    void detach_serial_link() const;
 
     // Input
     void set_key(Joypad::Key key, Joypad::KeyState state) const {
@@ -78,6 +84,8 @@ private:
     void unparcelize_state(Parcel&& parcel);
 
     uint64_t ticks {};
+
+    uint16_t cycles_with_lcd_off {};
 
 #ifdef ENABLE_DEBUGGER
     DebuggerBackend* debugger {};

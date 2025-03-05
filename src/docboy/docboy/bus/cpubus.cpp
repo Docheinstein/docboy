@@ -27,7 +27,7 @@
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller,
-               WramBankController& wram_bank_controller, Hdma& hdma, SpeedSwitch& speedswitch, Infrared& infrared,
+               WramBankController& wram_bank_controller, Hdma& hdma, SpeedSwitch& speed_switch, Infrared& infrared,
                UndocumentedRegisters& undocumented_registers) :
 #else
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,

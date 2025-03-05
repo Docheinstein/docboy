@@ -5,6 +5,7 @@
 #include "components/menu/items.h"
 #include "controllers/corecontroller.h"
 #include "controllers/maincontroller.h"
+#include "controllers/runcontroller.h"
 
 #include "utils/strings.h"
 
@@ -23,6 +24,14 @@ AudioOptionsScreen::AudioOptionsScreen(Context context) :
     items.audio_enabled = &menu.add_item(Spinner {[this] {
         on_change_audio_enabled();
     }});
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (runner.is_two_players_mode()) {
+        items.audio_player_source = &menu.add_item(Spinner {[this] {
+            on_change_audio_player_source();
+        }});
+    }
+#endif
 
     items.volume = &menu.add_item(Spinner {[this] {
                                                on_decrease_volume();
@@ -80,6 +89,14 @@ void AudioOptionsScreen::redraw() {
     const bool dynamic_sample_rate_control_enabled = main.is_dynamic_sample_rate_control_enabled();
 
     items.audio_enabled->text = "Audio   " + std::string {main.is_audio_enabled() ? "Enabled" : "Disabled"};
+#if ENABLE_TWO_PLAYERS_MODE
+    if (runner.is_two_players_mode()) {
+        items.audio_player_source->visible = audio_enabled;
+        items.audio_player_source->text =
+            "Source  Player " +
+            std::string(main.get_audio_player_source() == MainController::AUDIO_PLAYER_SOURCE_1 ? "1" : "2");
+    }
+#endif
     items.volume->visible = audio_enabled;
     items.volume->text = "Volume  " + std::to_string(main.get_volume());
 
@@ -127,6 +144,13 @@ void AudioOptionsScreen::on_increase_volume() {
     int32_t volume = std::min(main.get_volume() + VOLUME_STEP, static_cast<int>(MainController::VOLUME_MAX));
     ASSERT(volume >= 0 && volume <= MainController::VOLUME_MAX);
     main.set_volume(volume);
+    redraw();
+}
+
+void AudioOptionsScreen::on_change_audio_player_source() {
+    main.set_audio_player_source(main.get_audio_player_source() == MainController::AUDIO_PLAYER_SOURCE_1
+                                     ? MainController::AUDIO_PLAYER_SOURCE_2
+                                     : MainController::AUDIO_PLAYER_SOURCE_1);
     redraw();
 }
 

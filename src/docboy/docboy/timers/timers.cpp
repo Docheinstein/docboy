@@ -3,6 +3,8 @@
 #include "docboy/bootrom/helpers.h"
 #include "docboy/interrupts/interrupts.h"
 
+#include "utils/parcel.h"
+
 /* TIMA overflow timing example.
  *   t                  CPU                              Timer
  * CPU   |

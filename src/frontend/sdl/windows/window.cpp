@@ -4,9 +4,9 @@
 #include "screens/screen.h"
 #include "utils/asserts.h"
 
-Window::Window(int x, int y, uint32_t scaling) :
-    width {scaling * Specs::Display::WIDTH},
-    height {scaling * Specs::Display::HEIGHT},
+Window::Window(int width, int height, int x, int y, uint32_t scaling) :
+    width {static_cast<uint32_t>(width)},
+    height {static_cast<uint32_t>(height)},
     scaling {scaling} {
 
     const int win_x = x == POSITION_UNDEFINED ? static_cast<int>(SDL_WINDOWPOS_UNDEFINED) : x;
@@ -16,8 +16,8 @@ Window::Window(int x, int y, uint32_t scaling) :
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "DocBoy");
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, win_x);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, win_y);
-    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, static_cast<float>(width));
-    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, static_cast<float>(height));
+    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, static_cast<float>(width * scaling));
+    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, static_cast<float>(height * scaling));
 
     window = SDL_CreateWindowWithProperties(props);
     if (!window) {
@@ -63,10 +63,17 @@ Window::Position Window::get_position() const {
     return pos;
 }
 
+uint32_t Window::get_width() const {
+    return width;
+}
+
+uint32_t Window::get_height() const {
+    return height;
+}
+
 void Window::set_scaling(uint32_t scaling_) {
     scaling = scaling_;
-    SDL_SetWindowSize(window, static_cast<int>(scaling * Specs::Display::WIDTH),
-                      static_cast<int>(scaling * Specs::Display::HEIGHT));
+    SDL_SetWindowSize(window, static_cast<int>(width * scaling), static_cast<int>(height * scaling));
 }
 
 uint32_t Window::get_scaling() const {

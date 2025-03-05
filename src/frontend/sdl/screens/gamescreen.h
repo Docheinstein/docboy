@@ -27,10 +27,17 @@ private:
 
     bool is_in_menu() const;
 
-    SDL_Texture* game_texture {};
+    SDL_Texture* game_texture1 {};
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    SDL_Texture* game_texture2 {};
+#endif
+
     SDL_Texture* game_overlay_texture {};
 
-    const Lcd::PixelRgb565* game_framebuffer {};
+    const Lcd::PixelRgb565* game_framebuffer1 {};
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    const Lcd::PixelRgb565* game_framebuffer2 {};
+#endif
 
     struct {
         ScreenStack screen_stack {};

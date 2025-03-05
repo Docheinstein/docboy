@@ -1,9 +1,10 @@
-#include "screen.h"
+#include "screens/screen.h"
+
 #include "controllers/uicontroller.h"
 
 Screen::Screen(Context ctx) :
     context {ctx},
-    core {ctx.controllers.core},
+    runner {ctx.controllers.runner},
     ui {ctx.controllers.ui},
     nav {ctx.controllers.nav},
     main {ctx.controllers.main},

@@ -7,7 +7,7 @@
 
 class SerialBuffer : public ISerialEndpoint {
 public:
-    bool serial_read_bit() const override;
+    bool serial_read_bit() override;
     void serial_write_bit(bool bit) override;
 
     std::vector<uint8_t> buffer;

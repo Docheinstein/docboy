@@ -4,11 +4,21 @@
 
 #include "extra/img/imgmanip.h"
 
+#include "controllers/runcontroller.h"
+
 #include "windows/window.h"
 
-UiController::UiController(Window& window, Core& core) :
+UiController::UiController(Window& window, RunController& runner) :
     window {window},
-    core {core} {
+    runner {runner} {
+}
+
+uint32_t UiController::get_width() const {
+    return window.get_width();
+}
+
+uint32_t UiController::get_height() const {
+    return window.get_height();
 }
 
 void UiController::set_scaling(uint32_t scaling) {
@@ -73,7 +83,10 @@ void UiController::set_current_palette(size_t index) {
     current_palette = palettes[index];
 #ifndef ENABLE_CGB
     // TODO: CGB palettes?
-    core.gb.lcd.set_palette(current_palette.rgb565.palette);
+    runner.get_core1().set_palette(current_palette.rgb565.palette);
+    if (runner.is_two_players_mode()) {
+        runner.get_core2().set_palette(current_palette.rgb565.palette);
+    }
 #endif
 }
 

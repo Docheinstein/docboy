@@ -10,9 +10,19 @@ class MainController {
 public:
     static constexpr uint8_t VOLUME_MAX = 100;
 
+    static constexpr uint8_t SPEED_DEFAULT = 0;
+    static constexpr uint8_t SPEED_UNLIMITED = 255;
+
+    static constexpr uint8_t AUDIO_PLAYER_SOURCE_1 = 1;
+    static constexpr uint8_t AUDIO_PLAYER_SOURCE_2 = 2;
+
     void set_speed(int32_t s) {
         speed = s;
-        frame_time = std::chrono::nanoseconds {(uint64_t)(DEFAULT_FRAME_TIME.count() / pow2(speed))};
+        if (s == SPEED_UNLIMITED) {
+            frame_time = std::chrono::nanoseconds {0};
+        } else {
+            frame_time = std::chrono::nanoseconds {(uint64_t)(DEFAULT_FRAME_TIME.count() / pow2(speed))};
+        }
     }
 
     int32_t get_speed() const {
@@ -43,9 +53,27 @@ public:
         return audio.enabled;
     }
 
-    void set_audio_enabled_changed_callback(std::function<void(uint8_t volume)>&& callback) {
+    void set_audio_enabled_changed_callback(std::function<void(bool enabled)>&& callback) {
         audio.enabled_changed_callback = std::move(callback);
     }
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    void set_audio_player_source(uint8_t player) {
+        ASSERT(player == AUDIO_PLAYER_SOURCE_1 || player == AUDIO_PLAYER_SOURCE_2);
+        audio.audio_player_source = player;
+        if (audio.audio_player_source_changed_callback) {
+            audio.audio_player_source_changed_callback(audio.audio_player_source);
+        }
+    }
+
+    uint8_t get_audio_player_source() const {
+        return audio.audio_player_source;
+    }
+
+    void set_audio_player_source_changed_callback(std::function<void(uint8_t)>&& callback) {
+        audio.audio_player_source_changed_callback = std::move(callback);
+    }
+#endif
 
     void set_volume(uint8_t vol) {
         ASSERT(vol <= 100);
@@ -116,14 +144,18 @@ private:
     static constexpr std::chrono::nanoseconds DEFAULT_FRAME_TIME {1000000000LLU * Specs::Ppu::DOTS_PER_FRAME /
                                                                   Specs::Frequencies::CLOCK};
 
-    int32_t speed {};
+    int32_t speed {SPEED_DEFAULT};
     std::chrono::high_resolution_clock::duration frame_time {DEFAULT_FRAME_TIME};
     bool quitting {};
 
 #ifdef ENABLE_AUDIO
     struct {
         bool enabled {true};
-        std::function<void(uint8_t)> enabled_changed_callback {};
+        std::function<void(bool)> enabled_changed_callback {};
+#ifdef ENABLE_TWO_PLAYERS_MODE
+        uint8_t audio_player_source {AUDIO_PLAYER_SOURCE_1};
+        std::function<void(uint8_t)> audio_player_source_changed_callback {};
+#endif
         uint8_t volume {100};
         std::function<void(uint8_t)> volume_changed_callback {};
         struct {

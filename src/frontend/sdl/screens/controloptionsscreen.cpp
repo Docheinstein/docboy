@@ -2,11 +2,13 @@
 
 #include "components/menu/items.h"
 #include "controllers/corecontroller.h"
+#include "controllers/runcontroller.h"
 
 #include "SDL3/SDL.h"
 
-ControlOptionsScreen::ControlOptionsScreen(Context context) :
-    MenuScreen {context} {
+ControlOptionsScreen::ControlOptionsScreen(Context context, CoreController& core) :
+    MenuScreen {context},
+    core {core} {
 
     items.a = &menu.add_item(Button {"A", [this] {
                                          on_remap_key(Joypad::Key::A);

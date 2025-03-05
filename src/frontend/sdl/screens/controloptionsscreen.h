@@ -9,15 +9,19 @@
 
 #include "docboy/joypad/joypad.h"
 
+class CoreController;
+
 class ControlOptionsScreen : public MenuScreen {
 public:
-    explicit ControlOptionsScreen(Context context);
+    explicit ControlOptionsScreen(Context context, CoreController& core);
 
     void redraw() override;
     void handle_event(const SDL_Event& event) override;
 
 private:
     void on_remap_key(Joypad::Key key);
+
+    CoreController& core;
 
     struct {
         MenuItem* a;

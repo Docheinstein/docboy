@@ -24,6 +24,7 @@ option(ENABLE_DEBUGGER "Enable debugger" OFF)
 option(ENABLE_BOOTROM "Enable boot rom" OFF)
 option(ENABLE_AUDIO "Enable audio" ON)
 option(ENABLE_CGB "Enable GameBoy Color support" ON)
+option(ENABLE_TWO_PLAYERS_MODE "Enable two players mode (serial link)" ON)
 
 option(ENABLE_ASSERTS "Enable asserts" OFF)
 
@@ -58,6 +59,7 @@ message(STATUS "Feature: Debugger: ${ENABLE_DEBUGGER}")
 message(STATUS "Feature: Boot room: ${ENABLE_BOOTROM}")
 message(STATUS "Feature: Audio: ${ENABLE_AUDIO}")
 message(STATUS "Feature: GameBoy Color: ${ENABLE_CGB}")
+message(STATUS "Feature: Two players: ${ENABLE_TWO_PLAYERS_MODE}")
 
 if (BUILD_LIBRETRO_CORE_ANDROID)
     add_subdirectory(src/frontend/libretro/android)

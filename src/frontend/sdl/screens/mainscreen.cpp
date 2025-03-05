@@ -3,6 +3,7 @@
 #include "components/menu/items.h"
 #include "controllers/corecontroller.h"
 #include "controllers/maincontroller.h"
+#include "controllers/runcontroller.h"
 #include "screens/gamescreen.h"
 #include "screens/helpscreen.h"
 #include "screens/optionsscreen.h"
@@ -15,7 +16,7 @@ MainScreen::MainScreen(Context ctx) :
 #ifdef NFD
     menu.add_item(Button {"Open ROM", [this] {
                               if (const auto rom = open_rom_picker()) {
-                                  core.load_rom(*rom);
+                                  runner.get_core1().load_rom(*rom);
                                   nav.push(std::make_unique<GameScreen>(context));
                               }
                           }});

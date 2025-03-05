@@ -87,8 +87,6 @@ target_sources(docboy PRIVATE
         docboy/ppu/ppu.cpp
         docboy/ppu/ppu.h
         docboy/serial/endpoint.h
-        docboy/serial/port.cpp
-        docboy/serial/port.h
         docboy/serial/serial.cpp
         docboy/serial/serial.h
         docboy/audio/apu.cpp
@@ -161,6 +159,10 @@ endif ()
 
 if (ENABLE_CGB)
     target_compile_definitions(docboy PUBLIC ENABLE_CGB)
+endif ()
+
+if (ENABLE_TWO_PLAYERS_MODE)
+    target_compile_definitions(docboy PUBLIC ENABLE_TWO_PLAYERS_MODE)
 endif ()
 
 target_link_libraries(docboy PRIVATE utils)
