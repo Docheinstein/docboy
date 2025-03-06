@@ -9,6 +9,7 @@
 Serial::Serial(Timers& timers, Interrupts& interrupts) :
     timers {timers},
     interrupts {interrupts} {
+    reset();
 }
 
 void Serial::attach(ISerialEndpoint& e) {
@@ -157,7 +158,19 @@ void Serial::reset() {
     sb = 0;
     sc.transfer_enable = false;
 #ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
     sc.clock_speed = false;
+#else
+    sc.clock_speed = true;
 #endif
+#endif
+#ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
     sc.clock_select = false;
+#else
+    sc.clock_select = true;
+#endif
+#else
+    sc.clock_select = false;
+#endif
 }
