@@ -137,9 +137,9 @@ void Serial::save_state(Parcel& parcel) const {
 }
 
 void Serial::load_state(Parcel& parcel) {
-    master_transfer_toggle = parcel.read_bool();
-    progress = parcel.read_uint8();
     prev_div_bit_7 = parcel.read_bool();
+    progress = parcel.read_uint8();
+    master_transfer_toggle = parcel.read_bool();
 
     sb = parcel.read_uint8();
     sc.transfer_enable = parcel.read_bool();
