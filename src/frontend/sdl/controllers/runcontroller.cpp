@@ -10,7 +10,7 @@ RunController::RunController(Core& core1, Core* core2) :
     core2 {core2 ? std::optional<CoreController> {*core2} : std::nullopt},
     two_players_mode {core2 != nullptr}
 #else
-CoreControllers::CoreControllers(Core& core1) :
+RunController::RunController(Core& core1) :
     core1 {core1}
 #endif
 {

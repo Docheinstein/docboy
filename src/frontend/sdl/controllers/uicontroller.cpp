@@ -84,9 +84,11 @@ void UiController::set_current_palette(size_t index) {
 #ifndef ENABLE_CGB
     // TODO: CGB palettes?
     runner.get_core1().set_palette(current_palette.rgb565.palette);
+#ifdef ENABLE_TWO_PLAYERS_MODE
     if (runner.is_two_players_mode()) {
         runner.get_core2().set_palette(current_palette.rgb565.palette);
     }
+#endif
 #endif
 }
 

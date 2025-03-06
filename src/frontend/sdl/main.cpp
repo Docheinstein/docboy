@@ -329,9 +329,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Eventually attach serial link in two players mode
+#ifdef ENABLE_TWO_PLAYERS_MODE
     if (two_players_mode && prefs.serial_link) {
         run_controller.attach_serial_link();
     }
+#endif
 
 #ifdef ENABLE_DEBUGGER
     // Eventually attach debugger
@@ -517,14 +519,14 @@ int main(int argc, char* argv[]) {
 
 #endif
 
-    run_controller.set_paused_changed_callback([&unbind_audio_stream](bool paused) {
 #ifdef ENABLE_AUDIO
+    run_controller.set_paused_changed_callback([&unbind_audio_stream](bool paused) {
         // Unbind audio stream when game is paused.
         if (paused) {
             unbind_audio_stream();
         }
-#endif
     });
+#endif
 
     bool all_roms_loaded = false;
 

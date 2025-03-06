@@ -59,8 +59,8 @@ void LauncherScreen::redraw() {
         draw_text_horizontally_centered("load a GB ROM ", 122);
     }
 #else
-    if (cores.is_two_players_mode()) {
-        if (cores.get_core1().is_rom_loaded()) {
+    if (runner.is_two_players_mode()) {
+        if (runner.get_core1().is_rom_loaded()) {
             draw_text_horizontally_centered("Drop a GB ROM for GameBoy #2", 118);
         } else {
             draw_text_horizontally_centered("Drop a GB ROM for GameBoy #1", 118);
@@ -77,6 +77,7 @@ void LauncherScreen::redraw() {
 void LauncherScreen::handle_event(const SDL_Event& event) {
     const auto load_next_rom = [this](const char* rom) {
         bool all_roms_loaded = false;
+#ifdef ENABLE_TWO_PLAYERS_MODE
         if (runner.is_two_players_mode()) {
             if (runner.get_core1().is_rom_loaded()) {
                 runner.get_core2().load_rom(rom);
@@ -84,7 +85,9 @@ void LauncherScreen::handle_event(const SDL_Event& event) {
             } else {
                 runner.get_core1().load_rom(rom);
             }
-        } else {
+        } else
+#endif
+        {
             runner.get_core1().load_rom(rom);
             all_roms_loaded = true;
         }

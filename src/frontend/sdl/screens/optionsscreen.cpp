@@ -27,6 +27,7 @@ OptionsScreen::OptionsScreen(Context ctx) :
                           }});
 #endif
     menu.add_item(Button {"Control options", [this] {
+#ifdef ENABLE_TWO_PLAYERS_MODE
                               if (runner.is_two_players_mode()) {
                                   nav.push(std::make_unique<PlayerSelectScreen>(
                                       context,
@@ -36,7 +37,9 @@ OptionsScreen::OptionsScreen(Context ctx) :
                                       [this]() {
                                           nav.push(std::make_unique<ControlOptionsScreen>(context, runner.get_core2()));
                                       }));
-                              } else {
+                              } else
+#endif
+                              {
                                   nav.push(std::make_unique<ControlOptionsScreen>(context, runner.get_core1()));
                               }
                           }});

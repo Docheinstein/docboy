@@ -18,6 +18,7 @@ GameMainScreen::GameMainScreen(Context ctx) :
     ASSERT(runner.get_core1().is_rom_loaded());
 
     menu.add_item(Button {"Save state", [this] {
+#ifdef ENABLE_TWO_PLAYERS_MODE
                               if (runner.is_two_players_mode()) {
                                   nav.push(std::make_unique<PlayerSelectScreen>(
                                       context,
@@ -29,12 +30,15 @@ GameMainScreen::GameMainScreen(Context ctx) :
                                           runner.get_core2().write_state();
                                           nav.pop();
                                       }));
-                              } else {
+                              } else
+#endif
+                              {
                                   runner.get_core1().write_state();
                                   nav.pop();
                               }
                           }});
     menu.add_item(Button {"Load state", [this] {
+#ifdef ENABLE_TWO_PLAYERS_MODE
                               if (runner.is_two_players_mode()) {
                                   nav.push(std::make_unique<PlayerSelectScreen>(
                                       context,
@@ -46,7 +50,9 @@ GameMainScreen::GameMainScreen(Context ctx) :
                                           runner.get_core2().load_state();
                                           nav.pop();
                                       }));
-                              } else {
+                              } else
+#endif
+                              {
                                   runner.get_core1().load_state();
                                   nav.pop();
                               }
@@ -54,6 +60,7 @@ GameMainScreen::GameMainScreen(Context ctx) :
 
 #ifdef NFD
     menu.add_item(Button {"Open ROM", [this] {
+#ifdef ENABLE_TWO_PLAYERS_MODE
                               if (runner.is_two_players_mode()) {
                                   nav.push(std::make_unique<PlayerSelectScreen>(
                                       context,
@@ -69,7 +76,9 @@ GameMainScreen::GameMainScreen(Context ctx) :
                                               nav.pop();
                                           }
                                       }));
-                              } else {
+                              } else
+#endif
+                              {
                                   if (const auto rom = open_rom_picker()) {
                                       runner.get_core1().load_rom(*rom);
                                       nav.pop();

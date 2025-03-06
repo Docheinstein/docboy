@@ -23,8 +23,6 @@ target_sources(docboy-sdl PRIVATE
     main.cpp
     preferences/preferences.cpp
     preferences/preferences.h
-    screens/audiooptionsscreen.cpp
-    screens/audiooptionsscreen.h
     screens/controloptionsscreen.cpp
     screens/controloptionsscreen.h
     screens/gamemainscreen.cpp
@@ -58,6 +56,13 @@ target_sources(docboy-sdl PRIVATE
     windows/window.cpp
     windows/window.h
 )
+
+if (ENABLE_AUDIO)
+    target_sources(docboy-sdl PRIVATE
+            screens/audiooptionsscreen.cpp
+            screens/audiooptionsscreen.h
+    )
+endif ()
 
 if (ENABLE_DEBUGGER)
     target_sources(docboy-sdl PRIVATE
