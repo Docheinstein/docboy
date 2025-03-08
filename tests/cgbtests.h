@@ -731,6 +731,28 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_write_source_hdma2_same.gbc", "docboy/ok.png"}, );
     }
 
+    SECTION("serial") {
+        RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/serial/sc_write_read.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_change_to_high_speed_during_transfer_alt_round1.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_change_to_high_speed_during_transfer_alt_round2.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_change_to_high_speed_during_transfer_round1.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_change_to_high_speed_during_transfer_round2.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops0_round1.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops0_round2.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops1_round1.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops1_round2.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops2_round1.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops2_round2.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops3_round1.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops3_round2.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops32_round1.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_high_speed_nops32_round2.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_round1.gbc", "docboy/ok.png"},
+            F {"docboy/serial/serial_timing_round2.gbc", "docboy/ok.png"}, );
+    }
+
     SECTION("ir") {
         RUN_TEST_ROMS(
             // docboy
@@ -908,6 +930,10 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/double_speed/double_speed_ppu_stat_a_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_ppu_stat_b_round1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_ppu_stat_b_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_serial_high_speed_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_serial_high_speed_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_serial_speed_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_serial_speed_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_timers_speed.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_timers_tima_round1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_timers_tima_round2.gbc", "docboy/ok.png"},
@@ -1033,6 +1059,7 @@ TEST_CASE("cgb", "[emulation]") {
 
 #else
     SECTION("wip") {
+#if 0
         RUN_TEST_ROMS(
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_2.gbc", "docboy/ok.png"},
@@ -1221,6 +1248,11 @@ TEST_CASE("cgb", "[emulation]") {
                Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
             F {"docboy/double_speed/stop_key1_joypad1_interrupt1.gbc", "docboy/ok.png",
                Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}}, );
+#else
+        RUN_TEST_ROMS(
+
+        );
+#endif
     }
 #endif
 }

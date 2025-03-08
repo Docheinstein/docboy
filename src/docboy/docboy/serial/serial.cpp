@@ -29,14 +29,16 @@ void Serial::tick() {
 
     // Serial transfer ticks each time DIV16[7] has a falling edge.
     // A bit is transferred after each two of these falling edges.
-    const bool div_bit_7 = test_bit<7>(timers.div16);
+    // In CGB, with high speed serial mode enabled, DIV16[2] is considered instead.
+    const bool div_bit = timers.div16 & master.div_mask;
 
     if (sc.transfer_enable && sc.clock_select) {
-        if (prev_div_bit_7 && !div_bit_7) {
-            // Falling edge: advance transfer.
-            master_transfer_toggle = !master_transfer_toggle;
+        if (master.prev_div_bit && !div_bit) {
+            // DIV bit had a falling edge.
+            // After two falling edges, advance the transfer.
+            master.toggle = !master.toggle;
 
-            if (!master_transfer_toggle) {
+            if (!master.toggle) {
                 // TODO: check the timing of the input_bit and output_bit with a connected endpoint:
                 //       are they computed together in the second half of this bit transfer,
                 //       or maybe one of them or both are computed in the first half?
@@ -65,7 +67,7 @@ void Serial::tick() {
         }
     }
 
-    prev_div_bit_7 = div_bit_7;
+    master.prev_div_bit = div_bit;
 }
 
 bool Serial::serial_read_bit() {
@@ -104,8 +106,8 @@ void Serial::write_sc(uint8_t value) {
     //       is the progress of the transfer reset too?
     //       (Need second GameBoy to test it).
     if (sc.transfer_enable && sc.clock_select) {
-        if (master_transfer_toggle) {
-            // TODO: it seems that SB is shifted in this case: is the new bit always 1,
+        if (master.toggle) {
+            // TODO: it seems that SB updated in this case: is the new bit always 1,
             //       or maybe it is the previous bit received from the other peripheral?
             //       or maybe it is retrieved instantly from the other peripheral?
             //       (Need second GameBoy to test it).
@@ -113,7 +115,6 @@ void Serial::write_sc(uint8_t value) {
             sb = sb << 1 | input_bit;
         }
 
-        master_transfer_toggle = false;
         progress = 0;
     }
 
@@ -122,39 +123,47 @@ void Serial::write_sc(uint8_t value) {
     sc.clock_speed = test_bit<Specs::Bits::Serial::SC::CLOCK_SPEED>(value);
 #endif
     sc.clock_select = test_bit<Specs::Bits::Serial::SC::CLOCK_SELECT>(value);
+
+#ifdef ENABLE_CGB
+    master.div_mask = sc.clock_speed ? bit<2> : bit<7>;
+#else
+    master.div_mask = bit<7>;
+#endif
+
+    master.prev_div_bit = timers.div16 & master.div_mask;
+
+    master.toggle = false;
 }
 
 void Serial::save_state(Parcel& parcel) const {
-    parcel.write_bool(prev_div_bit_7);
-    parcel.write_uint8(progress);
-    parcel.write_bool(master_transfer_toggle);
-
     parcel.write_uint8(sb);
     parcel.write_bool(sc.transfer_enable);
 #ifdef ENABLE_CGB
     parcel.write_bool(sc.clock_speed);
 #endif
     parcel.write_bool(sc.clock_select);
+
+    parcel.write_uint8(progress);
+    parcel.write_uint16(master.div_mask);
+    parcel.write_bool(master.prev_div_bit);
+    parcel.write_bool(master.toggle);
 }
 
 void Serial::load_state(Parcel& parcel) {
-    prev_div_bit_7 = parcel.read_bool();
-    progress = parcel.read_uint8();
-    master_transfer_toggle = parcel.read_bool();
-
     sb = parcel.read_uint8();
     sc.transfer_enable = parcel.read_bool();
 #ifdef ENABLE_CGB
     sc.clock_speed = parcel.read_bool();
 #endif
     sc.clock_select = parcel.read_bool();
+
+    progress = parcel.read_uint8();
+    master.div_mask = parcel.read_uint16();
+    master.prev_div_bit = parcel.read_bool();
+    master.toggle = parcel.read_bool();
 }
 
 void Serial::reset() {
-    prev_div_bit_7 = false;
-    progress = 0;
-    master_transfer_toggle = false;
-
     sb = 0;
     sc.transfer_enable = false;
 #ifdef ENABLE_CGB
@@ -164,6 +173,7 @@ void Serial::reset() {
     sc.clock_speed = true;
 #endif
 #endif
+
 #ifdef ENABLE_CGB
 #ifdef ENABLE_BOOTROM
     sc.clock_select = false;
@@ -173,4 +183,16 @@ void Serial::reset() {
 #else
     sc.clock_select = false;
 #endif
+
+    progress = 0;
+
+#ifdef ENABLE_CGB
+    master.div_mask = sc.clock_speed ? bit<2> : bit<7>;
+#else
+    master.div_mask = bit<7>;
+#endif
+
+    master.prev_div_bit = timers.div16 & master.div_mask;
+
+    master.toggle = false;
 }

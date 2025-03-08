@@ -51,11 +51,13 @@ private:
 
     ISerialEndpoint* endpoint {};
 
-    bool prev_div_bit_7 {};
-
     uint8_t progress {};
 
-    bool master_transfer_toggle {};
+    struct {
+        uint16_t div_mask {};
+        bool prev_div_bit {};
+        bool toggle {};
+    } master;
 };
 
 #endif // SERIAL_H

@@ -2170,7 +2170,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 return "VBlank";
             }
             if (gb.ppu.tick_selector == &Ppu::vblank_last_line || gb.ppu.tick_selector == &Ppu::vblank_last_line_2 ||
-                gb.ppu.tick_selector == &Ppu::vblank_last_line_7 ||
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_3 || gb.ppu.tick_selector == &Ppu::vblank_last_line_7 ||
                 gb.ppu.tick_selector == &Ppu::vblank_last_line_453 ||
                 gb.ppu.tick_selector == &Ppu::vblank_last_line_454 ||
                 gb.ppu.tick_selector == &Ppu::vblank_last_line_455) {
@@ -2934,18 +2934,24 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << header("SERIAL", width) << endl;
 
-        bool is_transferring = (gb.serial.sc.transfer_enable && gb.serial.sc.clock_select) || (gb.serial.progress > 0);
+        bool is_master = gb.serial.sc.transfer_enable && gb.serial.sc.clock_select;
+        bool is_transferring = is_master || (gb.serial.progress > 0) /* slave */;
+
         b << yellow("Transfer") << "  :  " << (is_transferring ? green("Transferring") : darkgray("None")) << endl;
 
         if (is_transferring) {
-            bool is_master = gb.serial.sc.transfer_enable && gb.serial.sc.clock_select;
             b << yellow("Role    ") << "  :  " << (is_master ? "Master" : "Slave") << endl;
 
-            b << yellow("Progress") << "  :  " << +gb.serial.progress << "/8";
+            b << yellow("Progress") << "  :  " << +gb.serial.progress << "/8" << endl;
+
             if (is_master) {
-                b << " " << (gb.serial.master_transfer_toggle ? "(High)" : "(Low)");
+#ifdef ENABLE_CGB
+                b << yellow("Speed") << "     :  " << (gb.serial.sc.clock_speed ? "High" : "Normal") << endl;
+#endif
+                b << yellow("DIV Bit") << "   :  " << gb.serial.master.prev_div_bit << endl;
+                b << yellow("DIV Mask") << "  :  " << bin<uint8_t>(gb.serial.master.div_mask) << endl;
+                b << yellow("Toggle") << "    :  " << +gb.serial.master.toggle << endl;
             }
-            b << endl;
 
             b << yellow("SB") << "        :  " << [this]() -> Text {
                 Text t {};

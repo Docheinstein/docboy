@@ -73,9 +73,11 @@ inline void Core::tick_t1() const {
 #ifdef ENABLE_CGB
     gb.speed_switch_controller.tick();
 
-    if (gb.speed_switch_controller.is_double_speed_mode() &&
-        !gb.speed_switch_controller.is_blocking_timers() /* TODO: ok? */) {
-        gb.timers.tick();
+    if (gb.speed_switch_controller.is_double_speed_mode()) {
+        if (!gb.speed_switch_controller.is_blocking_timers() /* TODO: ok? */) {
+            gb.timers.tick();
+        }
+        gb.serial.tick();
     }
 #endif
 
