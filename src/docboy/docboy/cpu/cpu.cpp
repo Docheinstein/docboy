@@ -989,7 +989,7 @@ static constexpr uint8_t INTERRUPTS_TIMINGS_DOUBLE_SPEED[32][2][4] /* [interrupt
         /*  5 : Timer + VBlank */ {{U, U, U, U}, {U, U, U, U}},
         /*  6 : Timer + STAT */ {{U, U, U, U}, {U, U, U, U}},
         /*  7 : Timer + STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},
-        /*  8 : Serial */ {{1, U, 1, U}, {U, U, U, U}},
+        /*  8 : Serial */ {{1, 2, 1, 2}, {U, U, U, U}},
         /*  9 : Serial + VBlank */ {{U, U, U, U}, {U, U, U, U}},
         /* 10 : Serial + STAT */ {{U, U, U, U}, {U, U, U, U}},
         /* 11 : Serial + STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},

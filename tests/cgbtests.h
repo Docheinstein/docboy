@@ -881,6 +881,8 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/double_speed/double_speed_interrupt_joypad_manual_b.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_interrupt_joypad_manual_ei_a.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_interrupt_joypad_manual_ei_b.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_interrupt_serial_a.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_interrupt_serial_b.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_interrupt_serial_manual_a.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_interrupt_serial_manual_b.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_interrupt_serial_manual_ei_a.gbc", "docboy/ok.png"},
