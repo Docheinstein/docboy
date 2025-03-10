@@ -500,8 +500,8 @@ void Core::reset() {
 #endif
     gb.hram.reset(RANDOM_DATA);
     gb.boot.reset();
-    gb.serial.reset();
     gb.timers.reset();
+    gb.serial.reset();
     gb.interrupts.reset();
     gb.ext_bus.reset();
 #ifdef ENABLE_CGB
