@@ -122,28 +122,20 @@ void Hdma::tick_t3() {
             vram.acquire();
         }
     } else {
-        ASSERT(
-            !(unblock == UnblockState::Requested && remaining_chunks.state == RemainingChunksUpdateState::Requested));
-
-        if (unblock == UnblockState::Requested) {
-            ASSERT(state == TransferState::None || state == TransferState::Paused);
-            ASSERT(active);
-
-            // Unblock the CPU
-            unblock = UnblockState::None;
-            active = false;
-        } else if (remaining_chunks.state == RemainingChunksUpdateState::Requested) {
+        if (remaining_chunks.state == RemainingChunksUpdateState::Requested) {
             ASSERT(state == TransferState::None || state == TransferState::Paused ||
                    state == TransferState::Transferring);
 
             // Decrease the remaining chunk count
             remaining_chunks.state = RemainingChunksUpdateState::None;
             remaining_chunks.count--;
+        } else if (unblock == UnblockState::Requested) {
+            ASSERT(state == TransferState::None || state == TransferState::Paused);
+            ASSERT(active);
 
-            // Schedule the unblocking of the CPU for the end of the next M-cycle
-            if (mode == Hdma::TransferMode::HBlank || remaining_chunks.count == 0xFF /* General Purpose Mode */) {
-                unblock = UnblockState::Requested;
-            }
+            // Unblock the CPU
+            unblock = UnblockState::None;
+            active = false;
         }
     }
 }
@@ -173,9 +165,8 @@ void Hdma::tick_even() {
         }
 
         // Start write request for VRAM.
-        // Destination address overflows with modulo 0x2000.
-        const uint16_t destination_address_slack = (destination.address + destination.cursor) & 0x1FFF;
-        const uint16_t destination_address = Specs::MemoryLayout::VRAM::START | destination_address_slack;
+        // Destination address never overflows: HDMA is aborted if HDMA exceeds 0x9FFF.
+        const uint16_t destination_address = destination.address + destination.cursor;
         ASSERT(destination_address >= Specs::MemoryLayout::VRAM::START &&
                destination_address <= Specs::MemoryLayout::VRAM::END);
         vram.write_request(destination_address);
@@ -212,6 +203,34 @@ void Hdma::tick_odd() {
             } else if (mode == TransferMode::HBlank) {
                 // HBlank HDMA transfer is paused at the completion of a 16 bytes chunk
                 state = TransferState::Paused;
+            }
+
+            if (destination.address + destination.cursor <= Specs::MemoryLayout::VRAM::END) {
+                // Destination address is still in a valid range.
+
+                if (remaining_bytes == 0) {
+                    // Transfer completed
+                    state = TransferState::None;
+                } else if (mode == TransferMode::HBlank) {
+                    // HBlank HDMA transfer is paused at the completion of a 16 bytes chunk
+                    state = TransferState::Paused;
+                }
+
+                if (mode == Hdma::TransferMode::HBlank || remaining_chunks.count == 0) {
+                    // Schedule the unblock of the CPU if all the chunks have been transferred,
+                    // or after every chunk anyway in HBlank mode.
+                    unblock = UnblockState::Requested;
+                }
+            } else {
+                // Destination address overflow.
+                // The transfer is stopped and the destination is reset to 0x8000.
+                state = TransferState::None;
+                remaining_bytes = 0;
+                hdma3 = 0x00;
+                hdma4 = 0x00;
+                destination.address = Specs::MemoryLayout::VRAM::START;
+                destination.cursor = 0;
+                unblock = UnblockState::Requested;
             }
 
             if (state != TransferState::Transferring) {
