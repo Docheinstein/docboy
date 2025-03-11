@@ -33,7 +33,13 @@ void Hdma::write_hdma2(uint8_t value) {
 }
 
 void Hdma::write_hdma3(uint8_t value) {
-    hdma3 = keep_bits<5>(value);
+    // Note: all the bits are written to HDMA3, not only the lowest 5.
+    // This is shown by the fact that writing 0xFF00 has a different behavior
+    // compared to writing, for example 0x9F00. Indeed, the first one will
+    // make destination address reach 0xFFFF after the first 256 bytes, which will
+    // abort the transfer, while the latter will overflow several times (module 0x2000)
+    // before reach 0xFFFF.
+    hdma3 = value;
 
     // Reload new destination address
     destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
@@ -165,8 +171,10 @@ void Hdma::tick_even() {
         }
 
         // Start write request for VRAM.
-        // Destination address never overflows: HDMA is aborted if HDMA exceeds 0x9FFF.
-        const uint16_t destination_address = destination.address + destination.cursor;
+        // Destination address overflows with modulo 0x2000.
+        // HDMA is aborted only if the destination exceeds 0xFFFF.
+        const uint16_t destination_address_slack = (destination.address + destination.cursor) & 0x1FFF;
+        const uint16_t destination_address = Specs::MemoryLayout::VRAM::START | destination_address_slack;
         ASSERT(destination_address >= Specs::MemoryLayout::VRAM::START &&
                destination_address <= Specs::MemoryLayout::VRAM::END);
         vram.write_request(destination_address);
@@ -205,9 +213,7 @@ void Hdma::tick_odd() {
                 state = TransferState::Paused;
             }
 
-            if (destination.address + destination.cursor <= Specs::MemoryLayout::VRAM::END) {
-                // Destination address is still in a valid range.
-
+            if ((uint16_t)(destination.address + destination.cursor)) {
                 if (remaining_bytes == 0) {
                     // Transfer completed
                     state = TransferState::None;
@@ -222,7 +228,7 @@ void Hdma::tick_odd() {
                     unblock = UnblockState::Requested;
                 }
             } else {
-                // Destination address overflow.
+                // Destination address overflowed 0xFFFF.
                 // The transfer is stopped and the destination is reset to 0x8000.
                 state = TransferState::None;
                 remaining_bytes = 0;
