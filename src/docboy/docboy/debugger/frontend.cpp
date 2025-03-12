@@ -866,6 +866,8 @@ Command DebuggerFrontend::pull_command(const ExecutionState& state) {
         temporary_breakpoint = std::nullopt;
     }
 
+    flush_trace_buffer();
+
     // Pull command loop
     do {
         if (reprint_ui) {
@@ -1078,7 +1080,6 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
 
     if (sigint_trigger) {
         sigint_trigger = 0;
-        flush_trace_buffer();
         backend.interrupt();
     }
 }
@@ -3383,10 +3384,13 @@ std::string DebuggerFrontend::dump_display_entry(const DebuggerFrontend::Display
 }
 
 void DebuggerFrontend::flush_trace_buffer() {
-    for (const auto& s : trace_buffer) {
-        std::cerr << s;
+    if (!trace_buffer.empty()) {
+        for (const auto& s : trace_buffer) {
+            std::cerr << s;
+        }
+        std::cerr << std::flush;
+        trace_buffer.clear();
     }
-    trace_buffer.clear();
 }
 
 void DebuggerFrontend::reset() {
