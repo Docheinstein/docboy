@@ -917,11 +917,13 @@ void Cpu::check_interrupt() {
     /*
      * Interrupt timings (blank spaces are unknown).
      *
+     * --------- Normal Speed ------------
+     *
      * -----------------------------------
      * NotHalted | T0  |  T1 |  T2 |  T3 |
      * -----------------------------------
      * VBlank    |  1  |  1  |     |     |
-     * Stat      |  1  |  1  |  2  |  2  |
+     * Stat      |  1  |  1  |  1  |  2  |
      * Timer     |  1  |  1  |     |  2  |
      * Serial    |  1  |  1  |     |  2  |
      * Joypad    |  1  |  1  |     |     |
@@ -930,19 +932,48 @@ void Cpu::check_interrupt() {
      * Halted    | T0  |  T1 |  T2 |  T3 |
      * -----------------------------------
      * VBlank    |  1  |     |     |     |
-     * Stat      |  2  |  2  |  2  |  2  |
+     * Stat      |  1  |  2  |  2  |  2  |
      * Timer     |     |     |     |  3  |
      * Serial    |     |     |     |  3  |
      * Joypad    |     |     |     |     |
+     *
+     *
+     * --------- Double Speed ------------
+     *
+     * -----------------------------------
+     * NotHalted | T0  |  T1 |  T2 |  T3 |
+     * -----------------------------------
+     * -----------------------------------
+     * VBlank    |  1  |     |  1  |     |
+     * Stat      |  1  |  2  |  1  |  2  |
+     * Timer     |  1  |  2  |  1  |  2  |
+     * Serial    |  1  |  2  |  1  |  2  |
+     * Joypad    |  1  |     |  1  |     |
+     *
+     * -----------------------------------
+     * Halted    | T0  |  T1 |  T2 |  T3 |
+     * -----------------------------------
+     * VBlank    |  2  |     |  2  |     |
+     * Stat      |  2  |  3  |  2  |  3  |
+     * Timer     |     |  3  |     |  3  |
+     * Serial    |     |  3  |     |  3  |
+     * Joypad    |     |     |     |     |
      */
 
+    // U: Unknown timing: this case shouldn't happen at all.
 #ifdef ENABLE_ASSERTS
     static constexpr uint8_t UNKNOWN_INTERRUPT_TIMING = UINT8_MAX;
     static constexpr uint8_t U = UNKNOWN_INTERRUPT_TIMING;
 #else
     static constexpr uint8_t U = 1;
 #endif
-    static constexpr uint8_t J = 1; // not sure about joypad timing
+
+    // J: Joypad timing: not tested (just guessing).
+    static constexpr uint8_t J = 1;
+
+    // Sx: Serial (Slave) timing: not tested (just guessing).
+    static constexpr uint8_t S1 = 1;
+    static constexpr uint8_t S2 = 2;
 
     // clang-format off
     static constexpr uint8_t INTERRUPTS_TIMINGS[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
@@ -954,12 +985,12 @@ void Cpu::check_interrupt() {
         /*  5 : Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
         /*  6 : Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /*  7 : Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /*  8 : Serial */ {{1, 1, U, 2}, {U, U, U, 3}},
-        /*  9 : Serial + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
+        /*  8 : Serial */ {{1, 1, S1, 2}, {S2, S2, S2, 3}},
+        /*  9 : Serial + VBlank */ {{1, 1, U, 2}, {1, S2, S2, 3}},
         /* 10 : Serial + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /* 11 : Serial + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /* 12 : Serial + Timer */ {{1, 1, U, 2}, {U, U, U, 3}},
-        /* 13 : Serial + Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
+        /* 12 : Serial + Timer */ {{1, 1, S1, 2}, {U, U, U, 3}},
+        /* 13 : Serial + Timer + VBlank */ {{1, 1, S1, 2}, {1, S2, S2, 3}},
         /* 14 : Serial + Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /* 15 : Serial + Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
         /* 16 : Joypad */ {{J, J, J, J}, {J, J, J, J}},
@@ -980,24 +1011,24 @@ void Cpu::check_interrupt() {
         /* 31 : Joypad + Serial + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
     };
 
-static constexpr uint8_t INTERRUPTS_TIMINGS_DOUBLE_SPEED[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
+    static constexpr uint8_t INTERRUPTS_TIMINGS_DOUBLE_SPEED[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
         /*  0 : None */ {{U, U, U, U}, {U, U, U, U}},
-        /*  1 : VBlank */ {{1, U, 1, U}, {U, U, U, U}},
-        /*  2 : STAT */ {{1, 2, 1, 2}, {U, U, U, U}},
-        /*  3 : STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},
-        /*  4 : Timer */ {{1, 2, 1, 2}, {U, U, U, U}},
-        /*  5 : Timer + VBlank */ {{U, U, U, U}, {U, U, U, U}},
-        /*  6 : Timer + STAT */ {{U, U, U, U}, {U, U, U, U}},
-        /*  7 : Timer + STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},
-        /*  8 : Serial */ {{1, 2, 1, 2}, {U, U, U, U}},
-        /*  9 : Serial + VBlank */ {{U, U, U, U}, {U, U, U, U}},
-        /* 10 : Serial + STAT */ {{U, U, U, U}, {U, U, U, U}},
-        /* 11 : Serial + STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},
-        /* 12 : Serial + Timer */ {{U, U, U, U}, {U, U, U, U}},
-        /* 13 : Serial + Timer + VBlank */ {{U, U, U, U}, {U, U, U, U}},
-        /* 14 : Serial + Timer + STAT */ {{U, U, U, U}, {U, U, U, U}},
-        /* 15 : Serial + Timer + STAT + VBlank */ {{U, U, U, U}, {U, U, U, U}},
-        /* 16 : Joypad */ {{1, U, 1, U}, {J, J, J, J}},
+        /*  1 : VBlank */ {{1, U, 1, U}, {2, U, 2, U}},
+        /*  2 : STAT */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /*  3 : STAT + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /*  4 : Timer */ {{1, 2, 1, 2}, {U, 3, U, 3}},
+        /*  5 : Timer + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /*  6 : Timer + STAT */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /*  7 : Timer + STAT + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /*  8 : Serial */ {{1, 2, 1, 2}, {S2, 3, S2, 3}},
+        /*  9 : Serial + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /* 10 : Serial + STAT */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /* 11 : Serial + STAT + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /* 12 : Serial + Timer */ {{1, 2, 1, 2}, {S2, 3, S2, 3}},
+        /* 13 : Serial + Timer + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /* 14 : Serial + Timer + STAT */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /* 15 : Serial + Timer + STAT + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
+        /* 16 : Joypad */ {{J, J, J, J}, {J, J, J, J}},
         /* 17 : Joypad + VBlank */ {{J, J, J, J}, {J, J, J, J}},
         /* 18 : Joypad + STAT */ {{J, J, J, J}, {J, J, J, J}},
         /* 19 : Joypad + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
