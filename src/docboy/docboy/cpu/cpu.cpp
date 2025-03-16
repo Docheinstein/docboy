@@ -593,7 +593,13 @@ void Cpu::tick_t1() {
 #endif
 
     check_interrupt<0>();
+#ifdef ENABLE_CGB
+    if (!speed_switch_controller.is_double_speed_mode()) {
+        flush_write();
+    }
+#else
     flush_write(); // TODO not doublespeed
+#endif
 
 #ifdef ENABLE_CGB
     if (speed_switch_controller.is_double_speed_mode()) {

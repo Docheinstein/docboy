@@ -52,6 +52,13 @@ inline void Core::tick_t0() const {
 #endif
     gb.ppu.tick();
 #ifdef ENABLE_CGB
+    if (gb.speed_switch_controller.is_double_speed_mode()) {
+        if (!gb.speed_switch_controller.is_switching_speed()) {
+            gb.dma.tick();
+        }
+    }
+#endif
+#ifdef ENABLE_CGB
     gb.hdma.tick_t0();
 #endif
     gb.apu.tick_t0();
@@ -82,7 +89,13 @@ inline void Core::tick_t1() const {
 #endif
 
     gb.ppu.tick();
-    gb.dma.tick_t1();
+#ifdef ENABLE_CGB
+    if (!gb.speed_switch_controller.is_switching_speed()) {
+        gb.dma.tick();
+    }
+#else
+    gb.dma.tick();
+#endif
 #ifdef ENABLE_CGB
     gb.hdma.tick_t1();
 #endif
@@ -103,6 +116,13 @@ inline void Core::tick_t2() const {
 #endif
 
     gb.ppu.tick();
+#ifdef ENABLE_CGB
+    if (gb.speed_switch_controller.is_double_speed_mode()) {
+        if (!gb.speed_switch_controller.is_switching_speed()) {
+            gb.dma.tick();
+        }
+    }
+#endif
 #ifdef ENABLE_CGB
     gb.hdma.tick_t2();
 #endif
@@ -138,9 +158,15 @@ inline void Core::tick_t3() const {
 
     gb.ppu.tick();
 #ifdef ENABLE_CGB
+    if (!gb.speed_switch_controller.is_switching_speed()) {
+        gb.dma.tick();
+    }
+#else
+    gb.dma.tick();
+#endif
+#ifdef ENABLE_CGB
     gb.hdma.tick_t3();
 #endif
-    gb.dma.tick_t3();
     gb.interrupts.tick_t3();
     gb.stop_controller.tick();
     gb.cartridge_slot.tick();

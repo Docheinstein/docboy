@@ -1031,7 +1031,7 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
         }
 
         if (trace & TraceFlagDma) {
-            ss << "DMA:" << std::setw(3) << (gb.dma.transferring ? std::to_string(gb.dma.cursor) : "OFF") << "  ";
+            ss << "DMA:" << std::setw(3) << (gb.dma.is_active() ? std::to_string(gb.dma.cursor) : "OFF") << "  ";
         }
 
         if (trace & TraceFlagTimers) {
@@ -2719,25 +2719,24 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << header("DMA", width) << endl;
 
-        if (gb.dma.request.state != Dma::RequestState::None || gb.dma.transferring) {
-            b << yellow("Request") << "            :  ";
-            b <<
+        if (gb.dma.request.countdown > 0 || gb.dma.is_active()) {
+            b << yellow("Countdown") << "          :  " << +gb.dma.request.countdown << endl;
+            b << yellow("Transfer") << "           :  "
+              << (gb.dma.is_active() ? green("Transferring") : darkgray("None")) << endl;
+            b << yellow("Phase") << "              :  " <<
                 [this]() {
-                    switch (gb.dma.request.state) {
-                    case Dma::RequestState::Requested:
-                        return green("Requested");
-                    case Dma::RequestState::Pending:
-                        return green("Pending");
-                    case Dma::RequestState::None:
+                    switch (gb.dma.state) {
+                    case Dma::TransferState::Prepare:
+                        return Text {"Prepare"};
+                    case Dma::TransferState::Flush:
+                        return Text {"Flush"};
+                    case Dma::TransferState::None:
                         return darkgray("None");
                     }
                     ASSERT_NO_ENTRY();
                     return Text {};
                 }()
               << endl;
-
-            b << yellow("Transfer") << "           :  "
-              << (gb.dma.transferring ? green("Transferring") : darkgray("None")) << endl;
             b << yellow("Source") << "             :  " << hex(gb.dma.source) << endl;
             b << yellow("Progress") << "           :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
               << hex<uint16_t>(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << gb.dma.cursor << "/"

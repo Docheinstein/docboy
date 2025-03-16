@@ -131,7 +131,9 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/dma/dma_source_wram_routine_vram_read_ext.gbc", "docboy/ok.png"},
             F {"docboy/dma/dma_source_wram_routine_vram_read_vram.gbc", "docboy/ok.png"},
             F {"docboy/dma/dma_source_wram_routine_vram_read_wram.gbc", "docboy/ok.png"},
-            F {"docboy/dma/dma_source_wram_routine_wram.gbc", "docboy/ok.png"}, );
+            F {"docboy/dma/dma_source_wram_routine_wram.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_timing_round1.gbc", "docboy/ok.png"},
+            F {"docboy/dma/dma_timing_round2.gbc", "docboy/ok.png"}, );
     }
 
     SECTION("hdma") {
@@ -903,6 +905,10 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_1024.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_2048.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_cpu_speed.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_dma_speed_a_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_dma_speed_a_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_dma_speed_b_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_dma_speed_a_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_interrupt_joypad_manual_a.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_interrupt_joypad_manual_b.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_interrupt_joypad_manual_ei_a.gbc", "docboy/ok.png"},
@@ -1017,6 +1023,10 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/double_speed/speed_switch_to_double_duration_div_b_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_duration_ly_round1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_duration_ly_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_dma_alt_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_dma_alt_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_dma_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_dma_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_switch_after_wait.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_switch_read_key1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_switch_straight.gbc", "docboy/ok.png"},
@@ -1036,7 +1046,10 @@ TEST_CASE("cgb", "[emulation]") {
             // TODO
             //            F {"docboy/double_speed/speed_switch_to_double_timers_tima_262khz_round2.gbc",
             //            "docboy/ok.png"},
-
+            F {"docboy/double_speed/speed_switch_to_single_during_dma_alt_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_single_during_dma_alt_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_single_during_dma_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_single_during_dma_round2.gbc", "docboy/ok.png"},
             // TODO {
             //            F {"docboy/double_speed/speed_switch_to_single_odd_duration_apu_ch3_period_1.gbc",
             //            "docboy/ok.png"}, F
@@ -1305,9 +1318,7 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/double_speed/stop_key1_joypad1_interrupt1.gbc", "docboy/ok.png",
                Inputs {{BOOT_DURATION, Joypad::KeyState::Pressed, Joypad::Key::Up}}}, );
 #else
-        RUN_TEST_ROMS(
-
-        );
+        RUN_TEST_ROMS();
 #endif
     }
 #endif
