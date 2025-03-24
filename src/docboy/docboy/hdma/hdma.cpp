@@ -1,9 +1,10 @@
 #include "docboy/hdma/hdma.h"
 #include "docboy/dma/dma.h"
+#include "docboy/speedswitch/speedswitchcontroller.h"
 
 Hdma::Hdma(Mmu::View<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
            OamBus::View<Device::Hdma> oam_bus, const UInt8& stat_mode, const bool& fetching, const bool& halted,
-           const bool& stopped) :
+           const bool& stopped, SpeedSwitchController& speed_switch_controller) :
     mmu {mmu},
     ext_bus {ext_bus},
     vram {vram_bus},
@@ -11,7 +12,8 @@ Hdma::Hdma(Mmu::View<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, Vram
     stat_mode {stat_mode},
     fetching {fetching},
     halted {halted},
-    stopped {stopped} {
+    stopped {stopped},
+    speed_switch_controller {speed_switch_controller} {
     reset();
 }
 
@@ -94,56 +96,27 @@ void Hdma::write_hdma5(uint8_t value) {
 void Hdma::tick_t0() {
     tick_even();
     tick_state();
-
-    // HDMA is actually ready to start just after the first T0 that happens after the trigger
-    // (that could be either a writing to HDMA5, or STAT's mode changing to HBlank, in HBlank mode).
-    if (state == TransferState::Requested) {
-        state = TransferState::Ready;
-    }
+    tick_request();
 }
 
 void Hdma::tick_t1() {
     tick_odd();
     tick_state();
+    if (speed_switch_controller.is_double_speed_mode()) {
+        tick_phase();
+    }
 }
 
 void Hdma::tick_t2() {
     tick_even();
     tick_state();
+    tick_request();
 }
 
 void Hdma::tick_t3() {
     tick_odd();
     tick_state();
-
-    if (state == TransferState::Ready) {
-        if (fetching) {
-            // Actually start the HDMA if is ready (at least a T0 is passed from the trigger)
-            // and this is the last micro-operation of the CPU instruction.
-            state = Hdma::TransferState::Transferring;
-            active = true;
-
-            // Acquire video buses
-            oam.acquire();
-            vram.acquire();
-        }
-    } else {
-        if (remaining_chunks.state == RemainingChunksUpdateState::Requested) {
-            ASSERT(state == TransferState::None || state == TransferState::Paused ||
-                   state == TransferState::Transferring);
-
-            // Decrease the remaining chunk count
-            remaining_chunks.state = RemainingChunksUpdateState::None;
-            remaining_chunks.count--;
-        } else if (unblock == UnblockState::Requested) {
-            ASSERT(state == TransferState::None || state == TransferState::Paused);
-            ASSERT(active);
-
-            // Unblock the CPU
-            unblock = UnblockState::None;
-            active = false;
-        }
-    }
+    tick_phase();
 }
 
 void Hdma::tick_even() {
@@ -245,7 +218,7 @@ void Hdma::tick_odd() {
                 vram.release();
             }
 
-            // Schedule the update of the remaining chunks for the next T3
+            // Schedule the update of the remaining chunks
             remaining_chunks.state = RemainingChunksUpdateState::Requested;
         }
     }
@@ -269,6 +242,49 @@ void Hdma::tick_state() {
 
     // It seems that there is window of 1 T-Cycle that HDMA HBlank can start before GB is actually halted
     last_halted = halted;
+}
+
+void Hdma::tick_request() {
+    // HDMA is actually ready to start after two T0 or T2 elapsed after the trigger
+    // (that could be either a writing to HDMA5, or STAT's mode changing to HBlank, in HBlank mode).
+    if (state == TransferState::Requested) {
+        state = TransferState::Pending;
+    } else if (state == TransferState::Pending) {
+        state = TransferState::Ready;
+    }
+}
+
+void Hdma::tick_phase() {
+    if (state == TransferState::Ready) {
+        if (fetching) {
+            // Actually start the HDMA if is ready (at least a T0 is passed from the trigger)
+            // and this is the last micro-operation of the CPU instruction.
+            state = Hdma::TransferState::Transferring;
+            active = true;
+
+            // Acquire video buses
+            oam.acquire();
+            vram.acquire();
+        }
+    } else {
+        if (remaining_chunks.state == RemainingChunksUpdateState::Requested) {
+            ASSERT(state == TransferState::None || state == TransferState::Paused ||
+                   state == TransferState::Transferring);
+
+            // Decrease the remaining chunk count
+            remaining_chunks.state = RemainingChunksUpdateState::None;
+            remaining_chunks.count--;
+        } else if (unblock != UnblockState::None) {
+            if (--unblock == UnblockState::None) {
+                ASSERT(state == TransferState::None || state == TransferState::Paused);
+                ASSERT(active);
+
+                // Unblock the CPU
+                unblock = UnblockState::None;
+                active = false;
+            }
+        }
+    }
 }
 
 void Hdma::save_state(Parcel& parcel) const {

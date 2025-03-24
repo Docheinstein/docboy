@@ -1,7 +1,5 @@
 #include "docboy/ppu/ppu.h"
 
-#include <iostream>
-
 #include "docboy/bootrom/helpers.h"
 #include "docboy/common/randomdata.h"
 #include "docboy/dma/dma.h"
@@ -143,7 +141,6 @@ Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, 
 void Ppu::tick() {
     // Do nothing if PPU is off
     if (lcdc.enable) {
-
         // Tick PPU by one dot
         (this->*(tick_selector))();
 
@@ -195,7 +192,7 @@ void Ppu::tick() {
 #endif
     }
 
-    // Update STAT's mode (usually it matches the "internal" PPu mode, but there are a few exceptions).
+    // Update STAT's mode (usually it matches the "internal" PPU mode, but there are few exceptions).
     tick_stat();
 
     ASSERT(dots < 456);
@@ -310,8 +307,21 @@ inline void Ppu::tick_stat() {
     if (mode == OAM_SCAN && (is_glitched_line_0 || dma_controller.is_active())) {
         stat.mode = HBLANK;
     } else {
+        // The difference between stat_mode and stat.mode is subtle:
+        // * stat.mode contains the "unglitched" STAT mode (as seen by HDMA, for example).
+        // * stat_mode contains the mode that is read by reading STAT (FF41).
+        // These two are always the same, except on CGB double speed mode,
+        // where HBlank seems to take 1 extra T-Cycle to be visible through STAT's read.
         stat.mode = mode;
     }
+
+#ifdef ENABLE_CGB
+    if (!delay_stat_mode_update) {
+        stat_mode = stat.mode;
+    } else {
+        delay_stat_mode_update = false;
+    }
+#endif
 }
 
 inline void Ppu::update_stat_irq(bool irq) {
@@ -1015,6 +1025,14 @@ inline void Ppu::enter_hblank() {
         update_mode<HBLANK>();
 
         tick_selector = ly == 143 ? &Ppu::hblank_last_line : &Ppu::hblank;
+
+#ifdef ENABLE_CGB
+        // On CGB with double speed mode it seems that HBlank takes
+        // 1 extra T-Cycle to be visible through STAT's read.
+        if (speed_switch_controller.is_double_speed_mode()) {
+            delay_stat_mode_update = true;
+        }
+#endif
     }
 
     vram.release();
@@ -1960,6 +1978,11 @@ void Ppu::save_state(Parcel& parcel) const {
     parcel.write_bool(last_stat_irq);
     parcel.write_bool(enable_lyc_eq_ly_irq);
     parcel.write_bool(pending_stat_irq);
+#ifdef ENABLE_CGB
+    parcel.write_uint8(stat_mode);
+    parcel.write_bool(delay_stat_mode_update);
+#endif
+
 #ifndef ENABLE_CGB
     parcel.write_bool(stat_write.pending);
     parcel.write_uint8(stat_write.value);
@@ -2106,6 +2129,10 @@ void Ppu::load_state(Parcel& parcel) {
     last_stat_irq = parcel.read_bool();
     enable_lyc_eq_ly_irq = parcel.read_bool();
     pending_stat_irq = parcel.read_bool();
+#ifdef ENABLE_CGB
+    stat_mode = parcel.read_uint8();
+    delay_stat_mode_update = parcel.read_bool();
+#endif
 #ifndef ENABLE_CGB
     stat_write.pending = parcel.read_bool();
     stat_write.value = parcel.read_uint8();
@@ -2272,6 +2299,11 @@ void Ppu::reset() {
     pending_stat_irq = false;
 
 #ifdef ENABLE_CGB
+    stat_mode = stat.mode;
+    delay_stat_mode_update = false;
+#endif
+
+#ifdef ENABLE_CGB
     // TODO: with bootrom
     // TODO: more accurate timing: should be between 163 and 166
     dots = if_bootrom_else(0, 164);
@@ -2417,7 +2449,13 @@ uint8_t Ppu::read_stat() const {
            stat.oam_int << Specs::Bits::Video::STAT::OAM_INTERRUPT |
            stat.vblank_int << Specs::Bits::Video::STAT::VBLANK_INTERRUPT |
            stat.hblank_int << Specs::Bits::Video::STAT::HBLANK_INTERRUPT |
-           stat.lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY | stat.mode;
+           stat.lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY |
+#ifdef ENABLE_CGB
+           stat_mode
+#else
+           stat.mode;
+#endif
+        ;
 }
 
 void Ppu::write_stat(uint8_t value) {

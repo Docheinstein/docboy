@@ -291,6 +291,11 @@ private:
     bool enable_lyc_eq_ly_irq {true};
     bool pending_stat_irq {};
 
+#ifdef ENABLE_CGB
+    uint8_t stat_mode {};
+    bool delay_stat_mode_update {};
+#endif
+
 #ifndef ENABLE_CGB
     struct {
         bool pending {};

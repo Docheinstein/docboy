@@ -153,6 +153,7 @@ public:
         if (has_ever_checked) {
             impl->on_expectation_failed();
         } else if (impl->should_ever_check_expectation()) {
+            UNSCOPED_INFO("=== " << rom_name << " ===");
             UNSCOPED_INFO("Expectation never checked!");
         }
 

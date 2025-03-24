@@ -572,10 +572,6 @@ Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& j
 }
 
 void Cpu::tick_t0() {
-#ifdef ENABLE_ASSERTS
-    assert_tick<3>();
-#endif
-
     check_interrupt<3>();
     tick();
 
@@ -588,10 +584,6 @@ void Cpu::tick_t0() {
 }
 
 void Cpu::tick_t1() {
-#ifdef ENABLE_ASSERTS
-    assert_tick<0>();
-#endif
-
     check_interrupt<0>();
 #ifdef ENABLE_CGB
     if (!speed_switch_controller.is_double_speed_mode()) {
@@ -634,10 +626,6 @@ void Cpu::tick_t1() {
 }
 
 void Cpu::tick_t2() {
-#ifdef ENABLE_ASSERTS
-    assert_tick<1>();
-#endif
-
     check_interrupt<1>();
 
 #ifdef ENABLE_CGB
@@ -655,10 +643,6 @@ void Cpu::tick_t2() {
 }
 
 void Cpu::tick_t3() {
-#ifdef ENABLE_ASSERTS
-    assert_tick<2>();
-#endif
-
     check_interrupt<2>();
 
     flush_read();
@@ -1017,6 +1001,7 @@ void Cpu::check_interrupt() {
         /* 31 : Joypad + Serial + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
     };
 
+#ifdef ENABLE_CGB
     static constexpr uint8_t INTERRUPTS_TIMINGS_DOUBLE_SPEED[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
         /*  0 : None */ {{U, U, U, U}, {U, U, U, U}},
         /*  1 : VBlank */ {{1, U, 1, U}, {2, U, 2, U}},
@@ -1051,6 +1036,7 @@ void Cpu::check_interrupt() {
         /* 30 : Joypad + Serial + Timer + STAT */ {{J, J, J, J}, {J, J, J, J}},
         /* 31 : Joypad + Serial + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
     };
+#endif
     // clang-format on
 
     if (interrupt.state == InterruptState::None && (halted || ime == ImeState::Enabled)) {
@@ -3111,11 +3097,3 @@ template <uint8_t n, Cpu::Register16 rr>
 void Cpu::set_arr_m2() {
     fetch();
 }
-
-#ifdef ENABLE_ASSERTS
-template <uint8_t t>
-void Cpu::assert_tick() {
-    ASSERT(last_tick == t);
-    last_tick = mod<4>(t + 1);
-}
-#endif

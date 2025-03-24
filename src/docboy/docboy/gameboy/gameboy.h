@@ -197,7 +197,7 @@ public:
     WramBankController wram_bank_controller {wram_bus};
 
     // HDMA
-    Hdma hdma {mmu, ext_bus, vram_bus, oam_bus, ppu.stat.mode, fetching, halted, stopped};
+    Hdma hdma {mmu, ext_bus, vram_bus, oam_bus, ppu.stat.mode, fetching, halted, stopped, speed_switch_controller};
 
 #ifdef ENABLE_CGB
     // Speed Switch

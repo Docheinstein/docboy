@@ -2764,6 +2764,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                     switch (gb.hdma.state) {
                     case Hdma::TransferState::None:
                         return Text {"None"};
+                    case Hdma::TransferState::Pending:
+                        return green("Pending");
                     case Hdma::TransferState::Requested:
                         return green("Requested");
                     case Hdma::TransferState::Ready:

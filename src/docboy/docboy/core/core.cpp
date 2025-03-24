@@ -52,14 +52,14 @@ inline void Core::tick_t0() const {
 #endif
     gb.ppu.tick();
 #ifdef ENABLE_CGB
+    gb.hdma.tick_t0();
+#endif
+#ifdef ENABLE_CGB
     if (gb.speed_switch_controller.is_double_speed_mode()) {
         if (!gb.speed_switch_controller.is_switching_speed()) {
             gb.dma.tick();
         }
     }
-#endif
-#ifdef ENABLE_CGB
-    gb.hdma.tick_t0();
 #endif
     gb.apu.tick_t0();
     gb.ext_bus.tick();
@@ -90,14 +90,14 @@ inline void Core::tick_t1() const {
 
     gb.ppu.tick();
 #ifdef ENABLE_CGB
+    gb.hdma.tick_t1();
+#endif
+#ifdef ENABLE_CGB
     if (!gb.speed_switch_controller.is_switching_speed()) {
         gb.dma.tick();
     }
 #else
     gb.dma.tick();
-#endif
-#ifdef ENABLE_CGB
-    gb.hdma.tick_t1();
 #endif
     gb.apu.tick_t1();
     gb.ext_bus.tick();
@@ -117,14 +117,14 @@ inline void Core::tick_t2() const {
 
     gb.ppu.tick();
 #ifdef ENABLE_CGB
+    gb.hdma.tick_t2();
+#endif
+#ifdef ENABLE_CGB
     if (gb.speed_switch_controller.is_double_speed_mode()) {
         if (!gb.speed_switch_controller.is_switching_speed()) {
             gb.dma.tick();
         }
     }
-#endif
-#ifdef ENABLE_CGB
-    gb.hdma.tick_t2();
 #endif
     gb.apu.tick_t2();
     gb.ext_bus.tick();
@@ -157,15 +157,18 @@ inline void Core::tick_t3() const {
     gb.serial.tick();
 
     gb.ppu.tick();
+
+    // TODO: why HDMA/DMA reversed here?
+#ifdef ENABLE_CGB
+    gb.hdma.tick_t3();
+#endif
+
 #ifdef ENABLE_CGB
     if (!gb.speed_switch_controller.is_switching_speed()) {
         gb.dma.tick();
     }
 #else
     gb.dma.tick();
-#endif
-#ifdef ENABLE_CGB
-    gb.hdma.tick_t3();
 #endif
     gb.interrupts.tick_t3();
     gb.stop_controller.tick();
