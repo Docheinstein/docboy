@@ -3,12 +3,13 @@
 
 class Joypad;
 class Timers;
+class Ppu;
 class Lcd;
 class Parcel;
 
 class StopController {
 public:
-    StopController(bool& stopped, Joypad& joypad, Timers& timers, Lcd& lcd);
+    StopController(bool& stopped, Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd);
 
     void stop();
 
@@ -36,6 +37,7 @@ private:
 
     Joypad& joypad;
     Timers& timers;
+    Ppu& ppu;
     Lcd& lcd;
 };
 

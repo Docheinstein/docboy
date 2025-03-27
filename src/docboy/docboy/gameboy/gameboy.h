@@ -69,7 +69,7 @@ public:
     Apu apu {timers};
 
     // Power Saving
-    StopController stop_controller {stopped, joypad, timers, lcd};
+    StopController stop_controller {stopped, joypad, timers, ppu, lcd};
 
     // Boot ROM
 #ifdef ENABLE_BOOTROM
@@ -202,7 +202,7 @@ public:
 #ifdef ENABLE_CGB
     // Speed Switch
     SpeedSwitch speed_switch {};
-    SpeedSwitchController speed_switch_controller {speed_switch, timers, halted};
+    SpeedSwitchController speed_switch_controller {speed_switch, timers, ppu, lcd, halted};
 #endif
 
     // Other CGB

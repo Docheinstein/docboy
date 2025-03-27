@@ -859,6 +859,16 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/ppu/visual/lcdc_bit_0.gbc", "docboy/ppu/lcdc_bit_0.png"},
             F {"docboy/ppu/visual/obj_attr_bank.gbc", "docboy/ppu/obj_attr_bank.png"},
             F {"docboy/ppu/visual/obj_attr_palette.gbc", "docboy/ppu/obj_attr_palette.png"},
+            F {"docboy/ppu/visual/stop_during_hblank.gbc", "docboy/ppu/stop_during_hblank.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/ppu/visual/stop_during_oam_scan.gbc", "docboy/ppu/stop_during_oam_scan.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/ppu/visual/stop_during_pixel_transfer.gbc", "docboy/ppu/stop_during_pixel_transfer.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/ppu/visual/stop_during_vblank.gbc", "docboy/ppu/stop_during_vblank.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/ppu/visual/stop_ppu_off.gbc", "docboy/ppu/stop_ppu_off.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
             F {"docboy/ppu/visual/win_attr_bank.gbc", "docboy/ppu/win_attr_bank.png"},
             F {"docboy/ppu/visual/win_attr_palette.gbc", "docboy/ppu/win_attr_palette.png"},
             F {"docboy/ppu/visual/win_attrs_lcdc_bit_6.gbc", "docboy/ppu/win_attrs_lcdc_bit_6.png"},
@@ -939,6 +949,22 @@ TEST_CASE("cgb", "[emulation]") {
 
     SECTION("double_speed") {
         RUN_TEST_ROMS(
+            // docboy
+            F {"docboy/double_speed/visual/speed_switch_to_double_stop_during_hblank.gbc",
+               "docboy/double_speed/speed_switch_to_double_stop_during_hblank.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/double_speed/visual/speed_switch_to_double_stop_during_oam_scan.gbc",
+               "docboy/double_speed/speed_switch_to_double_stop_during_oam_scan.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/double_speed/visual/speed_switch_to_double_stop_during_pixel_transfer.gbc",
+               "docboy/double_speed/speed_switch_to_double_stop_during_pixel_transfer.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/double_speed/visual/speed_switch_to_double_stop_during_vblank.gbc",
+               "docboy/double_speed/speed_switch_to_double_stop_during_vblank.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/double_speed/visual/speed_switch_to_double_stop_ppu_off.gbc",
+               "docboy/double_speed/speed_switch_to_double_stop_ppu_off.png", CheckIntervalTicks {DURATION_MEDIUM},
+               ForceCheck {}},
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_4.gbc", "docboy/ok.png"},
@@ -1162,6 +1188,14 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/double_speed/speed_switch_to_double_during_dma_alt_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_during_dma_round1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_during_dma_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_hblank_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_hblank_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_pixel_transfer_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_pixel_transfer_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_hblank_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_hblank_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_pixel_transfer_round1.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/speed_switch_to_double_during_pixel_transfer_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_switch_after_wait.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_switch_read_key1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/speed_switch_to_double_switch_straight.gbc", "docboy/ok.png"},
@@ -1263,8 +1297,8 @@ TEST_CASE("cgb", "[emulation]") {
 
 #else
     SECTION("wip") {
+        RUN_TEST_ROMS();
     }
-}
 #endif
 }
 

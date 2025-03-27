@@ -1,15 +1,17 @@
 #include "docboy/stop/stopcontroller.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/lcd/lcd.h"
+#include "docboy/ppu/ppu.h"
 #include "docboy/timers/timers.h"
 
 #include "utils/bits.h"
 #include "utils/parcel.h"
 
-StopController::StopController(bool& stopped, Joypad& joypad, Timers& timers, Lcd& lcd) :
+StopController::StopController(bool& stopped, Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd) :
     stopped {stopped},
     joypad {joypad},
     timers {timers},
+    ppu {ppu},
     lcd {lcd} {
 }
 
@@ -32,8 +34,38 @@ void StopController::enter_stop_mode() {
     // DIV is reset
     timers.div16 = 0;
 
-    // LCD is cleared
-    lcd.clear();
+    // Depending on the current PPU state, LCD behaves differently.
+    //
+    // DMG.
+    //     PPU State   |    LCD
+    // ----------------------------
+    // Off             |  Off (neutral color)
+    // OAM Scan        |  Off (neutral color)
+    // Pixel Transfer  |  Off (neutral color)
+    // HBlank          |  Off (neutral color)
+    // VBlank          |  Off (neutral color)
+    //
+    // CGB.
+    // - In case of real STOP:
+    //     PPU State   |    LCD
+    // ----------------------------
+    // Off             |  Off (neutral color)
+    // OAM Scan        |  Black
+    // Pixel Transfer  |  Unchanged (keep the current content)
+    // HBlank          |  Black
+    // VBlank          |  Black
+
+#ifdef ENABLE_CGB
+    if (ppu.lcdc.enable) {
+        if (ppu.stat.mode != Specs::Ppu::Modes::PIXEL_TRANSFER) {
+            lcd.clear(Lcd::Colors::BLACK);
+        }
+    } else {
+        lcd.clear(Lcd::Colors::WHITE);
+    }
+#else
+    lcd.clear(Lcd::Colors::WHITE);
+#endif
 }
 
 void StopController::eventually_exit_stop_mode() {

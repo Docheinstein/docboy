@@ -9,12 +9,14 @@
 
 class SpeedSwitch;
 class Parcel;
+class Ppu;
+class Lcd;
 
 class SpeedSwitchController {
     DEBUGGABLE_CLASS()
 
 public:
-    SpeedSwitchController(SpeedSwitch& speed_switch, Timers& timers, bool& halted);
+    SpeedSwitchController(SpeedSwitch& speed_switch, Timers& timers, Ppu& ppu, Lcd& lcd, bool& halted);
 
     void tick() {
         if (speed_switch_countdown) {
@@ -53,6 +55,8 @@ public:
 private:
     SpeedSwitch& speed_switch;
     Timers& timers;
+    Ppu& ppu;
+    Lcd& lcd;
     bool& halted;
 
     uint32_t speed_switch_countdown {};

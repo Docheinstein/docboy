@@ -27,6 +27,9 @@ struct ColorTolerance {
     uint8_t green;
     uint8_t blue;
 };
+struct CheckIntervalTicks {
+    uint64_t value;
+};
 struct MaxTicks {
     uint64_t value;
 };
@@ -594,7 +597,7 @@ struct FramebufferRunnerParams {
 #ifndef ENABLE_CGB
                                const Lcd::Palette*,
 #endif
-                               ColorTolerance, MaxTicks, StopAtInstruction, ForceCheck,
+                               ColorTolerance, CheckIntervalTicks, MaxTicks, StopAtInstruction, ForceCheck,
                                std::vector<FramebufferRunner::JoypadInput>>;
 
     FramebufferRunnerParams(std::string&& rom, std::string&& expected, Param param1 = std::monostate {},
@@ -610,6 +613,8 @@ struct FramebufferRunnerParams {
 #endif
                 if (std::holds_alternative<ColorTolerance>(param)) {
                 color_tolerance = std::get<ColorTolerance>(param);
+            } else if (std::holds_alternative<CheckIntervalTicks>(param)) {
+                check_interval_ticks = std::get<CheckIntervalTicks>(param).value;
             } else if (std::holds_alternative<MaxTicks>(param)) {
                 max_ticks = std::get<MaxTicks>(param).value;
             } else if (std::holds_alternative<StopAtInstruction>(param)) {
@@ -628,6 +633,7 @@ struct FramebufferRunnerParams {
     std::string rom;
     std::string result;
     const Lcd::Palette* palette {};
+    uint64_t check_interval_ticks {DURATION_VERY_SHORT};
     uint64_t max_ticks {DEFAULT_DURATION};
     std::optional<uint8_t> stop_at_instruction {};
     bool force_check {};
@@ -718,7 +724,7 @@ struct RunnerAdapter {
                 .rom(roms_prefix + pf.rom)
                 .palette(pf.palette)
                 .max_ticks(pf.max_ticks)
-                .check_interval_ticks(DURATION_VERY_SHORT)
+                .check_interval_ticks(pf.check_interval_ticks)
                 .stop_at_instruction(pf.stop_at_instruction)
                 .expect_framebuffer(results_prefix + pf.result)
                 .color_tolerance(pf.color_tolerance.red, pf.color_tolerance.green, pf.color_tolerance.blue)

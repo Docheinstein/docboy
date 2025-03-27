@@ -831,6 +831,16 @@ TEST_CASE("dmg", "[emulation]") {
                StopAtInstruction {0x40}},
             F {"docboy/ppu/visual/change_win_map_wx22.gb", "docboy/ppu/change_win_map_wx22.png",
                StopAtInstruction {0x40}},
+            F {"docboy/ppu/visual/stop_during_hblank.gb", "docboy/ppu/stop_during_hblank.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/ppu/visual/stop_during_oam_scan.gb", "docboy/ppu/stop_during_oam_scan.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/ppu/visual/stop_during_pixel_transfer.gb", "docboy/ppu/stop_during_pixel_transfer.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/ppu/visual/stop_during_vblank.gb", "docboy/ppu/stop_during_vblank.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/ppu/visual/stop_ppu_off.gb", "docboy/ppu/stop_ppu_off.png", CheckIntervalTicks {DURATION_MEDIUM},
+               ForceCheck {}},
             F {"docboy/ppu/visual/window_bg_reprise_wx8.gb", "docboy/ppu/window_bg_reprise_wx8.png"},
             F {"docboy/ppu/visual/window_bg_reprise_wx9.gb", "docboy/ppu/window_bg_reprise_wx9.png"},
             F {"docboy/ppu/visual/window_bg_reprise_wx10.gb", "docboy/ppu/window_bg_reprise_wx10.png"},
@@ -3154,7 +3164,9 @@ TEST_CASE("dmg", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS();
+        RUN_TEST_ROMS(
+
+        );
     }
 #endif
 }

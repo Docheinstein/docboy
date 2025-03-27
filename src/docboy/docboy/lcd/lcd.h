@@ -24,6 +24,11 @@ public:
     using Pixel = uint8_t /* [0:3] */;
 #endif
 
+    struct Colors {
+        static constexpr PixelRgb565 WHITE = 0xFFFF;
+        static constexpr PixelRgb565 BLACK = 0x0000;
+    };
+
 #ifdef ENABLE_CGB
     static constexpr uint16_t NUM_COLORS = 32768;
 #else
@@ -46,7 +51,7 @@ public:
     }
 
     void push_pixel(Pixel pixel) {
-        ASSERT(static_cast<uint8_t>(pixel) < NUM_COLORS);
+        ASSERT(pixel < NUM_COLORS);
         pixels[cursor] = palette[pixel];
         if (++cursor == PIXEL_COUNT) {
             cursor = 0;
@@ -70,10 +75,10 @@ public:
 #endif
     }
 
-    void clear() {
+    void clear(PixelRgb565 color) {
         // Fills the LCD with color 0.
-        for (unsigned short& pixel : pixels) {
-            pixel = 0xFFFF;
+        for (PixelRgb565& pixel : pixels) {
+            pixel = color;
         }
     }
 
