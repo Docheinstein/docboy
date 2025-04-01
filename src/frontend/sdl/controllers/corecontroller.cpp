@@ -170,12 +170,12 @@ bool CoreController::detach_debugger() {
 }
 #endif
 
-const Lcd::PixelRgb565* CoreController::get_framebuffer() const {
+const PixelRgb565* CoreController::get_framebuffer() const {
     return core.gb.lcd.get_pixels();
 }
 
-void CoreController::set_palette(const Lcd::Palette& palette) {
-    core.gb.lcd.set_palette(palette);
+void CoreController::set_appearance(const Appearance& appearance) {
+    core.gb.lcd.set_appearance(appearance);
 }
 
 void CoreController::set_key_mapping(SDL_Keycode keycode, Joypad::Key joypad_key) {

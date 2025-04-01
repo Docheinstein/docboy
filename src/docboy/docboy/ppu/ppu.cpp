@@ -47,19 +47,6 @@ constexpr uint8_t NUMBER_OF_COLOR_INDEXES = 4;
 inline bool is_obj_opaque(const uint8_t color_index) {
     return color_index != OBJ_COLOR_INDEX_TRANSPARENT;
 }
-
-#ifdef ENABLE_CGB
-inline uint16_t /* BGR555 */ resolve_color(const uint8_t color_index, const uint8_t* palette /* 8 bytes */) {
-    ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
-    const uint8_t* palette_color_word = &palette[2 * color_index];
-    return keep_bits<15>(palette_color_word[0] | palette_color_word[1] << 8);
-}
-#else
-inline uint8_t resolve_color(const uint8_t color_index, const uint8_t palette) {
-    ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
-    return keep_bits<BITS_PER_PIXEL>(palette >> (BITS_PER_PIXEL * color_index));
-}
-#endif
 } // namespace
 
 const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
@@ -198,6 +185,18 @@ void Ppu::tick() {
     ASSERT(dots < 456);
 }
 
+#ifdef ENABLE_CGB
+void Ppu::enable_color_resolver() {
+    ASSERT(!color_resolver_enabled);
+    color_resolver_enabled = true;
+}
+
+void Ppu::disable_color_resolver() {
+    ASSERT(color_resolver_enabled);
+    color_resolver_enabled = false;
+}
+#endif
+
 // ------- PPU helpers -------
 
 void Ppu::turn_on() {
@@ -220,7 +219,9 @@ void Ppu::turn_off() {
     dots = 0;
     ly = 0;
     last_ly = 0;
-    lcd.reset_cursor();
+
+    lcd.rewind();
+    lcd.clear();
 
     // Clear oam entries eventually still there
     for (uint32_t i = 0; i < array_size(oam_entries); i++) {
@@ -1093,6 +1094,24 @@ inline void Ppu::update_mode() {
     ASSERT(Mode <= 0b11);
     mode = Mode;
 }
+
+#ifdef ENABLE_CGB
+inline uint16_t Ppu::resolve_color(const uint8_t color_index, const uint8_t* palette) {
+    if (!color_resolver_enabled) {
+        // Push black pixels instead.
+        return 0x0000;
+    }
+
+    ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
+    const uint8_t* palette_color_word = &palette[2 * color_index];
+    return keep_bits<15>(palette_color_word[0] | palette_color_word[1] << 8);
+}
+#else
+inline uint8_t Ppu::resolve_color(const uint8_t color_index, const uint8_t palette) {
+    ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
+    return keep_bits<BITS_PER_PIXEL>(palette >> (BITS_PER_PIXEL * color_index));
+}
+#endif
 
 inline void Ppu::increase_lx() {
     ASSERT(oam_entries_count >= oam_entries[lx].size());
@@ -2073,6 +2092,8 @@ void Ppu::save_state(Parcel& parcel) const {
 #ifdef ENABLE_CGB
     parcel.write_bytes(bg_palettes, sizeof(bg_palettes));
     parcel.write_bytes(obj_palettes, sizeof(obj_palettes));
+
+    parcel.write_bool(color_resolver_enabled);
 #endif
 
 #ifdef ENABLE_DEBUGGER
@@ -2226,6 +2247,8 @@ void Ppu::load_state(Parcel& parcel) {
 #ifdef ENABLE_CGB
     parcel.read_bytes(bg_palettes, sizeof(bg_palettes));
     parcel.read_bytes(obj_palettes, sizeof(obj_palettes));
+
+    color_resolver_enabled = parcel.read_bool();
 #endif
 
 #ifdef ENABLE_DEBUGGER
@@ -2403,6 +2426,8 @@ void Ppu::reset() {
         obj_palettes[i] = 0;
     }
 #endif
+
+    color_resolver_enabled = true;
 #endif
 
 #ifdef ENABLE_DEBUGGER

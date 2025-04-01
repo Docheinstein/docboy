@@ -29,8 +29,8 @@ uint32_t UiController::get_scaling() const {
     return window.get_scaling();
 }
 
-const UiController::Palette& UiController::add_palette(const std::array<uint16_t, 4>& rgb565, const std::string& name,
-                                                       std::optional<uint16_t> optional_accent) {
+const UiController::UiAppearance& UiController::add_appearance(const LcdAppearance& rgb565, const std::string& name,
+                                                               std::optional<uint16_t> optional_accent) {
     const auto rgb565_to_rgba8888 = [](uint16_t p) {
         return convert_pixel(p, ImageFormat::RGB565, ImageFormat::RGB888) << 8 | 0x000000FF;
     };
@@ -46,54 +46,53 @@ const UiController::Palette& UiController::add_palette(const std::array<uint16_t
     std::array<uint32_t, 4> rgba8888 {};
 
     for (uint32_t i = 0; i < 4; i++) {
-        rgba8888[i] = rgb565_to_rgba8888(rgb565[i]);
+        rgba8888[i] = rgb565_to_rgba8888(rgb565.palette[i]);
     }
 
-    Palette p;
+    UiAppearance a;
 
-    const auto index = palettes.size();
+    const auto index = appearances.size();
 
-    p.rgb565.palette = rgb565;
-    p.rgb565.accent = accent;
-    p.rgba8888.palette = rgba8888;
-    p.rgba8888.accent = rgb565_to_rgba8888(accent);
-    p.name = name;
-    p.index = index;
+    a.lcd = rgb565;
+    a.menu = rgba8888;
+    a.accent = rgb565_to_rgba8888(accent);
+    a.name = name;
+    a.index = index;
 
-    palettes.push_back(std::move(p));
+    appearances.push_back(std::move(a));
 
-    return palettes[index];
+    return appearances[index];
 }
 
-const UiController::Palette* UiController::get_palette(const std::array<uint16_t, 4>& rgb565) const {
-    for (const auto& p : palettes) {
-        if (p.rgb565.palette == rgb565) {
-            return &p;
+const UiController::UiAppearance* UiController::get_appearance(const LcdAppearance& rgb565) const {
+    for (const auto& a : appearances) {
+        if (a.lcd.palette == rgb565.palette && a.lcd.default_color == rgb565.default_color) {
+            return &a;
         }
     }
     return nullptr;
 }
 
-const std::vector<UiController::Palette>& UiController::get_palettes() const {
-    return palettes;
+const std::vector<UiController::UiAppearance>& UiController::get_appearances() const {
+    return appearances;
 }
 
-void UiController::set_current_palette(size_t index) {
-    ASSERT(index < palettes.size());
-    current_palette = palettes[index];
+void UiController::set_current_appearance(size_t index) {
+    ASSERT(index < appearances.size());
+    current_appearance = appearances[index];
 #ifndef ENABLE_CGB
     // TODO: CGB palettes?
-    runner.get_core1().set_palette(current_palette.rgb565.palette);
+    runner.get_core1().set_appearance(current_appearance.lcd);
 #ifdef ENABLE_TWO_PLAYERS_MODE
     if (runner.is_two_players_mode()) {
-        runner.get_core2().set_palette(current_palette.rgb565.palette);
+        runner.get_core2().set_appearance(current_appearance.lcd);
     }
 #endif
 #endif
 }
 
-const UiController::Palette& UiController::get_current_palette() const {
-    return current_palette;
+const UiController::UiAppearance& UiController::get_current_appearance() const {
+    return current_appearance;
 }
 
 SDL_Renderer* UiController::get_renderer() const {

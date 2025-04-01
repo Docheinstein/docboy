@@ -202,7 +202,7 @@ public:
 #ifdef ENABLE_CGB
     // Speed Switch
     SpeedSwitch speed_switch {};
-    SpeedSwitchController speed_switch_controller {speed_switch, timers, ppu, lcd, halted};
+    SpeedSwitchController speed_switch_controller {speed_switch, timers, halted};
 #endif
 
     // Other CGB

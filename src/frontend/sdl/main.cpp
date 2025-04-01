@@ -36,14 +36,18 @@
 #include "controllers/debuggercontroller.h"
 #include "docboy/debugger/backend.h"
 #include "docboy/debugger/frontend.h"
-#include "utils/hexdump.h"
 #endif
 
 namespace {
+constexpr UiController::LcdAppearance DMG_PALETTE {0xAD00, {0x84A0, 0x4B40, 0x2AA0, 0x1200}};
+constexpr UiController::LcdAppearance BRIGHT_GREEN_PALETTE {0x84A0, {0x84A0, 0x4B40, 0x2AA0, 0x1200}};
+constexpr UiController::LcdAppearance DULL_GREEN_PALETTE {0x9CE7, {0x9CE7, 0x4B44, 0x0A21, 0x1941}};
+constexpr UiController::LcdAppearance GREY_PALETTE {0xFFFF, {0xFFFF, 0xAD55, 0x52AA, 0x0000}};
+
 Preferences make_default_preferences() {
     Preferences prefs {};
 #ifndef ENABLE_CGB
-    prefs.palette = {0x84A0, 0x4B40, 0x2AA0, 0x1200};
+    prefs.dmg_palette = DMG_PALETTE;
 #endif
     prefs.keys.player1.a = SDLK_Z;
     prefs.keys.player1.b = SDLK_X;
@@ -312,14 +316,22 @@ int main(int argc, char* argv[]) {
     ui_controller.set_scaling(prefs.scaling);
 
     // Palette preferences
-    ui_controller.add_palette({0x84A0, 0x4B40, 0x2AA0, 0x1200}, "Green", 0xFFFF);
-    ui_controller.add_palette({0xFFFF, 0xAD55, 0x52AA, 0x0000}, "Grey", 0xA901);
-    const auto* palette = ui_controller.get_palette(prefs.palette);
-    if (!palette) {
-        // No know palette exists for this configuration: add a new one
-        palette = &ui_controller.add_palette(prefs.palette, "User");
+#ifdef ENABLE_CGB
+    // TODO: CGB palette?
+    const auto& appearance = ui_controller.add_appearance(DMG_PALETTE, "DMG", 0xFFFF);
+    ui_controller.set_current_appearance(appearance.index);
+#else
+    ui_controller.add_appearance(DMG_PALETTE, "DMG", 0xFFFF);
+    ui_controller.add_appearance(BRIGHT_GREEN_PALETTE, "Bright", 0xFFFF);
+    ui_controller.add_appearance(DULL_GREEN_PALETTE, "Dull", 0xFFFF);
+    ui_controller.add_appearance(GREY_PALETTE, "Grey", 0xA901);
+    const auto* appearance = ui_controller.get_appearance(prefs.dmg_palette);
+    if (!appearance) {
+        // No know appearance exists for this configuration: add a new one
+        appearance = &ui_controller.add_appearance(prefs.dmg_palette, "User");
     }
-    ui_controller.set_current_palette(palette->index);
+    ui_controller.set_current_appearance(appearance->index);
+#endif
 
     // Eventually attach serial console
     std::unique_ptr<SerialConsole> serial_console;
@@ -641,7 +653,9 @@ int main(int argc, char* argv[]) {
 #endif
 
     // Write current preferences
-    prefs.palette = ui_controller.get_current_palette().rgb565.palette;
+#ifndef ENABLE_CGB
+    prefs.dmg_palette = ui_controller.get_current_appearance().lcd;
+#endif
     prefs.scaling = window.get_scaling();
 
     const auto update_preferences_keys_from_joypad_mapping =

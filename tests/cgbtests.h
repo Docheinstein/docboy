@@ -90,6 +90,13 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/stat_write_bug/stat_write_bug_hblank.gbc", "docboy/ok.png"}, );
     }
 
+    SECTION("timers") {
+        RUN_TEST_ROMS(F {"docboy/timers/stop_read_tima_round1.gbc", "docboy/ok.png",
+                         Inputs {{65536, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+                      F {"docboy/timers/stop_read_tima_round2.gbc", "docboy/ok.png",
+                         Inputs {{65536, Joypad::KeyState::Pressed, Joypad::Key::A}}}, );
+    }
+
     SECTION("dma") {
         RUN_TEST_ROMS(
             // docboy
@@ -856,6 +863,8 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/ppu/visual/bg_attr_priority_lcdc_bit_0.gbc", "docboy/ppu/bg_attr_priority_lcdc_bit_0.png"},
             F {"docboy/ppu/visual/bg_attr_vertical_flip_scy.gbc", "docboy/ppu/bg_attr_vertical_flip_scy.png"},
             F {"docboy/ppu/visual/bg_attrs_lcdc_bit_3.gbc", "docboy/ppu/bg_attrs_lcdc_bit_3.png"},
+            F {"docboy/ppu/visual/halt_ppu_off.gbc", "docboy/ppu/halt_ppu_off.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
             F {"docboy/ppu/visual/lcdc_bit_0.gbc", "docboy/ppu/lcdc_bit_0.png"},
             F {"docboy/ppu/visual/obj_attr_bank.gbc", "docboy/ppu/obj_attr_bank.png"},
             F {"docboy/ppu/visual/obj_attr_palette.gbc", "docboy/ppu/obj_attr_palette.png"},
@@ -864,6 +873,8 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/ppu/visual/stop_during_oam_scan.gbc", "docboy/ppu/stop_during_oam_scan.png",
                CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
             F {"docboy/ppu/visual/stop_during_pixel_transfer.gbc", "docboy/ppu/stop_during_pixel_transfer.png",
+               CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
+            F {"docboy/ppu/visual/stop_during_pixel_transfer_alt.gbc", "docboy/ppu/stop_during_pixel_transfer.png",
                CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
             F {"docboy/ppu/visual/stop_during_vblank.gbc", "docboy/ppu/stop_during_vblank.png",
                CheckIntervalTicks {DURATION_MEDIUM}, ForceCheck {}},
@@ -1147,6 +1158,10 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/double_speed/double_speed_serial_high_speed_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_serial_speed_round1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_serial_speed_round2.gbc", "docboy/ok.png"},
+            F {"docboy/double_speed/double_speed_stop_read_tima_round1.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/double_speed/double_speed_stop_read_tima_round2.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
             F {"docboy/double_speed/double_speed_timers_speed.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_timers_tima_round1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_timers_tima_round2.gbc", "docboy/ok.png"},

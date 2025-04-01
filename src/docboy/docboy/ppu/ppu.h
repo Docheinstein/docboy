@@ -33,6 +33,11 @@ public:
 
     void tick();
 
+#ifdef ENABLE_CGB
+    void enable_color_resolver();
+    void disable_color_resolver();
+#endif
+
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
 
@@ -218,6 +223,12 @@ private:
 
     template <uint8_t mode>
     void update_mode();
+
+#ifdef ENABLE_CGB
+    uint16_t resolve_color(uint8_t color_index, const uint8_t* palette /* 8 bytes */);
+#else
+    uint8_t resolve_color(uint8_t color_index, uint8_t palette);
+#endif
 
     void increase_lx();
 
@@ -416,6 +427,9 @@ private:
     // CGB palettes
     uint8_t bg_palettes[64] {};
     uint8_t obj_palettes[64] {};
+
+    // CGB Quirks
+    bool color_resolver_enabled {};
 #endif
 
 #ifdef ENABLE_DEBUGGER

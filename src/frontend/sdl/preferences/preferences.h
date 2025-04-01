@@ -6,6 +6,8 @@
 
 #include "SDL3/SDL.h"
 
+#include "controllers/uicontroller.h"
+
 struct Preferences {
     struct Keys {
         SDL_Keycode a {};
@@ -18,7 +20,9 @@ struct Preferences {
         SDL_Keycode down {};
     };
 
-    std::array<uint16_t, 4> palette {};
+#ifndef ENABLE_CGB
+    UiController::LcdAppearance dmg_palette {};
+#endif
 
     struct {
         Keys player1 {};

@@ -2205,7 +2205,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 #endif
 
         // LCD
-        const auto pixel_color = [this](Lcd::PixelRgb565 lcd_color) {
+        const auto pixel_color = [this](PixelRgb565 lcd_color) {
             return color(hex(lcd_color), RGB565_TO_ANSI_COLORS[lcd_color]);
         };
 

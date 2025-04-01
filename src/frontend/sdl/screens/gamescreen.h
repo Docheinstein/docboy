@@ -34,9 +34,9 @@ private:
 
     SDL_Texture* game_overlay_texture {};
 
-    const Lcd::PixelRgb565* game_framebuffer1 {};
+    const PixelRgb565* game_framebuffer1 {};
 #ifdef ENABLE_TWO_PLAYERS_MODE
-    const Lcd::PixelRgb565* game_framebuffer2 {};
+    const PixelRgb565* game_framebuffer2 {};
 #endif
 
     struct {

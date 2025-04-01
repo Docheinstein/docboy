@@ -17,8 +17,8 @@ bool DebuggerController::attach_debugger(bool proceed_execution) {
     // Highlight the next pixel when the execution is stopped from the debugger
     const auto on_pulling_command = [this]() {
         // Cache the next pixel color
-        Lcd::PixelRgb565& next_pixel = core.gb.lcd.get_pixels()[core.gb.lcd.get_cursor()];
-        const Lcd::PixelRgb565 next_pixel_color = next_pixel;
+        PixelRgb565& next_pixel = core.gb.lcd.get_pixels()[core.gb.lcd.get_cursor()];
+        const PixelRgb565 next_pixel_color = next_pixel;
 
         // Mark the current dot as a special pixel (useful for debug PPU)
         next_pixel = 0xF800;

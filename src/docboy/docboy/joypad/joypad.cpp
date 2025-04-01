@@ -8,8 +8,10 @@ Joypad::Joypad(Interrupts& interrupts) :
 void Joypad::set_key_state(Key key, KeyState state) {
     set_bit(keys, static_cast<uint8_t>(key), static_cast<uint8_t>(state));
 
+    const bool dpad = test_bit<5>(static_cast<uint8_t>(key));
+
     const bool raise_interrupt =
-        (state == KeyState::Pressed) && (p1.select_dpad ? key <= Key::Start : key >= Key::Right);
+        (state == KeyState::Pressed) && ((!p1.select_dpad && dpad) || (!p1.select_buttons && !dpad));
 
     if (raise_interrupt) {
         interrupts.raise_interrupt<Interrupts::InterruptType::Joypad>();
@@ -19,7 +21,7 @@ void Joypad::set_key_state(Key key, KeyState state) {
 uint8_t Joypad::read_p1() const {
     return 0b11000000 | p1.select_buttons << Specs::Bits::Joypad::P1::SELECT_ACTION_BUTTONS |
            p1.select_dpad << Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS |
-           (p1.select_dpad ? keep_bits<4>(keys) : keep_bits<4>(keys >> 4));
+           ((p1.select_dpad ? 0xF : (keys >> 4) & 0xF) & (p1.select_buttons ? 0xF : (keys & 0xF)));
 }
 
 void Joypad::write_p1(uint8_t value) {

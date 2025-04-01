@@ -12,11 +12,15 @@ public:
 private:
     void on_increase_scaling();
     void on_decrease_scaling();
+#ifndef ENABLE_CGB
     void on_prev_palette();
     void on_next_palette();
+#endif
 
     struct {
+#ifndef ENABLE_CGB
         MenuItem* palette {};
+#endif
         MenuItem* scaling {};
     } items {};
 };

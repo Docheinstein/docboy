@@ -105,7 +105,20 @@ std::string get_preferences_path() {
 void read_preferences(const std::string& path, Preferences& p) {
     IniReader ini_reader;
     ini_reader.add_comment_prefix("#");
-    ini_reader.add_property("dmg_palette", p.palette, parse_hex_array<4>);
+#ifndef ENABLE_CGB
+    ini_reader.add_property("dmg_palette", p.dmg_palette,
+                            [](const std::string& s) -> std::optional<UiController::LcdAppearance> {
+                                auto a = parse_hex_array<5>(s);
+                                if (!a) {
+                                    return std::nullopt;
+                                }
+
+                                UiController::LcdAppearance appearance {};
+                                appearance.default_color = (*a)[4];
+                                std::copy_n(a->begin(), 4, appearance.palette.begin());
+                                return appearance;
+                            });
+#endif
     ini_reader.add_property("a", p.keys.player1.a, parse_keycode);
     ini_reader.add_property("b", p.keys.player1.b, parse_keycode);
     ini_reader.add_property("start", p.keys.player1.start, parse_keycode);
@@ -162,9 +175,13 @@ void read_preferences(const std::string& path, Preferences& p) {
 void write_preferences(const std::string& path, const Preferences& p) {
     std::map<std::string, std::string> properties;
 
-    properties.emplace("dmg_palette", join(p.palette, ",", [](uint16_t val) {
-                           return hex(val);
-                       }));
+#ifndef ENABLE_CGB
+    properties.emplace("dmg_palette", join(p.dmg_palette.palette, ",",
+                                           [](uint16_t val) {
+                                               return hex(val);
+                                           }) +
+                                          "," + hex(p.dmg_palette.default_color));
+#endif
     properties.emplace("a", SDL_GetKeyName(p.keys.player1.a));
     properties.emplace("b", SDL_GetKeyName(p.keys.player1.b));
     properties.emplace("start", SDL_GetKeyName(p.keys.player1.start));

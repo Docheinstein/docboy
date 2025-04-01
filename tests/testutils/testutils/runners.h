@@ -44,7 +44,7 @@ constexpr ColorTolerance COLOR_TOLERANCE_MEDIUM = {10, 10, 10};
 #endif
 
 #ifndef ENABLE_CGB
-constexpr Lcd::Palette GREY_PALETTE {0xFFFF, 0xAD55, 0x52AA, 0x0000}; // {0xFF, 0xAA, 0x55, 0x00} in RGB565
+constexpr Appearance GREY_PALETTE {0xFFFF, {0xFFFF, 0xAD55, 0x52AA, 0x0000}};
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -88,9 +88,9 @@ public:
         return static_cast<RunnerImpl&>(*this);
     }
 
-    RunnerImpl& palette(const Lcd::Palette* palette) {
-        if (palette) {
-            gb->lcd.set_palette(*palette);
+    RunnerImpl& appearance(const Appearance* appearance) {
+        if (appearance) {
+            gb->lcd.set_appearance(*appearance);
         }
         return static_cast<RunnerImpl&>(*this);
     }
@@ -595,7 +595,7 @@ using Inputs = std::vector<FramebufferRunner::JoypadInput>;
 struct FramebufferRunnerParams {
     using Param = std::variant<std::monostate,
 #ifndef ENABLE_CGB
-                               const Lcd::Palette*,
+                               const Appearance*,
 #endif
                                ColorTolerance, CheckIntervalTicks, MaxTicks, StopAtInstruction, ForceCheck,
                                std::vector<FramebufferRunner::JoypadInput>>;
@@ -607,8 +607,8 @@ struct FramebufferRunnerParams {
 
         auto parseParam = [this](Param& param) {
 #ifndef ENABLE_CGB
-            if (std::holds_alternative<const Lcd::Palette*>(param)) {
-                palette = std::get<const Lcd::Palette*>(param);
+            if (std::holds_alternative<const Appearance*>(param)) {
+                appearance = std::get<const Appearance*>(param);
             } else
 #endif
                 if (std::holds_alternative<ColorTolerance>(param)) {
@@ -632,7 +632,7 @@ struct FramebufferRunnerParams {
 
     std::string rom;
     std::string result;
-    const Lcd::Palette* palette {};
+    const Appearance* appearance {};
     uint64_t check_interval_ticks {DURATION_VERY_SHORT};
     uint64_t max_ticks {DEFAULT_DURATION};
     std::optional<uint8_t> stop_at_instruction {};
@@ -669,7 +669,7 @@ struct MemoryRunnerParams {
 struct TwoPlayersFramebufferRunnerParams {
     using Param = std::variant<std::monostate,
 #ifndef ENABLE_CGB
-                               const Lcd::Palette*,
+                               const Appearance*,
 #endif
                                ColorTolerance, MaxTicks>;
 
@@ -683,8 +683,8 @@ struct TwoPlayersFramebufferRunnerParams {
 
         auto parseParam = [this](Param& param) {
 #ifndef ENABLE_CGB
-            if (std::holds_alternative<const Lcd::Palette*>(param)) {
-                palette = std::get<const Lcd::Palette*>(param);
+            if (std::holds_alternative<const Appearance*>(param)) {
+                appearance = std::get<const Appearance*>(param);
             } else
 #endif
                 if (std::holds_alternative<ColorTolerance>(param)) {
@@ -702,7 +702,7 @@ struct TwoPlayersFramebufferRunnerParams {
     std::string result;
     std::string rom2;
     std::string result2;
-    const Lcd::Palette* palette {};
+    const Appearance* appearance {};
     uint64_t max_ticks {DEFAULT_DURATION};
     ColorTolerance color_tolerance {};
 };
@@ -722,7 +722,7 @@ struct RunnerAdapter {
             INFO("=== " << roms_prefix + pf.rom << " ===");
             return FramebufferRunner()
                 .rom(roms_prefix + pf.rom)
-                .palette(pf.palette)
+                .appearance(pf.appearance)
                 .max_ticks(pf.max_ticks)
                 .check_interval_ticks(pf.check_interval_ticks)
                 .stop_at_instruction(pf.stop_at_instruction)
@@ -764,7 +764,7 @@ struct RunnerAdapter {
             return TwoPlayersFramebufferRunner()
                 .rom(roms_prefix + pf2p.rom)
                 .rom2(roms_prefix + pf2p.rom2)
-                .palette(pf2p.palette)
+                .appearance(pf2p.appearance)
                 .max_ticks(pf2p.max_ticks)
                 .check_interval_ticks(DURATION_VERY_SHORT)
                 .expect_framebuffer1(results_prefix + pf2p.result)

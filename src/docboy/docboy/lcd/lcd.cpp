@@ -3,6 +3,15 @@
 
 #include "utils/parcel.h"
 
+Lcd::Lcd() {
+    appearance = DEFAULT_APPEARANCE;
+    reset();
+}
+
+void Lcd::set_appearance(const Appearance& a) {
+    appearance = a;
+}
+
 void Lcd::save_state(Parcel& parcel) const {
     parcel.write_bytes(pixels, sizeof(pixels));
     parcel.write_uint16(cursor);
@@ -21,6 +30,11 @@ void Lcd::load_state(Parcel& parcel) {
 #endif
 }
 
-Lcd::Lcd() {
-    palette = DEFAULT_PALETTE;
+void Lcd::reset() {
+    memset(pixels, 0, sizeof(pixels));
+    cursor = 0;
+#ifdef ENABLE_DEBUGGER
+    x = 0;
+    y = 0;
+#endif
 }

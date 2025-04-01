@@ -162,7 +162,7 @@ void GameScreen::handle_event(const SDL_Event& event) {
             break;
 #endif
         case SDLK_F11: {
-            const auto save_framebuffer_dat = [](const Lcd::PixelRgb565* framebuffer, CoreController& core) {
+            const auto save_framebuffer_dat = [](const PixelRgb565* framebuffer, CoreController& core) {
                 bool ok {};
                 write_file((temp_directory_path() / core.get_rom().with_extension("dat").filename()).string(),
                            framebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t), &ok);
@@ -184,7 +184,7 @@ void GameScreen::handle_event(const SDL_Event& event) {
             break;
         }
         case SDLK_F12: {
-            const auto save_framebuffer_png = [](const Lcd::PixelRgb565* framebuffer, CoreController& core) {
+            const auto save_framebuffer_png = [](const PixelRgb565* framebuffer, CoreController& core) {
                 auto buffer_rgb888 =
                     create_image_buffer(Specs::Display::WIDTH, Specs::Display::HEIGHT, ImageFormat::RGB888);
                 convert_image(ImageFormat::RGB565, framebuffer, ImageFormat::RGB888, buffer_rgb888.data(),
@@ -303,7 +303,7 @@ void GameScreen::draw_popup(const std::string& str) {
 }
 
 void GameScreen::redraw_overlay() {
-    uint32_t text_color = ui.get_current_palette().rgba8888.accent;
+    uint32_t text_color = ui.get_current_appearance().accent;
 
     uint32_t* overlay_texture_buffer = lock_texture(game_overlay_texture);
 

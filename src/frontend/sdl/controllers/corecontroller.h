@@ -42,8 +42,8 @@ public:
 #endif
 
     // Video
-    const Lcd::PixelRgb565* get_framebuffer() const;
-    void set_palette(const Lcd::Palette& palette);
+    const PixelRgb565* get_framebuffer() const;
+    void set_appearance(const Appearance& appearance);
 
     // Emulation
     void frame() {

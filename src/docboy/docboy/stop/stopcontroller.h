@@ -1,6 +1,8 @@
 #ifndef STOPCONTROLLER_H
 #define STOPCONTROLLER_H
 
+#include <cstdint>
+
 class Joypad;
 class Timers;
 class Ppu;
@@ -13,15 +15,14 @@ public:
 
     void stop();
 
-    void tick() {
+    void tick_t3() {
         if (requested) {
             enter_stop_mode();
         }
     }
 
-    void handle_stop_mode() {
-        eventually_exit_stop_mode();
-    }
+    void stopped_tick();
+    void stopped_tick_t3();
 
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
@@ -30,15 +31,18 @@ public:
 
 private:
     void enter_stop_mode();
-    void eventually_exit_stop_mode();
 
     bool& stopped;
-    bool requested {};
+    uint8_t requested {};
 
     Joypad& joypad;
     Timers& timers;
     Ppu& ppu;
     Lcd& lcd;
+
+#ifndef ENABLE_CGB
+    uint16_t ppu_shutdown_countdown {};
+#endif
 };
 
 #endif // STOPCONTROLLER_H

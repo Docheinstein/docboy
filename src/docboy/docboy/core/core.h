@@ -78,14 +78,12 @@ private:
     void tick_t2() const;
     void tick_t3() const;
 
-    void _cycle();
-
     Parcel parcelize_state() const;
     void unparcelize_state(Parcel&& parcel);
 
     uint64_t ticks {};
 
-    uint16_t cycles_with_lcd_off {};
+    uint16_t cycles_of_artificial_vblank {};
 
 #ifdef ENABLE_DEBUGGER
     DebuggerBackend* debugger {};

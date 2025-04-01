@@ -33,9 +33,9 @@ void LauncherScreen::redraw() {
     uint32_t* foreground_texture_buffer = lock_texture(foreground_texture);
 
     clear_texture(background_texture_buffer, ui.get_width() * ui.get_height(),
-                  ui.get_current_palette().rgba8888.palette[2] & (0xFFFFFF00 | context.ui.background_alpha));
+                  ui.get_current_appearance().menu[2] & (0xFFFFFF00 | context.ui.background_alpha));
 
-    uint32_t text_color = ui.get_current_palette().rgba8888.palette[0];
+    uint32_t text_color = ui.get_current_appearance().menu[0];
 
     const auto draw_text_horizontally_centered = [foreground_texture_buffer, width = ui.get_width(),
                                                   text_color](const char* str, uint32_t y) {

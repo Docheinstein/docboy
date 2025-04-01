@@ -2,10 +2,13 @@
 
 #include "docboy/core/core.h"
 
-#include "docboy/bootrom/factory.h"
 #include "docboy/cartridge/factory.h"
 #include "docboy/common/randomdata.h"
 #include "docboy/memory/vram0.h"
+
+#ifdef ENABLE_BOOTROM
+#include "docboy/bootrom/factory.h"
+#endif
 
 #ifdef ENABLE_DEBUGGER
 #include "docboy/debugger/backend.h"
@@ -31,7 +34,7 @@
 #endif
 
 namespace {
-constexpr uint16_t LCD_VBLANK_CYCLES = 16416;
+constexpr uint16_t ARTIFICIAL_VBLANK_CYCLES = 16416;
 constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
 constexpr uint32_t STATE_WATERMARK = 0xABCDDCBA;
 
@@ -43,6 +46,11 @@ Core::Core(GameBoy& gb) :
 }
 
 inline void Core::tick_t0() const {
+    if (gb.stopped) {
+        gb.stop_controller.stopped_tick();
+        return;
+    }
+
 #ifdef ENABLE_CGB
     if (!gb.hdma.is_active()) {
         gb.cpu.tick_t0();
@@ -69,6 +77,11 @@ inline void Core::tick_t0() const {
 }
 
 inline void Core::tick_t1() const {
+    if (gb.stopped) {
+        gb.stop_controller.stopped_tick();
+        return;
+    }
+
 #ifdef ENABLE_CGB
     if (!gb.hdma.is_active()) {
         gb.cpu.tick_t1();
@@ -107,6 +120,11 @@ inline void Core::tick_t1() const {
 }
 
 inline void Core::tick_t2() const {
+    if (gb.stopped) {
+        gb.stop_controller.stopped_tick();
+        return;
+    }
+
 #ifdef ENABLE_CGB
     if (!gb.hdma.is_active()) {
         gb.cpu.tick_t2();
@@ -134,6 +152,11 @@ inline void Core::tick_t2() const {
 }
 
 inline void Core::tick_t3() const {
+    if (gb.stopped) {
+        gb.stop_controller.stopped_tick_t3();
+        return;
+    }
+
 #ifdef ENABLE_CGB
     if (!gb.hdma.is_active()) {
         gb.cpu.tick_t3();
@@ -171,16 +194,16 @@ inline void Core::tick_t3() const {
     gb.dma.tick();
 #endif
     gb.interrupts.tick_t3();
-    gb.stop_controller.tick();
     gb.cartridge_slot.tick();
     gb.apu.tick_t3();
     gb.ext_bus.tick();
     gb.cpu_bus.tick();
     gb.oam_bus.tick();
     gb.vram_bus.tick();
+    gb.stop_controller.tick_t3();
 }
 
-void Core::_cycle() {
+void Core::cycle() {
     ASSERT(mod<4>(ticks) == 0);
 
     TICK_DEBUGGER(ticks);
@@ -204,34 +227,38 @@ void Core::_cycle() {
     ++ticks;
 }
 
-void Core::cycle() {
-    if (gb.stopped) {
-        // Just handle joypad input in STOP mode: all the components are idle.
-        TICK_DEBUGGER(ticks);
-        gb.stop_controller.handle_stop_mode();
-        return;
-    }
-
-    _cycle();
-}
-
 void Core::frame() {
     if (gb.stopped) {
-        // Just handle joypad input in STOP mode: all the components are idle.
-        TICK_DEBUGGER(ticks);
-        gb.stop_controller.handle_stop_mode();
-        return;
+        // Artificially run for a reasonable amount of cycles while stopped
+        for (uint16_t c = 0; c < ARTIFICIAL_VBLANK_CYCLES; c++) {
+            cycle();
+
+            if (!gb.stopped) {
+                return;
+            }
+
+            RETURN_ON_QUIT_OR_RESET_REQUEST();
+        }
+
+        // Still stopped: quit.
+        if (gb.stopped) {
+            return;
+        }
     }
 
+    ASSERT(!gb.stopped);
+
     // If LCD is disabled we risk to never reach VBlank (which would stall the UI and prevent inputs).
-    // Therefore, proceed for the cycles needed to render an entire frame and quit
-    // if the LCD is still disabled even after that.
+    // Therefore, proceed for the cycles needed to render an entire frame.
+    // Quit if the LCD is still disabled even after that.
     if (!gb.ppu.lcdc.enable) {
-        for (uint16_t c = 0; c < LCD_VBLANK_CYCLES; c++) {
-            _cycle();
+        for (uint16_t c = 0; c < ARTIFICIAL_VBLANK_CYCLES; c++) {
+            cycle();
+
             if (gb.stopped) {
                 return;
             }
+
             RETURN_ON_QUIT_OR_RESET_REQUEST();
             ASSERT(gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK);
         }
@@ -246,10 +273,12 @@ void Core::frame() {
 
     // Eventually go out of current VBlank.
     while (gb.ppu.stat.mode == Specs::Ppu::Modes::VBLANK) {
-        _cycle();
+        cycle();
+
         if (!gb.ppu.lcdc.enable || gb.stopped) {
             return;
         }
+
         RETURN_ON_QUIT_OR_RESET_REQUEST();
     }
 
@@ -257,10 +286,12 @@ void Core::frame() {
 
     // Proceed until next VBlank.
     while (gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK) {
-        _cycle();
+        cycle();
+
         if (!gb.ppu.lcdc.enable || gb.stopped) {
             return;
         }
+
         RETURN_ON_QUIT_OR_RESET_REQUEST();
     }
 }
@@ -269,26 +300,48 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
     uint8_t cycle_count {};
 
     if (gb.stopped) {
-        // Just handle joypad input in STOP mode: all the components are idle.
-        TICK_DEBUGGER(ticks);
-        gb.stop_controller.handle_stop_mode();
-        return true;
+        // Artificially run for a reasonable amount of cycles while stopped
+        for (uint16_t c = cycles_of_artificial_vblank; c < ARTIFICIAL_VBLANK_CYCLES; c++) {
+            if (++cycle_count > cycles_to_run) {
+                // No more cycles to run for this burst.
+                cycles_of_artificial_vblank = c;
+                return false;
+            }
+
+            cycle();
+
+            if (!gb.stopped) {
+                cycles_of_artificial_vblank = 0;
+                return true;
+            }
+
+            RETURN_ON_QUIT_OR_RESET_REQUEST(true);
+        }
+
+        // Still stopped: quit.
+        if (gb.stopped) {
+            cycles_of_artificial_vblank = 0;
+            return true;
+        }
     }
+
+    ASSERT(!gb.stopped);
 
     // If LCD is disabled we risk to never reach VBlank (which would stall the UI and prevent inputs).
     // Therefore, proceed for the cycles needed to render an entire frame and quit
     // if the LCD is still disabled even after that.
     if (!gb.ppu.lcdc.enable) {
-        for (uint16_t c = cycles_with_lcd_off; c < LCD_VBLANK_CYCLES; c++) {
+        for (uint16_t c = cycles_of_artificial_vblank; c < ARTIFICIAL_VBLANK_CYCLES; c++) {
             if (++cycle_count > cycles_to_run) {
                 // No more cycles to run for this burst.
+                cycles_of_artificial_vblank = c;
                 return false;
             }
 
-            _cycle();
+            cycle();
 
             if (gb.stopped) {
-                cycles_with_lcd_off = 0;
+                cycles_of_artificial_vblank = 0;
                 return true;
             }
 
@@ -298,7 +351,7 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
 
         // LCD still disabled: quit.
         if (!gb.ppu.lcdc.enable) {
-            cycles_with_lcd_off = 0;
+            cycles_of_artificial_vblank = 0;
             return true;
         }
     }
@@ -312,7 +365,7 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
             return false;
         }
 
-        _cycle();
+        cycle();
 
         if (!gb.ppu.lcdc.enable || gb.stopped) {
             return true;
@@ -330,7 +383,7 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
             return false;
         }
 
-        _cycle();
+        cycle();
 
         if (!gb.ppu.lcdc.enable || gb.stopped) {
             return true;
