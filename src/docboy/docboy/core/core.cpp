@@ -117,6 +117,12 @@ inline void Core::tick_t1() const {
     gb.cpu_bus.tick();
     gb.oam_bus.tick();
     gb.vram_bus.tick();
+
+#ifdef ENABLE_CGB
+    if (gb.speed_switch_controller.is_double_speed_mode()) {
+        gb.stop_controller.tick();
+    }
+#endif
 }
 
 inline void Core::tick_t2() const {
@@ -153,7 +159,7 @@ inline void Core::tick_t2() const {
 
 inline void Core::tick_t3() const {
     if (gb.stopped) {
-        gb.stop_controller.stopped_tick_t3();
+        gb.stop_controller.stopped_tock();
         return;
     }
 
@@ -200,7 +206,7 @@ inline void Core::tick_t3() const {
     gb.cpu_bus.tick();
     gb.oam_bus.tick();
     gb.vram_bus.tick();
-    gb.stop_controller.tick_t3();
+    gb.stop_controller.tick();
 }
 
 void Core::cycle() {

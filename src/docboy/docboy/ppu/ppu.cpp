@@ -187,7 +187,6 @@ void Ppu::tick() {
 
 #ifdef ENABLE_CGB
 void Ppu::enable_color_resolver() {
-    ASSERT(!color_resolver_enabled);
     color_resolver_enabled = true;
 }
 

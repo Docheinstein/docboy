@@ -117,6 +117,10 @@ public:
 
     RunnerImpl& schedule_inputs(std::vector<JoypadInput> inputs) {
         inputs_ = std::move(inputs);
+        // Eventually at BOOT_DURATION time to inputs timing
+        for (auto& in : inputs_) {
+            in.ticks += BOOT_DURATION;
+        }
         return static_cast<RunnerImpl&>(*this);
     }
 

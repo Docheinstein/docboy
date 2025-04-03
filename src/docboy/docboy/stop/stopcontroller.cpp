@@ -43,7 +43,7 @@ void StopController::stopped_tick() {
 #endif
 }
 
-void StopController::stopped_tick_t3() {
+void StopController::stopped_tock() {
     ASSERT(stopped);
     ASSERT(!requested);
 

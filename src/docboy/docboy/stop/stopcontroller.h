@@ -15,14 +15,14 @@ public:
 
     void stop();
 
-    void tick_t3() {
+    void tick() {
         if (requested) {
             enter_stop_mode();
         }
     }
 
     void stopped_tick();
-    void stopped_tick_t3();
+    void stopped_tock();
 
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
