@@ -59,12 +59,14 @@ void StopController::stopped_tock() {
         stopped = keep_bits<4>(joypad.read_p1()) == bitmask<4>;
     }
 
-#ifdef ENABLE_CGB
     if (!stopped) {
+        timers.tick();
+
+#ifdef ENABLE_CGB
         // Make PPU work again.
         ppu.enable_color_resolver();
-    }
 #endif
+    }
 }
 
 void StopController::enter_stop_mode() {
@@ -84,7 +86,7 @@ void StopController::enter_stop_mode() {
 #endif
 
     // DIV is reset
-    timers.set_div(4); // TODO: is this exact? Or maybe CPU is blocked by 1 M-Cycle?
+    timers.set_div(0);
 
 #ifdef ENABLE_CGB
     // In CGB, PPU will push black pixels during the STOP mode

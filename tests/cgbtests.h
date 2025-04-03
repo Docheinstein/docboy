@@ -91,9 +91,9 @@ TEST_CASE("cgb", "[emulation]") {
     }
 
     SECTION("timers") {
-        RUN_TEST_ROMS(F {"docboy/timers/stop_read_tima_round1.gbc", "docboy/ok.png",
+        RUN_TEST_ROMS(F {"docboy/timers/interactive/stop_read_tima_round1.gbc", "docboy/ok.png",
                          Inputs {{65536, Joypad::KeyState::Pressed, Joypad::Key::A}}},
-                      F {"docboy/timers/stop_read_tima_round2.gbc", "docboy/ok.png",
+                      F {"docboy/timers/interactive/stop_read_tima_round2.gbc", "docboy/ok.png",
                          Inputs {{65536, Joypad::KeyState::Pressed, Joypad::Key::A}}}, );
     }
 
@@ -324,8 +324,6 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/gdma_source_wram_dma_source_ram_c110_8000.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_source_wram_dma_source_ram_c120_8000.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_source_wram_dma_source_ram_d000_8000.gbc", "docboy/ok.png"},
-            F {"docboy/hdma/gdma_stop_remaining_length.gbc", "docboy/ok.png",
-               Inputs {{65536, Joypad::KeyState::Pressed, Joypad::Key::A}}},
             F {"docboy/hdma/gdma_tima_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_tima_timing_round2.gbc", "docboy/ok.png"},
             F {"docboy/hdma/gdma_transfer_length.gbc", "docboy/ok.png"},
@@ -587,10 +585,6 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_start_during_ly1_hblank_timing_round1.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_ly1_hblank_timing_round2.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_start_during_oam_scan_with_dma_running.gbc", "docboy/ok.png"},
-            F {"docboy/hdma/hdma_stop_resume_47_nops_scx0.gbc", "docboy/ok.png",
-               Inputs {{20000, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-            F {"docboy/hdma/hdma_stop_resume_wait_hblanks.gbc", "docboy/ok.png",
-               Inputs {{20000, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
             F {"docboy/hdma/hdma_switch_destination_vram_bank.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_switch_source_wram_bank.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_tima_timing_instr_length_4_round1.gbc", "docboy/ok.png"},
@@ -802,7 +796,16 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/hdma/hdma_write_source_hdma1_diff.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_write_source_hdma1_same.gbc", "docboy/ok.png"},
             F {"docboy/hdma/hdma_write_source_hdma2_diff.gbc", "docboy/ok.png"},
-            F {"docboy/hdma/hdma_write_source_hdma2_same.gbc", "docboy/ok.png"}, );
+            F {"docboy/hdma/hdma_write_source_hdma2_same.gbc", "docboy/ok.png"},
+
+            F {"docboy/hdma/interactive/gdma_stop_remaining_length.gbc", "docboy/ok.png",
+               Inputs {{65536, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/hdma/interactive/hdma_stop_resume_47_nops_scx0.gbc", "docboy/ok.png",
+               Inputs {{20000, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+            F {"docboy/hdma/interactive/hdma_stop_resume_wait_hblanks.gbc", "docboy/ok.png",
+               Inputs {{20000, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
+
+        );
     }
 
     SECTION("serial") {
@@ -1160,22 +1163,6 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/double_speed/double_speed_serial_high_speed_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_serial_speed_round1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_serial_speed_round2.gbc", "docboy/ok.png"},
-            F {"docboy/double_speed/double_speed_stop_read_tima_a_round1.gbc", "docboy/ok.png",
-               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
-            F {"docboy/double_speed/double_speed_stop_read_tima_a_round2.gbc", "docboy/ok.png",
-               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
-            F {"docboy/double_speed/double_speed_stop_read_tima_b_round1.gbc", "docboy/ok.png",
-               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
-            F {"docboy/double_speed/double_speed_stop_read_tima_b_round2.gbc", "docboy/ok.png",
-               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
-            F {"docboy/double_speed/double_speed_stop_read_tima_a_round1.gbc", "docboy/ok.png",
-               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
-            F {"docboy/double_speed/double_speed_stop_read_tima_a_round2.gbc", "docboy/ok.png",
-               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
-            F {"docboy/double_speed/double_speed_stop_read_tima_b_round1.gbc", "docboy/ok.png",
-               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
-            F {"docboy/double_speed/double_speed_stop_read_tima_b_round2.gbc", "docboy/ok.png",
-               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
             F {"docboy/double_speed/double_speed_timers_speed.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_timers_tima_round1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_timers_tima_round2.gbc", "docboy/ok.png"},
@@ -1304,23 +1291,40 @@ TEST_CASE("cgb", "[emulation]") {
             //            F {"docboy/double_speed/speed_switch_to_single_timers_tima_262khz_round2.gbc",
             //            "docboy/ok.png"},
 
-            F {"docboy/double_speed/stop_key0_joypad0_interrupt0.gbc", "docboy/ok.png",
+            F {"docboy/double_speed/interactive/double_speed_stop_read_tima_a_round1.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/double_speed/interactive/double_speed_stop_read_tima_a_round2.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/double_speed/interactive/double_speed_stop_read_tima_b_round1.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/double_speed/interactive/double_speed_stop_read_tima_b_round2.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/double_speed/interactive/double_speed_stop_read_tima_a_round1.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/double_speed/interactive/double_speed_stop_read_tima_a_round2.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/double_speed/interactive/double_speed_stop_read_tima_b_round1.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+            F {"docboy/double_speed/interactive/double_speed_stop_read_tima_b_round2.gbc", "docboy/ok.png",
+               Inputs {{131072, Joypad::KeyState::Pressed, Joypad::Key::A}}},
+
+            F {"docboy/double_speed/interactive/stop_key0_joypad0_interrupt0.gbc", "docboy/ok.png",
                Inputs {{8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-            F {"docboy/double_speed/stop_key0_joypad0_interrupt1.gbc", "docboy/ok.png",
+            F {"docboy/double_speed/interactive/stop_key0_joypad0_interrupt1.gbc", "docboy/ok.png",
                Inputs {{8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-            F {"docboy/double_speed/stop_key0_joypad1_interrupt0.gbc", "docboy/ok.png",
+            F {"docboy/double_speed/interactive/stop_key0_joypad1_interrupt0.gbc", "docboy/ok.png",
                Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-            F {"docboy/double_speed/stop_key0_joypad1_interrupt1.gbc", "docboy/ok.png",
+            F {"docboy/double_speed/interactive/stop_key0_joypad1_interrupt1.gbc", "docboy/ok.png",
                Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-            F {"docboy/double_speed/stop_key1_joypad0_interrupt0.gbc", "docboy/ok.png",
+            F {"docboy/double_speed/interactive/stop_key1_joypad0_interrupt0.gbc", "docboy/ok.png",
                Inputs {{8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-            F {"docboy/double_speed/stop_key1_joypad0_interrupt1_ime0.gbc", "docboy/ok.png",
+            F {"docboy/double_speed/interactive/stop_key1_joypad0_interrupt1_ime0.gbc", "docboy/ok.png",
                Inputs {{8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-            F {"docboy/double_speed/stop_key1_joypad0_interrupt1_ime1.gbc", "docboy/ok.png",
+            F {"docboy/double_speed/interactive/stop_key1_joypad0_interrupt1_ime1.gbc", "docboy/ok.png",
                Inputs {{8192, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-            F {"docboy/double_speed/stop_key1_joypad1_interrupt0.gbc", "docboy/ok.png",
+            F {"docboy/double_speed/interactive/stop_key1_joypad1_interrupt0.gbc", "docboy/ok.png",
                Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}},
-            F {"docboy/double_speed/stop_key1_joypad1_interrupt1.gbc", "docboy/ok.png",
+            F {"docboy/double_speed/interactive/stop_key1_joypad1_interrupt1.gbc", "docboy/ok.png",
                Inputs {{0, Joypad::KeyState::Pressed, Joypad::Key::Up}}}, );
     }
 
