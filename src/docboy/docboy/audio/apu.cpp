@@ -85,7 +85,7 @@ inline void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, co
                 ch.wave.position = mod<8>(ch.wave.position + 1);
 
                 // Reload period timer
-                ch.wave.timer = nrx4.period_high << 8 | nrx3.period_low;
+                ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
                 ASSERT(ch.wave.timer < 2048);
             }
         } else {
@@ -181,7 +181,7 @@ void Apu::reset() {
     ch1.dac = true;
     ch1.volume = 0;
     ch1.wave.position = 0;
-    ch1.wave.timer = nr14.period_high << 8 | nr13.period_low;
+    ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
     ch1.volume_sweep.direction = false;
     ch1.volume_sweep.pace = 0;
     ch1.volume_sweep.timer = 0;
@@ -193,7 +193,7 @@ void Apu::reset() {
     ch2.dac = false;
     ch2.volume = 0;
     ch2.wave.position = 0;
-    ch2.wave.timer = nr24.period_high << 8 | nr23.period_low;
+    ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
     ch2.volume_sweep.direction = false;
     ch2.volume_sweep.pace = 0;
     ch2.volume_sweep.timer = 0;
@@ -448,7 +448,7 @@ void Apu::tick_ch3() {
             if (ch3.trigger_delay == 0) {
                 ch3.retrigger = false;
 
-                ch3.wave.timer = nr34.period_high << 8 | nr33.period_low;
+                ch3.wave.timer = concat(nr34.period_high, nr33.period_low);
                 ch3.wave.position = 0;
             }
         }
@@ -460,7 +460,7 @@ void Apu::tick_ch3() {
             ch3.wave.play_position = ch3.wave.position >> 1;
 
             // Reload period timer
-            ch3.wave.timer = nr34.period_high << 8 | nr33.period_low;
+            ch3.wave.timer = concat(nr34.period_high, nr33.period_low);
 
             ch3.last_read_tick = ticks;
 
@@ -993,7 +993,7 @@ void Apu::write_nr14(uint8_t value) {
 
         ch1.volume = nr12.initial_volume;
 
-        ch1.wave.timer = nr14.period_high << 8 | nr13.period_low;
+        ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
 
         ch1.volume_sweep.direction = nr12.envelope_direction;
         ch1.volume_sweep.pace = nr12.sweep_pace;
@@ -1001,7 +1001,7 @@ void Apu::write_nr14(uint8_t value) {
         ch1.volume_sweep.expired = false;
 
         ch1.period_sweep.enabled = nr10.pace || nr10.step;
-        ch1.period_sweep.period = nr14.period_high << 8 | (nr13.period_low);
+        ch1.period_sweep.period = concat(nr14.period_high, nr13.period_low);
 
         // Pace 0 is reloaded as pace 8.
         // [blargg/05-sweep-details]
@@ -1119,7 +1119,7 @@ void Apu::write_nr24(uint8_t value) {
 
         ch2.volume = nr22.initial_volume;
 
-        ch2.wave.timer = nr24.period_high << 8 | nr23.period_low;
+        ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
 
         ch2.volume_sweep.direction = nr22.envelope_direction;
         ch2.volume_sweep.pace = nr22.sweep_pace;

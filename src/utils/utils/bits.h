@@ -116,20 +116,6 @@ inline uint16_t concat(uint8_t msb, uint8_t lsb) {
     return ((uint16_t)msb) << 8 | lsb;
 }
 
-// ---------- NIBBLES ----------
-
-template <uint8_t n, typename T>
-uint8_t get_nibble(T value) {
-    static_assert(n < 2 * sizeof(T));
-    return (value >> (4 * n)) & 0xF;
-}
-
-template <uint8_t n, typename T>
-void set_nibble(T& dest, uint8_t value) {
-    dest &= (T)(~(((T)(0xF)) << (4 * n)));
-    dest |= ((value & 0xF) << (4 * n));
-}
-
 // ---------- BITS ----------
 
 template <uint8_t n, uint8_t... ns>
@@ -179,18 +165,18 @@ constexpr bool test_bit() {
 }
 
 template <uint8_t n, uint8_t... ns, typename T>
-bool test_bits_or(T&& value) {
+bool test_bits_any(T&& value) {
     if constexpr (sizeof...(ns) > 0) {
-        return test_bit<n>(std::forward<T>(value)) || test_bits_or<ns...>(std::forward<T>(value));
+        return test_bit<n>(std::forward<T>(value)) || test_bits_any<ns...>(std::forward<T>(value));
     }
 
     return test_bit<n>(std::forward<T>(value));
 }
 
 template <uint8_t n, uint8_t... ns, typename T>
-bool test_bits_and(T&& value) {
+bool test_bits_all(T&& value) {
     if constexpr (sizeof...(ns) > 0) {
-        return test_bit<n>(std::forward<T>(value)) && test_bits_or<ns...>(std::forward<T>(value));
+        return test_bit<n>(std::forward<T>(value)) && test_bits_any<ns...>(std::forward<T>(value));
     }
 
     return test_bit<n>(std::forward<T>(value));
@@ -251,6 +237,12 @@ auto keep_bits(T&& value) {
     return value & bitmask<n>;
 }
 
+template <uint8_t n, typename T>
+auto discard_bits(T&& value) {
+    static_assert(n < 8 * sizeof(T));
+    return value & bitmask_off<n>;
+}
+
 template <uint8_t msb, uint8_t lsb, typename T, std::enable_if_t<msb >= lsb>* = nullptr>
 auto keep_bits_range(T&& value) {
     static_assert(msb < 8 * sizeof(T));
@@ -259,13 +251,8 @@ auto keep_bits_range(T&& value) {
 }
 
 template <const BitRange& range, typename T>
-auto keep_bits_range_r(T&& value) {
+auto keep_bits_range(T&& value) {
     return keep_bits_range<range.msb, range.lsb>(std::forward<T>(value));
-};
-
-template <const BitRange& range, typename T>
-auto get_bits_range(T&& value) {
-    return keep_bits_range_r<range>(std::forward<T>(value)) >> range.lsb;
 };
 
 template <uint8_t msb, uint8_t lsb, typename T>
@@ -273,11 +260,10 @@ auto get_bits_range(T&& value) {
     return keep_bits_range<msb, lsb>(std::forward<T>(value)) >> lsb;
 };
 
-template <uint8_t n, typename T>
-auto discard_bits(T&& value) {
-    static_assert(n < 8 * sizeof(T));
-    return value & bitmask_off<n>;
-}
+template <const BitRange& range, typename T>
+auto get_bits_range(T&& value) {
+    return get_bits_range<range.msb, range.lsb>(std::forward<T>(value));
+};
 
 template <typename T>
 T least_significant_bit(T n) {

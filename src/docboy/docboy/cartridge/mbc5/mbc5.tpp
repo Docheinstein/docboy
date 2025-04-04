@@ -68,7 +68,7 @@ void Mbc5<RomSize, RamSize, Battery>::write_rom(uint16_t address, uint8_t value)
     if (address < 0x6000) {
         // 0x3000 - 0x3FFF
         if (address < 0x4000) {
-            rom_bank_selector = keep_bits<1>(value) << 8 | keep_bits<8>(rom_bank_selector);
+            rom_bank_selector = concat(keep_bits<1>(value) ,keep_bits<8>(rom_bank_selector));
             return;
         }
 

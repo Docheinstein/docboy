@@ -35,6 +35,8 @@ public:
 
     void set_key_state(Key key, KeyState state);
 
+    uint8_t read_keys() const;
+
     struct P1 : Composite<Specs::Registers::Joypad::P1> {
         Bool select_buttons {make_bool()};
         Bool select_dpad {make_bool()};

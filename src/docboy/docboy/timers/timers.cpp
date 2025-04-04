@@ -60,7 +60,7 @@ void Timers::reset() {
 }
 
 uint8_t Timers::read_div() const {
-    const uint8_t div_high = div16 >> 8;
+    const uint8_t div_high = get_byte<1>(div16);
 #ifdef ENABLE_DEBUGGER
     DebuggerMemoryWatcher::notify_read(Specs::Registers::Timers::DIV);
 #endif
@@ -98,7 +98,7 @@ uint8_t Timers::read_tac() const {
 
 void Timers::write_tac(uint8_t value) {
     tac.enable = test_bit<Specs::Bits::Timers::TAC::ENABLE>(value);
-    tac.clock_selector = keep_bits_range_r<Specs::Bits::Timers::TAC::CLOCK_SELECTOR>(value);
+    tac.clock_selector = keep_bits_range<Specs::Bits::Timers::TAC::CLOCK_SELECTOR>(value);
     on_falling_edge_inc_tima();
 }
 

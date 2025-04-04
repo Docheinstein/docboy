@@ -98,20 +98,6 @@ TEST_CASE("bits", "[bits][unit]") {
         REQUIRE(AF == 0x0403);
     }
 
-    SECTION("get and set nibble") {
-        uint16_t X = 0xF2;
-        REQUIRE(get_nibble<0>(X) == 0x2);
-        REQUIRE(get_nibble<1>(X) == 0xF);
-
-        set_nibble<0>(X, 3);
-        REQUIRE(X == 0xF3);
-
-        set_nibble<1>(X, 0);
-        REQUIRE(X == 0x3);
-        REQUIRE(get_nibble<0>(X) == 0x3);
-        REQUIRE(get_nibble<1>(X) == 0x0);
-    }
-
     SECTION("concat bytes") {
         uint8_t A = 0x03;
         uint8_t B = 0x01;

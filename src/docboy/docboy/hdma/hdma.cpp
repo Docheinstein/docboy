@@ -21,14 +21,14 @@ void Hdma::write_hdma1(uint8_t value) {
     hdma1 = value;
 
     // Reload new source address
-    source.address = hdma1 << 8 | hdma2;
+    source.address = concat(hdma1, hdma2);
 }
 
 void Hdma::write_hdma2(uint8_t value) {
     hdma2 = discard_bits<4>(value);
 
     // Reload new source address
-    source.address = hdma1 << 8 | hdma2;
+    source.address = concat(hdma1, hdma2);
 
     // Reset source cursor
     source.cursor = 0;
@@ -44,14 +44,14 @@ void Hdma::write_hdma3(uint8_t value) {
     hdma3 = value;
 
     // Reload new destination address
-    destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
+    destination.address = Specs::MemoryLayout::VRAM::START | concat(hdma3, hdma4);
 }
 
 void Hdma::write_hdma4(uint8_t value) {
     hdma4 = discard_bits<4>(value);
 
     // Reload new destination address
-    destination.address = Specs::MemoryLayout::VRAM::START | (hdma3 << 8 | hdma4);
+    destination.address = Specs::MemoryLayout::VRAM::START | concat(hdma3, hdma4);
 
     // Reset destination cursor
     destination.cursor = 0;
@@ -146,7 +146,7 @@ void Hdma::tick_even() {
         // Start write request for VRAM.
         // Destination address overflows with modulo 0x2000.
         // HDMA is aborted only if the destination exceeds 0xFFFF.
-        const uint16_t destination_address_slack = (destination.address + destination.cursor) & 0x1FFF;
+        const uint16_t destination_address_slack = keep_bits<13>(destination.address + destination.cursor);
         const uint16_t destination_address = Specs::MemoryLayout::VRAM::START | destination_address_slack;
         ASSERT(destination_address >= Specs::MemoryLayout::VRAM::START &&
                destination_address <= Specs::MemoryLayout::VRAM::END);

@@ -20,11 +20,15 @@ void Joypad::set_key_state(Key key, KeyState state) {
 
 uint8_t Joypad::read_p1() const {
     return 0b11000000 | p1.select_buttons << Specs::Bits::Joypad::P1::SELECT_ACTION_BUTTONS |
-           p1.select_dpad << Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS |
-           ((p1.select_dpad ? 0xF : (keys >> 4) & 0xF) & (p1.select_buttons ? 0xF : (keys & 0xF)));
+           p1.select_dpad << Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS | read_keys();
 }
 
 void Joypad::write_p1(uint8_t value) {
     p1.select_buttons = test_bit<Specs::Bits::Joypad::P1::SELECT_ACTION_BUTTONS>(value);
     p1.select_dpad = test_bit<Specs::Bits::Joypad::P1::SELECT_DIRECTION_BUTTONS>(value);
+}
+
+uint8_t Joypad::read_keys() const {
+    return ((p1.select_dpad ? bitmask<4> : keep_bits<4>(keys >> 4)) &
+            (p1.select_buttons ? bitmask<4> : keep_bits<4>(keys)));
 }

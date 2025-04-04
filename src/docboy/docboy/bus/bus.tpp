@@ -32,7 +32,7 @@ void Bus::read_request(uint16_t addr) {
     set_bit<R<Dev>>(requests);
 
     if constexpr (Dev == Device::Cpu) {
-        if (test_bits_or<R<Device::Dma>, W<Device::Dma>>(requests)) {
+        if (test_bits_any<R<Device::Dma>, W<Device::Dma>>(requests)) {
             return;
         }
     }
@@ -65,7 +65,7 @@ void Bus::write_request(uint16_t addr) {
     set_bit<W<Dev>>(requests);
 
     if constexpr (Dev == Device::Cpu || Dev == Device::Idu) {
-        if (test_bits_or<R<Device::Dma>, W<Device::Dma>>(requests)) {
+        if (test_bits_any<R<Device::Dma>, W<Device::Dma>>(requests)) {
             return;
         }
     }

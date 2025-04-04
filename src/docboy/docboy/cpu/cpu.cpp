@@ -3,7 +3,6 @@
 #include "docboy/cpu/idu.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/joypad/joypad.h"
-#include "docboy/mmu/mmu.h"
 #include "docboy/stop/stopcontroller.h"
 
 #ifdef ENABLE_CGB
@@ -1148,7 +1147,7 @@ uint8_t Cpu::read_reg8() const {
     }
     if constexpr (r == Register8::F) {
         // Last four bits hardwired to 0
-        return get_byte<0>(af) & 0xF0;
+        return discard_bits<4>(get_byte<0>(af));
     }
     if constexpr (r == Register8::H) {
         return get_byte<1>(hl);
@@ -1183,7 +1182,7 @@ void Cpu::write_reg8(uint8_t value) {
     } else if constexpr (r == Register8::E) {
         set_byte<0>(de, value);
     } else if constexpr (r == Register8::F) {
-        set_byte<0>(af, value & 0xF0);
+        set_byte<0>(af, discard_bits<4>(value));
     } else if constexpr (r == Register8::H) {
         set_byte<1>(hl, value);
     } else if constexpr (r == Register8::L) {
@@ -1202,7 +1201,7 @@ void Cpu::write_reg8(uint8_t value) {
 template <Cpu::Register16 rr>
 uint16_t Cpu::read_reg16() const {
     if constexpr (rr == Register16::AF) {
-        return af & 0xFFF0;
+        return discard_bits<4>(af);
     }
     if constexpr (rr == Register16::BC) {
         return bc;
@@ -1224,7 +1223,7 @@ uint16_t Cpu::read_reg16() const {
 template <Cpu::Register16 rr>
 void Cpu::write_reg16(uint16_t value) {
     if constexpr (rr == Register16::AF) {
-        af = value & 0xFFF0;
+        af = discard_bits<4>(value);
     } else if constexpr (rr == Register16::BC) {
         bc = value;
     } else if constexpr (rr == Register16::DE) {
@@ -1263,13 +1262,13 @@ uint16_t& Cpu::get_reg16() {
 template <Cpu::Flag f>
 bool Cpu::test_flag() const {
     if constexpr (f == Flag::Z) {
-        return get_bit<Specs::Bits::Flags::Z>(af);
+        return test_bit<Specs::Bits::Flags::Z>(af);
     } else if constexpr (f == Flag::N) {
-        return get_bit<Specs::Bits::Flags::N>(af);
+        return test_bit<Specs::Bits::Flags::N>(af);
     } else if constexpr (f == Flag::H) {
-        return get_bit<Specs::Bits::Flags::H>(af);
+        return test_bit<Specs::Bits::Flags::H>(af);
     } else if constexpr (f == Flag::C) {
-        return get_bit<Specs::Bits::Flags::C>(af);
+        return test_bit<Specs::Bits::Flags::C>(af);
     }
 }
 
@@ -1349,12 +1348,12 @@ void Cpu::isr_m3() {
     // Note that there is an opportunity to cancel the interrupt and jump to address
     // 0x0000 if the flag in IF/IE has been reset since the trigger of the interrupt.
 
-    uint8_t lsb = least_significant_bit(interrupts.IE & interrupts.IF);
-    ASSERT(lsb <= 16);
+    uint8_t b = least_significant_bit(interrupts.IE & interrupts.IF);
+    ASSERT(b <= 16);
 
-    interrupts.IF = interrupts.IF ^ lsb;
+    interrupts.IF = interrupts.IF ^ b;
 
-    pc = IRQ_LOOKUP[lsb];
+    pc = IRQ_LOOKUP[b];
 }
 
 void Cpu::isr_m4() {
@@ -1382,7 +1381,7 @@ void Cpu::stop_m0() {
     //        1      |   1    |      1      ||     0     |     0    |       0        |      0     |         0
     // -----------------------------------------------------------------------------------------------------------------
 
-    const bool joypad_input = keep_bits<4>(joypad.read_p1()) != bitmask<4>;
+    const bool joypad_input = joypad.read_keys() != bitmask<4>;
     const bool pending_interrupts = get_pending_interrupts();
 
     if (joypad_input) {
@@ -2281,7 +2280,7 @@ void Cpu::daa_m0() {
             u += 0x60;
             C = true;
         }
-        if (H || get_nibble<0>(u) > 0x9) {
+        if (H || keep_bits<4>(u) > 0x9) {
             u += 0x06;
         }
     } else {
@@ -2344,7 +2343,7 @@ void Cpu::rlca_m0() {
 
 void Cpu::rla_m0() {
     u = read_reg8<Register8::A>();
-    bool b7 = get_bit<7>(u);
+    bool b7 = test_bit<7>(u);
     u = (u << 1) | test_flag<Flag::C>();
     write_reg8<Register8::A>(u);
     reset_flag<(Flag::Z)>();
@@ -2372,7 +2371,7 @@ void Cpu::rrca_m0() {
 
 void Cpu::rra_m0() {
     u = read_reg8<Register8::A>();
-    bool b0 = get_bit<0>(u);
+    bool b0 = test_bit<0>(u);
     u = (u >> 1) | (test_flag<Flag::C>() << 7);
     write_reg8<Register8::A>(u);
     reset_flag<(Flag::Z)>();
@@ -2707,7 +2706,7 @@ void Cpu::cb_m0() {
 template <Cpu::Register8 r>
 void Cpu::rlc_r_m0() {
     u = read_reg8<r>();
-    bool b7 = get_bit<7>(u);
+    bool b7 = test_bit<7>(u);
     u = (u << 1) | b7;
     write_reg8<r>(u);
     set_flag<Flag::Z>(u == 0);
@@ -2727,7 +2726,7 @@ void Cpu::rlc_arr_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::rlc_arr_m1() {
-    bool b7 = get_bit<7>(io.data);
+    bool b7 = test_bit<7>(io.data);
     u = (io.data << 1) | b7;
     write(addr, u);
     set_flag<Flag::Z>(u == 0);
@@ -2746,7 +2745,7 @@ void Cpu::rlc_arr_m2() {
 template <Cpu::Register8 r>
 void Cpu::rrc_r_m0() {
     u = read_reg8<r>();
-    bool b0 = get_bit<0>(u);
+    bool b0 = test_bit<0>(u);
     u = (u >> 1) | (b0 << 7);
     write_reg8<r>(u);
     set_flag<Flag::Z>(u == 0);
@@ -2766,7 +2765,7 @@ void Cpu::rrc_arr_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::rrc_arr_m1() {
-    bool b0 = get_bit<0>(io.data);
+    bool b0 = test_bit<0>(io.data);
     u = (io.data >> 1) | (b0 << 7);
     write(addr, u);
     set_flag<Flag::Z>(u == 0);
@@ -2785,7 +2784,7 @@ void Cpu::rrc_arr_m2() {
 template <Cpu::Register8 r>
 void Cpu::rl_r_m0() {
     u = read_reg8<r>();
-    bool b7 = get_bit<7>(u);
+    bool b7 = test_bit<7>(u);
     u = (u << 1) | test_flag<Flag::C>();
     write_reg8<r>(u);
     set_flag<Flag::Z>(u == 0);
@@ -2805,7 +2804,7 @@ void Cpu::rl_arr_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::rl_arr_m1() {
-    bool b7 = get_bit<7>(io.data);
+    bool b7 = test_bit<7>(io.data);
     u = (io.data << 1) | test_flag<Flag::C>();
     write(addr, u);
     set_flag<Flag::Z>(u == 0);
@@ -2824,7 +2823,7 @@ void Cpu::rl_arr_m2() {
 template <Cpu::Register8 r>
 void Cpu::rr_r_m0() {
     u = read_reg8<r>();
-    bool b0 = get_bit<0>(u);
+    bool b0 = test_bit<0>(u);
     u = (u >> 1) | (test_flag<Flag::C>() << 7);
     write_reg8<r>(u);
     set_flag<Flag::Z>(u == 0);
@@ -2844,7 +2843,7 @@ void Cpu::rr_arr_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::rr_arr_m1() {
-    bool b0 = get_bit<0>(io.data);
+    bool b0 = test_bit<0>(io.data);
     u = (io.data >> 1) | (test_flag<Flag::C>() << 7);
     write(addr, u);
     set_flag<Flag::Z>(u == 0);
@@ -2863,7 +2862,7 @@ void Cpu::rr_arr_m2() {
 template <Cpu::Register8 r>
 void Cpu::sra_r_m0() {
     u = read_reg8<r>();
-    bool b0 = get_bit<0>(u);
+    bool b0 = test_bit<0>(u);
     u = (u >> 1) | (u & bit<7>);
     write_reg8<r>(u);
     set_flag<Flag::Z>(u == 0);
@@ -2883,7 +2882,7 @@ void Cpu::sra_arr_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::sra_arr_m1() {
-    bool b0 = get_bit<0>(io.data);
+    bool b0 = test_bit<0>(io.data);
     u = (io.data >> 1) | (io.data & bit<7>);
     write(addr, u);
     set_flag<Flag::Z>(u == 0);
@@ -2902,7 +2901,7 @@ void Cpu::sra_arr_m2() {
 template <Cpu::Register8 r>
 void Cpu::srl_r_m0() {
     u = read_reg8<r>();
-    bool b0 = get_bit<0>(u);
+    bool b0 = test_bit<0>(u);
     u = (u >> 1);
     write_reg8<r>(u);
     set_flag<Flag::Z>(u == 0);
@@ -2922,7 +2921,7 @@ void Cpu::srl_arr_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::srl_arr_m1() {
-    bool b0 = get_bit<0>(io.data);
+    bool b0 = test_bit<0>(io.data);
     u = (io.data >> 1);
     write(addr, u);
     set_flag<Flag::Z>(u == 0);
@@ -2941,7 +2940,7 @@ void Cpu::srl_arr_m2() {
 template <Cpu::Register8 r>
 void Cpu::sla_r_m0() {
     u = read_reg8<r>();
-    bool b7 = get_bit<7>(u);
+    bool b7 = test_bit<7>(u);
     u = u << 1;
     write_reg8<r>(u);
     set_flag<Flag::Z>(u == 0);
@@ -2961,7 +2960,7 @@ void Cpu::sla_arr_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::sla_arr_m1() {
-    bool b7 = get_bit<7>(io.data);
+    bool b7 = test_bit<7>(io.data);
     u = io.data << 1;
     write(addr, u);
     set_flag<Flag::Z>(u == 0);
@@ -2980,7 +2979,7 @@ void Cpu::sla_arr_m2() {
 template <Cpu::Register8 r>
 void Cpu::swap_r_m0() {
     u = read_reg8<r>();
-    u = ((u & 0x0F) << 4) | ((u & 0xF0) >> 4);
+    u = (keep_bits<4>(u) << 4) | (discard_bits<4>(u) >> 4);
     write_reg8<r>(u);
     set_flag<Flag::Z>(u == 0);
     reset_flag<(Flag::N)>();
@@ -2999,7 +2998,7 @@ void Cpu::swap_arr_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::swap_arr_m1() {
-    u = ((io.data & 0x0F) << 4) | ((io.data & 0xF0) >> 4);
+    u = ((keep_bits<4>(io.data)) << 4) | (discard_bits<4>(io.data) >> 4);
     write(addr, u);
     set_flag<Flag::Z>(u == 0);
     reset_flag<(Flag::N)>();
@@ -3016,7 +3015,7 @@ void Cpu::swap_arr_m2() {
 
 template <uint8_t n, Cpu::Register8 r>
 void Cpu::bit_r_m0() {
-    b = get_bit<n>(read_reg8<r>());
+    b = test_bit<n>(read_reg8<r>());
     set_flag<Flag::Z>(b == 0);
     reset_flag<(Flag::N)>();
     set_flag<(Flag::H)>();

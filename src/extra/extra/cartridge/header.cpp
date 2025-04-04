@@ -6,6 +6,8 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/specs.h"
 
+#include "utils/bits.h"
+
 namespace {
 const std::map<uint8_t, std::string> CGB_FLAG_DESCRIPTION_MAP = {
     {0x80, "The game supports CGB enhancements, but is backwards compatible with monochrome Game Boys"},
@@ -299,7 +301,7 @@ std::string CartridgeHeader::cgb_flag_description() const {
 }
 
 std::string CartridgeHeader::new_licensee_code_description() const {
-    uint16_t new_licensee_code_ext = new_licensee_code[0] << 8 | new_licensee_code[1];
+    uint16_t new_licensee_code_ext = concat(new_licensee_code[0], new_licensee_code[1]);
     if (const auto it = NEW_LICENSEE_CODE_DESCRIPTION_MAP.find(new_licensee_code_ext);
         it != NEW_LICENSEE_CODE_DESCRIPTION_MAP.end()) {
         return it->second;

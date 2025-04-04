@@ -1223,10 +1223,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         };
 
         b << subheader("flags", width) << endl;
-        b << red("Z") << " : " << flag(get_bit<Specs::Bits::Flags::Z>(gb.cpu.af)) << "    " << red("N") << " : "
-          << flag(get_bit<Specs::Bits::Flags::N>(gb.cpu.af)) << "    " << red("H") << " : "
-          << flag(get_bit<Specs::Bits::Flags::H>(gb.cpu.af)) << "    " << red("C") << " : "
-          << flag(get_bit<Specs::Bits::Flags::C>(gb.cpu.af)) << endl;
+        b << red("Z") << " : " << flag(test_bit<Specs::Bits::Flags::Z>(gb.cpu.af)) << "    " << red("N") << " : "
+          << flag(test_bit<Specs::Bits::Flags::N>(gb.cpu.af)) << "    " << red("H") << " : "
+          << flag(test_bit<Specs::Bits::Flags::H>(gb.cpu.af)) << "    " << red("C") << " : "
+          << flag(test_bit<Specs::Bits::Flags::C>(gb.cpu.af)) << endl;
 
         // Read/Write
         b << subheader("io", width) << endl;

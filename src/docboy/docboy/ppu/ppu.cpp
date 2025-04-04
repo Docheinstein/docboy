@@ -1103,7 +1103,7 @@ inline uint16_t Ppu::resolve_color(const uint8_t color_index, const uint8_t* pal
 
     ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
     const uint8_t* palette_color_word = &palette[2 * color_index];
-    return keep_bits<15>(palette_color_word[0] | palette_color_word[1] << 8);
+    return keep_bits<15>(concat(palette_color_word[1], palette_color_word[0]));
 }
 #else
 inline uint8_t Ppu::resolve_color(const uint8_t color_index, const uint8_t palette) {
@@ -1610,13 +1610,13 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
         const uint8_t(*pixels_map_ptr)[8] = test_bit<Specs::Bits::Background::Attributes::X_FLIP>(bwf.attributes)
                                                 ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
                                                 : TILE_ROW_DATA_TO_ROW_PIXELS;
-        memcpy(pixel_data, &pixels_map_ptr[psf.tile_data_high << 8 | psf.tile_data_low], 8);
+        memcpy(pixel_data, &pixels_map_ptr[concat(psf.tile_data_high, psf.tile_data_low)], 8);
 
         for (int8_t i = 7; i >= 0; i--) {
             bg_fifo.emplace_back(pixel_data[i], bwf.attributes);
         }
 #else
-        bg_fifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[psf.tile_data_high << 8 | psf.tile_data_low]);
+        bg_fifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[concat(psf.tile_data_high, psf.tile_data_low)]);
 #endif
 
         fetcher_tick_selector = &Ppu::bgwin_prefetcher_get_tile_0;
@@ -1740,7 +1740,7 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
     const uint8_t(*pixels_map_ptr)[8] = test_bit<Specs::Bits::OAM::Attributes::X_FLIP>(of.attributes)
                                             ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
                                             : TILE_ROW_DATA_TO_ROW_PIXELS;
-    memcpy(obj_pixels_colors, &pixels_map_ptr[psf.tile_data_high << 8 | psf.tile_data_low], 8);
+    memcpy(obj_pixels_colors, &pixels_map_ptr[concat(psf.tile_data_high, psf.tile_data_low)], 8);
 
     ObjPixel obj_pixels[8];
     for (uint8_t i = 0; i < 8; i++) {
@@ -1829,7 +1829,7 @@ inline void Ppu::setup_obj_pixel_slice_fetcher_tile_data_address() {
     }
 
     // Last bit is ignored for 8x16 OBJs.
-    const uint8_t tile_number = (is_double_height ? (of.tile_number & 0xFE) : of.tile_number);
+    const uint8_t tile_number = (is_double_height ? (discard_bits<1>(of.tile_number)) : of.tile_number);
 
     const uint16_t vram_tile_addr = TILE_BYTES * tile_number;
 

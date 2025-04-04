@@ -56,7 +56,7 @@ void StopController::stopped_tock() {
     if (ppu_shutdown_countdown == 0)
 #endif
     {
-        stopped = keep_bits<4>(joypad.read_p1()) == bitmask<4>;
+        stopped = joypad.read_keys() == bitmask<4>;
     }
 
     if (!stopped) {
