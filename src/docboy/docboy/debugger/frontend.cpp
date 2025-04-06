@@ -1185,10 +1185,15 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << header("DOUBLE SPEED", width) << endl;
 
         // State
-        b << yellow("Double Speed") << "  :  " << +gb.speed_switch_controller.is_double_speed_mode() << endl;
-        b << yellow("Switching") << "     :  " << (gb.speed_switch_controller.speed_switch_countdown > 0) << endl;
+        b << yellow("Double Speed") << "        :  " << +gb.speed_switch_controller.is_double_speed_mode() << endl;
+        b << yellow("Switching") << "           :  " << (gb.speed_switch_controller.is_switching_speed()) << endl;
         if (gb.speed_switch_controller.speed_switch_countdown) {
-            b << yellow("Switch Delay") << "  :  " << +gb.speed_switch_controller.speed_switch_countdown << endl;
+            b << yellow("Switch Delay") << "        :  " << +gb.speed_switch_controller.speed_switch_countdown << endl;
+        }
+        b << yellow("Timers Blocked") << "      :  " << (gb.speed_switch_controller.is_blocking_timers()) << endl;
+        if (gb.speed_switch_controller.speed_switch_timers_block_countdown) {
+            b << yellow("Timers Block Delay") << "  :  "
+              << +gb.speed_switch_controller.speed_switch_timers_block_countdown << endl;
         }
 
         return b;

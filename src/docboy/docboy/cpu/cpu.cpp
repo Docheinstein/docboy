@@ -1078,7 +1078,7 @@ void Cpu::check_interrupt() {
 }
 
 inline uint8_t Cpu::get_pending_interrupts() const {
-    return interrupts.IE & interrupts.IF & bitmask<5>;
+    return keep_bits<5>(interrupts.IE & interrupts.IF);
 }
 
 void Cpu::serve_interrupt() {
