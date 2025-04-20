@@ -8,7 +8,6 @@
 
 class Interrupts;
 class Timers;
-class Dma;
 class Parcel;
 
 class SpeedSwitchController {
