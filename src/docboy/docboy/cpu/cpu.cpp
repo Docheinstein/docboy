@@ -1,4 +1,7 @@
 #include "docboy/cpu/cpu.h"
+
+#include <array>
+
 #include "docboy/bootrom/helpers.h"
 #include "docboy/cpu/idu.h"
 #include "docboy/interrupts/interrupts.h"
@@ -19,7 +22,92 @@ namespace {
 constexpr uint8_t STATE_INSTRUCTION_FLAG_NORMAL = 0;
 constexpr uint8_t STATE_INSTRUCTION_FLAG_CB = 1;
 constexpr uint8_t STATE_INSTRUCTION_FLAG_ISR = 2;
-constexpr uint8_t STATE_INSTRUCTION_FLAG_NONE = 255;
+
+constexpr uint8_t INTERRUPT_TIMING_UNSET = 128;
+
+// Table representing the interrupt timings, indexed as [interrupt][mode][t].
+// interrupt : IE & IE & 0x1F
+// mode      : 0 = not halted, 1 = halted, 2 = speed switch
+// t         : 0, 1, 2, 3
+using InterruptsTimings = std::array<std::array<std::array<uint8_t, 4>, 3>, 32>;
+
+// clang-format off
+template<
+    uint8_t V0,  uint8_t V1,  uint8_t V2,  uint8_t V3   /* VBlank */,
+    uint8_t V0H, uint8_t V1H, uint8_t V2H, uint8_t V3H  /* VBlank (halted) */,
+    uint8_t V0S, uint8_t V1S, uint8_t V2S, uint8_t V3S  /* VBlank (speed switch) */,
+
+    uint8_t S0,  uint8_t S1,  uint8_t S2,  uint8_t S3   /* STAT */,
+    uint8_t S0H, uint8_t S1H, uint8_t S2H, uint8_t S3H  /* STAT (halted) */,
+    uint8_t S0S, uint8_t S1S, uint8_t S2S, uint8_t S3S  /* STAT (speed switch) */,
+
+    uint8_t T0,  uint8_t T1,  uint8_t T2,  uint8_t T3   /* Timer */,
+    uint8_t T0H, uint8_t T1H, uint8_t T2H, uint8_t T3H  /* Timer (halted) */,
+    uint8_t T0S, uint8_t T1S, uint8_t T2S, uint8_t T3S  /* Timer (speed switch) */,
+
+    uint8_t L0,  uint8_t L1,  uint8_t L2,  uint8_t L3   /* Serial */,
+    uint8_t L0H, uint8_t L1H, uint8_t L2H, uint8_t L3H  /* Serial (halted) */,
+    uint8_t L0S, uint8_t L1S, uint8_t L2S, uint8_t L3S  /* Serial (speed switch) */,
+
+     uint8_t J0,  uint8_t J1,  uint8_t J2,  uint8_t J3   /* Joypad */,
+     uint8_t J0H, uint8_t J1H, uint8_t J2H, uint8_t J3H  /* Joypad (halted) */,
+     uint8_t J0S, uint8_t J1S, uint8_t J2S, uint8_t J3S  /* Joypad (speed switch) */
+>
+// clang-format on
+constexpr InterruptsTimings generate_interrupt_timing_table() {
+    constexpr uint8_t Z = INTERRUPT_TIMING_UNSET;
+
+    InterruptsTimings timings {
+        {/*  0 : None */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /*  1 : VBlank */ {{{{V0, V1, V2, V3}}, {{V0H, V1H, V2H, V3H}}, {{V0S, V1S, V2S, V3S}}}},
+         /*  2 : STAT */ {{{{S0, S1, S2, S3}}, {{S0H, S1H, S2H, S3H}}, {{S0S, S1S, S2S, S3S}}}},
+         /*  3 : STAT + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /*  4 : Timer */ {{{{T0, T1, T2, T3}}, {{T0H, T1H, T2H, T3H}}, {{T0S, T1S, T2S, T3S}}}},
+         /*  5 : Timer + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /*  6 : Timer + STAT */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /*  7 : Timer + STAT + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /*  8 : Serial */ {{{{L0, L1, L2, L3}}, {{L0H, L1H, L2H, L3H}}, {{L0S, L1S, L2S, L3S}}}},
+         /*  9 : Serial + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 10 : Serial + STAT */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 11 : Serial + STAT + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 12 : Serial + Timer */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 13 : Serial + Timer + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 14 : Serial + Timer + STAT */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 15 : Serial + Timer + STAT + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 16 : Joypad */ {{{{J0, J1, J2, J3}}, {{J0H, J1H, J2H, J3H}}, {{J0S, J1S, J2S, J3S}}}},
+         /* 17 : Joypad + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 18 : Joypad + STAT */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 19 : Joypad + STAT + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 20 : Joypad + Timer */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 21 : Joypad + Timer + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 22 : Joypad + Timer + STAT */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 23 : Joypad + Timer + STAT + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 24 : Joypad + Serial */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 25 : Joypad + Serial + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 26 : Joypad + Serial + STAT */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 27 : Joypad + Serial + STAT + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 28 : Joypad + Serial + Timer */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 29 : Joypad + Serial + Timer + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 30 : Joypad + Serial + Timer + STAT */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}},
+         /* 31 : Joypad + Serial + Timer + STAT + VBlank */ {{{{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}, {{Z, Z, Z, Z}}}}}};
+
+    // If multiple interrupts are pending (e.g. STAT + Timer),
+    // the timing is given by the interrupt with the lowest timing.
+    for (uint8_t interrupt = 0; interrupt < 32; interrupt++) {
+        for (uint8_t mode = 0; mode < 3; mode++) {
+            for (uint8_t t = 0; t < 4; t++) {
+                for (uint8_t b = 0; b < 5; b++) {
+                    if (test_bit(interrupt, b)) {
+                        timings[interrupt][mode][t] = std::min(timings[interrupt][mode][t], timings[bit_(b)][mode][t]);
+                    }
+                }
+            }
+        }
+    }
+
+    return timings;
+}
+
 } // namespace
 
 #ifdef ENABLE_CGB
@@ -667,16 +755,6 @@ void Cpu::tick_t3() {
 }
 
 inline void Cpu::tick() {
-#ifdef ENABLE_CGB
-    // TODO: this check should not be here: probably halted state is enough
-    if (speed_switch_controller.is_switching_speed()) {
-#ifdef ENABLE_DEBUGGER
-        ++cycles;
-#endif
-        return;
-    }
-#endif
-
     // Eventually handle pending interrupt
     if (interrupt.state == InterruptState::Pending) {
         // Decrease the remaining ticks for the pending interrupt
@@ -903,56 +981,10 @@ void Cpu::reset() {
 
 template <uint8_t t>
 void Cpu::check_interrupt() {
-    /*
-     * Interrupt timings (blank spaces are unknown).
-     *
-     * --------- Normal Speed ------------
-     *
-     * -----------------------------------
-     * NotHalted | T0  |  T1 |  T2 |  T3 |
-     * -----------------------------------
-     * VBlank    |  1  |  1  |     |     |
-     * Stat      |  1  |  1  |  1  |  2  |
-     * Timer     |  1  |  1  |     |  2  |
-     * Serial    |  1  |  1  |     |  2  |
-     * Joypad    |  1  |  1  |     |     |
-     *
-     * -----------------------------------
-     * Halted    | T0  |  T1 |  T2 |  T3 |
-     * -----------------------------------
-     * VBlank    |  1  |     |     |     |
-     * Stat      |  1  |  2  |  2  |  2  |
-     * Timer     |     |     |     |  3  |
-     * Serial    |     |     |     |  3  |
-     * Joypad    |     |     |     |     |
-     *
-     *
-     * --------- Double Speed ------------
-     *
-     * -----------------------------------
-     * NotHalted | T0  |  T1 |  T2 |  T3 |
-     * -----------------------------------
-     * -----------------------------------
-     * VBlank    |  1  |     |  1  |     |
-     * Stat      |  1  |  2  |  1  |  2  |
-     * Timer     |  1  |  2  |  1  |  2  |
-     * Serial    |  1  |  2  |  1  |  2  |
-     * Joypad    |  1  |     |  1  |     |
-     *
-     * -----------------------------------
-     * Halted    | T0  |  T1 |  T2 |  T3 |
-     * -----------------------------------
-     * VBlank    |  2  |     |  2  |     |
-     * Stat      |  2  |  3  |  2  |  3  |
-     * Timer     |     |  3  |     |  3  |
-     * Serial    |     |  3  |     |  3  |
-     * Joypad    |     |     |     |     |
-     */
-
     // U: Unknown timing: this case shouldn't happen at all.
 #ifdef ENABLE_ASSERTS
-    static constexpr uint8_t UNKNOWN_INTERRUPT_TIMING = UINT8_MAX;
-    static constexpr uint8_t U = UNKNOWN_INTERRUPT_TIMING;
+    static constexpr uint8_t INTERRUPT_TIMING_UNKNOWN = 255;
+    static constexpr uint8_t U = INTERRUPT_TIMING_UNKNOWN;
 #else
     static constexpr uint8_t U = 1;
 #endif
@@ -965,98 +997,67 @@ void Cpu::check_interrupt() {
     static constexpr uint8_t S2 = 2;
 
     // clang-format off
-    static constexpr uint8_t INTERRUPTS_TIMINGS[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
-        /*  0 : None */ {{U, U, U, U}, {U, U, U, U}},
-        /*  1 : VBlank */ {{1, 1, U, U}, {1, U, U, U}},
-        /*  2 : STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /*  3 : STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /*  4 : Timer */ {{1, 1, U, 2}, {U, U, U, 3}},
-        /*  5 : Timer + VBlank */ {{1, 1, U, 2}, {1, U, U, 3}},
-        /*  6 : Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /*  7 : Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /*  8 : Serial */ {{1, 1, S1, 2}, {S2, S2, S2, 3}},
-        /*  9 : Serial + VBlank */ {{1, 1, U, 2}, {1, S2, S2, 3}},
-        /* 10 : Serial + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /* 11 : Serial + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /* 12 : Serial + Timer */ {{1, 1, S1, 2}, {U, U, U, 3}},
-        /* 13 : Serial + Timer + VBlank */ {{1, 1, S1, 2}, {1, S2, S2, 3}},
-        /* 14 : Serial + Timer + STAT */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /* 15 : Serial + Timer + STAT + VBlank */ {{1, 1, 1, 2}, {1, 2, 2, 2}},
-        /* 16 : Joypad */ {{J, J, J, J}, {J, J, J, J}},
-        /* 17 : Joypad + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 18 : Joypad + STAT */ {{J, J, J, J}, {J, J, J, J}},
-        /* 19 : Joypad + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 20 : Joypad + Timer */ {{J, J, J, J}, {J, J, J, J}},
-        /* 21 : Joypad + Timer + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 22 : Joypad + Timer + STAT */ {{J, J, J, J}, {J, J, J, J}},
-        /* 23 : Joypad + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 24 : Joypad + Serial */ {{J, J, J, J}, {J, J, J, J}},
-        /* 25 : Joypad + Serial + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 26 : Joypad + Serial + STAT */ {{J, J, J, J}, {J, J, J, J}},
-        /* 27 : Joypad + Serial + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 28 : Joypad + Serial + Timer */ {{J, J, J, J}, {J, J, J, J}},
-        /* 29 : Joypad + Serial + Timer + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 30 : Joypad + Serial + Timer + STAT */ {{J, J, J, J}, {J, J, J, J}},
-        /* 31 : Joypad + Serial + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-    };
-
 #ifdef ENABLE_CGB
-    static constexpr uint8_t INTERRUPTS_TIMINGS_DOUBLE_SPEED[32][2][4] /* [interrupt flags][halted][t-cycle] */ = {
-        /*  0 : None */ {{U, U, U, U}, {U, U, U, U}},
-        /*  1 : VBlank */ {{1, U, 1, U}, {2, U, 2, U}},
-        /*  2 : STAT */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /*  3 : STAT + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /*  4 : Timer */ {{1, 2, 1, 2}, {U, 3, U, 3}},
-        /*  5 : Timer + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /*  6 : Timer + STAT */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /*  7 : Timer + STAT + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /*  8 : Serial */ {{1, 2, 1, 2}, {S2, 3, S2, 3}},
-        /*  9 : Serial + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /* 10 : Serial + STAT */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /* 11 : Serial + STAT + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /* 12 : Serial + Timer */ {{1, 2, 1, 2}, {S2, 3, S2, 3}},
-        /* 13 : Serial + Timer + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /* 14 : Serial + Timer + STAT */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /* 15 : Serial + Timer + STAT + VBlank */ {{1, 2, 1, 2}, {2, 3, 2, 3}},
-        /* 16 : Joypad */ {{J, J, J, J}, {J, J, J, J}},
-        /* 17 : Joypad + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 18 : Joypad + STAT */ {{J, J, J, J}, {J, J, J, J}},
-        /* 19 : Joypad + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 20 : Joypad + Timer */ {{J, J, J, J}, {J, J, J, J}},
-        /* 21 : Joypad + Timer + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 22 : Joypad + Timer + STAT */ {{J, J, J, J}, {J, J, J, J}},
-        /* 23 : Joypad + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 24 : Joypad + Serial */ {{J, J, J, J}, {J, J, J, J}},
-        /* 25 : Joypad + Serial + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 26 : Joypad + Serial + STAT */ {{J, J, J, J}, {J, J, J, J}},
-        /* 27 : Joypad + Serial + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 28 : Joypad + Serial + Timer */ {{J, J, J, J}, {J, J, J, J}},
-        /* 29 : Joypad + Serial + Timer + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-        /* 30 : Joypad + Serial + Timer + STAT */ {{J, J, J, J}, {J, J, J, J}},
-        /* 31 : Joypad + Serial + Timer + STAT + VBlank */ {{J, J, J, J}, {J, J, J, J}},
-    };
+    static constexpr InterruptsTimings INTERRUPTS_TIMINGS = generate_interrupt_timing_table<
+        /*             |      normal      |      halted       |   speed switch     */
+        /* VBlank */      1,  1,  U,  U,      2,  U,  U,  U,     3,  U,  3,  U, /* TODO: speed switch timing (odd mode) */
+        /* STAT   */      1,  1,  1,  2,      2,  2,  2,  3,     3,  U,  3,  U, /* TODO: speed switch timing (odd mode) */
+        /* Timer  */      1,  1,  U,  2,      U,  U,  U,  3,     1,  2,  U,  2,
+        /* Serial */      1,  1, S1,  2,     S2, S2, S2,  3,     1,  2, S1,  2,
+        /* Joypad */      J,  J,  J,  J,      J,  J,  J,  J,     J,  J,  J,  J>();
+
+    static constexpr InterruptsTimings INTERRUPTS_TIMINGS_DOUBLE_SPEED = generate_interrupt_timing_table<
+        /*             |      normal      |      halted       |   speed switch     */
+        /* VBlank */      1,  2,  1,  2,      2,  U,  2,  U,     1,  2,  1,  2,
+        /* STAT   */      1,  2,  1,  2,      2,  3,  2,  3,     1,  2,  1,  2,
+        /* Timer  */      1,  2,  1,  2,      U,  3,  U,  3,     U,  2,  U,  2,
+        /* Serial */      1,  2,  1,  2,     S2,  3, S2,  3,    S1,  2, S1,  2,
+        /* Joypad */      J,  J,  J , J,      J,  J,  J,  J,     J,  J,  J,  J>();
+#else
+static constexpr InterruptsTimings INTERRUPTS_TIMINGS = generate_interrupt_timing_table<
+    /*             |      normal      |      halted       |   speed switch     */
+    /* VBlank */      1,  1,  U,  U,      1,  U,  U,  U,     U,  U,  U,  U,
+    /* STAT   */      1,  1,  1,  2,      1,  2,  2,  2,     U,  U,  U,  U,
+    /* Timer  */      1,  1,  U,  2,      U,  U,  U,  3,     U,  U,  U,  U,
+    /* Serial */      1,  1, S1,  2,     S2, S2, S2,  3,     U,  U,  U,  U,
+    /* Joypad */      J,  J,  J,  J,      J,  J,  J,  J,     U,  U,  U,  U>();
 #endif
     // clang-format on
+
+#ifdef ENABLE_CGB
+    if (speed_switch_controller.is_blocking_interrupts()) {
+        // Interrupts are blocked for a few cycles at the beginning of a speed switch.
+        return;
+    }
+#endif
 
     if (interrupt.state == InterruptState::None && (halted || ime == ImeState::Enabled)) {
         if (const uint8_t pending_interrupts = get_pending_interrupts()) {
             interrupt.state = InterruptState::Pending;
 
 #ifdef ENABLE_CGB
+            ASSERT(!(speed_switch_controller.is_switching_speed() && !halted));
+            const uint8_t mode = halted + speed_switch_controller.is_switching_speed();
+
             if (speed_switch_controller.is_double_speed_mode()) {
-                interrupt.remaining_ticks = INTERRUPTS_TIMINGS_DOUBLE_SPEED[pending_interrupts][halted][t];
+                interrupt.remaining_ticks = INTERRUPTS_TIMINGS_DOUBLE_SPEED[pending_interrupts][mode][t];
             } else {
-                interrupt.remaining_ticks = INTERRUPTS_TIMINGS[pending_interrupts][halted][t];
+                interrupt.remaining_ticks = INTERRUPTS_TIMINGS[pending_interrupts][mode][t];
             }
 #else
             interrupt.remaining_ticks = INTERRUPTS_TIMINGS[pending_interrupts][halted][t];
 #endif
 
             ASSERT_CODE({
-                if (interrupt.remaining_ticks == UNKNOWN_INTERRUPT_TIMING) {
+                if (interrupt.remaining_ticks == INTERRUPT_TIMING_UNKNOWN ||
+                    interrupt.remaining_ticks == INTERRUPT_TIMING_UNSET) {
                     std::cerr << "---- UNKNOWN INTERRUPT TIMING ----" << std::endl;
                     std::cerr << "PC     : " << hex(pc) << std::endl;
                     std::cerr << "Halted : " << halted << std::endl;
+#ifdef ENABLE_CGB
+                    std::cerr << "Double : " << speed_switch_controller.is_double_speed_mode() << std::endl;
+                    std::cerr << "Switch : " << speed_switch_controller.is_switching_speed() << std::endl;
+#endif
                     std::cerr << "T      : " << +t << std::endl;
                     std::cerr << "IF     : " << bin((uint8_t)interrupts.IF) << std::endl;
                     std::cerr << "IE     : " << bin((uint8_t)interrupts.IE) << std::endl;

@@ -1187,14 +1187,13 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         // State
         b << yellow("Double Speed") << "        :  " << +gb.speed_switch_controller.is_double_speed_mode() << endl;
         b << yellow("Switching") << "           :  " << (gb.speed_switch_controller.is_switching_speed()) << endl;
-        if (gb.speed_switch_controller.speed_switch_countdown) {
-            b << yellow("Switch Delay") << "        :  " << +gb.speed_switch_controller.speed_switch_countdown << endl;
-        }
-        b << yellow("Timers Blocked") << "      :  " << (gb.speed_switch_controller.is_blocking_timers()) << endl;
-        if (gb.speed_switch_controller.speed_switch_timers_block_countdown) {
-            b << yellow("Timers Block Delay") << "  :  "
-              << +gb.speed_switch_controller.speed_switch_timers_block_countdown << endl;
-        }
+        b << yellow("Switch Delay") << "        :  " << +gb.speed_switch_controller.speed_switch_countdown << endl;
+        b << yellow("Timers Blocked") << "      :  " << gb.speed_switch_controller.timers_block.blocked << endl;
+        b << yellow("Timers Block Delay") << "  :  " << +gb.speed_switch_controller.timers_block.countdown << endl;
+        b << yellow("Intr. Blocked") << "       :  " << gb.speed_switch_controller.interrupts_block.blocked << endl;
+        b << yellow("Intr. Block Delay") << "   :  " << +gb.speed_switch_controller.interrupts_block.countdown << endl;
+        b << yellow("DMA Blocked") << "         :  " << gb.speed_switch_controller.dma_block.blocked << endl;
+        b << yellow("DMA Block Delay") << "     :  " << +gb.speed_switch_controller.dma_block.countdown << endl;
 
         return b;
     };

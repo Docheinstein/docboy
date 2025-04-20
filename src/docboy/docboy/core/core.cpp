@@ -64,7 +64,7 @@ inline void Core::tick_t0() const {
 #endif
 #ifdef ENABLE_CGB
     if (gb.speed_switch_controller.is_double_speed_mode()) {
-        if (!gb.speed_switch_controller.is_switching_speed()) {
+        if (!gb.speed_switch_controller.is_blocking_dma()) {
             gb.dma.tick();
         }
     }
@@ -106,7 +106,7 @@ inline void Core::tick_t1() const {
     gb.hdma.tick_t1();
 #endif
 #ifdef ENABLE_CGB
-    if (!gb.speed_switch_controller.is_switching_speed()) {
+    if (!gb.speed_switch_controller.is_blocking_dma()) {
         gb.dma.tick();
     }
 #else
@@ -145,7 +145,7 @@ inline void Core::tick_t2() const {
 #endif
 #ifdef ENABLE_CGB
     if (gb.speed_switch_controller.is_double_speed_mode()) {
-        if (!gb.speed_switch_controller.is_switching_speed()) {
+        if (!gb.speed_switch_controller.is_blocking_dma()) {
             gb.dma.tick();
         }
     }
@@ -191,9 +191,8 @@ inline void Core::tick_t3() const {
 #ifdef ENABLE_CGB
     gb.hdma.tick_t3();
 #endif
-
 #ifdef ENABLE_CGB
-    if (!gb.speed_switch_controller.is_switching_speed()) {
+    if (!gb.speed_switch_controller.is_blocking_dma()) {
         gb.dma.tick();
     }
 #else

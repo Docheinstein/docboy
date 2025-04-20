@@ -27,6 +27,6 @@ void SpeedSwitch::load_state(Parcel& parcel) {
 }
 
 void SpeedSwitch::reset() {
-    key1.current_speed = 0;
-    key1.switch_speed = 0;
+    key1.current_speed = false;
+    key1.switch_speed = false;
 }

@@ -50,7 +50,7 @@ constexpr uint64_t bitmask_range = bitmask<from - to + 1> << to;
 template <uint8_t n>
 constexpr uint64_t bitmask_off = uint64_t(-1) << n;
 
-inline uint64_t bit_(uint8_t n) {
+constexpr inline uint64_t bit_(uint8_t n) {
     return uint64_t(1) << n;
 };
 
@@ -148,7 +148,7 @@ std::decay_t<T> get_bits(T&& value) {
 }
 
 template <typename T>
-bool test_bit(T&& value, uint8_t n) {
+constexpr bool test_bit(T&& value, uint8_t n) {
     return value & bit_(n);
 }
 

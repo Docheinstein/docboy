@@ -1,47 +1,131 @@
 #include "docboy/speedswitch/speedswitchcontroller.h"
 
+#include "docboy/interrupts/interrupts.h"
+#include "docboy/timers/timers.h"
+
 #include "utils/asserts.h"
 #include "utils/bits.h"
 #include "utils/parcel.h"
 
-SpeedSwitchController::SpeedSwitchController(SpeedSwitch& speed_switch, Timers& timers, bool& halted) :
+SpeedSwitchController::SpeedSwitchController(SpeedSwitch& speed_switch, Interrupts& interrupts, Timers& timers,
+                                             bool& halted) :
     speed_switch {speed_switch},
+    interrupts {interrupts},
     timers {timers},
     halted {halted} {
 }
 
 void SpeedSwitchController::switch_speed() {
-    // Block CPU.
-    switching_speed = true;
+    // Halt CPU.
     halted = true;
 
-    // TODO: are KEY1 changed now, or at the end of speed switch?
+    // TODO: is KEY1 changed now, or at the end of speed switch?
+    //       Is there a way to verify this?
     speed_switch.key1.switch_speed = false;
     speed_switch.key1.current_speed = !speed_switch.key1.current_speed;
 
     if (speed_switch.key1.current_speed) {
         speed_switch_countdown = 16386 * 2;
+
+        // It seems that interrupts are blocked for the nex 6 T-Cycles.
+        interrupts_block.blocked = true;
+        interrupts_block.countdown = 3;
     } else {
-        speed_switch_countdown = 16386 * 4 - 4;
+        speed_switch_countdown = 16385 * 4;
     }
 
-    // Timer is blocked for 2 M-Cycles.
-    // TODO: figure out precise timing of block (start or end of speed switch)?
-    speed_switch_timers_block_countdown = 4;
-    timers_blocked = true;
+    // Timers are blocked for the next 2 M-Cycles.
+    timers_block.blocked = true;
+    timers_block.countdown = 4;
+
+    // DMA will be blocked after 1 M-Cycle.
+    ASSERT(!dma_block.blocked);
+    dma_block.countdown = 2;
 }
 
-void SpeedSwitchController::tick_speed_switch() {
-    ASSERT(speed_switch_countdown);
+void SpeedSwitchController::save_state(Parcel& parcel) const {
+    parcel.write_uint32(speed_switch_countdown);
+    parcel.write_bool(timers_block.blocked);
+    parcel.write_uint8(timers_block.countdown);
+    parcel.write_bool(interrupts_block.blocked);
+    parcel.write_uint8(interrupts_block.countdown);
+    parcel.write_bool(dma_block.blocked);
+    parcel.write_uint8(dma_block.countdown);
+}
 
-    if (--speed_switch_countdown == 0) {
-        // Unblock CPU.
-        switching_speed = false;
-        halted = false;
+void SpeedSwitchController::load_state(Parcel& parcel) {
+    speed_switch_countdown = parcel.read_uint32();
+    timers_block.blocked = parcel.read_bool();
+    timers_block.countdown = parcel.read_uint8();
+    interrupts_block.blocked = parcel.read_bool();
+    interrupts_block.countdown = parcel.read_uint8();
+    dma_block.blocked = parcel.read_bool();
+    dma_block.countdown = parcel.read_uint8();
+}
+
+void SpeedSwitchController::reset() {
+    speed_switch_countdown = 0;
+    timers_block.blocked = false;
+    timers_block.countdown = 0;
+    interrupts_block.blocked = false;
+    interrupts_block.countdown = 0;
+    dma_block.blocked = false;
+    dma_block.countdown = 0;
+}
+
+void SpeedSwitchController::tick() {
+    if (speed_switch_countdown) {
+        if (halted) {
+            if (--speed_switch_countdown == 0) {
+                // Speed switch countdown finished.
+
+                // Unhalt CPU.
+                halted = false;
+
+                // It seems that DMA unblock is delayed by 1 M-Cycle in this case.
+                ASSERT(dma_block.blocked);
+                dma_block.countdown = 2;
+            }
+        } else {
+            // Speed switch has been exited prematurely (due to a pending interrupt).
+            speed_switch_countdown = 0;
+
+            // DMA is unblocked instantly in this case.
+            ASSERT(dma_block.blocked);
+            dma_block.blocked = false;
+        }
     }
 
-    if (speed_switch_timers_block_countdown) {
-        if (--speed_switch_timers_block_countdown == 0) {
+    if (dma_block.countdown) {
+        if (--dma_block.countdown == 0) {
+            // Either block or unblock DMA.
+            dma_block.blocked = !dma_block.blocked;
+        }
+    }
+
+    if (interrupts_block.countdown) {
+        --interrupts_block.countdown;
+
+        if (interrupts_block.countdown == 1) {
+            // Usually interrupts are blocked for 6 T-Cycles, but if an interrupt was
+            // pending or it is raised in the first 4 T-Cycles, interrupt are unblocked
+            // 2 T-Cycles earlier than usual.
+            if (keep_bits<5>(interrupts.IE & interrupts.IF)) {
+                interrupts_block.countdown = 0;
+            }
+        }
+
+        if (interrupts_block.countdown == 0) {
+            interrupts_block.blocked = false;
+        }
+    }
+
+    if (timers_block.countdown) {
+        if (--timers_block.countdown == 0) {
+
+            // Unblock timers.
+            timers_block.blocked = false;
+
             // DIV is reset (indeed DIV's falling edge may increase TIMA).
             // Quirk: it seems that there is a window of an additional DIV tick for
             // increase TIMA on falling edge when TIMA runs at 262kHz.
@@ -49,34 +133,9 @@ void SpeedSwitchController::tick_speed_switch() {
             // Keeping the last four bits of DIV and allowing it to tick before
             // it's reset has been the most reasonable way to pass the test roms
             // that came to my mind.
-            // TODO: what really happens here?
             timers.set_div(keep_bits<4>(timers.div16));
             timers.tick();
             timers.set_div(0);
-
-            // Unblock timers.
-            timers_blocked = false;
         }
     }
-}
-
-void SpeedSwitchController::save_state(Parcel& parcel) const {
-    parcel.write_uint32(speed_switch_countdown);
-    parcel.write_bool(switching_speed);
-    parcel.write_uint8(speed_switch_timers_block_countdown);
-    parcel.write_bool(timers_blocked);
-}
-
-void SpeedSwitchController::load_state(Parcel& parcel) {
-    speed_switch_countdown = parcel.read_uint32();
-    switching_speed = parcel.read_bool();
-    switching_speed = parcel.read_uint8();
-    timers_blocked = parcel.read_bool();
-}
-
-void SpeedSwitchController::reset() {
-    speed_switch_countdown = 0;
-    switching_speed = false;
-    speed_switch_timers_block_countdown = 0;
-    timers_blocked = false;
 }

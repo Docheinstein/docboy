@@ -14,7 +14,7 @@ class Dma {
     DEBUGGABLE_CLASS()
 
 public:
-    explicit Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oam_bus);
+    Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oam_bus);
 
     void start_transfer(uint8_t value);
 

@@ -21,6 +21,7 @@ public:
     };
 
     void tick_t3() {
+        // TODO: when is this reset in CGB double speed mode?
         block_interrupts = false;
     }
 
