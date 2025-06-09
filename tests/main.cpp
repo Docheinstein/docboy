@@ -24,5 +24,9 @@ int main(int argc, char* argv[]) {
     boot_rom = var;
 #endif
 
+    runner_log = [](const std::string& message) {
+        UNSCOPED_INFO(message);
+    };
+
     return Catch::Session().run(argc, argv);
 }

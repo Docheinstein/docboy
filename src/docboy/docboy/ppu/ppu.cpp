@@ -208,7 +208,8 @@ void Ppu::turn_on() {
 
 #ifdef ENABLE_CGB
     if (speed_switch_controller.is_double_speed_mode()) {
-        // TODO: to investigate why
+        // It seems that PPU is earlier by one dot in double speed mode.
+        // TODO: further investigations.
         dots = 1;
     }
 #endif
@@ -416,17 +417,24 @@ void Ppu::oam_scan_77() {
 void Ppu::oam_scan_done() {
     ASSERT(dots >= 78);
 
-    if (++dots == 80) {
+    if (++dots == 79) {
+        // STAT Mode is updated to Pixel Transfer one dot earlier it actually comes in.
+        update_mode<PIXEL_TRANSFER>();
+    } else {
+        ASSERT(dots == 80);
         enter_pixel_transfer();
     }
 }
 
 void Ppu::oam_scan_after_turn_on() {
     ASSERT(!oam.is_acquired_by_this());
-    ASSERT(mode == OAM_SCAN);
 
     // First OAM Scan after PPU turn on does nothing.
-    if (++dots == 80) {
+    if (++dots == 79) {
+        // Mode is updated to Pixel Transfer one dot earlier it actually comes in.
+        ASSERT(mode == OAM_SCAN);
+        update_mode<PIXEL_TRANSFER>();
+    } else if (dots == 80) {
         enter_pixel_transfer();
     }
 }
@@ -692,6 +700,9 @@ void Ppu::hblank_454() {
     dots = 455;
 
     tick_selector = &Ppu::hblank_455;
+
+    // STAT Mode is updated to OAM one dot earlier it actually comes in.
+    update_mode<OAM_SCAN>();
 }
 
 void Ppu::hblank_455() {
@@ -743,8 +754,9 @@ void Ppu::hblank_last_line_454() {
 
     dots = 455;
 
-    // VBlank mode is set at dot 455 (though I'm not sure about it)
+#ifndef ENABLE_CGB
     update_mode<VBLANK>();
+#endif
 
     tick_selector = &Ppu::hblank_last_line_455;
 }
@@ -907,7 +919,7 @@ void Ppu::vblank_last_line_455() {
 // ------- PPU states helpers ---------
 
 void Ppu::enter_oam_scan() {
-    update_mode<OAM_SCAN>();
+    ASSERT(mode == OAM_SCAN);
 
     tick_selector = &Ppu::oam_scan_even;
 
@@ -916,6 +928,7 @@ void Ppu::enter_oam_scan() {
 }
 
 void Ppu::enter_pixel_transfer() {
+    ASSERT(mode == PIXEL_TRANSFER);
     ASSERT(dots == 80);
     ASSERT(ly < 144);
 
@@ -935,8 +948,6 @@ void Ppu::enter_pixel_transfer() {
 #endif
 
     reset_fetcher();
-
-    update_mode<PIXEL_TRANSFER>();
 
     tick_selector = &Ppu::pixel_transfer_dummy_lx0;
 
@@ -1029,6 +1040,7 @@ inline void Ppu::enter_hblank() {
 #ifdef ENABLE_CGB
         // On CGB with double speed mode it seems that HBlank takes
         // 1 extra T-Cycle to be visible through STAT's read.
+        // Other STAT modes seems to be visible at the right time.
         if (speed_switch_controller.is_double_speed_mode()) {
             delay_stat_mode_update = true;
         }
@@ -1046,7 +1058,13 @@ void Ppu::enter_vblank() {
 
     tick_selector = &Ppu::vblank;
 
+    // It seems that the VBlank mode timing is different between DMG and CGB.
+    // In CGB, VBlank mode is set 1 dot later.
+#ifdef ENABLE_CGB
+    update_mode<VBLANK>();
+#else
     ASSERT(mode == VBLANK);
+#endif
 
     interrupts.raise_interrupt<Interrupts::InterruptType::VBlank>();
 
@@ -1061,6 +1079,8 @@ void Ppu::enter_new_frame() {
 
     // Reset window activation state
     w.active_for_frame = false;
+
+    update_mode<OAM_SCAN>();
 
     enter_oam_scan();
 

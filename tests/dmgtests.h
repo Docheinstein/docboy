@@ -114,7 +114,7 @@ TEST_CASE("dmg", "[emulation]") {
             // mealybug
             F {"mealybug/m2_win_en_toggle.gb", "mealybug/m2_win_en_toggle.png", &GREY_PALETTE},
             F {"mealybug/m3_bgp_change.gb", "mealybug/m3_bgp_change.png", &GREY_PALETTE},
-            //            F {"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png", &GREY_PALETTE},
+            F {"mealybug/m3_bgp_change_sprites.gb", "mealybug/m3_bgp_change_sprites.png", &GREY_PALETTE},
             F {"mealybug/m3_lcdc_bg_en_change.gb", "mealybug/m3_lcdc_bg_en_change.png", &GREY_PALETTE},
             F {"mealybug/m3_lcdc_bg_map_change.gb", "mealybug/m3_lcdc_bg_map_change.png", &GREY_PALETTE},
             F {"mealybug/m3_lcdc_obj_en_change.gb", "mealybug/m3_lcdc_obj_en_change.png", &GREY_PALETTE},

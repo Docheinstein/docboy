@@ -16,3 +16,6 @@ target_link_libraries(rgb565to888 PRIVATE testutils utils extra)
 add_executable(rgb888to565 rgb888to565.cpp)
 target_link_libraries(rgb888to565 PRIVATE testutils utils extra)
 
+add_executable(runcmpframebuffer runcmpframebuffer.cpp)
+target_link_libraries(runcmpframebuffer PRIVATE testutils docboy utils extra)
+

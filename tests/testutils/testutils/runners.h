@@ -1,7 +1,6 @@
 #ifndef RUNNERS_H
 #define RUNNERS_H
 
-#include <catch2/catch_message.hpp>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -63,6 +62,14 @@ constexpr uint64_t DURATION_MEDIUM = BOOT_DURATION + 30'000'000;
 constexpr uint64_t DURATION_SHORT = BOOT_DURATION + 5'000'000;
 constexpr uint64_t DURATION_VERY_SHORT = BOOT_DURATION + 1'500'000;
 constexpr uint64_t DEFAULT_DURATION = DURATION_LONG;
+
+inline std::function<void(const std::string&)> make_default_runner_log() {
+    return [](const std::string& message) {
+        std::cerr << message << std::endl << std::flush;
+    };
+}
+
+inline std::function<void(const std::string&)> runner_log = make_default_runner_log();
 
 template <typename RunnerImpl>
 class Runner {
@@ -145,7 +152,12 @@ public:
             }
 
             // Advance emulation.
-            core.cycle();
+            try {
+                core.cycle();
+            } catch (const std::runtime_error& err) {
+                throw std::runtime_error("=== " + rom_name + " ===\n" + err.what());
+            }
+
             impl->on_cycle();
 
             // Check expectation.
@@ -160,8 +172,8 @@ public:
         if (has_ever_checked) {
             impl->on_expectation_failed();
         } else if (impl->should_ever_check_expectation()) {
-            UNSCOPED_INFO("=== " << rom_name << " ===");
-            UNSCOPED_INFO("Expectation never checked!");
+            runner_log("=== " + rom_name + " ===");
+            runner_log("Expectation never checked!");
         }
 
         return false;
@@ -303,7 +315,7 @@ public:
                 break;
             }
         }
-        CHECK(i < FRAMEBUFFER_NUM_PIXELS);
+        ASSERT(i < FRAMEBUFFER_NUM_PIXELS);
 
         // Dump framebuffers
 
@@ -316,7 +328,7 @@ public:
         save_framebuffer_png(path_expected, expected_framebuffer);
         output_message << "You can find the PNGs of the framebuffers at " << path_actual << " and " << path_expected;
 
-        UNSCOPED_INFO(output_message.str());
+        runner_log(output_message.str());
     }
 
 private:
@@ -362,9 +374,9 @@ public:
     }
 
     void on_expectation_failed() {
-        UNSCOPED_INFO("=== " << rom_name << " ===");
-        UNSCOPED_INFO("Expected serial output: " << hex(expected_output));
-        UNSCOPED_INFO("Actual serial output  : " << hex(last_output));
+        runner_log("=== " + rom_name + " ===");
+        runner_log("Expected serial output: " + hex(expected_output));
+        runner_log("Actual serial output  : " + hex(last_output));
     }
 
 private:
@@ -413,7 +425,7 @@ public:
     }
 
     void on_expectation_failed() {
-        UNSCOPED_INFO("=== " << rom_name << " ===");
+        runner_log("=== " + rom_name + " ===");
 
         std::string expected_output_str = "[" +
                                           join(expected_output, ",",
@@ -434,8 +446,8 @@ public:
                                            }) +
                                       "]";
 
-        UNSCOPED_INFO("Expected output: " << expected_output_str);
-        UNSCOPED_INFO("Actual output  : " << last_output_str);
+        runner_log("Expected output: " + expected_output_str);
+        runner_log("Actual output  : " + last_output_str);
     }
 
 private:
@@ -573,7 +585,7 @@ public:
                            << std::endl;
         }
 
-        UNSCOPED_INFO(output_message.str());
+        runner_log(output_message.str());
     }
 
 private:
@@ -723,7 +735,6 @@ struct RunnerAdapter {
     bool run(const Params& p) {
         if (std::holds_alternative<FramebufferRunnerParams>(p)) {
             const auto& pf = std::get<FramebufferRunnerParams>(p);
-            INFO("=== " << roms_prefix + pf.rom << " ===");
             return FramebufferRunner()
                 .rom(roms_prefix + pf.rom)
                 .appearance(pf.appearance)
@@ -740,7 +751,6 @@ struct RunnerAdapter {
         if (std::holds_alternative<SerialRunnerParams>(p)) {
             const auto& ps = std::get<SerialRunnerParams>(p);
 
-            INFO("=== " << ps.rom << " ===");
             return SerialRunner()
                 .rom(roms_prefix + ps.rom)
                 .max_ticks(ps.max_ticks)
@@ -752,7 +762,6 @@ struct RunnerAdapter {
         if (std::holds_alternative<MemoryRunnerParams>(p)) {
             const auto& pm = std::get<MemoryRunnerParams>(p);
 
-            INFO("=== " << pm.rom << " ===");
             return MemoryRunner()
                 .rom(roms_prefix + pm.rom)
                 .max_ticks(pm.max_ticks)
@@ -764,7 +773,6 @@ struct RunnerAdapter {
         if (std::holds_alternative<TwoPlayersFramebufferRunnerParams>(p)) {
             const auto& pf2p = std::get<TwoPlayersFramebufferRunnerParams>(p);
 
-            INFO("=== " << pf2p.rom << "," << pf2p.rom2 << " ===");
             return TwoPlayersFramebufferRunner()
                 .rom(roms_prefix + pf2p.rom)
                 .rom2(roms_prefix + pf2p.rom2)

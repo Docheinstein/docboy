@@ -1187,13 +1187,16 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         // State
         b << yellow("Double Speed") << "        :  " << +gb.speed_switch_controller.is_double_speed_mode() << endl;
         b << yellow("Switching") << "           :  " << (gb.speed_switch_controller.is_switching_speed()) << endl;
-        b << yellow("Switch Delay") << "        :  " << +gb.speed_switch_controller.speed_switch_countdown << endl;
+        b << yellow("Switch Enter Delay") << "  :  " << +gb.speed_switch_controller.speed_switch_enter_countdown
+          << endl;
+        b << yellow("Switch Exit Delay") << "   :  " << +gb.speed_switch_controller.speed_switch_exit_countdown << endl;
         b << yellow("Timers Blocked") << "      :  " << gb.speed_switch_controller.timers_block.blocked << endl;
         b << yellow("Timers Block Delay") << "  :  " << +gb.speed_switch_controller.timers_block.countdown << endl;
         b << yellow("Intr. Blocked") << "       :  " << gb.speed_switch_controller.interrupts_block.blocked << endl;
         b << yellow("Intr. Block Delay") << "   :  " << +gb.speed_switch_controller.interrupts_block.countdown << endl;
         b << yellow("DMA Blocked") << "         :  " << gb.speed_switch_controller.dma_block.blocked << endl;
         b << yellow("DMA Block Delay") << "     :  " << +gb.speed_switch_controller.dma_block.countdown << endl;
+        b << yellow("PPU Blocked") << "         :  " << +gb.speed_switch_controller.ppu_block.blocked << endl;
 
         return b;
     };
@@ -3357,7 +3360,7 @@ std::string DebuggerFrontend::dump_memory(uint16_t from, uint32_t n, MemoryOutpu
         for (uint32_t address = from; address <= 0xFFFF && i < n;) {
             std::optional<DisassembledInstruction> disas = backend.get_disassembled_instruction(address);
             if (!disas)
-                FATAL("Failed to disassemble at address " + std::to_string(address));
+                FATAL("failed to disassemble at address " + std::to_string(address));
 
             s += to_string(DisassembledInstructionReference {static_cast<uint16_t>(address), *disas}) +
                  ((i < n - 1) ? "\n" : "");

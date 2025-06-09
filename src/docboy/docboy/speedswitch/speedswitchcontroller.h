@@ -24,8 +24,12 @@ public:
         return speed_switch.key1.current_speed;
     }
 
+    bool use_double_speed_interrupts() const {
+        return interrupts_double_speed;
+    }
+
     bool is_switching_speed() const {
-        return speed_switch_countdown > 0;
+        return speed_switch_exit_countdown > 0;
     }
 
     bool is_blocking_timers() const {
@@ -40,18 +44,23 @@ public:
         return dma_block.blocked;
     }
 
+    bool is_blocking_ppu() const {
+        return ppu_block.blocked;
+    }
+
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
 
     void reset();
 
-public:
+private:
     SpeedSwitch& speed_switch;
     Interrupts& interrupts;
     Timers& timers;
     bool& halted;
 
-    uint32_t speed_switch_countdown {};
+    uint32_t speed_switch_exit_countdown {};
+    uint8_t speed_switch_enter_countdown {};
 
     struct {
         bool blocked {};
@@ -67,6 +76,12 @@ public:
         bool blocked {};
         uint8_t countdown {};
     } dma_block {};
+
+    struct {
+        bool blocked {};
+    } ppu_block {};
+
+    bool interrupts_double_speed {};
 };
 
 #endif // SPEEDSWITCHCONTROLLER_H

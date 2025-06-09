@@ -19,64 +19,101 @@ void SpeedSwitchController::switch_speed() {
     // Halt CPU.
     halted = true;
 
-    // TODO: is KEY1 changed now, or at the end of speed switch?
-    //       Is there a way to verify this?
     speed_switch.key1.switch_speed = false;
-    speed_switch.key1.current_speed = !speed_switch.key1.current_speed;
 
-    if (speed_switch.key1.current_speed) {
-        speed_switch_countdown = 16386 * 2;
+    if (!speed_switch.key1.current_speed) {
+        // Single => Double
 
-        // It seems that interrupts are blocked for the nex 6 T-Cycles.
+        // Speed switch actually takes effect after 4 T-Cycles.
+        speed_switch_enter_countdown = 2;
+
+        speed_switch_exit_countdown = 16386 * 2;
+
+        // It seems that interrupts are blocked for the next 6 T-Cycles.
         interrupts_block.blocked = true;
         interrupts_block.countdown = 3;
+
+        interrupts_double_speed = true;
+
+        timers_block.blocked = true;
+        timers_block.countdown = 4;
+
+        // DMA will be blocked after 6 T-Cycles.
+        ASSERT(!dma_block.blocked);
+        dma_block.countdown = 3;
     } else {
-        speed_switch_countdown = 16385 * 4;
+        // Double => Single
+
+        // Speed switch actually takes effect after 4 T-Cycles.
+        speed_switch_enter_countdown = 2;
+
+        speed_switch_exit_countdown = 16384 * 4 + 2;
+
+        interrupts_double_speed = false;
+
+        // Timer is blocked for the next 4 T-Cycles.
+        timers_block.blocked = true;
+        timers_block.countdown = 2;
+
+        // DMA will be blocked the next T-Cycle.
+        ASSERT(!dma_block.blocked);
+        dma_block.countdown = 1;
+
+        // Switch from double to single seems to block the PPU for one T-Cycle.
+        ppu_block.blocked = true;
     }
-
-    // Timers are blocked for the next 2 M-Cycles.
-    timers_block.blocked = true;
-    timers_block.countdown = 4;
-
-    // DMA will be blocked after 1 M-Cycle.
-    ASSERT(!dma_block.blocked);
-    dma_block.countdown = 2;
 }
 
 void SpeedSwitchController::save_state(Parcel& parcel) const {
-    parcel.write_uint32(speed_switch_countdown);
+    parcel.write_uint32(speed_switch_exit_countdown);
+    parcel.write_uint8(speed_switch_enter_countdown);
     parcel.write_bool(timers_block.blocked);
     parcel.write_uint8(timers_block.countdown);
     parcel.write_bool(interrupts_block.blocked);
     parcel.write_uint8(interrupts_block.countdown);
     parcel.write_bool(dma_block.blocked);
     parcel.write_uint8(dma_block.countdown);
+    parcel.write_bool(ppu_block.blocked);
+    parcel.write_bool(interrupts_double_speed);
 }
 
 void SpeedSwitchController::load_state(Parcel& parcel) {
-    speed_switch_countdown = parcel.read_uint32();
+    speed_switch_exit_countdown = parcel.read_uint32();
+    speed_switch_enter_countdown = parcel.read_uint8();
     timers_block.blocked = parcel.read_bool();
     timers_block.countdown = parcel.read_uint8();
     interrupts_block.blocked = parcel.read_bool();
     interrupts_block.countdown = parcel.read_uint8();
     dma_block.blocked = parcel.read_bool();
     dma_block.countdown = parcel.read_uint8();
+    ppu_block.blocked = parcel.read_bool();
+    interrupts_double_speed = parcel.read_bool();
 }
 
 void SpeedSwitchController::reset() {
-    speed_switch_countdown = 0;
+    speed_switch_exit_countdown = 0;
+    speed_switch_enter_countdown = 0;
     timers_block.blocked = false;
     timers_block.countdown = 0;
     interrupts_block.blocked = false;
     interrupts_block.countdown = 0;
     dma_block.blocked = false;
     dma_block.countdown = 0;
+    ppu_block.blocked = false;
+    interrupts_double_speed = false;
 }
 
 void SpeedSwitchController::tick() {
-    if (speed_switch_countdown) {
+    if (speed_switch_enter_countdown) {
+        if (--speed_switch_enter_countdown == 0) {
+            // Actually change speed.
+            speed_switch.key1.current_speed = !speed_switch.key1.current_speed;
+        }
+    }
+
+    if (speed_switch_exit_countdown) {
         if (halted) {
-            if (--speed_switch_countdown == 0) {
+            if (--speed_switch_exit_countdown == 0) {
                 // Speed switch countdown finished.
 
                 // Unhalt CPU.
@@ -88,11 +125,11 @@ void SpeedSwitchController::tick() {
             }
         } else {
             // Speed switch has been exited prematurely (due to a pending interrupt).
-            speed_switch_countdown = 0;
+            speed_switch_exit_countdown = 0;
 
             // DMA is unblocked instantly in this case.
-            ASSERT(dma_block.blocked);
             dma_block.blocked = false;
+            dma_block.countdown = 0;
         }
     }
 
@@ -108,7 +145,7 @@ void SpeedSwitchController::tick() {
 
         if (interrupts_block.countdown == 1) {
             // Usually interrupts are blocked for 6 T-Cycles, but if an interrupt was
-            // pending or it is raised in the first 4 T-Cycles, interrupt are unblocked
+            // pending, or it is raised in the first 4 T-Cycles, interrupt are unblocked
             // 2 T-Cycles earlier than usual.
             if (keep_bits<5>(interrupts.IE & interrupts.IF)) {
                 interrupts_block.countdown = 0;
@@ -138,4 +175,6 @@ void SpeedSwitchController::tick() {
             timers.set_div(0);
         }
     }
+
+    ppu_block.blocked = false;
 }

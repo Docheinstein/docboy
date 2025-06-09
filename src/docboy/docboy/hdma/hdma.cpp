@@ -240,8 +240,8 @@ void Hdma::tick_state() {
 
     last_stat_mode = stat_mode;
 
-    // It seems that there is window of 1 T-Cycle that HDMA HBlank can start before GB is actually halted
-    last_halted = halted;
+    // It seems that there is window of 1 T-Cycle that HDMA HBlank can start before GB is actually halted.
+    last_halted = halted && !speed_switch_controller.is_switching_speed();
 }
 
 void Hdma::tick_request() {

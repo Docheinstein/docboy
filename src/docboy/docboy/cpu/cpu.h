@@ -27,7 +27,6 @@ public:
         StopController& stop_controller);
 #endif
 
-    void tick();
     void tick_t0();
     void tick_t1();
     void tick_t2();
@@ -87,6 +86,19 @@ private:
 
     using MicroOperation = void (Cpu::*)();
     using Instruction = MicroOperation[INSTR_LEN];
+
+    void tick_microop();
+
+    void tick_even();
+    void tick_odd();
+
+    void tick_single_speed_0();
+    void tick_single_speed_1();
+    void tick_single_speed_2();
+    void tick_single_speed_3();
+
+    void tick_double_speed_0();
+    void tick_double_speed_1();
 
     template <uint8_t t>
     void check_interrupt();
@@ -618,9 +630,12 @@ private:
     template <uint8_t n, Register16 r>
     void set_arr_m2();
 
-#ifdef ENABLE_ASSERTS
-    template <uint8_t t>
-    void assert_tick();
+#ifdef ENABLE_DEBUGGER
+    void update_debug_information();
+#endif
+
+#ifdef ENABLE_TESTS
+    void update_test_information();
 #endif
 
     Idu& idu;
@@ -650,6 +665,8 @@ private:
     uint16_t sp {};
 
     ImeState ime {};
+
+    uint8_t phase {};
 
     struct {
         InterruptState state {};
