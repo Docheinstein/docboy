@@ -44,6 +44,41 @@ constexpr uint8_t NUMBER_OF_COLORS = 4;
 constexpr uint8_t BITS_PER_PIXEL = 2;
 constexpr uint8_t NUMBER_OF_COLOR_INDEXES = 4;
 
+constexpr std::array<uint8_t, 153> generate_ly_update_table() {
+    constexpr uint8_t LAST_3_BITS[] {
+        /* 0x00 */ 0x00,
+        /* 0x01 */ 0x00,
+        /* 0x02 */ 0x02,
+        /* 0x03 */ 0x00,
+        /* 0x04 */ 0x04,
+        /* 0x05 */ 0x04,
+        /* 0x06 */ 0x06,
+        /* 0x07 */ 0x00,
+    };
+
+    std::array<uint8_t, 153> table {};
+
+    for (uint8_t ly = 0; ly < 153; ly++) {
+        const uint8_t ly_last_3_bits = keep_bits<3>(ly);
+
+        uint8_t ly_out {};
+
+        if (keep_bits<4>(ly) == 0x0F) {
+            if (ly == 0x8F) {
+                ly_out = 0x80;
+            } else {
+                ly_out = LAST_3_BITS[get_bits_range<7, 4>(ly)] << 4;
+            }
+        } else {
+            ly_out = discard_bits<3>(ly) | LAST_3_BITS[ly_last_3_bits];
+        }
+
+        table[ly] = ly_out;
+    }
+
+    return table;
+}
+
 inline bool is_obj_opaque(const uint8_t color_index) {
     return color_index != OBJ_COLOR_INDEX_TRANSPARENT;
 }
@@ -70,6 +105,7 @@ const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
     &Ppu::hblank_last_line_455,
     &Ppu::hblank_first_line_after_turn_on,
     &Ppu::vblank,
+    &Ppu::vblank_453,
     &Ppu::vblank_454,
     &Ppu::vblank_455,
     &Ppu::vblank_last_line,
@@ -344,6 +380,28 @@ inline void Ppu::update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq() {
     bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && is_lyc_eq_ly();
     bool irq = stat.oam_int || lyc_eq_ly_irq;
     pending_stat_irq = last_stat_irq < irq;
+}
+
+inline void Ppu::begin_increase_ly() {
+    ASSERT(ly < 153);
+#ifdef ENABLE_CGB
+    // LY is affected by a bug: there's a window of 1 T-Cycle during which it might take
+    // a different value (which follows a periodic and very specific pattern).
+    // Contrarily to some documentation, this happens both in single speed mode and in
+    // double speed mode (depending on the T-Cycle CPU/PPU are aligned each other).
+    // It never happens in DMG.
+    static constexpr std::array<uint8_t, 153> LY_UPDATE_TABLE = generate_ly_update_table();
+    next_ly = ly + 1;
+    ly = LY_UPDATE_TABLE[ly];
+#endif
+}
+
+inline void Ppu::end_increase_ly() {
+#ifdef ENABLE_CGB
+    ly = next_ly;
+#else
+    ++ly;
+#endif
 }
 
 inline void Ppu::write_stat_real(uint8_t value) {
@@ -661,6 +719,8 @@ void Ppu::hblank() {
         // Eventually raise OAM interrupt
         update_stat_irq_for_oam_mode();
 
+        begin_increase_ly();
+
         tick_selector = &Ppu::hblank_453;
     }
 }
@@ -680,7 +740,7 @@ void Ppu::hblank_453() {
     ASSERT(enable_lyc_eq_ly_irq);
     enable_lyc_eq_ly_irq = false;
 
-    ++ly;
+    end_increase_ly();
 
     dots = 454;
 
@@ -727,6 +787,8 @@ void Ppu::hblank_last_line() {
         // TODO: investigate further: seems strange.
         update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq();
 
+        begin_increase_ly();
+
         tick_selector = &Ppu::hblank_last_line_453;
     }
 }
@@ -738,7 +800,7 @@ void Ppu::hblank_last_line_453() {
     ASSERT(enable_lyc_eq_ly_irq);
     enable_lyc_eq_ly_irq = false;
 
-    ++ly;
+    end_increase_ly();
 
     dots = 454;
 
@@ -792,15 +854,26 @@ void Ppu::hblank_first_line_after_turn_on() {
 void Ppu::vblank() {
     ASSERT(ly >= 144 && ly < 154);
 
-    if (++dots == 454) {
-        ++ly;
+    if (++dots == 453) {
+        begin_increase_ly();
 
-        // LYC_EQ_LY IRQ is disabled for dot 454.
-        ASSERT(enable_lyc_eq_ly_irq);
-        enable_lyc_eq_ly_irq = false;
-
-        tick_selector = &Ppu::vblank_454;
+        tick_selector = &Ppu::vblank_453;
     }
+}
+
+void Ppu::vblank_453() {
+    ASSERT(ly >= 144 && ly < 154);
+    ASSERT(dots == 453);
+
+    dots = 454;
+
+    end_increase_ly();
+
+    // LYC_EQ_LY IRQ is disabled for dot 454.
+    ASSERT(enable_lyc_eq_ly_irq);
+    enable_lyc_eq_ly_irq = false;
+
+    tick_selector = &Ppu::vblank_454;
 }
 
 void Ppu::vblank_454() {
@@ -2060,6 +2133,7 @@ void Ppu::save_state(Parcel& parcel) const {
 
     parcel.write_bool(is_glitched_line_0);
     parcel.write_uint8(glitched_line_0_hblank_delay);
+    parcel.write_uint8(next_ly);
 
     parcel.write_uint8(registers.oam.a);
     parcel.write_uint8(registers.oam.b);
@@ -2212,6 +2286,7 @@ void Ppu::load_state(Parcel& parcel) {
 
     is_glitched_line_0 = parcel.read_bool();
     glitched_line_0_hblank_delay = parcel.read_uint8();
+    next_ly = parcel.read_uint8();
 
     registers.oam.a = parcel.read_uint8();
     registers.oam.b = parcel.read_uint8();
@@ -2378,6 +2453,11 @@ void Ppu::reset() {
 #endif
 
     is_fetching_sprite = false;
+
+    is_glitched_line_0 = false;
+    glitched_line_0_hblank_delay = 0;
+
+    next_ly = 0;
 
 #ifdef ENABLE_DEBUGGER
     timings.oam_scan = 0;

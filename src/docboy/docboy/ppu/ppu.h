@@ -50,6 +50,8 @@ public:
     uint8_t read_stat() const;
     void write_stat(uint8_t value);
 
+    uint8_t read_ly() const;
+
     void write_dma(uint8_t value);
 
 #ifdef ENABLE_CGB
@@ -173,6 +175,9 @@ private:
     void update_stat_irq_for_oam_mode();
     void update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq();
 
+    void begin_increase_ly();
+    void end_increase_ly();
+
     void write_stat_real(uint8_t value);
 
     void tick_window();
@@ -201,6 +206,7 @@ private:
     void hblank_first_line_after_turn_on();
 
     void vblank();
+    void vblank_453();
     void vblank_454();
     void vblank_455();
     void vblank_last_line();
@@ -341,6 +347,8 @@ private:
 
     bool is_glitched_line_0 {};
     uint8_t glitched_line_0_hblank_delay {}; // [0, 2]
+
+    uint8_t next_ly {};
 
 #ifdef ENABLE_DEBUGGER
     struct {
