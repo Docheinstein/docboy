@@ -2422,8 +2422,7 @@ void Ppu::reset() {
 
 #ifdef ENABLE_CGB
     // TODO: with bootrom
-    // TODO: more accurate timing: should be between 163 and 166
-    dots = if_bootrom_else(0, 164);
+    dots = if_bootrom_else(0, 163);
 #else
     dots = if_bootrom_else(0, 395);
 #endif
@@ -2565,6 +2564,8 @@ void Ppu::write_lcdc(uint8_t value) {
 }
 
 uint8_t Ppu::read_stat() const {
+    std::cout << "ReadStat at " << dots << std::endl;
+
 #ifndef ENABLE_CGB
     ASSERT(!stat_write.pending);
 #endif
