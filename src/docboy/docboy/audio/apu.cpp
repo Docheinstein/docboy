@@ -199,7 +199,8 @@ void Apu::reset() {
     ch2.volume_sweep.timer = 0;
     ch2.volume_sweep.expired = false;
 
-    ch3.wave.position = 0;
+    ch3.wave.position.byte = 0;
+    ch3.wave.position.low_nibble = false;
     ch3.wave.timer = 0;
 
     ch4.dac = false;
@@ -256,15 +257,13 @@ inline uint8_t Apu::compute_ch3_digital_output() const {
 
     if (nr52.ch3 && nr32.volume) {
         ASSERT(nr30.dac);
-        ASSERT(ch3.wave.play_position < decltype(wave_ram)::Size);
+        ASSERT(ch3.wave.position.byte < decltype(wave_ram)::Size);
         ASSERT(nr32.volume <= 0b11);
 
-        if (mod<2>(ch3.wave.play_position)) {
-            // Low nibble
-            digital_output = keep_bits<4>(wave_ram[ch3.wave.play_position]);
+        if (ch3.wave.position.low_nibble) {
+            digital_output = keep_bits<4>(wave_ram[ch3.wave.position.byte]);
         } else {
-            // High nibble
-            digital_output = wave_ram[ch3.wave.play_position] >> 4;
+            digital_output = get_bits_range<7, 4>(wave_ram[ch3.wave.position.byte]);
         }
 
         // Scale by volume
@@ -449,15 +448,19 @@ void Apu::tick_ch3() {
                 ch3.retrigger = false;
 
                 ch3.wave.timer = concat(nr34.period_high, nr33.period_low);
-                ch3.wave.position = 0;
+                ch3.wave.position.byte = 0;
+                ch3.wave.position.low_nibble = false;
             }
         }
 
         if (++ch3.wave.timer == 2048) {
             // Advance square wave position
-            ch3.wave.position = mod<32>(ch3.wave.position + 1);
-
-            ch3.wave.play_position = ch3.wave.position >> 1;
+            if (ch3.wave.position.low_nibble) {
+                ch3.wave.position.low_nibble = false;
+                ch3.wave.position.byte = mod<16>(ch3.wave.position.byte + 1);
+            } else {
+                ch3.wave.position.low_nibble = true;
+            }
 
             // Reload period timer
             ch3.wave.timer = concat(nr34.period_high, nr33.period_low);
@@ -475,10 +478,10 @@ void Apu::tick_ch3() {
         // [blargg/10-wave_trigger_while_on]
         if (ch3.retrigger && ch3.trigger_delay == 3) {
             if (ticks == ch3.last_read_tick) {
-                if (ch3.wave.play_position < 4) {
-                    wave_ram[0] = static_cast<uint8_t>(wave_ram[ch3.wave.play_position]);
+                if (ch3.wave.position.byte < 4) {
+                    wave_ram[0] = static_cast<uint8_t>(wave_ram[ch3.wave.position.byte]);
                 } else {
-                    const uint8_t base = ch3.wave.play_position / 4;
+                    const uint8_t base = ch3.wave.position.byte / 4;
                     wave_ram[0] = static_cast<uint8_t>(wave_ram[4 * base]);
                     wave_ram[1] = static_cast<uint8_t>(wave_ram[4 * base + 1]);
                     wave_ram[2] = static_cast<uint8_t>(wave_ram[4 * base + 2]);
@@ -495,7 +498,7 @@ void Apu::tick_ch3() {
             ch3.pending_wave_write.pending = false;
 
             if (ticks == ch3.last_read_tick) {
-                wave_ram[ch3.wave.play_position] = ch3.pending_wave_write.value;
+                wave_ram[ch3.wave.position.byte] = ch3.pending_wave_write.value;
             }
         }
     }
@@ -664,7 +667,8 @@ void Apu::turn_off() {
     ch2.wave.position = 0;
     ch2.volume_sweep.expired = false;
 
-    ch3.wave.position = 0;
+    ch3.wave.position.byte = 0;
+    ch3.wave.position.low_nibble = false;
 
     ch4.dac = false;
     ch4.volume_sweep.expired = false;
@@ -757,9 +761,9 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch2.volume_sweep.expired);
 
     parcel.write_uint16(ch3.length_timer);
-    parcel.write_uint8(ch3.wave.position);
+    parcel.write_uint8(ch3.wave.position.byte);
+    parcel.write_bool(ch3.wave.position.low_nibble);
     parcel.write_uint16(ch3.wave.timer);
-    parcel.write_uint8(ch3.wave.play_position);
     parcel.write_bool(ch3.retrigger);
     parcel.write_uint8(ch3.trigger_delay);
     parcel.write_uint64(ch3.last_read_tick);
@@ -865,9 +869,9 @@ void Apu::load_state(Parcel& parcel) {
     ch2.volume_sweep.expired = parcel.read_bool();
 
     ch3.length_timer = parcel.read_uint16();
-    ch3.wave.position = parcel.read_uint8();
+    ch3.wave.position.byte = parcel.read_uint8();
+    ch3.wave.position.low_nibble = parcel.read_bool();
     ch3.wave.timer = parcel.read_uint16();
-    ch3.wave.play_position = parcel.read_uint8();
     ch3.retrigger = parcel.read_bool();
     ch3.trigger_delay = parcel.read_uint8();
     ch3.last_read_tick = parcel.read_uint64();
@@ -1412,7 +1416,7 @@ uint8_t Apu::read_wave_ram(uint16_t address) const {
     // reading this T-cycle, or 0xFF if CH3 is not reading anything.
     // [blargg/09-wave_read_while_on]
     if (ticks == ch3.last_read_tick + 1) {
-        return wave_ram[ch3.wave.play_position];
+        return wave_ram[ch3.wave.position.byte];
     }
 
     return 0xFF;

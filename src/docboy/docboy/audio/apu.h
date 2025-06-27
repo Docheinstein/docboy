@@ -315,9 +315,11 @@ private:
         uint16_t length_timer {};
 
         struct {
-            uint8_t position {};
+            struct {
+                uint8_t byte {};
+                bool low_nibble {};
+            } position;
             uint16_t timer {};
-            uint8_t play_position {};
         } wave;
 
         bool retrigger {};
