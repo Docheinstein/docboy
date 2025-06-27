@@ -2575,8 +2575,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader2("wave", width) << endl;
 
         b << yellow("Timer") << "         :  " << +gb.apu.ch3.wave.timer << endl;
-        b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position << endl;
-        b << yellow("Play Position") << " :  " << +gb.apu.ch3.wave.play_position << endl;
+        b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position.byte
+          << (gb.apu.ch3.wave.position.low_nibble ? "L" : "H") << endl;
         b << yellow("Last Read") << "     :  " << +gb.apu.ch3.last_read_tick << endl;
 
         b << subheader2("wave ram", width) << endl;
