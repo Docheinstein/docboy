@@ -2500,12 +2500,12 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     const auto make_apu_general_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
-        b << yellow("DIV") << "            :  " << (gb.apu.div_apu % 8) << endl;
+        b << yellow("DIV-APU") << "        :  " << (gb.apu.div_apu % 8) << endl;
         return b;
     };
     const auto make_apu_general_block_3 = [&](uint32_t width) {
         auto b {make_block(width)};
-        b << yellow("DIV bit 4") << "      :  " << +gb.apu.prev_div_bit_4 << endl;
+        b << yellow("DIV-APU bit") << "   :  " << +gb.apu.prev_div_edge_bit << endl;
         return b;
     };
 
@@ -2577,6 +2577,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Timer") << "         :  " << +gb.apu.ch3.wave.timer << endl;
         b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position.byte
           << (gb.apu.ch3.wave.position.low_nibble ? "L" : "H") << endl;
+        b << yellow("Output") << "        :  " << hex<uint8_t>(gb.apu.ch3.digital_output) << endl;
         b << yellow("Last Read") << "     :  " << +gb.apu.ch3.last_read_tick << endl;
 
         b << subheader2("wave ram", width) << endl;

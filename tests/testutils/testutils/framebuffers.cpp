@@ -6,10 +6,16 @@
 #include "utils/hexdump.h"
 #include <cstring>
 
-void load_framebuffer_png(const std::string& filename, uint16_t* buffer) {
-    const auto buffer_rgb888 = load_png_rgb888(filename);
+bool load_framebuffer_png(const std::string& filename, uint16_t* buffer) {
+    bool ok;
+    const auto buffer_rgb888 = load_png_rgb888(filename, nullptr, nullptr, &ok);
+    if (!ok) {
+        return false;
+    }
+
     convert_image(ImageFormat::RGB888, buffer_rgb888.data(), ImageFormat::RGB565, buffer, Specs::Display::WIDTH,
                   Specs::Display::HEIGHT);
+    return true;
 }
 
 bool save_framebuffer_png(const std::string& filename, const uint16_t* buffer) {
@@ -21,10 +27,12 @@ bool save_framebuffer_png(const std::string& filename, const uint16_t* buffer) {
 
 uint16_t convert_pixel_with_palette(uint16_t p, const std::array<uint16_t, 4>& inPalette,
                                     const std::array<uint16_t, 4>& outPalette) {
-    for (uint8_t c = 0; c < 4; c++)
-        if (p == inPalette[c])
+    for (uint8_t c = 0; c < 4; c++) {
+        if (p == inPalette[c]) {
             return outPalette[c];
-    // checkNoEntry()
+        }
+    }
+
     return p;
 }
 

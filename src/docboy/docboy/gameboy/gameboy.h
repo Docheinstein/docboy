@@ -66,7 +66,11 @@ public:
     Dma dma {mmu, oam_bus};
 
     // Audio
+#ifdef ENABLE_CGB
+    Apu apu {timers, speed_switch_controller};
+#else
     Apu apu {timers};
+#endif
 
     // Power Saving
     StopController stop_controller {stopped, joypad, timers, ppu, lcd};

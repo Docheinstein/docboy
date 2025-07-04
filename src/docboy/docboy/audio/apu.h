@@ -11,6 +11,7 @@
 
 class Timers;
 class Parcel;
+class SpeedSwitchController;
 
 class Apu {
     DEBUGGABLE_CLASS()
@@ -23,7 +24,11 @@ public:
 
     static constexpr uint32_t NUM_CHANNELS = 2;
 
+#ifdef ENABLE_CGB
+    Apu(Timers& timers, SpeedSwitchController& speed_switch_controller);
+#else
     explicit Apu(Timers& timers);
+#endif
 
     void set_volume(float volume /* [0:1]*/);
 
@@ -230,6 +235,7 @@ private:
     void turn_off();
 
     void tick_sampler();
+    void tick_length_timers();
     void tick_ch3();
 
 #ifdef ENABLE_CGB
@@ -249,6 +255,10 @@ private:
     void tick_ch4();
 
     Timers& timers;
+#ifdef ENABLE_CGB
+    // TODO: bad: APU shouldn't know speed_switch_controller
+    SpeedSwitchController& speed_switch_controller;
+#endif
 
     std::function<void(const AudioSample)> audio_sample_callback {};
 
@@ -322,8 +332,14 @@ private:
             uint16_t timer {};
         } wave;
 
+        uint8_t digital_output {};
+
         bool retrigger {};
         uint8_t trigger_delay {};
+
+        uint8_t period_reload_delay {};
+        uint16_t period {};
+
         uint64_t last_read_tick {};
 
         struct {
@@ -353,7 +369,7 @@ private:
         uint16_t lfsr {};
     } ch4 {};
 
-    bool prev_div_bit_4 {};
+    bool prev_div_edge_bit {};
     uint8_t div_apu {};
 };
 

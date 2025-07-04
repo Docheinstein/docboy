@@ -2268,6 +2268,8 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/boot/boot_ppu_phase_round2.gb", "docboy/ok.png"},
             F {"docboy/boot/boot_ppu_phase_round3.gb", "docboy/ok.png"},
             F {"docboy/boot/boot_ppu_phase_round4.gb", "docboy/ok.png"},
+            F {"docboy/boot/boot_regs_audio.gb", "docboy/ok.png"},
+            F {"docboy/boot/boot_regs_audio_off.gb", "docboy/ok.png"},
             F {"docboy/boot/boot_regs_cpu.gb", "docboy/ok.png"},
             F {"docboy/boot/boot_regs_interrupts.gb", "docboy/ok.png"},
             F {"docboy/boot/boot_regs_joypad.gb", "docboy/ok.png"},
@@ -3304,6 +3306,10 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/apu/ch3_corrupt_wave_period7_delay75.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3_corrupt_wave_period7_delay82.gb", "docboy/ok.png"},
 
+            F {"docboy/apu/ch3_read_wave_ch_off_dac_off.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3_read_wave_ch_off_dac_on.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3_read_wave_ch_on_dac_on.gb", "docboy/ok.png"},
+
             F {"docboy/apu/ch3_read_wave_period1_delay0.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3_read_wave_period1_delay1.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3_read_wave_period1_delay2.gb", "docboy/ok.png"},
@@ -3384,9 +3390,7 @@ TEST_CASE("dmg", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS(
-
-        );
+        RUN_TEST_ROMS();
     }
 #endif
 }

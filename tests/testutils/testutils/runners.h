@@ -40,6 +40,7 @@ struct ForceCheck {};
 #ifdef ENABLE_CGB
 constexpr ColorTolerance COLOR_TOLERANCE_LOW = {5, 5, 5};
 constexpr ColorTolerance COLOR_TOLERANCE_MEDIUM = {10, 10, 10};
+constexpr ColorTolerance COLOR_TOLERANCE_INSANE = {150, 150, 150};
 #endif
 
 #ifndef ENABLE_CGB
@@ -230,7 +231,10 @@ public:
     }
 
     FramebufferRunner& expect_framebuffer(const std::string& filename) {
-        load_framebuffer_png(filename, expected_framebuffer);
+        bool ok = load_framebuffer_png(filename, expected_framebuffer);
+        if (!ok) {
+            FATAL("failed to read file '" + filename + "'");
+        }
         return *this;
     }
 
@@ -470,12 +474,18 @@ public:
     }
 
     TwoPlayersFramebufferRunner& expect_framebuffer1(const std::string& filename) {
-        load_framebuffer_png(filename, expected_framebuffer1);
+        bool ok = load_framebuffer_png(filename, expected_framebuffer1);
+        if (!ok) {
+            FATAL("failed to read file '" + filename + "'");
+        }
         return *this;
     }
 
     TwoPlayersFramebufferRunner& expect_framebuffer2(const std::string& filename) {
-        load_framebuffer_png(filename, expected_framebuffer2);
+        bool ok = load_framebuffer_png(filename, expected_framebuffer2);
+        if (!ok) {
+            FATAL("failed to read file '" + filename + "'");
+        }
         return *this;
     }
 
