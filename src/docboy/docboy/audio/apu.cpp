@@ -983,12 +983,19 @@ void Apu::write_nr11(uint8_t value) {
 
     if (nr52.enable) {
         nr11.duty_cycle = get_bits_range<Specs::Bits::Audio::NR11::DUTY_CYCLE>(value);
-        nr11.initial_length_timer = initial_length;
     }
 
-    // It seems that length timer is loaded even though APU is disabled
+#ifdef ENABLE_CGB
+    if (nr52.enable) {
+        nr11.initial_length_timer = initial_length;
+    }
+#else
+    // On DMG, length timer is loaded even though APU is disabled
     // [blargg/08-len_ctr_during_power]
-    ch1.length_timer = 64 - initial_length;
+    nr11.initial_length_timer = initial_length;
+#endif
+
+    ch1.length_timer = 64 - nr11.initial_length_timer;
 }
 
 uint8_t Apu::read_nr12() const {
@@ -1108,13 +1115,21 @@ void Apu::write_nr21(uint8_t value) {
     uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
 
     if (nr52.enable) {
+        // TODO: DMG/CGB?
         nr21.duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
-        nr21.initial_length_timer = initial_length;
     }
 
-    // It seems that length timer is loaded even though APU is disabled
+#ifdef ENABLE_CGB
+    if (nr52.enable) {
+        nr21.initial_length_timer = initial_length;
+    }
+#else
+    // On DMG, length timer is loaded even though APU is disabled
     // [blargg/08-len_ctr_during_power]
-    ch2.length_timer = 64 - initial_length;
+    nr21.initial_length_timer = initial_length;
+#endif
+
+    ch2.length_timer = 64 - nr21.initial_length_timer;
 }
 
 uint8_t Apu::read_nr22() const {
@@ -1228,13 +1243,17 @@ uint8_t Apu::read_nr31() const {
 }
 
 void Apu::write_nr31(uint8_t value) {
+#ifdef ENABLE_CGB
     if (nr52.enable) {
         nr31.initial_length_timer = value;
     }
-
-    // It seems that length timer is loaded even though APU is disabled
+#else
+    // On DMG, length timer is loaded even though APU is disabled
     // [blargg/08-len_ctr_during_power]
-    ch3.length_timer = 256 - value;
+    nr31.initial_length_timer = value;
+#endif
+
+    ch3.length_timer = 256 - nr31.initial_length_timer;
 }
 
 uint8_t Apu::read_nr32() const {
@@ -1319,13 +1338,17 @@ uint8_t Apu::read_nr41() const {
 void Apu::write_nr41(uint8_t value) {
     uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR41::INITIAL_LENGTH_TIMER>(value);
 
+#ifdef ENABLE_CGB
     if (nr52.enable) {
         nr41.initial_length_timer = initial_length;
     }
-
-    // It seems that length timer is loaded even though APU is disabled
+#else
+    // On DMG, length timer is loaded even though APU is disabled
     // [blargg/08-len_ctr_during_power]
-    ch4.length_timer = 64 - initial_length;
+    nr41.initial_length_timer = initial_length;
+#endif
+
+    ch4.length_timer = 64 - nr41.initial_length_timer;
 }
 
 uint8_t Apu::read_nr42() const {

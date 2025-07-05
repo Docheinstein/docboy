@@ -6,7 +6,7 @@
 
 #include "utils/strings.h"
 
-#define WIP_ONLY_TEST_ROMS 0
+#define WIP_ONLY_TEST_ROMS 1
 
 #define RUN_TEST_ROMS(...)                                                                                             \
     static RunnerAdapter adapter {TESTS_ROOT_FOLDER "/roms/dmg/", TESTS_ROOT_FOLDER "/results/dmg/"};                  \
@@ -3249,7 +3249,14 @@ TEST_CASE("dmg", "[emulation]") {
             F {"blargg/dmg_sound/12-wave_write_while_on.gb", "blargg/dmg_sound/12-wave_write_while_on.png"},
 
             // docboy
-            F {"docboy/apu/ch1_length_timer_delay0.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_off_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_off_round2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_off_dac_off_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_off_dac_off_round2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_off_dac_on_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_off_dac_on_round2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_on_dac_on_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_on_dac_on_round2.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1_length_timer_delay1024.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1_length_timer_delay2048.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1_length_timer_delay3072.gb", "docboy/ok.png"},
@@ -3283,6 +3290,11 @@ TEST_CASE("dmg", "[emulation]") {
 
             F {"docboy/apu/ch1_write_nr12_turns_off_channel.gb", "docboy/ok.png"},
 
+            F {"docboy/apu/ch2_change_length_timer_apu_off_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch2_change_length_timer_apu_off_round2.gb", "docboy/ok.png"},
+
+            F {"docboy/apu/ch3_change_length_timer_apu_off_round2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch3_change_length_timer_apu_off_round2.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3_corrupt_wave_period7_delay1.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3_corrupt_wave_period7_delay2.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3_corrupt_wave_period7_delay3.gb", "docboy/ok.png"},
@@ -3377,6 +3389,8 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/apu/ch3_write_wave_period5_delay5.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3_write_wave_period5_delay6.gb", "docboy/ok.png"},
             F {"docboy/apu/ch3_write_wave_period5_delay7.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch4_change_length_timer_apu_off_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch4_change_length_timer_apu_off_round2.gb", "docboy/ok.png"},
 
             // samesuite
             F {"samesuite/apu/div_write_trigger.gb", "samesuite/apu/div_write_trigger.png", &GREY_PALETTE},

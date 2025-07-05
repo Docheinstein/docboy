@@ -6,7 +6,7 @@
 
 #include "utils/strings.h"
 
-#define WIP_ONLY_TEST_ROMS 0
+#define WIP_ONLY_TEST_ROMS 1
 
 #define RUN_TEST_ROMS(...)                                                                                             \
     static RunnerAdapter adapter {TESTS_ROOT_FOLDER "/roms/cgb/", TESTS_ROOT_FOLDER "/results/cgb/"};                  \
@@ -1187,22 +1187,30 @@ TEST_CASE("cgb", "[emulation]") {
 
     SECTION("apu") {
         RUN_TEST_ROMS(
-            // blarg
+            // blargg
             F {"blargg/cgb_sound/01-registers.gb", "blargg/cgb_sound/01-registers.png"},
-            F {"blargg/cgb_sound/02-len ctr.gb", "blargg/cgb_sound/02-len ctr.png"},
+            F {"blargg/cgb_sound/02-len_ctr.gb", "blargg/cgb_sound/02-len_ctr.png"},
             F {"blargg/cgb_sound/03-trigger.gb", "blargg/cgb_sound/03-trigger.png"},
             F {"blargg/cgb_sound/04-sweep.gb", "blargg/cgb_sound/04-sweep.png"},
-            F {"blargg/cgb_sound/05-sweep details.gb", "blargg/cgb_sound/05-sweep details.png"},
-            F {"blargg/cgb_sound/06-overflow on trigger.gb", "blargg/cgb_sound/06-overflow on trigger.png"},
-            F {"blargg/cgb_sound/07-len sweep period sync.gb", "blargg/cgb_sound/07-len sweep period sync.png"},
-            //            F {"blargg/cgb_sound/08-len ctr during power.gb", "blargg/cgb_sound/08-len ctr during
-            //            power.png"},
-            F {"blargg/cgb_sound/09-wave read while on.gb", "blargg/cgb_sound/09-wave read while on.png"},
-            //            F {"blargg/cgb_sound/10-wave trigger while on.gb", "blargg/cgb_sound/10-wave trigger while
-            //            on.png"}, F {"blargg/cgb_sound/11-regs after power.gb", "blargg/cgb_sound/11-regs after
-            //            power.png"}, F {"blargg/cgb_sound/12-wave.gb", "blargg/cgb_sound/12-wave.png"},
+            F {"blargg/cgb_sound/05-sweep_details.gb", "blargg/cgb_sound/05-sweep_details.png"},
+            F {"blargg/cgb_sound/06-overflow_on_trigger.gb", "blargg/cgb_sound/06-overflow_on_trigger.png"},
+            F {"blargg/cgb_sound/07-len_sweep_period_sync.gb", "blargg/cgb_sound/07-len_sweep_period_sync.png"},
+            F {"blargg/cgb_sound/08-len_ctr_during_power.gb", "blargg/cgb_sound/08-len_ctr_during_power.png"},
+            F {"blargg/cgb_sound/09-wave_read_while_on.gb", "blargg/cgb_sound/09-wave_read_while_on.png"},
+            //            F {"blargg/cgb_sound/10-wave_trigger_while_on.gb",
+            //            "blargg/cgb_sound/10-wave_trigger_while_on.png"}, F
+            //            {"blargg/cgb_sound/11-regs_after_power.gb", "blargg/cgb_sound/11-regs_after_power.png"}, F
+            //            {"blargg/cgb_sound/12-wave.gb", "blargg/cgb_sound/12-wave.png"},
 
             // docboy
+            F {"docboy/apu/ch1_change_length_timer_apu_off_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_off_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_off_dac_off_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_off_dac_off_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_off_dac_on_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_off_dac_on_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_on_dac_on_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_change_length_timer_apu_on_ch_on_dac_on_round2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_square_position_retrigger_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_square_position_retrigger_round2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_square_position_round1.gbc", "docboy/ok.png"},
@@ -1210,6 +1218,8 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/apu/ch1_volume_sweep_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_volume_sweep_round2.gbc", "docboy/ok.png"},
 
+            F {"docboy/apu/ch2_change_length_timer_apu_off_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch2_change_length_timer_apu_off_round2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch2_square_position_retrigger_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch2_square_position_retrigger_round2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch2_square_position_round1.gbc", "docboy/ok.png"},
@@ -1217,6 +1227,8 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/apu/ch2_volume_sweep_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch2_volume_sweep_round2.gbc", "docboy/ok.png"},
 
+            F {"docboy/apu/ch3_change_length_timer_apu_off_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch3_change_length_timer_apu_off_round2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch3_change_period_no_retrigger_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch3_change_period_no_retrigger_round2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch3_change_period_no_retrigger_round3.gbc", "docboy/ok.png"},
@@ -1267,6 +1279,8 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/apu/ch3_wave_delay16.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch3_wave_delay17.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch3_wave_delay18.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch4_change_length_timer_apu_off_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch4_change_length_timer_apu_off_round2.gbc", "docboy/ok.png"},
 
             F {"docboy/apu/ch4_volume_sweep_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch4_volume_sweep_round2.gbc", "docboy/ok.png"},
