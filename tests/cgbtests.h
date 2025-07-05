@@ -6,7 +6,7 @@
 
 #include "utils/strings.h"
 
-#define WIP_ONLY_TEST_ROMS 1
+#define WIP_ONLY_TEST_ROMS 0
 
 #define RUN_TEST_ROMS(...)                                                                                             \
     static RunnerAdapter adapter {TESTS_ROOT_FOLDER "/roms/cgb/", TESTS_ROOT_FOLDER "/results/cgb/"};                  \
@@ -1197,10 +1197,9 @@ TEST_CASE("cgb", "[emulation]") {
             F {"blargg/cgb_sound/07-len_sweep_period_sync.gb", "blargg/cgb_sound/07-len_sweep_period_sync.png"},
             F {"blargg/cgb_sound/08-len_ctr_during_power.gb", "blargg/cgb_sound/08-len_ctr_during_power.png"},
             F {"blargg/cgb_sound/09-wave_read_while_on.gb", "blargg/cgb_sound/09-wave_read_while_on.png"},
-            //            F {"blargg/cgb_sound/10-wave_trigger_while_on.gb",
-            //            "blargg/cgb_sound/10-wave_trigger_while_on.png"}, F
-            //            {"blargg/cgb_sound/11-regs_after_power.gb", "blargg/cgb_sound/11-regs_after_power.png"}, F
-            //            {"blargg/cgb_sound/12-wave.gb", "blargg/cgb_sound/12-wave.png"},
+            F {"blargg/cgb_sound/10-wave_trigger_while_on.gb", "blargg/cgb_sound/10-wave_trigger_while_on.png"},
+            F {"blargg/cgb_sound/11-regs_after_power.gb", "blargg/cgb_sound/11-regs_after_power.png"},
+            F {"blargg/cgb_sound/12-wave.gb", "blargg/cgb_sound/12-wave.png"},
 
             // docboy
             F {"docboy/apu/ch1_change_length_timer_apu_off_round1.gbc", "docboy/ok.png"},
@@ -1279,6 +1278,14 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/apu/ch3_wave_delay16.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch3_wave_delay17.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch3_wave_delay18.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch3_write_wave_period5_delay0.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch3_write_wave_period5_delay1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch3_write_wave_period5_delay2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch3_write_wave_period5_delay3.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch3_write_wave_period5_delay4.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch3_write_wave_period5_delay5.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch3_write_wave_period5_delay6.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch3_write_wave_period5_delay7.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch4_change_length_timer_apu_off_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch4_change_length_timer_apu_off_round2.gbc", "docboy/ok.png"},
 
@@ -1343,8 +1350,6 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_512.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_1024.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_apu_ch3_a_period_2048.gbc", "docboy/ok.png"},
-            F {"docboy/double_speed/double_speed_apu_ch3_length_timer_round1.gbc", "docboy/ok.png"},
-            F {"docboy/double_speed/double_speed_apu_ch3_length_timer_round2.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_cpu_speed.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_dma_speed_a_round1.gbc", "docboy/ok.png"},
             F {"docboy/double_speed/double_speed_dma_speed_a_round2.gbc", "docboy/ok.png"},

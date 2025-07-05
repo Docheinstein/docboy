@@ -340,12 +340,14 @@ private:
         uint8_t period_reload_delay {};
         uint16_t period {};
 
-        uint64_t last_read_tick {};
+#ifndef ENABLE_CGB
+        bool just_sampled {};
+#endif
 
         struct {
             bool pending {};
             uint8_t value {};
-        } pending_wave_write;
+        } wave_write_corruption;
     } ch3 {};
 
     struct {

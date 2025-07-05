@@ -456,6 +456,11 @@ void Apu::tick_ch4() {
 }
 
 void Apu::tick_ch3() {
+#ifndef ENABLE_CGB
+    ASSERT(!ch3.wave_write_corruption.pending || (ch3.wave_write_corruption.pending && nr52.ch3));
+    ch3.just_sampled = false;
+#endif
+
     if (nr52.ch3) {
         if (ch3.period_reload_delay) {
             if (--ch3.period_reload_delay == 0) {
@@ -500,19 +505,18 @@ void Apu::tick_ch3() {
             // Reload period timer
             ch3.wave.timer = ch3.period;
 
-            ch3.last_read_tick = ticks;
+#ifndef ENABLE_CGB
+            ch3.just_sampled = true;
+#endif
 
-            ASSERT(ch3.wave.timer < 2048);
-        }
-
-        // Re-triggering CH3 while it is reading wave ram corrupts wave ram.
-        // * If the buffer position read from wave ram is [0:3], then only the first byte
-        //   of wave ram is corrupted with the byte that is read at that moment.
-        // * If the buffer position read from wave ram is [4:15], then the first 4 bytes
-        //   of wave ram are corrupted with the (aligned) 4 bytes that are read at the moment
-        // [blargg/10-wave_trigger_while_on]
-        if (ch3.retrigger && ch3.trigger_delay == 3) {
-            if (ticks == ch3.last_read_tick) {
+#ifndef ENABLE_CGB
+            // On DMG, re-triggering CH3 while it is reading wave ram corrupts wave ram.
+            // * If the buffer position read from wave ram is [0:3], then only the first byte
+            //   of wave ram is corrupted with the byte that is read at that moment.
+            // * If the buffer position read from wave ram is [4:15], then the first 4 bytes
+            //   of wave ram are corrupted with the (aligned) 4 bytes that are read at the moment
+            // [blargg/10-wave_trigger_while_on]
+            if (ch3.retrigger && ch3.trigger_delay == 3) {
                 if (ch3.wave.position.byte < 4) {
                     wave_ram[0] = static_cast<uint8_t>(wave_ram[ch3.wave.position.byte]);
                 } else {
@@ -523,18 +527,18 @@ void Apu::tick_ch3() {
                     wave_ram[3] = static_cast<uint8_t>(wave_ram[4 * base + 3]);
                 }
             }
+#endif
+
+            ASSERT(ch3.wave.timer < 2048);
         }
 
         // Writing to wave ram while CH3 is reading a byte corrupts it:
         // the byte of wave ram that is currently read is wrote instead.
+        // [blargg/12-wave]
         // [blargg/12-wave_write_while_on]
-        // TODO: check exact timing (I guess this should take place in write_wave_ram instead)
-        if (ch3.pending_wave_write.pending) {
-            ch3.pending_wave_write.pending = false;
-
-            if (ticks == ch3.last_read_tick) {
-                wave_ram[ch3.wave.position.byte] = ch3.pending_wave_write.value;
-            }
+        if (ch3.wave_write_corruption.pending) {
+            ch3.wave_write_corruption.pending = false;
+            wave_ram[ch3.wave.position.byte] = ch3.wave_write_corruption.value;
         }
     }
 }
@@ -820,9 +824,11 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch3.trigger_delay);
     parcel.write_uint8(ch3.period_reload_delay);
     parcel.write_uint16(ch3.period);
-    parcel.write_uint64(ch3.last_read_tick);
-    parcel.write_bool(ch3.pending_wave_write.pending);
-    parcel.write_uint8(ch3.pending_wave_write.value);
+#ifndef ENABLE_CGB
+    parcel.write_bool(ch3.just_sampled);
+#endif
+    parcel.write_bool(ch3.wave_write_corruption.pending);
+    parcel.write_uint8(ch3.wave_write_corruption.value);
 
     parcel.write_bool(ch4.dac);
     parcel.write_uint8(ch4.volume);
@@ -934,9 +940,11 @@ void Apu::load_state(Parcel& parcel) {
     ch3.trigger_delay = parcel.read_uint8();
     ch3.period_reload_delay = parcel.read_uint8();
     ch3.period = parcel.read_uint16();
-    ch3.last_read_tick = parcel.read_uint64();
-    ch3.pending_wave_write.pending = parcel.read_bool();
-    ch3.pending_wave_write.value = parcel.read_uint8();
+#ifndef ENABLE_CGB
+    ch3.just_sampled = parcel.read_bool();
+#endif
+    ch3.wave_write_corruption.pending = parcel.read_bool();
+    ch3.wave_write_corruption.value = parcel.read_uint8();
 
     ch4.dac = parcel.read_bool();
     ch4.volume = parcel.read_uint8();
@@ -1115,7 +1123,6 @@ void Apu::write_nr21(uint8_t value) {
     uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
 
     if (nr52.enable) {
-        // TODO: DMG/CGB?
         nr21.duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
     }
 
@@ -1503,13 +1510,13 @@ uint8_t Apu::read_wave_ram(uint16_t address) const {
     }
 
 #ifdef ENABLE_CGB
+    // [blargg/09-wave_read_while_on]
     return wave_ram[ch3.wave.position.byte];
 #else
     // On DMG, when CH3 is on, reading wave ram yields the byte CH3 is currently
     // reading this T-cycle, or 0xFF if CH3 is not reading anything.
     // [blargg/09-wave_read_while_on]
-
-    if (ticks == ch3.last_read_tick + 1) {
+    if (ch3.just_sampled) {
         return wave_ram[ch3.wave.position.byte];
     }
     return 0xFF;
@@ -1523,10 +1530,20 @@ void Apu::write_wave_ram(uint16_t address, uint8_t value) {
         return;
     }
 
-    // TODO: this is a hack, check exact timing
-    //  (I guess corruption should take place here, not in tick_ch3)
-    ch3.pending_wave_write.pending = true;
-    ch3.pending_wave_write.value = value;
+    // Writing to wave ram corrupts the byte the channel is currently reading.
+    // On CGB, this always happens, while on DMG it happens only when write
+    // happens at the same the channel is sampling.
+#ifdef ENABLE_CGB
+    // [blargg/12-wave]
+    ch3.wave_write_corruption.pending = true;
+    ch3.wave_write_corruption.value = value;
+#else
+    // [blargg/12-wave_write_while_on]
+    if (ch3.wave.timer == 2047) {
+        ch3.wave_write_corruption.pending = true;
+        ch3.wave_write_corruption.value = value;
+    }
+#endif
 }
 
 #ifdef ENABLE_CGB
