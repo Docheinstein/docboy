@@ -86,14 +86,14 @@ inline void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, co
         // Wave position does not change immediately after channel's trigger.
         if (!ch.trigger_delay) {
             if (++ch.wave.timer == 2048) {
-                ASSERT(nrx1.duty_cycle < 4);
+                ASSERT(ch.wave.duty_cycle < 4);
                 ASSERT(ch.wave.position < 8);
 
                 // Advance square wave position
                 ch.wave.position = mod<8>(ch.wave.position + 1);
 
                 // Compute current output
-                ch.digital_output = SQUARE_WAVES[nrx1.duty_cycle][ch.wave.position];
+                ch.digital_output = SQUARE_WAVES[ch.wave.duty_cycle][ch.wave.position];
 
                 // Reload period timer
                 ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
@@ -102,6 +102,10 @@ inline void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, co
         } else {
             --ch.trigger_delay;
         }
+
+        // Reload duty cycle.
+        // Note: there's a window in which, if the channel samples, it outputs accordingly to the "old" duty cycle.
+        ch.wave.duty_cycle = nrx1.duty_cycle;
     }
 }
 } // namespace
@@ -212,6 +216,7 @@ void Apu::reset() {
     ch1.digital_output = false;
     ch1.wave.position = 0;
     ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
+    ch1.wave.duty_cycle = 0;
     ch1.volume_sweep.direction = false;
     ch1.volume_sweep.pace = 0;
     ch1.volume_sweep.timer = 0;
@@ -227,6 +232,7 @@ void Apu::reset() {
     ch2.digital_output = false;
     ch2.wave.position = 0;
     ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
+    ch2.wave.duty_cycle = 0;
     ch2.volume_sweep.direction = false;
     ch2.volume_sweep.pace = 0;
     ch2.volume_sweep.timer = 0;
@@ -865,6 +871,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch1.digital_output);
     parcel.write_uint8(ch1.wave.position);
     parcel.write_uint16(ch1.wave.timer);
+    parcel.write_uint8(ch1.wave.duty_cycle);
     parcel.write_bool(ch1.volume_sweep.direction);
     parcel.write_uint8(ch1.volume_sweep.pace);
     parcel.write_uint8(ch1.volume_sweep.timer);
@@ -882,6 +889,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch2.digital_output);
     parcel.write_uint8(ch2.wave.position);
     parcel.write_uint16(ch2.wave.timer);
+    parcel.write_uint8(ch2.wave.duty_cycle);
     parcel.write_bool(ch2.volume_sweep.direction);
     parcel.write_uint8(ch2.volume_sweep.pace);
     parcel.write_uint8(ch2.volume_sweep.timer);
@@ -986,6 +994,7 @@ void Apu::load_state(Parcel& parcel) {
     ch1.digital_output = parcel.read_bool();
     ch1.wave.position = parcel.read_uint8();
     ch1.wave.timer = parcel.read_uint16();
+    ch1.wave.duty_cycle = parcel.read_uint8();
     ch1.volume_sweep.direction = parcel.read_bool();
     ch1.volume_sweep.pace = parcel.read_uint8();
     ch1.volume_sweep.timer = parcel.read_uint8();
@@ -1003,6 +1012,7 @@ void Apu::load_state(Parcel& parcel) {
     ch2.digital_output = parcel.read_bool();
     ch2.wave.position = parcel.read_uint8();
     ch2.wave.timer = parcel.read_uint16();
+    ch2.wave.duty_cycle = parcel.read_uint8();
     ch2.volume_sweep.direction = parcel.read_bool();
     ch2.volume_sweep.pace = parcel.read_uint8();
     ch2.volume_sweep.timer = parcel.read_uint8();

@@ -2540,6 +2540,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 1", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Output") << "         :  " << +gb.apu.ch1.digital_output << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch1.volume << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
         b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch1.trigger_delay << endl;
@@ -2548,7 +2549,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << yellow("Timer") << "          :  " << +gb.apu.ch1.wave.timer << endl;
         b << yellow("Position") << "       :  " << +gb.apu.ch1.wave.position << endl;
-        b << yellow("Duty Cycle") << "     :  " << duty_cycle(gb.apu.nr11.duty_cycle) << endl;
+        b << yellow("Duty Cycle") << "     :  " << duty_cycle(gb.apu.ch1.wave.duty_cycle) << endl;
 
         b << subheader2("volume sweep", width) << endl;
         b << yellow("Timer") << "          :  " << +gb.apu.ch1.volume_sweep.timer << endl;
@@ -2587,6 +2588,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 2", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch2 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch2.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Output") << "         :  " << +gb.apu.ch2.digital_output << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch2.volume << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch2.length_timer << endl;
         b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch2.trigger_delay << endl;
@@ -2595,7 +2597,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << yellow("Timer") << "          :  " << +gb.apu.ch2.wave.timer << endl;
         b << yellow("Position") << "       :  " << +gb.apu.ch2.wave.position << endl;
-        b << yellow("Duty Cycle") << "     :  " << duty_cycle(gb.apu.nr21.duty_cycle) << endl;
+        b << yellow("Duty Cycle") << "     :  " << duty_cycle(gb.apu.ch2.wave.duty_cycle) << endl;
 
         b << subheader2("volume sweep", width) << endl;
         b << yellow("Timer") << "          :  " << +gb.apu.ch2.volume_sweep.timer << endl;
@@ -2611,6 +2613,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 3", width) << endl;
         b << yellow("Enabled") << "       :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "           :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Output") << "        :  " << hex<uint8_t>(gb.apu.ch3.digital_output) << endl;
         b << endl;
         b << yellow("Length Timer") << "  :  " << +gb.apu.ch3.length_timer << endl;
         b << yellow("Trigger Delay") << " :  " << +gb.apu.ch3.trigger_delay << endl;
@@ -2620,7 +2623,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Timer") << "         :  " << +gb.apu.ch3.wave.timer << endl;
         b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position.byte
           << (gb.apu.ch3.wave.position.low_nibble ? "L" : "H") << endl;
-        b << yellow("Output") << "        :  " << hex<uint8_t>(gb.apu.ch3.digital_output) << endl;
 
         b << subheader2("wave ram", width) << endl;
 
@@ -2642,6 +2644,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 4", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch4 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch4.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Output") << "         :  " << test_bit<0>(gb.apu.ch4.lfsr) << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch4.volume << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch4.length_timer << endl;
         b << endl;

@@ -295,6 +295,7 @@ private:
         struct {
             uint8_t position {};
             uint16_t timer {};
+            uint8_t duty_cycle {};
         } wave;
 
         struct {
@@ -327,6 +328,7 @@ private:
         struct {
             uint8_t position {};
             uint16_t timer {};
+            uint8_t duty_cycle {};
         } wave;
 
         struct {
