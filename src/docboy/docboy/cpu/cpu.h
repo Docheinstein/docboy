@@ -89,16 +89,20 @@ private:
 
     void tick_microop();
 
+#ifdef ENABLE_CGB
     void tick_even();
     void tick_odd();
+#endif
 
     void tick_single_speed_0();
     void tick_single_speed_1();
     void tick_single_speed_2();
     void tick_single_speed_3();
 
+#ifdef ENABLE_CGB
     void tick_double_speed_0();
     void tick_double_speed_1();
+#endif
 
     template <uint8_t t>
     void check_interrupt();

@@ -79,14 +79,21 @@ inline void handle_channel_volume_sweep_expired(Channel& ch) {
     }
 }
 
-template <typename Channel, typename ChannelOnFlag, typename Nrx3, typename Nrx4>
-inline void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, const Nrx3& nrx3, const Nrx4& nrx4) {
+template <typename Channel, typename ChannelOnFlag, typename Nrx1, typename Nrx3, typename Nrx4>
+inline void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, const Nrx1& nrx1, const Nrx3& nrx3,
+                                     const Nrx4& nrx4) {
     if (ch_on) {
         // Wave position does not change immediately after channel's trigger.
         if (!ch.trigger_delay) {
             if (++ch.wave.timer == 2048) {
+                ASSERT(nrx1.duty_cycle < 4);
+                ASSERT(ch.wave.position < 8);
+
                 // Advance square wave position
                 ch.wave.position = mod<8>(ch.wave.position + 1);
+
+                // Compute current output
+                ch.digital_output = SQUARE_WAVES[nrx1.duty_cycle][ch.wave.position];
 
                 // Reload period timer
                 ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
@@ -127,6 +134,9 @@ void Apu::set_audio_sample_callback(std::function<void(const AudioSample)>&& cal
 
 void Apu::reset() {
     // Reset I/O registers
+#ifdef ENABLE_CGB
+    phase = 0;
+#endif
     nr10.pace = 0;
     nr10.direction = false;
     nr10.step = 0;
@@ -197,6 +207,9 @@ void Apu::reset() {
 
     ch1.dac = true;
     ch1.volume = 0;
+    ch1.length_timer = 0;
+    ch1.trigger_delay = 0;
+    ch1.digital_output = false;
     ch1.wave.position = 0;
     ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
     ch1.volume_sweep.direction = false;
@@ -209,6 +222,9 @@ void Apu::reset() {
 
     ch2.dac = false;
     ch2.volume = 0;
+    ch2.length_timer = 0;
+    ch2.trigger_delay = 0;
+    ch2.digital_output = false;
     ch2.wave.position = 0;
     ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
     ch2.volume_sweep.direction = false;
@@ -216,6 +232,8 @@ void Apu::reset() {
     ch2.volume_sweep.timer = 0;
     ch2.volume_sweep.expired = false;
 
+    ch3.length_timer = 0;
+    ch3.digital_output = 0;
     ch3.wave.position.byte = 0;
     ch3.wave.position.low_nibble = false;
     ch3.wave.timer = 0;
@@ -224,9 +242,15 @@ void Apu::reset() {
     ch3.trigger_delay = 0;
     ch3.period_reload_delay = 0;
     ch3.period = 0;
+#ifndef ENABLE_CGB
+    ch3.just_sampled = false;
+#endif
+    ch3.wave_write_corruption.pending = false;
+    ch3.wave_write_corruption.value = 0;
 
     ch4.dac = false;
     ch4.volume = 0;
+    ch4.length_timer = 0;
     ch4.wave.timer = 0;
     ch4.volume_sweep.direction = false;
     ch4.volume_sweep.pace = 0;
@@ -243,12 +267,10 @@ inline uint8_t Apu::compute_ch1_digital_output() const {
 
     if (nr52.ch1) {
         ASSERT(ch1.dac);
-        ASSERT(nr11.duty_cycle < 4);
-        ASSERT(ch1.wave.position < 8);
         ASSERT(ch1.volume <= 0xF);
 
-        const bool digital_amplitude = SQUARE_WAVES[nr11.duty_cycle][ch1.wave.position];
-        digital_output = digital_amplitude * ch1.volume;
+        // Scale by volume
+        digital_output = ch1.digital_output * ch1.volume;
 
         ASSERT(digital_output <= 0xF);
     }
@@ -261,12 +283,10 @@ inline uint8_t Apu::compute_ch2_digital_output() const {
 
     if (nr52.ch2) {
         ASSERT(ch2.dac);
-        ASSERT(nr21.duty_cycle < 4);
-        ASSERT(ch2.wave.position < 8);
         ASSERT(ch2.volume <= 0xF);
 
-        const bool digital_amplitude = SQUARE_WAVES[nr21.duty_cycle][ch2.wave.position];
-        digital_output = digital_amplitude * ch2.volume;
+        // Scale by volume
+        digital_output = ch2.digital_output * ch2.volume;
 
         ASSERT(digital_output <= 0xF);
     }
@@ -280,12 +300,10 @@ inline uint8_t Apu::compute_ch3_digital_output() const {
     if (nr52.ch3 && nr32.volume) {
         ASSERT(nr30.dac);
         ASSERT(nr32.volume <= 0b11);
-
         ASSERT(ch3.digital_output <= 0x0F);
-        digital_output = ch3.digital_output;
 
         // Scale by volume
-        digital_output = digital_output >> (nr32.volume - 1);
+        digital_output = ch3.digital_output >> (nr32.volume - 1);
 
         ASSERT(digital_output <= 0xF);
     }
@@ -300,6 +318,7 @@ inline uint8_t Apu::compute_ch4_digital_output() const {
         ASSERT(ch4.dac);
         ASSERT(ch4.volume <= 0xF);
 
+        // Scale by volume
         const bool random_output = test_bit<0>(ch4.lfsr);
         digital_output = random_output ? ch4.volume : 0;
 
@@ -594,18 +613,65 @@ void Apu::tick_length_timers() {
 }
 
 void Apu::tick_t0() {
-    if (nr52.enable) {
-        ASSERT(!(nr52.ch1 && !ch1.dac));
-        ASSERT(!(nr52.ch2 && !ch2.dac));
-        ASSERT(!(nr52.ch3 && !nr30.dac));
-        ASSERT(!(nr52.ch4 && !ch4.dac));
+#ifdef ENABLE_CGB
+    tick();
+#else
+    tick_even_primary();
+#endif
+}
 
+void Apu::tick_t1() {
+#ifdef ENABLE_CGB
+    tick();
+#else
+    tick_odd();
+#endif
+}
+
+void Apu::tick_t2() {
+#ifdef ENABLE_CGB
+    tick();
+#else
+    tick_even_secondary();
+#endif
+}
+
+void Apu::tick_t3() {
+#ifdef ENABLE_CGB
+    tick();
+#else
+    tick_odd();
+#endif
+}
+
+#ifdef ENABLE_CGB
+inline void Apu::tick() {
+    ASSERT(phase < 4);
+
+    // APU phase is aligned with the T-Cycle it has been turned on (not the CPU clock edge).
+    // This is relevant in CGB (double speed mode).
+    if (mod<2>(phase) == 0) {
+        if (phase == 0) {
+            tick_even_primary();
+        } else {
+            tick_even_secondary();
+        }
+    } else {
+        tick_odd();
+    }
+
+    phase = mod<4>(phase + 1);
+}
+#endif
+
+void Apu::tick_even_primary() {
+    if (nr52.enable) {
         // Update length timers
         tick_length_timers();
 
         // Update wave timers
-        tick_square_wave_channel(ch1, nr52.ch1, nr13, nr14);
-        tick_square_wave_channel(ch2, nr52.ch2, nr23, nr24);
+        tick_square_wave_channel(ch1, nr52.ch1, nr11, nr13, nr14);
+        tick_square_wave_channel(ch2, nr52.ch2, nr21, nr23, nr24);
         tick_ch3();
         tick_ch4();
     }
@@ -617,11 +683,7 @@ void Apu::tick_t0() {
 #endif
 }
 
-void Apu::tick_t1() {
-    tick_sampler();
-}
-
-void Apu::tick_t2() {
+void Apu::tick_even_secondary() {
     if (nr52.enable) {
         // Update length timers
         tick_length_timers();
@@ -637,7 +699,7 @@ void Apu::tick_t2() {
 #endif
 }
 
-void Apu::tick_t3() {
+void Apu::tick_odd() {
     tick_sampler();
 }
 
@@ -656,6 +718,9 @@ void Apu::tick_sampler() {
 void Apu::turn_on() {
     prev_div_edge_bit = true; // TODO: verify this, also in CGB?
     div_apu = 0;
+#ifdef ENABLE_CGB
+    phase = 0;
+#endif
 }
 
 void Apu::turn_off() {
@@ -714,22 +779,27 @@ void Apu::turn_off() {
     nr52.ch1 = false;
 
     ch1.dac = false;
+    ch1.digital_output = false;
     ch1.wave.position = 0;
     ch1.volume_sweep.expired = false;
 
     ch2.dac = false;
+    ch2.digital_output = false;
     ch2.wave.position = 0;
     ch2.volume_sweep.expired = false;
 
+    ch3.digital_output = 0;
     ch3.wave.position.byte = 0;
     ch3.wave.position.low_nibble = false;
-    ch3.digital_output = 0;
 
     ch4.dac = false;
     ch4.volume_sweep.expired = false;
 }
 
 void Apu::save_state(Parcel& parcel) const {
+#ifdef ENABLE_CGB
+    parcel.write_uint8(phase);
+#endif
     parcel.write_uint8(nr10.pace);
     parcel.write_bool(nr10.direction);
     parcel.write_uint8(nr10.step);
@@ -792,6 +862,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch1.volume);
     parcel.write_uint8(ch1.length_timer);
     parcel.write_uint8(ch1.trigger_delay);
+    parcel.write_bool(ch1.digital_output);
     parcel.write_uint8(ch1.wave.position);
     parcel.write_uint16(ch1.wave.timer);
     parcel.write_bool(ch1.volume_sweep.direction);
@@ -808,6 +879,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch2.volume);
     parcel.write_uint8(ch2.length_timer);
     parcel.write_uint8(ch2.trigger_delay);
+    parcel.write_bool(ch2.digital_output);
     parcel.write_uint8(ch2.wave.position);
     parcel.write_uint16(ch2.wave.timer);
     parcel.write_bool(ch2.volume_sweep.direction);
@@ -816,10 +888,10 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch2.volume_sweep.expired);
 
     parcel.write_uint16(ch3.length_timer);
+    parcel.write_uint8(ch3.digital_output);
     parcel.write_uint8(ch3.wave.position.byte);
     parcel.write_bool(ch3.wave.position.low_nibble);
     parcel.write_uint16(ch3.wave.timer);
-    parcel.write_uint8(ch3.digital_output);
     parcel.write_bool(ch3.retrigger);
     parcel.write_uint8(ch3.trigger_delay);
     parcel.write_uint8(ch3.period_reload_delay);
@@ -845,6 +917,9 @@ void Apu::save_state(Parcel& parcel) const {
 }
 
 void Apu::load_state(Parcel& parcel) {
+#ifdef ENABLE_CGB
+    phase = parcel.read_uint8();
+#endif
     nr10.pace = parcel.read_uint8();
     nr10.direction = parcel.read_bool();
     nr10.step = parcel.read_uint8();
@@ -908,6 +983,7 @@ void Apu::load_state(Parcel& parcel) {
     ch1.volume = parcel.read_uint8();
     ch1.length_timer = parcel.read_uint8();
     ch1.trigger_delay = parcel.read_uint8();
+    ch1.digital_output = parcel.read_bool();
     ch1.wave.position = parcel.read_uint8();
     ch1.wave.timer = parcel.read_uint16();
     ch1.volume_sweep.direction = parcel.read_bool();
@@ -924,6 +1000,7 @@ void Apu::load_state(Parcel& parcel) {
     ch2.volume = parcel.read_uint8();
     ch2.length_timer = parcel.read_uint8();
     ch2.trigger_delay = parcel.read_uint8();
+    ch2.digital_output = parcel.read_bool();
     ch2.wave.position = parcel.read_uint8();
     ch2.wave.timer = parcel.read_uint16();
     ch2.volume_sweep.direction = parcel.read_bool();
@@ -932,10 +1009,10 @@ void Apu::load_state(Parcel& parcel) {
     ch2.volume_sweep.expired = parcel.read_bool();
 
     ch3.length_timer = parcel.read_uint16();
+    ch3.digital_output = parcel.read_uint8();
     ch3.wave.position.byte = parcel.read_uint8();
     ch3.wave.position.low_nibble = parcel.read_bool();
     ch3.wave.timer = parcel.read_uint16();
-    ch3.digital_output = parcel.read_uint8();
     ch3.retrigger = parcel.read_bool();
     ch3.trigger_delay = parcel.read_uint8();
     ch3.period_reload_delay = parcel.read_uint8();
@@ -1066,7 +1143,7 @@ void Apu::write_nr14(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configuration
     if (nr14.trigger) {
-        ch1.trigger_delay = !nr52.ch1 ? 3 : 2;
+        ch1.trigger_delay = !nr52.ch1 ? 3 : 1;
 
         if (ch1.dac) {
             // If the DAC is on, the channel is turned on as well
@@ -1199,7 +1276,7 @@ void Apu::write_nr24(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configuration
     if (nr24.trigger) {
-        ch2.trigger_delay = !nr52.ch2 ? 3 : 2;
+        ch2.trigger_delay = !nr52.ch2 ? 3 : 1;
 
         if (ch2.dac) {
             // If the DAC is on, the channel is turned on as well

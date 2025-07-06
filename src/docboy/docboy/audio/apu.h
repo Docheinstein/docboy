@@ -234,6 +234,14 @@ private:
     void turn_on();
     void turn_off();
 
+    void tick_even_primary();
+    void tick_even_secondary();
+    void tick_odd();
+
+#ifdef ENABLE_CGB
+    void tick();
+#endif
+
     void tick_sampler();
     void tick_length_timers();
     void tick_ch3();
@@ -264,6 +272,10 @@ private:
 
     float master_volume {1.0f};
 
+#ifdef ENABLE_CGB
+    uint8_t phase {};
+#endif
+
     uint64_t ticks {};
 
     double sample_period {};
@@ -277,6 +289,8 @@ private:
         uint8_t length_timer {};
 
         uint8_t trigger_delay {};
+
+        bool digital_output {};
 
         struct {
             uint8_t position {};
@@ -308,6 +322,8 @@ private:
 
         uint8_t trigger_delay {};
 
+        bool digital_output {};
+
         struct {
             uint8_t position {};
             uint16_t timer {};
@@ -324,6 +340,8 @@ private:
     struct {
         uint16_t length_timer {};
 
+        uint8_t digital_output {};
+
         struct {
             struct {
                 uint8_t byte {};
@@ -331,8 +349,6 @@ private:
             } position;
             uint16_t timer {};
         } wave;
-
-        uint8_t digital_output {};
 
         bool retrigger {};
         uint8_t trigger_delay {};
