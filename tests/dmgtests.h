@@ -3404,7 +3404,7 @@ TEST_CASE("dmg", "[emulation]") {
     }
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS(
+        RUN_TEST_ROMS();
     }
 #endif
 }

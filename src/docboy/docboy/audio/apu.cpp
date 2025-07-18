@@ -7,6 +7,7 @@
 #include "docboy/speedswitch/speedswitchcontroller.h"
 #endif
 
+#include "utils/arrays.h"
 #include "utils/asserts.h"
 #include "utils/bits.h"
 #include "utils/parcel.h"
@@ -110,6 +111,55 @@ inline void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, co
 }
 } // namespace
 
+const Apu::RegisterUpdater Apu::REGISTER_UPDATERS[] {&Apu::update_nr10,
+                                                     &Apu::update_nr11,
+                                                     &Apu::update_nr12,
+                                                     &Apu::update_nr13,
+                                                     &Apu::update_nr14,
+                                                     &Apu::update_nr21,
+                                                     &Apu::update_nr22,
+                                                     &Apu::update_nr23,
+                                                     &Apu::update_nr24,
+                                                     &Apu::update_nr30,
+                                                     &Apu::update_nr31,
+                                                     &Apu::update_nr32,
+                                                     &Apu::update_nr33,
+                                                     &Apu::update_nr34,
+                                                     &Apu::update_nr41,
+                                                     &Apu::update_nr42,
+                                                     &Apu::update_nr43,
+                                                     &Apu::update_nr44,
+                                                     &Apu::update_nr50,
+                                                     &Apu::update_nr51,
+                                                     &Apu::update_nr52,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE0>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE1>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE2>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE3>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE4>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE5>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE6>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE7>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE8>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVE9>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVEA>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVEB>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVEC>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVED>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVEE>,
+                                                     &Apu::update_wave_ram<Specs::Registers::Sound::WAVEF>};
+
+const Apu::RegisterUpdater Apu::WAVE_RAM_UPDATERS[] {
+    &Apu::update_wave_ram<Specs::Registers::Sound::WAVE0>, &Apu::update_wave_ram<Specs::Registers::Sound::WAVE1>,
+    &Apu::update_wave_ram<Specs::Registers::Sound::WAVE2>, &Apu::update_wave_ram<Specs::Registers::Sound::WAVE3>,
+    &Apu::update_wave_ram<Specs::Registers::Sound::WAVE4>, &Apu::update_wave_ram<Specs::Registers::Sound::WAVE5>,
+    &Apu::update_wave_ram<Specs::Registers::Sound::WAVE6>, &Apu::update_wave_ram<Specs::Registers::Sound::WAVE7>,
+    &Apu::update_wave_ram<Specs::Registers::Sound::WAVE8>, &Apu::update_wave_ram<Specs::Registers::Sound::WAVE9>,
+    &Apu::update_wave_ram<Specs::Registers::Sound::WAVEA>, &Apu::update_wave_ram<Specs::Registers::Sound::WAVEB>,
+    &Apu::update_wave_ram<Specs::Registers::Sound::WAVEC>, &Apu::update_wave_ram<Specs::Registers::Sound::WAVED>,
+    &Apu::update_wave_ram<Specs::Registers::Sound::WAVEE>, &Apu::update_wave_ram<Specs::Registers::Sound::WAVEF>,
+};
+
 #ifdef ENABLE_CGB
 Apu::Apu(Timers& timers, SpeedSwitchController& speed_switch_controller) :
     timers {timers},
@@ -138,9 +188,7 @@ void Apu::set_audio_sample_callback(std::function<void(const AudioSample)>&& cal
 
 void Apu::reset() {
     // Reset I/O registers
-#ifdef ENABLE_CGB
-    phase = 0;
-#endif
+    phase = 2;
     nr10.pace = 0;
     nr10.direction = false;
     nr10.step = 0;
@@ -206,6 +254,9 @@ void Apu::reset() {
 
     ticks = 0;
 
+    pending_write.updater = nullptr;
+    pending_write.value = 0;
+
     // Length timers are not reset
     // [blargg/08-len_ctr_during_power
 
@@ -239,20 +290,16 @@ void Apu::reset() {
     ch2.volume_sweep.expired = false;
 
     ch3.length_timer = 0;
+    ch3.sample = 0;
     ch3.digital_output = 0;
     ch3.wave.position.byte = 0;
     ch3.wave.position.low_nibble = false;
     ch3.wave.timer = 0;
     ch3.digital_output = 0;
-    ch3.retrigger = false;
     ch3.trigger_delay = 0;
-    ch3.period_reload_delay = 0;
-    ch3.period = 0;
 #ifndef ENABLE_CGB
     ch3.just_sampled = false;
 #endif
-    ch3.wave_write_corruption.pending = false;
-    ch3.wave_write_corruption.value = 0;
 
     ch4.dac = false;
     ch4.volume = 0;
@@ -352,6 +399,8 @@ Apu::AudioSample Apu::compute_audio_sample() const {
     } analog_output;
 
     // Note that DAC does its work even if channel is off.
+
+    // TODO: consider caching channel outputs instead of recomputing them each time (shared with PCM).
 
     // CH1
     if (ch1.dac) {
@@ -482,88 +531,43 @@ void Apu::tick_ch4() {
 
 void Apu::tick_ch3() {
 #ifndef ENABLE_CGB
-    ASSERT(!ch3.wave_write_corruption.pending || (ch3.wave_write_corruption.pending && nr52.ch3));
     ch3.just_sampled = false;
 #endif
 
     if (nr52.ch3) {
-        if (ch3.period_reload_delay) {
-            if (--ch3.period_reload_delay == 0) {
-                // The new target period takes 2 ticks to be updated after a NR33 or NR34 write.
-                // Note: it is actually loaded only at the next sample anyway, this delay
-                // only affects changed exactly during a sample.
-                // TODO: do other channels have this behavior too?
-                ch3.period = concat(nr34.period_high, nr33.period_low);
-            }
-        }
+        if (!ch3.trigger_delay) {
+            if (++ch3.wave.timer == 2048) {
+                // Sample
+                // Advance square wave position
+                if (ch3.wave.position.low_nibble) {
+                    ch3.wave.position.low_nibble = false;
+                    ch3.wave.position.byte = mod<16>(ch3.wave.position.byte + 1);
+                } else {
+                    ch3.wave.position.low_nibble = true;
+                }
 
-        // It seems that trigger takes 5 ticks to have effect
-        if (ch3.trigger_delay) {
-            if (--ch3.trigger_delay == 0) {
-                ch3.retrigger = false;
+                ASSERT(ch3.wave.position.byte < decltype(wave_ram)::Size);
+
+                // Update current sample and channel output
+                ch3.sample = wave_ram[ch3.wave.position.byte];
+
+                if (ch3.wave.position.low_nibble) {
+                    ch3.digital_output = keep_bits<4>(ch3.sample);
+                } else {
+                    ch3.digital_output = get_bits_range<7, 4>(ch3.sample);
+                }
 
                 // Reload period timer
-                ch3.wave.timer = ch3.period;
-                ch3.wave.position.byte = 0;
-                ch3.wave.position.low_nibble = false;
-            }
-        }
-
-        if (++ch3.wave.timer == 2048) {
-            // Advance square wave position
-            if (ch3.wave.position.low_nibble) {
-                ch3.wave.position.low_nibble = false;
-                ch3.wave.position.byte = mod<16>(ch3.wave.position.byte + 1);
-            } else {
-                ch3.wave.position.low_nibble = true;
-            }
-
-            ASSERT(ch3.wave.position.byte < decltype(wave_ram)::Size);
-
-            // Update play buffer
-            if (ch3.wave.position.low_nibble) {
-                ch3.digital_output = keep_bits<4>(wave_ram[ch3.wave.position.byte]);
-            } else {
-                ch3.digital_output = get_bits_range<7, 4>(wave_ram[ch3.wave.position.byte]);
-            }
-
-            // Reload period timer
-            ch3.wave.timer = ch3.period;
+                ch3.wave.timer = concat(nr34.period_high, nr33.period_low);
 
 #ifndef ENABLE_CGB
-            ch3.just_sampled = true;
+                ch3.just_sampled = true;
 #endif
 
-#ifndef ENABLE_CGB
-            // On DMG, re-triggering CH3 while it is reading wave ram corrupts wave ram.
-            // * If the buffer position read from wave ram is [0:3], then only the first byte
-            //   of wave ram is corrupted with the byte that is read at that moment.
-            // * If the buffer position read from wave ram is [4:15], then the first 4 bytes
-            //   of wave ram are corrupted with the (aligned) 4 bytes that are read at the moment
-            // [blargg/10-wave_trigger_while_on]
-            if (ch3.retrigger && ch3.trigger_delay == 3) {
-                if (ch3.wave.position.byte < 4) {
-                    wave_ram[0] = static_cast<uint8_t>(wave_ram[ch3.wave.position.byte]);
-                } else {
-                    const uint8_t base = ch3.wave.position.byte / 4;
-                    wave_ram[0] = static_cast<uint8_t>(wave_ram[4 * base]);
-                    wave_ram[1] = static_cast<uint8_t>(wave_ram[4 * base + 1]);
-                    wave_ram[2] = static_cast<uint8_t>(wave_ram[4 * base + 2]);
-                    wave_ram[3] = static_cast<uint8_t>(wave_ram[4 * base + 3]);
-                }
+                ASSERT(ch3.wave.timer < 2048);
             }
-#endif
-
-            ASSERT(ch3.wave.timer < 2048);
-        }
-
-        // Writing to wave ram while CH3 is reading a byte corrupts it:
-        // the byte of wave ram that is currently read is wrote instead.
-        // [blargg/12-wave]
-        // [blargg/12-wave_write_while_on]
-        if (ch3.wave_write_corruption.pending) {
-            ch3.wave_write_corruption.pending = false;
-            wave_ram[ch3.wave.position.byte] = ch3.wave_write_corruption.value;
+        } else {
+            --ch3.trigger_delay;
         }
     }
 }
@@ -619,94 +623,68 @@ void Apu::tick_length_timers() {
 }
 
 void Apu::tick_t0() {
-#ifdef ENABLE_CGB
-    tick();
-#else
-    tick_even_primary();
-#endif
+    tick_even();
 }
 
 void Apu::tick_t1() {
-#ifdef ENABLE_CGB
-    tick();
-#else
     tick_odd();
-#endif
 }
 
 void Apu::tick_t2() {
-#ifdef ENABLE_CGB
-    tick();
-#else
-    tick_even_secondary();
-#endif
+    tick_even();
 }
 
 void Apu::tick_t3() {
-#ifdef ENABLE_CGB
-    tick();
-#else
     tick_odd();
-#endif
 }
 
-#ifdef ENABLE_CGB
-inline void Apu::tick() {
-    ASSERT(phase < 4);
+void Apu::tick_even() {
+    // In single speed mode, writes to APU seem to be delayed by 1 T-cycle.
+    flush_pending_write();
 
-    // APU phase is aligned with the T-Cycle it has been turned on (not the CPU clock edge).
-    // This is relevant in CGB (double speed mode).
-    if (mod<2>(phase) == 0) {
+    if (nr52.enable) {
+        ASSERT(mod<2>(phase) == 0);
+
+        // Update length timers
+        // TODO: is CH3 length timer updated here as well, or in tick_odd?
+        tick_length_timers();
+
+        // Update wave timers.
+        // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
         if (phase == 0) {
-            tick_even_primary();
-        } else {
-            tick_even_secondary();
+            tick_square_wave_channel(ch1, nr52.ch1, nr11, nr13, nr14);
+            tick_square_wave_channel(ch2, nr52.ch2, nr21, nr23, nr24);
+            tick_ch4();
         }
-    } else {
-        tick_odd();
-    }
 
-    phase = mod<4>(phase + 1);
-}
-#endif
-
-void Apu::tick_even_primary() {
-    if (nr52.enable) {
-        // Update length timers
-        tick_length_timers();
-
-        // Update wave timers
-        tick_square_wave_channel(ch1, nr52.ch1, nr11, nr13, nr14);
-        tick_square_wave_channel(ch2, nr52.ch2, nr21, nr23, nr24);
-        tick_ch3();
-        tick_ch4();
+        phase = mod<4>(phase + 1);
     }
 
     tick_sampler();
 
 #ifdef ENABLE_CGB
-    update_pcm();
-#endif
-}
-
-void Apu::tick_even_secondary() {
-    if (nr52.enable) {
-        // Update length timers
-        tick_length_timers();
-
-        // Update wave timers
-        tick_ch3();
-    }
-
-    tick_sampler();
-
-#ifdef ENABLE_CGB
+    // TODO: consider to update PCM only when registers or outputs of channels changes.
     update_pcm();
 #endif
 }
 
 void Apu::tick_odd() {
+    if (nr52.enable) {
+        ASSERT(mod<2>(phase) == 1);
+
+        // Update wave timers
+        // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
+        tick_ch3();
+
+        phase = mod<4>(phase + 1);
+    }
+
     tick_sampler();
+
+#ifdef ENABLE_CGB
+    // TODO: consider to update PCM only when registers or outputs of channels changes.
+    update_pcm();
+#endif
 }
 
 void Apu::tick_sampler() {
@@ -724,9 +702,7 @@ void Apu::tick_sampler() {
 void Apu::turn_on() {
     prev_div_edge_bit = true; // TODO: verify this, also in CGB?
     div_apu = 0;
-#ifdef ENABLE_CGB
     phase = 0;
-#endif
 }
 
 void Apu::turn_off() {
@@ -794,6 +770,7 @@ void Apu::turn_off() {
     ch2.wave.position = 0;
     ch2.volume_sweep.expired = false;
 
+    ch3.sample = 0;
     ch3.digital_output = 0;
     ch3.wave.position.byte = 0;
     ch3.wave.position.low_nibble = false;
@@ -803,9 +780,7 @@ void Apu::turn_off() {
 }
 
 void Apu::save_state(Parcel& parcel) const {
-#ifdef ENABLE_CGB
     parcel.write_uint8(phase);
-#endif
     parcel.write_uint8(nr10.pace);
     parcel.write_bool(nr10.direction);
     parcel.write_uint8(nr10.step);
@@ -863,6 +838,14 @@ void Apu::save_state(Parcel& parcel) const {
     wave_ram.save_state(parcel);
 
     parcel.write_uint64(ticks);
+    parcel.write_double(next_tick_sample);
+
+    uint8_t i = 0;
+    while (i < (uint8_t)array_size(REGISTER_UPDATERS) && pending_write.updater != REGISTER_UPDATERS[i]) {
+        ++i;
+    }
+    parcel.write_uint8(i);
+    parcel.write_uint8(pending_write.value);
 
     parcel.write_bool(ch1.dac);
     parcel.write_uint8(ch1.volume);
@@ -900,15 +883,10 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch3.wave.position.byte);
     parcel.write_bool(ch3.wave.position.low_nibble);
     parcel.write_uint16(ch3.wave.timer);
-    parcel.write_bool(ch3.retrigger);
     parcel.write_uint8(ch3.trigger_delay);
-    parcel.write_uint8(ch3.period_reload_delay);
-    parcel.write_uint16(ch3.period);
 #ifndef ENABLE_CGB
     parcel.write_bool(ch3.just_sampled);
 #endif
-    parcel.write_bool(ch3.wave_write_corruption.pending);
-    parcel.write_uint8(ch3.wave_write_corruption.value);
 
     parcel.write_bool(ch4.dac);
     parcel.write_uint8(ch4.volume);
@@ -925,9 +903,7 @@ void Apu::save_state(Parcel& parcel) const {
 }
 
 void Apu::load_state(Parcel& parcel) {
-#ifdef ENABLE_CGB
     phase = parcel.read_uint8();
-#endif
     nr10.pace = parcel.read_uint8();
     nr10.direction = parcel.read_bool();
     nr10.step = parcel.read_uint8();
@@ -985,7 +961,12 @@ void Apu::load_state(Parcel& parcel) {
     wave_ram.load_state(parcel);
 
     ticks = parcel.read_uint64();
-    next_tick_sample = static_cast<double>(ticks) + sample_period;
+    next_tick_sample = parcel.read_double();
+
+    const uint8_t register_updater_index = parcel.read_uint8();
+    pending_write.updater =
+        register_updater_index < array_size(REGISTER_UPDATERS) ? REGISTER_UPDATERS[register_updater_index] : nullptr;
+    pending_write.value = parcel.read_uint8();
 
     ch1.dac = parcel.read_bool();
     ch1.volume = parcel.read_uint8();
@@ -1023,15 +1004,10 @@ void Apu::load_state(Parcel& parcel) {
     ch3.wave.position.byte = parcel.read_uint8();
     ch3.wave.position.low_nibble = parcel.read_bool();
     ch3.wave.timer = parcel.read_uint16();
-    ch3.retrigger = parcel.read_bool();
     ch3.trigger_delay = parcel.read_uint8();
-    ch3.period_reload_delay = parcel.read_uint8();
-    ch3.period = parcel.read_uint16();
 #ifndef ENABLE_CGB
     ch3.just_sampled = parcel.read_bool();
 #endif
-    ch3.wave_write_corruption.pending = parcel.read_bool();
-    ch3.wave_write_corruption.value = parcel.read_uint8();
 
     ch4.dac = parcel.read_bool();
     ch4.volume = parcel.read_uint8();
@@ -1053,6 +1029,234 @@ uint8_t Apu::read_nr10() const {
 }
 
 void Apu::write_nr10(uint8_t value) {
+    write_register(&Apu::update_nr10, value);
+}
+
+uint8_t Apu::read_nr11() const {
+    return 0b00111111 | nr11.duty_cycle << Specs::Bits::Audio::NR11::DUTY_CYCLE;
+}
+
+void Apu::write_nr11(uint8_t value) {
+    write_register(&Apu::update_nr11, value);
+}
+
+uint8_t Apu::read_nr12() const {
+    return nr12.initial_volume << Specs::Bits::Audio::NR12::INITIAL_VOLUME |
+           nr12.envelope_direction << Specs::Bits::Audio::NR12::ENVELOPE_DIRECTION |
+           nr12.sweep_pace << Specs::Bits::Audio::NR12::SWEEP_PACE;
+}
+
+void Apu::write_nr12(uint8_t value) {
+    write_register(&Apu::update_nr12, value);
+}
+
+uint8_t Apu::read_nr13() const {
+    return 0xFF;
+}
+
+void Apu::write_nr13(uint8_t value) {
+    write_register(&Apu::update_nr13, value);
+}
+
+uint8_t Apu::read_nr14() const {
+    return 0b10111111 | nr14.length_enable << Specs::Bits::Audio::NR14::LENGTH_ENABLE;
+}
+
+void Apu::write_nr14(uint8_t value) {
+    write_register(&Apu::update_nr14, value);
+}
+
+uint8_t Apu::read_nr21() const {
+    return 0b00111111 | nr21.duty_cycle << Specs::Bits::Audio::NR21::DUTY_CYCLE;
+}
+
+void Apu::write_nr21(uint8_t value) {
+    write_register(&Apu::update_nr21, value);
+}
+
+uint8_t Apu::read_nr22() const {
+    return nr22.initial_volume << Specs::Bits::Audio::NR22::INITIAL_VOLUME |
+           nr22.envelope_direction << Specs::Bits::Audio::NR22::ENVELOPE_DIRECTION |
+           nr22.sweep_pace << Specs::Bits::Audio::NR22::SWEEP_PACE;
+}
+
+void Apu::write_nr22(uint8_t value) {
+    write_register(&Apu::update_nr22, value);
+}
+
+uint8_t Apu::read_nr23() const {
+    return 0xFF;
+}
+
+void Apu::write_nr23(uint8_t value) {
+    write_register(&Apu::update_nr23, value);
+}
+
+uint8_t Apu::read_nr24() const {
+    return 0b10111111 | nr24.length_enable << Specs::Bits::Audio::NR24::LENGTH_ENABLE;
+}
+
+void Apu::write_nr24(uint8_t value) {
+    write_register(&Apu::update_nr24, value);
+}
+
+uint8_t Apu::read_nr30() const {
+    return 0b01111111 | nr30.dac << Specs::Bits::Audio::NR30::DAC;
+}
+
+void Apu::write_nr30(uint8_t value) {
+    write_register(&Apu::update_nr30, value);
+}
+
+uint8_t Apu::read_nr31() const {
+    return 0xFF;
+}
+
+void Apu::write_nr31(uint8_t value) {
+    write_register(&Apu::update_nr31, value);
+}
+
+uint8_t Apu::read_nr32() const {
+    return 0b10011111 | nr32.volume << Specs::Bits::Audio::NR32::VOLUME;
+}
+
+void Apu::write_nr32(uint8_t value) {
+    write_register(&Apu::update_nr32, value);
+}
+
+uint8_t Apu::read_nr33() const {
+    return 0xFF;
+}
+
+void Apu::write_nr33(uint8_t value) {
+    write_register(&Apu::update_nr33, value);
+}
+
+uint8_t Apu::read_nr34() const {
+    return 0b10111111 | nr34.length_enable << Specs::Bits::Audio::NR34::LENGTH_ENABLE;
+}
+
+void Apu::write_nr34(uint8_t value) {
+    write_register(&Apu::update_nr34, value);
+}
+
+uint8_t Apu::read_nr41() const {
+    return 0xFF;
+}
+
+void Apu::write_nr41(uint8_t value) {
+    write_register(&Apu::update_nr41, value);
+}
+
+uint8_t Apu::read_nr42() const {
+    return nr42.initial_volume << Specs::Bits::Audio::NR42::INITIAL_VOLUME |
+           nr42.envelope_direction << Specs::Bits::Audio::NR42::ENVELOPE_DIRECTION |
+           nr42.sweep_pace << Specs::Bits::Audio::NR42::SWEEP_PACE;
+}
+
+void Apu::write_nr42(uint8_t value) {
+    write_register(&Apu::update_nr42, value);
+}
+
+uint8_t Apu::read_nr43() const {
+    return nr43.clock_shift << Specs::Bits::Audio::NR43::CLOCK_SHIFT |
+           nr43.lfsr_width << Specs::Bits::Audio::NR43::LFSR_WIDTH |
+           nr43.clock_divider << Specs::Bits::Audio::NR43::CLOCK_DIVIDER;
+}
+
+void Apu::write_nr43(uint8_t value) {
+    write_register(&Apu::update_nr43, value);
+}
+
+uint8_t Apu::read_nr44() const {
+    return 0b10111111 | nr44.length_enable << Specs::Bits::Audio::NR44::LENGTH_ENABLE;
+}
+
+void Apu::write_nr44(uint8_t value) {
+    write_register(&Apu::update_nr44, value);
+}
+
+uint8_t Apu::read_nr50() const {
+    return nr50.vin_left << Specs::Bits::Audio::NR50::VIN_LEFT |
+           nr50.volume_left << Specs::Bits::Audio::NR50::VOLUME_LEFT |
+           nr50.vin_right << Specs::Bits::Audio::NR50::VIN_RIGHT |
+           nr50.volume_right << Specs::Bits::Audio::NR50::VOLUME_RIGHT;
+}
+
+void Apu::write_nr50(uint8_t value) {
+    write_register(&Apu::update_nr50, value);
+}
+
+uint8_t Apu::read_nr51() const {
+    return nr51.ch4_left << Specs::Bits::Audio::NR51::CH4_LEFT | nr51.ch3_left << Specs::Bits::Audio::NR51::CH3_LEFT |
+           nr51.ch2_left << Specs::Bits::Audio::NR51::CH2_LEFT | nr51.ch1_left << Specs::Bits::Audio::NR51::CH1_LEFT |
+           nr51.ch4_right << Specs::Bits::Audio::NR51::CH4_RIGHT |
+           nr51.ch3_right << Specs::Bits::Audio::NR51::CH3_RIGHT |
+           nr51.ch2_right << Specs::Bits::Audio::NR51::CH2_RIGHT |
+           nr51.ch1_right << Specs::Bits::Audio::NR51::CH1_RIGHT;
+}
+
+void Apu::write_nr51(uint8_t value) {
+    write_register(&Apu::update_nr51, value);
+}
+
+uint8_t Apu::read_nr52() const {
+    return 0b01110000 | nr52.enable << Specs::Bits::Audio::NR52::AUDIO_ENABLE |
+           nr52.ch4 << Specs::Bits::Audio::NR52::CH4_ENABLE | nr52.ch3 << Specs::Bits::Audio::NR52::CH3_ENABLE |
+           nr52.ch2 << Specs::Bits::Audio::NR52::CH2_ENABLE | nr52.ch1 << Specs::Bits::Audio::NR52::CH1_ENABLE;
+}
+
+void Apu::write_nr52(uint8_t value) {
+    write_register(&Apu::update_nr52, value);
+}
+
+uint8_t Apu::read_wave_ram(uint16_t address) const {
+    if (!nr52.ch3) {
+        // Wave ram is accessed normally if CH3 is off.
+        return wave_ram[address - Specs::Registers::Sound::WAVE0];
+    }
+
+#ifdef ENABLE_CGB
+    // [blargg/09-wave_read_while_on]
+    return wave_ram[ch3.wave.position.byte];
+#else
+    // On DMG, when CH3 is on, reading wave ram yields the byte CH3 is currently
+    // reading this T-cycle, or 0xFF if CH3 is not reading anything.
+    // [blargg/09-wave_read_while_on]
+    if (ch3.just_sampled) {
+        return wave_ram[ch3.wave.position.byte];
+    }
+    return 0xFF;
+#endif
+}
+
+void Apu::write_wave_ram(uint16_t address, uint8_t value) {
+    ASSERT(address >= Specs::Registers::Sound::WAVE0 && address <= Specs::Registers::Sound::WAVEF);
+    write_register(WAVE_RAM_UPDATERS[address - Specs::Registers::Sound::WAVE0], value);
+}
+
+void Apu::flush_pending_write() {
+    if (pending_write.updater) {
+        (this->*pending_write.updater)(pending_write.value);
+        pending_write.updater = nullptr;
+    }
+}
+
+void Apu::write_register(RegisterUpdater updater, uint8_t value) {
+#ifdef ENABLE_CGB
+    if (speed_switch_controller.is_double_speed_mode()) {
+        (this->*updater)(value);
+    } else {
+        pending_write.updater = updater;
+        pending_write.value = value;
+    }
+#else
+    pending_write.updater = updater;
+    pending_write.value = value;
+#endif
+}
+
+void Apu::update_nr10(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1069,11 +1273,7 @@ void Apu::write_nr10(uint8_t value) {
     }
 }
 
-uint8_t Apu::read_nr11() const {
-    return 0b00111111 | nr11.duty_cycle << Specs::Bits::Audio::NR11::DUTY_CYCLE;
-}
-
-void Apu::write_nr11(uint8_t value) {
+void Apu::update_nr11(uint8_t value) {
     uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER>(value);
 
     if (nr52.enable) {
@@ -1093,13 +1293,7 @@ void Apu::write_nr11(uint8_t value) {
     ch1.length_timer = 64 - nr11.initial_length_timer;
 }
 
-uint8_t Apu::read_nr12() const {
-    return nr12.initial_volume << Specs::Bits::Audio::NR12::INITIAL_VOLUME |
-           nr12.envelope_direction << Specs::Bits::Audio::NR12::ENVELOPE_DIRECTION |
-           nr12.sweep_pace << Specs::Bits::Audio::NR12::SWEEP_PACE;
-}
-
-void Apu::write_nr12(uint8_t value) {
+void Apu::update_nr12(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1115,11 +1309,7 @@ void Apu::write_nr12(uint8_t value) {
     }
 }
 
-uint8_t Apu::read_nr13() const {
-    return 0xFF;
-}
-
-void Apu::write_nr13(uint8_t value) {
+void Apu::update_nr13(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1127,11 +1317,7 @@ void Apu::write_nr13(uint8_t value) {
     nr13.period_low = value;
 }
 
-uint8_t Apu::read_nr14() const {
-    return 0b10111111 | nr14.length_enable << Specs::Bits::Audio::NR14::LENGTH_ENABLE;
-}
-
-void Apu::write_nr14(uint8_t value) {
+void Apu::update_nr14(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1202,11 +1388,7 @@ void Apu::write_nr14(uint8_t value) {
     }
 }
 
-uint8_t Apu::read_nr21() const {
-    return 0b00111111 | nr21.duty_cycle << Specs::Bits::Audio::NR21::DUTY_CYCLE;
-}
-
-void Apu::write_nr21(uint8_t value) {
+void Apu::update_nr21(uint8_t value) {
     uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
 
     if (nr52.enable) {
@@ -1226,13 +1408,7 @@ void Apu::write_nr21(uint8_t value) {
     ch2.length_timer = 64 - nr21.initial_length_timer;
 }
 
-uint8_t Apu::read_nr22() const {
-    return nr22.initial_volume << Specs::Bits::Audio::NR22::INITIAL_VOLUME |
-           nr22.envelope_direction << Specs::Bits::Audio::NR22::ENVELOPE_DIRECTION |
-           nr22.sweep_pace << Specs::Bits::Audio::NR22::SWEEP_PACE;
-}
-
-void Apu::write_nr22(uint8_t value) {
+void Apu::update_nr22(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1248,11 +1424,7 @@ void Apu::write_nr22(uint8_t value) {
     }
 }
 
-uint8_t Apu::read_nr23() const {
-    return 0xFF;
-}
-
-void Apu::write_nr23(uint8_t value) {
+void Apu::update_nr23(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1260,11 +1432,7 @@ void Apu::write_nr23(uint8_t value) {
     nr23.period_low = value;
 }
 
-uint8_t Apu::read_nr24() const {
-    return 0b10111111 | nr24.length_enable << Specs::Bits::Audio::NR24::LENGTH_ENABLE;
-}
-
-void Apu::write_nr24(uint8_t value) {
+void Apu::update_nr24(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1315,11 +1483,7 @@ void Apu::write_nr24(uint8_t value) {
     }
 }
 
-uint8_t Apu::read_nr30() const {
-    return 0b01111111 | nr30.dac << Specs::Bits::Audio::NR30::DAC;
-}
-
-void Apu::write_nr30(uint8_t value) {
+void Apu::update_nr30(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1327,16 +1491,14 @@ void Apu::write_nr30(uint8_t value) {
     nr30.dac = test_bit<Specs::Bits::Audio::NR30::DAC>(value);
 
     if (!nr30.dac) {
+        // TODO: disable channel glitch
+
         // If the DAC is turned off the channel is disabled as well
         nr52.ch3 = false;
     }
 }
 
-uint8_t Apu::read_nr31() const {
-    return 0xFF;
-}
-
-void Apu::write_nr31(uint8_t value) {
+void Apu::update_nr31(uint8_t value) {
 #ifdef ENABLE_CGB
     if (nr52.enable) {
         nr31.initial_length_timer = value;
@@ -1350,11 +1512,7 @@ void Apu::write_nr31(uint8_t value) {
     ch3.length_timer = 256 - nr31.initial_length_timer;
 }
 
-uint8_t Apu::read_nr32() const {
-    return 0b10011111 | nr32.volume << Specs::Bits::Audio::NR32::VOLUME;
-}
-
-void Apu::write_nr32(uint8_t value) {
+void Apu::update_nr32(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1362,30 +1520,18 @@ void Apu::write_nr32(uint8_t value) {
     nr32.volume = get_bits_range<Specs::Bits::Audio::NR32::VOLUME>(value);
 }
 
-uint8_t Apu::read_nr33() const {
-    return 0xFF;
-}
-
-void Apu::write_nr33(uint8_t value) {
+void Apu::update_nr33(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
-
-    ch3.period_reload_delay = 2;
 
     nr33.period_low = value;
 }
 
-uint8_t Apu::read_nr34() const {
-    return 0b10111111 | nr34.length_enable << Specs::Bits::Audio::NR34::LENGTH_ENABLE;
-}
-
-void Apu::write_nr34(uint8_t value) {
+void Apu::update_nr34(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
-
-    ch3.period_reload_delay = 2;
 
     bool prev_length_enable = nr34.length_enable;
 
@@ -1404,8 +1550,44 @@ void Apu::write_nr34(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configurations
     if (nr34.trigger) {
-        ch3.retrigger = nr52.ch3;
-        ch3.trigger_delay = 5;
+        ch3.trigger_delay = 3;
+
+        if (nr52.ch3) {
+            if (ch3.wave.timer == 2047) {
+                // If the channel is about to sample, the first byte of wave ram is used for the sampling instead.
+                ch3.sample = wave_ram[0];
+#ifndef ENABLE_CGB
+                // On DMG, re-triggering CH3 while it is reading wave ram corrupts wave ram.
+                // * If the buffer position read from wave ram is [0:3], then only the first byte
+                //   of wave ram is corrupted with the byte that is read at that moment.
+                // * If the buffer position read from wave ram is [4:15], then the first 4 bytes
+                //   of wave ram are corrupted with the (aligned) 4 bytes that are read at the moment
+                // [blargg/10-wave_trigger_while_on]
+
+                uint8_t next_wave_position_byte =
+                    ch3.wave.position.low_nibble ? mod<16>(ch3.wave.position.byte + 1) : ch3.wave.position.byte;
+
+                if (next_wave_position_byte < 4) {
+                    wave_ram[0] = static_cast<uint8_t>(wave_ram[next_wave_position_byte]);
+                } else {
+                    const uint8_t base = next_wave_position_byte / 4;
+                    wave_ram[0] = static_cast<uint8_t>(wave_ram[4 * base]);
+                    wave_ram[1] = static_cast<uint8_t>(wave_ram[4 * base + 1]);
+                    wave_ram[2] = static_cast<uint8_t>(wave_ram[4 * base + 2]);
+                    wave_ram[3] = static_cast<uint8_t>(wave_ram[4 * base + 3]);
+                }
+#endif
+            }
+            // The output of the channel is updated with the first nibble of the sample byte.
+            ch3.digital_output = get_bits_range<7, 4>(ch3.sample);
+        }
+
+        // The wave position is reset instantly.
+        ch3.wave.position.low_nibble = false;
+        ch3.wave.position.byte = 0;
+
+        // The timer is reloaded.
+        ch3.wave.timer = concat(nr34.period_high, nr33.period_low);
 
         if (nr30.dac) {
             // If the DAC is on, the channel is turned on as well
@@ -1425,11 +1607,7 @@ void Apu::write_nr34(uint8_t value) {
     }
 }
 
-uint8_t Apu::read_nr41() const {
-    return 0xFF;
-}
-
-void Apu::write_nr41(uint8_t value) {
+void Apu::update_nr41(uint8_t value) {
     uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR41::INITIAL_LENGTH_TIMER>(value);
 
 #ifdef ENABLE_CGB
@@ -1445,13 +1623,7 @@ void Apu::write_nr41(uint8_t value) {
     ch4.length_timer = 64 - nr41.initial_length_timer;
 }
 
-uint8_t Apu::read_nr42() const {
-    return nr42.initial_volume << Specs::Bits::Audio::NR42::INITIAL_VOLUME |
-           nr42.envelope_direction << Specs::Bits::Audio::NR42::ENVELOPE_DIRECTION |
-           nr42.sweep_pace << Specs::Bits::Audio::NR42::SWEEP_PACE;
-}
-
-void Apu::write_nr42(uint8_t value) {
+void Apu::update_nr42(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1467,13 +1639,7 @@ void Apu::write_nr42(uint8_t value) {
     }
 }
 
-uint8_t Apu::read_nr43() const {
-    return nr43.clock_shift << Specs::Bits::Audio::NR43::CLOCK_SHIFT |
-           nr43.lfsr_width << Specs::Bits::Audio::NR43::LFSR_WIDTH |
-           nr43.clock_divider << Specs::Bits::Audio::NR43::CLOCK_DIVIDER;
-}
-
-void Apu::write_nr43(uint8_t value) {
+void Apu::update_nr43(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1483,11 +1649,7 @@ void Apu::write_nr43(uint8_t value) {
     nr43.clock_divider = get_bits_range<Specs::Bits::Audio::NR43::CLOCK_DIVIDER>(value);
 }
 
-uint8_t Apu::read_nr44() const {
-    return 0b10111111 | nr44.length_enable << Specs::Bits::Audio::NR44::LENGTH_ENABLE;
-}
-
-void Apu::write_nr44(uint8_t value) {
+void Apu::update_nr44(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1534,14 +1696,7 @@ void Apu::write_nr44(uint8_t value) {
     }
 }
 
-uint8_t Apu::read_nr50() const {
-    return nr50.vin_left << Specs::Bits::Audio::NR50::VIN_LEFT |
-           nr50.volume_left << Specs::Bits::Audio::NR50::VOLUME_LEFT |
-           nr50.vin_right << Specs::Bits::Audio::NR50::VIN_RIGHT |
-           nr50.volume_right << Specs::Bits::Audio::NR50::VOLUME_RIGHT;
-}
-
-void Apu::write_nr50(uint8_t value) {
+void Apu::update_nr50(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1552,16 +1707,7 @@ void Apu::write_nr50(uint8_t value) {
     nr50.volume_right = get_bits_range<Specs::Bits::Audio::NR50::VOLUME_RIGHT>(value);
 }
 
-uint8_t Apu::read_nr51() const {
-    return nr51.ch4_left << Specs::Bits::Audio::NR51::CH4_LEFT | nr51.ch3_left << Specs::Bits::Audio::NR51::CH3_LEFT |
-           nr51.ch2_left << Specs::Bits::Audio::NR51::CH2_LEFT | nr51.ch1_left << Specs::Bits::Audio::NR51::CH1_LEFT |
-           nr51.ch4_right << Specs::Bits::Audio::NR51::CH4_RIGHT |
-           nr51.ch3_right << Specs::Bits::Audio::NR51::CH3_RIGHT |
-           nr51.ch2_right << Specs::Bits::Audio::NR51::CH2_RIGHT |
-           nr51.ch1_right << Specs::Bits::Audio::NR51::CH1_RIGHT;
-}
-
-void Apu::write_nr51(uint8_t value) {
+void Apu::update_nr51(uint8_t value) {
     if (!nr52.enable) {
         return;
     }
@@ -1576,13 +1722,7 @@ void Apu::write_nr51(uint8_t value) {
     nr51.ch1_right = test_bit<Specs::Bits::Audio::NR51::CH1_RIGHT>(value);
 }
 
-uint8_t Apu::read_nr52() const {
-    return 0b01110000 | nr52.enable << Specs::Bits::Audio::NR52::AUDIO_ENABLE |
-           nr52.ch4 << Specs::Bits::Audio::NR52::CH4_ENABLE | nr52.ch3 << Specs::Bits::Audio::NR52::CH3_ENABLE |
-           nr52.ch2 << Specs::Bits::Audio::NR52::CH2_ENABLE | nr52.ch1 << Specs::Bits::Audio::NR52::CH1_ENABLE;
-}
-
-void Apu::write_nr52(uint8_t value) {
+void Apu::update_nr52(uint8_t value) {
     const bool en = test_bit<Specs::Bits::Audio::NR52::AUDIO_ENABLE>(value);
     if (en != nr52.enable) {
         en ? turn_on() : turn_off();
@@ -1590,27 +1730,8 @@ void Apu::write_nr52(uint8_t value) {
     }
 }
 
-uint8_t Apu::read_wave_ram(uint16_t address) const {
-    if (!nr52.ch3) {
-        // Wave ram is accessed normally if CH3 is off.
-        return wave_ram[address - Specs::Registers::Sound::WAVE0];
-    }
-
-#ifdef ENABLE_CGB
-    // [blargg/09-wave_read_while_on]
-    return wave_ram[ch3.wave.position.byte];
-#else
-    // On DMG, when CH3 is on, reading wave ram yields the byte CH3 is currently
-    // reading this T-cycle, or 0xFF if CH3 is not reading anything.
-    // [blargg/09-wave_read_while_on]
-    if (ch3.just_sampled) {
-        return wave_ram[ch3.wave.position.byte];
-    }
-    return 0xFF;
-#endif
-}
-
-void Apu::write_wave_ram(uint16_t address, uint8_t value) {
+template <uint16_t address>
+void Apu::update_wave_ram(uint8_t value) {
     if (!nr52.ch3) {
         // Wave ram is accessed normally if CH3 is off.
         wave_ram[address - Specs::Registers::Sound::WAVE0] = value;
@@ -1622,13 +1743,11 @@ void Apu::write_wave_ram(uint16_t address, uint8_t value) {
     // happens at the same the channel is sampling.
 #ifdef ENABLE_CGB
     // [blargg/12-wave]
-    ch3.wave_write_corruption.pending = true;
-    ch3.wave_write_corruption.value = value;
+    wave_ram[ch3.wave.position.byte] = value;
 #else
     // [blargg/12-wave_write_while_on]
-    if (ch3.wave.timer == 2047) {
-        ch3.wave_write_corruption.pending = true;
-        ch3.wave_write_corruption.value = value;
+    if (ch3.just_sampled) {
+        wave_ram[ch3.wave.position.byte] = value;
     }
 #endif
 }

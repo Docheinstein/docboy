@@ -2500,9 +2500,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     const auto make_apu_general_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
-#ifdef ENABLE_CGB
         b << yellow("Phase") << "          :  " << +gb.apu.phase << endl;
-#endif
         return b;
     };
 
@@ -2614,7 +2612,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Enabled") << "       :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "           :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("Output") << "        :  " << hex<uint8_t>(gb.apu.ch3.digital_output) << endl;
-        b << endl;
+        b << yellow("Sample") << "        :  " << hex<uint8_t>(gb.apu.ch3.sample) << endl;
         b << yellow("Length Timer") << "  :  " << +gb.apu.ch3.length_timer << endl;
         b << yellow("Trigger Delay") << " :  " << +gb.apu.ch3.trigger_delay << endl;
 
@@ -2623,6 +2621,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Timer") << "         :  " << +gb.apu.ch3.wave.timer << endl;
         b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position.byte << " "
           << (gb.apu.ch3.wave.position.low_nibble ? "Low" : "High") << endl;
+        b << endl;
 
         b << subheader2("wave ram", width) << endl;
 
@@ -2652,6 +2651,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader2("wave", width) << endl;
 
         b << yellow("Timer") << "          :  " << +gb.apu.ch4.wave.timer << endl;
+        b << endl;
         b << endl;
 
         b << subheader2("volume sweep", width) << endl;

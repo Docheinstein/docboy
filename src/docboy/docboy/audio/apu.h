@@ -224,6 +224,8 @@ public:
 #endif
 
 private:
+    using RegisterUpdater = void (Apu::*)(uint8_t);
+
     struct DigitalAudioSample {
         uint8_t ch1 {};
         uint8_t ch2 {};
@@ -234,21 +236,20 @@ private:
     void turn_on();
     void turn_off();
 
-    void tick_even_primary();
-    void tick_even_secondary();
+    void tick_even();
     void tick_odd();
 
-#ifdef ENABLE_CGB
-    void tick();
-#endif
-
     void tick_sampler();
+    void tick_ch1_period_sweep();
     void tick_length_timers();
     void tick_ch3();
+    void tick_ch4();
 
 #ifdef ENABLE_CGB
     void update_pcm();
 #endif
+
+    uint32_t compute_ch1_next_period_sweep_period();
 
     uint8_t compute_ch1_digital_output() const;
     uint8_t compute_ch2_digital_output() const;
@@ -257,10 +258,41 @@ private:
     DigitalAudioSample compute_digital_audio_sample() const;
     AudioSample compute_audio_sample() const;
 
-    uint32_t compute_ch1_next_period_sweep_period();
+    void flush_pending_write();
 
-    void tick_ch1_period_sweep();
-    void tick_ch4();
+    void write_register(RegisterUpdater updater, uint8_t value);
+
+    void update_nr10(uint8_t value);
+    void update_nr11(uint8_t value);
+    void update_nr12(uint8_t value);
+    void update_nr13(uint8_t value);
+    void update_nr14(uint8_t value);
+
+    void update_nr21(uint8_t value);
+    void update_nr22(uint8_t value);
+    void update_nr23(uint8_t value);
+    void update_nr24(uint8_t value);
+
+    void update_nr30(uint8_t value);
+    void update_nr31(uint8_t value);
+    void update_nr32(uint8_t value);
+    void update_nr33(uint8_t value);
+    void update_nr34(uint8_t value);
+
+    void update_nr41(uint8_t value);
+    void update_nr42(uint8_t value);
+    void update_nr43(uint8_t value);
+    void update_nr44(uint8_t value);
+    void update_nr50(uint8_t value);
+    void update_nr51(uint8_t value);
+    void update_nr52(uint8_t value);
+
+    template <uint16_t address>
+    void update_wave_ram(uint8_t value);
+
+public:
+    static const RegisterUpdater REGISTER_UPDATERS[];
+    static const RegisterUpdater WAVE_RAM_UPDATERS[];
 
     Timers& timers;
 #ifdef ENABLE_CGB
@@ -272,14 +304,17 @@ private:
 
     float master_volume {1.0f};
 
-#ifdef ENABLE_CGB
     uint8_t phase {};
-#endif
 
     uint64_t ticks {};
 
     double sample_period {};
     double next_tick_sample {};
+
+    struct {
+        RegisterUpdater updater {};
+        uint8_t value {};
+    } pending_write;
 
     struct {
         bool dac {};
@@ -342,6 +377,8 @@ private:
     struct {
         uint16_t length_timer {};
 
+        uint8_t sample {};
+
         uint8_t digital_output {};
 
         struct {
@@ -352,20 +389,11 @@ private:
             uint16_t timer {};
         } wave;
 
-        bool retrigger {};
         uint8_t trigger_delay {};
-
-        uint8_t period_reload_delay {};
-        uint16_t period {};
 
 #ifndef ENABLE_CGB
         bool just_sampled {};
 #endif
-
-        struct {
-            bool pending {};
-            uint8_t value {};
-        } wave_write_corruption;
     } ch3 {};
 
     struct {
