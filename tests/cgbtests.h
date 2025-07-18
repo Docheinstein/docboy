@@ -6,7 +6,7 @@
 
 #include "utils/strings.h"
 
-#define WIP_ONLY_TEST_ROMS 0
+#define WIP_ONLY_TEST_ROMS 1
 
 #define RUN_TEST_ROMS(...)                                                                                             \
     static RunnerAdapter adapter {TESTS_ROOT_FOLDER "/roms/cgb/", TESTS_ROOT_FOLDER "/results/cgb/"};                  \
@@ -1725,24 +1725,15 @@ TEST_CASE("cgb", "[emulation]") {
                    "docboy/ok.png"},
                 F {"docboy/double_speed/apu/double_speed_apu_ch3_change_period_nr34_no_retrigger_delay12_round2.gbc",
                    "docboy/ok.png"},
-                //                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_alt_round0.gbc",
-                //                "docboy/ok.png"}, F
-                //                {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_alt_round1.gbc",
-                //                "docboy/ok.png"}, F
-                //                {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_round1.gbc",
-                //                "docboy/ok.png"}, F
-                //                {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_round2.gbc",
-                //                "docboy/ok.png"}, F
-                //                {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_128_round1.gbc",
-                //                "docboy/ok.png"}, F
-                //                {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_128_round2.gbc",
-                //                "docboy/ok.png"}, F
-                //                {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_div_round0.gbc",
-                //                "docboy/ok.png"}, F
-                //                {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_div_round1.gbc",
-                //                "docboy/ok.png"}, F
-                //                {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_div_round2.gbc",
-                //                "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_alt_round0.gbc", "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_alt_round1.gbc", "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_round1.gbc", "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_round2.gbc", "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_128_round1.gbc", "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_128_round2.gbc", "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_div_round0.gbc", "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_div_round1.gbc", "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch3_length_timer_div_round2.gbc", "docboy/ok.png"},
                 F {"docboy/double_speed/apu/double_speed_apu_ch3_retrigger_period_4_delay0_3.gbc", "docboy/ok.png"},
                 F {"docboy/double_speed/apu/double_speed_apu_ch3_retrigger_period_4_delay0_4.gbc", "docboy/ok.png"},
                 F {"docboy/double_speed/apu/double_speed_apu_ch3_retrigger_period_4_delay0_7.gbc", "docboy/ok.png"},
