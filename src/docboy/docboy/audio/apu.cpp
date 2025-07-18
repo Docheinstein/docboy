@@ -186,442 +186,6 @@ void Apu::set_audio_sample_callback(std::function<void(const AudioSample)>&& cal
     audio_sample_callback = std::move(callback);
 }
 
-void Apu::reset() {
-    // Reset I/O registers
-    phase = 2;
-    nr10.pace = 0;
-    nr10.direction = false;
-    nr10.step = 0;
-    nr11.duty_cycle = if_bootrom_else(0, 0b10);
-    nr11.initial_length_timer = if_bootrom_else(0, 0b111111);
-    nr12.initial_volume = if_bootrom_else(0, 0b1111);
-    nr12.envelope_direction = false;
-    nr12.sweep_pace = if_bootrom_else(0, 0b011);
-    nr13.period_low = if_bootrom_else(0, 0b11111111);
-    nr14.trigger = true;
-    nr14.length_enable = false;
-    nr14.period_high = 0b111;
-    nr21.duty_cycle = 0;
-    nr21.initial_length_timer = if_bootrom_else(0, 0b111111);
-    nr22.initial_volume = false;
-    nr22.envelope_direction = false;
-    nr22.sweep_pace = false;
-    nr23.period_low = if_bootrom_else(0, 0b11111111);
-    nr24.trigger = true;
-    nr24.length_enable = false;
-    nr24.period_high = 0b111;
-    nr30.dac = false;
-    nr31.initial_length_timer = if_bootrom_else(0, 0b11111111);
-    nr32.volume = 0;
-    nr33.period_low = if_bootrom_else(0, 0b11111111);
-    nr34.trigger = true;
-    nr34.length_enable = false;
-    nr34.period_high = 0b111;
-    nr41.initial_length_timer = if_bootrom_else(0, 0b111111);
-    nr42.initial_volume = 0;
-    nr42.envelope_direction = false;
-    nr42.sweep_pace = 0;
-    nr43.clock_shift = 0;
-    nr43.lfsr_width = false;
-    nr43.clock_divider = 0;
-    nr44.trigger = true;
-    nr44.length_enable = false;
-    nr50.vin_left = false;
-    nr50.volume_left = if_bootrom_else(0, 0b111);
-    nr50.vin_right = false;
-    nr50.volume_right = if_bootrom_else(0, 0b111);
-    nr51.ch4_left = if_bootrom_else(false, true);
-    nr51.ch3_left = if_bootrom_else(false, true);
-    nr51.ch2_left = if_bootrom_else(false, true);
-    nr51.ch1_left = if_bootrom_else(false, true);
-    nr51.ch4_right = false;
-    nr51.ch3_right = false;
-    nr51.ch2_right = if_bootrom_else(false, true);
-    nr51.ch1_right = if_bootrom_else(false, true);
-    nr52.enable = true;
-    nr52.ch4 = false;
-    nr52.ch3 = false;
-    nr52.ch2 = false;
-    nr52.ch1 = true;
-
-    for (uint16_t i = 0; i < decltype(wave_ram)::Size; i++) {
-#ifdef ENABLE_CGB
-        wave_ram[i] = mod<2>(i) == 0 ? 0x00 : 0xFF;
-#else
-        wave_ram[i] = 0;
-#endif
-    }
-
-    ticks = 0;
-
-    pending_write.updater = nullptr;
-    pending_write.value = 0;
-
-    // Length timers are not reset
-    // [blargg/08-len_ctr_during_power
-
-    ch1.dac = true;
-    ch1.volume = 0;
-    ch1.length_timer = 0;
-    ch1.trigger_delay = 0;
-    ch1.digital_output = false;
-    ch1.wave.position = 0;
-    ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
-    ch1.wave.duty_cycle = 0;
-    ch1.volume_sweep.direction = false;
-    ch1.volume_sweep.pace = 0;
-    ch1.volume_sweep.timer = 0;
-    ch1.volume_sweep.expired = false;
-    ch1.period_sweep.enabled = false;
-    ch1.period_sweep.period = 0;
-    ch1.period_sweep.timer = 0;
-
-    ch2.dac = false;
-    ch2.volume = 0;
-    ch2.length_timer = 0;
-    ch2.trigger_delay = 0;
-    ch2.digital_output = false;
-    ch2.wave.position = 0;
-    ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
-    ch2.wave.duty_cycle = 0;
-    ch2.volume_sweep.direction = false;
-    ch2.volume_sweep.pace = 0;
-    ch2.volume_sweep.timer = 0;
-    ch2.volume_sweep.expired = false;
-
-    ch3.length_timer = 0;
-    ch3.sample = 0;
-    ch3.digital_output = 0;
-    ch3.wave.position.byte = 0;
-    ch3.wave.position.low_nibble = false;
-    ch3.wave.timer = 0;
-    ch3.digital_output = 0;
-    ch3.trigger_delay = 0;
-#ifndef ENABLE_CGB
-    ch3.just_sampled = false;
-#endif
-
-    ch4.dac = false;
-    ch4.volume = 0;
-    ch4.length_timer = 0;
-    ch4.wave.timer = 0;
-    ch4.volume_sweep.direction = false;
-    ch4.volume_sweep.pace = 0;
-    ch4.volume_sweep.timer = 0;
-    ch4.volume_sweep.expired = false;
-    ch4.lfsr = 0;
-
-    prev_div_edge_bit = false;
-    div_apu = 2;
-}
-
-inline uint8_t Apu::compute_ch1_digital_output() const {
-    uint8_t digital_output {};
-
-    if (nr52.ch1) {
-        ASSERT(ch1.dac);
-        ASSERT(ch1.volume <= 0xF);
-
-        // Scale by volume
-        digital_output = ch1.digital_output * ch1.volume;
-
-        ASSERT(digital_output <= 0xF);
-    }
-
-    return digital_output;
-}
-
-inline uint8_t Apu::compute_ch2_digital_output() const {
-    uint8_t digital_output {};
-
-    if (nr52.ch2) {
-        ASSERT(ch2.dac);
-        ASSERT(ch2.volume <= 0xF);
-
-        // Scale by volume
-        digital_output = ch2.digital_output * ch2.volume;
-
-        ASSERT(digital_output <= 0xF);
-    }
-
-    return digital_output;
-}
-
-inline uint8_t Apu::compute_ch3_digital_output() const {
-    uint8_t digital_output {};
-
-    if (nr52.ch3 && nr32.volume) {
-        ASSERT(nr30.dac);
-        ASSERT(nr32.volume <= 0b11);
-        ASSERT(ch3.digital_output <= 0x0F);
-
-        // Scale by volume
-        digital_output = ch3.digital_output >> (nr32.volume - 1);
-
-        ASSERT(digital_output <= 0xF);
-    }
-
-    return digital_output;
-}
-
-inline uint8_t Apu::compute_ch4_digital_output() const {
-    uint8_t digital_output {};
-
-    if (nr52.ch4) {
-        ASSERT(ch4.dac);
-        ASSERT(ch4.volume <= 0xF);
-
-        // Scale by volume
-        const bool random_output = test_bit<0>(ch4.lfsr);
-        digital_output = random_output ? ch4.volume : 0;
-
-        ASSERT(digital_output <= 0xF);
-    }
-
-    return digital_output;
-}
-
-Apu::DigitalAudioSample Apu::compute_digital_audio_sample() const {
-    return DigitalAudioSample {
-        compute_ch1_digital_output(),
-        compute_ch2_digital_output(),
-        compute_ch3_digital_output(),
-        compute_ch4_digital_output(),
-    };
-}
-
-Apu::AudioSample Apu::compute_audio_sample() const {
-    struct {
-        int16_t ch1 {};
-        int16_t ch2 {};
-        int16_t ch3 {};
-        int16_t ch4 {};
-    } analog_output;
-
-    // Note that DAC does its work even if channel is off.
-
-    // TODO: consider caching channel outputs instead of recomputing them each time (shared with PCM).
-
-    // CH1
-    if (ch1.dac) {
-        analog_output.ch1 = digital_to_analog_volume(compute_ch1_digital_output());
-    }
-
-    // CH2
-    if (ch2.dac) {
-        analog_output.ch2 = digital_to_analog_volume(compute_ch2_digital_output());
-    }
-
-    // CH3
-    if (nr30.dac) {
-        analog_output.ch3 = digital_to_analog_volume(compute_ch3_digital_output());
-    }
-
-    // CH4
-    if (ch4.dac) {
-        analog_output.ch4 = digital_to_analog_volume(compute_ch4_digital_output());
-    }
-
-    // Mix channels
-    struct {
-        struct ChannelStereoAnalogOutput {
-            int16_t left, right;
-        } ch1, ch2, ch3, ch4;
-    } analog_stereo_output {};
-
-    analog_stereo_output.ch1.left = nr51.ch1_left ? analog_output.ch1 : (int16_t)0;
-    analog_stereo_output.ch2.left = nr51.ch2_left ? analog_output.ch2 : (int16_t)0;
-    analog_stereo_output.ch3.left = nr51.ch3_left ? analog_output.ch3 : (int16_t)0;
-    analog_stereo_output.ch4.left = nr51.ch4_left ? analog_output.ch4 : (int16_t)0;
-    analog_stereo_output.ch1.right = nr51.ch1_right ? analog_output.ch1 : (int16_t)0;
-    analog_stereo_output.ch2.right = nr51.ch2_right ? analog_output.ch2 : (int16_t)0;
-    analog_stereo_output.ch3.right = nr51.ch3_right ? analog_output.ch3 : (int16_t)0;
-    analog_stereo_output.ch4.right = nr51.ch4_right ? analog_output.ch4 : (int16_t)0;
-
-    int32_t analog_left = (analog_stereo_output.ch1.left + analog_stereo_output.ch2.left +
-                           analog_stereo_output.ch3.left + analog_stereo_output.ch4.left) /
-                          4;
-    int32_t analog_right = (analog_stereo_output.ch1.right + analog_stereo_output.ch2.right +
-                            analog_stereo_output.ch3.right + analog_stereo_output.ch4.right) /
-                           4;
-
-    ASSERT(analog_left >= INT16_MIN && analog_left <= INT16_MAX);
-    ASSERT(analog_right >= INT16_MIN && analog_right <= INT16_MAX);
-
-    AudioSample sample {static_cast<int16_t>(analog_left), static_cast<int16_t>(analog_right)};
-
-    // Scale by NR50 volume
-    sample.left = scale_analog_volume_by_master_volume(sample.left, nr50.volume_left);
-    sample.right = scale_analog_volume_by_master_volume(sample.right, nr50.volume_right);
-
-    // Scale by software volume (physical knob)
-    ASSERT(master_volume >= 0.0f && master_volume <= 1.0f);
-
-    sample.left = static_cast<int16_t>(static_cast<float>(sample.left) * master_volume);
-    sample.right = static_cast<int16_t>(static_cast<float>(sample.right) * master_volume);
-
-    return sample;
-}
-
-inline uint32_t Apu::compute_ch1_next_period_sweep_period() {
-    // P_t+1 = P_t ± P_t / (2^step)
-    int32_t period = ch1.period_sweep.period + (nr10.direction ? -1 : 1) * (ch1.period_sweep.period >> nr10.step);
-
-    // Store whether period sweep is in decreasing mode after a recalculation
-    if (!ch1.period_sweep.decreasing) {
-        ch1.period_sweep.decreasing = nr10.direction == 1;
-    }
-
-    ASSERT(period >= 0);
-    return period;
-}
-
-inline void Apu::tick_ch1_period_sweep() {
-    // Update period sweep (CH1 only)
-    if (nr52.ch1 && ch1.period_sweep.enabled) {
-        if (++ch1.period_sweep.timer >= ch1.period_sweep.pace) {
-            if (nr10.pace) {
-                // Compute new period
-                uint32_t new_period = compute_ch1_next_period_sweep_period();
-
-                if (new_period >= 2048) {
-                    // Period overflow: turn off the channel
-                    nr52.ch1 = false;
-                }
-
-                if (nr10.step) {
-                    // Write back period to the internal period register and to NR13/NR14
-                    ch1.period_sweep.period = new_period;
-
-                    nr14.period_high = get_bits_range<11, 8>(new_period);
-                    nr13.period_low = keep_bits<8>(new_period);
-
-                    // Period calculation is performed a second time for overflow check
-                    // (but result is not written back)
-                    // [blargg/04-sweep]
-                    if (compute_ch1_next_period_sweep_period() >= 2048) {
-                        nr52.ch1 = false;
-                    }
-                }
-            }
-
-            // Pace 0 is reloaded as pace 8
-            // [blargg/05-sweep-details]
-            ch1.period_sweep.pace = nr10.pace > 0 ? nr10.pace : 8;
-            ch1.period_sweep.timer = 0;
-        }
-    }
-}
-
-void Apu::tick_ch4() {
-    if (nr52.ch4) {
-        uint8_t D = nr43.clock_divider ? 2 * nr43.clock_divider : 1;
-
-        if (++ch4.wave.timer >= 2 * D << nr43.clock_shift) {
-            const bool b = test_bit<0>(ch4.lfsr) == test_bit<1>(ch4.lfsr);
-            set_bit<15>(ch4.lfsr, b);
-            if (nr43.lfsr_width) {
-                set_bit<7>(ch4.lfsr, b);
-            }
-            ch4.lfsr = ch4.lfsr >> 1;
-            ch4.wave.timer = 0;
-        }
-    }
-}
-
-void Apu::tick_ch3() {
-#ifndef ENABLE_CGB
-    ch3.just_sampled = false;
-#endif
-
-    if (nr52.ch3) {
-        if (!ch3.trigger_delay) {
-            if (++ch3.wave.timer == 2048) {
-                // Sample
-                // Advance square wave position
-                if (ch3.wave.position.low_nibble) {
-                    ch3.wave.position.low_nibble = false;
-                    ch3.wave.position.byte = mod<16>(ch3.wave.position.byte + 1);
-                } else {
-                    ch3.wave.position.low_nibble = true;
-                }
-
-                ASSERT(ch3.wave.position.byte < decltype(wave_ram)::Size);
-
-                // Update current sample and channel output
-                ch3.sample = wave_ram[ch3.wave.position.byte];
-
-                if (ch3.wave.position.low_nibble) {
-                    ch3.digital_output = keep_bits<4>(ch3.sample);
-                } else {
-                    ch3.digital_output = get_bits_range<7, 4>(ch3.sample);
-                }
-
-                // Reload period timer
-                ch3.wave.timer = concat(nr34.period_high, nr33.period_low);
-
-#ifndef ENABLE_CGB
-                ch3.just_sampled = true;
-#endif
-
-                ASSERT(ch3.wave.timer < 2048);
-            }
-        } else {
-            --ch3.trigger_delay;
-        }
-    }
-}
-
-void Apu::tick_length_timers() {
-    // Increase DIV-APU each time DIV[4] (or DIV[5] in double speed) has a falling edge (~512Hz).
-#ifdef ENABLE_CGB
-    bool div_edge_bit {};
-    if (speed_switch_controller.is_double_speed_mode()) {
-        div_edge_bit = test_bit<5>(timers.read_div());
-    } else {
-        div_edge_bit = test_bit<4>(timers.read_div());
-    }
-#else
-    const bool div_edge_bit = test_bit<4>(timers.read_div());
-#endif
-
-    if (prev_div_edge_bit && !div_edge_bit) {
-        div_apu++;
-
-        // Eventually update channel's volume, if volume sweep is expired.
-        // This doesn't happen at the same time the volume sweep overflows,
-        // but only the next DIV_APU event.
-        // [samesuite/div_trigger_volume_10,
-        //  samesuite/div_write_trigger_volume,
-        //  samesuite/div_write_trigger_volume_10]
-        handle_channel_volume_sweep_expired(ch1);
-        handle_channel_volume_sweep_expired(ch2);
-        handle_channel_volume_sweep_expired(ch4);
-
-        if (mod<2>(div_apu) == 0) {
-            // Update length timer
-            tick_channel_length_timer(ch1, nr52.ch1, nr14);
-            tick_channel_length_timer(ch2, nr52.ch2, nr24);
-            tick_channel_length_timer(ch3, nr52.ch3, nr34);
-            tick_channel_length_timer(ch4, nr52.ch4, nr44);
-
-            if (mod<4>(div_apu) == 0) {
-                // Update period sweep (CH1 only)
-                tick_ch1_period_sweep();
-
-                if (mod<8>(div_apu) == 0) {
-                    // Update volume sweep
-                    tick_channel_volume_sweep(ch1, nr52.ch1);
-                    tick_channel_volume_sweep(ch2, nr52.ch2);
-                    tick_channel_volume_sweep(ch4, nr52.ch4);
-                }
-            }
-        }
-    }
-
-    prev_div_edge_bit = div_edge_bit;
-}
-
 void Apu::tick_t0() {
     tick_even();
 }
@@ -636,147 +200,6 @@ void Apu::tick_t2() {
 
 void Apu::tick_t3() {
     tick_odd();
-}
-
-void Apu::tick_even() {
-    // In single speed mode, writes to APU seem to be delayed by 1 T-cycle.
-    flush_pending_write();
-
-    if (nr52.enable) {
-        ASSERT(mod<2>(phase) == 0);
-
-        // Update length timers
-        // TODO: is CH3 length timer updated here as well, or in tick_odd?
-        tick_length_timers();
-
-        // Update wave timers.
-        // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
-        if (phase == 0) {
-            tick_square_wave_channel(ch1, nr52.ch1, nr11, nr13, nr14);
-            tick_square_wave_channel(ch2, nr52.ch2, nr21, nr23, nr24);
-            tick_ch4();
-        }
-
-        phase = mod<4>(phase + 1);
-    }
-
-    tick_sampler();
-
-#ifdef ENABLE_CGB
-    // TODO: consider to update PCM only when registers or outputs of channels changes.
-    update_pcm();
-#endif
-}
-
-void Apu::tick_odd() {
-    if (nr52.enable) {
-        ASSERT(mod<2>(phase) == 1);
-
-        // Update wave timers
-        // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
-        tick_ch3();
-
-        phase = mod<4>(phase + 1);
-    }
-
-    tick_sampler();
-
-#ifdef ENABLE_CGB
-    // TODO: consider to update PCM only when registers or outputs of channels changes.
-    update_pcm();
-#endif
-}
-
-void Apu::tick_sampler() {
-    ASSERT(sample_period > 0.0);
-
-    if (++ticks >= static_cast<uint64_t>(next_tick_sample)) {
-        next_tick_sample += sample_period;
-
-        if (audio_sample_callback) {
-            audio_sample_callback(compute_audio_sample());
-        }
-    }
-}
-
-void Apu::turn_on() {
-    prev_div_edge_bit = true; // TODO: verify this, also in CGB?
-    div_apu = 0;
-    phase = 0;
-}
-
-void Apu::turn_off() {
-    nr10.pace = 0;
-    nr10.direction = false;
-    nr10.step = 0;
-    nr11.duty_cycle = 0;
-    nr11.initial_length_timer = 0;
-    nr12.initial_volume = 0;
-    nr12.envelope_direction = false;
-    nr12.sweep_pace = 0;
-    nr13.period_low = 0;
-    nr14.trigger = false;
-    nr14.length_enable = false;
-    nr14.period_high = 0;
-    nr21.duty_cycle = 0;
-    nr21.initial_length_timer = 0;
-    nr22.initial_volume = 0;
-    nr22.envelope_direction = false;
-    nr22.sweep_pace = 0;
-    nr23.period_low = 0;
-    nr24.trigger = false;
-    nr24.length_enable = false;
-    nr24.period_high = 0;
-    nr30.dac = false;
-    nr31.initial_length_timer = 0;
-    nr32.volume = 0;
-    nr33.period_low = 0;
-    nr34.trigger = false;
-    nr34.length_enable = false;
-    nr34.period_high = 0;
-    nr41.initial_length_timer = 0;
-    nr42.initial_volume = 0;
-    nr42.envelope_direction = false;
-    nr42.sweep_pace = 0;
-    nr43.clock_shift = 0;
-    nr43.lfsr_width = false;
-    nr43.clock_divider = 0;
-    nr44.trigger = false;
-    nr44.length_enable = false;
-    nr50.vin_left = false;
-    nr50.volume_left = 0;
-    nr50.vin_right = false;
-    nr50.volume_right = 0;
-    nr51.ch4_left = false;
-    nr51.ch3_left = false;
-    nr51.ch2_left = false;
-    nr51.ch1_left = false;
-    nr51.ch4_right = false;
-    nr51.ch3_right = false;
-    nr51.ch2_right = false;
-    nr51.ch1_right = false;
-    nr52.ch4 = false;
-    nr52.ch3 = false;
-    nr52.ch2 = false;
-    nr52.ch1 = false;
-
-    ch1.dac = false;
-    ch1.digital_output = false;
-    ch1.wave.position = 0;
-    ch1.volume_sweep.expired = false;
-
-    ch2.dac = false;
-    ch2.digital_output = false;
-    ch2.wave.position = 0;
-    ch2.volume_sweep.expired = false;
-
-    ch3.sample = 0;
-    ch3.digital_output = 0;
-    ch3.wave.position.byte = 0;
-    ch3.wave.position.low_nibble = false;
-
-    ch4.dac = false;
-    ch4.volume_sweep.expired = false;
 }
 
 void Apu::save_state(Parcel& parcel) const {
@@ -1023,6 +446,135 @@ void Apu::load_state(Parcel& parcel) {
     div_apu = parcel.read_uint8();
 }
 
+void Apu::reset() {
+    // Reset I/O registers
+    phase = 2;
+    nr10.pace = 0;
+    nr10.direction = false;
+    nr10.step = 0;
+    nr11.duty_cycle = if_bootrom_else(0, 0b10);
+    nr11.initial_length_timer = if_bootrom_else(0, 0b111111);
+    nr12.initial_volume = if_bootrom_else(0, 0b1111);
+    nr12.envelope_direction = false;
+    nr12.sweep_pace = if_bootrom_else(0, 0b011);
+    nr13.period_low = if_bootrom_else(0, 0b11111111);
+    nr14.trigger = true;
+    nr14.length_enable = false;
+    nr14.period_high = 0b111;
+    nr21.duty_cycle = 0;
+    nr21.initial_length_timer = if_bootrom_else(0, 0b111111);
+    nr22.initial_volume = false;
+    nr22.envelope_direction = false;
+    nr22.sweep_pace = false;
+    nr23.period_low = if_bootrom_else(0, 0b11111111);
+    nr24.trigger = true;
+    nr24.length_enable = false;
+    nr24.period_high = 0b111;
+    nr30.dac = false;
+    nr31.initial_length_timer = if_bootrom_else(0, 0b11111111);
+    nr32.volume = 0;
+    nr33.period_low = if_bootrom_else(0, 0b11111111);
+    nr34.trigger = true;
+    nr34.length_enable = false;
+    nr34.period_high = 0b111;
+    nr41.initial_length_timer = if_bootrom_else(0, 0b111111);
+    nr42.initial_volume = 0;
+    nr42.envelope_direction = false;
+    nr42.sweep_pace = 0;
+    nr43.clock_shift = 0;
+    nr43.lfsr_width = false;
+    nr43.clock_divider = 0;
+    nr44.trigger = true;
+    nr44.length_enable = false;
+    nr50.vin_left = false;
+    nr50.volume_left = if_bootrom_else(0, 0b111);
+    nr50.vin_right = false;
+    nr50.volume_right = if_bootrom_else(0, 0b111);
+    nr51.ch4_left = if_bootrom_else(false, true);
+    nr51.ch3_left = if_bootrom_else(false, true);
+    nr51.ch2_left = if_bootrom_else(false, true);
+    nr51.ch1_left = if_bootrom_else(false, true);
+    nr51.ch4_right = false;
+    nr51.ch3_right = false;
+    nr51.ch2_right = if_bootrom_else(false, true);
+    nr51.ch1_right = if_bootrom_else(false, true);
+    nr52.enable = true;
+    nr52.ch4 = false;
+    nr52.ch3 = false;
+    nr52.ch2 = false;
+    nr52.ch1 = true;
+
+    for (uint16_t i = 0; i < decltype(wave_ram)::Size; i++) {
+#ifdef ENABLE_CGB
+        wave_ram[i] = mod<2>(i) == 0 ? 0x00 : 0xFF;
+#else
+        wave_ram[i] = 0;
+#endif
+    }
+
+    ticks = 0;
+
+    pending_write.updater = nullptr;
+    pending_write.value = 0;
+
+    // Length timers are not reset
+    // [blargg/08-len_ctr_during_power
+
+    ch1.dac = true;
+    ch1.volume = 0;
+    ch1.length_timer = 0;
+    ch1.trigger_delay = 0;
+    ch1.digital_output = false;
+    ch1.wave.position = 0;
+    ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
+    ch1.wave.duty_cycle = 0;
+    ch1.volume_sweep.direction = false;
+    ch1.volume_sweep.pace = 0;
+    ch1.volume_sweep.timer = 0;
+    ch1.volume_sweep.expired = false;
+    ch1.period_sweep.enabled = false;
+    ch1.period_sweep.period = 0;
+    ch1.period_sweep.timer = 0;
+
+    ch2.dac = false;
+    ch2.volume = 0;
+    ch2.length_timer = 0;
+    ch2.trigger_delay = 0;
+    ch2.digital_output = false;
+    ch2.wave.position = 0;
+    ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
+    ch2.wave.duty_cycle = 0;
+    ch2.volume_sweep.direction = false;
+    ch2.volume_sweep.pace = 0;
+    ch2.volume_sweep.timer = 0;
+    ch2.volume_sweep.expired = false;
+
+    ch3.length_timer = 0;
+    ch3.sample = 0;
+    ch3.digital_output = 0;
+    ch3.wave.position.byte = 0;
+    ch3.wave.position.low_nibble = false;
+    ch3.wave.timer = 0;
+    ch3.digital_output = 0;
+    ch3.trigger_delay = 0;
+#ifndef ENABLE_CGB
+    ch3.just_sampled = false;
+#endif
+
+    ch4.dac = false;
+    ch4.volume = 0;
+    ch4.length_timer = 0;
+    ch4.wave.timer = 0;
+    ch4.volume_sweep.direction = false;
+    ch4.volume_sweep.pace = 0;
+    ch4.volume_sweep.timer = 0;
+    ch4.volume_sweep.expired = false;
+    ch4.lfsr = 0;
+
+    prev_div_edge_bit = false;
+    div_apu = 2;
+}
+
 uint8_t Apu::read_nr10() const {
     return 0b10000000 | nr10.pace << Specs::Bits::Audio::NR10::PACE |
            nr10.direction << Specs::Bits::Audio::NR10::DIRECTION | nr10.step << Specs::Bits::Audio::NR10::STEP;
@@ -1233,6 +785,472 @@ uint8_t Apu::read_wave_ram(uint16_t address) const {
 void Apu::write_wave_ram(uint16_t address, uint8_t value) {
     ASSERT(address >= Specs::Registers::Sound::WAVE0 && address <= Specs::Registers::Sound::WAVEF);
     write_register(WAVE_RAM_UPDATERS[address - Specs::Registers::Sound::WAVE0], value);
+}
+
+#ifdef ENABLE_CGB
+uint8_t Apu::read_pcm12() const {
+    return pcm12;
+}
+
+uint8_t Apu::read_pcm34() const {
+    return pcm34;
+}
+#endif
+
+void Apu::turn_on() {
+    prev_div_edge_bit = true; // TODO: verify this, also in CGB?
+    div_apu = 0;
+    phase = 0;
+}
+
+void Apu::turn_off() {
+    nr10.pace = 0;
+    nr10.direction = false;
+    nr10.step = 0;
+    nr11.duty_cycle = 0;
+    nr11.initial_length_timer = 0;
+    nr12.initial_volume = 0;
+    nr12.envelope_direction = false;
+    nr12.sweep_pace = 0;
+    nr13.period_low = 0;
+    nr14.trigger = false;
+    nr14.length_enable = false;
+    nr14.period_high = 0;
+    nr21.duty_cycle = 0;
+    nr21.initial_length_timer = 0;
+    nr22.initial_volume = 0;
+    nr22.envelope_direction = false;
+    nr22.sweep_pace = 0;
+    nr23.period_low = 0;
+    nr24.trigger = false;
+    nr24.length_enable = false;
+    nr24.period_high = 0;
+    nr30.dac = false;
+    nr31.initial_length_timer = 0;
+    nr32.volume = 0;
+    nr33.period_low = 0;
+    nr34.trigger = false;
+    nr34.length_enable = false;
+    nr34.period_high = 0;
+    nr41.initial_length_timer = 0;
+    nr42.initial_volume = 0;
+    nr42.envelope_direction = false;
+    nr42.sweep_pace = 0;
+    nr43.clock_shift = 0;
+    nr43.lfsr_width = false;
+    nr43.clock_divider = 0;
+    nr44.trigger = false;
+    nr44.length_enable = false;
+    nr50.vin_left = false;
+    nr50.volume_left = 0;
+    nr50.vin_right = false;
+    nr50.volume_right = 0;
+    nr51.ch4_left = false;
+    nr51.ch3_left = false;
+    nr51.ch2_left = false;
+    nr51.ch1_left = false;
+    nr51.ch4_right = false;
+    nr51.ch3_right = false;
+    nr51.ch2_right = false;
+    nr51.ch1_right = false;
+    nr52.ch4 = false;
+    nr52.ch3 = false;
+    nr52.ch2 = false;
+    nr52.ch1 = false;
+
+    ch1.dac = false;
+    ch1.digital_output = false;
+    ch1.wave.position = 0;
+    ch1.volume_sweep.expired = false;
+
+    ch2.dac = false;
+    ch2.digital_output = false;
+    ch2.wave.position = 0;
+    ch2.volume_sweep.expired = false;
+
+    ch3.sample = 0;
+    ch3.digital_output = 0;
+    ch3.wave.position.byte = 0;
+    ch3.wave.position.low_nibble = false;
+
+    ch4.dac = false;
+    ch4.volume_sweep.expired = false;
+}
+
+void Apu::tick_even() {
+    // In single speed mode, writes to APU seem to be delayed by 1 T-cycle.
+    flush_pending_write();
+
+    if (nr52.enable) {
+        ASSERT(mod<2>(phase) == 0);
+
+        // Update length timers
+        // TODO: is CH3 length timer updated here as well, or in tick_odd?
+        tick_length_timers();
+
+        // Update wave timers.
+        // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
+        if (phase == 0) {
+            tick_square_wave_channel(ch1, nr52.ch1, nr11, nr13, nr14);
+            tick_square_wave_channel(ch2, nr52.ch2, nr21, nr23, nr24);
+            tick_ch4();
+        }
+
+        phase = mod<4>(phase + 1);
+    }
+
+    tick_sampler();
+
+#ifdef ENABLE_CGB
+    // TODO: consider to update PCM only when registers or outputs of channels changes.
+    update_pcm();
+#endif
+}
+
+void Apu::tick_odd() {
+    if (nr52.enable) {
+        ASSERT(mod<2>(phase) == 1);
+
+        // Update wave timers
+        // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
+        tick_ch3();
+
+        phase = mod<4>(phase + 1);
+    }
+
+    tick_sampler();
+
+#ifdef ENABLE_CGB
+    // TODO: consider to update PCM only when registers or outputs of channels changes.
+    update_pcm();
+#endif
+}
+
+void Apu::tick_sampler() {
+    ASSERT(sample_period > 0.0);
+
+    if (++ticks >= static_cast<uint64_t>(next_tick_sample)) {
+        next_tick_sample += sample_period;
+
+        if (audio_sample_callback) {
+            audio_sample_callback(compute_audio_sample());
+        }
+    }
+}
+
+inline void Apu::tick_ch1_period_sweep() {
+    // Update period sweep (CH1 only)
+    if (nr52.ch1 && ch1.period_sweep.enabled) {
+        if (++ch1.period_sweep.timer >= ch1.period_sweep.pace) {
+            if (nr10.pace) {
+                // Compute new period
+                uint32_t new_period = compute_ch1_next_period_sweep_period();
+
+                if (new_period >= 2048) {
+                    // Period overflow: turn off the channel
+                    nr52.ch1 = false;
+                }
+
+                if (nr10.step) {
+                    // Write back period to the internal period register and to NR13/NR14
+                    ch1.period_sweep.period = new_period;
+
+                    nr14.period_high = get_bits_range<11, 8>(new_period);
+                    nr13.period_low = keep_bits<8>(new_period);
+
+                    // Period calculation is performed a second time for overflow check
+                    // (but result is not written back)
+                    // [blargg/04-sweep]
+                    if (compute_ch1_next_period_sweep_period() >= 2048) {
+                        nr52.ch1 = false;
+                    }
+                }
+            }
+
+            // Pace 0 is reloaded as pace 8
+            // [blargg/05-sweep-details]
+            ch1.period_sweep.pace = nr10.pace > 0 ? nr10.pace : 8;
+            ch1.period_sweep.timer = 0;
+        }
+    }
+}
+
+void Apu::tick_length_timers() {
+    // Increase DIV-APU each time DIV[4] (or DIV[5] in double speed) has a falling edge (~512Hz).
+#ifdef ENABLE_CGB
+    bool div_edge_bit {};
+    if (speed_switch_controller.is_double_speed_mode()) {
+        div_edge_bit = test_bit<5>(timers.read_div());
+    } else {
+        div_edge_bit = test_bit<4>(timers.read_div());
+    }
+#else
+    const bool div_edge_bit = test_bit<4>(timers.read_div());
+#endif
+
+    if (prev_div_edge_bit && !div_edge_bit) {
+        div_apu++;
+
+        // Eventually update channel's volume, if volume sweep is expired.
+        // This doesn't happen at the same time the volume sweep overflows,
+        // but only the next DIV_APU event.
+        // [samesuite/div_trigger_volume_10,
+        //  samesuite/div_write_trigger_volume,
+        //  samesuite/div_write_trigger_volume_10]
+        handle_channel_volume_sweep_expired(ch1);
+        handle_channel_volume_sweep_expired(ch2);
+        handle_channel_volume_sweep_expired(ch4);
+
+        if (mod<2>(div_apu) == 0) {
+            // Update length timer
+            tick_channel_length_timer(ch1, nr52.ch1, nr14);
+            tick_channel_length_timer(ch2, nr52.ch2, nr24);
+            tick_channel_length_timer(ch3, nr52.ch3, nr34);
+            tick_channel_length_timer(ch4, nr52.ch4, nr44);
+
+            if (mod<4>(div_apu) == 0) {
+                // Update period sweep (CH1 only)
+                tick_ch1_period_sweep();
+
+                if (mod<8>(div_apu) == 0) {
+                    // Update volume sweep
+                    tick_channel_volume_sweep(ch1, nr52.ch1);
+                    tick_channel_volume_sweep(ch2, nr52.ch2);
+                    tick_channel_volume_sweep(ch4, nr52.ch4);
+                }
+            }
+        }
+    }
+
+    prev_div_edge_bit = div_edge_bit;
+}
+
+void Apu::tick_ch3() {
+#ifndef ENABLE_CGB
+    ch3.just_sampled = false;
+#endif
+
+    if (nr52.ch3) {
+        if (!ch3.trigger_delay) {
+            if (++ch3.wave.timer == 2048) {
+                // Sample
+                // Advance square wave position
+                if (ch3.wave.position.low_nibble) {
+                    ch3.wave.position.low_nibble = false;
+                    ch3.wave.position.byte = mod<16>(ch3.wave.position.byte + 1);
+                } else {
+                    ch3.wave.position.low_nibble = true;
+                }
+
+                ASSERT(ch3.wave.position.byte < decltype(wave_ram)::Size);
+
+                // Update current sample and channel output
+                ch3.sample = wave_ram[ch3.wave.position.byte];
+
+                if (ch3.wave.position.low_nibble) {
+                    ch3.digital_output = keep_bits<4>(ch3.sample);
+                } else {
+                    ch3.digital_output = get_bits_range<7, 4>(ch3.sample);
+                }
+
+                // Reload period timer
+                ch3.wave.timer = concat(nr34.period_high, nr33.period_low);
+
+#ifndef ENABLE_CGB
+                ch3.just_sampled = true;
+#endif
+
+                ASSERT(ch3.wave.timer < 2048);
+            }
+        } else {
+            --ch3.trigger_delay;
+        }
+    }
+}
+
+void Apu::tick_ch4() {
+    if (nr52.ch4) {
+        uint8_t D = nr43.clock_divider ? 2 * nr43.clock_divider : 1;
+
+        if (++ch4.wave.timer >= 2 * D << nr43.clock_shift) {
+            const bool b = test_bit<0>(ch4.lfsr) == test_bit<1>(ch4.lfsr);
+            set_bit<15>(ch4.lfsr, b);
+            if (nr43.lfsr_width) {
+                set_bit<7>(ch4.lfsr, b);
+            }
+            ch4.lfsr = ch4.lfsr >> 1;
+            ch4.wave.timer = 0;
+        }
+    }
+}
+
+#ifdef ENABLE_CGB
+void Apu::update_pcm() {
+    DigitalAudioSample digital_output = compute_digital_audio_sample();
+    pcm12 = digital_output.ch2 << 4 | digital_output.ch1;
+    pcm34 = digital_output.ch4 << 4 | digital_output.ch3;
+}
+#endif
+
+inline uint32_t Apu::compute_ch1_next_period_sweep_period() {
+    // P_t+1 = P_t ± P_t / (2^step)
+    int32_t period = ch1.period_sweep.period + (nr10.direction ? -1 : 1) * (ch1.period_sweep.period >> nr10.step);
+
+    // Store whether period sweep is in decreasing mode after a recalculation
+    if (!ch1.period_sweep.decreasing) {
+        ch1.period_sweep.decreasing = nr10.direction == 1;
+    }
+
+    ASSERT(period >= 0);
+    return period;
+}
+
+inline uint8_t Apu::compute_ch1_digital_output() const {
+    uint8_t digital_output {};
+
+    if (nr52.ch1) {
+        ASSERT(ch1.dac);
+        ASSERT(ch1.volume <= 0xF);
+
+        // Scale by volume
+        digital_output = ch1.digital_output * ch1.volume;
+
+        ASSERT(digital_output <= 0xF);
+    }
+
+    return digital_output;
+}
+
+inline uint8_t Apu::compute_ch2_digital_output() const {
+    uint8_t digital_output {};
+
+    if (nr52.ch2) {
+        ASSERT(ch2.dac);
+        ASSERT(ch2.volume <= 0xF);
+
+        // Scale by volume
+        digital_output = ch2.digital_output * ch2.volume;
+
+        ASSERT(digital_output <= 0xF);
+    }
+
+    return digital_output;
+}
+
+inline uint8_t Apu::compute_ch3_digital_output() const {
+    uint8_t digital_output {};
+
+    if (nr52.ch3 && nr32.volume) {
+        ASSERT(nr30.dac);
+        ASSERT(nr32.volume <= 0b11);
+        ASSERT(ch3.digital_output <= 0x0F);
+
+        // Scale by volume
+        digital_output = ch3.digital_output >> (nr32.volume - 1);
+
+        ASSERT(digital_output <= 0xF);
+    }
+
+    return digital_output;
+}
+
+inline uint8_t Apu::compute_ch4_digital_output() const {
+    uint8_t digital_output {};
+
+    if (nr52.ch4) {
+        ASSERT(ch4.dac);
+        ASSERT(ch4.volume <= 0xF);
+
+        // Scale by volume
+        const bool random_output = test_bit<0>(ch4.lfsr);
+        digital_output = random_output ? ch4.volume : 0;
+
+        ASSERT(digital_output <= 0xF);
+    }
+
+    return digital_output;
+}
+
+Apu::DigitalAudioSample Apu::compute_digital_audio_sample() const {
+    return DigitalAudioSample {
+        compute_ch1_digital_output(),
+        compute_ch2_digital_output(),
+        compute_ch3_digital_output(),
+        compute_ch4_digital_output(),
+    };
+}
+
+Apu::AudioSample Apu::compute_audio_sample() const {
+    struct {
+        int16_t ch1 {};
+        int16_t ch2 {};
+        int16_t ch3 {};
+        int16_t ch4 {};
+    } analog_output;
+
+    // Note that DAC does its work even if channel is off.
+
+    // TODO: consider caching channel outputs instead of recomputing them each time (shared with PCM).
+
+    // CH1
+    if (ch1.dac) {
+        analog_output.ch1 = digital_to_analog_volume(compute_ch1_digital_output());
+    }
+
+    // CH2
+    if (ch2.dac) {
+        analog_output.ch2 = digital_to_analog_volume(compute_ch2_digital_output());
+    }
+
+    // CH3
+    if (nr30.dac) {
+        analog_output.ch3 = digital_to_analog_volume(compute_ch3_digital_output());
+    }
+
+    // CH4
+    if (ch4.dac) {
+        analog_output.ch4 = digital_to_analog_volume(compute_ch4_digital_output());
+    }
+
+    // Mix channels
+    struct {
+        struct ChannelStereoAnalogOutput {
+            int16_t left, right;
+        } ch1, ch2, ch3, ch4;
+    } analog_stereo_output {};
+
+    analog_stereo_output.ch1.left = nr51.ch1_left ? analog_output.ch1 : (int16_t)0;
+    analog_stereo_output.ch2.left = nr51.ch2_left ? analog_output.ch2 : (int16_t)0;
+    analog_stereo_output.ch3.left = nr51.ch3_left ? analog_output.ch3 : (int16_t)0;
+    analog_stereo_output.ch4.left = nr51.ch4_left ? analog_output.ch4 : (int16_t)0;
+    analog_stereo_output.ch1.right = nr51.ch1_right ? analog_output.ch1 : (int16_t)0;
+    analog_stereo_output.ch2.right = nr51.ch2_right ? analog_output.ch2 : (int16_t)0;
+    analog_stereo_output.ch3.right = nr51.ch3_right ? analog_output.ch3 : (int16_t)0;
+    analog_stereo_output.ch4.right = nr51.ch4_right ? analog_output.ch4 : (int16_t)0;
+
+    int32_t analog_left = (analog_stereo_output.ch1.left + analog_stereo_output.ch2.left +
+                           analog_stereo_output.ch3.left + analog_stereo_output.ch4.left) /
+                          4;
+    int32_t analog_right = (analog_stereo_output.ch1.right + analog_stereo_output.ch2.right +
+                            analog_stereo_output.ch3.right + analog_stereo_output.ch4.right) /
+                           4;
+
+    ASSERT(analog_left >= INT16_MIN && analog_left <= INT16_MAX);
+    ASSERT(analog_right >= INT16_MIN && analog_right <= INT16_MAX);
+
+    AudioSample sample {static_cast<int16_t>(analog_left), static_cast<int16_t>(analog_right)};
+
+    // Scale by NR50 volume
+    sample.left = scale_analog_volume_by_master_volume(sample.left, nr50.volume_left);
+    sample.right = scale_analog_volume_by_master_volume(sample.right, nr50.volume_right);
+
+    // Scale by software volume (physical knob)
+    ASSERT(master_volume >= 0.0f && master_volume <= 1.0f);
+
+    sample.left = static_cast<int16_t>(static_cast<float>(sample.left) * master_volume);
+    sample.right = static_cast<int16_t>(static_cast<float>(sample.right) * master_volume);
+
+    return sample;
 }
 
 void Apu::flush_pending_write() {
@@ -1751,19 +1769,3 @@ void Apu::update_wave_ram(uint8_t value) {
     }
 #endif
 }
-
-#ifdef ENABLE_CGB
-void Apu::update_pcm() {
-    DigitalAudioSample digital_output = compute_digital_audio_sample();
-    pcm12 = digital_output.ch2 << 4 | digital_output.ch1;
-    pcm34 = digital_output.ch4 << 4 | digital_output.ch3;
-}
-
-uint8_t Apu::read_pcm12() const {
-    return pcm12;
-}
-
-uint8_t Apu::read_pcm34() const {
-    return pcm34;
-}
-#endif
