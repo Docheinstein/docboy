@@ -83,7 +83,11 @@ inline void handle_channel_volume_sweep_expired(Channel& ch) {
 template <typename Channel, typename ChannelOnFlag, typename Nrx1, typename Nrx3, typename Nrx4>
 inline void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, const Nrx1& nrx1, const Nrx3& nrx3,
                                      const Nrx4& nrx4) {
-    if (ch_on) {
+    ch.just_sampled = false;
+
+    ch.tick_edge = !ch.tick_edge;
+
+    if (ch_on && ch.tick_edge) {
         // Wave position does not change immediately after channel's trigger.
         if (!ch.trigger_delay) {
             if (++ch.wave.timer == 2048) {
@@ -99,6 +103,8 @@ inline void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, co
                 // Reload period timer
                 ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
                 ASSERT(ch.wave.timer < 2048);
+
+                ch.just_sampled = true;
             }
         } else {
             --ch.trigger_delay;
@@ -203,7 +209,6 @@ void Apu::tick_t3() {
 }
 
 void Apu::save_state(Parcel& parcel) const {
-    parcel.write_uint8(phase);
     parcel.write_uint8(nr10.pace);
     parcel.write_bool(nr10.direction);
     parcel.write_uint8(nr10.step);
@@ -275,6 +280,8 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch1.length_timer);
     parcel.write_uint8(ch1.trigger_delay);
     parcel.write_bool(ch1.digital_output);
+    parcel.write_bool(ch1.just_sampled);
+    parcel.write_bool(ch1.tick_edge);
     parcel.write_uint8(ch1.wave.position);
     parcel.write_uint16(ch1.wave.timer);
     parcel.write_uint8(ch1.wave.duty_cycle);
@@ -293,6 +300,8 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch2.length_timer);
     parcel.write_uint8(ch2.trigger_delay);
     parcel.write_bool(ch2.digital_output);
+    parcel.write_bool(ch2.just_sampled);
+    parcel.write_bool(ch2.tick_edge);
     parcel.write_uint8(ch2.wave.position);
     parcel.write_uint16(ch2.wave.timer);
     parcel.write_uint8(ch2.wave.duty_cycle);
@@ -302,18 +311,19 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch2.volume_sweep.expired);
 
     parcel.write_uint16(ch3.length_timer);
-    parcel.write_uint8(ch3.digital_output);
-    parcel.write_uint8(ch3.wave.position.byte);
-    parcel.write_bool(ch3.wave.position.low_nibble);
-    parcel.write_uint16(ch3.wave.timer);
+    parcel.write_uint8(ch3.sample);
     parcel.write_uint8(ch3.trigger_delay);
+    parcel.write_uint8(ch3.digital_output);
 #ifndef ENABLE_CGB
     parcel.write_bool(ch3.just_sampled);
 #endif
-
+    parcel.write_uint8(ch3.wave.position.byte);
+    parcel.write_bool(ch3.wave.position.low_nibble);
+    parcel.write_uint16(ch3.wave.timer);
     parcel.write_bool(ch4.dac);
     parcel.write_uint8(ch4.volume);
     parcel.write_uint8(ch4.length_timer);
+    parcel.write_bool(ch4.tick_edge);
     parcel.write_uint16(ch4.wave.timer);
     parcel.write_bool(ch4.volume_sweep.direction);
     parcel.write_uint8(ch4.volume_sweep.pace);
@@ -326,7 +336,6 @@ void Apu::save_state(Parcel& parcel) const {
 }
 
 void Apu::load_state(Parcel& parcel) {
-    phase = parcel.read_uint8();
     nr10.pace = parcel.read_uint8();
     nr10.direction = parcel.read_bool();
     nr10.step = parcel.read_uint8();
@@ -396,6 +405,8 @@ void Apu::load_state(Parcel& parcel) {
     ch1.length_timer = parcel.read_uint8();
     ch1.trigger_delay = parcel.read_uint8();
     ch1.digital_output = parcel.read_bool();
+    ch1.just_sampled = parcel.read_bool();
+    ch1.tick_edge = parcel.read_bool();
     ch1.wave.position = parcel.read_uint8();
     ch1.wave.timer = parcel.read_uint16();
     ch1.wave.duty_cycle = parcel.read_uint8();
@@ -414,6 +425,8 @@ void Apu::load_state(Parcel& parcel) {
     ch2.length_timer = parcel.read_uint8();
     ch2.trigger_delay = parcel.read_uint8();
     ch2.digital_output = parcel.read_bool();
+    ch2.just_sampled = parcel.read_bool();
+    ch2.tick_edge = parcel.read_bool();
     ch2.wave.position = parcel.read_uint8();
     ch2.wave.timer = parcel.read_uint16();
     ch2.wave.duty_cycle = parcel.read_uint8();
@@ -423,18 +436,20 @@ void Apu::load_state(Parcel& parcel) {
     ch2.volume_sweep.expired = parcel.read_bool();
 
     ch3.length_timer = parcel.read_uint16();
-    ch3.digital_output = parcel.read_uint8();
-    ch3.wave.position.byte = parcel.read_uint8();
-    ch3.wave.position.low_nibble = parcel.read_bool();
-    ch3.wave.timer = parcel.read_uint16();
+    ch3.sample = parcel.read_uint8();
     ch3.trigger_delay = parcel.read_uint8();
+    ch3.digital_output = parcel.read_uint8();
 #ifndef ENABLE_CGB
     ch3.just_sampled = parcel.read_bool();
 #endif
+    ch3.wave.position.byte = parcel.read_uint8();
+    ch3.wave.position.low_nibble = parcel.read_bool();
+    ch3.wave.timer = parcel.read_uint16();
 
     ch4.dac = parcel.read_bool();
     ch4.volume = parcel.read_uint8();
     ch4.length_timer = parcel.read_uint8();
+    ch4.tick_edge = parcel.read_bool();
     ch4.wave.timer = parcel.read_uint16();
     ch4.volume_sweep.direction = parcel.read_bool();
     ch4.volume_sweep.pace = parcel.read_uint8();
@@ -448,7 +463,6 @@ void Apu::load_state(Parcel& parcel) {
 
 void Apu::reset() {
     // Reset I/O registers
-    phase = 2;
     nr10.pace = 0;
     nr10.direction = false;
     nr10.step = 0;
@@ -525,6 +539,8 @@ void Apu::reset() {
     ch1.length_timer = 0;
     ch1.trigger_delay = 0;
     ch1.digital_output = false;
+    ch1.just_sampled = false;
+    ch1.tick_edge = false;
     ch1.wave.position = 0;
     ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
     ch1.wave.duty_cycle = 0;
@@ -541,6 +557,8 @@ void Apu::reset() {
     ch2.length_timer = 0;
     ch2.trigger_delay = 0;
     ch2.digital_output = false;
+    ch2.just_sampled = false;
+    ch2.tick_edge = false;
     ch2.wave.position = 0;
     ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
     ch2.wave.duty_cycle = 0;
@@ -551,19 +569,19 @@ void Apu::reset() {
 
     ch3.length_timer = 0;
     ch3.sample = 0;
-    ch3.digital_output = 0;
-    ch3.wave.position.byte = 0;
-    ch3.wave.position.low_nibble = false;
-    ch3.wave.timer = 0;
-    ch3.digital_output = 0;
     ch3.trigger_delay = 0;
+    ch3.digital_output = 0;
 #ifndef ENABLE_CGB
     ch3.just_sampled = false;
 #endif
+    ch3.wave.position.byte = 0;
+    ch3.wave.position.low_nibble = false;
+    ch3.wave.timer = 0;
 
     ch4.dac = false;
     ch4.volume = 0;
     ch4.length_timer = 0;
+    ch4.tick_edge = false;
     ch4.wave.timer = 0;
     ch4.volume_sweep.direction = false;
     ch4.volume_sweep.pace = 0;
@@ -800,7 +818,6 @@ uint8_t Apu::read_pcm34() const {
 void Apu::turn_on() {
     prev_div_edge_bit = true; // TODO: verify this, also in CGB?
     div_apu = 0;
-    phase = 0;
 }
 
 void Apu::turn_off() {
@@ -860,11 +877,13 @@ void Apu::turn_off() {
 
     ch1.dac = false;
     ch1.digital_output = false;
+    ch1.tick_edge = false;
     ch1.wave.position = 0;
     ch1.volume_sweep.expired = false;
 
     ch2.dac = false;
     ch2.digital_output = false;
+    ch2.tick_edge = false;
     ch2.wave.position = 0;
     ch2.volume_sweep.expired = false;
 
@@ -874,6 +893,7 @@ void Apu::turn_off() {
     ch3.wave.position.low_nibble = false;
 
     ch4.dac = false;
+    ch4.tick_edge = false;
     ch4.volume_sweep.expired = false;
 }
 
@@ -882,21 +902,15 @@ void Apu::tick_even() {
     flush_pending_write();
 
     if (nr52.enable) {
-        ASSERT(mod<2>(phase) == 0);
-
         // Update length timers
         // TODO: is CH3 length timer updated here as well, or in tick_odd?
         tick_length_timers();
 
         // Update wave timers.
         // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
-        if (phase == 0) {
-            tick_square_wave_channel(ch1, nr52.ch1, nr11, nr13, nr14);
-            tick_square_wave_channel(ch2, nr52.ch2, nr21, nr23, nr24);
-            tick_ch4();
-        }
-
-        phase = mod<4>(phase + 1);
+        tick_square_wave_channel(ch1, nr52.ch1, nr11, nr13, nr14);
+        tick_square_wave_channel(ch2, nr52.ch2, nr21, nr23, nr24);
+        tick_ch4();
     }
 
     tick_sampler();
@@ -909,13 +923,9 @@ void Apu::tick_even() {
 
 void Apu::tick_odd() {
     if (nr52.enable) {
-        ASSERT(mod<2>(phase) == 1);
-
         // Update wave timers
         // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
         tick_ch3();
-
-        phase = mod<4>(phase + 1);
     }
 
     tick_sampler();
@@ -1069,7 +1079,9 @@ void Apu::tick_ch3() {
 }
 
 void Apu::tick_ch4() {
-    if (nr52.ch4) {
+    ch4.tick_edge = !ch4.tick_edge;
+
+    if (nr52.ch4 && ch4.tick_edge) {
         uint8_t D = nr43.clock_divider ? 2 * nr43.clock_divider : 1;
 
         if (++ch4.wave.timer >= 2 * D << nr43.clock_shift) {
@@ -1292,87 +1304,20 @@ void Apu::update_nr10(uint8_t value) {
 }
 
 void Apu::update_nr11(uint8_t value) {
-    uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER>(value);
-
-    if (nr52.enable) {
-        nr11.duty_cycle = get_bits_range<Specs::Bits::Audio::NR11::DUTY_CYCLE>(value);
-    }
-
-#ifdef ENABLE_CGB
-    if (nr52.enable) {
-        nr11.initial_length_timer = initial_length;
-    }
-#else
-    // On DMG, length timer is loaded even though APU is disabled
-    // [blargg/08-len_ctr_during_power]
-    nr11.initial_length_timer = initial_length;
-#endif
-
-    ch1.length_timer = 64 - nr11.initial_length_timer;
+    update_nrx1(ch1, nr11, value);
 }
 
 void Apu::update_nr12(uint8_t value) {
-    if (!nr52.enable) {
-        return;
-    }
-
-    nr12.initial_volume = get_bits_range<Specs::Bits::Audio::NR12::INITIAL_VOLUME>(value);
-    nr12.envelope_direction = test_bit<Specs::Bits::Audio::NR12::ENVELOPE_DIRECTION>(value);
-    nr12.sweep_pace = get_bits_range<Specs::Bits::Audio::NR12::SWEEP_PACE>(value);
-
-    ch1.dac = nr12.initial_volume | nr12.envelope_direction;
-    if (!ch1.dac) {
-        // If the DAC is turned off the channel is disabled as well
-        nr52.ch1 = false;
-    }
+    update_nrx2(ch1, nr52.ch1, nr12, value);
 }
 
 void Apu::update_nr13(uint8_t value) {
-    if (!nr52.enable) {
-        return;
-    }
-
-    nr13.period_low = value;
+    update_nrx3(ch1, nr13, nr14, value);
 }
 
 void Apu::update_nr14(uint8_t value) {
-    if (!nr52.enable) {
-        return;
-    }
-
-    bool prev_length_enable = nr14.length_enable;
-
-    nr14.trigger = test_bit<Specs::Bits::Audio::NR14::TRIGGER>(value);
-    nr14.length_enable = test_bit<Specs::Bits::Audio::NR14::LENGTH_ENABLE>(value);
-    nr14.period_high = get_bits_range<Specs::Bits::Audio::NR14::PERIOD>(value);
-    ASSERT(nr14.period_high < 8);
-
-    // Length timer clocks if length_enable has a rising edge (disabled -> enabled)
-    // [blargg/03-trigger]
-    if (!prev_length_enable && nr14.length_enable) {
-        if (mod<2>(div_apu) == 0) {
-            tick_channel_length_timer(ch1, nr52.ch1);
-        }
-    }
-
-    // Writing with the Trigger bit set reloads the channel configuration
-    if (nr14.trigger) {
-        ch1.trigger_delay = !nr52.ch1 ? 3 : 1;
-
-        if (ch1.dac) {
-            // If the DAC is on, the channel is turned on as well
-            nr52.ch1 = true;
-        }
-
-        ch1.volume = nr12.initial_volume;
-
-        ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
-
-        ch1.volume_sweep.direction = nr12.envelope_direction;
-        ch1.volume_sweep.pace = nr12.sweep_pace;
-        ch1.volume_sweep.timer = 0;
-        ch1.volume_sweep.expired = false;
-
+    update_nrx4(ch1, nr52.ch1, nr12, nr13, nr14, value, /* called on trigger */ [this] {
+        // Period sweep is updated on trigger
         ch1.period_sweep.enabled = nr10.pace || nr10.step;
         ch1.period_sweep.period = concat(nr14.period_high, nr13.period_low);
 
@@ -1383,7 +1328,6 @@ void Apu::update_nr14(uint8_t value) {
         ch1.period_sweep.timer = 0;
         ch1.period_sweep.decreasing = false;
 
-        // Period sweep is updated on trigger
         // [blargg/04-sweep]
         if (nr10.step) {
             uint32_t new_period = compute_ch1_next_period_sweep_period();
@@ -1392,111 +1336,152 @@ void Apu::update_nr14(uint8_t value) {
                 nr52.ch1 = false;
             }
         }
-
-        // If length timer is 0, it is reloaded with the maximum value (64) as well
-        // [blargg/03-trigger]
-        if (ch1.length_timer == 0) {
-            if (nr14.length_enable && mod<2>(div_apu) == 0) {
-                // Reload and clocks the length timer all at once
-                ch1.length_timer = 63;
-            } else {
-                ch1.length_timer = 64;
-            }
-        }
-    }
+    });
 }
 
 void Apu::update_nr21(uint8_t value) {
-    uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR21::INITIAL_LENGTH_TIMER>(value);
+    update_nrx1(ch2, nr21, value);
+}
+
+void Apu::update_nr22(uint8_t value) {
+    update_nrx2(ch2, nr52.ch2, nr22, value);
+}
+
+void Apu::update_nr23(uint8_t value) {
+    update_nrx3(ch2, nr23, nr24, value);
+}
+
+void Apu::update_nr24(uint8_t value) {
+    update_nrx4(ch2, nr52.ch2, nr22, nr23, nr24, value);
+}
+
+template <typename Channel, typename Nrx1>
+inline void Apu::update_nrx1(Channel& ch, Nrx1& nrx1, uint8_t value) {
+    uint8_t initial_length = get_bits_range<Specs::Bits::Audio::NR11::INITIAL_LENGTH_TIMER>(value);
 
     if (nr52.enable) {
-        nr21.duty_cycle = get_bits_range<Specs::Bits::Audio::NR21::DUTY_CYCLE>(value);
+        nrx1.duty_cycle = get_bits_range<Specs::Bits::Audio::NR11::DUTY_CYCLE>(value);
     }
 
 #ifdef ENABLE_CGB
     if (nr52.enable) {
-        nr21.initial_length_timer = initial_length;
+        nrx1.initial_length_timer = initial_length;
     }
 #else
     // On DMG, length timer is loaded even though APU is disabled
     // [blargg/08-len_ctr_during_power]
-    nr21.initial_length_timer = initial_length;
+    nrx1.initial_length_timer = initial_length;
 #endif
 
-    ch2.length_timer = 64 - nr21.initial_length_timer;
+    ch.length_timer = 64 - nrx1.initial_length_timer;
 }
 
-void Apu::update_nr22(uint8_t value) {
+template <typename Channel, typename ChannelOnFlag, typename Nrx2>
+inline void Apu::update_nrx2(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, uint8_t value) {
     if (!nr52.enable) {
         return;
     }
 
-    nr22.initial_volume = get_bits_range<Specs::Bits::Audio::NR22::INITIAL_VOLUME>(value);
-    nr22.envelope_direction = test_bit<Specs::Bits::Audio::NR22::ENVELOPE_DIRECTION>(value);
-    nr22.sweep_pace = get_bits_range<Specs::Bits::Audio::NR22::SWEEP_PACE>(value);
+    nrx2.initial_volume = get_bits_range<Specs::Bits::Audio::NR12::INITIAL_VOLUME>(value);
+    nrx2.envelope_direction = test_bit<Specs::Bits::Audio::NR12::ENVELOPE_DIRECTION>(value);
+    nrx2.sweep_pace = get_bits_range<Specs::Bits::Audio::NR12::SWEEP_PACE>(value);
 
-    ch2.dac = nr22.initial_volume | nr22.envelope_direction;
-    if (!ch2.dac) {
+    ch.dac = nrx2.initial_volume | nrx2.envelope_direction;
+    if (!ch.dac) {
         // If the DAC is turned off the channel is disabled as well
-        nr52.ch2 = false;
+        ch_on = false;
     }
 }
 
-void Apu::update_nr23(uint8_t value) {
+template <typename Channel, typename Nrx3, typename Nrx4>
+inline void Apu::update_nrx3(Channel& ch, Nrx3& nrx3, Nrx4& nrx4, uint8_t value) {
     if (!nr52.enable) {
         return;
     }
 
-    nr23.period_low = value;
+    nrx3.period_low = value;
+
+    // If the channel has just sampled, timer is reloaded with the new period instantly.
+    if (ch.just_sampled) {
+        ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
+    }
 }
 
-void Apu::update_nr24(uint8_t value) {
+template <typename Channel, typename ChannelOnFlag, typename Nrx2, typename Nrx3, typename Nrx4,
+          typename TriggerFunction>
+inline void Apu::update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3& nrx3, Nrx4& nrx4, uint8_t value,
+                             TriggerFunction&& custom_trigger_function) {
     if (!nr52.enable) {
         return;
     }
 
-    bool prev_length_enable = nr24.length_enable;
+    bool prev_length_enable = nrx4.length_enable;
 
-    nr24.trigger = test_bit<Specs::Bits::Audio::NR24::TRIGGER>(value);
-    nr24.length_enable = test_bit<Specs::Bits::Audio::NR24::LENGTH_ENABLE>(value);
-    nr24.period_high = get_bits_range<Specs::Bits::Audio::NR24::PERIOD>(value);
-    ASSERT(nr24.period_high < 8);
+    nrx4.trigger = test_bit<Specs::Bits::Audio::NR14::TRIGGER>(value);
+    nrx4.length_enable = test_bit<Specs::Bits::Audio::NR14::LENGTH_ENABLE>(value);
+    nrx4.period_high = get_bits_range<Specs::Bits::Audio::NR14::PERIOD>(value);
+    ASSERT(nrx4.period_high < 8);
 
     // Length timer clocks if length_enable has a rising edge (disabled -> enabled)
     // [blargg/03-trigger]
-    if (!prev_length_enable && nr24.length_enable) {
+    if (!prev_length_enable && nrx4.length_enable) {
         if (mod<2>(div_apu) == 0) {
-            tick_channel_length_timer(ch2, nr52.ch2);
+            tick_channel_length_timer(ch, ch_on);
         }
     }
 
     // Writing with the Trigger bit set reloads the channel configuration
-    if (nr24.trigger) {
-        ch2.trigger_delay = !nr52.ch2 ? 3 : 1;
+    if (nrx4.trigger) {
+        if (!ch_on) {
+            ch.trigger_delay = 3;
+        } else {
+            ch.trigger_delay = 2 + (ch.trigger_delay ? 1 : 0);
 
-        if (ch2.dac) {
-            // If the DAC is on, the channel is turned on as well
-            nr52.ch2 = true;
+            if (ch.wave.timer == 2047) {
+                // If the channel is about to sample, the position of the square wave is advanced
+
+                // Advance square wave position
+                ch.wave.position = mod<8>(ch.wave.position + 1);
+
+                // Compute current output
+                ch.digital_output = SQUARE_WAVES[ch.wave.duty_cycle][ch.wave.position];
+            }
         }
 
-        ch2.volume = nr22.initial_volume;
+        if (ch.dac) {
+            // If the DAC is on, the channel is turned on as well
+            ch_on = true;
+        }
 
-        ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
+        ch.volume = nrx2.initial_volume;
 
-        ch2.volume_sweep.direction = nr22.envelope_direction;
-        ch2.volume_sweep.pace = nr22.sweep_pace;
-        ch2.volume_sweep.timer = 0;
-        ch2.volume_sweep.expired = false;
+        ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
+
+        ch.volume_sweep.direction = nrx2.envelope_direction;
+        ch.volume_sweep.pace = nrx2.sweep_pace;
+        ch.volume_sweep.timer = 0;
+        ch.volume_sweep.expired = false;
 
         // If length timer is 0, it is reloaded with the maximum value (64) as well
         // [blargg/03-trigger]
-        if (ch2.length_timer == 0) {
-            if (nr24.length_enable && mod<2>(div_apu) == 0) {
+        if (ch.length_timer == 0) {
+            if (nrx4.length_enable && mod<2>(div_apu) == 0) {
                 // Reload and clocks the length timer all at once
-                ch2.length_timer = 63;
+                ch.length_timer = 63;
             } else {
-                ch2.length_timer = 64;
+                ch.length_timer = 64;
             }
+        }
+
+        if constexpr (!std::is_same_v<TriggerFunction, std::nullptr_t>) {
+            custom_trigger_function();
+        }
+    } else {
+        // If the channel has just sampled, timer is reloaded with the new period instantly
+        // (even if channel is not triggered).
+        //  [samesuite/channel_1_freq_change_timing-cgbDE.gb]
+        if (ch.just_sampled) {
+            ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
         }
     }
 }

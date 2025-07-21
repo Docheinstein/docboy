@@ -273,6 +273,20 @@ private:
     void update_nr23(uint8_t value);
     void update_nr24(uint8_t value);
 
+    template <typename Channel, typename Nrx1>
+    void update_nrx1(Channel& ch, Nrx1& nrx1, uint8_t value);
+
+    template <typename Channel, typename ChannelOnFlag, typename Nrx2>
+    void update_nrx2(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, uint8_t value);
+
+    template <typename Channel, typename Nrx3, typename Nrx4>
+    void update_nrx3(Channel& ch, Nrx3& nrx3, Nrx4& nrx4, uint8_t value);
+
+    template <typename Channel, typename ChannelOnFlag, typename Nrx2, typename Nrx3, typename Nrx4,
+              typename TriggerFunction = std::nullptr_t>
+    void update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3& nrx3, Nrx4& nrx4, uint8_t value,
+                     TriggerFunction&& custom_trigger_function = nullptr);
+
     void update_nr30(uint8_t value);
     void update_nr31(uint8_t value);
     void update_nr32(uint8_t value);
@@ -304,8 +318,6 @@ public:
 
     float master_volume {1.0f};
 
-    uint8_t phase {};
-
     uint64_t ticks {};
 
     double sample_period {};
@@ -326,6 +338,10 @@ public:
         uint8_t trigger_delay {};
 
         bool digital_output {};
+
+        bool just_sampled {};
+
+        bool tick_edge {};
 
         struct {
             uint8_t position {};
@@ -360,6 +376,10 @@ public:
 
         bool digital_output {};
 
+        bool just_sampled {};
+
+        bool tick_edge {};
+
         struct {
             uint8_t position {};
             uint16_t timer {};
@@ -379,8 +399,13 @@ public:
 
         uint8_t sample {};
 
+        uint8_t trigger_delay {};
+
         uint8_t digital_output {};
 
+#ifndef ENABLE_CGB
+        bool just_sampled {};
+#endif
         struct {
             struct {
                 uint8_t byte {};
@@ -388,12 +413,6 @@ public:
             } position;
             uint16_t timer {};
         } wave;
-
-        uint8_t trigger_delay {};
-
-#ifndef ENABLE_CGB
-        bool just_sampled {};
-#endif
     } ch3 {};
 
     struct {
@@ -402,6 +421,8 @@ public:
         uint8_t volume {};
 
         uint8_t length_timer {};
+
+        bool tick_edge {};
 
         struct {
             uint16_t timer {};

@@ -50,8 +50,6 @@ public:
     uint8_t read_stat() const;
     void write_stat(uint8_t value);
 
-    uint8_t read_ly() const;
-
     void write_dma(uint8_t value);
 
 #ifdef ENABLE_CGB
