@@ -46,11 +46,10 @@
 
 class GameBoy {
 public:
-    // CPU
 #ifdef ENABLE_CGB
-    Cpu cpu {idu, interrupts, mmu, joypad, fetching, halted, stop_controller, speed_switch, speed_switch_controller};
+    Cpu cpu {idu, interrupts, mmu, joypad, stop_controller, speed_switch, speed_switch_controller};
 #else
-    Cpu cpu {idu, interrupts, mmu, joypad, fetching, halted, stop_controller};
+    Cpu cpu {idu, interrupts, mmu, joypad, stop_controller};
 #endif
     Idu idu {oam_bus};
 
@@ -67,13 +66,13 @@ public:
 
     // Audio
 #ifdef ENABLE_CGB
-    Apu apu {timers, speed_switch_controller};
+    Apu apu {timers, speed_switch_controller, cpu.pc};
 #else
-    Apu apu {timers};
+    Apu apu {timers, cpu.pc};
 #endif
 
     // Power Saving
-    StopController stop_controller {stopped, joypad, timers, ppu, lcd};
+    StopController stop_controller {joypad, timers, ppu, lcd};
 
     // Boot ROM
 #ifdef ENABLE_BOOTROM
@@ -201,23 +200,26 @@ public:
     WramBankController wram_bank_controller {wram_bus};
 
     // HDMA
-    Hdma hdma {mmu, ext_bus, vram_bus, oam_bus, ppu.stat.mode, fetching, halted, stopped, speed_switch_controller};
+    Hdma hdma {mmu,
+               ext_bus,
+               vram_bus,
+               oam_bus,
+               ppu.stat.mode,
+               cpu.fetching,
+               cpu.halted,
+               stop_controller.stopped,
+               speed_switch_controller};
 
 #ifdef ENABLE_CGB
     // Speed Switch
     SpeedSwitch speed_switch {};
-    SpeedSwitchController speed_switch_controller {speed_switch, interrupts, timers, halted};
+    SpeedSwitchController speed_switch_controller {speed_switch, interrupts, timers, cpu.halted};
 #endif
 
-    // Other CGB
+    // Other CGB components
     Infrared infrared {};
     UndocumentedRegisters undocumented_registers {};
 #endif
-
-    // Status
-    bool fetching {};
-    bool halted {};
-    bool stopped {};
 };
 
 #endif // GAMEBOY_H

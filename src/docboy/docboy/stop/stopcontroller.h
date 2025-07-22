@@ -11,7 +11,7 @@ class Parcel;
 
 class StopController {
 public:
-    StopController(bool& stopped, Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd);
+    StopController(Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd);
 
     void stop();
 
@@ -29,10 +29,11 @@ public:
 
     void reset();
 
+    bool stopped;
+
 private:
     void enter_stop_mode();
 
-    bool& stopped;
     uint8_t requested {};
 
     Joypad& joypad;

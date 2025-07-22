@@ -1159,8 +1159,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("T-Cycle") << "  :  " << core.ticks << endl;
         b << yellow("M-Cycle") << "  :  " << core.ticks / 4 << endl;
 
-        b << yellow("Halted") << "   :  " << gb.halted << endl;
-        b << yellow("Stopped") << "  :  " << gb.stopped << endl;
+        b << yellow("Halted") << "   :  " << gb.cpu.halted << endl;
+        b << yellow("Stopped") << "  :  " << gb.stop_controller.stopped << endl;
 
         b << yellow("Phase") << "    :  ";
         for (uint8_t t = 0; t < 4; t++) {

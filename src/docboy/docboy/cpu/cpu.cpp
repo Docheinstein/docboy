@@ -143,18 +143,16 @@ constexpr InterruptsTimings generate_interrupt_timing_table() {
 } // namespace
 
 #ifdef ENABLE_CGB
-Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
-         StopController& stop_controller, SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller) :
+Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller,
+         SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller) :
 #else
-Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
+Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad,
          StopController& stop_controller) :
 #endif
     idu {idu},
     interrupts {interrupts},
     mmu {mmu},
     joypad {joypad},
-    fetching {fetching},
-    halted {halted},
     stop_controller {stop_controller},
 #ifdef ENABLE_CGB
     speed_switch {speed_switch},
@@ -723,14 +721,14 @@ void Cpu::tick_t3() {
 }
 
 void Cpu::save_state(Parcel& parcel) const {
-    parcel.write_bool(fetching);
     parcel.write_bool(halted);
+    parcel.write_bool(fetching);
 
+    parcel.write_uint16(pc);
     parcel.write_uint16(af);
     parcel.write_uint16(bc);
     parcel.write_uint16(de);
     parcel.write_uint16(hl);
-    parcel.write_uint16(pc);
     parcel.write_uint16(sp);
 
     parcel.write_uint8((uint8_t)ime);
@@ -780,14 +778,14 @@ void Cpu::save_state(Parcel& parcel) const {
 }
 
 void Cpu::load_state(Parcel& parcel) {
-    fetching = parcel.read_bool();
     halted = parcel.read_bool();
+    fetching = parcel.read_bool();
 
+    pc = parcel.read_uint16();
     af = parcel.read_uint16();
     bc = parcel.read_uint16();
     de = parcel.read_uint16();
     hl = parcel.read_uint16();
-    pc = parcel.read_uint16();
     sp = parcel.read_uint16();
 
     ime = (ImeState)(parcel.read_uint8());
@@ -835,22 +833,22 @@ void Cpu::load_state(Parcel& parcel) {
 }
 
 void Cpu::reset() {
-    fetching = false;
     halted = false;
+    fetching = false;
 
 #ifdef ENABLE_CGB
+    pc = if_bootrom_else(0, 0x0100);
     af = if_bootrom_else(0, 0x1180);
     bc = 0x0000;
     de = if_bootrom_else(0, 0xFF56);
     hl = if_bootrom_else(0, 0x000D);
-    pc = if_bootrom_else(0, 0x0100);
     sp = if_bootrom_else(0, 0xFFFE);
 #else
+    pc = if_bootrom_else(0, 0x0100);
     af = if_bootrom_else(0, 0x01B0);
     bc = if_bootrom_else(0, 0x0013);
     de = if_bootrom_else(0, 0x00D8);
     hl = if_bootrom_else(0, 0x014D);
-    pc = if_bootrom_else(0, 0x0100);
     sp = if_bootrom_else(0, 0xFFFE);
 #endif
 

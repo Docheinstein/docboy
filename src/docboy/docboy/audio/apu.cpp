@@ -167,14 +167,16 @@ const Apu::RegisterUpdater Apu::WAVE_RAM_UPDATERS[] {
 };
 
 #ifdef ENABLE_CGB
-Apu::Apu(Timers& timers, SpeedSwitchController& speed_switch_controller) :
+Apu::Apu(Timers& timers, SpeedSwitchController& speed_switch_controller, const uint16_t& pc) :
     timers {timers},
-    speed_switch_controller {speed_switch_controller} {
+    speed_switch_controller {speed_switch_controller},
+    program_counter {pc} {
     reset();
 }
 #else
-Apu::Apu(Timers& timers) :
-    timers {timers} {
+Apu::Apu(Timers& timers, const uint16_t& pc) :
+    timers {timers},
+    program_counter {pc} {
     reset();
 }
 #endif
@@ -1494,10 +1496,20 @@ void Apu::update_nr30(uint8_t value) {
     nr30.dac = test_bit<Specs::Bits::Audio::NR30::DAC>(value);
 
     if (!nr30.dac) {
-        // TODO: disable channel glitch
+        if (nr52.ch3) {
+            // If channel is turned off, the channel output is updated with the high nibble of the current sampling
+            // byte. It seems that if this happens while the channel is sampling, the channel loads the sampling byte
+            // from wave ram depending on the current PC value.
+            // TODO: does this happen on DMG too?
+            if (ch3.wave.timer == 2047) {
+                ch3.digital_output = get_bits_range<7, 4>(wave_ram[keep_bits<4>(program_counter)]);
+            } else {
+                ch3.digital_output = get_bits_range<7, 4>(ch3.sample);
+            }
 
-        // If the DAC is turned off the channel is disabled as well
-        nr52.ch3 = false;
+            // If the DAC is turned off the channel is disabled as well
+            nr52.ch3 = false;
+        }
     }
 }
 

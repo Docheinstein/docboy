@@ -46,7 +46,7 @@ Core::Core(GameBoy& gb) :
 }
 
 inline void Core::tick_t0() const {
-    if (gb.stopped) {
+    if (gb.stop_controller.stopped) {
         gb.stop_controller.stopped_tick();
         return;
     }
@@ -85,7 +85,7 @@ inline void Core::tick_t0() const {
 }
 
 inline void Core::tick_t1() const {
-    if (gb.stopped) {
+    if (gb.stop_controller.stopped) {
         gb.stop_controller.stopped_tick();
         return;
     }
@@ -141,7 +141,7 @@ inline void Core::tick_t1() const {
 }
 
 inline void Core::tick_t2() const {
-    if (gb.stopped) {
+    if (gb.stop_controller.stopped) {
         gb.stop_controller.stopped_tick();
         return;
     }
@@ -180,7 +180,7 @@ inline void Core::tick_t2() const {
 }
 
 inline void Core::tick_t3() const {
-    if (gb.stopped) {
+    if (gb.stop_controller.stopped) {
         gb.stop_controller.stopped_tock();
         return;
     }
@@ -261,12 +261,12 @@ void Core::cycle() {
 }
 
 void Core::frame() {
-    if (gb.stopped) {
+    if (gb.stop_controller.stopped) {
         // Artificially run for a reasonable amount of cycles while stopped
         for (uint16_t c = 0; c < ARTIFICIAL_VBLANK_CYCLES; c++) {
             cycle();
 
-            if (!gb.stopped) {
+            if (!gb.stop_controller.stopped) {
                 return;
             }
 
@@ -274,12 +274,12 @@ void Core::frame() {
         }
 
         // Still stopped: quit.
-        if (gb.stopped) {
+        if (gb.stop_controller.stopped) {
             return;
         }
     }
 
-    ASSERT(!gb.stopped);
+    ASSERT(!gb.stop_controller.stopped);
 
     // If LCD is disabled we risk to never reach VBlank (which would stall the UI and prevent inputs).
     // Therefore, proceed for the cycles needed to render an entire frame.
@@ -288,7 +288,7 @@ void Core::frame() {
         for (uint16_t c = 0; c < ARTIFICIAL_VBLANK_CYCLES; c++) {
             cycle();
 
-            if (gb.stopped) {
+            if (gb.stop_controller.stopped) {
                 return;
             }
 
@@ -308,7 +308,7 @@ void Core::frame() {
     while (gb.ppu.stat.mode == Specs::Ppu::Modes::VBLANK) {
         cycle();
 
-        if (!gb.ppu.lcdc.enable || gb.stopped) {
+        if (!gb.ppu.lcdc.enable || gb.stop_controller.stopped) {
             return;
         }
 
@@ -321,7 +321,7 @@ void Core::frame() {
     while (gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK) {
         cycle();
 
-        if (!gb.ppu.lcdc.enable || gb.stopped) {
+        if (!gb.ppu.lcdc.enable || gb.stop_controller.stopped) {
             return;
         }
 
@@ -332,7 +332,7 @@ void Core::frame() {
 bool Core::run_for_cycles(uint32_t cycles_to_run) {
     uint8_t cycle_count {};
 
-    if (gb.stopped) {
+    if (gb.stop_controller.stopped) {
         // Artificially run for a reasonable amount of cycles while stopped
         for (uint16_t c = cycles_of_artificial_vblank; c < ARTIFICIAL_VBLANK_CYCLES; c++) {
             if (++cycle_count > cycles_to_run) {
@@ -343,7 +343,7 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
 
             cycle();
 
-            if (!gb.stopped) {
+            if (!gb.stop_controller.stopped) {
                 cycles_of_artificial_vblank = 0;
                 return true;
             }
@@ -352,13 +352,13 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
         }
 
         // Still stopped: quit.
-        if (gb.stopped) {
+        if (gb.stop_controller.stopped) {
             cycles_of_artificial_vblank = 0;
             return true;
         }
     }
 
-    ASSERT(!gb.stopped);
+    ASSERT(!gb.stop_controller.stopped);
 
     // If LCD is disabled we risk to never reach VBlank (which would stall the UI and prevent inputs).
     // Therefore, proceed for the cycles needed to render an entire frame and quit
@@ -373,7 +373,7 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
 
             cycle();
 
-            if (gb.stopped) {
+            if (gb.stop_controller.stopped) {
                 cycles_of_artificial_vblank = 0;
                 return true;
             }
@@ -400,7 +400,7 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
 
         cycle();
 
-        if (!gb.ppu.lcdc.enable || gb.stopped) {
+        if (!gb.ppu.lcdc.enable || gb.stop_controller.stopped) {
             return true;
         }
 
@@ -418,7 +418,7 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
 
         cycle();
 
-        if (!gb.ppu.lcdc.enable || gb.stopped) {
+        if (!gb.ppu.lcdc.enable || gb.stop_controller.stopped) {
             return true;
         }
 

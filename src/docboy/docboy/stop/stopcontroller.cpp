@@ -5,8 +5,7 @@
 #include "docboy/ppu/ppu.h"
 #include "docboy/timers/timers.h"
 
-StopController::StopController(bool& stopped, Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd) :
-    stopped {stopped},
+StopController::StopController(Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd) :
     joypad {joypad},
     timers {timers},
     ppu {ppu},

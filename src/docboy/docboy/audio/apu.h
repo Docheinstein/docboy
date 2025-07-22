@@ -25,9 +25,9 @@ public:
     static constexpr uint32_t NUM_CHANNELS = 2;
 
 #ifdef ENABLE_CGB
-    Apu(Timers& timers, SpeedSwitchController& speed_switch_controller);
+    Apu(Timers& timers, SpeedSwitchController& speed_switch_controller, const uint16_t& pc);
 #else
-    explicit Apu(Timers& timers);
+    explicit Apu(Timers& timers, const uint16_t& pc);
 #endif
 
     void set_volume(float volume /* [0:1]*/);
@@ -313,6 +313,7 @@ public:
     // TODO: bad: APU shouldn't know speed_switch_controller
     SpeedSwitchController& speed_switch_controller;
 #endif
+    const uint16_t& program_counter;
 
     std::function<void(const AudioSample)> audio_sample_callback {};
 

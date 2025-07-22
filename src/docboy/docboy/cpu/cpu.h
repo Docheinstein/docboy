@@ -20,11 +20,10 @@ class Cpu {
 
 public:
 #ifdef ENABLE_CGB
-    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
-        StopController& stop_controller, SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller);
+    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller,
+        SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller);
 #else
-    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, bool& fetching, bool& halted,
-        StopController& stop_controller);
+    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller);
 #endif
 
     void tick_t0();
@@ -36,6 +35,11 @@ public:
     void load_state(Parcel& parcel);
 
     void reset();
+
+    bool halted;
+    bool fetching;
+
+    uint16_t pc {};
 
 private:
     enum class Register8 : uint8_t {
@@ -646,8 +650,7 @@ private:
     Interrupts& interrupts;
     Mmu::View<Device::Cpu> mmu;
     Joypad& joypad;
-    bool& fetching;
-    bool& halted;
+
     StopController& stop_controller;
 #ifdef ENABLE_CGB
     // TODO: architectural: should CPU know them?
@@ -665,7 +668,6 @@ private:
     uint16_t bc {};
     uint16_t de {};
     uint16_t hl {};
-    uint16_t pc {};
     uint16_t sp {};
 
     ImeState ime {};
