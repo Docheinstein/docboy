@@ -2176,12 +2176,12 @@ TEST_CASE("cgb", "[emulation]") {
             // samesuite
             F {"samesuite/apu/channel_1/channel_1_align.gb", "samesuite/apu/channel_1/channel_1_align.png",
                COLOR_TOLERANCE_MEDIUM},
-            F {"samesuite/apu/channel_1/channel_1_align_12.gb", "samesuite/apu/channel_1/channel_1_align_12.png",
-               COLOR_TOLERANCE_MEDIUM},
-            F {"samesuite/apu/channel_1/channel_1_align_25.gb", "samesuite/apu/channel_1/channel_1_align_25.png",
-               COLOR_TOLERANCE_MEDIUM},
-            F {"samesuite/apu/channel_1/channel_1_align_75.gb", "samesuite/apu/channel_1/channel_1_align_75.png",
-               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_align_12-cgbE.gb",
+               "samesuite/apu/channel_1/channel_1_align_12-cgbE.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_align_25-cgbE.gb",
+               "samesuite/apu/channel_1/channel_1_align_25-cgbE.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_align_75-cgbE.gb",
+               "samesuite/apu/channel_1/channel_1_align_75-cgbE.png", COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_align_cpu.gb", "samesuite/apu/channel_1/channel_1_align_cpu.png",
                COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_delay.gb", "samesuite/apu/channel_1/channel_1_delay.png",
@@ -2202,21 +2202,21 @@ TEST_CASE("cgb", "[emulation]") {
                "samesuite/apu/channel_1/channel_1_restart_nrx2_glitch.png", COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_restart.gb", "samesuite/apu/channel_1/channel_1_restart.png",
                COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_stop_div-cgbE.gb",
+               "samesuite/apu/channel_1/channel_1_stop_div-cgbE.png", COLOR_TOLERANCE_MEDIUM},
             //            F
-            //            {"samesuite/apu/channel_1/channel_1_stop_div.gb",
-            //            "samesuite/apu/channel_1/channel_1_stop_div.png", COLOR_TOLERANCE_MEDIUM}, F
             //            {"samesuite/apu/channel_1/channel_1_stop_restart.gb",
             //            "samesuite/apu/channel_1/channel_1_stop_restart.png", COLOR_TOLERANCE_MEDIUM}, F
-            //            {"samesuite/apu/channel_1/channel_1_sweep.gb", "samesuite/apu/channel_1/channel_1_sweep.png",
-            //            COLOR_TOLERANCE_MEDIUM}, F {"samesuite/apu/channel_1/channel_1_sweep_restart.gb",
-            //            "samesuite/apu/channel_1/channel_1_sweep_restart.png", COLOR_TOLERANCE_MEDIUM}, F
-            //            {"samesuite/apu/channel_1/channel_1_sweep_restart_2.gb",
-            //            "samesuite/apu/channel_1/channel_1_sweep_restart_2.png", COLOR_TOLERANCE_MEDIUM},
+            //            {"samesuite/apu/channel_1/channel_1_sweep-cgbE.gb",
+            //            "samesuite/apu/channel_1/channel_1_sweep-cgbE.png", COLOR_TOLERANCE_MEDIUM}, F
+            //            {"samesuite/apu/channel_1/channel_1_sweep_restart-cgbE.gb",
+            //            "samesuite/apu/channel_1/channel_1_sweep_restart-cgbE.png", COLOR_TOLERANCE_MEDIUM}, F
+            //            {"samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.gb",
+            //            "samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.png", COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_volume.gb", "samesuite/apu/channel_1/channel_1_volume.png",
                COLOR_TOLERANCE_MEDIUM},
-            //            F
-            //            {"samesuite/apu/channel_1/channel_1_volume_div.gb",
-            //            "samesuite/apu/channel_1/channel_1_volume_div.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_volume_div-cgbE.gb",
+               "samesuite/apu/channel_1/channel_1_volume_div-cgbE.png", COLOR_TOLERANCE_MEDIUM},
 
             F {"samesuite/apu/channel_3/channel_3_and_glitch.gb", "samesuite/apu/channel_3/channel_3_and_glitch.png",
                COLOR_TOLERANCE_MEDIUM},
