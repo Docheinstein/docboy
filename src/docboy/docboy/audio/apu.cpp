@@ -222,6 +222,15 @@ inline void tick_volume_sweep_reload(Channel& ch, const Nrx2& nrx2) {
     }
 }
 
+template <typename Channel>
+inline void advance_square_wave_position(Channel& ch) {
+    // Advance square wave position
+    ch.wave.position = mod<8>(ch.wave.position + 1);
+
+    // Update current output
+    ch.digital_output = SQUARE_WAVES[ch.wave.duty_cycle][ch.wave.position];
+}
+
 template <typename Channel, typename ChannelOnFlag, typename Nrx1, typename Nrx3, typename Nrx4>
 inline void tick_square_wave(Channel& ch, const ChannelOnFlag& ch_on, const Nrx1& nrx1, const Nrx3& nrx3,
                              const Nrx4& nrx4) {
@@ -237,10 +246,7 @@ inline void tick_square_wave(Channel& ch, const ChannelOnFlag& ch_on, const Nrx1
                 ASSERT(ch.wave.position < 8);
 
                 // Advance square wave position
-                ch.wave.position = mod<8>(ch.wave.position + 1);
-
-                // Compute current output
-                ch.digital_output = SQUARE_WAVES[ch.wave.duty_cycle][ch.wave.position];
+                advance_square_wave_position(ch);
 
                 // Reload period timer
                 ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
@@ -1547,6 +1553,11 @@ inline void Apu::update_nrx2(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, uint
                                      [nrx2.envelope_direction][ch.volume];
 
         if (!ch.dac) {
+            if (ch.wave.timer == 2047) {
+                // If the channel is about to sample, the position of the square wave is advanced
+                advance_square_wave_position(ch);
+            }
+
             // If the DAC is turned off the channel is disabled as well
             ch_on = false;
         }
@@ -1599,12 +1610,7 @@ inline void Apu::update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3
 
             if (ch.wave.timer == 2047) {
                 // If the channel is about to sample, the position of the square wave is advanced
-
-                // Advance square wave position
-                ch.wave.position = mod<8>(ch.wave.position + 1);
-
-                // Compute current output
-                ch.digital_output = SQUARE_WAVES[ch.wave.duty_cycle][ch.wave.position];
+                advance_square_wave_position(ch);
             }
         }
 

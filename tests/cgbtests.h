@@ -2204,9 +2204,9 @@ TEST_CASE("cgb", "[emulation]") {
                COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_stop_div-cgbE.gb",
                "samesuite/apu/channel_1/channel_1_stop_div-cgbE.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_stop_restart.gb",
+               "samesuite/apu/channel_1/channel_1_stop_restart.png", COLOR_TOLERANCE_MEDIUM},
             //            F
-            //            {"samesuite/apu/channel_1/channel_1_stop_restart.gb",
-            //            "samesuite/apu/channel_1/channel_1_stop_restart.png", COLOR_TOLERANCE_MEDIUM}, F
             //            {"samesuite/apu/channel_1/channel_1_sweep-cgbE.gb",
             //            "samesuite/apu/channel_1/channel_1_sweep-cgbE.png", COLOR_TOLERANCE_MEDIUM}, F
             //            {"samesuite/apu/channel_1/channel_1_sweep_restart-cgbE.gb",
