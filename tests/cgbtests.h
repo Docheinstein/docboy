@@ -2196,13 +2196,13 @@ TEST_CASE("cgb", "[emulation]") {
                "samesuite/apu/channel_1/channel_1_freq_change_timing-cgbDE.png", COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_nrx2_glitch.gb", "samesuite/apu/channel_1/channel_1_nrx2_glitch.png",
                COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_nrx2_speed_change.gb",
+               "samesuite/apu/channel_1/channel_1_nrx2_speed_change.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_restart_nrx2_glitch.gb",
+               "samesuite/apu/channel_1/channel_1_restart_nrx2_glitch.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_restart.gb", "samesuite/apu/channel_1/channel_1_restart.png",
+               COLOR_TOLERANCE_MEDIUM},
             //            F
-            //            {"samesuite/apu/channel_1/channel_1_nrx2_speed_change.gb",
-            //            "samesuite/apu/channel_1/channel_1_nrx2_speed_change.png", COLOR_TOLERANCE_MEDIUM}, F
-            //            {"samesuite/apu/channel_1/channel_1_restart_nrx2_glitch.gb",
-            //            "samesuite/apu/channel_1/channel_1_restart_nrx2_glitch.png", COLOR_TOLERANCE_MEDIUM}, F
-            //            {"samesuite/apu/channel_1/channel_1_restart.gb",
-            //            "samesuite/apu/channel_1/channel_1_restart.png", COLOR_TOLERANCE_MEDIUM}, F
             //            {"samesuite/apu/channel_1/channel_1_stop_div.gb",
             //            "samesuite/apu/channel_1/channel_1_stop_div.png", COLOR_TOLERANCE_MEDIUM}, F
             //            {"samesuite/apu/channel_1/channel_1_stop_restart.gb",
@@ -2211,9 +2211,10 @@ TEST_CASE("cgb", "[emulation]") {
             //            COLOR_TOLERANCE_MEDIUM}, F {"samesuite/apu/channel_1/channel_1_sweep_restart.gb",
             //            "samesuite/apu/channel_1/channel_1_sweep_restart.png", COLOR_TOLERANCE_MEDIUM}, F
             //            {"samesuite/apu/channel_1/channel_1_sweep_restart_2.gb",
-            //            "samesuite/apu/channel_1/channel_1_sweep_restart_2.png", COLOR_TOLERANCE_MEDIUM}, F
-            //            {"samesuite/apu/channel_1/channel_1_volume.gb",
-            //            "samesuite/apu/channel_1/channel_1_volume.png", COLOR_TOLERANCE_MEDIUM}, F
+            //            "samesuite/apu/channel_1/channel_1_sweep_restart_2.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_volume.gb", "samesuite/apu/channel_1/channel_1_volume.png",
+               COLOR_TOLERANCE_MEDIUM},
+            //            F
             //            {"samesuite/apu/channel_1/channel_1_volume_div.gb",
             //            "samesuite/apu/channel_1/channel_1_volume_div.png", COLOR_TOLERANCE_MEDIUM},
 
