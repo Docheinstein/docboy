@@ -239,17 +239,20 @@ private:
     void tick_even();
     void tick_odd();
 
+    void tick_div_apu();
+    void tick_div_apu_falling_edge();
+    void tick_div_apu_raising_edge();
     void tick_sampler();
-    void tick_ch1_period_sweep();
-    void tick_length_timers();
-    void tick_ch3();
-    void tick_ch4();
+
+    void tick_period_sweep();
+    void tick_wave();
+    void tick_noise();
 
 #ifdef ENABLE_CGB
     void update_pcm();
 #endif
 
-    uint32_t compute_ch1_next_period_sweep_period();
+    uint32_t compute_next_period_sweep_period();
 
     uint8_t compute_ch1_digital_output() const;
     uint8_t compute_ch2_digital_output() const;
@@ -352,9 +355,8 @@ public:
 
         struct {
             bool direction {};
-            uint8_t pace {};
-            uint8_t timer {};
-            bool expired {};
+            uint8_t countdown {};
+            bool pending_update {};
         } volume_sweep;
 
         struct {
@@ -389,9 +391,8 @@ public:
 
         struct {
             bool direction {};
-            uint8_t pace {};
-            uint8_t timer {};
-            bool expired {};
+            uint8_t countdown {};
+            bool pending_update {};
         } volume_sweep;
     } ch2 {};
 
@@ -431,9 +432,8 @@ public:
 
         struct {
             bool direction {};
-            uint8_t pace {};
-            uint8_t timer {};
-            bool expired {};
+            uint8_t countdown {};
+            bool pending_update {};
         } volume_sweep;
 
         uint16_t lfsr {};

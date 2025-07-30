@@ -2544,9 +2544,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Duty Cycle") << "     :  " << duty_cycle(gb.apu.ch1.wave.duty_cycle) << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Timer") << "          :  " << +gb.apu.ch1.volume_sweep.timer << endl;
-        b << yellow("Pace") << "           :  " << +gb.apu.ch1.volume_sweep.pace << endl;
+        b << yellow("Countdown") << "      :  " << +gb.apu.ch1.volume_sweep.countdown << endl;
         b << yellow("Direction") << "      :  " << +gb.apu.ch1.volume_sweep.direction << endl;
+        b << yellow("Pending") << "        :  " << +gb.apu.ch1.volume_sweep.pending_update << endl;
 
         b << subheader2("period sweep", width) << endl;
 
@@ -2592,9 +2592,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Duty Cycle") << "     :  " << duty_cycle(gb.apu.ch2.wave.duty_cycle) << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Timer") << "          :  " << +gb.apu.ch2.volume_sweep.timer << endl;
-        b << yellow("Pace") << "           :  " << +gb.apu.ch2.volume_sweep.pace << endl;
+        b << yellow("Countdown") << "      :  " << +gb.apu.ch2.volume_sweep.countdown << endl;
         b << yellow("Direction") << "      :  " << +gb.apu.ch2.volume_sweep.direction << endl;
+        b << yellow("Pending") << "        :  " << +gb.apu.ch2.volume_sweep.pending_update << endl;
 
         return b;
     };
@@ -2649,9 +2649,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Timer") << "          :  " << +gb.apu.ch4.volume_sweep.timer << endl;
-        b << yellow("Pace") << "           :  " << +gb.apu.ch4.volume_sweep.pace << endl;
+        b << yellow("Countdown") << "      :  " << +gb.apu.ch4.volume_sweep.countdown << endl;
         b << yellow("Direction") << "      :  " << +gb.apu.ch4.volume_sweep.direction << endl;
+        b << yellow("Pending") << "        :  " << +gb.apu.ch4.volume_sweep.pending_update << endl;
 
         b << subheader2("lfsr", width) << endl;
 

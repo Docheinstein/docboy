@@ -20,6 +20,136 @@ constexpr bool SQUARE_WAVES[][8] {
     {false, true, true, true, true, true, true, false}       /* 75.0 % */
 };
 
+constexpr std::array<std::array<std::array<std::array<std::array<std::array<uint8_t, 16>, 2>, 2>, 2>, 2>, 2>
+generate_nrx2_glitch_table() {
+    // TODO: DMG: how does it differ from CGB-E?
+
+    // All the cases can be expressed as a combination of a possible negation and/or an increment/decrement by 1.
+    // Here we compute a lookup table for all the cases.
+
+    // [prev_vol != 0][prev_sweep != 0][new_sweep != 0][prev_dir][new_dir]
+    constexpr bool GLITCH_NRX2_NEGATE[2][2][2][2][2] = {
+        {
+            {
+                {
+                    {/* 0 */ true, /* 1 */ false},
+                    {/* 2 */ true, /* 3 */ false},
+                },
+                {
+                    {/* 4 */ true, /* 5 */ false},
+                    {/* 6 */ true, /* 7 */ false},
+                },
+            },
+            {
+                {
+                    {/* 8 */ true, /* 9 */ false},
+                    {/* 10 */ true, /* 11 */ false},
+                },
+                {
+                    {/* 12 */ true, /* 13 */ false},
+                    {/* 14 */ true, /* 15 */ false},
+                },
+            },
+        },
+        {
+            {
+                {
+                    {/* 16 */ false, /* 17 */ true},
+                    {/* 18 */ true, /* 19 */ false},
+                },
+                {
+                    {/* 20 */ false, /* 21 */ true},
+                    {/* 22 */ true, /* 23 */ false},
+                },
+            },
+            {
+                {
+                    {/* 24 */ false, /* 25 */ true},
+                    {/* 26 */ true, /* 27 */ false},
+                },
+                {
+                    {/* 28 */ false, /* 29 */ true},
+                    {/* 30 */ true, /* 31 */ false},
+                },
+            },
+        },
+    };
+
+    // [prev_vol != 0][prev_sweep != 0][new_sweep != 0][prev_dir][new_dir]
+    constexpr uint8_t GLITCH_NRX2_INCREMENT[2][2][2][2][2] = {
+        {
+            {
+                {
+                    {/* 0 */ 1, /* 1 */ 1},
+                    {/* 2 */ 1, /* 3 */ 1},
+                },
+                {
+                    {/* 4 */ 0, /* 5 */ 1},
+                    {/* 6 */ 0, /* 7 */ 1},
+                },
+            },
+            {
+                {
+                    {/* 8 */ 1, /* 9 */ 0},
+                    {/* 10 */ 1, /* 11 */ 0},
+                },
+                {
+                    {/* 12 */ 1, /* 13 */ 0},
+                    {/* 14 */ 1, /* 15 */ 0},
+                },
+            },
+        },
+        {
+            {
+                {
+                    {/* 16 */ 0, /* 17 */ 0},
+                    {/* 18 */ 1, /* 19 */ 1},
+                },
+                {
+                    {/* 20 */ 15, /* 21 */ 0},
+                    {/* 22 */ 0, /* 23 */ 1},
+                },
+            },
+            {
+                {
+                    {/* 24 */ 0, /* 25 */ 15},
+                    {/* 26 */ 1, /* 27 */ 0},
+                },
+                {
+                    {/* 28 */ 0, /* 29 */ 15},
+                    {/* 30 */ 1, /* 31 */ 0},
+                },
+            },
+        },
+    };
+
+    // [prev_init_volume][prev_sweep][new_sweep][prev_dir][new_dir][prev_vol]
+    std::array<std::array<std::array<std::array<std::array<std::array<uint8_t, 16>, 2>, 2>, 2>, 2>, 2> table {};
+
+    for (uint8_t prev_init_volume = 0; prev_init_volume < 2; prev_init_volume++) {
+        for (uint8_t prev_sweep = 0; prev_sweep < 2; prev_sweep++) {
+            for (uint8_t new_sweep = 0; new_sweep < 2; new_sweep++) {
+                for (uint8_t prev_dir = 0; prev_dir < 2; prev_dir++) {
+                    for (uint8_t new_dir = 0; new_dir < 2; new_dir++) {
+                        for (uint8_t prev_vol = 0; prev_vol < 16; prev_vol++) {
+                            const bool negate =
+                                GLITCH_NRX2_NEGATE[prev_init_volume][prev_sweep][new_sweep][prev_dir][new_dir];
+                            const uint8_t increment =
+                                GLITCH_NRX2_INCREMENT[prev_init_volume][prev_sweep][new_sweep][prev_dir][new_dir];
+
+                            const uint8_t vol = mod<16>((negate ? ~prev_vol : prev_vol) + increment);
+
+                            table[prev_init_volume][prev_sweep][new_sweep][prev_dir][new_dir][prev_vol] = vol;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return table;
+}
+
 inline int16_t digital_to_analog_volume(uint8_t digital_volume) {
     ASSERT(digital_volume <= 0xF);
     int32_t analog_volume = INT16_MAX - (UINT16_MAX / 15) * digital_volume;
@@ -35,7 +165,7 @@ inline int16_t scale_analog_volume_by_master_volume(int16_t input_analog_volume,
 }
 
 template <typename Channel, typename ChannelOnFlag>
-inline void tick_channel_length_timer(Channel& ch, ChannelOnFlag& ch_on) {
+inline void tick_length_timer(Channel& ch, ChannelOnFlag& ch_on) {
     if (ch.length_timer > 0) {
         if (--ch.length_timer == 0) {
             // Length timer expired: turn off the channel
@@ -45,30 +175,29 @@ inline void tick_channel_length_timer(Channel& ch, ChannelOnFlag& ch_on) {
 }
 
 template <typename Channel, typename ChannelOnFlag, typename Nrx4>
-inline void tick_channel_length_timer(Channel& ch, ChannelOnFlag& ch_on, const Nrx4& nrx4) {
+inline void tick_length_timer(Channel& ch, ChannelOnFlag& ch_on, const Nrx4& nrx4) {
     if (nrx4.length_enable) {
-        tick_channel_length_timer(ch, ch_on);
+        tick_length_timer(ch, ch_on);
     }
 }
 
 template <typename Channel, typename ChannelOnFlag>
-inline void tick_channel_volume_sweep(Channel& ch, const ChannelOnFlag& ch_on) {
-    if (ch_on && ch.volume_sweep.pace /* 0 disables volume sweep */) {
-        if (++ch.volume_sweep.timer >= ch.volume_sweep.pace) {
-            // Volume sweep expired
-            ch.volume_sweep.expired = true;
-            ch.volume_sweep.timer = 0;
-        }
+inline void tick_volume_sweep(Channel& ch, const ChannelOnFlag& ch_on) {
+    if (ch_on && !ch.volume_sweep.pending_update) {
+        // Countdown is decreased even if volume sweep pace is 0.
+        // This has meaningful implications if volume sweep is updated while
+        // the channel is on (without a retrigger to reload volume sweep).
+        ch.volume_sweep.countdown = mod<8>(ch.volume_sweep.countdown - 1);
     }
 }
 
-template <typename Channel>
-inline void handle_channel_volume_sweep_expired(Channel& ch) {
-    if (ch.volume_sweep.expired) {
-        ch.volume_sweep.expired = false;
-
-        // Increase/decrease volume accordingly to sweep direction (if possible).
-        if (ch.volume_sweep.direction) {
+template <typename Channel, typename Nrx2>
+inline void handle_volume_sweep_update(Channel& ch, const Nrx2& nrx2) {
+    if (ch.volume_sweep.pending_update) {
+        // Either increase or the decrease the volume,
+        // accordingly to the current volume sweep direction.
+        ch.volume_sweep.pending_update = false;
+        if (nrx2.envelope_direction) {
             if (ch.volume < 0xF) {
                 ++ch.volume;
             }
@@ -80,9 +209,22 @@ inline void handle_channel_volume_sweep_expired(Channel& ch) {
     }
 }
 
+template <typename Channel, typename Nrx2>
+inline void tick_volume_sweep_reload(Channel& ch, const Nrx2& nrx2) {
+    if (ch.volume_sweep.countdown == 0) {
+        // The volume sweep pace is reloaded with the volume sweep from NRX2.
+        // A non-zero sweep pace triggers a volume update for the next DIV_APU tick.
+        // This happens regardless the new pace value (it just have to be positive).
+        ch.volume_sweep.countdown = nrx2.sweep_pace;
+        if (ch.volume_sweep.countdown) {
+            ch.volume_sweep.pending_update = true;
+        }
+    }
+}
+
 template <typename Channel, typename ChannelOnFlag, typename Nrx1, typename Nrx3, typename Nrx4>
-inline void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, const Nrx1& nrx1, const Nrx3& nrx3,
-                                     const Nrx4& nrx4) {
+inline void tick_square_wave(Channel& ch, const ChannelOnFlag& ch_on, const Nrx1& nrx1, const Nrx3& nrx3,
+                             const Nrx4& nrx4) {
     ch.just_sampled = false;
 
     ch.tick_edge = !ch.tick_edge;
@@ -288,9 +430,8 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint16(ch1.wave.timer);
     parcel.write_uint8(ch1.wave.duty_cycle);
     parcel.write_bool(ch1.volume_sweep.direction);
-    parcel.write_uint8(ch1.volume_sweep.pace);
-    parcel.write_uint8(ch1.volume_sweep.timer);
-    parcel.write_bool(ch1.volume_sweep.expired);
+    parcel.write_uint8(ch1.volume_sweep.countdown);
+    parcel.write_bool(ch1.volume_sweep.pending_update);
     parcel.write_bool(ch1.period_sweep.enabled);
     parcel.write_uint16(ch1.period_sweep.period);
     parcel.write_uint8(ch1.period_sweep.pace);
@@ -308,9 +449,8 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint16(ch2.wave.timer);
     parcel.write_uint8(ch2.wave.duty_cycle);
     parcel.write_bool(ch2.volume_sweep.direction);
-    parcel.write_uint8(ch2.volume_sweep.pace);
-    parcel.write_uint8(ch2.volume_sweep.timer);
-    parcel.write_bool(ch2.volume_sweep.expired);
+    parcel.write_uint8(ch2.volume_sweep.countdown);
+    parcel.write_bool(ch2.volume_sweep.pending_update);
 
     parcel.write_uint16(ch3.length_timer);
     parcel.write_uint8(ch3.sample);
@@ -328,9 +468,8 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch4.tick_edge);
     parcel.write_uint16(ch4.wave.timer);
     parcel.write_bool(ch4.volume_sweep.direction);
-    parcel.write_uint8(ch4.volume_sweep.pace);
-    parcel.write_uint8(ch4.volume_sweep.timer);
-    parcel.write_bool(ch4.volume_sweep.expired);
+    parcel.write_uint8(ch4.volume_sweep.countdown);
+    parcel.write_bool(ch4.volume_sweep.pending_update);
     parcel.write_uint16(ch4.lfsr);
 
     parcel.write_bool(prev_div_edge_bit);
@@ -413,9 +552,8 @@ void Apu::load_state(Parcel& parcel) {
     ch1.wave.timer = parcel.read_uint16();
     ch1.wave.duty_cycle = parcel.read_uint8();
     ch1.volume_sweep.direction = parcel.read_bool();
-    ch1.volume_sweep.pace = parcel.read_uint8();
-    ch1.volume_sweep.timer = parcel.read_uint8();
-    ch1.volume_sweep.expired = parcel.read_bool();
+    ch1.volume_sweep.countdown = parcel.read_uint8();
+    ch1.volume_sweep.pending_update = parcel.read_bool();
     ch1.period_sweep.enabled = parcel.read_bool();
     ch1.period_sweep.period = parcel.read_uint16();
     ch1.period_sweep.pace = parcel.read_uint8();
@@ -433,9 +571,8 @@ void Apu::load_state(Parcel& parcel) {
     ch2.wave.timer = parcel.read_uint16();
     ch2.wave.duty_cycle = parcel.read_uint8();
     ch2.volume_sweep.direction = parcel.read_bool();
-    ch2.volume_sweep.pace = parcel.read_uint8();
-    ch2.volume_sweep.timer = parcel.read_uint8();
-    ch2.volume_sweep.expired = parcel.read_bool();
+    ch2.volume_sweep.countdown = parcel.read_uint8();
+    ch2.volume_sweep.pending_update = parcel.read_bool();
 
     ch3.length_timer = parcel.read_uint16();
     ch3.sample = parcel.read_uint8();
@@ -454,9 +591,8 @@ void Apu::load_state(Parcel& parcel) {
     ch4.tick_edge = parcel.read_bool();
     ch4.wave.timer = parcel.read_uint16();
     ch4.volume_sweep.direction = parcel.read_bool();
-    ch4.volume_sweep.pace = parcel.read_uint8();
-    ch4.volume_sweep.timer = parcel.read_uint8();
-    ch4.volume_sweep.expired = parcel.read_bool();
+    ch4.volume_sweep.countdown = parcel.read_uint8();
+    ch4.volume_sweep.pending_update = parcel.read_bool();
     ch4.lfsr = parcel.read_uint16();
 
     prev_div_edge_bit = parcel.read_bool();
@@ -547,9 +683,8 @@ void Apu::reset() {
     ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
     ch1.wave.duty_cycle = 0;
     ch1.volume_sweep.direction = false;
-    ch1.volume_sweep.pace = 0;
-    ch1.volume_sweep.timer = 0;
-    ch1.volume_sweep.expired = false;
+    ch1.volume_sweep.countdown = 0;
+    ch1.volume_sweep.pending_update = false;
     ch1.period_sweep.enabled = false;
     ch1.period_sweep.period = 0;
     ch1.period_sweep.timer = 0;
@@ -565,9 +700,8 @@ void Apu::reset() {
     ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
     ch2.wave.duty_cycle = 0;
     ch2.volume_sweep.direction = false;
-    ch2.volume_sweep.pace = 0;
-    ch2.volume_sweep.timer = 0;
-    ch2.volume_sweep.expired = false;
+    ch2.volume_sweep.countdown = 0;
+    ch2.volume_sweep.pending_update = false;
 
     ch3.length_timer = 0;
     ch3.sample = 0;
@@ -586,9 +720,8 @@ void Apu::reset() {
     ch4.tick_edge = false;
     ch4.wave.timer = 0;
     ch4.volume_sweep.direction = false;
-    ch4.volume_sweep.pace = 0;
-    ch4.volume_sweep.timer = 0;
-    ch4.volume_sweep.expired = false;
+    ch4.volume_sweep.countdown = 0;
+    ch4.volume_sweep.pending_update = false;
     ch4.lfsr = 0;
 
     prev_div_edge_bit = false;
@@ -881,13 +1014,13 @@ void Apu::turn_off() {
     ch1.digital_output = false;
     ch1.tick_edge = false;
     ch1.wave.position = 0;
-    ch1.volume_sweep.expired = false;
+    ch1.volume_sweep.pending_update = false;
 
     ch2.dac = false;
     ch2.digital_output = false;
     ch2.tick_edge = false;
     ch2.wave.position = 0;
-    ch2.volume_sweep.expired = false;
+    ch2.volume_sweep.pending_update = false;
 
     ch3.sample = 0;
     ch3.digital_output = 0;
@@ -896,7 +1029,7 @@ void Apu::turn_off() {
 
     ch4.dac = false;
     ch4.tick_edge = false;
-    ch4.volume_sweep.expired = false;
+    ch4.volume_sweep.pending_update = false;
 }
 
 void Apu::tick_even() {
@@ -905,14 +1038,13 @@ void Apu::tick_even() {
 
     if (nr52.enable) {
         // Update length timers
-        // TODO: is CH3 length timer updated here as well, or in tick_odd?
-        tick_length_timers();
+        tick_div_apu();
 
         // Update wave timers.
         // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
-        tick_square_wave_channel(ch1, nr52.ch1, nr11, nr13, nr14);
-        tick_square_wave_channel(ch2, nr52.ch2, nr21, nr23, nr24);
-        tick_ch4();
+        tick_square_wave(ch1, nr52.ch1, nr11, nr13, nr14);
+        tick_square_wave(ch2, nr52.ch2, nr21, nr23, nr24);
+        tick_noise();
     }
 
     tick_sampler();
@@ -927,7 +1059,7 @@ void Apu::tick_odd() {
     if (nr52.enable) {
         // Update wave timers
         // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
-        tick_ch3();
+        tick_wave();
     }
 
     tick_sampler();
@@ -936,6 +1068,69 @@ void Apu::tick_odd() {
     // TODO: consider to update PCM only when registers or outputs of channels changes.
     update_pcm();
 #endif
+}
+
+void Apu::tick_div_apu() {
+    // Increase DIV-APU each time DIV[4] (or DIV[5] in double speed) has a falling edge (~512Hz).
+#ifdef ENABLE_CGB
+    bool div_edge_bit {};
+    if (speed_switch_controller.is_double_speed_mode()) {
+        div_edge_bit = test_bit<5>(timers.read_div());
+    } else {
+        div_edge_bit = test_bit<4>(timers.read_div());
+    }
+#else
+    const bool div_edge_bit = test_bit<4>(timers.read_div());
+#endif
+
+    if (prev_div_edge_bit && !div_edge_bit) {
+        div_apu++;
+        tick_div_apu_falling_edge();
+    } else if (!prev_div_edge_bit && div_edge_bit) {
+        tick_div_apu_raising_edge();
+    }
+
+    prev_div_edge_bit = div_edge_bit;
+}
+
+inline void Apu::tick_div_apu_falling_edge() {
+    if (mod<2>(div_apu) == 0) {
+        // Update length timer
+        tick_length_timer(ch1, nr52.ch1, nr14);
+        tick_length_timer(ch2, nr52.ch2, nr24);
+        tick_length_timer(ch3, nr52.ch3, nr34); // TODO: is CH3 length timer updated here as well, or in tick_odd?
+        tick_length_timer(ch4, nr52.ch4, nr44);
+
+        if (mod<4>(div_apu) == 0) {
+            // Update period sweep
+            tick_period_sweep();
+
+            if (mod<8>(div_apu) == 0) {
+                // Update volume sweep
+                tick_volume_sweep(ch1, nr52.ch1);
+                tick_volume_sweep(ch2, nr52.ch2);
+                tick_volume_sweep(ch4, nr52.ch4);
+            }
+        }
+    }
+
+    // Eventually update channel's volume, if volume sweep pace countdown triggered.
+    // This doesn't happen at the same time the volume sweep overflows,
+    // but only the next DIV_APU event.
+    // [samesuite/div_trigger_volume_10,
+    //  samesuite/div_write_trigger_volume,
+    //  samesuite/div_write_trigger_volume_10]
+    handle_volume_sweep_update(ch1, nr12);
+    handle_volume_sweep_update(ch2, nr22);
+    handle_volume_sweep_update(ch4, nr42);
+}
+
+inline void Apu::tick_div_apu_raising_edge() {
+    // Volume sweep pace is reloaded from NRx2 and a volume update is eventually triggered.
+    // This does not happen during the main DIV_APU tick, it is delayed by half DIV_APU tick.
+    tick_volume_sweep_reload(ch1, nr12);
+    tick_volume_sweep_reload(ch2, nr22);
+    tick_volume_sweep_reload(ch4, nr42);
 }
 
 void Apu::tick_sampler() {
@@ -950,13 +1145,13 @@ void Apu::tick_sampler() {
     }
 }
 
-inline void Apu::tick_ch1_period_sweep() {
+inline void Apu::tick_period_sweep() {
     // Update period sweep (CH1 only)
     if (nr52.ch1 && ch1.period_sweep.enabled) {
         if (++ch1.period_sweep.timer >= ch1.period_sweep.pace) {
             if (nr10.pace) {
                 // Compute new period
-                uint32_t new_period = compute_ch1_next_period_sweep_period();
+                uint32_t new_period = compute_next_period_sweep_period();
 
                 if (new_period >= 2048) {
                     // Period overflow: turn off the channel
@@ -973,7 +1168,7 @@ inline void Apu::tick_ch1_period_sweep() {
                     // Period calculation is performed a second time for overflow check
                     // (but result is not written back)
                     // [blargg/04-sweep]
-                    if (compute_ch1_next_period_sweep_period() >= 2048) {
+                    if (compute_next_period_sweep_period() >= 2048) {
                         nr52.ch1 = false;
                     }
                 }
@@ -987,57 +1182,7 @@ inline void Apu::tick_ch1_period_sweep() {
     }
 }
 
-void Apu::tick_length_timers() {
-    // Increase DIV-APU each time DIV[4] (or DIV[5] in double speed) has a falling edge (~512Hz).
-#ifdef ENABLE_CGB
-    bool div_edge_bit {};
-    if (speed_switch_controller.is_double_speed_mode()) {
-        div_edge_bit = test_bit<5>(timers.read_div());
-    } else {
-        div_edge_bit = test_bit<4>(timers.read_div());
-    }
-#else
-    const bool div_edge_bit = test_bit<4>(timers.read_div());
-#endif
-
-    if (prev_div_edge_bit && !div_edge_bit) {
-        div_apu++;
-
-        // Eventually update channel's volume, if volume sweep is expired.
-        // This doesn't happen at the same time the volume sweep overflows,
-        // but only the next DIV_APU event.
-        // [samesuite/div_trigger_volume_10,
-        //  samesuite/div_write_trigger_volume,
-        //  samesuite/div_write_trigger_volume_10]
-        handle_channel_volume_sweep_expired(ch1);
-        handle_channel_volume_sweep_expired(ch2);
-        handle_channel_volume_sweep_expired(ch4);
-
-        if (mod<2>(div_apu) == 0) {
-            // Update length timer
-            tick_channel_length_timer(ch1, nr52.ch1, nr14);
-            tick_channel_length_timer(ch2, nr52.ch2, nr24);
-            tick_channel_length_timer(ch3, nr52.ch3, nr34);
-            tick_channel_length_timer(ch4, nr52.ch4, nr44);
-
-            if (mod<4>(div_apu) == 0) {
-                // Update period sweep (CH1 only)
-                tick_ch1_period_sweep();
-
-                if (mod<8>(div_apu) == 0) {
-                    // Update volume sweep
-                    tick_channel_volume_sweep(ch1, nr52.ch1);
-                    tick_channel_volume_sweep(ch2, nr52.ch2);
-                    tick_channel_volume_sweep(ch4, nr52.ch4);
-                }
-            }
-        }
-    }
-
-    prev_div_edge_bit = div_edge_bit;
-}
-
-void Apu::tick_ch3() {
+void Apu::tick_wave() {
 #ifndef ENABLE_CGB
     ch3.just_sampled = false;
 #endif
@@ -1080,7 +1225,7 @@ void Apu::tick_ch3() {
     }
 }
 
-void Apu::tick_ch4() {
+void Apu::tick_noise() {
     ch4.tick_edge = !ch4.tick_edge;
 
     if (nr52.ch4 && ch4.tick_edge) {
@@ -1106,7 +1251,7 @@ void Apu::update_pcm() {
 }
 #endif
 
-inline uint32_t Apu::compute_ch1_next_period_sweep_period() {
+inline uint32_t Apu::compute_next_period_sweep_period() {
     // P_t+1 = P_t ± P_t / (2^step)
     int32_t period = ch1.period_sweep.period + (nr10.direction ? -1 : 1) * (ch1.period_sweep.period >> nr10.step);
 
@@ -1332,7 +1477,7 @@ void Apu::update_nr14(uint8_t value) {
 
         // [blargg/04-sweep]
         if (nr10.step) {
-            uint32_t new_period = compute_ch1_next_period_sweep_period();
+            uint32_t new_period = compute_next_period_sweep_period();
 
             if (new_period >= 2048) {
                 nr52.ch1 = false;
@@ -1384,14 +1529,27 @@ inline void Apu::update_nrx2(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, uint
         return;
     }
 
+    uint8_t prev_volume = nrx2.initial_volume;
+    bool prev_direction = nrx2.envelope_direction;
+    uint8_t prev_sweep = nrx2.sweep_pace;
+
     nrx2.initial_volume = get_bits_range<Specs::Bits::Audio::NR12::INITIAL_VOLUME>(value);
     nrx2.envelope_direction = test_bit<Specs::Bits::Audio::NR12::ENVELOPE_DIRECTION>(value);
     nrx2.sweep_pace = get_bits_range<Specs::Bits::Audio::NR12::SWEEP_PACE>(value);
 
     ch.dac = nrx2.initial_volume | nrx2.envelope_direction;
-    if (!ch.dac) {
-        // If the DAC is turned off the channel is disabled as well
-        ch_on = false;
+
+    if (ch_on) {
+        static constexpr auto NRX2_GLITCH_TABLE = generate_nrx2_glitch_table();
+
+        // NRx2 glitch: volume is updated in a way that depends on the previous and current NRx2 values.
+        ch.volume = NRX2_GLITCH_TABLE[prev_volume != 0][prev_sweep != 0][nrx2.sweep_pace != 0][prev_direction]
+                                     [nrx2.envelope_direction][ch.volume];
+
+        if (!ch.dac) {
+            // If the DAC is turned off the channel is disabled as well
+            ch_on = false;
+        }
     }
 }
 
@@ -1428,7 +1586,7 @@ inline void Apu::update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3
     // [blargg/03-trigger]
     if (!prev_length_enable && nrx4.length_enable) {
         if (mod<2>(div_apu) == 0) {
-            tick_channel_length_timer(ch, ch_on);
+            tick_length_timer(ch, ch_on);
         }
     }
 
@@ -1460,9 +1618,8 @@ inline void Apu::update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3
         ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
 
         ch.volume_sweep.direction = nrx2.envelope_direction;
-        ch.volume_sweep.pace = nrx2.sweep_pace;
-        ch.volume_sweep.timer = 0;
-        ch.volume_sweep.expired = false;
+        ch.volume_sweep.countdown = nrx2.sweep_pace;
+        ch.volume_sweep.pending_update = false;
 
         // If length timer is 0, it is reloaded with the maximum value (64) as well
         // [blargg/03-trigger]
@@ -1559,7 +1716,7 @@ void Apu::update_nr34(uint8_t value) {
     // [blargg/03-trigger]
     if (!prev_length_enable && nr34.length_enable) {
         if (mod<2>(div_apu) == 0) {
-            tick_channel_length_timer(ch3, nr52.ch3);
+            tick_length_timer(ch3, nr52.ch3);
         }
     }
 
@@ -1678,7 +1835,7 @@ void Apu::update_nr44(uint8_t value) {
     // [blargg/03-trigger]
     if (!prev_length_enable && nr44.length_enable) {
         if (mod<2>(div_apu) == 0) {
-            tick_channel_length_timer(ch4, nr52.ch4);
+            tick_length_timer(ch4, nr52.ch4);
         }
     }
 
@@ -1692,9 +1849,8 @@ void Apu::update_nr44(uint8_t value) {
         ch4.volume = nr42.initial_volume;
 
         ch4.volume_sweep.direction = nr42.envelope_direction;
-        ch4.volume_sweep.pace = nr42.sweep_pace;
-        ch4.volume_sweep.timer = 0;
-        ch4.volume_sweep.expired = false;
+        ch4.volume_sweep.countdown = nr42.sweep_pace;
+        ch4.volume_sweep.pending_update = false;
 
         ch4.lfsr = 0;
 
