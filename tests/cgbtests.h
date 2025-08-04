@@ -13,6 +13,14 @@
     const auto [params] = TABLE(RunnerAdapter::Params, ({__VA_ARGS__}));                                               \
     REQUIRE(adapter.run(params))
 
+#define RUN_FOLDER_FRAMEBUFFER_TEST_ROMS(folder, result)                                                               \
+    static RunnerAdapter adapter {folder, TESTS_ROOT_FOLDER "/results/cgb/"};                                          \
+    for (const auto& entry : iterate_directory(folder)) {                                                              \
+        if (entry.type == DirectoryIteratorEntry::FileType::File) {                                                    \
+            REQUIRE(adapter.run(F {entry.filename, result}));                                                          \
+        }                                                                                                              \
+    }
+
 TEST_CASE("cgb", "[emulation]") {
 #if !WIP_ONLY_TEST_ROMS
     SECTION("boot") {
@@ -3871,7 +3879,6 @@ TEST_CASE("cgb", "[emulation]") {
 
 #else
     SECTION("wip") {
-        RUN_TEST_ROMS();
     }
 #endif
 }
