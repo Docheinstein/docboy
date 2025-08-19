@@ -335,7 +335,7 @@ void Apu::set_volume(float volume) {
 }
 
 void Apu::set_sample_rate(double rate) {
-    sample_period = (double)Specs::Frequencies::CLOCK / rate;
+    sampling.period = static_cast<double>(Specs::Frequencies::CLOCK) / rate;
 }
 
 void Apu::set_audio_sample_callback(std::function<void(const AudioSample)>&& callback) {
@@ -359,6 +359,13 @@ void Apu::tick_t3() {
 }
 
 void Apu::save_state(Parcel& parcel) const {
+    parcel.write_uint64(sampling.ticks);
+    parcel.write_double(sampling.next_tick);
+
+    parcel.write_bool(apu_clock_edge);
+    parcel.write_bool(prev_div_edge_bit);
+    parcel.write_uint8(div_apu);
+
     parcel.write_uint8(nr10.pace);
     parcel.write_bool(nr10.direction);
     parcel.write_uint8(nr10.step);
@@ -415,9 +422,6 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(nr52.ch1);
     wave_ram.save_state(parcel);
 
-    parcel.write_uint64(ticks);
-    parcel.write_double(next_tick_sample);
-
     uint8_t i = 0;
     while (i < (uint8_t)array_size(REGISTER_UPDATERS) && pending_write.updater != REGISTER_UPDATERS[i]) {
         ++i;
@@ -438,11 +442,16 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch1.volume_sweep.direction);
     parcel.write_uint8(ch1.volume_sweep.countdown);
     parcel.write_bool(ch1.volume_sweep.pending_update);
-    parcel.write_bool(ch1.period_sweep.enabled);
+    parcel.write_uint8(ch1.period_sweep.pace_countdown);
     parcel.write_uint16(ch1.period_sweep.period);
-    parcel.write_uint8(ch1.period_sweep.pace);
-    parcel.write_uint8(ch1.period_sweep.timer);
-    parcel.write_bool(ch1.period_sweep.decreasing);
+    parcel.write_uint16(ch1.period_sweep.increment);
+    parcel.write_bool(ch1.period_sweep.recalculation.clock_edge);
+    parcel.write_uint8(ch1.period_sweep.recalculation.target_trigger_counter);
+    parcel.write_uint8(ch1.period_sweep.recalculation.trigger_counter);
+    parcel.write_uint8(ch1.period_sweep.recalculation.countdown);
+    parcel.write_uint16(ch1.period_sweep.recalculation.increment);
+    parcel.write_bool(ch1.period_sweep.recalculation.from_trigger);
+    parcel.write_bool(ch1.period_sweep.recalculation.step_0);
 
     parcel.write_bool(ch2.dac);
     parcel.write_uint8(ch2.volume);
@@ -477,12 +486,16 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch4.volume_sweep.countdown);
     parcel.write_bool(ch4.volume_sweep.pending_update);
     parcel.write_uint16(ch4.lfsr);
-
-    parcel.write_bool(prev_div_edge_bit);
-    parcel.write_uint8(div_apu);
 }
 
 void Apu::load_state(Parcel& parcel) {
+    sampling.ticks = parcel.read_uint64();
+    sampling.next_tick = parcel.read_double();
+
+    apu_clock_edge = parcel.read_bool();
+    prev_div_edge_bit = parcel.read_bool();
+    div_apu = parcel.read_uint8();
+
     nr10.pace = parcel.read_uint8();
     nr10.direction = parcel.read_bool();
     nr10.step = parcel.read_uint8();
@@ -539,9 +552,6 @@ void Apu::load_state(Parcel& parcel) {
     nr52.ch1 = parcel.read_bool();
     wave_ram.load_state(parcel);
 
-    ticks = parcel.read_uint64();
-    next_tick_sample = parcel.read_double();
-
     const uint8_t register_updater_index = parcel.read_uint8();
     pending_write.updater =
         register_updater_index < array_size(REGISTER_UPDATERS) ? REGISTER_UPDATERS[register_updater_index] : nullptr;
@@ -560,11 +570,16 @@ void Apu::load_state(Parcel& parcel) {
     ch1.volume_sweep.direction = parcel.read_bool();
     ch1.volume_sweep.countdown = parcel.read_uint8();
     ch1.volume_sweep.pending_update = parcel.read_bool();
-    ch1.period_sweep.enabled = parcel.read_bool();
+    ch1.period_sweep.pace_countdown = parcel.read_uint8();
     ch1.period_sweep.period = parcel.read_uint16();
-    ch1.period_sweep.pace = parcel.read_uint8();
-    ch1.period_sweep.timer = parcel.read_uint8();
-    ch1.period_sweep.decreasing = parcel.read_bool();
+    ch1.period_sweep.increment = parcel.read_uint16();
+    ch1.period_sweep.recalculation.clock_edge = parcel.read_bool();
+    ch1.period_sweep.recalculation.target_trigger_counter = parcel.read_uint8();
+    ch1.period_sweep.recalculation.trigger_counter = parcel.read_uint8();
+    ch1.period_sweep.recalculation.countdown = parcel.read_uint8();
+    ch1.period_sweep.recalculation.increment = parcel.read_uint16();
+    ch1.period_sweep.recalculation.from_trigger = parcel.read_bool();
+    ch1.period_sweep.recalculation.step_0 = parcel.read_bool();
 
     ch2.dac = parcel.read_bool();
     ch2.volume = parcel.read_uint8();
@@ -600,12 +615,16 @@ void Apu::load_state(Parcel& parcel) {
     ch4.volume_sweep.countdown = parcel.read_uint8();
     ch4.volume_sweep.pending_update = parcel.read_bool();
     ch4.lfsr = parcel.read_uint16();
-
-    prev_div_edge_bit = parcel.read_bool();
-    div_apu = parcel.read_uint8();
 }
 
 void Apu::reset() {
+    sampling.ticks = 0;
+    sampling.next_tick = 0.0;
+
+    apu_clock_edge = false;
+    prev_div_edge_bit = false;
+    div_apu = 2;
+
     // Reset I/O registers
     nr10.pace = 0;
     nr10.direction = false;
@@ -670,8 +689,6 @@ void Apu::reset() {
 #endif
     }
 
-    ticks = 0;
-
     pending_write.updater = nullptr;
     pending_write.value = 0;
 
@@ -691,9 +708,16 @@ void Apu::reset() {
     ch1.volume_sweep.direction = false;
     ch1.volume_sweep.countdown = 0;
     ch1.volume_sweep.pending_update = false;
-    ch1.period_sweep.enabled = false;
+    ch1.period_sweep.pace_countdown = 0;
     ch1.period_sweep.period = 0;
-    ch1.period_sweep.timer = 0;
+    ch1.period_sweep.increment = 0;
+    ch1.period_sweep.recalculation.clock_edge = false;
+    ch1.period_sweep.recalculation.target_trigger_counter = 0;
+    ch1.period_sweep.recalculation.trigger_counter = 0;
+    ch1.period_sweep.recalculation.countdown = 0;
+    ch1.period_sweep.recalculation.increment = 0;
+    ch1.period_sweep.recalculation.from_trigger = false;
+    ch1.period_sweep.recalculation.step_0 = false;
 
     ch2.dac = false;
     ch2.volume = 0;
@@ -729,9 +753,6 @@ void Apu::reset() {
     ch4.volume_sweep.countdown = 0;
     ch4.volume_sweep.pending_update = false;
     ch4.lfsr = 0;
-
-    prev_div_edge_bit = false;
-    div_apu = 2;
 }
 
 uint8_t Apu::read_nr10() const {
@@ -959,6 +980,7 @@ uint8_t Apu::read_pcm34() const {
 void Apu::turn_on() {
     prev_div_edge_bit = true; // TODO: verify this, also in CGB?
     div_apu = 0;
+    apu_clock_edge = true;
 }
 
 void Apu::turn_off() {
@@ -1043,14 +1065,13 @@ void Apu::tick_even() {
     flush_pending_write();
 
     if (nr52.enable) {
-        // Update length timers
         tick_div_apu();
 
-        // Update wave timers.
-        // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
         tick_square_wave(ch1, nr52.ch1, nr11, nr13, nr14);
         tick_square_wave(ch2, nr52.ch2, nr21, nr23, nr24);
         tick_noise();
+
+        apu_clock_edge = !apu_clock_edge;
     }
 
     tick_sampler();
@@ -1063,8 +1084,8 @@ void Apu::tick_even() {
 
 void Apu::tick_odd() {
     if (nr52.enable) {
-        // Update wave timers
-        // It seems that CH3 ticks off by 1 T-Cycle compared to other channels.
+        tick_period_sweep_recalculation();
+
         tick_wave();
     }
 
@@ -1140,10 +1161,10 @@ inline void Apu::tick_div_apu_raising_edge() {
 }
 
 void Apu::tick_sampler() {
-    ASSERT(sample_period > 0.0);
+    ASSERT(sampling.period > 0.0);
 
-    if (++ticks >= static_cast<uint64_t>(next_tick_sample)) {
-        next_tick_sample += sample_period;
+    if (++sampling.ticks >= static_cast<uint64_t>(sampling.next_tick)) {
+        sampling.next_tick += sampling.period;
 
         if (audio_sample_callback) {
             audio_sample_callback(compute_audio_sample());
@@ -1152,38 +1173,31 @@ void Apu::tick_sampler() {
 }
 
 inline void Apu::tick_period_sweep() {
-    // Update period sweep (CH1 only)
-    if (nr52.ch1 && ch1.period_sweep.enabled) {
-        if (++ch1.period_sweep.timer >= ch1.period_sweep.pace) {
-            if (nr10.pace) {
-                // Compute new period
-                uint32_t new_period = compute_next_period_sweep_period();
+    if (nr52.ch1) {
+        if (keep_bits<3>(--ch1.period_sweep.pace_countdown) == 0) {
+            // Pace countdown expired: handle period sweep.
+            period_sweep_done();
+        }
+    }
+}
 
-                if (new_period >= 2048) {
-                    // Period overflow: turn off the channel
-                    nr52.ch1 = false;
-                }
-
-                if (nr10.step) {
-                    // Write back period to the internal period register and to NR13/NR14
-                    ch1.period_sweep.period = new_period;
-
-                    nr14.period_high = get_bits_range<11, 8>(new_period);
-                    nr13.period_low = keep_bits<8>(new_period);
-
-                    // Period calculation is performed a second time for overflow check
-                    // (but result is not written back)
-                    // [blargg/04-sweep]
-                    if (compute_next_period_sweep_period() >= 2048) {
-                        nr52.ch1 = false;
-                    }
+void Apu::tick_period_sweep_recalculation() {
+    // Period sweep recalculation ticks only once per M-Cycle.
+    // The alignment depends on the time the APU has been turned on.
+    if (apu_clock_edge == ch1.period_sweep.recalculation.clock_edge) {
+        if (ch1.period_sweep.recalculation.trigger_counter < ch1.period_sweep.recalculation.target_trigger_counter) {
+            // Recalculation takes some extra cycles (from 2 to 4) after the trigger.
+            ++ch1.period_sweep.recalculation.trigger_counter;
+        } else if (ch1.period_sweep.recalculation.countdown) {
+            // Recalculation countdown is advanced.
+            // Note that it is advanced only if the current step is 0, otherwise it is paused.
+            // The only exception is if the period sweep was started with step 0: in that case it ticks anyway.
+            if (nr10.step || ch1.period_sweep.recalculation.step_0) {
+                if (--ch1.period_sweep.recalculation.countdown == 0) {
+                    // Recalculation countdown expired: handle period sweep recalculation.
+                    period_sweep_recalculation_done();
                 }
             }
-
-            // Pace 0 is reloaded as pace 8
-            // [blargg/05-sweep-details]
-            ch1.period_sweep.pace = nr10.pace > 0 ? nr10.pace : 8;
-            ch1.period_sweep.timer = 0;
         }
     }
 }
@@ -1249,6 +1263,68 @@ void Apu::tick_noise() {
     }
 }
 
+void Apu::period_sweep_done() {
+    if (nr10.pace) {
+        if (nr10.step) {
+            // If step is > 0, the internal wave period (NR14 and NR13) is updated accordingly to the new calculation.
+            // Note that the internal period register is not updated here, but only when the recalculation is done.
+            const uint16_t period =
+                compute_next_period_sweep_period(compute_period_sweep_signed_increment(), nr10.direction);
+            nr14.period_high = get_bits_range<10, 8>(period);
+            nr13.period_low = keep_bits<8>(period);
+
+            // A recalculation is scheduled with a certain delay (it depends on the step value).
+            ch1.period_sweep.recalculation.countdown = 1 + nr10.step;
+            ch1.period_sweep.recalculation.clock_edge = false;
+            ch1.period_sweep.recalculation.step_0 = false;
+        } else {
+            // The recalculation happens almost instantly if the step is 0.
+            // Furthermore, this seems the only case in which the recalculation is not aligned with the internal APU
+            // clock, instead it is aligned with this the time the period sweep is done.
+            // TODO. further investigations?
+            ch1.period_sweep.recalculation.countdown = 2;
+            ch1.period_sweep.recalculation.clock_edge = !apu_clock_edge;
+            ch1.period_sweep.recalculation.step_0 = true;
+        }
+
+        // Increment is reloaded accordingly to the step.
+        ch1.period_sweep.increment = concat(nr14.period_high, nr13.period_low) >> nr10.step;
+    }
+
+    // Pace 0 is reloaded as pace 8.
+    // [blargg/05-sweep-details]
+    ch1.period_sweep.pace_countdown = nr10.pace ? nr10.pace : 8;
+}
+
+void Apu::period_sweep_recalculation_done() {
+    // Reload the internal shadow period from the current NR14 and NR13.
+    ch1.period_sweep.period = concat(nr14.period_high, nr13.period_low);
+
+    // Compute the new increment.
+    ch1.period_sweep.recalculation.increment = compute_period_sweep_signed_increment();
+
+    if (nr10.direction == 0) {
+        // If the current direction is increasing, the channel might be disabled due to an overflow.
+#ifdef ENABLE_CGB
+        const bool complement_bit = nr10.direction;
+#else
+        // DMG glitch: the complement bit does not depend on the nr10.direction, as expected, instead it's always 1,
+        // unless the recalculation is the first one coming from a trigger (NR14 write)
+        const bool complement_bit = !ch1.period_sweep.recalculation.from_trigger;
+#endif
+
+        const uint16_t period =
+            compute_next_period_sweep_period(ch1.period_sweep.recalculation.increment, complement_bit);
+        if (period >= 2048) {
+            // Overflow on recalculation: disable channel.
+            nr52.ch1 = false;
+        }
+    }
+
+    // ch1.period_sweep.recalculation.target_trigger_counter = 0; // TODO: is this necessary?
+    ch1.period_sweep.recalculation.from_trigger = false;
+}
+
 #ifdef ENABLE_CGB
 void Apu::update_pcm() {
     DigitalAudioSample digital_output = compute_digital_audio_sample();
@@ -1257,17 +1333,18 @@ void Apu::update_pcm() {
 }
 #endif
 
-inline uint32_t Apu::compute_next_period_sweep_period() {
-    // P_t+1 = P_t ± P_t / (2^step)
-    int32_t period = ch1.period_sweep.period + (nr10.direction ? -1 : 1) * (ch1.period_sweep.period >> nr10.step);
+inline uint16_t Apu::compute_period_sweep_signed_increment() const {
+    // This yields ch1.period_sweep.increment itself if the direction is increasing, or the 1-complement if it's
+    // decreasing. This seems the way the period sweep works internally, for negative direction. Indeed, the increment
+    // it's not represented in 2-complement, instead it's represented in 1-complement, to which a magic bit is
+    // eventually added. Such bit usually is exactly nr10.direction, which yields to 1-complement + 1, which is exactly
+    // 2-complement of the increment, that is the negated increment, but there are glitches in the period sweep which
+    // makes such magic bit coming from somewhere else, not from the nr10.direction.
+    return ch1.period_sweep.increment ^ (nr10.direction ? bitmask<11> : 0);
+}
 
-    // Store whether period sweep is in decreasing mode after a recalculation
-    if (!ch1.period_sweep.decreasing) {
-        ch1.period_sweep.decreasing = nr10.direction == 1;
-    }
-
-    ASSERT(period >= 0);
-    return period;
+inline uint16_t Apu::compute_next_period_sweep_period(uint16_t signed_increment, bool complement_bit) const {
+    return ch1.period_sweep.period + signed_increment + complement_bit;
 }
 
 inline uint8_t Apu::compute_ch1_digital_output() const {
@@ -1444,15 +1521,81 @@ void Apu::update_nr10(uint8_t value) {
         return;
     }
 
+    uint8_t prev_direction = nr10.direction;
+    uint8_t prev_step = nr10.step;
+
     nr10.pace = get_bits_range<Specs::Bits::Audio::NR10::PACE>(value);
     nr10.direction = test_bit<Specs::Bits::Audio::NR10::DIRECTION>(value);
     nr10.step = get_bits_range<Specs::Bits::Audio::NR10::STEP>(value);
 
-    // After the period is recalculated with decreasing mode, if the sweep period mode
-    // is changed again to increasing mode, the channel is disabled instantly.
-    // [blargg/05-sweep-details]
-    if (ch1.period_sweep.decreasing && nr10.direction == 0) {
-        nr52.ch1 = false;
+    // Writing to NR10 might lead to several glitches.
+    // These are the ones I discovered so far.
+    if (nr52.ch1) {
+        if (nr10.direction == 0) {
+            // Glitch 1.
+            // Updating the period sweep direction to increase mode might eventually disable the channel.
+            // Usually, this happens if the period sweep mode was in decrease mode and now is in increasing mode,
+            // but the actual calculation is a bit more tricky.
+            // Indeed, on DMG the channel can be disabled even if the direction is not changed
+            // (the channel overflows during the trigger with a period of 2048, but after a NR10 write
+            // or due to a recalculation, it overflows also with 2047).
+#ifdef ENABLE_CGB
+            bool complement_bit = prev_direction;
+#else
+            // DMG glitch: the complement bit does not depend on the nr10.direction, as expected, instead it's always 1.
+            bool complement_bit = true;
+#endif
+
+            const uint16_t period =
+                compute_next_period_sweep_period(ch1.period_sweep.recalculation.increment, complement_bit);
+            if (period >= 2048) {
+                // Overflow on recalculation: disable channel.
+                nr52.ch1 = false;
+            }
+        }
+    }
+
+    if (nr52.ch1) {
+        if (ch1.period_sweep.recalculation.target_trigger_counter &&
+            ch1.period_sweep.recalculation.trigger_counter < 2) {
+            // Glitch 2.
+            // Writing to NR10 just after it has been triggered reloads the new step as recalculation countdown.
+            ch1.period_sweep.recalculation.countdown = nr10.step;
+            if (!ch1.period_sweep.recalculation.countdown) {
+                // If the new step is 0, the recalculation will be aborted (forever).
+                ch1.period_sweep.recalculation.trigger_counter = 0;
+                ch1.period_sweep.recalculation.target_trigger_counter = 0;
+            }
+        } else {
+            // Glitch 3.
+            // Under certain circumstances, if the previous step was 0 and the new one is positive,
+            // the recalculation countdown might be ticked by 1.
+#ifdef ENABLE_CGB
+            // On CGB: the ticking happens only if the writing happens at the same time of a recalculation tick
+            // (this should happen only in double speed mode). It seems that the countdown is ticked anyhow if
+            // the recalculation is about to be completed (regardless the old/new step values)
+            const bool tick_sweep = apu_clock_edge == ch1.period_sweep.recalculation.clock_edge &&
+                                    ((ch1.period_sweep.recalculation.countdown && prev_step == 0 && nr10.step) ||
+                                     ch1.period_sweep.recalculation.countdown == 1);
+#else
+            // On DMG: the ticking always happens (contrarily to CGB single speed mode) if the previous step was 0
+            // and the new one is positive.
+            const bool tick_sweep = (ch1.period_sweep.recalculation.countdown && prev_step == 0 && nr10.step);
+#endif
+
+            if (tick_sweep) {
+                if (--ch1.period_sweep.recalculation.countdown == 0) {
+                    period_sweep_recalculation_done();
+                }
+            }
+        }
+
+        // Glitch 4.
+        // If the writing happens with a pace_countdown of 8 (remember that pace 0 is reloaded as 8),
+        // the period sweep is ticked as if a DIV APU event happened.
+        if (keep_bits<3>(ch1.period_sweep.pace_countdown) == 0) {
+            period_sweep_done();
+        }
     }
 }
 
@@ -1469,27 +1612,58 @@ void Apu::update_nr13(uint8_t value) {
 }
 
 void Apu::update_nr14(uint8_t value) {
-    update_nrx4(ch1, nr52.ch1, nr12, nr13, nr14, value, /* called on trigger */ [this] {
-        // Period sweep is updated on trigger
-        ch1.period_sweep.enabled = nr10.pace || nr10.step;
-        ch1.period_sweep.period = concat(nr14.period_high, nr13.period_low);
+    if (!nr52.enable) {
+        return;
+    }
 
+    update_nrx4(ch1, nr52.ch1, nr12, nr13, nr14, value);
+
+    if (nr14.trigger) {
         // Pace 0 is reloaded as pace 8.
         // [blargg/05-sweep-details]
-        ch1.period_sweep.pace = nr10.pace > 0 ? nr10.pace : 8;
+        ch1.period_sweep.pace_countdown = nr10.pace ? nr10.pace : 8;
 
-        ch1.period_sweep.timer = 0;
-        ch1.period_sweep.decreasing = false;
+        // The shadow registers are reset.
+        ch1.period_sweep.period = 0;
+        ch1.period_sweep.increment = 0;
+        ch1.period_sweep.recalculation.increment = 0;
 
         // [blargg/04-sweep]
         if (nr10.step) {
-            uint32_t new_period = compute_next_period_sweep_period();
+            // Trigger the channel with a step > 0 leads to a recalculation.
 
-            if (new_period >= 2048) {
-                nr52.ch1 = false;
+            // Increment is reloaded accordingly to the step.
+            ch1.period_sweep.increment = concat(nr14.period_high, nr13.period_low) >> nr10.step;
+
+            // The timing of the recalculation varies: it is bound to the NR10 step value, plus a certain delay.
+            // The two delays are split into trigger_counter and countdown: this is convenient to handle the NR10
+            // glitches accurately.
+            if (ch1.period_sweep.recalculation.target_trigger_counter &&
+                ch1.period_sweep.recalculation.trigger_counter < 2) {
+                // No reload: there's a window in which the counter is not reloaded if it has been just reloaded.
+            } else {
+                // This seems to cover all the cases so far, but further investigations are probably needed.
+                // The new target_trigger_counter varies from 2 to 4.
+                // (4 is a special case that seems to happen only for step 1).
+                // TODO: verify with more triple trigger cases.
+                ch1.period_sweep.recalculation.target_trigger_counter =
+                    2 + (ch1.period_sweep.recalculation.countdown < 2) +
+                    (ch1.period_sweep.recalculation.trigger_counter == 2 &&
+                     ch1.period_sweep.recalculation.countdown == nr10.step);
+
+                // Restart the counter.
+                ch1.period_sweep.recalculation.trigger_counter = 0;
             }
+
+            // Reload countdown accordingly to the step.
+            ch1.period_sweep.recalculation.countdown = nr10.step;
+
+            // Align the recalculation with the APU clock.
+            ch1.period_sweep.recalculation.clock_edge = false;
+
+            ch1.period_sweep.recalculation.from_trigger = true;
         }
-    });
+    }
 }
 
 void Apu::update_nr21(uint8_t value) {
@@ -1636,10 +1810,6 @@ inline void Apu::update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3
             } else {
                 ch.length_timer = 64;
             }
-        }
-
-        if constexpr (!std::is_same_v<TriggerFunction, std::nullptr_t>) {
-            custom_trigger_function();
         }
     } else {
         // If the channel has just sampled, timer is reloaded with the new period instantly

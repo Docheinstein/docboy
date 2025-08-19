@@ -25,7 +25,6 @@ struct DirectoryIteratorEntry {
 struct DirectorySentinel {};
 
 struct DirectoryIterator {
-public:
     using iterator_category = std::input_iterator_tag;
     using value_type = DirectoryIteratorEntry;
     using difference_type = std::ptrdiff_t;
@@ -117,7 +116,7 @@ private:
     }
 
     DIR* dir {};
-    struct dirent* entry {};
+    dirent* entry {};
 
     value_type current {};
 };

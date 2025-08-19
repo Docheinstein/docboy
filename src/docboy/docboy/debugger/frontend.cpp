@@ -2500,11 +2500,17 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     const auto make_apu_general_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
-        b << yellow("DIV-APU") << "       :  " << (gb.apu.div_apu % 8) << endl;
+        b << yellow("Primary Tick") << "   :  " << gb.apu.apu_clock_edge << endl;
         return b;
     };
 
     const auto make_apu_general_block_3 = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << yellow("DIV-APU") << "       :  " << (gb.apu.div_apu % 8) << endl;
+        return b;
+    };
+
+    const auto make_apu_general_block_4 = [&](uint32_t width) {
         auto b {make_block(width)};
         b << yellow("DIV-APU bit") << "    :  " << +gb.apu.prev_div_edge_bit << endl;
         return b;
@@ -2530,30 +2536,35 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         };
 
         b << subheader("channel 1", width) << endl;
-        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("DAC") << "            :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("Output") << "         :  " << +gb.apu.ch1.digital_output << endl;
-        b << yellow("Volume") << "         :  " << +gb.apu.ch1.volume << endl;
-        b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
-        b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch1.trigger_delay << endl;
+        b << yellow("Enabled") << "         :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "             :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Output") << "          :  " << +gb.apu.ch1.digital_output << endl;
+        b << yellow("Volume") << "          :  " << +gb.apu.ch1.volume << endl;
+        b << yellow("Length Timer") << "    :  " << +gb.apu.ch1.length_timer << endl;
+        b << yellow("Trigger Delay") << "   :  " << +gb.apu.ch1.trigger_delay << endl;
 
         b << subheader2("wave", width) << endl;
 
-        b << yellow("Timer") << "          :  " << +gb.apu.ch1.wave.timer << endl;
-        b << yellow("Position") << "       :  " << +gb.apu.ch1.wave.position << endl;
-        b << yellow("Duty Cycle") << "     :  " << duty_cycle(gb.apu.ch1.wave.duty_cycle) << endl;
+        b << yellow("Timer") << "           :  " << +gb.apu.ch1.wave.timer << endl;
+        b << yellow("Position") << "        :  " << +gb.apu.ch1.wave.position << endl;
+        b << yellow("Duty Cycle") << "      :  " << duty_cycle(gb.apu.ch1.wave.duty_cycle) << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Countdown") << "      :  " << +gb.apu.ch1.volume_sweep.countdown << endl;
-        b << yellow("Direction") << "      :  " << +gb.apu.ch1.volume_sweep.direction << endl;
-        b << yellow("Pending") << "        :  " << +gb.apu.ch1.volume_sweep.pending_update << endl;
+        b << yellow("Countdown") << "       :  " << +gb.apu.ch1.volume_sweep.countdown << endl;
+        b << yellow("Direction") << "       :  " << +gb.apu.ch1.volume_sweep.direction << endl;
+        b << yellow("Pending") << "         :  " << +gb.apu.ch1.volume_sweep.pending_update << endl;
 
         b << subheader2("period sweep", width) << endl;
 
-        b << yellow("Enabled") << "        :  " << +gb.apu.ch1.period_sweep.enabled << endl;
-        b << yellow("Period") << "         :  " << +gb.apu.ch1.period_sweep.period << endl;
-        b << yellow("Timer") << "          :  " << +gb.apu.ch1.period_sweep.timer << endl;
-        b << yellow("Decreasing") << "     :  " << +gb.apu.ch1.period_sweep.decreasing << endl;
+        b << yellow("Pace Countdown") << "  :  " << +gb.apu.ch1.period_sweep.pace_countdown << endl;
+        b << yellow("Period") << "          :  " << +gb.apu.ch1.period_sweep.period << endl;
+        b << yellow("Increment") << "       :  " << +gb.apu.ch1.period_sweep.increment << endl;
+        b << yellow("Rec. Trig. Cnt.") << " :  " << +gb.apu.ch1.period_sweep.recalculation.trigger_counter << "/"
+          << +gb.apu.ch1.period_sweep.recalculation.target_trigger_counter << endl;
+        b << yellow("Rec. Countdown") << "  :  " << +gb.apu.ch1.period_sweep.recalculation.countdown << endl;
+        b << yellow("Rec. Increment") << "  :  " << +gb.apu.ch1.period_sweep.recalculation.increment << endl;
+        b << yellow("Rec. From Trig.") << " :  " << +gb.apu.ch1.period_sweep.recalculation.from_trigger << endl;
+        b << yellow("Rec. Step = 0") << "   :  " << +gb.apu.ch1.period_sweep.recalculation.step_0 << endl;
 
         return b;
     };
@@ -3312,6 +3323,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     c3r3->add_node(make_apu_general_block_2(COLUMN_3_ROW_3_4_PART_2_WIDTH));
     c3r3->add_node(make_space_divider());
     c3r3->add_node(make_apu_general_block_3(COLUMN_3_ROW_3_4_PART_3_WIDTH));
+    c3r3->add_node(make_space_divider());
+    c3r3->add_node(make_apu_general_block_4(COLUMN_3_ROW_3_4_PART_4_WIDTH));
 
     auto c3r4 {make_horizontal_layout()};
     c3r4->add_node(make_apu_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));

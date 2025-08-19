@@ -245,14 +245,19 @@ private:
     void tick_sampler();
 
     void tick_period_sweep();
+    void tick_period_sweep_recalculation();
     void tick_wave();
     void tick_noise();
+
+    void period_sweep_done();
+    void period_sweep_recalculation_done();
 
 #ifdef ENABLE_CGB
     void update_pcm();
 #endif
 
-    uint32_t compute_next_period_sweep_period();
+    uint16_t compute_period_sweep_signed_increment() const;
+    uint16_t compute_next_period_sweep_period(uint16_t signed_increment, bool complement_bit) const;
 
     uint8_t compute_ch1_digital_output() const;
     uint8_t compute_ch2_digital_output() const;
@@ -322,10 +327,15 @@ public:
 
     float master_volume {1.0f};
 
-    uint64_t ticks {};
+    struct {
+        uint64_t ticks {};
+        double period {};
+        double next_tick {};
+    } sampling;
 
-    double sample_period {};
-    double next_tick_sample {};
+    bool apu_clock_edge {};
+    bool prev_div_edge_bit {};
+    uint8_t div_apu {};
 
     struct {
         RegisterUpdater updater {};
@@ -360,11 +370,23 @@ public:
         } volume_sweep;
 
         struct {
-            bool enabled {};
+            uint8_t pace_countdown {};
+
             uint16_t period {};
-            uint8_t pace {};
-            uint8_t timer {};
-            bool decreasing {};
+            uint16_t increment {};
+
+            struct {
+                bool clock_edge {};
+
+                uint8_t target_trigger_counter {};
+                uint8_t trigger_counter {};
+                uint8_t countdown {};
+
+                uint16_t increment {};
+
+                bool from_trigger {};
+                bool step_0 {};
+            } recalculation;
         } period_sweep;
     } ch1 {};
 
@@ -438,9 +460,6 @@ public:
 
         uint16_t lfsr {};
     } ch4 {};
-
-    bool prev_div_edge_bit {};
-    uint8_t div_apu {};
 };
 
 #endif // APU_H

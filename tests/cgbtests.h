@@ -1314,6 +1314,226 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/apu/ch1_change_volume_sweep_pace_7_timer_1_div_apu_4_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_change_volume_sweep_pace_7_timer_1_div_apu_4_round2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_fake_retrigger_square_wave_delay0.gbc", "docboy/ok.png"},
+
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_decrease_during_recalc_round0.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_decrease_during_recalc_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_decrease_during_recalc_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_decrease_on_trigger_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_decrease_on_trigger_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step0_after_recalc.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step0_after_recalc_period0.gbc",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step0_after_recalc_retrigger_period0.gbc",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step0_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step0_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step6_period1792_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step6_period1792_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step6_round1_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step6_round1_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step6_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step7_round1_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step7_round1_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_to_increase_step7_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_twice_period_not_overflow_round1_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_twice_period_not_overflow_round1_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_twice_period_not_overflow_round2_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_twice_period_not_overflow_round2_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_twice_period_overflow_round1_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_twice_period_overflow_round1_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_twice_period_overflow_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_twice_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_direction_twice_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_nr13_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_nr13_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_0_step0.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_reload_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_reload_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_step0.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_step0_delayed_more_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_step0_delayed_more_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_step0_delayed_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_step0_delayed_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_step6_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_2_step6_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_4_step_0_to_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_4_then_step_0_to_2_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_0_to_4_then_step_0_to_2_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_1_to_0_during_recalc_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_1_to_0_during_recalc_round2_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_1_to_0_during_recalc_round2_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_2_to_0_reload_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_2_to_0_reload_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_2_to_4_reload_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_2_to_4_reload_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_2_to_4_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_2_to_4_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_delay14285_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_delay14285_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_delay14286_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_delay14286_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_0_to_0_pace4_delay16_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_0_to_0_pace4_delay16_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_0_to_0_pace4_delay16384_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_0_to_0_pace4_delay16384_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_0_to_1_pace0.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_0_to_1_pace4_delay16.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_0_to_1_pace4_delay16384.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_0_to_1_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_0_to_1_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_0_period768_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_0_period768_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_4_period2016_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_4_period2016_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1792_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1792_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1824_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1824_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1868_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1868_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1895_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1895_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1896_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1896_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1897_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1897_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1920_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1920_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1952_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1952_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1985_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period1985_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period2016_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_6_to_5_period2016_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delayed_round1.gbc",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delayed_round2.gbc",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_twice_delayed_round1.gbc",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_twice_delayed_round2.gbc",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_twice_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_step_7_to_0_during_recalc_twice_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_decrease_speed_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_decrease_speed_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step1_delay0_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step1_delay0_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step1_delay1_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step1_delay1_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step1_delay2_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step1_delay2_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step1_delay3_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step1_delay3_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay00_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay0_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay00_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay0_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay1_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay1_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay2_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay2_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay3_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay3_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay4_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay4_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay5_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay5_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay6_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_double_trigger_step6_delay6_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_direction_decrease.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step0_period256.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step0_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step0_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step1_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step1_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step2_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step2_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step3_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step3_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step4_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step4_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step5_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step5_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step6_period2016_round1_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step6_period2016_round1_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step6_period2017_round1_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step6_period2017_round1_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step6_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step6_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step7_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_on_trigger_step7_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step0_period768.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step0_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step0_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step1_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step1_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step2_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step2_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step3_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step3_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step4_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step4_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step5_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step5_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step6_period1954_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step6_period1954_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step6_period1955_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step6_period1955_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step6_period1956_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step6_period1956_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step6_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step6_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step7_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step7_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step_7_period1600.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step_7_period1800.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_disable_step_7_period1801.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_retrigger_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_retrigger_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step0_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step0_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step1_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step1_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step2_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step2_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step3_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step3_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step4_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step4_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step5_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step5_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step6_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step6_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step7_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_step7_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace0_step6_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace0_step6_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace1_step6_delay47_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace1_step6_delay47_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace1_step6_delay48_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace1_step6_delay48_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace1_step6_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace1_step6_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace2_step6_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace2_step6_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace2_step6_round3.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_pace2_step6_round4.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_writeback_step0.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_write_nr10_overflow_period2015_step6.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_write_nr10_overflow_period2016_step6.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_write_nr10_overflow_period2017_step6.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_write_nr10_overflow_period2031_step7.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_write_nr10_overflow_period2032_step7.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_write_nr10_overflow_period2032_step7_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_write_nr10_overflow_period2032_step7_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_write_nr10_overflow_period2033_step7.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_read_apu_off_round0.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_read_apu_off_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_read_apu_off_round2.gbc", "docboy/ok.png"},
@@ -2214,13 +2434,12 @@ TEST_CASE("cgb", "[emulation]") {
                "samesuite/apu/channel_1/channel_1_stop_div-cgbE.png", COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_stop_restart.gb",
                "samesuite/apu/channel_1/channel_1_stop_restart.png", COLOR_TOLERANCE_MEDIUM},
-            //            F
-            //            {"samesuite/apu/channel_1/channel_1_sweep-cgbE.gb",
-            //            "samesuite/apu/channel_1/channel_1_sweep-cgbE.png", COLOR_TOLERANCE_MEDIUM}, F
-            //            {"samesuite/apu/channel_1/channel_1_sweep_restart-cgbE.gb",
-            //            "samesuite/apu/channel_1/channel_1_sweep_restart-cgbE.png", COLOR_TOLERANCE_MEDIUM}, F
-            //            {"samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.gb",
-            //            "samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_sweep-cgbE.gb", "samesuite/apu/channel_1/channel_1_sweep-cgbE.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_sweep_restart-cgbE.gb",
+               "samesuite/apu/channel_1/channel_1_sweep_restart-cgbE.png", COLOR_TOLERANCE_MEDIUM},
+            // F {"samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.gb",
+            // "samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.png", COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_volume.gb", "samesuite/apu/channel_1/channel_1_volume.png",
                COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_volume_div-cgbE.gb",
@@ -2312,6 +2531,868 @@ TEST_CASE("cgb", "[emulation]") {
                 F {"docboy/double_speed/apu/double_speed_apu_ch1_change_period_nr14_no_retrigger_75_17_round1.gbc",
                    "docboy/ok.png"},
                 F {"docboy/double_speed/apu/double_speed_apu_ch1_change_period_nr14_no_retrigger_75_17_round2.gbc",
+                   "docboy/ok.png"},
+
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_after_trigger_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_after_trigger_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_delay15_after_trigger.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_delay16_after_trigger.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_0_delay15_after_trigger_"
+                   "delay256_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_0_delay15_after_trigger_"
+                   "delay256_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_0_then_7_delay2_after_"
+                   "trigger_delay256_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_0_then_7_delay2_after_"
+                   "trigger_delay256_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_6_delay2_after_trigger_"
+                   "delayed_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_6_delay2_after_trigger_"
+                   "delayed_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay0_after_double_"
+                   "trigger.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay0_after_trigger.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay1_after_double_"
+                   "trigger_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay1_after_double_"
+                   "trigger_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay1_after_trigger.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay2_after_double_"
+                   "trigger_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay2_after_double_"
+                   "trigger_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay2_after_trigger_"
+                   "delay255_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay2_after_trigger_"
+                   "delay255_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay2_after_trigger_"
+                   "delay256_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay2_after_trigger_"
+                   "delay256_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay16_after_trigger_"
+                   "delay256_reload_period_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delay16_after_trigger_"
+                   "delay256_reload_period_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_0_during_recalc_then_7_delayed.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_1_during_recalc_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_1_during_recalc_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_5_during_recalc_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_step_7_to_5_during_recalc_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_channel_pace_3_step_1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_channel_pace_3_step_1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_channel_pace_3_step_2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_channel_pace_3_step_2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay3_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay4_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay4_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay5_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay5_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay6_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step1_delay6_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay3_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay4_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay4_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay5_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay5_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay6_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay6_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay7_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay7_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay8_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step2_delay8_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay3_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay4_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay4_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay5_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay5_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay6_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay6_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay7_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay7_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay8_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay8_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay9_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay9_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay10_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step3_delay10_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay3_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay4_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay4_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay5_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay5_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay6_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay6_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay7_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay7_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay8_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay8_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay9_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay9_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay10_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay10_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay11_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay11_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay12_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step4_delay12_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay3_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay4_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay4_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay5_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay5_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay6_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay6_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay7_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay7_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay8_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay8_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay9_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay9_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay10_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay10_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay11_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay11_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay12_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay12_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay13_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay13_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay14_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step5_delay14_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_b_delay0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_b_delay0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_b_delay1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_b_delay1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay00_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay00_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay3_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay4_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay4_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay5_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay5_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay6_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay6_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay7_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay7_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay8_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay8_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay9_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay9_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay10_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay10_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay11_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay11_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay12_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay12_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay13_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay13_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay14_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay14_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay15_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay15_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay16_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay16_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay17_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay17_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay18_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_double_trigger_step6_delay18_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step3_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_a1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_a1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_a2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_a2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_b1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_b1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_b2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_b2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_c1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_c1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_c2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_c2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_d1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_d1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_d2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_d2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step4_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step5_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step5_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step6_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step6_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step7_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_on_trigger_step7_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay0_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay0_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay1_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay1_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay2_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay2_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay3_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay3_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay4_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step1_delay4_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay0_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay0_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay1_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay1_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay2_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay2_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay3_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay3_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_3_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_4_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_4_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_5_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_5_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_6_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_6_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_7_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_7_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_8_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay4_8_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay5_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay5_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay6_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay6_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay7_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay7_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay8_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay8_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay9_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay9_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay10_0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_disable_on_triple_trigger_step4_delay10_0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_a_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_a_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_b_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_b_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_c_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_c_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_d_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_d_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step0_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step3_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_a1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_a1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_a2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_a2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_a3_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_b1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_b1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_b2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_b2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_c1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_c1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_c2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_c2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_d1_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_d1_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_d2_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_d2_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step4_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step5_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step5_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step6_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step6_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step7_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/double_speed_apu_ch1_period_sweep_disable_step7_round2.gbc",
                    "docboy/ok.png"},
 
                 F {"docboy/double_speed/apu/double_speed_apu_ch1_period_timing_round1.gbc", "docboy/ok.png"},

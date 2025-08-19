@@ -465,6 +465,10 @@ public:
         Runner<TwoPlayersFramebufferRunner>(),
         gb2 {std::make_unique<GameBoy>()},
         core2 {*gb2} {
+#ifdef ENABLE_BOOTROM
+        core2.load_boot_rom(boot_rom);
+#endif
+        core2.set_audio_sample_rate(32786);
     }
 
     TwoPlayersFramebufferRunner& rom2(const std::string& filename) {
