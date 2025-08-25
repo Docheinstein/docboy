@@ -2494,7 +2494,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     const auto make_apu_general_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
-        b << yellow("On") << "             :  " << (gb.apu.nr52.enable ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("On") << "              :  " << (gb.apu.nr52.enable ? green("ON") : darkgray("OFF")) << endl;
         return b;
     };
 
