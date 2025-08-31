@@ -16,6 +16,7 @@ bool create_directory(const std::string& filename, int mode = 0755);
 
 #ifndef WINDOWS
 DirectoryTraverser iterate_directory(const std::string& filename);
+RecursiveDirectoryTraverser recursive_iterate_directory(const std::string& filename);
 #endif
 
 #endif // UTILSOS_H

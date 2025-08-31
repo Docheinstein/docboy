@@ -68,4 +68,8 @@ bool create_directory(const std::string& filename, int mode) {
 DirectoryTraverser iterate_directory(const std::string& filename) {
     return DirectoryTraverser {filename};
 }
+
+RecursiveDirectoryTraverser recursive_iterate_directory(const std::string& filename) {
+    return RecursiveDirectoryTraverser {filename};
+}
 #endif

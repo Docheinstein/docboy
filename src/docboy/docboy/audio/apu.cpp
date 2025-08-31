@@ -445,6 +445,8 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch1.period_sweep.pace_countdown);
     parcel.write_uint16(ch1.period_sweep.period);
     parcel.write_uint16(ch1.period_sweep.increment);
+    parcel.write_uint8(ch1.period_sweep.restart_countdown);
+    parcel.write_bool(ch1.period_sweep.just_reloaded_period);
     parcel.write_bool(ch1.period_sweep.recalculation.clock_edge);
     parcel.write_uint8(ch1.period_sweep.recalculation.target_trigger_counter);
     parcel.write_uint8(ch1.period_sweep.recalculation.trigger_counter);
@@ -573,6 +575,8 @@ void Apu::load_state(Parcel& parcel) {
     ch1.period_sweep.pace_countdown = parcel.read_uint8();
     ch1.period_sweep.period = parcel.read_uint16();
     ch1.period_sweep.increment = parcel.read_uint16();
+    ch1.period_sweep.restart_countdown = parcel.read_uint8();
+    ch1.period_sweep.just_reloaded_period = parcel.read_bool();
     ch1.period_sweep.recalculation.clock_edge = parcel.read_bool();
     ch1.period_sweep.recalculation.target_trigger_counter = parcel.read_uint8();
     ch1.period_sweep.recalculation.trigger_counter = parcel.read_uint8();
@@ -711,6 +715,8 @@ void Apu::reset() {
     ch1.period_sweep.pace_countdown = 0;
     ch1.period_sweep.period = 0;
     ch1.period_sweep.increment = 0;
+    ch1.period_sweep.restart_countdown = 0;
+    ch1.period_sweep.just_reloaded_period = false;
     ch1.period_sweep.recalculation.clock_edge = false;
     ch1.period_sweep.recalculation.target_trigger_counter = 0;
     ch1.period_sweep.recalculation.trigger_counter = 0;
@@ -1065,8 +1071,6 @@ void Apu::tick_even() {
     flush_pending_write();
 
     if (nr52.enable) {
-        tick_div_apu();
-
         tick_square_wave(ch1, nr52.ch1, nr11, nr13, nr14);
         tick_square_wave(ch2, nr52.ch2, nr21, nr23, nr24);
         tick_noise();
@@ -1085,6 +1089,8 @@ void Apu::tick_even() {
 void Apu::tick_odd() {
     if (nr52.enable) {
         tick_period_sweep_recalculation();
+
+        tick_div_apu();
 
         tick_wave();
     }
@@ -1200,6 +1206,13 @@ void Apu::tick_period_sweep_recalculation() {
             }
         }
     }
+
+    // TODO: is this always ticked, or maybe it's aligned with apu_clock_edge in some manner?
+    if (ch1.period_sweep.restart_countdown) {
+        --ch1.period_sweep.restart_countdown;
+    }
+
+    ch1.period_sweep.just_reloaded_period = false;
 }
 
 void Apu::tick_wave() {
@@ -1264,6 +1277,17 @@ void Apu::tick_noise() {
 }
 
 void Apu::period_sweep_done() {
+    // Glitch.
+    // If period_sweep ticks while a recalculation is pending, strange things happens.
+    if (ch1.period_sweep.recalculation.countdown) {
+        if (ch1.period_sweep.restart_countdown) {
+            // If the channel has just been triggered (but not retriggered), the period seems to be reloaded as well.
+            ch1.period_sweep.period = concat(nr14.period_high, nr13.period_low);
+        }
+        // Increment seems to be reset anyway.
+        ch1.period_sweep.increment = 0;
+    }
+
     if (nr10.pace) {
         if (nr10.step) {
             // If step is > 0, the internal wave period (NR14 and NR13) is updated accordingly to the new calculation.
@@ -1273,18 +1297,24 @@ void Apu::period_sweep_done() {
             nr14.period_high = get_bits_range<10, 8>(period);
             nr13.period_low = keep_bits<8>(period);
 
-            // A recalculation is scheduled with a certain delay (it depends on the step value).
-            ch1.period_sweep.recalculation.countdown = 1 + nr10.step;
-            ch1.period_sweep.recalculation.clock_edge = false;
-            ch1.period_sweep.recalculation.step_0 = false;
+            ch1.period_sweep.just_reloaded_period = true;
+
+            // A recalculation is scheduled (if it was not already pending) with a delay that depends on the step value.
+            if (ch1.period_sweep.restart_countdown == 0) {
+                ch1.period_sweep.recalculation.countdown = 1 + nr10.step;
+                ch1.period_sweep.recalculation.clock_edge = false;
+                ch1.period_sweep.recalculation.step_0 = false;
+            }
         } else {
-            // The recalculation happens almost instantly if the step is 0.
+            // The recalculation happens almost instantly if the step is 0 (if it was not already pending).
             // Furthermore, this seems the only case in which the recalculation is not aligned with the internal APU
             // clock, instead it is aligned with this the time the period sweep is done.
             // TODO. further investigations?
-            ch1.period_sweep.recalculation.countdown = 2;
-            ch1.period_sweep.recalculation.clock_edge = !apu_clock_edge;
-            ch1.period_sweep.recalculation.step_0 = true;
+            if (ch1.period_sweep.restart_countdown == 0) {
+                ch1.period_sweep.recalculation.countdown = 2;
+                ch1.period_sweep.recalculation.clock_edge = !apu_clock_edge;
+                ch1.period_sweep.recalculation.step_0 = true;
+            }
         }
 
         // Increment is reloaded accordingly to the step.
@@ -1503,17 +1533,8 @@ void Apu::flush_pending_write() {
 }
 
 void Apu::write_register(RegisterUpdater updater, uint8_t value) {
-#ifdef ENABLE_CGB
-    if (speed_switch_controller.is_double_speed_mode()) {
-        (this->*updater)(value);
-    } else {
-        pending_write.updater = updater;
-        pending_write.value = value;
-    }
-#else
     pending_write.updater = updater;
     pending_write.value = value;
-#endif
 }
 
 void Apu::update_nr10(uint8_t value) {
@@ -1608,12 +1629,24 @@ void Apu::update_nr12(uint8_t value) {
 }
 
 void Apu::update_nr13(uint8_t value) {
+    if (ch1.period_sweep.just_reloaded_period) {
+        // TODO: check this case.
+    }
+
     update_nrx3(ch1, nr13, nr14, value);
 }
 
 void Apu::update_nr14(uint8_t value) {
     if (!nr52.enable) {
         return;
+    }
+
+    if (ch1.period_sweep.just_reloaded_period) {
+        // Glitch.
+        // If the period has just been reloaded by the period sweep, then the new period value is just ignored.
+        // It also seems that the wave position is advanced in this case.
+        value = discard_bits<3>(value) | nr14.period_high;
+        advance_square_wave_position(ch1);
     }
 
     update_nrx4(ch1, nr52.ch1, nr12, nr13, nr14, value);
@@ -1627,6 +1660,13 @@ void Apu::update_nr14(uint8_t value) {
         ch1.period_sweep.period = 0;
         ch1.period_sweep.increment = 0;
         ch1.period_sweep.recalculation.increment = 0;
+
+        // This countdown refers to the time the channel has been triggered (not retriggered!).
+        // This is needed to emulate a few glitches occurring when the period sweep is ticked
+        // nearly to the NR14 write.
+        if (ch1.period_sweep.recalculation.trigger_counter == ch1.period_sweep.recalculation.target_trigger_counter) {
+            ch1.period_sweep.restart_countdown = 3;
+        }
 
         // [blargg/04-sweep]
         if (nr10.step) {
@@ -1752,10 +1792,8 @@ inline void Apu::update_nrx3(Channel& ch, Nrx3& nrx3, Nrx4& nrx4, uint8_t value)
     }
 }
 
-template <typename Channel, typename ChannelOnFlag, typename Nrx2, typename Nrx3, typename Nrx4,
-          typename TriggerFunction>
-inline void Apu::update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3& nrx3, Nrx4& nrx4, uint8_t value,
-                             TriggerFunction&& custom_trigger_function) {
+template <typename Channel, typename ChannelOnFlag, typename Nrx2, typename Nrx3, typename Nrx4>
+inline void Apu::update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3& nrx3, Nrx4& nrx4, uint8_t value) {
     if (!nr52.enable) {
         return;
     }

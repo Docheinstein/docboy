@@ -14,10 +14,18 @@
     REQUIRE(adapter.run(params))
 
 #define RUN_FOLDER_FRAMEBUFFER_TEST_ROMS(folder, result)                                                               \
-    static RunnerAdapter adapter {folder, TESTS_ROOT_FOLDER "/results/dmg/"};                                          \
+    static RunnerAdapter adapter {"", TESTS_ROOT_FOLDER "/results/dmg/"};                                              \
     for (const auto& entry : iterate_directory(folder)) {                                                              \
         if (entry.type == DirectoryIteratorEntry::FileType::File) {                                                    \
-            REQUIRE(adapter.run(F {entry.filename, result}));                                                          \
+            REQUIRE(adapter.run(F {entry.path.c_str(), result}));                                                      \
+        }                                                                                                              \
+    }
+
+#define RUN_RECURSIVE_FOLDER_FRAMEBUFFER_TEST_ROMS(folder, result)                                                     \
+    static RunnerAdapter adapter {"", TESTS_ROOT_FOLDER "/results/dmg/"};                                              \
+    for (const auto& entry : recursive_iterate_directory(folder)) {                                                    \
+        if (entry.type == DirectoryIteratorEntry::FileType::File) {                                                    \
+            REQUIRE(adapter.run(F {entry.path.c_str(), result}));                                                      \
         }                                                                                                              \
     }
 
@@ -3322,6 +3330,47 @@ TEST_CASE("dmg", "[emulation]") {
             F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_round1_2.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_round2_1.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_round2_2.gb", "docboy/ok.png"},
+
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14277_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14277_round2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14278_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14278_round2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14279.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14284.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14285_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14285_round2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14286_round1.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_delay14286_round2.gb", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14277_round1.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14277_round2.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14278_round1.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14278_round2.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14279_round1.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14279_round2.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14280_round1.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14280_round2.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14283_round1.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14283_round2.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14284_round1.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14285_round1.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14285_round2.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14286_round1.gb",
+               "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_period_nr14_during_recalc_step0_delay14286_round2.gb",
+               "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_step_0_to_0_pace4_delay16_round1.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_step_0_to_0_pace4_delay16_round2.gb", "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_step_0_to_0_pace4_delay16384_round1.gb", "docboy/ok.png"},

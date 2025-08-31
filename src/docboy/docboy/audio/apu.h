@@ -290,10 +290,8 @@ private:
     template <typename Channel, typename Nrx3, typename Nrx4>
     void update_nrx3(Channel& ch, Nrx3& nrx3, Nrx4& nrx4, uint8_t value);
 
-    template <typename Channel, typename ChannelOnFlag, typename Nrx2, typename Nrx3, typename Nrx4,
-              typename TriggerFunction = std::nullptr_t>
-    void update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3& nrx3, Nrx4& nrx4, uint8_t value,
-                     TriggerFunction&& custom_trigger_function = nullptr);
+    template <typename Channel, typename ChannelOnFlag, typename Nrx2, typename Nrx3, typename Nrx4>
+    void update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3& nrx3, Nrx4& nrx4, uint8_t value);
 
     void update_nr30(uint8_t value);
     void update_nr31(uint8_t value);
@@ -374,6 +372,10 @@ public:
 
             uint16_t period {};
             uint16_t increment {};
+
+            uint8_t restart_countdown {};
+
+            bool just_reloaded_period {};
 
             struct {
                 bool clock_edge {};

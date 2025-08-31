@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <vector>
 
 // TODO: Support for Windows
 
@@ -18,7 +19,7 @@ struct DirectoryIteratorEntry {
         Other = (1 << 2),
     };
 
-    const char* filename {};
+    std::string path {};
     FileType type {};
 };
 
@@ -31,8 +32,9 @@ struct DirectoryIterator {
     using pointer = const DirectoryIteratorEntry*;
     using reference = const DirectoryIteratorEntry&;
 
-    explicit DirectoryIterator(const char* path) {
-        dir = opendir(path);
+    explicit DirectoryIterator(const std::string& path) :
+        root {path} {
+        dir = opendir(path.c_str());
         advance();
     }
 
@@ -46,9 +48,10 @@ struct DirectoryIterator {
     DirectoryIterator& operator=(const DirectoryIterator&) = delete;
 
     DirectoryIterator(DirectoryIterator&& other) noexcept :
+        root {std::move(other.root)},
         dir {other.dir},
         entry {other.entry},
-        current {other.current} {
+        current {std::move(other.current)} {
         other.dir = nullptr;
         other.entry = nullptr;
     }
@@ -59,9 +62,10 @@ struct DirectoryIterator {
                 closedir(dir);
             }
 
+            root = std::move(other.root);
             dir = other.dir;
             entry = other.entry;
-            current = other.current;
+            current = std::move(other.current);
 
             other.dir = nullptr;
             other.entry = nullptr;
@@ -87,6 +91,10 @@ struct DirectoryIterator {
         return entry != nullptr;
     }
 
+    bool operator==(DirectorySentinel s) const {
+        return !operator!=(s);
+    }
+
 private:
     void advance() {
         if (!dir) {
@@ -98,7 +106,7 @@ private:
         } while (entry && (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0));
 
         if (entry) {
-            current.filename = entry->d_name;
+            current.path = root + "/" + entry->d_name;
             switch (entry->d_type) {
             case DT_REG:
                 current.type = DirectoryIteratorEntry::FileType::File;
@@ -115,6 +123,8 @@ private:
         }
     }
 
+    std::string root {};
+
     DIR* dir {};
     dirent* entry {};
 
@@ -127,7 +137,7 @@ struct DirectoryTraverser {
     }
 
     DirectoryIterator begin() {
-        return DirectoryIterator {path.c_str()};
+        return DirectoryIterator {path};
     }
 
     DirectorySentinel end() {
@@ -137,6 +147,78 @@ struct DirectoryTraverser {
 private:
     std::string path {};
 };
+
+struct RecursiveDirectoryIterator {
+    using iterator_category = std::input_iterator_tag;
+    using value_type = DirectoryIteratorEntry;
+    using difference_type = std::ptrdiff_t;
+    using pointer = const DirectoryIteratorEntry*;
+    using reference = const DirectoryIteratorEntry&;
+
+    explicit RecursiveDirectoryIterator(const std::string& path) {
+        stack.emplace_back(path);
+        advance();
+    }
+
+    reference operator*() const {
+        return current;
+    }
+
+    pointer operator->() const {
+        return &current;
+    }
+
+    RecursiveDirectoryIterator& operator++() {
+        advance();
+        return *this;
+    }
+
+    bool operator!=(DirectorySentinel) const {
+        return !stack.empty();
+    }
+
+private:
+    void advance() {
+        while (!stack.empty()) {
+            DirectoryIterator& it = stack.back();
+
+            if (it == DirectorySentinel {}) {
+                stack.pop_back();
+                continue;
+            }
+
+            current = *it;
+            ++it;
+
+            if (current.type == DirectoryIteratorEntry::Directory) {
+                stack.emplace_back(current.path);
+            }
+
+            return;
+        }
+    }
+
+    std::vector<DirectoryIterator> stack {};
+    value_type current {};
+};
+
+struct RecursiveDirectoryTraverser {
+    explicit RecursiveDirectoryTraverser(std::string path) :
+        path {std::move(path)} {
+    }
+
+    RecursiveDirectoryIterator begin() {
+        return RecursiveDirectoryIterator {path};
+    }
+
+    DirectorySentinel end() {
+        return DirectorySentinel {};
+    }
+
+private:
+    std::string path {};
+};
+
 #endif
 
 #endif // UTILSTRAVERSAL_H
