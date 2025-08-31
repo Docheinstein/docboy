@@ -1,5 +1,7 @@
 #include "docboy/audio/apu.h"
 
+#include <array>
+
 #include "docboy/bootrom/helpers.h"
 #include "docboy/timers/timers.h"
 
@@ -1661,6 +1663,8 @@ void Apu::update_nr14(uint8_t value) {
         ch1.period_sweep.increment = 0;
         ch1.period_sweep.recalculation.increment = 0;
 
+        ch1.period_sweep.recalculation.from_trigger = true;
+
         // This countdown refers to the time the channel has been triggered (not retriggered!).
         // This is needed to emulate a few glitches occurring when the period sweep is ticked
         // nearly to the NR14 write.
@@ -1700,8 +1704,6 @@ void Apu::update_nr14(uint8_t value) {
 
             // Align the recalculation with the APU clock.
             ch1.period_sweep.recalculation.clock_edge = false;
-
-            ch1.period_sweep.recalculation.from_trigger = true;
         }
     }
 }

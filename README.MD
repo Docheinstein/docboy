@@ -1,5 +1,5 @@
-![Tests](https://github.com/Docheinstein/docboy/actions/workflows/build-all-platforms.yml/badge.svg)
-![Build](https://github.com/Docheinstein/docboy/actions/workflows/build-and-test.yml/badge.svg)
+![Tests](https://github.com/Docheinstein/docboy/actions/workflows/build-all-platforms.yml/badge.svg?branch=cgb)
+![Build](https://github.com/Docheinstein/docboy/actions/workflows/build-and-test.yml/badge.svg?branch=cgb)
 
 # DocBoy
 
