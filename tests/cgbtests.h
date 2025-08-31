@@ -2483,8 +2483,8 @@ TEST_CASE("cgb", "[emulation]") {
                COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_sweep_restart-cgbE.gb",
                "samesuite/apu/channel_1/channel_1_sweep_restart-cgbE.png", COLOR_TOLERANCE_MEDIUM},
-            // F {"samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.gb",
-            // "samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.gb",
+               "samesuite/apu/channel_1/channel_1_sweep_restart_2-cgbE.png", COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_volume.gb", "samesuite/apu/channel_1/channel_1_volume.png",
                COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_1/channel_1_volume_div-cgbE.gb",
@@ -2798,6 +2798,122 @@ TEST_CASE("cgb", "[emulation]") {
                 F {"docboy/double_speed/apu/"
                    "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_double_trigger_delay2_"
                    "delay12246_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12240_round1."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12240_round2."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12241_round1."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12241_round2."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12242_round1."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12242_round2."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12243_round1."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12243_round2."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12244_round1."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12244_round2."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12245_round1."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12245_round2."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12246_round1."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_delay12246_round2."
+                   "gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_recalc_delay12242_"
+                   "round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_recalc_delay12242_"
+                   "round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_recalc_delay12243_"
+                   "round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_recalc_delay12243_"
+                   "round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_recalc_delay12244_"
+                   "round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_recalc_delay12244_"
+                   "round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_recalc_delay12245_"
+                   "round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_recalc_delay12245_"
+                   "round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_step0_delay12242_"
+                   "round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_step0_delay12242_"
+                   "round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_step0_delay12243_"
+                   "round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_step0_delay12244_"
+                   "round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_step0_delay12245_"
+                   "round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_step0_delay12246_"
+                   "round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_no_retrigger_step0_delay12246_"
+                   "round2.gbc",
                    "docboy/ok.png"},
                 F {"docboy/double_speed/apu/"
                    "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_step0_delay12228_round1.gbc",

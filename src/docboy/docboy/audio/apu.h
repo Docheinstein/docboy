@@ -375,7 +375,7 @@ public:
 
             uint8_t restart_countdown {};
 
-            bool just_reloaded_period {};
+            uint8_t period_reload_decay {};
 
             struct {
                 bool clock_edge {};

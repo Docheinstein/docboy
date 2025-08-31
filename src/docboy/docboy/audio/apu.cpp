@@ -448,7 +448,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint16(ch1.period_sweep.period);
     parcel.write_uint16(ch1.period_sweep.increment);
     parcel.write_uint8(ch1.period_sweep.restart_countdown);
-    parcel.write_bool(ch1.period_sweep.just_reloaded_period);
+    parcel.write_uint8(ch1.period_sweep.period_reload_decay);
     parcel.write_bool(ch1.period_sweep.recalculation.clock_edge);
     parcel.write_uint8(ch1.period_sweep.recalculation.target_trigger_counter);
     parcel.write_uint8(ch1.period_sweep.recalculation.trigger_counter);
@@ -578,7 +578,7 @@ void Apu::load_state(Parcel& parcel) {
     ch1.period_sweep.period = parcel.read_uint16();
     ch1.period_sweep.increment = parcel.read_uint16();
     ch1.period_sweep.restart_countdown = parcel.read_uint8();
-    ch1.period_sweep.just_reloaded_period = parcel.read_bool();
+    ch1.period_sweep.period_reload_decay = parcel.read_uint8();
     ch1.period_sweep.recalculation.clock_edge = parcel.read_bool();
     ch1.period_sweep.recalculation.target_trigger_counter = parcel.read_uint8();
     ch1.period_sweep.recalculation.trigger_counter = parcel.read_uint8();
@@ -718,7 +718,7 @@ void Apu::reset() {
     ch1.period_sweep.period = 0;
     ch1.period_sweep.increment = 0;
     ch1.period_sweep.restart_countdown = 0;
-    ch1.period_sweep.just_reloaded_period = false;
+    ch1.period_sweep.period_reload_decay = 0;
     ch1.period_sweep.recalculation.clock_edge = false;
     ch1.period_sweep.recalculation.target_trigger_counter = 0;
     ch1.period_sweep.recalculation.trigger_counter = 0;
@@ -1209,12 +1209,14 @@ void Apu::tick_period_sweep_recalculation() {
         }
     }
 
-    // TODO: is this always ticked, or maybe it's aligned with apu_clock_edge in some manner?
+    // TODO: check the exact timing of this glitch-counters (maybe these are aligned with apu_clock_edge)?
     if (ch1.period_sweep.restart_countdown) {
         --ch1.period_sweep.restart_countdown;
     }
 
-    ch1.period_sweep.just_reloaded_period = false;
+    if (ch1.period_sweep.period_reload_decay) {
+        --ch1.period_sweep.period_reload_decay;
+    }
 }
 
 void Apu::tick_wave() {
@@ -1299,7 +1301,7 @@ void Apu::period_sweep_done() {
             nr14.period_high = get_bits_range<10, 8>(period);
             nr13.period_low = keep_bits<8>(period);
 
-            ch1.period_sweep.just_reloaded_period = true;
+            ch1.period_sweep.period_reload_decay = 2;
 
             // A recalculation is scheduled (if it was not already pending) with a delay that depends on the step value.
             if (ch1.period_sweep.restart_countdown == 0) {
@@ -1631,7 +1633,7 @@ void Apu::update_nr12(uint8_t value) {
 }
 
 void Apu::update_nr13(uint8_t value) {
-    if (ch1.period_sweep.just_reloaded_period) {
+    if (ch1.period_sweep.period_reload_decay == 2) {
         // Glitch.
         // If the period has just been reloaded by the period sweep, then the new period value is just ignored.
         value = nr13.period_low;
@@ -1645,7 +1647,7 @@ void Apu::update_nr14(uint8_t value) {
         return;
     }
 
-    if (ch1.period_sweep.just_reloaded_period) {
+    if (ch1.period_sweep.period_reload_decay == 2) {
         // Glitch.
         // If the period has just been reloaded by the period sweep, then the new period value is just ignored.
         // It also seems that the wave position is advanced in this case.
@@ -1706,6 +1708,13 @@ void Apu::update_nr14(uint8_t value) {
 
             // Align the recalculation with the APU clock.
             ch1.period_sweep.recalculation.clock_edge = false;
+        }
+    } else {
+        // Glitch.
+        // There's a window, after period sweep tick reload, where increment is reloaded anyway,
+        // even if trigger is not set.
+        if (ch1.period_sweep.period_reload_decay) {
+            ch1.period_sweep.increment = concat(nr14.period_high, nr13.period_low) >> nr10.step;
         }
     }
 }
