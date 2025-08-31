@@ -2579,6 +2579,42 @@ TEST_CASE("cgb", "[emulation]") {
                    "docboy/ok.png"},
 
                 F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12240_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12240_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12241_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12241_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12242_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12242_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12243_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12243_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12244_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12244_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12245_round1.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
+                   "double_speed_apu_ch1_period_sweep_change_period_nr13_during_recalc_delay12245_round2.gbc",
+                   "docboy/ok.png"},
+                F {"docboy/double_speed/apu/"
                    "double_speed_apu_ch1_period_sweep_change_period_nr14_during_recalc_delay12228_round1.gbc",
                    "docboy/ok.png"},
                 F {"docboy/double_speed/apu/"

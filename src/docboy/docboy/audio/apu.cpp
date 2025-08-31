@@ -1632,7 +1632,9 @@ void Apu::update_nr12(uint8_t value) {
 
 void Apu::update_nr13(uint8_t value) {
     if (ch1.period_sweep.just_reloaded_period) {
-        // TODO: check this case.
+        // Glitch.
+        // If the period has just been reloaded by the period sweep, then the new period value is just ignored.
+        value = nr13.period_low;
     }
 
     update_nrx3(ch1, nr13, nr14, value);
