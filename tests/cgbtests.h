@@ -1376,6 +1376,13 @@ TEST_CASE("cgb", "[emulation]") {
             F {"docboy/apu/ch1_period_sweep_change_pace_2_to_4_after_recalc_round2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_pace_2_to_4_round1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_pace_2_to_4_round2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_4_to_6_during_recalc_round0_1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_4_to_6_during_recalc_round0_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_4_to_6_during_recalc_round1_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_4_to_6_during_recalc_round1_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_4_to_6_during_recalc_round2_2.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_4_to_6_round1.gbc", "docboy/ok.png"},
+            F {"docboy/apu/ch1_period_sweep_change_pace_4_to_6_round2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_round1_1.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_round1_2.gbc", "docboy/ok.png"},
             F {"docboy/apu/ch1_period_sweep_change_period_nr13_during_recalc_round2_1.gbc", "docboy/ok.png"},
@@ -5374,15 +5381,8 @@ TEST_CASE("cgb", "[emulation]") {
 
 #else
     SECTION("wip") {
-        // RUN_FOLDER_FRAMEBUFFER_TEST_ROMS("/home/stefano/Develop/C/docboy-test-suite/roms/cgb/apu/04_change_step_during_recalc",
-        // "docboy/ok.png");
         RUN_RECURSIVE_FOLDER_FRAMEBUFFER_TEST_ROMS(
             "/home/stefano/Develop/C/docboy-test-suite/roms/cgb/apu-sweep/double_speed", "docboy/ok.png");
-        // RUN_RECURSIVE_FOLDER_FRAMEBUFFER_TEST_ROMS("/home/stefano/Develop/C/docboy-test-suite/roms/cgb/apu-sweep/single_speed",
-        // "docboy/ok.png");
-
-        // RUN_RECURSIVE_FOLDER_FRAMEBUFFER_TEST_ROMS("/home/stefano/Develop/C/docboy-test-suite/roms/cgb/apu-sweep/double_speed/00_core",
-        // "docboy/ok.png");
     }
 #endif
 }

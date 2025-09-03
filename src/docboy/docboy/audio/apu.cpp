@@ -1319,10 +1319,6 @@ void Apu::period_sweep_done() {
         ch1.period_sweep.reload.reload_period = true;
         ch1.period_sweep.reload.countdown = 2;
     }
-
-    // Pace 0 is reloaded as pace 8.
-    // [blargg/05-sweep-details]
-    ch1.period_sweep.pace_countdown = nr10.pace ? nr10.pace : 8;
 }
 
 void Apu::period_sweep_reload_done() {
@@ -1348,6 +1344,10 @@ void Apu::period_sweep_reload_done() {
 
     // Increment is reloaded accordingly to the step.
     ch1.period_sweep.increment = concat(nr14.period_high, nr13.period_low) >> nr10.step;
+
+    // Pace 0 is reloaded as pace 8.
+    // [blargg/05-sweep-details]
+    ch1.period_sweep.pace_countdown = nr10.pace ? nr10.pace : 8;
 }
 
 void Apu::period_sweep_recalculation_done() {
