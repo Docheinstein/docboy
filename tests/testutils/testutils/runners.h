@@ -156,7 +156,7 @@ public:
             try {
                 core.cycle();
             } catch (const std::runtime_error& err) {
-                throw std::runtime_error("=== " + rom_name + " ===\n" + err.what());
+                throw std::runtime_error(rom_name + "\n" + err.what());
             }
 
             impl->on_cycle();
@@ -173,7 +173,7 @@ public:
         if (has_ever_checked) {
             impl->on_expectation_failed();
         } else if (impl->should_ever_check_expectation()) {
-            runner_log("=== " + rom_name + " ===");
+            runner_log(rom_name);
             runner_log("Expectation never checked!");
         }
 
@@ -298,7 +298,7 @@ public:
         // Framebuffer not equals: figure out where's the (first) problem
         std::stringstream output_message;
 
-        output_message << "=== " << rom_name << " ===" << std::endl;
+        output_message << rom_name << std::endl;
 
         uint32_t i;
         for (i = 0; i < FRAMEBUFFER_NUM_PIXELS; i++) {
@@ -378,7 +378,7 @@ public:
     }
 
     void on_expectation_failed() {
-        runner_log("=== " + rom_name + " ===");
+        runner_log(rom_name);
         runner_log("Expected serial output: " + hex(expected_output));
         runner_log("Actual serial output  : " + hex(last_output));
     }
@@ -429,7 +429,7 @@ public:
     }
 
     void on_expectation_failed() {
-        runner_log("=== " + rom_name + " ===");
+        runner_log(rom_name);
 
         std::string expected_output_str = "[" +
                                           join(expected_output, ",",
@@ -546,7 +546,7 @@ public:
         // Framebuffer not equals: figure out where's the (first) problem
         std::stringstream output_message;
 
-        output_message << "=== " << rom_name << "," << rom_name2 << "===" << std::endl;
+        output_message << rom_name << "," << rom_name2 << std::endl;
 
         const auto compare_framebuffers = [&output_message, this](uint16_t* last_framebuffer,
                                                                   uint16_t* expected_framebuffer) {

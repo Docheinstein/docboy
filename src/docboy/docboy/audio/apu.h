@@ -245,11 +245,13 @@ private:
     void tick_sampler();
 
     void tick_period_sweep();
+    void tick_period_sweep_reload();
     void tick_period_sweep_recalculation();
     void tick_wave();
     void tick_noise();
 
     void period_sweep_done();
+    void period_sweep_reload_done();
     void period_sweep_recalculation_done();
 
 #ifdef ENABLE_CGB
@@ -375,19 +377,21 @@ public:
 
             uint8_t restart_countdown {};
 
-            uint8_t period_reload_decay {};
+            struct {
+                uint8_t countdown {};
+                bool period_reloaded {};
+                bool reload_period {};
+            } reload;
 
             struct {
-                bool clock_edge {};
-
                 uint8_t target_trigger_counter {};
                 uint8_t trigger_counter {};
                 uint8_t countdown {};
+                bool instant {};
 
                 uint16_t increment {};
 
                 bool from_trigger {};
-                bool step_0 {};
             } recalculation;
         } period_sweep;
     } ch1 {};

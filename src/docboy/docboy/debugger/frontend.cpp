@@ -2559,12 +2559,13 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Pace Countdown") << "  :  " << +gb.apu.ch1.period_sweep.pace_countdown << endl;
         b << yellow("Period") << "          :  " << +gb.apu.ch1.period_sweep.period << endl;
         b << yellow("Increment") << "       :  " << +gb.apu.ch1.period_sweep.increment << endl;
+        b << yellow("Reload Countd.") << "  :  " << +gb.apu.ch1.period_sweep.reload.countdown << endl;
+        b << yellow("Reload Period") << "   :  " << +gb.apu.ch1.period_sweep.reload.reload_period << endl;
         b << yellow("Rec. Trig. Cnt.") << " :  " << +gb.apu.ch1.period_sweep.recalculation.trigger_counter << "/"
           << +gb.apu.ch1.period_sweep.recalculation.target_trigger_counter << endl;
         b << yellow("Rec. Countdown") << "  :  " << +gb.apu.ch1.period_sweep.recalculation.countdown << endl;
         b << yellow("Rec. Increment") << "  :  " << +gb.apu.ch1.period_sweep.recalculation.increment << endl;
         b << yellow("Rec. From Trig.") << " :  " << +gb.apu.ch1.period_sweep.recalculation.from_trigger << endl;
-        b << yellow("Rec. Step = 0") << "   :  " << +gb.apu.ch1.period_sweep.recalculation.step_0 << endl;
 
         return b;
     };
