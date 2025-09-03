@@ -2534,6 +2534,31 @@ TEST_CASE("cgb", "[emulation]") {
             F {"samesuite/apu/channel_1/channel_1_volume_div-cgbE.gb",
                "samesuite/apu/channel_1/channel_1_volume_div-cgbE.png", COLOR_TOLERANCE_MEDIUM},
 
+            F {"samesuite/apu/channel_2/channel_2_align.gb", "samesuite/apu/channel_2/channel_2_align.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_align_cpu.gb", "samesuite/apu/channel_2/channel_2_align_cpu.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_delay.gb", "samesuite/apu/channel_2/channel_2_delay.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_duty.gb", "samesuite/apu/channel_2/channel_2_duty.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_duty_delay.gb", "samesuite/apu/channel_2/channel_2_duty_delay.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_freq_change.gb", "samesuite/apu/channel_2/channel_2_freq_change.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_nrx2_glitch.gb", "samesuite/apu/channel_2/channel_2_nrx2_glitch.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_nrx2_speed_change.gb",
+               "samesuite/apu/channel_2/channel_2_nrx2_speed_change.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_restart.gb", "samesuite/apu/channel_2/channel_2_restart.png",
+               COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_restart_nrx2_glitch.gb",
+               "samesuite/apu/channel_2/channel_2_restart_nrx2_glitch.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_stop_restart.gb",
+               "samesuite/apu/channel_2/channel_2_stop_restart.png", COLOR_TOLERANCE_MEDIUM},
+            F {"samesuite/apu/channel_2/channel_2_volume.gb", "samesuite/apu/channel_2/channel_2_volume.png",
+               COLOR_TOLERANCE_MEDIUM},
+
             F {"samesuite/apu/channel_3/channel_3_and_glitch.gb", "samesuite/apu/channel_3/channel_3_and_glitch.png",
                COLOR_TOLERANCE_MEDIUM},
             F {"samesuite/apu/channel_3/channel_3_delay.gb", "samesuite/apu/channel_3/channel_3_delay.png",
@@ -5381,8 +5406,7 @@ TEST_CASE("cgb", "[emulation]") {
 
 #else
     SECTION("wip") {
-        RUN_RECURSIVE_FOLDER_FRAMEBUFFER_TEST_ROMS(
-            "/home/stefano/Develop/C/docboy-test-suite/roms/cgb/apu-sweep/double_speed", "docboy/ok.png");
+        RUN_TEST_ROMS();
     }
 #endif
 }
