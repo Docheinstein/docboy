@@ -67,4 +67,5 @@ endif()
 # Catch2
 if (BUILD_TESTS)
     add_subdirectory(catch2)
+    add_subdirectory(simdjson)
 endif()

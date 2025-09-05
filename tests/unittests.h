@@ -1,8 +1,10 @@
 #ifndef UNITTESTS_H
 #define UNITTESTS_H
 
-#include "testutils/catch.h"
+#include "catch2/catch_all.hpp"
+
 #include "testutils/runners.h"
+
 #include "utils/casts.h"
 #include "utils/memory.h"
 #include "utils/strings.h"

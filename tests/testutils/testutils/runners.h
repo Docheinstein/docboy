@@ -76,9 +76,9 @@ template <typename RunnerImpl>
 class Runner {
 public:
     struct JoypadInput {
-        uint64_t ticks {};
-        Joypad::KeyState state {};
+        uint64_t tick {};
         Joypad::Key key {};
+        Joypad::KeyState state {};
     };
 
     explicit Runner() :
@@ -125,9 +125,9 @@ public:
 
     RunnerImpl& schedule_inputs(std::vector<JoypadInput> inputs) {
         inputs_ = std::move(inputs);
-        // Eventually at BOOT_DURATION time to inputs timing
+        // Eventually add BOOT_DURATION time to inputs timing
         for (auto& in : inputs_) {
-            in.ticks += BOOT_DURATION;
+            in.tick += BOOT_DURATION;
         }
         return static_cast<RunnerImpl&>(*this);
     }
@@ -143,8 +143,8 @@ public:
         for (tick = core.ticks; tick <= max_ticks_ && can_run; tick += 4) {
             // Eventually submit scheduled Joypad input.
             if (!inputs_.empty()) {
-                for (auto it = inputs_.begin(); it != inputs_.end(); it++) {
-                    if (tick >= it->ticks) {
+                for (auto it = inputs_.begin(); it != inputs_.end(); ++it) {
+                    if (tick >= it->tick) {
                         core.set_key(it->key, it->state);
                         inputs_.erase(it);
                         break;
@@ -641,9 +641,7 @@ struct FramebufferRunnerParams {
                 appearance = std::get<const Appearance*>(param);
             } else
 #endif
-                if (std::holds_alternative<ColorTolerance>(param)) {
-                color_tolerance = std::get<ColorTolerance>(param);
-            } else if (std::holds_alternative<CheckIntervalTicks>(param)) {
+                if (std::holds_alternative<CheckIntervalTicks>(param)) {
                 check_interval_ticks = std::get<CheckIntervalTicks>(param).value;
             } else if (std::holds_alternative<MaxTicks>(param)) {
                 max_ticks = std::get<MaxTicks>(param).value;
@@ -653,6 +651,8 @@ struct FramebufferRunnerParams {
                 force_check = true;
             } else if (std::holds_alternative<std::vector<FramebufferRunner::JoypadInput>>(param)) {
                 inputs = std::get<std::vector<FramebufferRunner::JoypadInput>>(param);
+            } else if (std::holds_alternative<ColorTolerance>(param)) {
+                color_tolerance = std::get<ColorTolerance>(param);
             }
         };
 
