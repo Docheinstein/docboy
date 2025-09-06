@@ -93,9 +93,8 @@ if (BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(external)
+add_subdirectory(third_party)
 add_subdirectory(src)
-
 
 if (BUILD_DEVTOOLS)
     add_subdirectory(devtools)

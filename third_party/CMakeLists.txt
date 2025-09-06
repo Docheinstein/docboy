@@ -5,26 +5,33 @@ add_subdirectory(args)
 add_subdirectory(tui)
 
 # zlib
-set(ZLIB_BUILD_EXAMPLES OFF)
-set(SKIP_INSTALL_ALL ON)
-set(RENAME_ZCONF OFF)
+set(ZLIB_BUILD_TESTING OFF CACHE BOOL "Enable Zlib Examples as tests")
+set(ZLIB_BUILD_SHARED OFF CACHE BOOL "Enable building zlib shared library")
+set(ZLIB_BUILD_STATIC ON CACHE BOOL "Enable building zlib static library")
+set(ZLIB_BUILD_MINIZIP OFF CACHE BOOL "Enable building libminizip contrib library")
+set(ZLIB_INSTALL OFF CACHE BOOL "Enable installation of zlib")
+if(WIN32)
+    set(ZLIB_INSTALL_COMPAT_DLL OFF CACHE BOOL "Install a copy as zlib1.dll")
+endif(WIN32)
+
 add_subdirectory(zlib)
 
 # Explicitly set ZLIB::ZLIB as an alias for zlibstatic so that libpng will use this.
 add_library(ZLIB::ZLIB ALIAS zlibstatic)
 
 # libpng
-# Copy prebuilt pnglibconf.h into libpng source directory.
-# We must to do so even if it is available system wise because we want to
-# statically link the zlib library we have built; otherwise the libpng might
-# complain because of zlib's version mismatch.
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libpng/scripts/pnglibconf.h.prebuilt
-           ${CMAKE_CURRENT_SOURCE_DIR}/libpng/pnglibconf.h)
-
 set(PNG_SHARED OFF CACHE BOOL "Build libpng as a shared library")
 set(PNG_STATIC ON CACHE BOOL "Build libpng as a static library")
+set(PNG_FRAMEWORK OFF CACHE BOOL "Build libpng as a framework bundle")
 set(PNG_TESTS OFF CACHE BOOL "Build the libpng tests")
 set(PNG_TOOLS OFF CACHE BOOL "Build the libpng tools")
+set(SKIP_INSTALL_ALL ON)
+
+# Force libpng to use our zlib for generation of the pnglibconf.h.
+set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib")
+set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/zlib")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${ZLIB_INCLUDE_DIR}")
+
 add_subdirectory(libpng)
 
 # SDL
@@ -39,12 +46,17 @@ set(SDL_HAPTIC OFF)
 set(SDL_HIDAPI ON)
 set(SDL_POWER OFF)
 set(SDL_SENSOR OFF)
+set(SDL_DUMMYAUDIO OFF)
+set(SDL_DUMMYCAMERA OFF)
+set(SDL_DUMMYVIDEO OFF)
 
 add_subdirectory(SDL)
 
 # nativefiledialog
 # GTK3 is required by nativefiledialog on Linux: we don't build and link nfd at all if it's missing.
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build a shared library instead of static")
 set(NFD_BUILD_TESTS OFF CACHE BOOL "Build tests for nfd")
+set(NFD_BUILD_SDL2_TESTS OFF CACHE BOOL "Build SDL2 tests for nfd")
 set(NFD_INSTALL OFF CACHE BOOL "Generate install target for nfd")
 
 set(ENABLE_NFD ON)
@@ -59,7 +71,7 @@ endif ()
 
 if (ENABLE_NFD)
     set(ENABLE_NFD ON PARENT_SCOPE)
-    add_subdirectory(nativefiledialog)
+    add_subdirectory(nfd)
 else ()
     set(ENABLE_NFD OFF PARENT_SCOPE)
 endif()

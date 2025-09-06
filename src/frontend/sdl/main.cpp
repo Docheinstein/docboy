@@ -208,12 +208,12 @@ int main(int argc, char* argv[]) {
 
     // Initialize SDL
 #ifdef ENABLE_AUDIO
-    const uint32_t sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO;
+    constexpr uint32_t sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO;
 #else
     const uint32_t sdl_init_flags = SDL_INIT_VIDEO;
 #endif
 
-    if (SDL_Init(sdl_init_flags) != 0) {
+    if (!SDL_Init(sdl_init_flags)) {
         std::cerr << "ERROR: SDL initialization failed '" << SDL_GetError() << "'" << std::endl;
         return 4;
     }
@@ -387,7 +387,7 @@ int main(int argc, char* argv[]) {
     }
 
     SDL_AudioSpec audio_device_spec;
-    if (SDL_GetAudioDeviceFormat(audio_device, &audio_device_spec, nullptr) != 0) {
+    if (!SDL_GetAudioDeviceFormat(audio_device, &audio_device_spec, nullptr)) {
         std::cerr << "ERROR: failed to retrieve format of SDL audio device '" << SDL_GetError() << "'" << std::endl;
         return 7;
     }
@@ -581,7 +581,7 @@ int main(int argc, char* argv[]) {
         next_frame_time += main_controller.get_frame_time();
 
         // Handle events
-        while (SDL_PollEvent(&e) != 0) {
+        while (SDL_PollEvent(&e)) {
             switch (e.type) {
             case SDL_EVENT_QUIT:
                 main_controller.quit();
