@@ -11,6 +11,7 @@
 
 class ExtBus;
 class CpuBus;
+class WramBus;
 class OamBus;
 class VramBus;
 class Parcel;
@@ -27,9 +28,17 @@ public:
     using View = MmuView<Dev>;
 
 #ifdef ENABLE_BOOTROM
+#ifdef ENABLE_CGB
+    Mmu(BootRom& boot_rom, ExtBus& ext_bus, WramBus& wram_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
+#else
     Mmu(BootRom& boot_rom, ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
+#endif
+#else
+#ifdef ENABLE_CGB
+    Mmu(ExtBus& ext_bus, WramBus& wram_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
 #else
     Mmu(ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus);
+#endif
 #endif
 
     template <Device::Type>
@@ -63,7 +72,7 @@ private:
             void (*write_request)(IBus*, uint16_t) {};
             void (*flush_write_request)(IBus*, uint8_t) {};
 
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
             uint8_t (*read_bus)(const IBus*, uint16_t) {};
 #endif
         } vtable;
@@ -80,7 +89,7 @@ private:
         template <typename Bus, Device::Type Dev>
         static void flush_write_request(IBus* bus, uint8_t value);
 
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
         template <typename Bus>
         static uint8_t read_bus(const IBus* bus, uint16_t address);
 #endif
@@ -90,12 +99,16 @@ private:
         void write_request(uint16_t);
         void flush_write_request(uint8_t);
 
-#ifdef ENABLE_DEBUGGER
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_TESTS)
         uint8_t read_bus(uint16_t) const;
 #endif
     };
 
-    static constexpr uint8_t NUM_DEVICES = 2;
+#ifdef ENABLE_CGB
+    static constexpr uint8_t NUM_DEVICES = 3 /* Cpu, Dma, Hdma */;
+#else
+    static constexpr uint8_t NUM_DEVICES = 2 /* Cpu, Dma */;
+#endif
 
     template <Device::Type Dev, typename Bus>
     static BusAccess make_accessors(Bus* bus);
@@ -109,6 +122,9 @@ private:
 #endif
 
     ExtBus& ext_bus;
+#ifdef ENABLE_CGB
+    WramBus& wram_bus;
+#endif
     CpuBus& cpu_bus;
     VramBus& vram_bus;
     OamBus& oam_bus;

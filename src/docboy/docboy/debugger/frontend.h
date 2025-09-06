@@ -54,6 +54,10 @@ private:
                             bool raw) const;
     std::string dump_display_entry(const DisplayEntry& d) const;
 
+    void flush_trace_buffer();
+
+    void reset();
+
     DebuggerBackend& backend;
     const Core& core;
     const GameBoy& gb;
@@ -61,6 +65,7 @@ private:
     std::string last_cmdline;
     std::vector<DisplayEntry> display_entries;
     uint32_t trace {};
+    std::vector<std::string> trace_buffer {};
 
     struct {
         uint16_t past {6};

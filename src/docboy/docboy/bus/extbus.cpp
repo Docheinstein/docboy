@@ -3,18 +3,25 @@
 #include "docboy/memory/wram1.h"
 #include "docboy/memory/wram2.h"
 
-ExtBus::ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2& wram2) :
-    Bus {},
-    cartridge_slot {cartridge_slot},
-    wram1 {wram1},
-    wram2 {wram2} {
+#ifdef ENABLE_CGB
+ExtBus::ExtBus(CartridgeSlot& cartridge_slot) :
+#else
+ExtBus::ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2* wram2) :
+#endif
 
+    Bus {},
+    cartridge_slot {cartridge_slot}
+#ifndef ENABLE_CGB
+    ,
+    wram1 {wram1},
+    wram2 {wram2}
+#endif
+{
     /* 0x0000 - 0x7FFF */
     for (uint16_t i = Specs::MemoryLayout::ROM0::START; i <= Specs::MemoryLayout::ROM1::END; i++) {
         memory_accessors[i] = {
             NonTrivialRead<&CartridgeSlot::read_rom> {&cartridge_slot},
             NonTrivialWrite<&CartridgeSlot::write_rom> {&cartridge_slot},
-
         };
     }
 
@@ -27,6 +34,7 @@ ExtBus::ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2& wram2) :
         };
     }
 
+#ifndef ENABLE_CGB
     /* 0xC000 - 0xCFFF */
     for (uint16_t i = Specs::MemoryLayout::WRAM1::START; i <= Specs::MemoryLayout::WRAM1::END; i++) {
         memory_accessors[i] = &wram1[i - Specs::MemoryLayout::WRAM1::START];
@@ -34,11 +42,14 @@ ExtBus::ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2& wram2) :
 
     /* 0xD000 - 0xDFFF */
     for (uint16_t i = Specs::MemoryLayout::WRAM2::START; i <= Specs::MemoryLayout::WRAM2::END; i++) {
-        memory_accessors[i] = &wram2[i - Specs::MemoryLayout::WRAM2::START];
+        memory_accessors[i] = &wram2[0][i - Specs::MemoryLayout::WRAM2::START];
     }
 
     /* 0xE000 - 0xFDFF */
     for (uint16_t i = Specs::MemoryLayout::ECHO_RAM::START; i <= Specs::MemoryLayout::ECHO_RAM::END; i++) {
         memory_accessors[i] = &wram1[i - Specs::MemoryLayout::ECHO_RAM::START];
     }
+#endif
+
+    reset();
 }

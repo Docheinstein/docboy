@@ -12,19 +12,42 @@ class Joypad;
 class Serial;
 class Timers;
 class Interrupts;
+class Dma;
 class Apu;
 class Ppu;
+class VramBankController;
+class WramBankController;
+class SpeedSwitch;
+class Hdma;
+class Infrared;
+class UndocumentedRegisters;
 class Boot;
 
 class CpuBus final : public Bus {
 
 public:
+    template <Device::Type Dev>
+    using View = BusView<CpuBus, Dev>;
+
 #ifdef ENABLE_BOOTROM
+#ifdef ENABLE_CGB
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
-           Apu& apu, Ppu& ppu, Boot& boot);
+           Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller,
+           WramBankController& wram_bank_controller, Hdma& hdma, SpeedSwitch& speedswitch, Infrared& infrared,
+           UndocumentedRegisters& undocumented_registers);
 #else
-    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Apu& apu, Ppu& Ppu,
-           Boot& boot);
+    CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
+           Boot& boot, Apu& apu, Ppu& ppu, Dma& dma);
+#endif
+#else
+#ifdef ENABLE_CGB
+    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
+           Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
+           Hdma& hdma, SpeedSwitch& speedswitch, Infrared& infrared, UndocumentedRegisters& undocumented_registers);
+#else
+    CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
+           Ppu& ppu, Dma& dma);
+#endif
 #endif
 
 #ifdef ENABLE_BOOTROM
@@ -41,5 +64,19 @@ public:
 
     Apu& apu;
     Ppu& ppu;
+
+    Dma& dma;
+
+#ifdef ENABLE_CGB
+    VramBankController& vram_bank_controller;
+    WramBankController& wram_bank_controller;
+
+    Hdma& hdma;
+
+    SpeedSwitch& speed_switch;
+
+    Infrared& infrared;
+    UndocumentedRegisters& undocumented_registers;
+#endif
 };
 #endif // CPUBUS_H

@@ -9,12 +9,22 @@ class CartridgeSlot;
 
 class ExtBus final : public Bus {
 public:
-    ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2& wram2);
+    template <Device::Type Dev>
+    using View = BusView<ExtBus, Dev>;
+
+#ifdef ENABLE_CGB
+    explicit ExtBus(CartridgeSlot& cartridge_slot);
+#else
+    ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2* wram2);
+#endif
 
 private:
     CartridgeSlot& cartridge_slot;
+
+#ifndef ENABLE_CGB
     Wram1& wram1;
-    Wram2& wram2;
+    Wram2* wram2;
+#endif
 };
 
 #endif // EXTBUS_H

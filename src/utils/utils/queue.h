@@ -22,6 +22,8 @@ template <typename T, uint8_t N>
 struct Queue {
     static_assert(std::is_trivially_copyable_v<T>);
 
+    static constexpr uint8_t Size = N;
+
     bool is_empty() const {
         return count == 0;
     }
@@ -45,6 +47,14 @@ struct Queue {
     void push_back(T element) {
         ASSERT(!is_full());
         data[end] = element;
+        end = (end + 1) % N;
+        ++count;
+    }
+
+    template <typename... Args>
+    void emplace_back(Args&&... args) {
+        ASSERT(!is_full());
+        data[end] = T {std::forward<Args>(args)...};
         end = (end + 1) % N;
         ++count;
     }

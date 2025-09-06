@@ -19,11 +19,14 @@ target_sources(utils PRIVATE
     utils/parcel.h
     utils/path.cpp
     utils/path.h
+    utils/perf.h
     utils/queue.h
     utils/random.h
     utils/std.h
     utils/strings.cpp
     utils/strings.h
+    utils/traits.h
+    utils/traversal.h
     utils/vector.h
 )
 

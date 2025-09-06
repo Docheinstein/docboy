@@ -20,6 +20,8 @@ target_sources(docboy PRIVATE
         docboy/bus/vrambus.cpp
         docboy/bus/vrambus.h
         docboy/bus/vrambus.tpp
+        docboy/bus/wrambus.cpp
+        docboy/bus/wrambus.h
         docboy/cartridge/cartridge.h
         docboy/cartridge/factory.cpp
         docboy/cartridge/factory.h
@@ -40,6 +42,8 @@ target_sources(docboy PRIVATE
         docboy/cartridge/slot.cpp
         docboy/cartridge/slot.h
         docboy/common/macros.h
+        docboy/common/randomdata.cpp
+        docboy/common/randomdata.h
         docboy/common/specs.h
         docboy/core/core.cpp
         docboy/core/core.h
@@ -52,24 +56,27 @@ target_sources(docboy PRIVATE
         docboy/interrupts/interrupts.h
         docboy/joypad/joypad.cpp
         docboy/joypad/joypad.h
+        docboy/lcd/colormap.h
+        docboy/lcd/appearance.h
         docboy/lcd/lcd.cpp
         docboy/lcd/lcd.h
         docboy/memory/cell.h
         docboy/memory/fwd/cellfwd.h
         docboy/memory/fwd/hramfwd.h
         docboy/memory/fwd/memoryfwd.h
+        docboy/memory/fwd/notusablefwd.h
         docboy/memory/fwd/oamfwd.h
-        docboy/memory/fwd/randmemoryfwd.h
         docboy/memory/fwd/vramfwd.h
         docboy/memory/fwd/wram1fwd.h
         docboy/memory/fwd/wram2fwd.h
         docboy/memory/hram.h
         docboy/memory/memory.h
+        docboy/memory/notusable.h
         docboy/memory/oam.h
-        docboy/memory/randmemory.h
         docboy/memory/traits.h
-        docboy/memory/vram.cpp
         docboy/memory/vram.h
+        docboy/memory/vram0.cpp
+        docboy/memory/vram0.h
         docboy/memory/wram1.h
         docboy/memory/wram2.h
         docboy/mmu/mmu.cpp
@@ -81,10 +88,6 @@ target_sources(docboy PRIVATE
         docboy/ppu/ppu.cpp
         docboy/ppu/ppu.h
         docboy/serial/endpoint.h
-        docboy/serial/link.cpp
-        docboy/serial/link.h
-        docboy/serial/port.cpp
-        docboy/serial/port.h
         docboy/serial/serial.cpp
         docboy/serial/serial.h
         docboy/audio/apu.cpp
@@ -92,6 +95,25 @@ target_sources(docboy PRIVATE
         docboy/timers/timers.cpp
         docboy/timers/timers.h
 )
+
+if (ENABLE_CGB)
+    target_sources(docboy PRIVATE
+            docboy/banks/vrambankcontroller.cpp
+            docboy/banks/vrambankcontroller.h
+            docboy/banks/wrambankcontroller.cpp
+            docboy/banks/wrambankcontroller.h
+            docboy/hdma/hdma.cpp
+            docboy/hdma/hdma.h
+            docboy/ir/infrared.cpp
+            docboy/ir/infrared.h
+            docboy/speedswitch/speedswitch.cpp
+            docboy/speedswitch/speedswitch.h
+            docboy/speedswitch/speedswitchcontroller.cpp
+            docboy/speedswitch/speedswitchcontroller.h
+            docboy/undoc/undocregs.cpp
+            docboy/undoc/undocregs.h
+    )
+endif()
 
 if (ENABLE_BOOTROM)
     target_compile_definitions(docboy PUBLIC ENABLE_BOOTROM)
@@ -125,22 +147,23 @@ if (ENABLE_DEBUGGER)
             docboy/debugger/memwatcher.h
             docboy/debugger/mnemonics.cpp
             docboy/debugger/mnemonics.h
+            docboy/debugger/rgbtoansi.h
             docboy/debugger/shared.h
     )
 
     target_link_libraries(docboy PRIVATE tui)
 endif ()
 
-if (ENABLE_SERIAL)
-    target_compile_definitions(docboy PUBLIC ENABLE_SERIAL)
-endif ()
-
 if (ENABLE_AUDIO)
     target_compile_definitions(docboy PUBLIC ENABLE_AUDIO)
 endif ()
 
-if (ENABLE_AUDIO_PCM)
-    target_compile_definitions(docboy PUBLIC ENABLE_AUDIO_PCM)
+if (ENABLE_CGB)
+    target_compile_definitions(docboy PUBLIC ENABLE_CGB)
+endif ()
+
+if (ENABLE_TWO_PLAYERS_MODE)
+    target_compile_definitions(docboy PUBLIC ENABLE_TWO_PLAYERS_MODE)
 endif ()
 
 target_link_libraries(docboy PRIVATE utils)

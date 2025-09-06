@@ -21,9 +21,9 @@ public:
 #endif
     }
 
-    Memory(const uint8_t* data_, uint16_t length) :
+    explicit Memory(const uint8_t* data_) :
         Memory {} {
-        set_data(data_, length);
+        reset(data_);
     }
 
     const UInt8& operator[](uint16_t index) const {
@@ -40,16 +40,19 @@ public:
         parcel.read_bytes(data, Size * sizeof(UInt8));
     }
 
-protected:
-    void set_data(const uint8_t* data_, uint16_t length) {
-        ASSERT(length <= Size);
+    void reset() {
+        for (uint16_t i = 0; i < Size; i++) {
+            data[i] = 0;
+        }
+    }
 
+    void reset(const uint8_t* data_) {
 #ifdef ENABLE_DEBUGGER
-        for (uint16_t i = 0; i < length; i++) {
+        for (uint16_t i = 0; i < Size; i++) {
             data[i] = data_[i];
         }
 #else
-        memcpy(this->data, data_, length);
+        memcpy(this->data, data_, Size);
 #endif
     }
 

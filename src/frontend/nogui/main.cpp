@@ -54,6 +54,9 @@ void dump_cartridge_info(const ICartridge& cartridge) {
     std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";
     std::cout << "Header checksum   :  " << hex(header.header_checksum) << "\n";
 }
+
+GameBoy gb {};
+Core core {gb};
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -98,14 +101,6 @@ int main(int argc, char* argv[]) {
 
     ensure_file_exists(args.rom);
 
-#ifdef ENABLE_BOOTROM
-    auto gb {std::make_unique<GameBoy>(BootRomFactory::create(args.boot_rom))};
-#else
-    auto gb {std::make_unique<GameBoy>()};
-#endif
-
-    Core core {*gb};
-
     Path rom_path {args.rom};
 
     std::unique_ptr<ICartridge> cartridge {CartridgeFactory::create(rom_path.string())};
@@ -115,18 +110,17 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+#ifdef ENABLE_BOOTROM
+    core.load_boot_rom(args.boot_rom);
+#endif
     core.load_rom(args.rom);
 
-#ifdef ENABLE_SERIAL
+    // Serial
     std::unique_ptr<SerialConsole> serial_console;
-    std::unique_ptr<SerialLink> serial_link;
     if (args.serial) {
         serial_console = std::make_unique<SerialConsole>(std::cerr, 16);
-        serial_link = std::make_unique<SerialLink>();
-        serial_link->plug1.attach(*serial_console);
-        core.attach_serial_link(serial_link->plug2);
+        core.attach_serial_link(*serial_console);
     }
-#endif
 
     const auto start = std::chrono::high_resolution_clock::now();
     for (uint64_t tick = 0; tick < args.ticks_to_run; tick += 4) {
@@ -146,11 +140,9 @@ int main(int argc, char* argv[]) {
         std::cout << "SpeedUp: " << 1000.0 * (double)seconds_to_run / (double)elapsed_millis << std::endl;
     }
 
-#ifdef ENABLE_SERIAL
     if (serial_console) {
         serial_console->flush();
     }
-#endif
 
     return 0;
 }

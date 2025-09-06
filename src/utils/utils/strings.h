@@ -65,6 +65,9 @@ std::string lpad(const std::string& s, std::size_t length, char ch = ' ');
 std::string rpad(const std::string& s, std::size_t length, char ch = ' ');
 
 bool starts_with(const std::string& heystack, const std::string& needle);
+bool ends_with(const std::string& heystack, const std::string& needle);
+
+bool contains(const std::string& heystack, const std::string& needle);
 
 template <uint8_t Precision, typename T>
 std::string to_string_with_precision(const T value) {

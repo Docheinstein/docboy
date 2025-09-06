@@ -24,20 +24,6 @@ public:
     bool is_rom_loaded() const;
     Path get_rom() const;
 
-    // Running/Pause
-    void set_paused(bool paused_) {
-        paused = paused_;
-        if (paused_changed_callback) {
-            paused_changed_callback(paused);
-        }
-    }
-    bool is_paused() const {
-        return paused;
-    }
-    void set_paused_changed_callback(std::function<void(bool)>&& callback) {
-        paused_changed_callback = std::move(callback);
-    }
-
     // Save
     bool write_save() const;
     bool load_save() const;
@@ -56,11 +42,16 @@ public:
 #endif
 
     // Video
-    const Lcd::PixelRgb565* get_framebuffer() const;
+    const PixelRgb565* get_framebuffer() const;
+    void set_appearance(const Appearance& appearance);
 
     // Emulation
     void frame() {
         core.frame();
+    }
+
+    bool run_for_cycles(uint32_t cycles) {
+        return core.run_for_cycles(cycles);
     }
 
     // Input
@@ -79,6 +70,16 @@ public:
         return joypad_map;
     }
 
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    // Serial
+    void attach_serial_link(ISerialEndpoint& endpoint);
+    void detach_serial_link();
+
+    bool is_serial_link_attached() const;
+
+    ISerialEndpoint& get_serial_endpoint();
+#endif
+
 private:
     std::string get_save_path() const;
     std::string get_state_path() const;
@@ -89,9 +90,6 @@ private:
         Path path {};
         bool is_loaded {};
     } rom;
-
-    bool paused {true};
-    std::function<void(bool)> paused_changed_callback {};
 
     std::map<SDL_Keycode, Joypad::Key> keycode_map;
     std::map<Joypad::Key, SDL_Keycode> joypad_map;

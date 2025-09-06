@@ -21,10 +21,10 @@ option(BUILD_LIBRETRO_CORE_ANDROID "Build libretro core for Android" OFF)
 option(NDK_PATH "NDK Path for Android build" "")
 
 option(ENABLE_DEBUGGER "Enable debugger" OFF)
-option(ENABLE_SERIAL "Enable serial link" OFF)
 option(ENABLE_BOOTROM "Enable boot rom" OFF)
 option(ENABLE_AUDIO "Enable audio" ON)
-option(ENABLE_AUDIO_PCM "Enable audio PCM registers even for DMG" OFF)
+option(ENABLE_CGB "Enable GameBoy Color support" ON)
+option(ENABLE_TWO_PLAYERS_MODE "Enable two players mode (serial link)" ON)
 
 option(ENABLE_ASSERTS "Enable asserts" OFF)
 
@@ -54,6 +54,12 @@ endif()
 if (BUILD_LIBRETRO_CORE)
     message(STATUS "Frontend: libretro core (Android)")
 endif()
+
+message(STATUS "Feature: Debugger: ${ENABLE_DEBUGGER}")
+message(STATUS "Feature: Boot room: ${ENABLE_BOOTROM}")
+message(STATUS "Feature: Audio: ${ENABLE_AUDIO}")
+message(STATUS "Feature: GameBoy Color: ${ENABLE_CGB}")
+message(STATUS "Feature: Two players: ${ENABLE_TWO_PLAYERS_MODE}")
 
 if (BUILD_LIBRETRO_CORE_ANDROID)
     add_subdirectory(src/frontend/libretro/android)
@@ -87,9 +93,8 @@ if (BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(external)
+add_subdirectory(third_party)
 add_subdirectory(src)
-
 
 if (BUILD_DEVTOOLS)
     add_subdirectory(devtools)

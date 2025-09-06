@@ -4,11 +4,27 @@ on: push
 
 jobs:
   # Build for linux and run tests.
-  build-linux-gcc-and-test:
+
+  # DMG
+  build-linux-gcc-and-test-dmg:
     uses: ./.github/workflows/apply-to-single-platform.yml
     with:
       os: ubuntu-latest
       c_compiler: gcc
       cpp_compiler: g++
       build_type: Release
-      run_tests: true
+      enable_cgb: false
+      run_unit_tests: true
+      run_emulation_tests: true
+
+  # CGB
+  build-linux-gcc-and-test-cgb:
+    uses: ./.github/workflows/apply-to-single-platform.yml
+    with:
+      os: ubuntu-latest
+      c_compiler: gcc
+      cpp_compiler: g++
+      build_type: Release
+      enable_cgb: true
+      run_unit_tests: true
+      run_emulation_tests: true

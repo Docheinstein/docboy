@@ -10,6 +10,7 @@ class DebuggerBackend;
 
 class Core {
     DEBUGGABLE_CLASS()
+    TESTABLE_CLASS()
 
 public:
     explicit Core(GameBoy& gb);
@@ -18,11 +19,17 @@ public:
     void cycle();
     void frame();
 
+    bool run_for_cycles(uint32_t cycles);
+
     // Load ROM
+#ifdef ENABLE_BOOTROM
+    void load_boot_rom(const std::string& filename);
+#endif
     void load_rom(const std::string& filename);
 
     // Serial
-    void attach_serial_link(SerialLink::Plug& plug) const;
+    void attach_serial_link(ISerialEndpoint& endpoint) const;
+    void detach_serial_link() const;
 
     // Input
     void set_key(Joypad::Key key, Joypad::KeyState state) const {
@@ -36,6 +43,7 @@ public:
     void set_audio_sample_rate(double sample_rate) const {
         gb.apu.set_sample_rate(sample_rate);
     }
+
     void set_audio_volume(float volume) const {
         gb.apu.set_volume(volume);
     }
@@ -64,22 +72,24 @@ public:
 
     GameBoy& gb;
 
-    uint64_t ticks {};
-
-#ifdef ENABLE_DEBUGGER
-    DebuggerBackend* debugger {};
-#endif
-
 private:
     void tick_t0() const;
     void tick_t1() const;
     void tick_t2() const;
     void tick_t3() const;
 
-    void _cycle();
-
     Parcel parcelize_state() const;
     void unparcelize_state(Parcel&& parcel);
+
+    uint64_t ticks {};
+
+    uint16_t cycles_of_artificial_vblank {};
+
+#ifdef ENABLE_DEBUGGER
+    DebuggerBackend* debugger {};
+
+    bool resetting {};
+#endif
 };
 
 #endif // CORE_H

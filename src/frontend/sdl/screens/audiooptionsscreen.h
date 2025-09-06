@@ -16,6 +16,9 @@ public:
 private:
     struct {
         MenuItem* audio_enabled {};
+#ifdef ENABLE_TWO_PLAYERS_MODE
+        MenuItem* audio_player_source {};
+#endif
         MenuItem* volume {};
         struct {
             MenuItem* enabled_label {};
@@ -33,6 +36,10 @@ private:
 
     void on_decrease_volume();
     void on_increase_volume();
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    void on_change_audio_player_source();
+#endif
 
     void on_change_dynamic_sample_rate_control();
 

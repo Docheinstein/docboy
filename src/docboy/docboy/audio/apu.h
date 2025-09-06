@@ -11,6 +11,7 @@
 
 class Timers;
 class Parcel;
+class SpeedSwitchController;
 
 class Apu {
     DEBUGGABLE_CLASS()
@@ -23,7 +24,11 @@ public:
 
     static constexpr uint32_t NUM_CHANNELS = 2;
 
-    explicit Apu(Timers& timers);
+#ifdef ENABLE_CGB
+    Apu(Timers& timers, SpeedSwitchController& speed_switch_controller, const uint16_t& pc);
+#else
+    explicit Apu(Timers& timers, const uint16_t& pc);
+#endif
 
     void set_volume(float volume /* [0:1]*/);
 
@@ -109,7 +114,7 @@ public:
     uint8_t read_wave_ram(uint16_t address) const;
     void write_wave_ram(uint16_t address, uint8_t value);
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
     uint8_t read_pcm12() const;
     uint8_t read_pcm34() const;
 #endif
@@ -213,12 +218,14 @@ public:
 
     Memory<Specs::Registers::Sound::WAVE0, Specs::Registers::Sound::WAVEF> wave_ram;
 
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
     UInt8 pcm12 {make_uint8(Specs::Registers::Sound::PCM12)};
     UInt8 pcm34 {make_uint8(Specs::Registers::Sound::PCM34)};
 #endif
 
 private:
+    using RegisterUpdater = void (Apu::*)(uint8_t);
+
     struct DigitalAudioSample {
         uint8_t ch1 {};
         uint8_t ch2 {};
@@ -229,12 +236,30 @@ private:
     void turn_on();
     void turn_off();
 
-    void tick_sampler();
-    void tick_ch3();
+    void tick_even();
+    void tick_odd();
 
-#ifdef ENABLE_AUDIO_PCM
+    void tick_div_apu();
+    void tick_div_apu_falling_edge();
+    void tick_div_apu_raising_edge();
+    void tick_sampler();
+
+    void tick_period_sweep();
+    void tick_period_sweep_reload();
+    void tick_period_sweep_recalculation();
+    void tick_wave();
+    void tick_noise();
+
+    void period_sweep_done();
+    void period_sweep_reload_done();
+    void period_sweep_recalculation_done();
+
+#ifdef ENABLE_CGB
     void update_pcm();
 #endif
+
+    uint16_t compute_period_sweep_signed_increment() const;
+    uint16_t compute_next_period_sweep_period(uint16_t signed_increment, bool complement_bit) const;
 
     uint8_t compute_ch1_digital_output() const;
     uint8_t compute_ch2_digital_output() const;
@@ -243,21 +268,79 @@ private:
     DigitalAudioSample compute_digital_audio_sample() const;
     AudioSample compute_audio_sample() const;
 
-    uint32_t compute_ch1_next_period_sweep_period();
+    void flush_pending_write();
 
-    void tick_ch1_period_sweep();
-    void tick_ch4();
+    void write_register(RegisterUpdater updater, uint8_t value);
+
+    void update_nr10(uint8_t value);
+    void update_nr11(uint8_t value);
+    void update_nr12(uint8_t value);
+    void update_nr13(uint8_t value);
+    void update_nr14(uint8_t value);
+
+    void update_nr21(uint8_t value);
+    void update_nr22(uint8_t value);
+    void update_nr23(uint8_t value);
+    void update_nr24(uint8_t value);
+
+    template <typename Channel, typename Nrx1>
+    void update_nrx1(Channel& ch, Nrx1& nrx1, uint8_t value);
+
+    template <typename Channel, typename ChannelOnFlag, typename Nrx2>
+    void update_nrx2(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, uint8_t value);
+
+    template <typename Channel, typename Nrx3, typename Nrx4>
+    void update_nrx3(Channel& ch, Nrx3& nrx3, Nrx4& nrx4, uint8_t value);
+
+    template <typename Channel, typename ChannelOnFlag, typename Nrx2, typename Nrx3, typename Nrx4>
+    void update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3& nrx3, Nrx4& nrx4, uint8_t value);
+
+    void update_nr30(uint8_t value);
+    void update_nr31(uint8_t value);
+    void update_nr32(uint8_t value);
+    void update_nr33(uint8_t value);
+    void update_nr34(uint8_t value);
+
+    void update_nr41(uint8_t value);
+    void update_nr42(uint8_t value);
+    void update_nr43(uint8_t value);
+    void update_nr44(uint8_t value);
+    void update_nr50(uint8_t value);
+    void update_nr51(uint8_t value);
+    void update_nr52(uint8_t value);
+
+    template <uint16_t address>
+    void update_wave_ram(uint8_t value);
+
+public:
+    static const RegisterUpdater REGISTER_UPDATERS[];
+    static const RegisterUpdater WAVE_RAM_UPDATERS[];
 
     Timers& timers;
+#ifdef ENABLE_CGB
+    // TODO: bad: APU shouldn't know speed_switch_controller
+    SpeedSwitchController& speed_switch_controller;
+#endif
+    const uint16_t& program_counter;
 
     std::function<void(const AudioSample)> audio_sample_callback {};
 
     float master_volume {1.0f};
 
-    uint64_t ticks {};
+    struct {
+        uint64_t ticks {};
+        double period {};
+        double next_tick {};
+    } sampling;
 
-    double sample_period {};
-    double next_tick_sample {};
+    bool apu_clock_edge {};
+    bool prev_div_edge_bit {};
+    uint8_t div_apu {};
+
+    struct {
+        RegisterUpdater updater {};
+        uint8_t value {};
+    } pending_write;
 
     struct {
         bool dac {};
@@ -268,24 +351,48 @@ private:
 
         uint8_t trigger_delay {};
 
+        bool digital_output {};
+
+        bool just_sampled {};
+
+        bool tick_edge {};
+
         struct {
             uint8_t position {};
             uint16_t timer {};
+            uint8_t duty_cycle {};
         } wave;
 
         struct {
             bool direction {};
-            uint8_t pace {};
-            uint8_t timer {};
-            bool expired {};
+            uint8_t countdown {};
+            bool pending_update {};
         } volume_sweep;
 
         struct {
-            bool enabled {};
+            uint8_t pace_countdown {};
+
             uint16_t period {};
-            uint8_t pace {};
-            uint8_t timer {};
-            bool decreasing {};
+            uint16_t increment {};
+
+            uint8_t restart_countdown {};
+
+            struct {
+                uint8_t countdown {};
+                bool period_reloaded {};
+                bool reload_period {};
+            } reload;
+
+            struct {
+                uint8_t target_trigger_counter {};
+                uint8_t trigger_counter {};
+                uint8_t countdown {};
+                bool instant {};
+
+                uint16_t increment {};
+
+                bool from_trigger {};
+            } recalculation;
         } period_sweep;
     } ch1 {};
 
@@ -298,36 +405,44 @@ private:
 
         uint8_t trigger_delay {};
 
+        bool digital_output {};
+
+        bool just_sampled {};
+
+        bool tick_edge {};
+
         struct {
             uint8_t position {};
             uint16_t timer {};
+            uint8_t duty_cycle {};
         } wave;
 
         struct {
             bool direction {};
-            uint8_t pace {};
-            uint8_t timer {};
-            bool expired {};
+            uint8_t countdown {};
+            bool pending_update {};
         } volume_sweep;
     } ch2 {};
 
     struct {
         uint16_t length_timer {};
 
-        struct {
-            uint8_t position {};
-            uint16_t timer {};
-            uint8_t play_position {};
-        } wave;
+        uint8_t sample {};
 
-        bool retrigger {};
         uint8_t trigger_delay {};
-        uint64_t last_read_tick {};
 
+        uint8_t digital_output {};
+
+#ifndef ENABLE_CGB
+        bool just_sampled {};
+#endif
         struct {
-            bool pending {};
-            uint8_t value {};
-        } pending_wave_write;
+            struct {
+                uint8_t byte {};
+                bool low_nibble {};
+            } position;
+            uint16_t timer {};
+        } wave;
     } ch3 {};
 
     struct {
@@ -337,22 +452,20 @@ private:
 
         uint8_t length_timer {};
 
+        bool tick_edge {};
+
         struct {
             uint16_t timer {};
         } wave;
 
         struct {
             bool direction {};
-            uint8_t pace {};
-            uint8_t timer {};
-            bool expired {};
+            uint8_t countdown {};
+            bool pending_update {};
         } volume_sweep;
 
         uint16_t lfsr {};
     } ch4 {};
-
-    bool prev_div_bit_4 {};
-    uint8_t div_apu {};
 };
 
 #endif // APU_H

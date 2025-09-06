@@ -50,7 +50,7 @@ constexpr uint64_t bitmask_range = bitmask<from - to + 1> << to;
 template <uint8_t n>
 constexpr uint64_t bitmask_off = uint64_t(-1) << n;
 
-inline uint64_t bit_(uint8_t n) {
+constexpr inline uint64_t bit_(uint8_t n) {
     return uint64_t(1) << n;
 };
 
@@ -93,41 +93,27 @@ constexpr uint64_t mod(uint64_t n) {
 }
 
 template <typename T>
-double pow2(T n) {
+constexpr double pow2(T n) {
     return (n < 0) ? (1.0 / (1 << -n)) : (1 << n);
 }
 
 // ---------- BYTES ----------
 
 template <uint8_t n, typename T>
-uint8_t get_byte(T&& value) {
+constexpr uint8_t get_byte(T&& value) {
     static_assert(n < sizeof(T));
     return value >> (8 * n);
 }
 
 template <uint8_t n, typename T>
-void set_byte(T& dest, uint8_t value) {
+constexpr void set_byte(T& dest, uint8_t value) {
     static_assert(n < sizeof(T));
     dest &= (std::decay_t<T>)(~(((std::decay_t<T>)(0xFF)) << (8 * n)));
     dest |= (value << (8 * n));
 }
 
-inline uint16_t concat(uint8_t msb, uint8_t lsb) {
+constexpr inline uint16_t concat(uint8_t msb, uint8_t lsb) {
     return ((uint16_t)msb) << 8 | lsb;
-}
-
-// ---------- NIBBLES ----------
-
-template <uint8_t n, typename T>
-uint8_t get_nibble(T value) {
-    static_assert(n < 2 * sizeof(T));
-    return (value >> (4 * n)) & 0xF;
-}
-
-template <uint8_t n, typename T>
-void set_nibble(T& dest, uint8_t value) {
-    dest &= (T)(~(((T)(0xF)) << (4 * n)));
-    dest |= ((value & 0xF) << (4 * n));
 }
 
 // ---------- BITS ----------
@@ -142,18 +128,18 @@ constexpr auto bits() {
 }
 
 template <typename T>
-std::decay_t<T> get_bit(T&& value, uint8_t n) {
+constexpr std::decay_t<T> get_bit(T&& value, uint8_t n) {
     return value & bit_(n);
 }
 
 template <uint8_t n, typename T>
-std::decay_t<T> get_bit(T&& value) {
+constexpr std::decay_t<T> get_bit(T&& value) {
     static_assert(n < 8 * sizeof(T));
     return value & bit<n>;
 }
 
 template <uint8_t n, uint8_t... ns, typename T>
-std::decay_t<T> get_bits(T&& value) {
+constexpr std::decay_t<T> get_bits(T&& value) {
     if constexpr (sizeof...(ns) > 0) {
         return get_bit<n>(std::forward<T>(value)) | get_bits<ns...>(std::forward<T>(value));
     }
@@ -162,12 +148,12 @@ std::decay_t<T> get_bits(T&& value) {
 }
 
 template <typename T>
-bool test_bit(T&& value, uint8_t n) {
+constexpr bool test_bit(T&& value, uint8_t n) {
     return value & bit_(n);
 }
 
 template <uint8_t n, typename T>
-bool test_bit(T&& value) {
+constexpr bool test_bit(T&& value) {
     static_assert(n < 8 * sizeof(T));
     return value & bit<n>;
 }
@@ -179,65 +165,65 @@ constexpr bool test_bit() {
 }
 
 template <uint8_t n, uint8_t... ns, typename T>
-bool test_bits_or(T&& value) {
+constexpr bool test_bits_any(T&& value) {
     if constexpr (sizeof...(ns) > 0) {
-        return test_bit<n>(std::forward<T>(value)) || test_bits_or<ns...>(std::forward<T>(value));
+        return test_bit<n>(std::forward<T>(value)) || test_bits_any<ns...>(std::forward<T>(value));
     }
 
     return test_bit<n>(std::forward<T>(value));
 }
 
 template <uint8_t n, uint8_t... ns, typename T>
-bool test_bits_and(T&& value) {
+constexpr bool test_bits_all(T&& value) {
     if constexpr (sizeof...(ns) > 0) {
-        return test_bit<n>(std::forward<T>(value)) && test_bits_or<ns...>(std::forward<T>(value));
+        return test_bit<n>(std::forward<T>(value)) && test_bits_any<ns...>(std::forward<T>(value));
     }
 
     return test_bit<n>(std::forward<T>(value));
 }
 
 template <typename T>
-void set_bit(T&& dest, uint8_t n, bool value) {
+constexpr void set_bit(T&& dest, uint8_t n, bool value) {
     dest &= (~bit_(n));
     dest |= ((value ? 1 : 0) << n);
 }
 
 template <typename T>
-void set_bit(T&& dest, uint8_t n) {
+constexpr void set_bit(T&& dest, uint8_t n) {
     dest |= (1 << n);
 }
 
 template <uint8_t n, typename T>
-void set_bit(T&& dest, bool value) {
+constexpr void set_bit(T&& dest, bool value) {
     static_assert(n < 8 * sizeof(T));
     dest &= ~bit<n>;
     dest |= ((value ? 1 : 0) << n);
 }
 
 template <uint8_t n, typename T>
-void set_bit(T&& dest) {
+constexpr void set_bit(T&& dest) {
     static_assert(n < 8 * sizeof(T));
     dest |= bit<n>;
 }
 
 template <uint8_t n, typename T>
-void reset_bit(T&& dest) {
+constexpr void reset_bit(T&& dest) {
     static_assert(n < 8 * sizeof(T));
     dest &= ~bit<n>;
 }
 
 template <typename T>
-void reset_bit(T&& dest, uint8_t n) {
+constexpr void reset_bit(T&& dest, uint8_t n) {
     dest &= ~(1 << n);
 }
 
 template <uint8_t n, typename T>
-void toggle_bit(T&& dest) {
+constexpr void toggle_bit(T&& dest) {
     dest ^= bit<n>;
 }
 
 template <uint8_t n, typename T, bool y>
-void set_bit(T&& dest) {
+constexpr void set_bit(T&& dest) {
     if constexpr (y) {
         set_bit<n>(dest);
     } else {
@@ -246,46 +232,46 @@ void set_bit(T&& dest) {
 }
 
 template <uint8_t n, typename T>
-auto keep_bits(T&& value) {
+constexpr auto keep_bits(T&& value) {
     static_assert(n < 8 * sizeof(T));
     return value & bitmask<n>;
 }
 
+template <uint8_t n, typename T>
+constexpr auto discard_bits(T&& value) {
+    static_assert(n < 8 * sizeof(T));
+    return value & bitmask_off<n>;
+}
+
 template <uint8_t msb, uint8_t lsb, typename T, std::enable_if_t<msb >= lsb>* = nullptr>
-auto keep_bits_range(T&& value) {
+constexpr auto keep_bits_range(T&& value) {
     static_assert(msb < 8 * sizeof(T));
     static_assert(lsb < 8 * sizeof(T));
     return value & bitmask_range<msb, lsb>;
 }
 
 template <const BitRange& range, typename T>
-auto keep_bits_range_r(T&& value) {
+constexpr auto keep_bits_range(T&& value) {
     return keep_bits_range<range.msb, range.lsb>(std::forward<T>(value));
 };
 
-template <const BitRange& range, typename T>
-auto get_bits_range(T&& value) {
-    return keep_bits_range_r<range>(std::forward<T>(value)) >> range.lsb;
-};
-
 template <uint8_t msb, uint8_t lsb, typename T>
-auto get_bits_range(T&& value) {
+constexpr auto get_bits_range(T&& value) {
     return keep_bits_range<msb, lsb>(std::forward<T>(value)) >> lsb;
 };
 
-template <uint8_t n, typename T>
-auto discard_bits(T&& value) {
-    static_assert(n < 8 * sizeof(T));
-    return value & bitmask_off<n>;
-}
+template <const BitRange& range, typename T>
+constexpr auto get_bits_range(T&& value) {
+    return get_bits_range<range.msb, range.lsb>(std::forward<T>(value));
+};
 
 template <typename T>
-T least_significant_bit(T n) {
+constexpr T least_significant_bit(T n) {
     return n & -n;
 }
 
 template <uint32_t m, typename T>
-T mask_by_pow2(T n) {
+constexpr T mask_by_pow2(T n) {
     static_assert(is_power_of_2<m>);
     return keep_bits<log_2<m>>(n);
 }
@@ -293,34 +279,34 @@ T mask_by_pow2(T n) {
 // ---------- OPERATIONS ----------
 
 template <uint8_t b, typename T1, typename T2>
-bool sum_test_carry_bit(T1 v1, T2 v2) {
-    static constexpr uint64_t mask = bitmask<b + 1>;
+constexpr bool sum_test_carry_bit(T1 v1, T2 v2) {
+    constexpr uint64_t mask = bitmask<b + 1>;
     return ((uint64_t(v1) & mask) + (uint64_t(v2) & mask)) & bit<b + 1>;
 }
 
 template <uint8_t b, typename T1>
-bool inc_test_carry_bit(T1 v1) {
-    static constexpr uint64_t mask = bitmask<b + 1>;
+constexpr bool inc_test_carry_bit(T1 v1) {
+    constexpr uint64_t mask = bitmask<b + 1>;
     return ((uint64_t(v1) & mask) + uint64_t(1)) & bit<b + 1>;
 }
 
 template <uint8_t b, typename T1, typename T2>
-sum_carry_result<T1> sum_carry(T1 v1, T2 v2) {
+constexpr sum_carry_result<T1> sum_carry(T1 v1, T2 v2) {
     return {T1(v1 + v2), sum_test_carry_bit<b>(v1, v2)};
 }
 
 template <uint8_t b1, uint8_t b2, typename T1, typename T2>
-sum_carry_result_2<T1> sum_carry(T1 v1, T2 v2) {
+constexpr sum_carry_result_2<T1> sum_carry(T1 v1, T2 v2) {
     return {T1(v1 + v2), sum_test_carry_bit<b1>(v1, v2), sum_test_carry_bit<b2>(v1, v2)};
 }
 
 template <uint8_t b, typename T1>
-sum_carry_result<T1> inc_carry(T1 v1) {
+constexpr sum_carry_result<T1> inc_carry(T1 v1) {
     return {T1(v1 + 1), inc_test_carry_bit<b>(v1)};
 }
 
 template <uint8_t b, typename T1, typename T2>
-bool sub_get_borrow_bit(T1 v1, T2 v2) {
+constexpr bool sub_get_borrow_bit(T1 v1, T2 v2) {
     // TODO: can be optimized?
     uint64_t mask = bitmask<b + 1>;
     v2 = (v2 < 0) ? -v2 : v2;
@@ -330,12 +316,12 @@ bool sub_get_borrow_bit(T1 v1, T2 v2) {
 }
 
 template <uint8_t b, typename T1, typename T2>
-sub_borrow_result<T1> sub_borrow(T1 v1, T2 v2) {
+constexpr sub_borrow_result<T1> sub_borrow(T1 v1, T2 v2) {
     return {T1(v1 - v2), sub_get_borrow_bit<b>(v1, v2)};
 }
 
 template <uint8_t b1, uint8_t b2, typename T1, typename T2>
-sub_borrow_result_2<T1> sub_borrow(T1 v1, T2 v2) {
+constexpr sub_borrow_result_2<T1> sub_borrow(T1 v1, T2 v2) {
     return {T1(v1 - v2), sub_get_borrow_bit<b1>(v1, v2), sub_get_borrow_bit<b2>(v1, v2)};
 }
 

@@ -10,10 +10,10 @@
 MenuScreen::MenuScreen(Context context) :
     Screen {context},
     menu_background_texture {SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
-                                               Specs::Display::WIDTH, Specs::Display::HEIGHT)},
+                                               static_cast<int>(ui.get_width()), static_cast<int>(ui.get_height()))},
     menu_foreground_texture {SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
-                                               Specs::Display::WIDTH, Specs::Display::HEIGHT)},
-    menu {menu_foreground_texture, ui.get_current_palette().rgba8888.palette} {
+                                               static_cast<int>(ui.get_width()), static_cast<int>(ui.get_height()))},
+    menu {menu_foreground_texture, ui.get_current_appearance().menu} {
 
     SDL_SetTextureScaleMode(menu_background_texture, SDL_SCALEMODE_NEAREST);
     SDL_SetTextureBlendMode(menu_background_texture, SDL_BLENDMODE_BLEND);
@@ -24,8 +24,8 @@ MenuScreen::MenuScreen(Context context) :
 
 void MenuScreen::redraw() {
     uint32_t* texture_buffer = lock_texture(menu_background_texture);
-    clear_texture(texture_buffer, Specs::Display::WIDTH * Specs::Display::HEIGHT,
-                  ui.get_current_palette().rgba8888.palette[2] & (0xFFFFFF00 | context.ui.background_alpha));
+    clear_texture(texture_buffer, ui.get_width() * ui.get_height(),
+                  ui.get_current_appearance().menu[2] & (0xFFFFFF00 | context.ui.background_alpha));
     unlock_texture(menu_background_texture);
     menu.redraw();
 }

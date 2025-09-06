@@ -2,8 +2,8 @@
 #define HRAMFWD_H
 
 #include "docboy/common/specs.h"
-#include "docboy/memory/fwd/randmemoryfwd.h"
+#include "docboy/memory/fwd/memoryfwd.h"
 
-using Hram = RandomizedMemory<Specs::MemoryLayout::HRAM::START, Specs::MemoryLayout::HRAM::END>;
+using Hram = Memory<Specs::MemoryLayout::HRAM::START, Specs::MemoryLayout::HRAM::END>;
 
 #endif // HRAMFWD_H

@@ -24,9 +24,21 @@
 #include "docboy/memory/wram2.h"
 #include "docboy/mmu/mmu.h"
 #include "docboy/ppu/ppu.h"
-#include "docboy/serial/port.h"
+#include "docboy/serial/serial.h"
 #include "docboy/stop/stopcontroller.h"
 #include "docboy/timers/timers.h"
+
+#ifdef ENABLE_CGB
+#include "docboy/banks/vrambankcontroller.h"
+#include "docboy/banks/wrambankcontroller.h"
+#include "docboy/bus/wrambus.h"
+#include "docboy/hdma/hdma.h"
+#include "docboy/ir/infrared.h"
+#include "docboy/memory/notusable.h"
+#include "docboy/speedswitch/speedswitch.h"
+#include "docboy/speedswitch/speedswitchcontroller.h"
+#include "docboy/undoc/undocregs.h"
+#endif
 
 #ifdef ENABLE_BOOTROM
 #include "docboy/bootrom/bootrom.h"
@@ -34,26 +46,64 @@
 
 class GameBoy {
 public:
-#ifdef ENABLE_BOOTROM
-    explicit GameBoy(std::unique_ptr<BootRom> boot_rom) :
-        boot_rom {std::move(boot_rom)} {
-    }
+#ifdef ENABLE_CGB
+    Cpu cpu {idu, interrupts, mmu, joypad, stop_controller, speed_switch, speed_switch_controller};
+#else
+    Cpu cpu {idu, interrupts, mmu, joypad, stop_controller};
+#endif
+    Idu idu {oam_bus};
+
+    // Video
+#ifdef ENABLE_CGB
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, speed_switch_controller};
+#else
+    Ppu ppu {lcd, interrupts, vram_bus, oam_bus, dma};
+#endif
+    Lcd lcd {};
+
+    // DMA
+    Dma dma {mmu, oam_bus};
+
+    // Audio
+#ifdef ENABLE_CGB
+    Apu apu {timers, speed_switch_controller, cpu.pc};
+#else
+    Apu apu {timers, cpu.pc};
 #endif
 
-    // Memory
-    Vram vram {};
-    Wram1 wram1 {};
-    Wram2 wram2 {};
-    Oam oam {};
-    Hram hram {};
+    // Power Saving
+    StopController stop_controller {joypad, timers, ppu, lcd};
 
     // Boot ROM
 #ifdef ENABLE_BOOTROM
-    std::unique_ptr<BootRom> boot_rom {};
+    BootRom boot_rom {};
 #endif
 
     // Cartridge
     CartridgeSlot cartridge_slot {};
+
+    // Memory
+#ifdef ENABLE_CGB
+    Vram vram[2] {};
+#else
+    Vram vram[1] {};
+#endif
+
+    Wram1 wram1 {};
+
+#ifdef ENABLE_CGB
+    Wram2 wram2[7] {};
+#else
+    Wram2 wram2[1] {};
+#endif
+
+    Oam oam {};
+
+#ifdef ENABLE_CGB
+    NotUsable not_usable {};
+#endif
+
+    Hram hram {};
 
     // IO
 #ifdef ENABLE_BOOTROM
@@ -62,44 +112,114 @@ public:
     Boot boot {};
 #endif
     Joypad joypad {interrupts};
-    SerialPort serial_port {interrupts};
+    Serial serial {timers, interrupts};
     Timers timers {interrupts};
     Interrupts interrupts {};
 
     // Buses
-    ExtBus ext_bus {cartridge_slot, wram1, wram2};
-#ifdef ENABLE_BOOTROM
-    CpuBus cpu_bus {*boot_rom, hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
+#ifdef ENABLE_CGB
+    ExtBus ext_bus {cartridge_slot};
 #else
-    CpuBus cpu_bus {hram, joypad, serial_port, timers, interrupts, apu, ppu, boot};
+    ExtBus ext_bus {cartridge_slot, wram1, wram2};
+#endif
+
+#ifdef ENABLE_CGB
+    WramBus wram_bus {wram1, wram2};
+#endif
+
+#ifdef ENABLE_BOOTROM
+#ifdef ENABLE_CGB
+    CpuBus cpu_bus {
+        boot_rom,
+        hram,
+        joypad,
+        serial,
+        timers,
+        interrupts,
+        boot,
+        apu,
+        ppu,
+        dma,
+        vram_bank_controller,
+        wram_bank_controller,
+        hdma,
+        speed_switch,
+        infrared,
+        undocumented_registers,
+    };
+#else
+    CpuBus cpu_bus {boot_rom, hram, joypad, serial, timers, interrupts, boot, apu, ppu, dma};
+#endif
+#else
+#ifdef ENABLE_CGB
+    CpuBus cpu_bus {hram,
+                    joypad,
+                    serial,
+                    timers,
+                    interrupts,
+                    boot,
+                    apu,
+                    ppu,
+                    dma,
+                    vram_bank_controller,
+                    wram_bank_controller,
+                    hdma,
+                    speed_switch,
+                    infrared,
+                    undocumented_registers};
+#else
+    CpuBus cpu_bus {hram, joypad, serial, timers, interrupts, boot, apu, ppu, dma};
+#endif
 #endif
     VramBus vram_bus {vram};
+
+#ifdef ENABLE_CGB
+    OamBus oam_bus {oam, not_usable};
+#else
     OamBus oam_bus {oam};
+#endif
 
     // MMU
 #if ENABLE_BOOTROM
-    Mmu mmu {*boot_rom, ext_bus, cpu_bus, vram_bus, oam_bus};
+#ifdef ENABLE_CGB
+    Mmu mmu {boot_rom, ext_bus, wram_bus, cpu_bus, vram_bus, oam_bus};
+#else
+    Mmu mmu {boot_rom, ext_bus, cpu_bus, vram_bus, oam_bus};
+#endif
+#else
+#ifdef ENABLE_CGB
+    Mmu mmu {ext_bus, wram_bus, cpu_bus, vram_bus, oam_bus};
 #else
     Mmu mmu {ext_bus, cpu_bus, vram_bus, oam_bus};
 #endif
+#endif
 
-    // DMA
-    Dma dma {mmu, oam_bus};
+#ifdef ENABLE_CGB
+    // Bank Controllers
+    VramBankController vram_bank_controller {vram_bus};
+    WramBankController wram_bank_controller {wram_bus};
 
-    // CPU
-    Idu idu {oam_bus};
-    Cpu cpu {idu, interrupts, mmu, joypad, stop_controller};
+    // HDMA
+    Hdma hdma {mmu,
+               ext_bus,
+               vram_bus,
+               oam_bus,
+               ppu.stat.mode,
+               cpu.fetching,
+               cpu.halted,
+               stop_controller.stopped,
+               speed_switch_controller};
 
-    // Video
-    Lcd lcd {};
-    Ppu ppu {lcd, interrupts, dma, vram_bus, oam_bus};
+#ifdef ENABLE_CGB
+    // Speed Switch
+    SpeedSwitch speed_switch {};
+    SpeedSwitchController speed_switch_controller {speed_switch, interrupts, timers, cpu.halted};
+#endif
 
-    // Audio
-    Apu apu {timers};
-
-    // Power Saving
-    bool stopped {};
-    StopController stop_controller {stopped, joypad, timers, lcd};
+    // Other CGB components
+    Infrared infrared {};
+    UndocumentedRegisters undocumented_registers {};
+#endif
 };
 
 #endif // GAMEBOY_H

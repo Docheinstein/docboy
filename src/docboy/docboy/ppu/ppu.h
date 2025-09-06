@@ -5,7 +5,6 @@
 
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
-#include "docboy/dma/dma.h"
 
 #include "utils/arrays.h"
 #include "utils/asserts.h"
@@ -16,16 +15,28 @@
 class Lcd;
 class Interrupts;
 class Dma;
+class Hdma;
 class Parcel;
+class SpeedSwitchController;
 
 class Ppu {
     DEBUGGABLE_CLASS()
 
 public:
-    Ppu(Lcd& lcd, Interrupts& interrupts, Dma& dma, VramBus::View<Device::Ppu> vram_bus,
-        OamBus::View<Device::Ppu> oam_bus);
+#ifdef ENABLE_CGB
+    Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
+        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller);
+#else
+    Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
+        Dma& dma_controller);
+#endif
 
     void tick();
+
+#ifdef ENABLE_CGB
+    void enable_color_resolver();
+    void disable_color_resolver();
+#endif
 
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
@@ -33,13 +44,30 @@ public:
     void reset();
 
     // PPU I/O registers
-    void write_dma(uint8_t value);
+    uint8_t read_lcdc() const;
+    void write_lcdc(uint8_t value);
 
     uint8_t read_stat() const;
     void write_stat(uint8_t value);
 
-    uint8_t read_lcdc() const;
-    void write_lcdc(uint8_t value);
+    void write_dma(uint8_t value);
+
+#ifdef ENABLE_CGB
+    uint8_t read_bcps() const;
+    void write_bcps(uint8_t value);
+
+    uint8_t read_bcpd() const;
+    void write_bcpd(uint8_t value);
+
+    uint8_t read_ocps() const;
+    void write_ocps(uint8_t value);
+
+    uint8_t read_ocpd() const;
+    void write_ocpd(uint8_t value);
+
+    uint8_t read_opri() const;
+    void write_opri(uint8_t value);
+#endif
 
     struct Lcdc : Composite<Specs::Registers::Video::LCDC> {
 #ifdef ENABLE_DEBUGGER
@@ -65,33 +93,56 @@ public:
     };
 
     struct Stat : Composite<Specs::Registers::Video::STAT> {
-        UInt8 lyc_eq_ly_int {make_uint8()};
-        UInt8 oam_int {make_uint8()};
-        UInt8 vblank_int {make_uint8()};
-        UInt8 hblank_int {make_uint8()};
-        UInt8 lyc_eq_ly {make_uint8()};
+        Bool lyc_eq_ly_int {make_bool()};
+        Bool oam_int {make_bool()};
+        Bool vblank_int {make_bool()};
+        Bool hblank_int {make_bool()};
+        Bool lyc_eq_ly {make_bool()};
         UInt8 mode {make_uint8()};
     } stat {};
 
     UInt8 scy {make_uint8(Specs::Registers::Video::SCY)};
     UInt8 scx {make_uint8(Specs::Registers::Video::SCX)};
     UInt8 ly {make_uint8(Specs::Registers::Video::LY)};
-    UInt8 dma {make_uint8(Specs::Registers::Video::DMA)};
     UInt8 lyc {make_uint8(Specs::Registers::Video::LYC)};
+    UInt8 dma {make_uint8(Specs::Registers::Video::DMA)};
     UInt8 bgp {make_uint8(Specs::Registers::Video::BGP)};
     UInt8 obp0 {make_uint8(Specs::Registers::Video::OBP0)};
     UInt8 obp1 {make_uint8(Specs::Registers::Video::OBP1)};
     UInt8 wy {make_uint8(Specs::Registers::Video::WY)};
     UInt8 wx {make_uint8(Specs::Registers::Video::WX)};
 
+#ifdef ENABLE_CGB
+    struct Bcps : Composite<Specs::Registers::Video::BCPS> {
+        Bool auto_increment {make_bool()};
+        UInt8 address {make_uint8()};
+    } bcps {};
+
+    struct Ocps : Composite<Specs::Registers::Video::OCPS> {
+        Bool auto_increment {make_bool()};
+        UInt8 address {make_uint8()};
+    } ocps {};
+
+    struct Opri : Composite<Specs::Registers::Video::OPRI> {
+        Bool priority_mode {make_bool()};
+    } opri {};
+#endif
+
 private:
     using TickSelector = void (Ppu::*)();
     using FetcherTickSelector = void (Ppu::*)();
     using PixelColorIndex = uint8_t;
 
+#ifdef ENABLE_CGB
+    struct BgPixel {
+        PixelColorIndex color_index;
+        uint8_t attributes;
+    };
+#else
     struct BgPixel {
         PixelColorIndex color_index;
     };
+#endif
 
     struct ObjPixel {
         PixelColorIndex color_index;
@@ -114,14 +165,25 @@ private:
 
     bool is_lyc_eq_ly() const;
 
+    void raise_stat_irq();
+
     void tick_stat();
-    void update_state_irq(bool irq);
+
+    void update_stat_irq(bool irq);
+    void update_stat_irq_for_oam_mode();
+    void update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq();
+
+    void begin_increase_ly();
+    void end_increase_ly();
+
+    void write_stat_real(uint8_t value);
 
     void tick_window();
 
     // PPU states
     void oam_scan_even();
     void oam_scan_odd();
+    void oam_scan_77();
     void oam_scan_done();
     void oam_scan_after_turn_on();
 
@@ -136,15 +198,22 @@ private:
     void hblank_454();
     void hblank_455();
     void hblank_last_line();
+    void hblank_last_line_453();
     void hblank_last_line_454();
     void hblank_last_line_455();
+    void hblank_first_line_after_turn_on();
 
     void vblank();
+    void vblank_453();
     void vblank_454();
+    void vblank_455();
     void vblank_last_line();
     void vblank_last_line_2();
+    void vblank_last_line_3();
     void vblank_last_line_7();
+    void vblank_last_line_453();
     void vblank_last_line_454();
+    void vblank_last_line_455();
 
     // PPU states helpers
     void enter_oam_scan();
@@ -159,7 +228,11 @@ private:
     template <uint8_t mode>
     void update_mode();
 
-    void update_stat_irq_for_oam_mode();
+#ifdef ENABLE_CGB
+    uint16_t resolve_color(uint8_t color_index, const uint8_t* palette /* 8 bytes */);
+#else
+    uint8_t resolve_color(uint8_t color_index, uint8_t palette);
+#endif
 
     void increase_lx();
 
@@ -169,7 +242,10 @@ private:
     void check_window_activation();
     void setup_fetcher_for_window();
 
-    void handle_oam_scan_buses_oddities();
+    void reset_oam_scan_entries();
+    void oam_scan_read_request();
+    void oam_scan_flush_read_request();
+    void handle_oam_scan_entry();
 
     // Fetcher states
     void bgwin_prefetcher_get_tile_0();
@@ -212,19 +288,43 @@ private:
 
     Lcd& lcd;
     Interrupts& interrupts;
-    Dma& dma_controller;
+#ifdef ENABLE_CGB
+    Hdma& hdma;
+#endif
     VramBus::View<Device::Ppu> vram;
     OamBus::View<Device::Ppu> oam;
+    Dma& dma_controller;
+#ifdef ENABLE_CGB
+    // TODO: bad: PPU shouldn't know speed_switch_controller
+    SpeedSwitchController& speed_switch_controller;
+#endif
 
     TickSelector tick_selector {};
     FetcherTickSelector fetcher_tick_selector {&Ppu::bg_prefetcher_get_tile_0};
 
     bool last_stat_irq {};
     bool enable_lyc_eq_ly_irq {true};
+    bool pending_stat_irq {};
+
+#ifdef ENABLE_CGB
+    uint8_t stat_mode {};
+    bool delay_stat_mode_update {};
+#endif
+
+#ifndef ENABLE_CGB
+    struct {
+        bool pending {};
+        uint8_t value {};
+    } stat_write {};
+#endif
 
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168)
 
+    uint8_t mode {};
+
+    uint8_t last_ly {};  // LY delayed by 1 t-cycle
+    uint8_t last_lyc {}; // LYC delayed by 1 t-cycle
     uint8_t last_bgp {}; // BGP delayed by 1 t-cycle
     uint8_t last_wx {};  // WX delayed by 1 t-cycle
     Lcdc last_lcdc {};   // LCDC delayed by 1 t-cycle
@@ -243,6 +343,11 @@ private:
 
     bool is_fetching_sprite {};
 
+    bool is_glitched_line_0 {};
+    uint8_t glitched_line_0_hblank_delay {}; // [0, 2]
+
+    uint8_t next_ly {};
+
 #ifdef ENABLE_DEBUGGER
     struct {
         uint16_t oam_scan {};
@@ -258,6 +363,7 @@ private:
     // Oam Scan
     struct {
         uint8_t count {}; // [0, 10]
+        uint8_t index {}; // [0, 40]
     } oam_scan;
 
     // Pixel Transfer
@@ -285,6 +391,11 @@ private:
     struct {
         uint8_t lx {}; // [0, 256), advances 8 by 8
         uint16_t tilemap_tile_vram_addr {};
+
+#ifdef ENABLE_CGB
+        bool attributes_enabled {};
+        uint8_t attributes {};
+#endif
 
 #ifdef ENABLE_DEBUGGER
         uint8_t tilemap_x {};
@@ -317,6 +428,15 @@ private:
         uint8_t tile_data_low {};
         uint8_t tile_data_high {};
     } psf;
+
+#ifdef ENABLE_CGB
+    // CGB palettes
+    uint8_t bg_palettes[64] {};
+    uint8_t obj_palettes[64] {};
+
+    // CGB Quirks
+    bool color_resolver_enabled {};
+#endif
 
 #ifdef ENABLE_DEBUGGER
     uint64_t cycles {};

@@ -6,8 +6,11 @@
 
 #include "docboy/common/macros.h"
 #include "docboy/common/specs.h"
+#include "docboy/lcd/appearance.h"
 
+#include "utils/arrays.h"
 #include "utils/asserts.h"
+#include "utils/bits.h"
 
 class Parcel;
 
@@ -15,31 +18,22 @@ class Lcd {
     DEBUGGABLE_CLASS()
 
 public:
-    using Palette = std::array<uint16_t, 4>;
-    using Pixel = uint8_t;
-    using PixelRgb565 = uint16_t;
+#ifdef ENABLE_CGB
+    using Pixel = uint16_t /* [0:32767]*/;
+#else
+    using Pixel = uint8_t /* [0:3] */;
+#endif
 
     static constexpr uint16_t PIXEL_COUNT = Specs::Display::WIDTH * Specs::Display::HEIGHT;
     static constexpr uint32_t PIXEL_BUFFER_SIZE = PIXEL_COUNT * sizeof(PixelRgb565);
 
-    static constexpr Palette DEFAULT_PALETTE {
-        0x84A0, // Lightest Green
-        0x4B40, // Light Green
-        0x2AA0, // Dark Green
-        0x1200, // Darkest Green
-    };
+    Lcd();
 
-    explicit Lcd(const Palette& palette = DEFAULT_PALETTE) :
-        palette {palette} {
-    }
-
-    void set_palette(const Palette& palette_) {
-        palette = palette_;
-    }
+    void set_appearance(const Appearance& a);
 
     void push_pixel(Pixel pixel) {
-        ASSERT(static_cast<uint8_t>(pixel) < 4);
-        pixels[cursor] = palette[static_cast<uint8_t>(pixel)];
+        ASSERT(pixel < Appearance::NUM_COLORS);
+        pixels[cursor] = appearance.palette[pixel];
         if (++cursor == PIXEL_COUNT) {
             cursor = 0;
         }
@@ -53,8 +47,15 @@ public:
         return pixels;
     }
 
-    void reset_cursor() {
-        // Reset the LCD position.
+    void clear() {
+        // Fills the LCD with the default color
+        for (uint32_t i = 0; i < array_size(pixels); ++i) {
+            pixels[i] = appearance.default_color;
+        }
+    }
+
+    void rewind() {
+        // Reset the LCD position
         cursor = 0;
 #ifdef ENABLE_DEBUGGER
         x = 0;
@@ -62,15 +63,8 @@ public:
 #endif
     }
 
-    void clear() {
-        // Fills the LCD with color 0.
-        for (unsigned short& pixel : pixels) {
-            pixel = palette[0];
-        }
-    }
-
 #ifdef ENABLE_DEBUGGER
-    Lcd::PixelRgb565* get_pixels() {
+    PixelRgb565* get_pixels() {
         return pixels;
     }
     uint16_t get_cursor() const {
@@ -81,17 +75,10 @@ public:
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
 
-    void reset() {
-        memset(pixels, 0, sizeof(pixels));
-        cursor = 0;
-#ifdef ENABLE_DEBUGGER
-        x = 0;
-        y = 0;
-#endif
-    }
+    void reset();
 
 private:
-    Palette palette {};
+    Appearance appearance {};
 
     PixelRgb565 pixels[PIXEL_COUNT] {};
     uint16_t cursor {};

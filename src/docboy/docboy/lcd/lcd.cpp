@@ -1,6 +1,16 @@
 #include "docboy/lcd/lcd.h"
+#include "docboy/lcd/colormap.h"
 
 #include "utils/parcel.h"
+
+Lcd::Lcd() {
+    appearance = DEFAULT_APPEARANCE;
+    reset();
+}
+
+void Lcd::set_appearance(const Appearance& a) {
+    appearance = a;
+}
 
 void Lcd::save_state(Parcel& parcel) const {
     parcel.write_bytes(pixels, sizeof(pixels));
@@ -17,5 +27,14 @@ void Lcd::load_state(Parcel& parcel) {
 #ifdef ENABLE_DEBUGGER
     x = parcel.read_uint8();
     y = parcel.read_uint8();
+#endif
+}
+
+void Lcd::reset() {
+    memset(pixels, 0, sizeof(pixels));
+    cursor = 0;
+#ifdef ENABLE_DEBUGGER
+    x = 0;
+    y = 0;
 #endif
 }

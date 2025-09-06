@@ -161,18 +161,17 @@ namespace Registers {
         constexpr uint16_t WAVED = 0xFF3D;
         constexpr uint16_t WAVEE = 0xFF3E;
         constexpr uint16_t WAVEF = 0xFF3F;
-#ifdef ENABLE_AUDIO_PCM
+#ifdef ENABLE_CGB
         constexpr uint16_t PCM12 = 0xFF76;
         constexpr uint16_t PCM34 = 0xFF77;
 #endif
         constexpr uint16_t REGISTERS[] = {NR10,  NR11,  NR12,  NR13,  NR14,  NR21,  NR22,  NR23,  NR24,  NR30,
                                           NR31,  NR32,  NR33,  NR34,  NR41,  NR42,  NR43,  NR44,  NR50,  NR51,
                                           NR52,  WAVE0, WAVE1, WAVE2, WAVE3, WAVE4, WAVE5, WAVE6, WAVE7, WAVE8,
-                                          WAVE9, WAVEA, WAVEB, WAVEC, WAVED, WAVEE, WAVEF,
-#ifdef ENABLE_AUDIO_PCM
-                                          PCM12, PCM34
+                                          WAVE9, WAVEA, WAVEB, WAVEC, WAVED, WAVEE, WAVEF};
+#ifdef ENABLE_CGB
+        constexpr uint16_t CGB_REGISTERS[] = {PCM12, PCM34};
 #endif
-        };
     } // namespace Sound
 
     namespace Video {
@@ -188,10 +187,58 @@ namespace Registers {
         constexpr uint16_t OBP1 = 0xFF49;
         constexpr uint16_t WY = 0xFF4A;
         constexpr uint16_t WX = 0xFF4B;
-        constexpr uint16_t REGISTERS[] = {
-            LCDC, STAT, SCY, SCX, LY, LYC, DMA, BGP, OBP0, OBP1, WY, WX,
-        };
+#ifdef ENABLE_CGB
+        constexpr uint16_t BCPS = 0xFF68;
+        constexpr uint16_t BCPD = 0xFF69;
+        constexpr uint16_t OCPS = 0xFF6A;
+        constexpr uint16_t OCPD = 0xFF6B;
+        constexpr uint16_t OPRI = 0xFF6C;
+#endif
+
+        constexpr uint16_t REGISTERS[] = {LCDC, STAT, SCY, SCX, LY, LYC, DMA, BGP, OBP0, OBP1, WY, WX};
+
+#ifdef ENABLE_CGB
+        constexpr uint16_t CGB_REGISTERS[] = {BCPS, BCPD, OCPS, OCPD, OPRI};
+#endif
     } // namespace Video
+
+#ifdef ENABLE_CGB
+    namespace SpeedSwitch {
+        constexpr uint16_t KEY1 = 0xFF4D;
+        constexpr uint16_t CGB_REGISTERS[] = {KEY1};
+    } // namespace SpeedSwitch
+
+    namespace Hdma {
+        constexpr uint16_t HDMA1 = 0xFF51;
+        constexpr uint16_t HDMA2 = 0xFF52;
+        constexpr uint16_t HDMA3 = 0xFF53;
+        constexpr uint16_t HDMA4 = 0xFF54;
+        constexpr uint16_t HDMA5 = 0xFF55;
+        constexpr uint16_t CGB_REGISTERS[] = {HDMA1, HDMA2, HDMA3, HDMA4, HDMA5};
+    } // namespace Hdma
+
+    namespace Infrared {
+        constexpr uint16_t RP = 0xFF56;
+        constexpr uint16_t CGB_REGISTERS[] = {RP};
+    } // namespace Infrared
+
+    namespace Banks {
+        constexpr uint16_t VBK = 0xFF4F;
+        constexpr uint16_t SVBK = 0xFF70;
+
+        constexpr uint16_t CGB_REGISTERS[] = {VBK, SVBK};
+    } // namespace Banks
+
+    namespace Undocumented {
+        constexpr uint16_t FF72 = 0xFF72;
+        constexpr uint16_t FF73 = 0xFF73;
+        constexpr uint16_t FF74 = 0xFF74;
+        constexpr uint16_t FF75 = 0xFF75;
+
+        constexpr uint16_t CGB_REGISTERS[] = {FF72, FF73, FF74, FF75};
+    } // namespace Undocumented
+
+#endif
 
     namespace Boot {
         constexpr uint16_t BOOT = 0xFF50;
@@ -233,8 +280,9 @@ namespace Bits {
     namespace Timers {
         namespace TAC {
             constexpr uint8_t ENABLE = 2;
-        }
-    } // namespace Timers
+            constexpr BitRange CLOCK_SELECTOR = {1, 0};
+        } // namespace TAC
+    }     // namespace Timers
 
     namespace Video {
         namespace LCDC {
@@ -256,7 +304,20 @@ namespace Bits {
             constexpr uint8_t MODE_HIGH = 1;
             constexpr uint8_t MODE_LOW = 0;
         } // namespace STAT
-    }     // namespace Video
+#ifdef ENABLE_CGB
+        namespace BCPS {
+            constexpr uint8_t AUTO_INCREMENT = 7;
+            constexpr BitRange ADDRESS = {5, 0};
+        } // namespace BCPS
+        namespace OCPS {
+            constexpr uint8_t AUTO_INCREMENT = 7;
+            constexpr BitRange ADDRESS = {5, 0};
+        } // namespace OCPS
+        namespace OPRI {
+            constexpr uint8_t PRIORITY_MODE = 0;
+        } // namespace OPRI
+#endif
+    } // namespace Video
 
     namespace Audio {
         namespace NR10 {
@@ -355,14 +416,42 @@ namespace Bits {
             constexpr uint8_t BG_OVER_OBJ = 7;
             constexpr uint8_t Y_FLIP = 6;
             constexpr uint8_t X_FLIP = 5;
-            constexpr uint8_t PALETTE_NUM = 4;
+            constexpr uint8_t DMG_PALETTE = 4;
+#ifdef ENABLE_CGB
+            constexpr uint8_t BANK = 3;
+            constexpr BitRange CGB_PALETTE = {2, 0};
+#endif
         } // namespace Attributes
     }     // namespace OAM
 
+#ifdef ENABLE_CGB
+    namespace Background {
+        namespace Attributes {
+            constexpr uint8_t PRIORITY = 7;
+            constexpr uint8_t Y_FLIP = 6;
+            constexpr uint8_t X_FLIP = 5;
+            constexpr uint8_t BANK = 3;
+            constexpr BitRange PALETTE = {2, 0};
+        } // namespace Attributes
+    }     // namespace Background
+#endif
+
+#ifdef ENABLE_CGB
+    namespace Hdma {
+        namespace HDMA5 {
+            constexpr uint8_t HBLANK_TRANSFER = 7;
+            constexpr BitRange TRANSFER_LENGTH = {6, 0};
+        } // namespace HDMA5
+    }     // namespace Hdma
+#endif
+
     namespace Serial {
         namespace SC {
-            constexpr uint8_t TRANSFER_START = 7;
-            constexpr uint8_t CLOCK = 0;
+            constexpr uint8_t TRANSFER_ENABLE = 7;
+#ifdef ENABLE_CGB
+            constexpr uint8_t CLOCK_SPEED = 1;
+#endif
+            constexpr uint8_t CLOCK_SELECT = 0;
         } // namespace SC
     }     // namespace Serial
 
@@ -373,6 +462,21 @@ namespace Bits {
             constexpr uint8_t DAY = 0;
         } // namespace DH
     }     // namespace Rtc
+
+#ifdef ENABLE_CGB
+    namespace SpeedSwitch {
+        constexpr uint8_t CURRENT_SPEED = 7;
+        constexpr uint8_t SPEED_SWITCH = 0;
+    } // namespace SpeedSwitch
+#endif
+
+#ifdef ENABLE_CGB
+    namespace Infrared {
+        constexpr BitRange READ_ENABLE = {7, 6};
+        constexpr uint8_t RECEIVING = 1;
+        constexpr uint8_t EMITTING = 0;
+    } // namespace Infrared
+#endif
 } // namespace Bits
 
 namespace Bytes {

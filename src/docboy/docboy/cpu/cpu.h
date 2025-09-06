@@ -10,6 +10,8 @@ class Idu;
 class Interrupts;
 class Joypad;
 class StopController;
+class SpeedSwitch;
+class SpeedSwitchController;
 class Parcel;
 
 class Cpu {
@@ -17,9 +19,13 @@ class Cpu {
     TESTABLE_CLASS()
 
 public:
+#ifdef ENABLE_CGB
+    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller,
+        SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller);
+#else
     Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller);
+#endif
 
-    void tick();
     void tick_t0();
     void tick_t1();
     void tick_t2();
@@ -29,6 +35,11 @@ public:
     void load_state(Parcel& parcel);
 
     void reset();
+
+    bool halted;
+    bool fetching;
+
+    uint16_t pc {};
 
 private:
     enum class Register8 : uint8_t {
@@ -79,6 +90,23 @@ private:
 
     using MicroOperation = void (Cpu::*)();
     using Instruction = MicroOperation[INSTR_LEN];
+
+    void tick_microop();
+
+#ifdef ENABLE_CGB
+    void tick_even();
+    void tick_odd();
+#endif
+
+    void tick_single_speed_0();
+    void tick_single_speed_1();
+    void tick_single_speed_2();
+    void tick_single_speed_3();
+
+#ifdef ENABLE_CGB
+    void tick_double_speed_0();
+    void tick_double_speed_1();
+#endif
 
     template <uint8_t t>
     void check_interrupt();
@@ -610,11 +638,25 @@ private:
     template <uint8_t n, Register16 r>
     void set_arr_m2();
 
+#ifdef ENABLE_DEBUGGER
+    void update_debug_information();
+#endif
+
+#ifdef ENABLE_TESTS
+    void update_test_information();
+#endif
+
     Idu& idu;
     Interrupts& interrupts;
     Mmu::View<Device::Cpu> mmu;
     Joypad& joypad;
+
     StopController& stop_controller;
+#ifdef ENABLE_CGB
+    // TODO: architectural: should CPU know them?
+    SpeedSwitch& speed_switch;
+    SpeedSwitchController& speed_switch_controller;
+#endif
 
     Instruction instructions[256];
     Instruction instructions_cb[256];
@@ -626,22 +668,16 @@ private:
     uint16_t bc {};
     uint16_t de {};
     uint16_t hl {};
-    uint16_t pc {};
     uint16_t sp {};
 
     ImeState ime {};
 
-    bool halted {};
+    uint8_t phase {};
 
     struct {
         InterruptState state {};
         uint8_t remaining_ticks {};
     } interrupt;
-
-    struct {
-        bool fetching {};
-        Instruction* instructions {};
-    } fetcher;
 
     struct {
         struct {
@@ -670,6 +706,8 @@ private:
         uint8_t data {};
     } io;
 
+    bool fetching_cb {};
+
     // scratchpad
     struct {
         bool b {};
@@ -683,6 +721,10 @@ private:
 
 #ifdef ENABLE_DEBUGGER
     uint64_t cycles {};
+#endif
+
+#ifdef ENABLE_ASSERTS
+    uint8_t last_tick {3};
 #endif
 };
 

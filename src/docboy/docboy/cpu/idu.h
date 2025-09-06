@@ -16,7 +16,7 @@ public:
 
     void tick_t1() {
         // Eventually clear any previous write request.
-        oam_bus.clear_write_request<Device::Cpu>();
+        oam_bus.clear_write_request<Device::Idu>();
     }
 
     void increment(uint16_t& data) {
@@ -35,7 +35,7 @@ public:
         // range and the PPU is reading from OAM at that moment (DMG only).
         // [blargg/oam_bug/2-causes]
         if (data >= Specs::MemoryLayout::OAM::START && data <= Specs::MemoryLayout::NOT_USABLE::END) {
-            oam_bus.write_request<Device::Cpu>(data);
+            oam_bus.write_request<Device::Idu>(data);
         }
 
         data += inc;

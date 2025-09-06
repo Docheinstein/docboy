@@ -13,3 +13,15 @@ void Boot::write_boot(uint8_t value) {
 #endif
     boot |= value;
 }
+
+void Boot::save_state(Parcel& parcel) const {
+    parcel.write_uint8(boot);
+}
+
+void Boot::load_state(Parcel& parcel) {
+    boot = parcel.read_uint8();
+}
+
+void Boot::reset() {
+    boot = if_bootrom_else(0b11111110, 0b11111111);
+}

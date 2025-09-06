@@ -3,6 +3,7 @@
 
 #include <memory>
 
+class RunController;
 class CoreController;
 class UiController;
 class NavController;
@@ -18,7 +19,7 @@ union SDL_Event;
 class Screen {
 public:
     struct Controllers {
-        CoreController& core;
+        RunController& runner;
         UiController& ui;
         NavController& nav;
         MainController& main;
@@ -45,7 +46,7 @@ public:
 protected:
     Context context;
 
-    CoreController& core;
+    RunController& runner;
     UiController& ui;
     NavController& nav;
     MainController& main;

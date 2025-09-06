@@ -2,6 +2,7 @@
 
 #include "controllers/corecontroller.h"
 #include "controllers/maincontroller.h"
+#include "controllers/runcontroller.h"
 #include "controllers/uicontroller.h"
 #include "screens/mainscreen.h"
 
@@ -19,26 +20,42 @@
 #endif
 
 GameScreen::GameScreen(Context context) :
-    Screen {context},
-    game_texture {SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING,
-                                    Specs::Display::WIDTH, Specs::Display::HEIGHT)},
-    game_overlay_texture {SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
-                                            Specs::Display::WIDTH, Specs::Display::HEIGHT)},
-    game_framebuffer {core.get_framebuffer()} {
+    Screen {context} {
+    game_framebuffer1 = runner.get_core1().get_framebuffer();
 
-    SDL_SetTextureScaleMode(game_texture, SDL_SCALEMODE_NEAREST);
+    game_texture1 = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING,
+                                      Specs::Display::WIDTH, Specs::Display::HEIGHT);
+    SDL_SetTextureScaleMode(game_texture1, SDL_SCALEMODE_NEAREST);
 
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (runner.is_two_players_mode()) {
+        game_framebuffer2 = runner.get_core2().get_framebuffer();
+
+        game_texture2 = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING,
+                                          Specs::Display::WIDTH, Specs::Display::HEIGHT);
+        SDL_SetTextureScaleMode(game_texture2, SDL_SCALEMODE_NEAREST);
+    }
+#endif
+
+    game_overlay_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+                                             static_cast<int>(ui.get_width()), static_cast<int>(ui.get_height()));
     SDL_SetTextureScaleMode(game_overlay_texture, SDL_SCALEMODE_NEAREST);
     SDL_SetTextureBlendMode(game_overlay_texture, SDL_BLENDMODE_BLEND);
 
-    ASSERT(core.is_rom_loaded());
+    ASSERT(runner.get_core1().is_rom_loaded());
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (runner.is_two_players_mode()) {
+        ASSERT(runner.get_core2().is_rom_loaded());
+    }
+#endif
 
     // Exit pause state (start emulation)
-    core.set_paused(false);
+    runner.set_paused(false);
 
     // Pause the emulation if menu is visible
     menu.screen_stack.set_on_screen_changed_callback([this]() {
-        core.set_paused(is_in_menu());
+        runner.set_paused(is_in_menu());
     });
 }
 
@@ -54,16 +71,26 @@ void GameScreen::redraw() {
 void GameScreen::render() {
     if (is_in_menu()) {
         // Draw game framebuffer even in menu: it will be shown underneath the semi-transparent menu
-        SDL_RenderTexture(renderer, game_texture, nullptr, nullptr);
+        SDL_RenderTexture(renderer, game_texture1, nullptr, nullptr);
         menu.screen_stack.top->render();
         return;
     }
 
     // Copy framebuffer to rendered texture
-    uint32_t* game_texture_buffer = lock_texture(game_texture);
-    copy_to_texture(game_texture_buffer, game_framebuffer,
+    uint32_t* game_texture_buffer = lock_texture(game_texture1);
+    copy_to_texture(game_texture_buffer, game_framebuffer1,
                     Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t));
-    unlock_texture(game_texture);
+    unlock_texture(game_texture1);
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (game_framebuffer2) {
+        ASSERT(game_texture2);
+        uint32_t* game_texture2_buffer = lock_texture(game_texture2);
+        copy_to_texture(game_texture2_buffer, game_framebuffer2,
+                        Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t));
+        unlock_texture(game_texture2);
+    }
+#endif
 
     // Update FPS
     if (fps.visible) {
@@ -83,7 +110,17 @@ void GameScreen::render() {
         redraw_overlay();
     }
 
-    SDL_RenderTexture(renderer, game_texture, nullptr, nullptr);
+    SDL_FRect dest_rect {0, 0, static_cast<float>(Specs::Display::WIDTH * ui.get_scaling()),
+                         static_cast<float>(Specs::Display::HEIGHT * ui.get_scaling())};
+
+    SDL_RenderTexture(renderer, game_texture1, nullptr, &dest_rect);
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (game_texture2) {
+        dest_rect.x += static_cast<float>(Specs::Display::WIDTH * ui.get_scaling());
+        SDL_RenderTexture(renderer, game_texture2, nullptr, &dest_rect);
+    }
+#endif
+
     SDL_RenderTexture(renderer, game_overlay_texture, nullptr, nullptr);
 }
 
@@ -93,37 +130,80 @@ void GameScreen::handle_event(const SDL_Event& event) {
         return;
     }
 
-    ASSERT(!core.is_paused());
+    ASSERT(!runner.is_paused());
 
     switch (event.type) {
     case SDL_EVENT_KEY_DOWN: {
         switch (event.key.key) {
         case SDLK_F1:
-            if (core.write_state()) {
+            if (runner.get_core1().write_state()) {
                 draw_popup("State saved");
             }
             break;
         case SDLK_F2:
-            if (core.load_state()) {
+            if (runner.get_core1().load_state()) {
                 draw_popup("State loaded");
             }
             break;
+#ifdef ENABLE_TWO_PLAYERS_MODE
+        case SDLK_F3:
+            if (runner.is_two_players_mode()) {
+                if (runner.get_core2().write_state()) {
+                    draw_popup("State saved (#2)");
+                }
+            }
+            break;
+        case SDLK_F4:
+            if (runner.is_two_players_mode()) {
+                if (runner.get_core2().load_state()) {
+                    draw_popup("State loaded (#2)");
+                }
+            }
+            break;
+#endif
         case SDLK_F11: {
+            const auto save_framebuffer_dat = [](const PixelRgb565* framebuffer, CoreController& core) {
+                bool ok {};
+                write_file((temp_directory_path() / core.get_rom().with_extension("dat").filename()).string(),
+                           framebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t), &ok);
+                return ok;
+            };
+
             bool ok {};
-            write_file((temp_directory_path() / core.get_rom().with_extension("dat").filename()).string(),
-                       game_framebuffer, Specs::Display::WIDTH * Specs::Display::HEIGHT * sizeof(uint16_t), &ok);
+            ok = save_framebuffer_dat(game_framebuffer1, runner.get_core1());
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+            if (runner.is_two_players_mode()) {
+                ok |= save_framebuffer_dat(game_framebuffer2, runner.get_core2());
+            }
+#endif
+
             if (ok) {
                 draw_popup("Framebuffer saved");
             }
             break;
         }
         case SDLK_F12: {
-            auto buffer_rgb888 =
-                create_image_buffer(Specs::Display::WIDTH, Specs::Display::HEIGHT, ImageFormat::RGB888);
-            convert_image(ImageFormat::RGB565, game_framebuffer, ImageFormat::RGB888, buffer_rgb888.data(),
-                          Specs::Display::WIDTH, Specs::Display::HEIGHT);
-            if (save_png_rgb888((temp_directory_path() / core.get_rom().with_extension("png").filename()).string(),
-                                buffer_rgb888.data(), Specs::Display::WIDTH, Specs::Display::HEIGHT)) {
+            const auto save_framebuffer_png = [](const PixelRgb565* framebuffer, CoreController& core) {
+                auto buffer_rgb888 =
+                    create_image_buffer(Specs::Display::WIDTH, Specs::Display::HEIGHT, ImageFormat::RGB888);
+                convert_image(ImageFormat::RGB565, framebuffer, ImageFormat::RGB888, buffer_rgb888.data(),
+                              Specs::Display::WIDTH, Specs::Display::HEIGHT);
+                return save_png_rgb888(
+                    (temp_directory_path() / core.get_rom().with_extension("png").filename()).string(),
+                    buffer_rgb888.data(), Specs::Display::WIDTH, Specs::Display::HEIGHT);
+            };
+
+            bool ok {};
+            ok = save_framebuffer_png(game_framebuffer1, runner.get_core1());
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+            if (runner.is_two_players_mode()) {
+                ok |= save_framebuffer_png(game_framebuffer2, runner.get_core2());
+            }
+#endif
+
+            if (ok) {
                 draw_popup("Screenshot saved");
             }
             break;
@@ -149,6 +229,14 @@ void GameScreen::handle_event(const SDL_Event& event) {
             main.set_speed(main.get_speed() + 1);
             redraw_overlay();
             break;
+        case SDLK_SPACE:
+            if (main.get_speed() == MainController::SPEED_UNLIMITED) {
+                main.set_speed(MainController::SPEED_DEFAULT);
+            } else {
+                main.set_speed(MainController::SPEED_UNLIMITED);
+            }
+            redraw_overlay();
+            break;
 #ifdef ENABLE_DEBUGGER
         case SDLK_D:
             if (debugger.is_debugger_attached()) {
@@ -165,25 +253,43 @@ void GameScreen::handle_event(const SDL_Event& event) {
         case SDLK_ESCAPE: {
             // Open menu with a semi-transparent background
 #ifdef ENABLE_DEBUGGER
-            Screen::Controllers controllers {core, ui, menu.nav_controller, main, debugger};
+            Screen::Controllers controllers {runner, ui, menu.nav_controller, main, debugger};
 #else
-            Screen::Controllers controllers {core, ui, menu.nav_controller, main};
+            Screen::Controllers controllers {runner, ui, menu.nav_controller, main};
 #endif
             menu.screen_stack.push(std::make_unique<GameMainScreen>(Context {controllers, {0xE0}}));
             redraw();
         }
         default:
-            core.send_key(event.key.key, Joypad::KeyState::Pressed);
+            runner.get_core1().send_key(event.key.key, Joypad::KeyState::Pressed);
+#ifdef ENABLE_TWO_PLAYERS_MODE
+            if (runner.is_two_players_mode()) {
+                runner.get_core2().send_key(event.key.key, Joypad::KeyState::Pressed);
+            }
+#endif
             break;
         }
         break;
     }
     case SDL_EVENT_KEY_UP: {
-        core.send_key(event.key.key, Joypad::KeyState::Released);
+        runner.get_core1().send_key(event.key.key, Joypad::KeyState::Released);
+#ifdef ENABLE_TWO_PLAYERS_MODE
+        if (runner.is_two_players_mode()) {
+            runner.get_core2().send_key(event.key.key, Joypad::KeyState::Released);
+        }
+#endif
         break;
     }
     case SDL_EVENT_DROP_FILE: {
-        core.load_rom(event.drop.data);
+#ifdef ENABLE_TWO_PLAYERS_MODE
+        if (!runner.is_two_players_mode()) {
+            runner.get_core1().load_rom(event.drop.data);
+        } else {
+            // Drag & Drop to load ROM while playing is not supported with dual screen at the moment
+        }
+#else
+        runner.get_core1().load_rom(event.drop.data);
+#endif
         break;
     }
     }
@@ -197,26 +303,28 @@ void GameScreen::draw_popup(const std::string& str) {
 }
 
 void GameScreen::redraw_overlay() {
-    uint32_t text_color = ui.get_current_palette().rgba8888.accent;
+    uint32_t text_color = ui.get_current_appearance().accent;
 
     uint32_t* overlay_texture_buffer = lock_texture(game_overlay_texture);
 
-    clear_texture(overlay_texture_buffer, Specs::Display::WIDTH * Specs::Display::HEIGHT);
+    clear_texture(overlay_texture_buffer, ui.get_width() * ui.get_height());
 
     if (popup.visible) {
-        draw_text(overlay_texture_buffer, Specs::Display::WIDTH, popup.text, 4, Specs::Display::HEIGHT - 12,
-                  text_color);
+        draw_text(overlay_texture_buffer, ui.get_width(), popup.text, 4, Specs::Display::HEIGHT - 12, text_color);
     }
 
     if (fps.visible) {
         const std::string fps_str = std::to_string(fps.display_count);
-        draw_text(overlay_texture_buffer, Specs::Display::WIDTH, fps_str,
-                  Specs::Display::WIDTH - 4 - fps_str.size() * 8, 4, text_color);
+        draw_text(overlay_texture_buffer, ui.get_width(), fps_str, ui.get_width() - 4 - fps_str.size() * 8, 4,
+                  text_color);
     }
 
     if (const int32_t speed {main.get_speed()}; speed != 0) {
-        draw_text(overlay_texture_buffer, Specs::Display::WIDTH,
-                  (speed > 0 ? "x" : "/") + std::to_string((uint32_t)(pow2(abs(speed)))), 4, 4, text_color);
+        std::string speed_text =
+            speed == MainController::SPEED_UNLIMITED
+                ? ">>"
+                : (speed > MainController::SPEED_DEFAULT ? "x" : "/") + std::to_string((uint32_t)(pow2(abs(speed))));
+        draw_text(overlay_texture_buffer, ui.get_width(), speed_text, 4, 4, text_color);
     }
 
     unlock_texture(game_overlay_texture);

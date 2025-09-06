@@ -2,8 +2,14 @@
 
 #include "components/menu/items.h"
 #include "controllers/navcontroller.h"
+#include "controllers/runcontroller.h"
 #include "screens/controloptionsscreen.h"
 #include "screens/graphicsoptionsscreen.h"
+#include "screens/playerselectscreen.h"
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+#include "screens/serialoptionsscreen.h"
+#endif
 
 #ifdef ENABLE_AUDIO
 #include "screens/audiooptionsscreen.h"
@@ -21,8 +27,29 @@ OptionsScreen::OptionsScreen(Context ctx) :
                           }});
 #endif
     menu.add_item(Button {"Control options", [this] {
-                              nav.push(std::make_unique<ControlOptionsScreen>(context));
+#ifdef ENABLE_TWO_PLAYERS_MODE
+                              if (runner.is_two_players_mode()) {
+                                  nav.push(std::make_unique<PlayerSelectScreen>(
+                                      context,
+                                      [this]() {
+                                          nav.push(std::make_unique<ControlOptionsScreen>(context, runner.get_core1()));
+                                      },
+                                      [this]() {
+                                          nav.push(std::make_unique<ControlOptionsScreen>(context, runner.get_core2()));
+                                      }));
+                              } else
+#endif
+                              {
+                                  nav.push(std::make_unique<ControlOptionsScreen>(context, runner.get_core1()));
+                              }
                           }});
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (runner.is_two_players_mode()) {
+        menu.add_item(Button {"Serial options", [this] {
+                                  nav.push(std::make_unique<SerialOptionsScreen>(context));
+                              }});
+    }
+#endif
     menu.add_item(Button {"Back", [this] {
                               nav.pop();
                           }});

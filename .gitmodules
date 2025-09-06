@@ -1,27 +1,24 @@
-[submodule "external/tui"]
-	path = external/tui
+[submodule "third_party/tui"]
+	path = third_party/tui
 	url = https://github.com/Docheinstein/tui
-	branch = master
-[submodule "external/args"]
-	path = external/args
+[submodule "third_party/args"]
+	path = third_party/args
 	url = https://github.com/Docheinstein/args
-	branch = master
-[submodule "external/SDL"]
-	path = external/SDL
+[submodule "third_party/SDL"]
+	path = third_party/SDL
 	url = https://github.com/libsdl-org/SDL/
-	branch = main
-[submodule "external/libpng"]
-	path = external/libpng
-	url = https://github.com/Docheinstein/libpng
-	branch = master
-[submodule "external/zlib"]
-	path = external/zlib
-	url = https://github.com/Docheinstein/zlib
-	branch = develop
-[submodule "external/catch2"]
-	path = external/catch2
-	url = https://github.com/catchorg/Catch2.git
-	branch = devel
-[submodule "external/nativefiledialog"]
-	path = external/nativefiledialog
-	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "third_party/simdjson"]
+	path = third_party/simdjson
+	url = https://github.com/simdjson/simdjson
+[submodule "third_party/zlib"]
+	path = third_party/zlib
+	url = https://github.com/madler/zlib
+[submodule "third_party/libpng"]
+	path = third_party/libpng
+	url = https://github.com/pnggroup/libpng
+[submodule "third_party/catch2"]
+	path = third_party/catch2
+	url = https://github.com/catchorg/Catch2
+[submodule "third_party/nfd"]
+	path = third_party/nfd
+	url = https://github.com/btzy/nativefiledialog-extended

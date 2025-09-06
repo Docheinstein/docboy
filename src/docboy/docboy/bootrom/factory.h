@@ -7,7 +7,7 @@
 #include "docboy/bootrom/fwd/bootromfwd.h"
 
 namespace BootRomFactory {
-std::unique_ptr<BootRom> create(const std::string& filename);
+void load(BootRom& boot_rom, const std::string& filename);
 };
 
 #endif // BOOTROMFACTORY_H

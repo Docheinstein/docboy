@@ -63,3 +63,13 @@ bool create_directory(const std::string& filename, int mode) {
     return mkdir(filename.c_str(), mode) == 0;
 #endif
 }
+
+#ifndef WINDOWS
+DirectoryTraverser iterate_directory(const std::string& filename) {
+    return DirectoryTraverser {filename};
+}
+
+RecursiveDirectoryTraverser recursive_iterate_directory(const std::string& filename) {
+    return RecursiveDirectoryTraverser {filename};
+}
+#endif

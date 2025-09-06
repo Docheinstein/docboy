@@ -32,7 +32,7 @@ bool equals_ignore_case(const std::string& s1, const std::string& s2) {
 
 std::string lpad(const std::string& s, std::size_t length, char ch) {
     const std::size_t in_length = s.length();
-    return length < in_length ? std::string(length - in_length, ch) + s : s;
+    return in_length < length ? std::string(length - in_length, ch) + s : s;
 }
 
 std::string rpad(const std::string& s, std::size_t length, char ch) {
@@ -42,4 +42,12 @@ std::string rpad(const std::string& s, std::size_t length, char ch) {
 
 bool starts_with(const std::string& heystack, const std::string& needle) {
     return heystack.find(needle) == 0;
+}
+
+bool ends_with(const std::string& heystack, const std::string& needle) {
+    return heystack.find(needle) == heystack.size() - needle.size();
+}
+
+bool contains(const std::string& heystack, const std::string& needle) {
+    return heystack.find(needle) != std::string::npos;
 }

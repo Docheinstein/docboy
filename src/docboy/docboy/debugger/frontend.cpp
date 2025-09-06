@@ -17,6 +17,7 @@
 #include "docboy/debugger/backend.h"
 #include "docboy/debugger/helpers.h"
 #include "docboy/debugger/mnemonics.h"
+#include "docboy/debugger/rgbtoansi.h"
 #include "docboy/debugger/shared.h"
 
 #include "utils/formatters.h"
@@ -85,6 +86,11 @@ struct FrontendDisplayCommand {
 
 struct FrontendUndisplayCommand {};
 
+struct FrontendKeyCommand {
+    Joypad::Key key {};
+    Joypad::KeyState event {};
+};
+
 struct FrontendTickCommand {
     uint64_t count {};
 };
@@ -129,9 +135,9 @@ struct FrontendTraceCommand {
     std::optional<uint32_t> level {};
 };
 
-struct FrontendChecksumCommand {};
-
 struct FrontendDumpDisassembleCommand {};
+
+struct FrontendResetCommand {};
 
 struct FrontendHelpCommand {};
 struct FrontendQuitCommand {};
@@ -140,10 +146,10 @@ using FrontendCommand =
     std::variant<FrontendBreakpointCommand, FrontendWatchpointCommand, FrontendDeleteCommand,
                  FrontendAutoDisassembleCommand, FrontendExamineCommand, FrontendSearchBytesCommand,
                  FrontendSearchInstructionsCommand, FrontendDisplayCommand, FrontendUndisplayCommand,
-                 FrontendTickCommand, FrontendDotCommand, FrontendStepCommand, FrontendMicroStepCommand,
-                 FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand, FrontendScanlineCommand,
-                 FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand, FrontendChecksumCommand,
-                 FrontendDumpDisassembleCommand, FrontendHelpCommand, FrontendQuitCommand>;
+                 FrontendKeyCommand, FrontendTickCommand, FrontendDotCommand, FrontendStepCommand,
+                 FrontendMicroStepCommand, FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand,
+                 FrontendScanlineCommand, FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand,
+                 FrontendDumpDisassembleCommand, FrontendResetCommand, FrontendHelpCommand, FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
     std::regex regex;
@@ -161,9 +167,10 @@ enum TraceFlag : uint32_t {
     TraceFlagStack = 1 << 5,
     TraceFlagMemory = 1 << 6,
     TraceFlagPpu = 1 << 7,
-    TraceFlagHash = 1 << 8,
-    TraceFlagMCycle = 1 << 9,
-    TraceFlagTCycle = 1 << 10,
+    TraceFlagSerial = 1 << 8,
+    TraceFlagHash = 1 << 9,
+    TraceFlagMCycle = 1 << 10,
+    TraceFlagTCycle = 1 << 11,
     MaxTraceFlag = (TraceFlagTCycle << 1) - 1,
 };
 
@@ -358,6 +365,44 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          FrontendUndisplayCommand cmd {};
          return cmd;
      }},
+    {std::regex(R"(key (press|release) (down|up|left|right|start|select|a|b))"), "key <press|release> <key>",
+     "Send 'press' or 'release' event for <key> (<key>: a, b, start, select, up, down, left, right)",
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         FrontendKeyCommand cmd {};
+
+         const std::string& event = groups[0];
+         const std::string& key = groups[1];
+
+         if (event == "press") {
+             cmd.event = Joypad::KeyState::Pressed;
+         } else if (event == "release") {
+             cmd.event = Joypad::KeyState::Released;
+         } else {
+             return std::nullopt;
+         }
+
+         if (key == "down") {
+             cmd.key = Joypad::Key::Down;
+         } else if (key == "up") {
+             cmd.key = Joypad::Key::Up;
+         } else if (key == "left") {
+             cmd.key = Joypad::Key::Left;
+         } else if (key == "right") {
+             cmd.key = Joypad::Key::Right;
+         } else if (key == "start") {
+             cmd.key = Joypad::Key::Start;
+         } else if (key == "select") {
+             cmd.key = Joypad::Key::Select;
+         } else if (key == "a") {
+             cmd.key = Joypad::Key::A;
+         } else if (key == "b") {
+             cmd.key = Joypad::Key::B;
+         } else {
+             return std::nullopt;
+         }
+
+         return cmd;
+     }},
     {std::regex(R"(t\s*(\d+)?)"), "t [<count>]", "Continue running for <count> clock ticks (default = 1)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          const std::string& count = groups[0];
@@ -437,18 +482,23 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          }
          return cmd;
      }},
-    {std::regex(R"(dump)"), "dump", "Dump the disassemble (output on stderr)",
+    {std::regex(R"(d)"), "d", "Dump the disassemble (output on stderr)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          return FrontendDumpDisassembleCommand {};
+     }},
+    {std::regex(R"(r)"), "r", "Reset the emulator to its initial state",
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         return FrontendResetCommand {};
      }},
     {std::regex(R"(h(?:elp)?)"), "h", "Display help",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          return FrontendHelpCommand {};
      }},
     {std::regex(R"(q)"), "q", "Quit",
-     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-         return FrontendQuitCommand {};
-     }},
+     [](const std::vector<std::string>& groups) -> std::
+                                                    optional<FrontendCommand> {
+                                                        return FrontendQuitCommand {};
+                                                    }},
 };
 
 std::optional<FrontendCommand> parse_cmdline(const std::string& s) {
@@ -501,6 +551,8 @@ std::string to_string(const DisassembledInstructionReference& instr) {
        << std::setw(23) << instruction_mnemonic(instr.instruction, instr.address);
     return ss.str();
 }
+
+constexpr uint32_t TRACE_BUFFER_CAPACITY = 100'000;
 
 #ifdef TERM_SUPPORTS_UNICODE
 constexpr const char* PIPE = "|";
@@ -638,6 +690,13 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendUndisplayCommand
     return std::nullopt;
 }
 
+// Key
+template <>
+std::optional<Command> DebuggerFrontend::handle_command<FrontendKeyCommand>(const FrontendKeyCommand& cmd) {
+    core.set_key(cmd.key, cmd.event);
+    return std::nullopt;
+}
+
 // Tick
 template <>
 std::optional<Command> DebuggerFrontend::handle_command<FrontendTickCommand>(const FrontendTickCommand& cmd) {
@@ -728,12 +787,21 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendTraceCommand>(co
               << TraceFlagMemory << std::endl;
     std::cout << "> PPU          : " << (static_cast<bool>(trace & TraceFlagPpu) ? "ON " : "OFF") << " | "
               << TraceFlagPpu << std::endl;
+    std::cout << "> Serial       : " << (static_cast<bool>(trace & TraceFlagSerial) ? "ON " : "OFF") << " | "
+              << TraceFlagSerial << std::endl;
     std::cout << "> Hash         : " << (static_cast<bool>(trace & TraceFlagHash) ? "ON " : "OFF") << " | "
               << TraceFlagHash << std::endl;
     std::cout << "> M-Cycles     : " << (static_cast<bool>(trace & TraceFlagMCycle) ? "ON " : "OFF") << " | "
               << TraceFlagMCycle << std::endl;
     std::cout << "> T-Cycles     : " << (static_cast<bool>(trace & TraceFlagTCycle) ? "ON " : "OFF") << " | "
               << TraceFlagTCycle << std::endl;
+
+    if (trace) {
+        // Allocate enough space for the trace buffer (only the first time).
+        if (trace_buffer.capacity() < TRACE_BUFFER_CAPACITY) {
+            trace_buffer.reserve(TRACE_BUFFER_CAPACITY);
+        }
+    }
 
     return std::nullopt;
 }
@@ -752,6 +820,15 @@ DebuggerFrontend::handle_command<FrontendDumpDisassembleCommand>(const FrontendD
     }
     std::cout << "Dumped " << disassembled.size() << " instructions" << std::endl;
 
+    return std::nullopt;
+}
+
+// Reset
+template <>
+std::optional<Command> DebuggerFrontend::handle_command<FrontendResetCommand>(const FrontendResetCommand& cmd) {
+    backend.reset();
+    reset();
+    reprint_ui = true;
     return std::nullopt;
 }
 
@@ -788,6 +865,8 @@ Command DebuggerFrontend::pull_command(const ExecutionState& state) {
         backend.remove_point(*temporary_breakpoint);
         temporary_breakpoint = std::nullopt;
     }
+
+    flush_trace_buffer();
 
     // Pull command loop
     do {
@@ -861,6 +940,8 @@ Command DebuggerFrontend::pull_command(const ExecutionState& state) {
             cmd_to_send = handle_command(std::get<FrontendDisplayCommand>(cmd));
         } else if (std::holds_alternative<FrontendUndisplayCommand>(cmd)) {
             cmd_to_send = handle_command(std::get<FrontendUndisplayCommand>(cmd));
+        } else if (std::holds_alternative<FrontendKeyCommand>(cmd)) {
+            cmd_to_send = handle_command(std::get<FrontendKeyCommand>(cmd));
         } else if (std::holds_alternative<FrontendTickCommand>(cmd)) {
             cmd_to_send = handle_command(std::get<FrontendTickCommand>(cmd));
         } else if (std::holds_alternative<FrontendDotCommand>(cmd)) {
@@ -885,6 +966,8 @@ Command DebuggerFrontend::pull_command(const ExecutionState& state) {
             cmd_to_send = handle_command(std::get<FrontendTraceCommand>(cmd));
         } else if (std::holds_alternative<FrontendDumpDisassembleCommand>(cmd)) {
             cmd_to_send = handle_command(std::get<FrontendDumpDisassembleCommand>(cmd));
+        } else if (std::holds_alternative<FrontendResetCommand>(cmd)) {
+            cmd_to_send = handle_command(std::get<FrontendResetCommand>(cmd));
         } else if (std::holds_alternative<FrontendHelpCommand>(cmd)) {
             cmd_to_send = handle_command(std::get<FrontendHelpCommand>(cmd));
         } else if (std::holds_alternative<FrontendQuitCommand>(cmd)) {
@@ -909,7 +992,9 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
             return;
         }
 
-        std::cerr << std::left << std::setw(12) << "[" + std::to_string(tick) + "] ";
+        std::stringstream ss;
+
+        ss << std::left << std::setw(12) << "[" + std::to_string(tick) + "] ";
 
         if (trace & TraceFlagInstruction) {
             std::string instr_str;
@@ -928,59 +1013,69 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
                 }
             }
 
-            std::cerr << std::left << std::setw(28) << instr_str << "  ";
+            ss << std::left << std::setw(28) << instr_str << "  ";
         }
 
         if (trace & TraceFlagRegisters) {
-            std::cerr << "AF:" << hex(cpu.af) << " BC:" << hex(cpu.bc) << " DE:" << hex(cpu.de) << " HL:" << hex(cpu.hl)
-                      << " SP:" << hex(cpu.sp) << " PC:" << hex((uint16_t)(cpu.pc)) << "  ";
+            ss << "AF:" << hex(cpu.af) << " BC:" << hex(cpu.bc) << " DE:" << hex(cpu.de) << " HL:" << hex(cpu.hl)
+               << " SP:" << hex(cpu.sp) << " PC:" << hex((uint16_t)(cpu.pc)) << "  ";
         }
 
         if (trace & TraceFlagInterrupts) {
             const Interrupts& interrupts = gb.interrupts;
-            std::cerr << "IME:"
-                      << (cpu.ime == Cpu::ImeState::Enabled
-                              ? "1"
-                              : ((cpu.ime == Cpu::ImeState::Pending || cpu.ime == Cpu::ImeState::Requested) ? "!"
-                                                                                                            : "0"))
-                      << " IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF) << "  ";
+            ss << "IME:"
+               << (cpu.ime == Cpu::ImeState::Enabled
+                       ? "1"
+                       : ((cpu.ime == Cpu::ImeState::Pending || cpu.ime == Cpu::ImeState::Requested) ? "!" : "0"))
+               << " IE:" << hex((uint8_t)interrupts.IE) << " IF:" << hex((uint8_t)interrupts.IF) << "  ";
         }
 
         if (trace & TraceFlagDma) {
-            std::cerr << "DMA:" << std::setw(3) << (gb.dma.transferring ? std::to_string(gb.dma.cursor) : "OFF")
-                      << "  ";
+            ss << "DMA:" << std::setw(3) << (gb.dma.is_active() ? std::to_string(gb.dma.cursor) : "OFF") << "  ";
         }
 
         if (trace & TraceFlagTimers) {
-            std::cerr << "DIV16:" << hex(gb.timers.div16)
-                      << " DIV:" << hex(backend.read_memory(Specs::Registers::Timers::DIV))
-                      << " TIMA:" << hex(backend.read_memory(Specs::Registers::Timers::TIMA))
-                      << " TMA:" << hex(backend.read_memory(Specs::Registers::Timers::TMA))
-                      << " TAC:" << hex(backend.read_memory(Specs::Registers::Timers::TAC)) << "  ";
+            ss << "DIV16:" << hex(gb.timers.div16) << " DIV:" << hex(backend.read_memory(Specs::Registers::Timers::DIV))
+               << " TIMA:" << hex(backend.read_memory(Specs::Registers::Timers::TIMA))
+               << " TMA:" << hex(backend.read_memory(Specs::Registers::Timers::TMA))
+               << " TAC:" << hex(backend.read_memory(Specs::Registers::Timers::TAC)) << "  ";
         }
 
         if (trace & TraceFlagStack) {
-            std::cerr << "[SP+1]:" << hex(backend.read_memory(cpu.sp + 1)) << " "
-                      << "[SP]:" << hex(backend.read_memory(cpu.sp)) << " "
-                      << "[SP-1]:" << hex(backend.read_memory(cpu.sp - 1)) << "  ";
+            ss << "[SP+1]:" << hex(backend.read_memory(cpu.sp + 1)) << " "
+               << "[SP]:" << hex(backend.read_memory(cpu.sp)) << " "
+               << "[SP-1]:" << hex(backend.read_memory(cpu.sp - 1)) << "  ";
         }
 
         if (trace & TraceFlagMemory) {
-            std::cerr << "[BC]:" << hex(backend.read_memory(cpu.bc)) << " "
-                      << "[DE]:" << hex(backend.read_memory(cpu.de)) << " "
-                      << "[HL]:" << hex(backend.read_memory(cpu.hl)) << "  ";
+            ss << "[BC]:" << hex(backend.read_memory(cpu.bc)) << " "
+               << "[DE]:" << hex(backend.read_memory(cpu.de)) << " "
+               << "[HL]:" << hex(backend.read_memory(cpu.hl)) << "  ";
+        }
+
+        if (trace & TraceFlagSerial) {
+            ss << "SB:" << hex((uint8_t)gb.serial.sb) << " SC:" << hex((uint8_t)gb.serial.read_sc())
+               << " Progress:" << +gb.serial.progress << " ";
         }
 
         if (trace & TraceFlagPpu) {
             const Ppu& ppu = gb.ppu;
-            std::cerr << "Mode:" << +gb.ppu.stat.mode << " Dots:" << std::setw(12) << ppu.dots << "  ";
+            ss << "Mode:" << +gb.ppu.stat.mode << " Dots:" << std::setw(12) << ppu.dots << "  ";
         }
 
         if (trace & TraceFlagHash) {
-            std::cerr << "Hash:" << hex(static_cast<uint16_t>(backend.state_hash())) << "  ";
+            ss << "Hash:" << hex(static_cast<uint16_t>(backend.state_hash())) << "  ";
         }
 
-        std::cerr << std::endl;
+        ss << std::endl;
+
+        // Append the trace entry to the buffer.
+        trace_buffer.push_back(ss.str());
+
+        // Flush the trace buffer if it is full.
+        if (trace_buffer.size() == TRACE_BUFFER_CAPACITY) {
+            flush_trace_buffer();
+        }
     }
 
     if (sigint_trigger) {
@@ -1064,6 +1159,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("T-Cycle") << "  :  " << core.ticks << endl;
         b << yellow("M-Cycle") << "  :  " << core.ticks / 4 << endl;
 
+        b << yellow("Halted") << "   :  " << gb.cpu.halted << endl;
+        b << yellow("Stopped") << "  :  " << gb.stop_controller.stopped << endl;
+
         b << yellow("Phase") << "    :  ";
         for (uint8_t t = 0; t < 4; t++) {
             Text phase {"T" + std::to_string(t)};
@@ -1079,6 +1177,31 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         return b;
     };
 
+#ifdef ENABLE_CGB
+    // Double Speed
+    const auto make_double_speed_block = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("DOUBLE SPEED", width) << endl;
+
+        // State
+        b << yellow("Double Speed") << "        :  " << +gb.speed_switch_controller.is_double_speed_mode() << endl;
+        b << yellow("Switching") << "           :  " << (gb.speed_switch_controller.is_switching_speed()) << endl;
+        b << yellow("Switch Enter Delay") << "  :  " << +gb.speed_switch_controller.speed_switch_enter_countdown
+          << endl;
+        b << yellow("Switch Exit Delay") << "   :  " << +gb.speed_switch_controller.speed_switch_exit_countdown << endl;
+        b << yellow("Timers Blocked") << "      :  " << gb.speed_switch_controller.timers_block.blocked << endl;
+        b << yellow("Timers Block Delay") << "  :  " << +gb.speed_switch_controller.timers_block.countdown << endl;
+        b << yellow("Intr. Blocked") << "       :  " << gb.speed_switch_controller.interrupts_block.blocked << endl;
+        b << yellow("Intr. Block Delay") << "   :  " << +gb.speed_switch_controller.interrupts_block.countdown << endl;
+        b << yellow("DMA Blocked") << "         :  " << gb.speed_switch_controller.dma_block.blocked << endl;
+        b << yellow("DMA Block Delay") << "     :  " << +gb.speed_switch_controller.dma_block.countdown << endl;
+        b << yellow("PPU Blocked") << "         :  " << +gb.speed_switch_controller.ppu_block.blocked << endl;
+
+        return b;
+    };
+#endif
+
     // CPU
     const auto make_cpu_block = [&](uint32_t width) {
         auto b {make_block(width)};
@@ -1087,7 +1210,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         // State
         b << yellow("Cycle") << "   :  " << gb.cpu.cycles << endl;
-        b << yellow("Halted") << "  :  " << gb.cpu.halted << endl;
 
         // Registers
         const auto reg = [](uint16_t value) {
@@ -1108,10 +1230,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         };
 
         b << subheader("flags", width) << endl;
-        b << red("Z") << " : " << flag(get_bit<Specs::Bits::Flags::Z>(gb.cpu.af)) << "    " << red("N") << " : "
-          << flag(get_bit<Specs::Bits::Flags::N>(gb.cpu.af)) << "    " << red("H") << " : "
-          << flag(get_bit<Specs::Bits::Flags::H>(gb.cpu.af)) << "    " << red("C") << " : "
-          << flag(get_bit<Specs::Bits::Flags::C>(gb.cpu.af)) << endl;
+        b << red("Z") << " : " << flag(test_bit<Specs::Bits::Flags::Z>(gb.cpu.af)) << "    " << red("N") << " : "
+          << flag(test_bit<Specs::Bits::Flags::N>(gb.cpu.af)) << "    " << red("H") << " : "
+          << flag(test_bit<Specs::Bits::Flags::H>(gb.cpu.af)) << "    " << red("C") << " : "
+          << flag(test_bit<Specs::Bits::Flags::C>(gb.cpu.af)) << endl;
 
         // Read/Write
         b << subheader("io", width) << endl;
@@ -1139,7 +1261,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << subheader("interrupts", width) << endl;
 
-        b << yellow("State") << "   :  " <<
+        b << yellow("State") << "    :  " <<
             [this]() {
                 switch (gb.cpu.interrupt.state) {
                 case Cpu::InterruptState::None:
@@ -1154,15 +1276,25 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             }()
           << endl;
 
+        b << yellow("Blocked") << "  :  " <<
+            [this]() {
+                if (gb.interrupts.block_interrupts) {
+                    return Text {"1"};
+                }
+
+                return darkgray("0");
+            }()
+          << endl;
+
         if (gb.cpu.interrupt.state == Cpu::InterruptState::Pending) {
-            b << yellow("Ticks") << "   :  " << gb.cpu.interrupt.remaining_ticks << endl;
+            b << yellow("Ticks") << "    :  " << gb.cpu.interrupt.remaining_ticks << endl;
         }
 
         Text t {hr(width)};
 
         b << hr(width) << endl;
 
-        b << red("IME") << "     :  " <<
+        b << red("IME") << "      :  " <<
             [this]() {
                 switch (gb.cpu.ime) {
                 case Cpu::ImeState::Enabled:
@@ -1179,27 +1311,27 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             }()
           << endl;
 
-        b << red("IE ") << "     :  " << bin(IE) << " (" << hex(IE) << ")" << endl;
-        b << red("IF ") << "     :  " << bin(IF) << " (" << hex(IF) << ")" << endl;
+        b << red("IE ") << "      :  " << bin(IE) << " (" << hex(IE) << ")" << endl;
+        b << red("IF ") << "      :  " << bin(IF) << " (" << hex(IF) << ")" << endl;
 
         const auto intr = [colorbool](bool IME, bool IE, bool IF) {
             return "IE : " + colorbool(IE) + "    IF : " + colorbool(IF) + "    " +
                    ((IME && IE && IF) ? green("ON ") : darkgray("OFF"));
         };
 
-        b << red("VBLANK") << "  :  "
+        b << red("VBLANK") << "   :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::VBLANK>(IE), test_bit<Specs::Bits::Interrupts::VBLANK>(IF))
           << endl;
-        b << red("STAT") << "    :  "
+        b << red("STAT") << "     :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::STAT>(IE), test_bit<Specs::Bits::Interrupts::STAT>(IF))
           << endl;
-        b << red("TIMER") << "   :  "
+        b << red("TIMER") << "    :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::TIMER>(IE), test_bit<Specs::Bits::Interrupts::TIMER>(IF))
           << endl;
-        b << red("JOYPAD") << "  :  "
+        b << red("JOYPAD") << "   :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::JOYPAD>(IE), test_bit<Specs::Bits::Interrupts::JOYPAD>(IF))
           << endl;
-        b << red("SERIAL") << "  :  "
+        b << red("SERIAL") << "   :  "
           << intr(IME, test_bit<Specs::Bits::Interrupts::SERIAL>(IE), test_bit<Specs::Bits::Interrupts::SERIAL>(IF))
           << endl;
 
@@ -1979,7 +2111,22 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("On") << "                :  " << (gb.ppu.lcdc.enable ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("Cycle") << "             :  " << gb.ppu.cycles << endl;
         b << yellow("Dots") << "              :  " << gb.ppu.dots << endl;
-
+        b << yellow("Mode") << "              :  " << [this]() -> Text {
+            if (gb.ppu.mode == Specs::Ppu::Modes::OAM_SCAN) {
+                return "Oam Scan";
+            }
+            if (gb.ppu.mode == Specs::Ppu::Modes::PIXEL_TRANSFER) {
+                return "Pixel Transfer";
+            }
+            if (gb.ppu.mode == Specs::Ppu::Modes::HBLANK) {
+                return "HBlank";
+            }
+            if (gb.ppu.mode == Specs::Ppu::Modes::VBLANK) {
+                return "VBlank";
+            }
+            ASSERT_NO_ENTRY();
+            return "Unknown";
+        }() << endl;
         return b;
     };
 
@@ -1987,9 +2134,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         auto b {make_block(width)};
 
         // General
-        b << yellow("Mode") << "                :  " << [this]() -> Text {
+        b << yellow("Phase") << "               :  " << [this]() -> Text {
             if (gb.ppu.tick_selector == &Ppu::oam_scan_even || gb.ppu.tick_selector == &Ppu::oam_scan_odd ||
-                gb.ppu.tick_selector == &Ppu::oam_scan_done || gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on)
+                gb.ppu.tick_selector == &Ppu::oam_scan_77 || gb.ppu.tick_selector == &Ppu::oam_scan_done ||
+                gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on)
                 return "Oam Scan";
             if (gb.ppu.tick_selector == &Ppu::pixel_transfer_dummy_lx0 ||
                 gb.ppu.tick_selector == &Ppu::pixel_transfer_discard_lx0 ||
@@ -2014,24 +2162,32 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 return t;
             }
             if (gb.ppu.tick_selector == &Ppu::hblank || gb.ppu.tick_selector == &Ppu::hblank_453 ||
-                gb.ppu.tick_selector == &Ppu::hblank_454 || gb.ppu.tick_selector == &Ppu::hblank_455 ||
-                gb.ppu.tick_selector == &Ppu::hblank_last_line || gb.ppu.tick_selector == &Ppu::hblank_last_line_454 ||
-                gb.ppu.tick_selector == &Ppu::hblank_last_line_455) {
-                return "Horizontal Blank";
+                gb.ppu.tick_selector == &Ppu::hblank_454 || gb.ppu.tick_selector == &Ppu::hblank_455) {
+                return "HBlank";
             }
-            if (gb.ppu.tick_selector == &Ppu::vblank || gb.ppu.tick_selector == &Ppu::vblank_454) {
-                return "Vertical Blank";
+            if (gb.ppu.tick_selector == &Ppu::hblank_last_line || gb.ppu.tick_selector == &Ppu::hblank_last_line_453 ||
+                gb.ppu.tick_selector == &Ppu::hblank_last_line_454 ||
+                gb.ppu.tick_selector == &Ppu::hblank_last_line_455) {
+                return "HBlank (Last Line)";
+            }
+            if (gb.ppu.tick_selector == &Ppu::hblank_first_line_after_turn_on) {
+                return "HBlank (Glitched Line 0)";
+            }
+            if (gb.ppu.tick_selector == &Ppu::vblank || gb.ppu.tick_selector == &Ppu::vblank_453 ||
+                gb.ppu.tick_selector == &Ppu::vblank_454 || gb.ppu.tick_selector == &Ppu::vblank_455) {
+                return "VBlank";
             }
             if (gb.ppu.tick_selector == &Ppu::vblank_last_line || gb.ppu.tick_selector == &Ppu::vblank_last_line_2 ||
-                gb.ppu.tick_selector == &Ppu::vblank_last_line_7 ||
-                gb.ppu.tick_selector == &Ppu::vblank_last_line_454) {
-                return "Vertical Blank (Last Line)";
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_3 || gb.ppu.tick_selector == &Ppu::vblank_last_line_7 ||
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_453 ||
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_454 ||
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_455) {
+                return "VBlank (Last Line)";
             }
 
             ASSERT_NO_ENTRY();
             return "Unknown";
         }() << endl;
-
         b << yellow("Last Stat IRQ") << "       :  " << gb.ppu.last_stat_irq << endl;
         b << yellow("LYC_EQ_LY En.") << "       :  " << gb.ppu.enable_lyc_eq_ly_irq << endl;
 
@@ -2041,28 +2197,31 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     const auto make_ppu_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
 
+#ifdef ENABLE_CGB
+        b << subheader("bg palettes", width) << endl;
+
+        const auto bg_palette = [this, &b](uint8_t i) -> Text {
+            uint16_t rgb555 = gb.ppu.bg_palettes[2 * i] << 8 | gb.ppu.bg_palettes[2 * i + 1];
+            return color(hex(rgb555), RGB555_TO_ANSI_COLORS[rgb555]);
+        };
+
+        for (uint8_t i = 0; i < 8; i++) {
+            b << yellow("BGP") << yellow(i) << "              : " << bg_palette(i) << " " << bg_palette(i + 1) << " "
+              << bg_palette(i + 2) << " " << bg_palette(i + 3) << endl;
+        }
+#endif
+
         // LCD
-        const auto pixel_color = [this](uint16_t lcd_color) {
-            Text colors[4] {
-                color<154>("0"),
-                color<106>("1"),
-                color<64>("2"),
-                color<28>("3"),
-            };
-            for (uint8_t i = 0; i < 4; i++) {
-                if (lcd_color == gb.lcd.palette[i]) {
-                    return colors[i];
-                }
-            }
-            return color<0>("[.]"); // allowed because framebuffer could be cleared by the debugger
+        const auto pixel_color = [this](PixelRgb565 lcd_color) {
+            return color(hex(lcd_color), RGB565_TO_ANSI_COLORS[lcd_color]);
         };
 
         b << subheader("lcd", width) << endl;
         b << yellow("X") << "                 :  " << gb.lcd.x << endl;
         b << yellow("Y") << "                 :  " << gb.lcd.y << endl;
         b << yellow("Last Pixels") << "       :  ";
-        for (int32_t i = 0; i < 8; i++) {
-            int32_t idx = gb.lcd.cursor - 8 + i;
+        for (int32_t i = 0; i < 4; i++) {
+            int32_t idx = gb.lcd.cursor - 4 + i;
             if (idx >= 0) {
                 b << pixel_color(gb.lcd.pixels[idx]) << " ";
             }
@@ -2073,10 +2232,21 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("bg fifo", width) << endl;
 
         uint8_t bg_pixels[8];
+#ifdef ENABLE_CGB
+        uint8_t bg_attributes[8];
+#endif
         for (uint8_t i = 0; i < gb.ppu.bg_fifo.size(); i++) {
-            bg_pixels[i] = gb.ppu.bg_fifo[i].color_index;
+            const Ppu::BgPixel& p = gb.ppu.bg_fifo[i];
+            bg_pixels[i] = p.color_index;
+#ifdef ENABLE_CGB
+            bg_attributes[i] = p.attributes;
+#endif
         }
+
         b << yellow("BG Fifo Pixels") << "    :  " << hex(bg_pixels, gb.ppu.bg_fifo.size()) << endl;
+#ifdef ENABLE_CGB
+        b << yellow("BG Fifo Attrs.") << "    :  " << hex(bg_attributes, gb.ppu.bg_fifo.size()) << endl;
+#endif
 
         // OBJ Fifo
         uint8_t obj_pixels[8];
@@ -2118,7 +2288,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         // Pixel Transfer
         b << subheader("pixel transfer", width) << endl;
 
-        b << yellow("Fetcher Mode") << "      :  " <<
+        b << yellow("Fetcher Phase") << "     :  " <<
             [this]() {
                 if (gb.ppu.fetcher_tick_selector == &Ppu::bgwin_prefetcher_get_tile_0) {
                     return "BG/WIN Tile0";
@@ -2199,6 +2369,20 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     const auto make_ppu_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
 
+#ifdef ENABLE_CGB
+        b << subheader("obj palettes", width) << endl;
+
+        const auto obj_palette = [this, &b](uint8_t i) -> Text {
+            uint16_t rgb555 = gb.ppu.obj_palettes[2 * i] << 8 | gb.ppu.obj_palettes[2 * i + 1];
+            return color(hex(rgb555), RGB555_TO_ANSI_COLORS[rgb555]);
+        };
+
+        for (uint8_t i = 0; i < 8; i++) {
+            b << yellow("OBJP") << yellow(i) << "               : " << obj_palette(i) << " " << obj_palette(i + 1)
+              << " " << obj_palette(i + 2) << " " << obj_palette(i + 3) << endl;
+        }
+#endif
+
         // OAM Registers
         b << subheader("oam registers", width) << endl;
         b << yellow("OAM A") << "               :  " << hex(gb.ppu.registers.oam.a) << endl;
@@ -2208,47 +2392,52 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         const auto& oam_entries = gb.ppu.scanline_oam_entries;
         b << subheader("oam scanline entries", width) << endl;
 
-        const auto oam_entries_info = [](const auto& v, uint8_t (*fn)(const Ppu::OamScanEntry&)) {
+        const auto oam_entries_info = [](const auto& v, uint8_t from, uint8_t to,
+                                         uint8_t (*fn)(const Ppu::OamScanEntry&)) {
             Text t {};
-            for (uint8_t i = 0; i < v.size(); i++) {
+            for (uint8_t i = from; i < v.size() && i < to; i++) {
                 t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
             }
             return t;
         };
 
-        b << yellow("OAM Number") << "          :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.number;
-        }) << endl;
-        b << yellow("OAM X") << "               :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.x;
-        }) << endl;
-        b << yellow("OAM Y") << "               :  " << oam_entries_info(oam_entries, [](const Ppu::OamScanEntry& e) {
-            return e.y;
-        }) << endl;
+        const auto oam_entries_section = [&b, &oam_entries_info](const auto& v, uint8_t from, uint8_t to) {
+            b << yellow("OAM Number") << "          :  "
+              << oam_entries_info(v, from, to,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.number;
+                                  })
+              << endl;
+            b << yellow("OAM X") << "               :  "
+              << oam_entries_info(v, from, to,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.x;
+                                  })
+              << endl;
+            b << yellow("OAM Y") << "               :  "
+              << oam_entries_info(v, from, to,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.y;
+                                  })
+              << endl;
+        };
+
+        oam_entries_section(oam_entries, 0, 5);
+        if (oam_entries.size() > 5) {
+            b << hr(width) << endl;
+            oam_entries_section(oam_entries, 5, 10);
+        }
 
         if (gb.ppu.lx < array_size(gb.ppu.oam_entries)) {
             const auto& oam_entries_hit = gb.ppu.oam_entries[gb.ppu.lx];
             // OAM Hit
             b << subheader("oam hit", width) << endl;
 
-            b << yellow("OAM Number") << "          :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.number;
-                                  })
-              << endl;
-            b << yellow("OAM X") << "               :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.x;
-                                  })
-              << endl;
-            b << yellow("OAM Y") << "               :  "
-              << oam_entries_info(oam_entries_hit,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.y;
-                                  })
-              << endl;
+            oam_entries_section(oam_entries_hit, 0, 5);
+            if (oam_entries_hit.size() > 5) {
+                b << hr(width) << endl;
+                oam_entries_section(oam_entries_hit, 5, 10);
+            }
         }
 
         // BG/WIN Prefetcher
@@ -2260,6 +2449,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.tilemap_vram_addr) << endl;
         b << yellow("Tile Map Tile Addr.") << " :  "
           << hex<uint16_t>(Specs::MemoryLayout::VRAM::START + gb.ppu.bwf.tilemap_tile_vram_addr) << endl;
+
+#ifdef ENABLE_CGB
+        b << yellow("BG Attributes") << "       :  " << hex<uint8_t>(gb.ppu.bwf.attributes) << endl;
+#endif
         b << yellow("Cached Fetch") << "        :  "
           << (gb.ppu.bwf.interrupted_fetch.has_data ? hex<uint16_t>(gb.ppu.bwf.interrupted_fetch.tile_data_high << 8 |
                                                                     gb.ppu.bwf.interrupted_fetch.tile_data_low)
@@ -2270,7 +2463,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("obj prefetcher", width) << endl;
         b << yellow("OAM Number") << "          :  " << gb.ppu.of.entry.number << endl;
         b << yellow("Tile Number") << "         :  " << gb.ppu.of.tile_number << endl;
-        b << yellow("OBJ Attributes") << "      :  " << gb.ppu.of.attributes << endl;
+        b << yellow("OBJ Attributes") << "      :  " << hex<uint8_t>(gb.ppu.of.attributes) << endl;
 
         // Pixel Slice Fetcher
         b << subheader("pixel slice fetcher", width) << endl;
@@ -2301,47 +2494,78 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     const auto make_apu_general_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
-        b << yellow("On") << "             :  " << (gb.apu.nr52.enable ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("On") << "              :  " << (gb.apu.nr52.enable ? green("ON") : darkgray("OFF")) << endl;
         return b;
     };
 
     const auto make_apu_general_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
-        b << yellow("DIV") << "            :  " << (gb.apu.div_apu % 8) << endl;
+        b << yellow("Clock Edge") << "     :  " << gb.apu.apu_clock_edge << endl;
         return b;
     };
+
     const auto make_apu_general_block_3 = [&](uint32_t width) {
         auto b {make_block(width)};
-        b << yellow("DIV bit 4") << "      :  " << +gb.apu.prev_div_bit_4 << endl;
+        b << yellow("DIV-APU") << "       :  " << (gb.apu.div_apu % 8) << endl;
+        return b;
+    };
+
+    const auto make_apu_general_block_4 = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << yellow("DIV-APU bit") << "    :  " << +gb.apu.prev_div_edge_bit << endl;
         return b;
     };
 
     const auto make_apu_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
 
+        const auto duty_cycle = [](uint8_t dc) {
+            switch (dc) {
+            case 0b00:
+                return "12%";
+            case 0b01:
+                return "25%";
+            case 0b10:
+                return "50%";
+            case 0b11:
+                return "75%";
+            default:
+                ASSERT_NO_ENTRY();
+                return "";
+            }
+        };
+
         b << subheader("channel 1", width) << endl;
-        b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("DAC") << "            :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("Volume") << "         :  " << +gb.apu.ch1.volume << endl;
-        b << yellow("Length Timer") << "   :  " << +gb.apu.ch1.length_timer << endl;
-        b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch1.trigger_delay << endl;
+        b << yellow("Enabled") << "         :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("DAC") << "             :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Output") << "          :  " << +gb.apu.ch1.digital_output << endl;
+        b << yellow("Volume") << "          :  " << +gb.apu.ch1.volume << endl;
+        b << yellow("Length Timer") << "    :  " << +gb.apu.ch1.length_timer << endl;
+        b << yellow("Trigger Delay") << "   :  " << +gb.apu.ch1.trigger_delay << endl;
 
         b << subheader2("wave", width) << endl;
 
-        b << yellow("Timer") << "          :  " << +gb.apu.ch1.wave.timer << endl;
-        b << yellow("Position") << "       :  " << +gb.apu.ch1.wave.position << endl;
+        b << yellow("Timer") << "           :  " << +gb.apu.ch1.wave.timer << endl;
+        b << yellow("Position") << "        :  " << +gb.apu.ch1.wave.position << endl;
+        b << yellow("Duty Cycle") << "      :  " << duty_cycle(gb.apu.ch1.wave.duty_cycle) << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Timer") << "          :  " << +gb.apu.ch1.volume_sweep.timer << endl;
-        b << yellow("Pace") << "           :  " << +gb.apu.ch1.volume_sweep.pace << endl;
-        b << yellow("Direction") << "      :  " << +gb.apu.ch1.volume_sweep.direction << endl;
+        b << yellow("Countdown") << "       :  " << +gb.apu.ch1.volume_sweep.countdown << endl;
+        b << yellow("Direction") << "       :  " << +gb.apu.ch1.volume_sweep.direction << endl;
+        b << yellow("Pending") << "         :  " << +gb.apu.ch1.volume_sweep.pending_update << endl;
 
         b << subheader2("period sweep", width) << endl;
 
-        b << yellow("Enabled") << "        :  " << +gb.apu.ch1.period_sweep.enabled << endl;
-        b << yellow("Period") << "         :  " << +gb.apu.ch1.period_sweep.period << endl;
-        b << yellow("Timer") << "          :  " << +gb.apu.ch1.period_sweep.timer << endl;
-        b << yellow("Decreasing") << "     :  " << +gb.apu.ch1.period_sweep.decreasing << endl;
+        b << yellow("Pace Countdown") << "  :  " << +gb.apu.ch1.period_sweep.pace_countdown << endl;
+        b << yellow("Period") << "          :  " << +gb.apu.ch1.period_sweep.period << endl;
+        b << yellow("Increment") << "       :  " << +gb.apu.ch1.period_sweep.increment << endl;
+        b << yellow("Reload Countd.") << "  :  " << +gb.apu.ch1.period_sweep.reload.countdown << endl;
+        b << yellow("Reload Period") << "   :  " << +gb.apu.ch1.period_sweep.reload.reload_period << endl;
+        b << yellow("Rec. Trig. Cnt.") << " :  " << +gb.apu.ch1.period_sweep.recalculation.trigger_counter << "/"
+          << +gb.apu.ch1.period_sweep.recalculation.target_trigger_counter << endl;
+        b << yellow("Rec. Countdown") << "  :  " << +gb.apu.ch1.period_sweep.recalculation.countdown << endl;
+        b << yellow("Rec. Increment") << "  :  " << +gb.apu.ch1.period_sweep.recalculation.increment << endl;
+        b << yellow("Rec. From Trig.") << " :  " << +gb.apu.ch1.period_sweep.recalculation.from_trigger << endl;
 
         return b;
     };
@@ -2349,9 +2573,26 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     const auto make_apu_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
 
+        const auto duty_cycle = [](uint8_t dc) {
+            switch (dc) {
+            case 0b00:
+                return "12%";
+            case 0b01:
+                return "25%";
+            case 0b10:
+                return "50%";
+            case 0b11:
+                return "75%";
+            default:
+                ASSERT_NO_ENTRY();
+                return "";
+            }
+        };
+
         b << subheader("channel 2", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch2 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch2.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Output") << "         :  " << +gb.apu.ch2.digital_output << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch2.volume << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch2.length_timer << endl;
         b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch2.trigger_delay << endl;
@@ -2360,11 +2601,12 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << yellow("Timer") << "          :  " << +gb.apu.ch2.wave.timer << endl;
         b << yellow("Position") << "       :  " << +gb.apu.ch2.wave.position << endl;
+        b << yellow("Duty Cycle") << "     :  " << duty_cycle(gb.apu.ch2.wave.duty_cycle) << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Timer") << "          :  " << +gb.apu.ch2.volume_sweep.timer << endl;
-        b << yellow("Pace") << "           :  " << +gb.apu.ch2.volume_sweep.pace << endl;
+        b << yellow("Countdown") << "      :  " << +gb.apu.ch2.volume_sweep.countdown << endl;
         b << yellow("Direction") << "      :  " << +gb.apu.ch2.volume_sweep.direction << endl;
+        b << yellow("Pending") << "        :  " << +gb.apu.ch2.volume_sweep.pending_update << endl;
 
         return b;
     };
@@ -2375,16 +2617,17 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 3", width) << endl;
         b << yellow("Enabled") << "       :  " << (gb.apu.nr52.ch3 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "           :  " << (gb.apu.nr30.dac ? green("ON") : darkgray("OFF")) << endl;
-        b << endl;
+        b << yellow("Output") << "        :  " << hex<uint8_t>(gb.apu.ch3.digital_output) << endl;
+        b << yellow("Sample") << "        :  " << hex<uint8_t>(gb.apu.ch3.sample) << endl;
         b << yellow("Length Timer") << "  :  " << +gb.apu.ch3.length_timer << endl;
         b << yellow("Trigger Delay") << " :  " << +gb.apu.ch3.trigger_delay << endl;
 
         b << subheader2("wave", width) << endl;
 
         b << yellow("Timer") << "         :  " << +gb.apu.ch3.wave.timer << endl;
-        b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position << endl;
-        b << yellow("Play Position") << " :  " << +gb.apu.ch3.wave.play_position << endl;
-        b << yellow("Last Read") << "     :  " << +gb.apu.ch3.last_read_tick << endl;
+        b << yellow("Position") << "      :  " << +gb.apu.ch3.wave.position.byte << " "
+          << (gb.apu.ch3.wave.position.low_nibble ? "Low" : "High") << endl;
+        b << endl;
 
         b << subheader2("wave ram", width) << endl;
 
@@ -2406,6 +2649,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 4", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch4 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch4.dac ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Output") << "         :  " << test_bit<0>(gb.apu.ch4.lfsr) << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch4.volume << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch4.length_timer << endl;
         b << endl;
@@ -2414,11 +2658,12 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << yellow("Timer") << "          :  " << +gb.apu.ch4.wave.timer << endl;
         b << endl;
+        b << endl;
 
         b << subheader2("volume sweep", width) << endl;
-        b << yellow("Timer") << "          :  " << +gb.apu.ch4.volume_sweep.timer << endl;
-        b << yellow("Pace") << "           :  " << +gb.apu.ch4.volume_sweep.pace << endl;
+        b << yellow("Countdown") << "      :  " << +gb.apu.ch4.volume_sweep.countdown << endl;
         b << yellow("Direction") << "      :  " << +gb.apu.ch4.volume_sweep.direction << endl;
+        b << yellow("Pending") << "        :  " << +gb.apu.ch4.volume_sweep.pending_update << endl;
 
         b << subheader2("lfsr", width) << endl;
 
@@ -2445,50 +2690,85 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             return darkgray("Idle");
         };
 
-        const auto bus_requests = [bus_request](uint8_t requests) {
+        const auto bus_requests = [bus_request](uint16_t requests) {
             return bus_request(Device::Cpu, requests).lpad(Text::Length {5}) + " | " +
                    bus_request(Device::Dma, requests).lpad(Text::Length {5}) + " | " +
-                   bus_request(Device::Ppu, requests).lpad(Text::Length {5});
+#ifdef ENABLE_CGB
+                   bus_request(Device::Hdma, requests).lpad(Text::Length {5}) + " | " +
+#endif
+                   bus_request(Device::Ppu, requests).lpad(Text::Length {5}) + " | " +
+                   bus_request(Device::Idu, requests).lpad(Text::Length {5});
         };
 
-        const auto bus_acquired = [](Device::Type dev, uint8_t acquirers) {
+        const auto bus_acquired = [](Device::Type dev, uint16_t acquirers) {
             return test_bit(acquirers, dev) ? green("YES") : darkgray("NO");
         };
 
         const auto bus_acquirers = [bus_acquired](uint8_t acquirers) {
             return " " + bus_acquired(Device::Cpu, acquirers).lpad(Text::Length {3}) + "  |  " +
                    bus_acquired(Device::Dma, acquirers).lpad(Text::Length {3}) + "  |  " +
-                   bus_acquired(Device::Ppu, acquirers).lpad(Text::Length {3});
+#ifdef ENABLE_CGB
+                   bus_acquired(Device::Hdma, acquirers).lpad(Text::Length {3}) + "  |  " +
+#endif
+                   bus_acquired(Device::Ppu, acquirers).lpad(Text::Length {3}) + "  |  " +
+                   bus_acquired(Device::Idu, acquirers).lpad(Text::Length {3});
         };
 
-        const auto bus_address = [bus_request](uint16_t address, uint8_t requests) {
+        const auto bus_address = [bus_request](uint16_t address, uint16_t requests) {
             return requests ? hex(address) : darkgray(hex(address));
         };
 
+        const auto decay_time = [](uint8_t decay) {
+            return decay ? Text {decay} : darkgray(decay);
+        };
+
+#ifdef ENABLE_CGB
+        b << "                     " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("HDMA")
+          << " |  " << magenta("PPU") << "  |  " << magenta("IDU")
+#else
         b << "                     " << magenta("CPU") << "  |  " << magenta("DMA") << "  |  " << magenta("PPU")
+          << "  |  " << magenta("IDU")
+#endif
+
           << endl;
         b << cyan("EXT Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << bus_requests(gb.ext_bus.requests) << endl;
         b << "  " << yellow("Address") << "   :  " << bus_address(gb.ext_bus.address, gb.ext_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.ext_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.ext_bus.decay) << endl;
         b << endl;
 
         b << cyan("CPU Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << bus_requests(gb.cpu_bus.requests) << endl;
         b << "  " << yellow("Address") << "   :  " << bus_address(gb.cpu_bus.address, gb.cpu_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.cpu_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.cpu_bus.decay) << endl;
         b << endl;
 
         b << cyan("VRAM Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << bus_requests(gb.vram_bus.requests) << endl;
         b << "  " << yellow("Acquired") << "  :       " << bus_acquirers(gb.vram_bus.acquirers) << endl;
         b << "  " << yellow("Address") << "   :  " << bus_address(gb.vram_bus.address, gb.vram_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.vram_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.vram_bus.decay) << endl;
         b << endl;
 
         b << cyan("OAM Bus") << "      " << endl;
         b << "  " << yellow("Request") << "   :       " << bus_requests(gb.oam_bus.requests) << endl;
         b << "  " << yellow("Acquired") << "  :       " << bus_acquirers(gb.oam_bus.acquirers) << endl;
         b << "  " << yellow("Address") << "   :  " << bus_address(gb.oam_bus.address, gb.oam_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.oam_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.oam_bus.decay) << endl;
         b << endl;
 
+#ifdef ENABLE_CGB
+        b << cyan("WRAM Bus") << "      " << endl;
+        b << "  " << yellow("Request") << "   :       " << bus_requests(gb.wram_bus.requests) << endl;
+        b << "  " << yellow("Address") << "   :  " << bus_address(gb.wram_bus.address, gb.wram_bus.requests) << endl;
+        b << "  " << yellow("Data") << "      :  " << hex(gb.wram_bus.data) << endl;
+        b << "  " << yellow("Decay") << "     :  " << decay_time(gb.wram_bus.decay) << endl;
+        b << endl;
+#endif
         return b;
     };
 
@@ -2498,37 +2778,97 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
         b << header("DMA", width) << endl;
 
-        if (gb.dma.request.state != Dma::RequestState::None || gb.dma.transferring) {
-            b << yellow("DMA Request") << "   :  ";
+        if (gb.dma.request.countdown > 0 || gb.dma.is_active()) {
+            b << yellow("Countdown") << "          :  " << +gb.dma.request.countdown << endl;
+            b << yellow("Transfer") << "           :  "
+              << (gb.dma.is_active() ? green("Transferring") : darkgray("None")) << endl;
+            b << yellow("Phase") << "              :  " <<
+                [this]() {
+                    switch (gb.dma.state) {
+                    case Dma::TransferState::Prepare:
+                        return Text {"Prepare"};
+                    case Dma::TransferState::Flush:
+                        return Text {"Flush"};
+                    case Dma::TransferState::None:
+                        return darkgray("None");
+                    }
+                    ASSERT_NO_ENTRY();
+                    return Text {};
+                }()
+              << endl;
+            b << yellow("Source") << "             :  " << hex(gb.dma.source) << endl;
+            b << yellow("Progress") << "           :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
+              << hex<uint16_t>(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << gb.dma.cursor << "/"
+              << "159]" << endl;
+        } else {
+            b << yellow("Transfer") << "           :  " << darkgray("None") << endl;
+        }
+
+        return b;
+    };
+
+#ifdef ENABLE_CGB
+    // HDMA
+    const auto make_hdma_block = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("HDMA", width) << endl;
+
+        if (gb.hdma.active || gb.hdma.state != Hdma::TransferState::None) {
+            b << yellow("Blocking CPU") << "       :  " << +gb.hdma.active << endl;
+
+            b << yellow("Transfer") << "           :  ";
             b <<
                 [this]() {
-                    switch (gb.dma.request.state) {
-                    case Dma::RequestState::Requested:
-                        return green("Requested");
-                    case Dma::RequestState::Pending:
-                        return green("Pending");
-                    case Dma::RequestState::None:
+                    switch (gb.hdma.state) {
+                    case Hdma::TransferState::None:
                         return Text {"None"};
+                    case Hdma::TransferState::Pending:
+                        return green("Pending");
+                    case Hdma::TransferState::Requested:
+                        return green("Requested");
+                    case Hdma::TransferState::Ready:
+                        return green("Ready");
+                    case Hdma::TransferState::Transferring:
+                        return green("Transferring");
+                    case Hdma::TransferState::Paused:
+                        return green("Paused");
                     }
                     ASSERT_NO_ENTRY();
                     return Text {};
                 }()
               << endl;
 
-            b << yellow("DMA Transfer") << "  :  ";
-            b << (gb.dma.transferring ? green("In Progress") : "None");
-            b << endl;
+            b << yellow("Mode") << "               :  ";
+            b <<
+                [this]() {
+                    switch (gb.hdma.mode) {
+                    case Hdma::TransferMode::GeneralPurpose:
+                        return Text {"General Purpose"};
+                    case Hdma::TransferMode::HBlank:
+                        return Text {"HBlank"};
+                    }
+                    ASSERT_NO_ENTRY();
+                    return Text {};
+                }()
+              << endl;
 
-            b << yellow("DMA Source") << "    :  " << hex(gb.dma.source) << endl;
-            b << yellow("DMA Progress") << "  :  " << hex<uint16_t>(gb.dma.source + gb.dma.cursor) << " => "
-              << hex<uint16_t>(Specs::MemoryLayout::OAM::START + gb.dma.cursor) << " [" << gb.dma.cursor << "/"
-              << "159]" << endl;
+            b << yellow("Source") << "             :  " << hex(gb.hdma.source.address) << endl;
+            b << yellow("Destination") << "        :  " << hex(gb.hdma.destination.address) << endl;
+            b << yellow("Rem. Bytes") << "         :  " << gb.hdma.remaining_bytes << endl;
+            b << yellow("Progress") << "           :  " << hex<uint16_t>(gb.hdma.source.address + gb.hdma.source.cursor)
+              << " => " << hex<uint16_t>(gb.hdma.destination.address + gb.hdma.destination.cursor) << endl;
+            b << yellow("Rem. Chunks") << "        :  " << +gb.hdma.remaining_chunks.count << endl;
+            b << yellow("Rem. Chunks Req.") << "   :  "
+              << (gb.hdma.remaining_chunks.state == Hdma::RemainingChunksUpdateState::Requested) << endl;
+            b << yellow("Unblock Request") << "    :  "
+              << (gb.hdma.unblock == Hdma::RemainingChunksUpdateState::Requested) << endl;
         } else {
-            b << yellow("DMA Transfer") << "  :  " << darkgray("None") << endl;
+            b << yellow("Transfer") << "           :  " << darkgray("None") << endl;
         }
-
         return b;
     };
+#endif
 
     // Timers
     const auto make_timers_block = [&](uint32_t width) {
@@ -2552,7 +2892,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << red("DIV (16)") << "   :  " << [this]() -> Text {
             uint16_t div = gb.timers.div16;
             Text t {};
-            uint8_t highlight_bit = Specs::Timers::TAC_DIV_BITS_SELECTOR[keep_bits<2>(gb.timers.tac)];
+            uint8_t highlight_bit = Specs::Timers::TAC_DIV_BITS_SELECTOR[gb.timers.tac.clock_selector];
             for (int8_t b = 15; b >= 0; b--) {
                 bool high = test_bit(div, b);
                 t += ((b == highlight_bit) ? yellow(Text {high}) : Text {high});
@@ -2623,6 +2963,67 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << ios(Specs::Registers::Sound::REGISTERS, array_size(Specs::Registers::Sound::REGISTERS)) << endl;
         b << subheader("video", width) << endl;
         b << ios(Specs::Registers::Video::REGISTERS, array_size(Specs::Registers::Video::REGISTERS)) << endl;
+
+#ifdef ENABLE_CGB
+        b << endl;
+        b << header("IO (CGB)", width) << endl;
+        b << subheader("audio", width) << endl;
+        b << ios(Specs::Registers::Sound::CGB_REGISTERS, array_size(Specs::Registers::Sound::CGB_REGISTERS)) << endl;
+        b << subheader("video", width) << endl;
+        b << ios(Specs::Registers::Video::CGB_REGISTERS, array_size(Specs::Registers::Video::CGB_REGISTERS)) << endl;
+        b << subheader("hdma", width) << endl;
+        b << ios(Specs::Registers::Hdma::CGB_REGISTERS, array_size(Specs::Registers::Hdma::CGB_REGISTERS)) << endl;
+        b << subheader("banks", width) << endl;
+        b << ios(Specs::Registers::Banks::CGB_REGISTERS, array_size(Specs::Registers::Banks::CGB_REGISTERS)) << endl;
+        b << subheader("speedswitch", width) << endl;
+        b << ios(Specs::Registers::SpeedSwitch::CGB_REGISTERS, array_size(Specs::Registers::SpeedSwitch::CGB_REGISTERS))
+          << endl;
+        b << subheader("ir", width) << endl;
+        b << ios(Specs::Registers::Infrared::CGB_REGISTERS, array_size(Specs::Registers::Infrared::CGB_REGISTERS))
+          << endl;
+        b << subheader("undocumented", width) << endl;
+        b << ios(Specs::Registers::Undocumented::CGB_REGISTERS,
+                 array_size(Specs::Registers::Undocumented::CGB_REGISTERS))
+          << endl;
+#endif
+        return b;
+    };
+
+    // Serial
+    const auto make_serial_block = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << header("SERIAL", width) << endl;
+
+        bool is_master = gb.serial.sc.transfer_enable && gb.serial.sc.clock_select;
+        bool is_transferring = is_master || (gb.serial.progress > 0) /* slave */;
+
+        b << yellow("Transfer") << "  :  " << (is_transferring ? green("Transferring") : darkgray("None")) << endl;
+
+        if (is_transferring) {
+            b << yellow("Role    ") << "  :  " << (is_master ? "Master" : "Slave") << endl;
+
+            b << yellow("Progress") << "  :  " << +gb.serial.progress << "/8" << endl;
+
+            if (is_master) {
+#ifdef ENABLE_CGB
+                b << yellow("Speed") << "     :  " << (gb.serial.sc.clock_speed ? "High" : "Normal") << endl;
+#endif
+                b << yellow("DIV Bit") << "   :  " << gb.serial.master.prev_div_bit << endl;
+                b << yellow("DIV Mask") << "  :  " << bin<uint8_t>(gb.serial.master.div_mask) << endl;
+                b << yellow("Toggle") << "    :  " << +gb.serial.master.toggle << endl;
+            }
+
+            b << yellow("SB") << "        :  " << [this]() -> Text {
+                Text t {};
+                for (int8_t b = 7; b >= 0; b--) {
+                    bool high = test_bit(gb.serial.sb, b);
+                    t += ((b >= gb.serial.progress) ? Text {high} : yellow(Text {high}));
+                }
+                return t;
+            }() << " ("
+                << hex<uint8_t>(gb.serial.sb) << ")" << endl;
+        }
 
         return b;
     };
@@ -2866,17 +3267,28 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     auto c1 {make_vertical_layout()};
     c1->add_node(make_gameboy_block(COLUMN_1_WIDTH));
     c1->add_node(make_space_divider());
+#ifdef ENABLE_CGB
+    c1->add_node(make_double_speed_block(COLUMN_1_WIDTH));
+#endif
     c1->add_node(make_cpu_block(COLUMN_1_WIDTH));
     c1->add_node(make_space_divider());
     c1->add_node(make_timers_block(COLUMN_1_WIDTH));
+    c1->add_node(make_serial_block(COLUMN_1_WIDTH));
 
+#ifdef ENABLE_CGB
+    static constexpr uint32_t COLUMN_2_WIDTH = 58;
+#else
     static constexpr uint32_t COLUMN_2_WIDTH = 49;
+#endif
     auto c2 {make_vertical_layout()};
     c2->add_node(make_cartridge_block(COLUMN_2_WIDTH));
     c2->add_node(make_space_divider());
     c2->add_node(make_bus_block(COLUMN_2_WIDTH));
     c2->add_node(make_space_divider());
     c2->add_node(make_dma_block(COLUMN_2_WIDTH));
+#ifdef ENABLE_CGB
+    c2->add_node(make_hdma_block(COLUMN_2_WIDTH));
+#endif
 
     static constexpr uint32_t COLUMN_3_ROW_1_2_PART_1_WIDTH = 45;
     static constexpr uint32_t COLUMN_3_ROW_1_2_PART_2_WIDTH = 52;
@@ -2912,6 +3324,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     c3r3->add_node(make_apu_general_block_2(COLUMN_3_ROW_3_4_PART_2_WIDTH));
     c3r3->add_node(make_space_divider());
     c3r3->add_node(make_apu_general_block_3(COLUMN_3_ROW_3_4_PART_3_WIDTH));
+    c3r3->add_node(make_space_divider());
+    c3r3->add_node(make_apu_general_block_4(COLUMN_3_ROW_3_4_PART_4_WIDTH));
 
     auto c3r4 {make_horizontal_layout()};
     c3r4->add_node(make_apu_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));
@@ -3000,7 +3414,7 @@ std::string DebuggerFrontend::dump_memory(uint16_t from, uint32_t n, MemoryOutpu
         for (uint32_t address = from; address <= 0xFFFF && i < n;) {
             std::optional<DisassembledInstruction> disas = backend.get_disassembled_instruction(address);
             if (!disas)
-                FATAL("Failed to disassemble at address " + std::to_string(address));
+                FATAL("failed to disassemble at address " + std::to_string(address));
 
             s += to_string(DisassembledInstructionReference {static_cast<uint16_t>(address), *disas}) +
                  ((i < n - 1) ? "\n" : "");
@@ -3029,4 +3443,25 @@ std::string DebuggerFrontend::dump_display_entry(const DebuggerFrontend::Display
         ss << dump_memory(dx.address, dx.length, dx.format, dx.format_arg, dx.raw);
     }
     return ss.str();
+}
+
+void DebuggerFrontend::flush_trace_buffer() {
+    if (!trace_buffer.empty()) {
+        for (const auto& s : trace_buffer) {
+            std::cerr << s;
+        }
+        std::cerr << std::flush;
+        trace_buffer.clear();
+    }
+}
+
+void DebuggerFrontend::reset() {
+    last_cmdline = {};
+    display_entries.clear();
+    trace = 0;
+    trace_buffer.clear();
+    auto_disassemble_instructions.past = 6;
+    auto_disassemble_instructions.next = 10;
+    temporary_breakpoint = std::nullopt;
+    reprint_ui = false;
 }

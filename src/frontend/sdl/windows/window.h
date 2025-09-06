@@ -20,7 +20,8 @@ public:
 
     static constexpr int POSITION_UNDEFINED = -1;
 
-    explicit Window(int x = POSITION_UNDEFINED, int y = POSITION_UNDEFINED, uint32_t scaling = 1);
+    explicit Window(int width, int height, int x = POSITION_UNDEFINED, int y = POSITION_UNDEFINED,
+                    uint32_t scaling = 1);
 
     void render();
     void clear();
@@ -32,6 +33,9 @@ public:
     ScreenStack& get_screen_stack();
 
     Position get_position() const;
+
+    uint32_t get_width() const;
+    uint32_t get_height() const;
 
     void set_scaling(uint32_t scaling);
     uint32_t get_scaling() const;

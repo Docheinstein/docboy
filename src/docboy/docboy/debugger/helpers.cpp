@@ -44,7 +44,7 @@ uint8_t DebuggerHelpers::read_memory_raw(const GameBoy& gb, uint16_t address) {
 
     /* 0x8000 - 0x9FFF */
     if (address <= Specs::MemoryLayout::VRAM::END) {
-        return gb.vram[address - Specs::MemoryLayout::VRAM::START];
+        return gb.vram_bus.read_bus(address);
     }
 
     /* 0xA000 - 0xBFFF */
@@ -52,20 +52,41 @@ uint8_t DebuggerHelpers::read_memory_raw(const GameBoy& gb, uint16_t address) {
         return gb.ext_bus.read_bus(address);
     }
 
+#ifdef ENABLE_CGB
+    /* 0xC000 - 0xCFFF */
+    if (address <= Specs::MemoryLayout::WRAM1::END) {
+        return gb.wram_bus.read_bus(address);
+    }
+#else
     /* 0xC000 - 0xCFFF */
     if (address <= Specs::MemoryLayout::WRAM1::END) {
         return gb.ext_bus.read_bus(address);
     }
+#endif
 
+#ifdef ENABLE_CGB
+    /* 0xD000 - 0xDFFF */
+    if (address <= Specs::MemoryLayout::WRAM2::END) {
+        return gb.wram_bus.read_bus(address);
+    }
+#else
     /* 0xD000 - 0xDFFF */
     if (address <= Specs::MemoryLayout::WRAM2::END) {
         return gb.ext_bus.read_bus(address);
     }
+#endif
 
+#ifdef ENABLE_CGB
+    /* 0xE000 - 0xFDFF */
+    if (address <= Specs::MemoryLayout::ECHO_RAM::END) {
+        return gb.wram_bus.read_bus(address);
+    }
+#else
     /* 0xE000 - 0xFDFF */
     if (address <= Specs::MemoryLayout::ECHO_RAM::END) {
         return gb.ext_bus.read_bus(address);
     }
+#endif
 
     /* 0xFE00 - 0xFE9F */
     if (address <= Specs::MemoryLayout::OAM::END) {

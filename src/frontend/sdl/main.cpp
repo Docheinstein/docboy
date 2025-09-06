@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <map>
@@ -8,22 +9,20 @@
 
 #include "controllers/corecontroller.h"
 #include "controllers/maincontroller.h"
+#include "controllers/runcontroller.h"
 #include "controllers/uicontroller.h"
+#include "preferences/preferences.h"
 #include "screens/gamescreen.h"
 #include "screens/launcherscreen.h"
 #include "windows/window.h"
 
 #include "extra/cartridge/header.h"
-#include "extra/img/imgmanip.h"
-#include "extra/ini/reader/reader.h"
-#include "extra/ini/writer/writer.h"
 #include "extra/serial/endpoints/console.h"
 
 #include "args/args.h"
 
 #include "utils/formatters.h"
 #include "utils/os.h"
-#include "utils/strings.h"
 
 #ifdef NFD
 #include "nfd.h"
@@ -40,55 +39,50 @@
 #endif
 
 namespace {
-
-struct Preferences {
-    Lcd::Palette palette {};
-    struct {
-        SDL_Keycode a {};
-        SDL_Keycode b {};
-        SDL_Keycode start {};
-        SDL_Keycode select {};
-        SDL_Keycode left {};
-        SDL_Keycode up {};
-        SDL_Keycode right {};
-        SDL_Keycode down {};
-    } keys {};
-    uint32_t scaling {};
-    int x {};
-    int y {};
-#ifdef ENABLE_AUDIO
-    bool audio {};
-    uint8_t volume {};
-    struct {
-        bool enabled {};
-        uint32_t max_latency {};
-        double moving_average_factor {};
-        double max_pitch_slack_factor {};
-    } dynamic_sample_rate {};
-#endif
-};
+constexpr UiController::LcdAppearance DMG_PALETTE {0xAD00, {0x84A0, 0x4B40, 0x2AA0, 0x1200}};
+constexpr UiController::LcdAppearance BRIGHT_GREEN_PALETTE {0x84A0, {0x84A0, 0x4B40, 0x2AA0, 0x1200}};
+constexpr UiController::LcdAppearance DULL_GREEN_PALETTE {0x9CE7, {0x9CE7, 0x4B44, 0x0A21, 0x1941}};
+constexpr UiController::LcdAppearance GREY_PALETTE {0xFFFF, {0xFFFF, 0xAD55, 0x52AA, 0x0000}};
 
 Preferences make_default_preferences() {
     Preferences prefs {};
-    prefs.palette = Lcd::DEFAULT_PALETTE;
-    prefs.keys.a = SDLK_Z;
-    prefs.keys.b = SDLK_X;
-    prefs.keys.start = SDLK_RETURN;
-    prefs.keys.select = SDLK_TAB;
-    prefs.keys.left = SDLK_LEFT;
-    prefs.keys.up = SDLK_UP;
-    prefs.keys.right = SDLK_RIGHT;
-    prefs.keys.down = SDLK_DOWN;
+#ifndef ENABLE_CGB
+    prefs.dmg_palette = DMG_PALETTE;
+#endif
+    prefs.keys.player1.a = SDLK_Z;
+    prefs.keys.player1.b = SDLK_X;
+    prefs.keys.player1.start = SDLK_RETURN;
+    prefs.keys.player1.select = SDLK_TAB;
+    prefs.keys.player1.left = SDLK_LEFT;
+    prefs.keys.player1.up = SDLK_UP;
+    prefs.keys.player1.right = SDLK_RIGHT;
+    prefs.keys.player1.down = SDLK_DOWN;
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    prefs.keys.player2.a = SDLK_A;
+    prefs.keys.player2.b = SDLK_S;
+    prefs.keys.player2.start = SDLK_RSHIFT;
+    prefs.keys.player2.select = SDLK_LSHIFT;
+    prefs.keys.player2.left = SDLK_J;
+    prefs.keys.player2.up = SDLK_I;
+    prefs.keys.player2.right = SDLK_L;
+    prefs.keys.player2.down = SDLK_K;
+#endif
     prefs.scaling = 2;
     prefs.x = 200;
     prefs.y = 200;
 #ifdef ENABLE_AUDIO
     prefs.audio = true;
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    prefs.audio_player_source = 1;
+#endif
     prefs.volume = 100;
     prefs.dynamic_sample_rate.enabled = true;
     prefs.dynamic_sample_rate.max_latency = 50;
     prefs.dynamic_sample_rate.moving_average_factor = 0.005;
     prefs.dynamic_sample_rate.max_pitch_slack_factor = 0.005;
+#endif
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    prefs.serial_link = true;
 #endif
     return prefs;
 }
@@ -111,101 +105,6 @@ void dump_cartridge_info(const ICartridge& cartridge) {
     std::cout << "Header checksum   :  " << hex(header.header_checksum) << "\n";
 }
 
-template <typename T, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()>
-std::optional<T> parse_integer(const std::string& s) {
-    const char* cstr = s.c_str();
-    char* endptr {};
-    errno = 0;
-
-    auto val = std::strtoll(cstr, &endptr, 10);
-
-    if (errno || endptr == cstr || *endptr != '\0') {
-        return std::nullopt;
-    }
-
-    return std::clamp(val, static_cast<decltype(val)>(min), static_cast<decltype(val)>(max));
-}
-
-template <uint32_t min_num, uint32_t min_denum, uint32_t max_num, uint32_t max_denum>
-std::optional<double> parse_double(const std::string& s) {
-    const char* cstr = s.c_str();
-    char* endptr {};
-    errno = 0;
-
-    auto val = std::strtod(cstr, &endptr);
-
-    if (errno || endptr == cstr || *endptr != '\0') {
-        return std::nullopt;
-    }
-
-    static constexpr double min = min_denum ? (min_num / min_denum) : 0;
-    static constexpr double max = max_denum ? (max_num / max_denum) : 0;
-
-    return std::clamp(val, static_cast<decltype(val)>(min), static_cast<decltype(val)>(max));
-}
-
-template <typename T, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()>
-std::optional<T> parse_floating_point(const std::string& s) {
-    const char* cstr = s.c_str();
-    char* endptr {};
-    errno = 0;
-
-    auto val = std::strtod(cstr, &endptr);
-
-    if (errno || endptr == cstr || *endptr != '\0') {
-        return std::nullopt;
-    }
-
-    return std::clamp(val, static_cast<decltype(val)>(min), static_cast<decltype(val)>(max));
-}
-
-std::optional<bool> parse_bool(const std::string& s) {
-    return parse_integer<bool>(s);
-}
-
-std::optional<uint16_t> parse_hex_uint16(const std::string& s) {
-    const char* cstr = s.c_str();
-    char* endptr {};
-    errno = 0;
-
-    uint16_t val = std::strtol(cstr, &endptr, 16);
-
-    if (errno || endptr == cstr || *endptr != '\0') {
-        return std::nullopt;
-    }
-
-    return val;
-}
-
-std::optional<SDL_Keycode> parse_keycode(const std::string& s) {
-    SDL_Keycode keycode = SDL_GetKeyFromName(s.c_str());
-    return keycode != SDLK_UNKNOWN ? std::optional {keycode} : std::nullopt;
-}
-
-template <uint8_t Size>
-std::optional<std::array<uint16_t, Size>> parse_hex_array(const std::string& s) {
-    std::vector<std::string> tokens;
-    split(s, std::back_inserter(tokens), [](char ch) {
-        return ch == ',';
-    });
-
-    if (tokens.size() != Size) {
-        return std::nullopt;
-    }
-
-    std::array<uint16_t, Size> ret {};
-
-    for (uint32_t i = 0; i < Size; i++) {
-        if (auto u = parse_hex_uint16(tokens[i])) {
-            ret[i] = *u;
-        } else {
-            return std::nullopt;
-        }
-    }
-
-    return ret;
-}
-
 void ensure_file_exists(const std::string& path) {
     if (!file_exists(path)) {
         std::cerr << "ERROR: failed to load '" << path << "'" << std::endl;
@@ -213,98 +112,29 @@ void ensure_file_exists(const std::string& path) {
     }
 }
 
-std::string get_preferences_path() {
-    const char* pref_path_cstr = SDL_GetPrefPath("", "DocBoy");
-    std::string pref_path = (Path {pref_path_cstr} / "prefs.ini").string();
-    return pref_path;
-}
+// GameBoy and Core
+GameBoy gb {};
+Core core {gb};
 
-void read_preferences(const std::string& path, Preferences& p) {
-    IniReader ini_reader;
-    ini_reader.add_comment_prefix("#");
-    ini_reader.add_property("dmg_palette", p.palette, parse_hex_array<4>);
-    ini_reader.add_property("a", p.keys.a, parse_keycode);
-    ini_reader.add_property("b", p.keys.b, parse_keycode);
-    ini_reader.add_property("start", p.keys.start, parse_keycode);
-    ini_reader.add_property("select", p.keys.select, parse_keycode);
-    ini_reader.add_property("left", p.keys.left, parse_keycode);
-    ini_reader.add_property("up", p.keys.up, parse_keycode);
-    ini_reader.add_property("right", p.keys.right, parse_keycode);
-    ini_reader.add_property("down", p.keys.down, parse_keycode);
-    ini_reader.add_property("scaling", p.scaling, parse_integer<uint32_t>);
-    ini_reader.add_property("x", p.x, parse_integer<int32_t>);
-    ini_reader.add_property("y", p.y, parse_integer<int32_t>);
-
-#ifdef ENABLE_AUDIO
-    ini_reader.add_property("audio", p.audio, parse_bool);
-    ini_reader.add_property("volume", p.volume, parse_integer<uint8_t, 0, 100>);
-    ini_reader.add_property("dynamic_sample_rate_control", p.dynamic_sample_rate.enabled, parse_bool);
-    ini_reader.add_property("dynamic_sample_rate_control_max_latency", p.dynamic_sample_rate.max_latency,
-                            parse_integer<uint32_t>);
-    ini_reader.add_property("dynamic_sample_rate_control_moving_average_factor",
-                            p.dynamic_sample_rate.moving_average_factor, parse_double<0, 0, 1, 1>);
-    ini_reader.add_property("dynamic_sample_rate_control_max_pitch_slack_factor",
-                            p.dynamic_sample_rate.max_pitch_slack_factor, parse_double<0, 0, 1, 1>);
+#ifdef ENABLE_TWO_PLAYERS_MODE
+// Second GameBoy and Core
+std::unique_ptr<GameBoy> gb2;
+std::unique_ptr<Core> core2;
 #endif
-
-    const auto result = ini_reader.parse(path);
-    switch (result.outcome) {
-    case IniReader::Result::Outcome::Success:
-        break;
-    case IniReader::Result::Outcome::ErrorReadFailed:
-        std::cerr << "ERROR: failed to read '" << path << "'" << std::endl;
-        exit(2);
-    case IniReader::Result::Outcome::ErrorParseFailed:
-        std::cerr << "ERROR: failed to parse  '" << path << "': error at line " << result.last_read_line << std::endl;
-        exit(2);
-    }
-}
-
-void write_preferences(const std::string& path, const Preferences& p) {
-    std::map<std::string, std::string> properties;
-
-    properties.emplace("dmg_palette", join(p.palette, ",", [](uint16_t val) {
-                           return hex(val);
-                       }));
-    properties.emplace("a", SDL_GetKeyName(p.keys.a));
-    properties.emplace("b", SDL_GetKeyName(p.keys.b));
-    properties.emplace("start", SDL_GetKeyName(p.keys.start));
-    properties.emplace("select", SDL_GetKeyName(p.keys.select));
-    properties.emplace("left", SDL_GetKeyName(p.keys.left));
-    properties.emplace("up", SDL_GetKeyName(p.keys.up));
-    properties.emplace("right", SDL_GetKeyName(p.keys.right));
-    properties.emplace("down", SDL_GetKeyName(p.keys.down));
-    properties.emplace("scaling", std::to_string(p.scaling));
-    properties.emplace("x", std::to_string(p.x));
-    properties.emplace("y", std::to_string(p.y));
-
-#ifdef ENABLE_AUDIO
-    properties.emplace("audio", std::to_string(p.audio));
-    properties.emplace("volume", std::to_string(p.volume));
-    properties.emplace("dynamic_sample_rate_control", std::to_string(p.dynamic_sample_rate.enabled));
-    properties.emplace("dynamic_sample_rate_control_max_latency", std::to_string(p.dynamic_sample_rate.max_latency));
-    properties.emplace("dynamic_sample_rate_control_moving_average_factor",
-                       std::to_string(p.dynamic_sample_rate.moving_average_factor));
-    properties.emplace("dynamic_sample_rate_control_max_pitch_slack_factor",
-                       std::to_string(p.dynamic_sample_rate.max_pitch_slack_factor));
-#endif
-
-    IniWriter ini_writer;
-    if (!ini_writer.write(properties, path)) {
-        std::cerr << "WARN: failed to write '" << path << "'" << std::endl;
-    }
-}
 } // namespace
 
 int main(int argc, char* argv[]) {
     // Parse command line arguments
     struct {
         std::string rom;
+#ifdef ENABLE_TWO_PLAYERS_MODE
+        std::optional<std::string> second_rom;
+#endif
 #ifdef ENABLE_BOOTROM
         std::string boot_rom;
 #endif
         std::string config {};
-        bool serial {};
+        bool serial_console {};
         uint32_t scaling {};
         bool dump_cartridge_info {};
 #ifdef ENABLE_DEBUGGER
@@ -320,10 +150,11 @@ int main(int argc, char* argv[]) {
     args_parser.add_argument(args.boot_rom, "boot-rom").help("Boot ROM");
 #endif
     args_parser.add_argument(args.rom, "rom").required(false).help("ROM");
-    args_parser.add_argument(args.config, "--config", "-c").help("Read configuration file");
-#ifdef ENABLE_SERIAL
-    args_parser.add_argument(args.serial, "--serial", "-s").help("Display serial console");
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    args_parser.add_argument(args.second_rom, "--second-rom", "-2").help("Second player rom");
 #endif
+    args_parser.add_argument(args.config, "--config", "-c").help("Read configuration file");
+    args_parser.add_argument(args.serial_console, "--serial-console", "-s").help("Display serial console");
     args_parser.add_argument(args.scaling, "--scaling", "-z").help("Scaling factor");
     args_parser.add_argument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
 #ifdef ENABLE_DEBUGGER
@@ -377,17 +208,15 @@ int main(int argc, char* argv[]) {
 
     // Initialize SDL
 #ifdef ENABLE_AUDIO
-    const uint32_t sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO;
+    constexpr uint32_t sdl_init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO;
 #else
     const uint32_t sdl_init_flags = SDL_INIT_VIDEO;
 #endif
 
-    if (SDL_Init(sdl_init_flags) != 0) {
+    if (!SDL_Init(sdl_init_flags)) {
         std::cerr << "ERROR: SDL initialization failed '" << SDL_GetError() << "'" << std::endl;
         return 4;
     }
-
-    //    audio_test();
 
 #ifdef NFD
     // Initialize NFD
@@ -397,68 +226,124 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    // Create GameBoy and Core
+    bool two_players_mode = false;
+
+    // Setup GameBoy(s) and Core(s)
 #ifdef ENABLE_BOOTROM
-    auto gb {std::make_unique<GameBoy>(BootRomFactory::create(args.boot_rom))};
-#else
-    auto gb {std::make_unique<GameBoy>()};
+    // Load Boot ROM
+    core.load_boot_rom(args.boot_rom);
 #endif
 
-    Core core {*gb};
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    // Eventually create second GameBoy and Core
+    two_players_mode = args.second_rom.has_value();
+
+    if (two_players_mode) {
+        gb2 = std::make_unique<GameBoy>();
+        core2 = std::make_unique<Core>(*gb2);
+
+#ifdef ENABLE_BOOTROM
+        // Load Boot ROM
+        core2->load_boot_rom(args.boot_rom);
+#endif
+    }
+#endif
 
     // Create SDL window
-    Window window {prefs.x, prefs.y, prefs.scaling};
+    int width = Specs::Display::WIDTH;
+    int height = Specs::Display::HEIGHT;
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode) {
+        width *= 2;
+    }
+#endif
+
+    Window window {width, height, prefs.x, prefs.y, prefs.scaling};
 
     // Create screens' context
-    CoreController core_controller {core};
-    UiController ui_controller {window, core};
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    RunController run_controller {core, core2 ? &*core2 : nullptr};
+#else
+    RunController run_controller {core};
+#endif
+    UiController ui_controller {window, run_controller};
     NavController nav_controller {window.get_screen_stack()};
     MainController main_controller {};
+
+    CoreController& core_controller1 {run_controller.get_core1()};
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    CoreController* core_controller2 {two_players_mode ? &run_controller.get_core2() : nullptr};
+#endif
 #ifdef ENABLE_DEBUGGER
-    DebuggerController debugger_controller {window, core, core_controller};
+    DebuggerController debugger_controller {window, core, core_controller1};
 #endif
 
 #ifdef ENABLE_DEBUGGER
-    Screen::Controllers controllers {core_controller, ui_controller, nav_controller, main_controller,
+    Screen::Controllers controllers {run_controller, ui_controller, nav_controller, main_controller,
                                      debugger_controller};
 #else
-    Screen::Controllers controllers {core_controller, ui_controller, nav_controller, main_controller};
+    Screen::Controllers controllers {run_controller, ui_controller, nav_controller, main_controller};
 #endif
 
     Screen::Context context {controllers, {0xFF}};
 
     // Keymap preferences
-    core_controller.set_key_mapping(prefs.keys.a, Joypad::Key::A);
-    core_controller.set_key_mapping(prefs.keys.b, Joypad::Key::B);
-    core_controller.set_key_mapping(prefs.keys.start, Joypad::Key::Start);
-    core_controller.set_key_mapping(prefs.keys.select, Joypad::Key::Select);
-    core_controller.set_key_mapping(prefs.keys.left, Joypad::Key::Left);
-    core_controller.set_key_mapping(prefs.keys.up, Joypad::Key::Up);
-    core_controller.set_key_mapping(prefs.keys.right, Joypad::Key::Right);
-    core_controller.set_key_mapping(prefs.keys.down, Joypad::Key::Down);
+    core_controller1.set_key_mapping(prefs.keys.player1.a, Joypad::Key::A);
+    core_controller1.set_key_mapping(prefs.keys.player1.b, Joypad::Key::B);
+    core_controller1.set_key_mapping(prefs.keys.player1.start, Joypad::Key::Start);
+    core_controller1.set_key_mapping(prefs.keys.player1.select, Joypad::Key::Select);
+    core_controller1.set_key_mapping(prefs.keys.player1.left, Joypad::Key::Left);
+    core_controller1.set_key_mapping(prefs.keys.player1.up, Joypad::Key::Up);
+    core_controller1.set_key_mapping(prefs.keys.player1.right, Joypad::Key::Right);
+    core_controller1.set_key_mapping(prefs.keys.player1.down, Joypad::Key::Down);
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode) {
+        core_controller2->set_key_mapping(prefs.keys.player2.a, Joypad::Key::A);
+        core_controller2->set_key_mapping(prefs.keys.player2.b, Joypad::Key::B);
+        core_controller2->set_key_mapping(prefs.keys.player2.start, Joypad::Key::Start);
+        core_controller2->set_key_mapping(prefs.keys.player2.select, Joypad::Key::Select);
+        core_controller2->set_key_mapping(prefs.keys.player2.left, Joypad::Key::Left);
+        core_controller2->set_key_mapping(prefs.keys.player2.up, Joypad::Key::Up);
+        core_controller2->set_key_mapping(prefs.keys.player2.right, Joypad::Key::Right);
+        core_controller2->set_key_mapping(prefs.keys.player2.down, Joypad::Key::Down);
+    }
+#endif
 
     // Scaling preferences
     ui_controller.set_scaling(prefs.scaling);
 
     // Palette preferences
-    ui_controller.add_palette({0x84A0, 0x4B40, 0x2AA0, 0x1200}, "Green", 0xFFFF);
-    ui_controller.add_palette({0xFFFF, 0xAD55, 0x52AA, 0x0000}, "Grey", 0xA901);
-    const auto* palette = ui_controller.get_palette(prefs.palette);
-    if (!palette) {
-        // No know palette exists for this configuration: add a new one
-        palette = &ui_controller.add_palette(prefs.palette, "User");
+#ifdef ENABLE_CGB
+    // TODO: CGB palette?
+    const auto& appearance = ui_controller.add_appearance(DMG_PALETTE, "DMG", 0xFFFF);
+    ui_controller.set_current_appearance(appearance.index);
+#else
+    ui_controller.add_appearance(DMG_PALETTE, "DMG", 0xFFFF);
+    ui_controller.add_appearance(BRIGHT_GREEN_PALETTE, "Bright", 0xFFFF);
+    ui_controller.add_appearance(DULL_GREEN_PALETTE, "Dull", 0xFFFF);
+    ui_controller.add_appearance(GREY_PALETTE, "Grey", 0xA901);
+    const auto* appearance = ui_controller.get_appearance(prefs.dmg_palette);
+    if (!appearance) {
+        // No know appearance exists for this configuration: add a new one
+        appearance = &ui_controller.add_appearance(prefs.dmg_palette, "User");
     }
-    ui_controller.set_current_palette(palette->index);
+    ui_controller.set_current_appearance(appearance->index);
+#endif
 
-#ifdef ENABLE_SERIAL
-    // Eventually attach serial
+    // Eventually attach serial console
     std::unique_ptr<SerialConsole> serial_console;
-    std::unique_ptr<SerialLink> serial_link;
-    if (args.serial) {
+    if (!two_players_mode && args.serial_console) {
         serial_console = std::make_unique<SerialConsole>(std::cerr, 16);
-        serial_link = std::make_unique<SerialLink>();
-        serial_link->plug1.attach(*serial_console);
-        core.attach_serial_link(serial_link->plug2);
+        core.attach_serial_link(*serial_console);
+    }
+
+    // Eventually attach serial link in two players mode
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode && prefs.serial_link) {
+        run_controller.attach_serial_link();
     }
 #endif
 
@@ -502,7 +387,7 @@ int main(int argc, char* argv[]) {
     }
 
     SDL_AudioSpec audio_device_spec;
-    if (SDL_GetAudioDeviceFormat(audio_device, &audio_device_spec, nullptr) != 0) {
+    if (!SDL_GetAudioDeviceFormat(audio_device, &audio_device_spec, nullptr)) {
         std::cerr << "ERROR: failed to retrieve format of SDL audio device '" << SDL_GetError() << "'" << std::endl;
         return 7;
     }
@@ -521,6 +406,12 @@ int main(int argc, char* argv[]) {
 
     // Set audio sample rate accordingly to opened audio device
     core.set_audio_sample_rate(audio_device_sample_rate);
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode) {
+        core2->set_audio_sample_rate(audio_device_sample_rate);
+    }
+#endif
 
     bool audio_stream_bound {};
 
@@ -543,8 +434,18 @@ int main(int argc, char* argv[]) {
         }
     });
 
-    main_controller.set_volume_changed_callback([&core](uint8_t volume /* [0, 100] */) {
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    main_controller.set_audio_player_source(prefs.audio_player_source);
+#endif
+
+    main_controller.set_volume_changed_callback([two_players_mode](uint8_t volume /* [0, 100] */) {
         core.set_audio_volume(static_cast<float>(volume) / 100);
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+        if (two_players_mode) {
+            core2->set_audio_volume(static_cast<float>(volume) / 100);
+        }
+#endif
     });
     main_controller.set_volume(prefs.volume);
 
@@ -598,26 +499,67 @@ int main(int argc, char* argv[]) {
 
     double sample_rate_control = 1.0;
 
-    core.set_audio_sample_callback([&audiobuffer](const Apu::AudioSample sample) {
-        if (audiobuffer.index < array_size(audiobuffer.data) - 1) {
-            audiobuffer.data[audiobuffer.index++] = sample.left;
-            audiobuffer.data[audiobuffer.index++] = sample.right;
+    // Audio sample callback
+    const auto set_audio_sample_callback = [two_players_mode, &audiobuffer, &main_controller]() {
+        auto audio_sample_callback = [&audiobuffer](const Apu::AudioSample sample) {
+            if (audiobuffer.index < array_size(audiobuffer.data) - 1) {
+                audiobuffer.data[audiobuffer.index++] = sample.left;
+                audiobuffer.data[audiobuffer.index++] = sample.right;
+            }
+        };
+
+        if (two_players_mode) {
+            if (main_controller.get_audio_player_source() == MainController::AUDIO_PLAYER_SOURCE_1) {
+                core.set_audio_sample_callback(std::move(audio_sample_callback));
+                core2->set_audio_sample_callback(nullptr);
+            } else {
+                core.set_audio_sample_callback(nullptr);
+                core2->set_audio_sample_callback(std::move(audio_sample_callback));
+            }
+        } else {
+            core.set_audio_sample_callback(std::move(audio_sample_callback));
         }
+    };
+
+    set_audio_sample_callback();
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    main_controller.set_audio_player_source_changed_callback([&set_audio_sample_callback](uint8_t player) {
+        set_audio_sample_callback();
     });
 #endif
 
-    core_controller.set_paused_changed_callback([&unbind_audio_stream](bool paused) {
+#endif
+
 #ifdef ENABLE_AUDIO
+    run_controller.set_paused_changed_callback([&unbind_audio_stream](bool paused) {
         // Unbind audio stream when game is paused.
         if (paused) {
             unbind_audio_stream();
         }
-#endif
     });
+#endif
+
+    bool all_roms_loaded = false;
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    all_roms_loaded = !args.rom.empty() && (!args.second_rom || !args.second_rom->empty());
+#else
+    all_roms_loaded = !args.rom.empty();
+#endif
 
     if (!args.rom.empty()) {
+        core_controller1.load_rom(args.rom);
+    }
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (args.second_rom && !args.second_rom->empty()) {
+        core_controller2->load_rom(*args.second_rom);
+    }
+#endif
+
+    if (all_roms_loaded) {
         // Start with loaded game
-        core_controller.load_rom(args.rom);
         nav_controller.push(std::make_unique<GameScreen>(context));
     } else {
         // Start with launcher screen instead
@@ -639,7 +581,7 @@ int main(int argc, char* argv[]) {
         next_frame_time += main_controller.get_frame_time();
 
         // Handle events
-        while (SDL_PollEvent(&e) != 0) {
+        while (SDL_PollEvent(&e)) {
             switch (e.type) {
             case SDL_EVENT_QUIT:
                 main_controller.quit();
@@ -650,8 +592,8 @@ int main(int argc, char* argv[]) {
         }
 
         // Eventually advance emulation by one frame
-        if (!core_controller.is_paused()) {
-            core_controller.frame();
+        if (!run_controller.is_paused()) {
+            run_controller.frame();
 
 #ifdef ENABLE_AUDIO
             if (audio_stream_bound) {
@@ -698,23 +640,43 @@ int main(int argc, char* argv[]) {
     }
 
     // Write RAM state
-    if (core_controller.is_rom_loaded()) {
-        core_controller.write_save();
+    if (core_controller1.is_rom_loaded()) {
+        core_controller1.write_save();
     }
 
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode) {
+        if (core_controller2->is_rom_loaded()) {
+            core_controller2->write_save();
+        }
+    }
+#endif
+
     // Write current preferences
-    prefs.palette = ui_controller.get_current_palette().rgb565.palette;
+#ifndef ENABLE_CGB
+    prefs.dmg_palette = ui_controller.get_current_appearance().lcd;
+#endif
     prefs.scaling = window.get_scaling();
 
-    const auto& keycodes {core_controller.get_joypad_map()};
-    prefs.keys.a = keycodes.at(Joypad::Key::A);
-    prefs.keys.b = keycodes.at(Joypad::Key::B);
-    prefs.keys.start = keycodes.at(Joypad::Key::Start);
-    prefs.keys.select = keycodes.at(Joypad::Key::Select);
-    prefs.keys.left = keycodes.at(Joypad::Key::Left);
-    prefs.keys.up = keycodes.at(Joypad::Key::Up);
-    prefs.keys.right = keycodes.at(Joypad::Key::Right);
-    prefs.keys.down = keycodes.at(Joypad::Key::Down);
+    const auto update_preferences_keys_from_joypad_mapping =
+        [](Preferences::Keys& keys, const std::map<Joypad::Key, SDL_Keycode>& joypad_mapping) {
+            keys.a = joypad_mapping.at(Joypad::Key::A);
+            keys.b = joypad_mapping.at(Joypad::Key::B);
+            keys.start = joypad_mapping.at(Joypad::Key::Start);
+            keys.select = joypad_mapping.at(Joypad::Key::Select);
+            keys.left = joypad_mapping.at(Joypad::Key::Left);
+            keys.up = joypad_mapping.at(Joypad::Key::Up);
+            keys.right = joypad_mapping.at(Joypad::Key::Right);
+            keys.down = joypad_mapping.at(Joypad::Key::Down);
+        };
+
+    update_preferences_keys_from_joypad_mapping(prefs.keys.player1, core_controller1.get_joypad_map());
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode) {
+        update_preferences_keys_from_joypad_mapping(prefs.keys.player2, core_controller2->get_joypad_map());
+    }
+#endif
 
     Window::Position pos = window.get_position();
     prefs.x = pos.x;
@@ -722,6 +684,9 @@ int main(int argc, char* argv[]) {
 
 #ifdef ENABLE_AUDIO
     prefs.audio = main_controller.is_audio_enabled();
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    prefs.audio_player_source = main_controller.get_audio_player_source();
+#endif
     prefs.volume = main_controller.get_volume();
 
     prefs.dynamic_sample_rate.enabled = main_controller.is_dynamic_sample_rate_control_enabled();
@@ -733,13 +698,18 @@ int main(int argc, char* argv[]) {
         main_controller.get_dynamic_sample_rate_control_max_pitch_slack_factor();
 #endif
 
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode) {
+        prefs.serial_link = run_controller.is_serial_link_attached();
+    } // else: leave it as it was
+#endif
+
     write_preferences(pref_path, prefs);
 
-#ifdef ENABLE_SERIAL
+    // Eventually flush serial
     if (serial_console) {
         serial_console->flush();
     }
-#endif
 
 #ifdef ENABLE_AUDIO
     // Release audio resources

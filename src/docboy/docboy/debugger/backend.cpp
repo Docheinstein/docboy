@@ -60,10 +60,14 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
         ASSERT(history.size() <= MAX_HISTORY_SIZE);
     }
 
-    bool is_m_cycle = (tick % 4) == 0;
+    bool is_aligned_with_instruction = (tick % 4) == 0;
+#ifdef ENABLE_CGB
+    is_aligned_with_instruction =
+        is_aligned_with_instruction || (tick % 2 == 0 && core.gb.speed_switch_controller.is_double_speed_mode());
+#endif
 
     // Handle new CPU instruction (check breakpoints, call stack, ...)
-    if (is_m_cycle) {
+    if (is_aligned_with_instruction) {
         if (!DebuggerHelpers::is_in_isr(cpu) && cpu.instruction.microop.counter == 0) {
             if (last_instruction) {
                 const uint8_t last_opcode = last_instruction->instruction[0];
@@ -156,7 +160,7 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
         handle_command<FrameBackCommand, FrameBackCommandState>();
     } else if (std::holds_alternative<ScanlineCommand>(cmd)) {
         handle_command<ScanlineCommand, ScanlineCommandState>();
-    } else if (is_m_cycle) {
+    } else if (is_aligned_with_instruction) {
         // M-Cycle commands (CPU)
         if (std::holds_alternative<DotCommand>(cmd)) {
             handle_command<DotCommand, DotCommandState>();
@@ -177,6 +181,36 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
         } else if (std::holds_alternative<AbortCommand>(cmd)) {
             handle_command<AbortCommand, AbortCommandState>();
         }
+    }
+}
+
+void DebuggerBackend::reset() {
+    // Reset core
+    core.reset();
+
+    // Reset debugger state
+    command = std::nullopt;
+    command_state = std::nullopt;
+    run = true;
+    interrupted = false;
+    cartridge_info = std::nullopt;
+    breakpoints.clear();
+    watchpoints.clear();
+    memset(watchpoints_at_address, 0, sizeof(watchpoints_at_address));
+    for (uint32_t i = 0; i < array_size(disassembled_instructions); i++) {
+        disassembled_instructions[i] = std::nullopt;
+    }
+    watchpoint_hit = std::nullopt;
+    next_point_id = 0;
+    allow_memory_callbacks = true;
+    history.clear();
+    last_instruction = std::nullopt;
+    call_stack.clear();
+    memory_hash = 0;
+
+    // Eventually notify observers
+    if (on_reset_callback) {
+        on_reset_callback();
     }
 }
 
@@ -236,6 +270,10 @@ void DebuggerBackend::notify_memory_write(uint16_t address) {
         watchpoint_hit->access_type = WatchpointHit::AccessType::Write;
         watchpoint_hit->old_value = read_memory_raw(address);
     }
+}
+
+void DebuggerBackend::set_on_reset_callback(std::function<void()>&& callback) {
+    on_reset_callback = std::move(callback);
 }
 
 bool DebuggerBackend::is_asking_to_quit() const {
@@ -519,7 +557,8 @@ uint32_t DebuggerBackend::state_hash() const {
     h = hash_combine(h, gb.timers.div16);
     h = hash_combine(h, gb.timers.tima);
     h = hash_combine(h, gb.timers.tma);
-    h = hash_combine(h, gb.timers.tac);
+    h = hash_combine(h, gb.timers.tac.enable);
+    h = hash_combine(h, gb.timers.tac.clock_selector);
     h = hash_combine(h, memory_hash);
 
     return h;

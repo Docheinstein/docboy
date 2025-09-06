@@ -13,14 +13,16 @@ target_sources(docboy-sdl PRIVATE
     components/menu/items.h
     controllers/corecontroller.cpp
     controllers/corecontroller.h
+    controllers/runcontroller.cpp
+    controllers/runcontroller.h
     controllers/maincontroller.h
     controllers/navcontroller.cpp
     controllers/navcontroller.h
     controllers/uicontroller.cpp
     controllers/uicontroller.h
     main.cpp
-    screens/audiooptionsscreen.cpp
-    screens/audiooptionsscreen.h
+    preferences/preferences.cpp
+    preferences/preferences.h
     screens/controloptionsscreen.cpp
     screens/controloptionsscreen.h
     screens/gamemainscreen.cpp
@@ -39,6 +41,8 @@ target_sources(docboy-sdl PRIVATE
     screens/menuscreen.h
     screens/optionsscreen.cpp
     screens/optionsscreen.h
+    screens/playerselectscreen.cpp
+    screens/playerselectscreen.h
     screens/screen.cpp
     screens/screen.h
     screens/screenstack.cpp
@@ -53,10 +57,24 @@ target_sources(docboy-sdl PRIVATE
     windows/window.h
 )
 
+if (ENABLE_AUDIO)
+    target_sources(docboy-sdl PRIVATE
+            screens/audiooptionsscreen.cpp
+            screens/audiooptionsscreen.h
+    )
+endif ()
+
 if (ENABLE_DEBUGGER)
     target_sources(docboy-sdl PRIVATE
             controllers/debuggercontroller.cpp
             controllers/debuggercontroller.h
+    )
+endif ()
+
+if (ENABLE_TWO_PLAYERS_MODE)
+    target_sources(docboy-sdl PRIVATE
+            screens/serialoptionsscreen.cpp
+            screens/serialoptionsscreen.h
     )
 endif ()
 

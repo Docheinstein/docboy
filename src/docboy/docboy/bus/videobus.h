@@ -5,7 +5,7 @@
 
 class Parcel;
 
-template <typename Bus, Device::Type Dev>
+template <typename BusType, Device::Type Dev>
 class VideoBusView;
 
 template <typename Impl>
@@ -39,14 +39,14 @@ public:
     void reset();
 
 private:
-    uint8_t acquirers {};
+    uint16_t acquirers {}; // TODO: can be uint8_t if OAM BUG for IDU should not be handled in CGB
 };
 
-template <typename Bus, Device::Type Dev>
-class VideoBusView : public BusView<Bus, Dev> {
+template <typename BusType, Device::Type Dev>
+class VideoBusView : public BusView<BusType, Dev> {
 public:
-    /* implicit */ VideoBusView(Bus& bus) :
-        BusView<Bus, Dev>(bus) {
+    /* implicit */ VideoBusView(BusType& bus) :
+        BusView<BusType, Dev>(bus) {
     }
 
     void acquire();

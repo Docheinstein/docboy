@@ -262,7 +262,7 @@ std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename
 
     const std::vector<uint8_t> data = read_file(filename, &ok);
     if (!ok) {
-        FATAL("failed to read file");
+        FATAL("failed to read file '" + filename + "'");
     }
 
     if (data.size() < MemoryLayout::SIZE) {

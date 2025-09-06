@@ -14,12 +14,15 @@ class Dma {
     DEBUGGABLE_CLASS()
 
 public:
-    explicit Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oam_bus);
+    Dma(Mmu::View<Device::Dma> mmu, OamBus::View<Device::Dma> oam_bus);
 
-    void start_transfer(uint16_t address);
+    void start_transfer(uint8_t value);
 
-    void tick_t1();
-    void tick_t3();
+    bool is_active() const {
+        return state != TransferState::None;
+    }
+
+    void tick();
 
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
@@ -27,22 +30,24 @@ public:
     void reset();
 
 private:
-    struct RequestState {
+    struct TransferState {
         using Type = uint8_t;
-        static constexpr Type Requested = 2;
-        static constexpr Type Pending = 1;
         static constexpr Type None = 0;
+        static constexpr Type Prepare = 1;
+        static constexpr Type Flush = 2;
     };
+
+    bool is_oam_blocked() const;
 
     Mmu::View<Device::Dma> mmu;
     OamBus::View<Device::Dma> oam;
 
     struct {
-        RequestState::Type state {};
+        uint8_t countdown {};
         uint16_t source {};
     } request;
 
-    bool transferring {};
+    TransferState::Type state {};
     uint16_t source {};
     uint8_t cursor {};
 };

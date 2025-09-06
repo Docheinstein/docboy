@@ -2,6 +2,6 @@
 #define HRAM_H
 
 #include "docboy/memory/fwd/hramfwd.h"
-#include "docboy/memory/randmemory.h"
+#include "docboy/memory/memory.h"
 
 #endif // HRAM_H

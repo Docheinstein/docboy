@@ -4,6 +4,6 @@
 #include "docboy/common/specs.h"
 #include "docboy/memory/fwd/memoryfwd.h"
 
-class Vram;
+using Vram = Memory<Specs::MemoryLayout::VRAM::START, Specs::MemoryLayout::VRAM::END>;
 
 #endif // VRAMFWD_H

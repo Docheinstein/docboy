@@ -13,16 +13,45 @@ public:
             VideoBusView<VramBus, Dev>(bus) {
         }
 
-        uint8_t read(uint16_t address) const;
+        template <uint8_t Bank>
+        uint8_t read(uint16_t address);
     };
 
-    explicit VramBus(Vram& vram);
+    explicit VramBus(Vram* vram);
+
+    template <Device::Type Dev, uint8_t Bank>
+    uint8_t read(uint16_t vram_address);
 
     template <Device::Type Dev>
-    uint8_t read(uint16_t vram_address) const;
+    void write_request(uint16_t addr);
+
+    template <Device::Type Dev>
+    void flush_write_request(uint8_t value);
+
+    void tick();
+
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
+
+    void reset();
+
+#ifdef ENABLE_CGB
+    void set_vram_bank(bool bank);
+#endif
 
 private:
-    Vram& vram;
+#if ENABLE_CGB
+    uint8_t read_vram(uint16_t address) const;
+    void write_vram(uint16_t address, uint8_t value);
+#endif
+
+    Vram* vram;
+
+    uint8_t readers {};
+
+#ifdef ENABLE_CGB
+    bool vram_bank {};
+#endif
 };
 
 #include "docboy/bus/vrambus.tpp"

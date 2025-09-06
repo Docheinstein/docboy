@@ -10,9 +10,8 @@ SerialConsole::SerialConsole(std::ostream& output, uint32_t bufsize) :
     bufsize {bufsize} {
 }
 
-void SerialConsole::serial_write(uint8_t value) {
-    SerialBuffer::serial_write(value);
-    if (value == '\n' || (buffer.size() > bufsize)) {
+void SerialConsole::serial_write_bit(bool bit) {
+    if (serial_write_bit_(bit) && (buffer[buffer.size() - 1] == '\n' || (buffer.size() > bufsize))) {
         flush();
     }
 }
