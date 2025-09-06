@@ -18,12 +18,12 @@ option(BUILD_SDL_FRONTEND "Build SDL frontend" OFF)
 option(BUILD_LIBRETRO_CORE "Build libretro core" OFF)
 option(BUILD_LIBRETRO_CORE_ANDROID "Build libretro core for Android" OFF)
 
-option(NDK_PATH "NDK Path for Android build" "")
+option(NDK_PATH "NDK path for Android build" "")
 
 option(ENABLE_DEBUGGER "Enable debugger" OFF)
 option(ENABLE_BOOTROM "Enable boot rom" OFF)
 option(ENABLE_AUDIO "Enable audio" ON)
-option(ENABLE_CGB "Enable GameBoy Color support" ON)
+option(ENABLE_CGB "Enable GameBoy Color" ON)
 option(ENABLE_TWO_PLAYERS_MODE "Enable two players mode (serial link)" ON)
 
 option(ENABLE_ASSERTS "Enable asserts" OFF)
@@ -36,6 +36,7 @@ endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if (NOT BUILD_NOGUI_FRONTEND AND NOT BUILD_SDL_FRONTEND AND NOT BUILD_LIBRETRO_CORE AND NOT BUILD_LIBRETRO_CORE_ANDROID)
+    # Enable SDL by default if no frontend is specified.
     set(BUILD_SDL_FRONTEND ON)
 endif ()
 
