@@ -55,6 +55,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }}
           -DBUILD_TESTS=${{ inputs.run_unit_tests || inputs.run_emulation_tests }}
           -DENABLE_CGB=${{ inputs.enable_cgb }}
+          -DSDL_UNIX_CONSOLE_BUILD=ON
           -S ${{ github.workspace }}
 
       # Build project.
