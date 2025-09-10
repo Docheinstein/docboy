@@ -2892,10 +2892,21 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << red("DIV (16)") << "   :  " << [this]() -> Text {
             uint16_t div = gb.timers.div16;
             Text t {};
-            uint8_t highlight_bit = Specs::Timers::TAC_DIV_BITS_SELECTOR[gb.timers.tac.clock_selector];
+#ifdef ENABLE_CGB
+            uint8_t apu_highlight_bit = 8 + gb.apu.div_apu_bit_selector;
+#else
+            uint8_t apu_highlight_bit = 12;
+#endif
+            uint8_t tac_highlight_bit = Specs::Timers::TAC_DIV_BITS_SELECTOR[gb.timers.tac.clock_selector];
             for (int8_t b = 15; b >= 0; b--) {
-                bool high = test_bit(div, b);
-                t += ((b == highlight_bit) ? yellow(Text {high}) : Text {high});
+                bool set = test_bit(div, b);
+                if (b == tac_highlight_bit) {
+                    t += yellow(Text {set});
+                } else if (b == apu_highlight_bit) {
+                    t += green(Text {set});
+                } else {
+                    t += Text {set};
+                }
                 if (b == 8)
                     t += " ";
             }

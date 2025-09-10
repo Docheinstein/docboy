@@ -312,7 +312,6 @@ private:
     template <uint16_t address>
     void update_wave_ram(uint8_t value);
 
-public:
     static const RegisterUpdater REGISTER_UPDATERS[];
     static const RegisterUpdater WAVE_RAM_UPDATERS[];
 
@@ -323,7 +322,7 @@ public:
 #endif
     const uint16_t& program_counter;
 
-    std::function<void(const AudioSample)> audio_sample_callback {};
+    std::function<void(AudioSample)> audio_sample_callback {};
 
     float master_volume {1.0f};
 
@@ -336,6 +335,9 @@ public:
     bool apu_clock_edge {};
     bool prev_div_edge_bit {};
     uint8_t div_apu {};
+#ifdef ENABLE_CGB
+    uint8_t div_apu_bit_selector {};
+#endif
 
     struct {
         RegisterUpdater updater {};
@@ -366,6 +368,7 @@ public:
         struct {
             bool direction {};
             uint8_t countdown {};
+            bool reloaded {};
             bool pending_update {};
         } volume_sweep;
 
@@ -420,6 +423,7 @@ public:
         struct {
             bool direction {};
             uint8_t countdown {};
+            bool reloaded {};
             bool pending_update {};
         } volume_sweep;
     } ch2 {};
@@ -461,6 +465,7 @@ public:
         struct {
             bool direction {};
             uint8_t countdown {};
+            bool reloaded {};
             bool pending_update {};
         } volume_sweep;
 

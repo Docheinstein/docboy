@@ -209,14 +209,18 @@ void run_test_roms_from_params(const std::string& roms_folder, const std::string
 }
 
 void run_test_roms_from_json(const std::string& roms_folder, const std::string& results_folder,
-                             const std::string& json_path) {
-
-    static RunnerAdapter adapter {roms_folder, results_folder};
-
+                             const std::string& json_path, const std::string& section_filter) {
     // Since Catch will re-enter this branch multiple times, for each section, parse and cache the json only once.
     const std::vector<Section>& sections = build_or_get_test_roms_sections_from_json(json_path);
 
+    RunnerAdapter adapter {roms_folder, results_folder};
+
     for (const auto& [name, tests_params] : sections) {
+        if (!section_filter.empty() && !starts_with(name, section_filter)) {
+            // If a filter is given, keep only the sections having the filter as prefix.
+            continue;
+        }
+
         SECTION(name) {
             for (const auto& test_params : tests_params) {
                 REQUIRE(adapter.run(test_params));
@@ -225,21 +229,24 @@ void run_test_roms_from_json(const std::string& roms_folder, const std::string& 
     }
 }
 
-void run_framebuffer_test_roms_from_folder_recursive(const std::string& roms_folder,
-                                                     const std::string& results_folder) {
-    RunnerAdapter adapter {roms_folder, results_folder};
-    for (const auto& entry : recursive_iterate_directory(roms_folder)) {
-        if (entry.type == DirectoryIteratorEntry::FileType::File) {
-            REQUIRE(adapter.run(F {entry.path.c_str(), std::string {results_folder}}));
+void run_framebuffer_test_roms_from_folder_recursive(const std::string& roms_folder, const std::string& result) {
+    RunnerAdapter adapter {"", ""};
+    SECTION(roms_folder) {
+        for (const auto& entry : recursive_iterate_directory(roms_folder)) {
+            if (entry.type == DirectoryIteratorEntry::FileType::File) {
+                REQUIRE(adapter.run(F {entry.path.c_str(), std::string {result}}));
+            }
         }
     }
 }
 
-void run_framebuffer_test_roms_from_folder(const std::string& roms_folder, const std::string& results_folder) {
-    RunnerAdapter adapter {roms_folder, results_folder};
-    for (const auto& entry : iterate_directory(roms_folder)) {
-        if (entry.type == DirectoryIteratorEntry::FileType::File) {
-            REQUIRE(adapter.run(F {entry.path.c_str(), std::string {results_folder}}));
+void run_framebuffer_test_roms_from_folder(const std::string& roms_folder, const std::string& result) {
+    RunnerAdapter adapter {"", ""};
+    SECTION(roms_folder) {
+        for (const auto& entry : iterate_directory(roms_folder)) {
+            if (entry.type == DirectoryIteratorEntry::FileType::File) {
+                REQUIRE(adapter.run(F {entry.path.c_str(), std::string {result}}));
+            }
         }
     }
 }

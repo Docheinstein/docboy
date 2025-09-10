@@ -185,11 +185,33 @@ inline void tick_length_timer(Channel& ch, ChannelOnFlag& ch_on, const Nrx4& nrx
 
 template <typename Channel, typename ChannelOnFlag>
 inline void tick_volume_sweep(Channel& ch, const ChannelOnFlag& ch_on) {
-    if (ch_on && !ch.volume_sweep.pending_update) {
+    if (ch_on && !ch.volume_sweep.reloaded) {
         // Countdown is decreased even if volume sweep pace is 0.
         // This has meaningful implications if volume sweep is updated while
         // the channel is on (without a retrigger to reload volume sweep).
         ch.volume_sweep.countdown = mod<8>(ch.volume_sweep.countdown - 1);
+    }
+}
+
+template <typename Channel, typename Nrx2>
+inline void tick_volume_sweep_reload(Channel& ch, const Nrx2& nrx2) {
+    if (ch.volume_sweep.countdown == 0) {
+        // The volume sweep pace is reloaded with the volume sweep from NRX2.
+        // A non-zero sweep pace triggers a volume update for the next DIV_APU tick.
+        // This happens regardless the new pace value (it just have to be positive).
+        ch.volume_sweep.countdown = nrx2.sweep_pace;
+        if (ch.volume_sweep.countdown) {
+            ch.volume_sweep.reloaded = true;
+        }
+    }
+}
+
+template <typename Channel>
+inline void tick_volume_sweep_reloaded(Channel& ch) {
+    if (ch.volume_sweep.reloaded) {
+        // The volume is changed the next tick.
+        ch.volume_sweep.reloaded = false;
+        ch.volume_sweep.pending_update = true;
     }
 }
 
@@ -207,19 +229,6 @@ inline void handle_volume_sweep_update(Channel& ch, const Nrx2& nrx2) {
             if (ch.volume > 0) {
                 --ch.volume;
             }
-        }
-    }
-}
-
-template <typename Channel, typename Nrx2>
-inline void tick_volume_sweep_reload(Channel& ch, const Nrx2& nrx2) {
-    if (ch.volume_sweep.countdown == 0) {
-        // The volume sweep pace is reloaded with the volume sweep from NRX2.
-        // A non-zero sweep pace triggers a volume update for the next DIV_APU tick.
-        // This happens regardless the new pace value (it just have to be positive).
-        ch.volume_sweep.countdown = nrx2.sweep_pace;
-        if (ch.volume_sweep.countdown) {
-            ch.volume_sweep.pending_update = true;
         }
     }
 }
@@ -340,7 +349,7 @@ void Apu::set_sample_rate(double rate) {
     sampling.period = static_cast<double>(Specs::Frequencies::CLOCK) / rate;
 }
 
-void Apu::set_audio_sample_callback(std::function<void(const AudioSample)>&& callback) {
+void Apu::set_audio_sample_callback(std::function<void(AudioSample)>&& callback) {
     audio_sample_callback = std::move(callback);
 }
 
@@ -367,6 +376,9 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(apu_clock_edge);
     parcel.write_bool(prev_div_edge_bit);
     parcel.write_uint8(div_apu);
+#ifdef ENABLE_CGB
+    parcel.write_uint8(div_apu_bit_selector);
+#endif
 
     parcel.write_uint8(nr10.pace);
     parcel.write_bool(nr10.direction);
@@ -443,6 +455,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch1.wave.duty_cycle);
     parcel.write_bool(ch1.volume_sweep.direction);
     parcel.write_uint8(ch1.volume_sweep.countdown);
+    parcel.write_bool(ch1.volume_sweep.reloaded);
     parcel.write_bool(ch1.volume_sweep.pending_update);
     parcel.write_uint8(ch1.period_sweep.pace_countdown);
     parcel.write_uint16(ch1.period_sweep.period);
@@ -470,6 +483,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch2.wave.duty_cycle);
     parcel.write_bool(ch2.volume_sweep.direction);
     parcel.write_uint8(ch2.volume_sweep.countdown);
+    parcel.write_bool(ch2.volume_sweep.reloaded);
     parcel.write_bool(ch2.volume_sweep.pending_update);
 
     parcel.write_uint16(ch3.length_timer);
@@ -489,6 +503,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint16(ch4.wave.timer);
     parcel.write_bool(ch4.volume_sweep.direction);
     parcel.write_uint8(ch4.volume_sweep.countdown);
+    parcel.write_bool(ch4.volume_sweep.reloaded);
     parcel.write_bool(ch4.volume_sweep.pending_update);
     parcel.write_uint16(ch4.lfsr);
 }
@@ -500,6 +515,9 @@ void Apu::load_state(Parcel& parcel) {
     apu_clock_edge = parcel.read_bool();
     prev_div_edge_bit = parcel.read_bool();
     div_apu = parcel.read_uint8();
+#ifdef ENABLE_CGB
+    div_apu_bit_selector = parcel.read_uint8();
+#endif
 
     nr10.pace = parcel.read_uint8();
     nr10.direction = parcel.read_bool();
@@ -574,6 +592,7 @@ void Apu::load_state(Parcel& parcel) {
     ch1.wave.duty_cycle = parcel.read_uint8();
     ch1.volume_sweep.direction = parcel.read_bool();
     ch1.volume_sweep.countdown = parcel.read_uint8();
+    ch1.volume_sweep.reloaded = parcel.read_bool();
     ch1.volume_sweep.pending_update = parcel.read_bool();
     ch1.period_sweep.pace_countdown = parcel.read_uint8();
     ch1.period_sweep.period = parcel.read_uint16();
@@ -601,6 +620,7 @@ void Apu::load_state(Parcel& parcel) {
     ch2.wave.duty_cycle = parcel.read_uint8();
     ch2.volume_sweep.direction = parcel.read_bool();
     ch2.volume_sweep.countdown = parcel.read_uint8();
+    ch2.volume_sweep.reloaded = parcel.read_bool();
     ch2.volume_sweep.pending_update = parcel.read_bool();
 
     ch3.length_timer = parcel.read_uint16();
@@ -621,6 +641,7 @@ void Apu::load_state(Parcel& parcel) {
     ch4.wave.timer = parcel.read_uint16();
     ch4.volume_sweep.direction = parcel.read_bool();
     ch4.volume_sweep.countdown = parcel.read_uint8();
+    ch4.volume_sweep.reloaded = parcel.read_bool();
     ch4.volume_sweep.pending_update = parcel.read_bool();
     ch4.lfsr = parcel.read_uint16();
 }
@@ -632,6 +653,9 @@ void Apu::reset() {
     apu_clock_edge = false;
     prev_div_edge_bit = false;
     div_apu = 2;
+#ifdef ENABLE_CGB
+    div_apu_bit_selector = 4;
+#endif
 
     // Reset I/O registers
     nr10.pace = 0;
@@ -715,6 +739,7 @@ void Apu::reset() {
     ch1.wave.duty_cycle = 0;
     ch1.volume_sweep.direction = false;
     ch1.volume_sweep.countdown = 0;
+    ch1.volume_sweep.reloaded = false;
     ch1.volume_sweep.pending_update = false;
     ch1.period_sweep.pace_countdown = 0;
     ch1.period_sweep.period = 0;
@@ -742,6 +767,7 @@ void Apu::reset() {
     ch2.wave.duty_cycle = 0;
     ch2.volume_sweep.direction = false;
     ch2.volume_sweep.countdown = 0;
+    ch2.volume_sweep.reloaded = false;
     ch2.volume_sweep.pending_update = false;
 
     ch3.length_timer = 0;
@@ -762,6 +788,7 @@ void Apu::reset() {
     ch4.wave.timer = 0;
     ch4.volume_sweep.direction = false;
     ch4.volume_sweep.countdown = 0;
+    ch4.volume_sweep.reloaded = false;
     ch4.volume_sweep.pending_update = false;
     ch4.lfsr = 0;
 }
@@ -991,6 +1018,9 @@ uint8_t Apu::read_pcm34() const {
 void Apu::turn_on() {
     prev_div_edge_bit = true; // TODO: verify this, also in CGB?
     div_apu = 0;
+#ifdef ENABLE_CGB
+    div_apu_bit_selector = speed_switch_controller.is_double_speed_mode() ? 5 : 4;
+#endif
     apu_clock_edge = true;
 }
 
@@ -1053,12 +1083,14 @@ void Apu::turn_off() {
     ch1.digital_output = false;
     ch1.tick_edge = false;
     ch1.wave.position = 0;
+    ch1.volume_sweep.reloaded = false;
     ch1.volume_sweep.pending_update = false;
 
     ch2.dac = false;
     ch2.digital_output = false;
     ch2.tick_edge = false;
     ch2.wave.position = 0;
+    ch2.volume_sweep.reloaded = false;
     ch2.volume_sweep.pending_update = false;
 
     ch3.sample = 0;
@@ -1068,6 +1100,7 @@ void Apu::turn_off() {
 
     ch4.dac = false;
     ch4.tick_edge = false;
+    ch4.volume_sweep.reloaded = false;
     ch4.volume_sweep.pending_update = false;
 }
 
@@ -1096,6 +1129,10 @@ void Apu::tick_odd() {
         tick_period_sweep_recalculation();
         tick_period_sweep_reload();
 
+        handle_volume_sweep_update(ch1, nr12);
+        handle_volume_sweep_update(ch2, nr22);
+        handle_volume_sweep_update(ch4, nr42);
+
         tick_div_apu();
 
         tick_wave();
@@ -1112,12 +1149,12 @@ void Apu::tick_odd() {
 void Apu::tick_div_apu() {
     // Increase DIV-APU each time DIV[4] (or DIV[5] in double speed) has a falling edge (~512Hz).
 #ifdef ENABLE_CGB
-    bool div_edge_bit {};
-    if (speed_switch_controller.is_double_speed_mode()) {
-        div_edge_bit = test_bit<5>(timers.read_div());
-    } else {
-        div_edge_bit = test_bit<4>(timers.read_div());
+    // DIV bit selector does not change until speed switch is actually completed and timer has been reset.
+    if (!speed_switch_controller.is_blocking_timers()) {
+        div_apu_bit_selector = speed_switch_controller.is_double_speed_mode() ? 5 : 4;
     }
+
+    const bool div_edge_bit = test_bit(timers.read_div(), div_apu_bit_selector);
 #else
     const bool div_edge_bit = test_bit<4>(timers.read_div());
 #endif
@@ -1159,9 +1196,9 @@ inline void Apu::tick_div_apu_falling_edge() {
     // [samesuite/div_trigger_volume_10,
     //  samesuite/div_write_trigger_volume,
     //  samesuite/div_write_trigger_volume_10]
-    handle_volume_sweep_update(ch1, nr12);
-    handle_volume_sweep_update(ch2, nr22);
-    handle_volume_sweep_update(ch4, nr42);
+    tick_volume_sweep_reloaded(ch1);
+    tick_volume_sweep_reloaded(ch2);
+    tick_volume_sweep_reloaded(ch4);
 }
 
 inline void Apu::tick_div_apu_raising_edge() {
@@ -1873,6 +1910,7 @@ inline void Apu::update_nrx4(Channel& ch, ChannelOnFlag& ch_on, Nrx2& nrx2, Nrx3
 
         ch.volume_sweep.direction = nrx2.envelope_direction;
         ch.volume_sweep.countdown = nrx2.sweep_pace;
+        ch.volume_sweep.reloaded = false;
         ch.volume_sweep.pending_update = false;
 
         // If length timer is 0, it is reloaded with the maximum value (64) as well
@@ -2100,6 +2138,7 @@ void Apu::update_nr44(uint8_t value) {
 
         ch4.volume_sweep.direction = nr42.envelope_direction;
         ch4.volume_sweep.countdown = nr42.sweep_pace;
+        ch4.volume_sweep.reloaded = false;
         ch4.volume_sweep.pending_update = false;
 
         ch4.lfsr = 0;

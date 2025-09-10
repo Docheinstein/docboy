@@ -12766,6 +12766,185 @@
                 "rom": "docboy/double_speed/apu/double_speed_apu_ch1_square_wave_duty_75_delay9.gbc",
                 "framebuffer": "docboy/ok.png"
             },
+
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer0_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer0_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer63_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer63_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_a_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_a_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_b_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_b_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_c_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_c_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_change_initial_length_timer_and_retrigger_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_change_initial_length_timer_and_retrigger_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_change_initial_length_timer_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_change_initial_length_timer_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_d_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_d_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_disable_length_enable_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_disable_length_enable_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu1_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu1_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu2_multiple_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu2_multiple_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu2_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu2_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu3_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu3_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu4_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_enable_0_to_1_divapu4_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_no_initial_length_divapu1_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_no_initial_length_divapu1_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_no_initial_length_divapu2_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_no_initial_length_divapu2_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_restart_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_restart_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_length_timer_without_length_enable.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_volume_sweep_b_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_volume_sweep_b_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_volume_sweep_c_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_volume_sweep_c_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_volume_sweep_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch2_volume_sweep_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
             {
                 "rom": "docboy/double_speed/apu/double_speed_apu_ch3_a_period_1.gbc",
                 "framebuffer": "docboy/ok.png"
@@ -12936,19 +13115,44 @@
                 "framebuffer": "docboy/ok.png"
             },
             {
-                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_alt_round0.gbc",
-                "framebuffer": "docboy/ok.png"
-            },
-            {
-                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_alt_round1.gbc",
-                "framebuffer": "docboy/ok.png"
-            },
-            {
                 "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_round1.gbc",
                 "framebuffer": "docboy/ok.png"
             },
             {
                 "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_1_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_a_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_a_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_b_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_b_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_c_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_c_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_d_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom": "docboy/double_speed/apu/double_speed_apu_ch3_length_timer_d_round2.gbc",
                 "framebuffer": "docboy/ok.png"
             },
             {
@@ -13319,30 +13523,94 @@
                 "rom": "docboy/double_speed/apu/double_speed_apu_ch3_write_wave_period_1_delay5.gbc",
                 "framebuffer": "docboy/ok.png"
             },
+
             {
-                "rom": "docboy/double_speed/apu/speed_switch_to_double_apu_ch3_length_timer_128_alt_round1.gbc",
-                "framebuffer": "docboy/ok.png",
-                "enabled": false
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu2_divbit00_round1.gbc",
+                "framebuffer": "docboy/ok.png"
             },
             {
-                "rom": "docboy/double_speed/apu/speed_switch_to_double_apu_ch3_length_timer_128_alt_round2.gbc",
-                "framebuffer": "docboy/ok.png",
-                "enabled": false
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu2_divbit00_round2.gbc",
+                "framebuffer": "docboy/ok.png"
             },
             {
-                "rom": "docboy/double_speed/apu/speed_switch_to_double_apu_ch3_length_timer_128_div_round0.gbc",
-                "framebuffer": "docboy/ok.png",
-                "enabled": false
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu2_divbit01_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu2_divbit01_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu2_divbit10_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu2_divbit10_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu2_divbit11_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu2_divbit11_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu3_divbit00_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu3_divbit00_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu3_divbit01_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu3_divbit01_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu3_divbit10_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu3_divbit10_round2.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu3_divbit11_round1.gbc",
+                "framebuffer": "docboy/ok.png"
+            },
+            {
+                "rom":
+                    "docboy/double_speed/apu/speed_switch_to_double_apu_ch2_volume_sweep_divapu3_divbit11_round2.gbc",
+                "framebuffer": "docboy/ok.png"
             },
             {
                 "rom": "docboy/double_speed/apu/speed_switch_to_double_apu_ch3_length_timer_128_div_round1.gbc",
-                "framebuffer": "docboy/ok.png",
-                "enabled": false
+                "framebuffer": "docboy/ok.png"
             },
             {
                 "rom": "docboy/double_speed/apu/speed_switch_to_double_apu_ch3_length_timer_128_div_round2.gbc",
-                "framebuffer": "docboy/ok.png",
-                "enabled": false
+                "framebuffer": "docboy/ok.png"
             },
             {
                 "rom": "docboy/double_speed/apu/speed_switch_to_double_apu_ch3_length_timer_128_round1.gbc",
@@ -13351,16 +13619,6 @@
             },
             {
                 "rom": "docboy/double_speed/apu/speed_switch_to_double_apu_ch3_length_timer_128_round2.gbc",
-                "framebuffer": "docboy/ok.png",
-                "enabled": false
-            },
-            {
-                "rom": "docboy/double_speed/apu/speed_switch_to_double_apu_ch3_length_timer_192_round1.gbc",
-                "framebuffer": "docboy/ok.png",
-                "enabled": false
-            },
-            {
-                "rom": "docboy/double_speed/apu/speed_switch_to_double_apu_ch3_length_timer_192_round2.gbc",
                 "framebuffer": "docboy/ok.png",
                 "enabled": false
             },
@@ -14697,8 +14955,7 @@
                 "framebuffer": "docboy/ok.png"
             },
             {
-                "rom":
-                    "docboy/double_speed/interrupts/speed_switch_to_double_interrupt_stat_aligned_with_stop_nops_36_scx2_round1.gbc",
+                "rom": "docboy/double_speed/interrupts/speed_switch_to_double_interrupt_stat_aligned_with_stop_nops_36_scx2_round1.gbc",
                 "framebuffer": "docboy/ok.png"
             },
             {
