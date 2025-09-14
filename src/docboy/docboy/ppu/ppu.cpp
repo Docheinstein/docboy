@@ -284,6 +284,8 @@ void Ppu::turn_off() {
 
     is_glitched_line_0 = true;
 
+    enable_lyc_eq_ly_irq = true;
+
     vram.release();
     oam.release();
 }
@@ -1700,9 +1702,9 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
         ASSERT(bg_fifo.is_empty());
 
         PixelColorIndex pixel_data[8];
-        const uint8_t(*pixels_map_ptr)[8] = test_bit<Specs::Bits::Background::Attributes::X_FLIP>(bwf.attributes)
-                                                ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
-                                                : TILE_ROW_DATA_TO_ROW_PIXELS;
+        const uint8_t (*pixels_map_ptr)[8] = test_bit<Specs::Bits::Background::Attributes::X_FLIP>(bwf.attributes)
+                                                 ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
+                                                 : TILE_ROW_DATA_TO_ROW_PIXELS;
         memcpy(pixel_data, &pixels_map_ptr[concat(psf.tile_data_high, psf.tile_data_low)], 8);
 
         for (int8_t i = 7; i >= 0; i--) {
@@ -1830,9 +1832,9 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
 #endif
 
     PixelColorIndex obj_pixels_colors[8];
-    const uint8_t(*pixels_map_ptr)[8] = test_bit<Specs::Bits::OAM::Attributes::X_FLIP>(of.attributes)
-                                            ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
-                                            : TILE_ROW_DATA_TO_ROW_PIXELS;
+    const uint8_t (*pixels_map_ptr)[8] = test_bit<Specs::Bits::OAM::Attributes::X_FLIP>(of.attributes)
+                                             ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
+                                             : TILE_ROW_DATA_TO_ROW_PIXELS;
     memcpy(obj_pixels_colors, &pixels_map_ptr[concat(psf.tile_data_high, psf.tile_data_low)], 8);
 
     ObjPixel obj_pixels[8];

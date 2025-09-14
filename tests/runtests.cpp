@@ -59,34 +59,35 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
 
     std::string rom {object["rom"].get_string().value()};
 
-    uint64_t max_ticks = DEFAULT_DURATION;
-    if (auto max_ticks_element = object["max_ticks"]; max_ticks_element.error() == simdjson::SUCCESS) {
-        max_ticks = max_ticks_element.get_uint64();
-    }
+    auto parse_base_params = [](auto object, auto& params) {
+        params.rom = object["rom"].get_string().value();
 
-    if (auto framebuffer_element = object["framebuffer"]; framebuffer_element.error() == simdjson::SUCCESS) {
-        // FramebufferRunnerParams or TwoPlayersFramebufferRunnerParams
-        std::string framebuffer_result {framebuffer_element.get_string().value()};
-
-        if (auto rom2_element = object["rom2"]; rom2_element.error() == simdjson::SUCCESS) {
-            // TwoPlayersFramebufferRunnerParams
-            std::string rom2 {rom2_element.get_string().value()};
-            std::string framebuffer_result2 {object["framebuffer2"].get_string().value()};
-
-            return TwoPlayersFramebufferRunnerParams {std::move(rom), std::move(framebuffer_result), std::move(rom2),
-                                                      std::move(framebuffer_result2), MaxTicks {max_ticks}};
+        if (auto check_interval_ticks_element = object["check_interval_ticks"];
+            check_interval_ticks_element.error() == simdjson::SUCCESS) {
+            params.check_interval_ticks = check_interval_ticks_element.get_uint64();
         }
 
-        FramebufferRunnerParams params {std::move(rom), std::move(framebuffer_result), MaxTicks {max_ticks}};
+        if (auto max_ticks_element = object["max_ticks"]; max_ticks_element.error() == simdjson::SUCCESS) {
+            params.max_ticks = max_ticks_element.get_uint64();
+        }
+
+        if (auto stop_at_instruction_element = object["stop_at_instruction"];
+            stop_at_instruction_element.error() == simdjson::SUCCESS) {
+            params.stop_at_instruction = stop_at_instruction_element.get_uint64();
+        }
+
+        if (auto force_check_element = object["force_check"]; force_check_element.error() == simdjson::SUCCESS) {
+            params.force_check = force_check_element.get_bool();
+        }
 
         if (auto inputs_elements = object["inputs"]; inputs_elements.error() == simdjson::SUCCESS) {
-            std::vector<FramebufferRunner::JoypadInput> inputs {};
+            std::vector<JoypadInput> inputs {};
 
             auto inputs_array = inputs_elements.get_array();
             for (auto input_element : inputs_array) {
                 auto input_object = input_element.get_object();
 
-                FramebufferRunner::JoypadInput input {};
+                JoypadInput input {};
                 input.tick = input_object["tick"].get_uint64();
                 input.key = parse_joypad_key(input_object["key"].get_string());
                 input.state = parse_joypad_key_state(input_object["state"].get_string());
@@ -96,7 +97,9 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
 
             params.inputs = std::move(inputs);
         }
+    };
 
+    auto parse_framebuffer_params = [](auto object, auto& params) {
         if (auto color_tolerance_element = object["color_tolerance"];
             color_tolerance_element.error() == simdjson::SUCCESS) {
             auto color_tolerance_object = color_tolerance_element.get_object();
@@ -113,20 +116,32 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
             }
         }
 #endif
+    };
 
-        if (auto check_interval_ticks_element = object["check_interval_ticks"];
-            check_interval_ticks_element.error() == simdjson::SUCCESS) {
-            params.check_interval_ticks = check_interval_ticks_element.get_uint64();
+    if (auto framebuffer_element = object["framebuffer"]; framebuffer_element.error() == simdjson::SUCCESS) {
+        // FramebufferRunnerParams or TwoPlayersFramebufferRunnerParams
+        std::string framebuffer_result {framebuffer_element.get_string().value()};
+
+        if (auto rom2_element = object["rom2"]; rom2_element.error() == simdjson::SUCCESS) {
+            // TwoPlayersFramebufferRunnerParams
+
+            std::string rom2 {rom2_element.get_string().value()};
+            std::string framebuffer_result2 {object["framebuffer2"].get_string().value()};
+
+            TwoPlayersFramebufferRunnerParams params {std::move(rom), std::move(framebuffer_result), std::move(rom2),
+                                                      std::move(framebuffer_result2)};
+            parse_base_params(object, params);
+            parse_framebuffer_params(object, params);
+
+            return params;
         }
 
-        if (auto stop_at_instruction_element = object["stop_at_instruction"];
-            stop_at_instruction_element.error() == simdjson::SUCCESS) {
-            params.stop_at_instruction = stop_at_instruction_element.get_uint64();
-        }
+        // FramebufferRunnerParams
 
-        if (auto force_check_element = object["force_check"]; force_check_element.error() == simdjson::SUCCESS) {
-            params.force_check = force_check_element.get_bool();
-        }
+        FramebufferRunnerParams params {std::move(rom), std::move(framebuffer_result)};
+
+        parse_base_params(object, params);
+        parse_framebuffer_params(object, params);
 
         return params;
     }
@@ -136,25 +151,38 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
 
         std::vector<uint8_t> serial_result {};
         for (auto serial_byte_element : serial_element.get_array()) {
-            serial_result.push_back(serial_byte_element.get_uint64());
+            serial_result.push_back(serial_byte_element.get_uint64().value());
         }
 
-        return SerialRunnerParams {std::move(rom), std::move(serial_result), max_ticks};
+        SerialRunnerParams params {std::move(rom), std::move(serial_result)};
+
+        parse_base_params(object, params);
+
+        return params;
     }
 
     if (auto memory_element = object["memory"]; memory_element.error() == simdjson::SUCCESS) {
         // MemoryRunnerParams
 
-        std::vector<std::pair<uint16_t, uint8_t>> memory_result {};
+        std::vector<MemoryExpectation> memory_result {};
         for (auto memory_result_element : memory_element.get_array()) {
             auto memory_result_object = memory_result_element.get_object();
-            std::pair<uint16_t, uint8_t> memory_pair {};
-            memory_pair.first = memory_result_object["address"].get_uint64();
-            memory_pair.second = memory_result_object["value"].get_uint64();
-            memory_result.push_back(memory_pair);
+            MemoryExpectation expected {};
+            expected.address = memory_result_object["address"].get_uint64();
+            expected.success_value = memory_result_object["value"].get_uint64();
+            if (auto fail_value_element = memory_result_object["fail_value"];
+                fail_value_element.error() == simdjson::SUCCESS) {
+                expected.fail_value = fail_value_element.get_uint64();
+            }
+
+            memory_result.push_back(expected);
         }
 
-        return MemoryRunnerParams {std::move(rom), std::move(memory_result), max_ticks};
+        MemoryRunnerParams params {std::move(rom), std::move(memory_result)};
+
+        parse_base_params(object, params);
+
+        return params;
     }
 
     ASSERT_NO_ENTRY();
@@ -229,23 +257,45 @@ void run_test_roms_from_json(const std::string& roms_folder, const std::string& 
     }
 }
 
-void run_framebuffer_test_roms_from_folder_recursive(const std::string& roms_folder, const std::string& result) {
-    RunnerAdapter adapter {"", ""};
+void run_framebuffer_test_roms_from_folder(const std::string& roms_folder, const std::string& result) {
+    RunnerAdapter adapter {};
     SECTION(roms_folder) {
-        for (const auto& entry : recursive_iterate_directory(roms_folder)) {
+        for (const auto& entry : iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
-                REQUIRE(adapter.run(F {entry.path.c_str(), std::string {result}}));
+                REQUIRE(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
             }
         }
     }
 }
 
-void run_framebuffer_test_roms_from_folder(const std::string& roms_folder, const std::string& result) {
-    RunnerAdapter adapter {"", ""};
+void run_framebuffer_test_roms_from_folder_recursive(const std::string& roms_folder, const std::string& result) {
+    RunnerAdapter adapter {};
+    SECTION(roms_folder) {
+        for (const auto& entry : recursive_iterate_directory(roms_folder)) {
+            if (entry.type == DirectoryIteratorEntry::FileType::File) {
+                REQUIRE(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
+            }
+        }
+    }
+}
+
+void run_memory_test_roms_from_folder(const std::string& roms_folder, const MemoryExpectation& expectation) {
+    RunnerAdapter adapter {};
     SECTION(roms_folder) {
         for (const auto& entry : iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
-                REQUIRE(adapter.run(F {entry.path.c_str(), std::string {result}}));
+                REQUIRE(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
+            }
+        }
+    }
+}
+
+void run_memory_test_roms_from_folder_recursive(const std::string& roms_folder, const MemoryExpectation& expectation) {
+    RunnerAdapter adapter {};
+    SECTION(roms_folder) {
+        for (const auto& entry : recursive_iterate_directory(roms_folder)) {
+            if (entry.type == DirectoryIteratorEntry::FileType::File) {
+                REQUIRE(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
             }
         }
     }

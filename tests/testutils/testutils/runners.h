@@ -21,26 +21,39 @@
 #include "utils/path.h"
 #include "utils/strings.h"
 
+struct JoypadInput {
+    uint64_t tick {};
+    Joypad::Key key {};
+    Joypad::KeyState state {};
+};
 struct ColorTolerance {
-    uint8_t red;
-    uint8_t green;
-    uint8_t blue;
+    uint8_t red {};
+    uint8_t green {};
+    uint8_t blue {};
 };
 struct CheckIntervalTicks {
-    uint64_t value;
+    uint64_t value {};
 };
 struct MaxTicks {
-    uint64_t value;
+    uint64_t value {};
 };
 struct StopAtInstruction {
-    uint8_t instruction;
+    uint8_t instruction {};
+};
+struct MemoryExpectation {
+    uint16_t address {};
+    uint8_t success_value {};
+    std::optional<uint8_t> fail_value {};
 };
 struct ForceCheck {};
 
+constexpr uint64_t DEFAULT_CHECK_INTERVAL = 100'000;
+constexpr uint64_t DEFAULT_MAX_DURATION = 100'000'000;
+
 #ifdef ENABLE_CGB
-constexpr ColorTolerance COLOR_TOLERANCE_LOW = {5, 5, 5};
-constexpr ColorTolerance COLOR_TOLERANCE_MEDIUM = {10, 10, 10};
-constexpr ColorTolerance COLOR_TOLERANCE_INSANE = {150, 150, 150};
+constexpr ColorTolerance COLOR_TOLERANCE_LOW {5, 5, 5};
+constexpr ColorTolerance COLOR_TOLERANCE_MEDIUM {10, 10, 10};
+constexpr ColorTolerance COLOR_TOLERANCE_INSANE {150, 150, 150};
 #endif
 
 #ifndef ENABLE_CGB
@@ -51,18 +64,12 @@ constexpr Appearance GREY_PALETTE {0xFFFF, {0xFFFF, 0xAD55, 0x52AA, 0x0000}};
 extern std::string boot_rom;
 #endif
 
+// TODO: tests with bootrom for CGB
 #ifdef ENABLE_BOOTROM
 constexpr uint64_t BOOT_DURATION = 23'440'328;
 #else
 constexpr uint64_t BOOT_DURATION = 0;
 #endif
-
-constexpr uint64_t DURATION_VERY_LONG = BOOT_DURATION + 250'000'000;
-constexpr uint64_t DURATION_LONG = BOOT_DURATION + 100'000'000;
-constexpr uint64_t DURATION_MEDIUM = BOOT_DURATION + 30'000'000;
-constexpr uint64_t DURATION_SHORT = BOOT_DURATION + 5'000'000;
-constexpr uint64_t DURATION_VERY_SHORT = BOOT_DURATION + 1'500'000;
-constexpr uint64_t DEFAULT_DURATION = DURATION_LONG;
 
 inline std::function<void(const std::string&)> make_default_runner_log() {
     return [](const std::string& message) {
@@ -75,11 +82,7 @@ inline std::function<void(const std::string&)> runner_log = make_default_runner_
 template <typename RunnerImpl>
 class Runner {
 public:
-    struct JoypadInput {
-        uint64_t tick {};
-        Joypad::Key key {};
-        Joypad::KeyState state {};
-    };
+    enum class ExpectationResult { Success, Fail, Fatal };
 
     explicit Runner() :
         gb {std::make_unique<GameBoy>()},
@@ -164,8 +167,13 @@ public:
             // Check expectation.
             if (impl->should_check_expectation()) {
                 has_ever_checked = true;
-                if (impl->check_expectation()) {
+                ExpectationResult result = impl->check_expectation();
+                if (result == ExpectationResult::Success) {
                     return true;
+                }
+                if (result == ExpectationResult::Fatal) {
+                    // Certainly a failure, no way the tests will succeed later.
+                    break;
                 }
             }
         }
@@ -216,8 +224,9 @@ public:
         return false;
     }
 
-    bool check_expectation() {
-        return true;
+    ExpectationResult check_expectation() {
+        ASSERT_NO_ENTRY();
+        return ExpectationResult::Fail;
     }
 
     void on_expectation_failed() {
@@ -284,14 +293,20 @@ public:
         return false;
     }
 
-    bool check_expectation() {
+    ExpectationResult check_expectation() {
         memcpy(last_framebuffer, gb->lcd.get_pixels(), FRAMEBUFFER_SIZE);
+
+        bool framebuffer_match = false;
+
         if (color_tolerance_.red == 0 && color_tolerance_.green == 0 && color_tolerance_.blue == 0) {
-            return are_framebuffer_equals(last_framebuffer, expected_framebuffer);
+            framebuffer_match = are_framebuffer_equals(last_framebuffer, expected_framebuffer);
         } else {
-            return are_framebuffer_equals_with_tolerance(last_framebuffer, expected_framebuffer, color_tolerance_.red,
-                                                         color_tolerance_.green, color_tolerance_.blue);
+            framebuffer_match =
+                are_framebuffer_equals_with_tolerance(last_framebuffer, expected_framebuffer, color_tolerance_.red,
+                                                      color_tolerance_.green, color_tolerance_.blue);
         }
+
+        return framebuffer_match ? ExpectationResult::Success : ExpectationResult::Fail;
     }
 
     void on_expectation_failed() {
@@ -372,9 +387,9 @@ public:
         return tick > 0 && tick % check_interval_ticks_ == 0;
     }
 
-    bool check_expectation() {
+    ExpectationResult check_expectation() {
         last_output = serial_buffer.buffer;
-        return serial_buffer.buffer == expected_output;
+        return serial_buffer.buffer == expected_output ? ExpectationResult::Success : ExpectationResult::Fail;
     }
 
     void on_expectation_failed() {
@@ -395,7 +410,7 @@ public:
         Runner<MemoryRunner>() {
     }
 
-    MemoryRunner& expect_output(const std::vector<std::pair<uint16_t, uint8_t>>& output) {
+    MemoryRunner& expect_output(const std::vector<MemoryExpectation>& output) {
         expected_output = output;
         return *this;
     }
@@ -414,18 +429,20 @@ public:
         return tick > 0 && tick % check_interval_ticks_ == 0;
     }
 
-    bool check_expectation() {
-        bool match = true;
+    ExpectationResult check_expectation() {
+        bool success = true;
+        bool fatal = false;
 
         last_output.clear();
 
-        for (const auto& [address, value] : expected_output) {
+        for (const auto& [address, success_value, fail_value] : expected_output) {
             uint8_t real_value = gb->mmu.bus_accessors[Device::Cpu][address].read_bus(address);
-            match = match && (real_value == value);
+            fatal = fatal || (fail_value && (real_value == *fail_value));
+            success = success && (real_value == success_value);
             last_output.emplace_back(address, real_value);
         }
 
-        return match;
+        return success ? ExpectationResult::Success : (fatal ? ExpectationResult::Fatal : ExpectationResult::Fail);
     }
 
     void on_expectation_failed() {
@@ -433,10 +450,10 @@ public:
 
         std::string expected_output_str = "[" +
                                           join(expected_output, ",",
-                                               [](const std::pair<uint16_t, uint8_t>& address_to_value) {
+                                               [](const MemoryExpectation& expectation) {
                                                    std::stringstream str;
-                                                   str << "{" << hex(address_to_value.first) << ", "
-                                                       << hex(address_to_value.second) << "}";
+                                                   str << "{" << hex(expectation.address) << ", "
+                                                       << hex(expectation.success_value) << "}";
                                                    return str.str();
                                                }) +
                                           "]";
@@ -456,7 +473,7 @@ public:
 
 private:
     std::vector<std::pair<uint16_t, uint8_t>> last_output;
-    std::vector<std::pair<uint16_t, uint8_t>> expected_output;
+    std::vector<MemoryExpectation> expected_output;
 };
 
 class TwoPlayersFramebufferRunner : public Runner<TwoPlayersFramebufferRunner> {
@@ -528,18 +545,24 @@ public:
         return false;
     }
 
-    bool check_expectation() {
+    ExpectationResult check_expectation() {
         memcpy(last_framebuffer1, gb->lcd.get_pixels(), FRAMEBUFFER_SIZE);
         memcpy(last_framebuffer2, gb2->lcd.get_pixels(), FRAMEBUFFER_SIZE);
+
+        bool framebuffer_match = false;
+
         if (color_tolerance_.red == 0 && color_tolerance_.green == 0 && color_tolerance_.blue == 0) {
-            return are_framebuffer_equals(last_framebuffer1, expected_framebuffer1) &&
-                   are_framebuffer_equals(last_framebuffer2, expected_framebuffer2);
+            framebuffer_match = are_framebuffer_equals(last_framebuffer1, expected_framebuffer1) &&
+                                are_framebuffer_equals(last_framebuffer2, expected_framebuffer2);
         } else {
-            return are_framebuffer_equals_with_tolerance(last_framebuffer1, expected_framebuffer1, color_tolerance_.red,
-                                                         color_tolerance_.green, color_tolerance_.blue) &&
-                   are_framebuffer_equals_with_tolerance(last_framebuffer1, expected_framebuffer2, color_tolerance_.red,
-                                                         color_tolerance_.green, color_tolerance_.blue);
+            framebuffer_match =
+                are_framebuffer_equals_with_tolerance(last_framebuffer1, expected_framebuffer1, color_tolerance_.red,
+                                                      color_tolerance_.green, color_tolerance_.blue) &&
+                are_framebuffer_equals_with_tolerance(last_framebuffer1, expected_framebuffer2, color_tolerance_.red,
+                                                      color_tolerance_.green, color_tolerance_.blue);
         }
+
+        return framebuffer_match ? ExpectationResult::Success : ExpectationResult::Fail;
     }
 
     void on_expectation_failed() {
@@ -620,120 +643,61 @@ private:
     } color_tolerance_;
 };
 
-using Inputs = std::vector<FramebufferRunner::JoypadInput>;
+using Inputs = std::vector<JoypadInput>;
 
-struct FramebufferRunnerParams {
-    using Param = std::variant<std::monostate,
-#ifndef ENABLE_CGB
-                               const Appearance*,
-#endif
-                               ColorTolerance, CheckIntervalTicks, MaxTicks, StopAtInstruction, ForceCheck,
-                               std::vector<FramebufferRunner::JoypadInput>>;
-
-    FramebufferRunnerParams(std::string&& rom, std::string&& expected, Param param1 = std::monostate {},
-                            Param param2 = std::monostate {}) :
-        rom(std::move(rom)),
-        result {std::move(expected)} {
-
-        auto parseParam = [this](Param& param) {
-#ifndef ENABLE_CGB
-            if (std::holds_alternative<const Appearance*>(param)) {
-                appearance = std::get<const Appearance*>(param);
-            } else
-#endif
-                if (std::holds_alternative<CheckIntervalTicks>(param)) {
-                check_interval_ticks = std::get<CheckIntervalTicks>(param).value;
-            } else if (std::holds_alternative<MaxTicks>(param)) {
-                max_ticks = std::get<MaxTicks>(param).value;
-            } else if (std::holds_alternative<StopAtInstruction>(param)) {
-                stop_at_instruction = std::get<StopAtInstruction>(param).instruction;
-            } else if (std::holds_alternative<ForceCheck>(param)) {
-                force_check = true;
-            } else if (std::holds_alternative<std::vector<FramebufferRunner::JoypadInput>>(param)) {
-                inputs = std::get<std::vector<FramebufferRunner::JoypadInput>>(param);
-            } else if (std::holds_alternative<ColorTolerance>(param)) {
-                color_tolerance = std::get<ColorTolerance>(param);
-            }
-        };
-
-        parseParam(param1);
-        parseParam(param2);
-    }
-
-    std::string rom;
-    std::string result;
-    const Appearance* appearance {};
-    uint64_t check_interval_ticks {DURATION_VERY_SHORT};
-    uint64_t max_ticks {DEFAULT_DURATION};
+struct BaseRunnerParams {
+    std::string rom {};
+    uint64_t check_interval_ticks {DEFAULT_CHECK_INTERVAL};
+    uint64_t max_ticks {DEFAULT_MAX_DURATION};
     std::optional<uint8_t> stop_at_instruction {};
     bool force_check {};
-    std::vector<FramebufferRunner::JoypadInput> inputs {};
+    std::vector<JoypadInput> inputs {};
+};
+
+struct FramebufferRunnerParams : BaseRunnerParams {
+    FramebufferRunnerParams(std::string&& rom, std::string&& expected) :
+        result {std::move(expected)} {
+        this->rom = std::move(rom);
+    }
+
+    std::string result;
+
+    const Appearance* appearance {};
     ColorTolerance color_tolerance {};
 };
 
-struct SerialRunnerParams {
-    SerialRunnerParams(std::string&& rom, std::vector<uint8_t>&& expected, uint64_t maxTicks_ = DURATION_MEDIUM) :
-        rom(std::move(rom)),
-        result {std::move(expected)},
-        max_ticks {maxTicks_} {
+struct SerialRunnerParams : BaseRunnerParams {
+    SerialRunnerParams(std::string&& rom, std::vector<uint8_t>&& expected) :
+        result {std::move(expected)} {
+        this->rom = std::move(rom);
     }
 
-    std::string rom;
     std::vector<uint8_t> result;
-    uint64_t max_ticks;
 };
 
-struct MemoryRunnerParams {
-    MemoryRunnerParams(std::string&& rom, std::vector<std::pair<uint16_t, uint8_t>>&& expected,
-                       uint64_t maxTicks_ = DURATION_MEDIUM) :
-        rom(std::move(rom)),
-        result {std::move(expected)},
-        max_ticks {maxTicks_} {
+struct MemoryRunnerParams : BaseRunnerParams {
+    MemoryRunnerParams(std::string&& rom, std::vector<MemoryExpectation>&& expected) :
+        result {std::move(expected)} {
+        this->rom = std::move(rom);
     }
 
-    std::string rom;
-    std::vector<std::pair<uint16_t, uint8_t>> result;
-    uint64_t max_ticks;
+    std::vector<MemoryExpectation> result;
 };
 
-struct TwoPlayersFramebufferRunnerParams {
-    using Param = std::variant<std::monostate,
-#ifndef ENABLE_CGB
-                               const Appearance*,
-#endif
-                               ColorTolerance, MaxTicks>;
-
+struct TwoPlayersFramebufferRunnerParams : BaseRunnerParams {
     TwoPlayersFramebufferRunnerParams(std::string&& rom, std::string&& expected, std::string&& rom2,
-                                      std::string&& expected2, Param param1 = std::monostate {},
-                                      Param param2 = std::monostate {}) :
-        rom(std::move(rom)),
+                                      std::string&& expected2) :
         result {std::move(expected)},
         rom2 {std::move(rom2)},
         result2 {std::move(expected2)} {
-
-        auto parseParam = [this](Param& param) {
-#ifndef ENABLE_CGB
-            if (std::holds_alternative<const Appearance*>(param)) {
-                appearance = std::get<const Appearance*>(param);
-            } else
-#endif
-                if (std::holds_alternative<ColorTolerance>(param)) {
-                color_tolerance = std::get<ColorTolerance>(param);
-            } else if (std::holds_alternative<MaxTicks>(param)) {
-                max_ticks = std::get<MaxTicks>(param).value;
-            }
-        };
-
-        parseParam(param1);
-        parseParam(param2);
+        this->rom = std::move(rom);
     }
 
-    std::string rom;
     std::string result;
     std::string rom2;
     std::string result2;
+
     const Appearance* appearance {};
-    uint64_t max_ticks {DEFAULT_DURATION};
     ColorTolerance color_tolerance {};
 };
 
@@ -741,7 +705,7 @@ struct RunnerAdapter {
     using Params = std::variant<FramebufferRunnerParams, SerialRunnerParams, MemoryRunnerParams,
                                 TwoPlayersFramebufferRunnerParams>;
 
-    RunnerAdapter(std::string roms_prefix, std::string results_prefix) :
+    RunnerAdapter(std::string roms_prefix = "", std::string results_prefix = "") :
         roms_prefix {std::move(roms_prefix)},
         results_prefix {std::move(results_prefix)} {
     }
@@ -751,12 +715,12 @@ struct RunnerAdapter {
             const auto& pf = std::get<FramebufferRunnerParams>(p);
             return FramebufferRunner()
                 .rom(roms_prefix + pf.rom)
-                .appearance(pf.appearance)
-                .max_ticks(pf.max_ticks)
-                .check_interval_ticks(pf.check_interval_ticks)
-                .stop_at_instruction(pf.stop_at_instruction)
                 .expect_framebuffer(results_prefix + pf.result)
+                .appearance(pf.appearance)
                 .color_tolerance(pf.color_tolerance.red, pf.color_tolerance.green, pf.color_tolerance.blue)
+                .check_interval_ticks(pf.check_interval_ticks)
+                .max_ticks(pf.max_ticks)
+                .stop_at_instruction(pf.stop_at_instruction)
                 .force_check(pf.force_check)
                 .schedule_inputs(pf.inputs)
                 .run();
@@ -767,9 +731,12 @@ struct RunnerAdapter {
 
             return SerialRunner()
                 .rom(roms_prefix + ps.rom)
-                .max_ticks(ps.max_ticks)
-                .check_interval_ticks(DURATION_VERY_SHORT)
                 .expect_output(ps.result)
+                .check_interval_ticks(ps.check_interval_ticks)
+                .max_ticks(ps.max_ticks)
+                .stop_at_instruction(ps.stop_at_instruction)
+                .force_check(ps.force_check)
+                .schedule_inputs(ps.inputs)
                 .run();
         }
 
@@ -778,9 +745,12 @@ struct RunnerAdapter {
 
             return MemoryRunner()
                 .rom(roms_prefix + pm.rom)
-                .max_ticks(pm.max_ticks)
-                .check_interval_ticks(DURATION_VERY_SHORT)
                 .expect_output(pm.result)
+                .check_interval_ticks(pm.check_interval_ticks)
+                .max_ticks(pm.max_ticks)
+                .stop_at_instruction(pm.stop_at_instruction)
+                .force_check(pm.force_check)
+                .schedule_inputs(pm.inputs)
                 .run();
         }
 
@@ -789,13 +759,16 @@ struct RunnerAdapter {
 
             return TwoPlayersFramebufferRunner()
                 .rom(roms_prefix + pf2p.rom)
-                .rom2(roms_prefix + pf2p.rom2)
-                .appearance(pf2p.appearance)
-                .max_ticks(pf2p.max_ticks)
-                .check_interval_ticks(DURATION_VERY_SHORT)
                 .expect_framebuffer1(results_prefix + pf2p.result)
+                .rom2(roms_prefix + pf2p.rom2)
                 .expect_framebuffer2(results_prefix + pf2p.result2)
+                .appearance(pf2p.appearance)
                 .color_tolerance(pf2p.color_tolerance.red, pf2p.color_tolerance.green, pf2p.color_tolerance.blue)
+                .check_interval_ticks(pf2p.check_interval_ticks)
+                .max_ticks(pf2p.max_ticks)
+                .stop_at_instruction(pf2p.stop_at_instruction)
+                .force_check(pf2p.force_check)
+                .schedule_inputs(pf2p.inputs)
                 .run();
         }
 
@@ -807,11 +780,5 @@ private:
     std::string roms_prefix;
     std::string results_prefix;
 };
-
-using F = FramebufferRunnerParams;
-using S = SerialRunnerParams;
-using M = MemoryRunnerParams;
-
-using F2P = TwoPlayersFramebufferRunnerParams;
 
 #endif // RUNNERS_H
