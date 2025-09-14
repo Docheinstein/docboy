@@ -50,6 +50,4 @@ ExtBus::ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2* wram2) :
         memory_accessors[i] = &wram1[i - Specs::MemoryLayout::ECHO_RAM::START];
     }
 #endif
-
-    reset();
 }
