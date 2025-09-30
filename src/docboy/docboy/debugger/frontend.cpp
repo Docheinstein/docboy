@@ -495,10 +495,9 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          return FrontendHelpCommand {};
      }},
     {std::regex(R"(q)"), "q", "Quit",
-     [](const std::vector<std::string>& groups) -> std::
-                                                    optional<FrontendCommand> {
-                                                        return FrontendQuitCommand {};
-                                                    }},
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         return FrontendQuitCommand {};
+     }},
 };
 
 std::optional<FrontendCommand> parse_cmdline(const std::string& s) {
@@ -2500,7 +2499,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     const auto make_apu_general_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
-        b << yellow("Clock Edge") << "     :  " << gb.apu.apu_clock_edge << endl;
+        b << yellow("Clock") << "        :  " << gb.apu.apu_clock << endl;
         return b;
     };
 
@@ -2536,6 +2535,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         };
 
         b << subheader("channel 1", width) << endl;
+
         b << yellow("Enabled") << "         :  " << (gb.apu.nr52.ch1 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "             :  " << (gb.apu.ch1.dac ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("Output") << "          :  " << +gb.apu.ch1.digital_output << endl;
@@ -2543,16 +2543,11 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Length Timer") << "    :  " << +gb.apu.ch1.length_timer << endl;
         b << yellow("Trigger Delay") << "   :  " << +gb.apu.ch1.trigger_delay << endl;
 
-        b << subheader2("wave", width) << endl;
+        b << subheader2("square wave", width) << endl;
 
         b << yellow("Timer") << "           :  " << +gb.apu.ch1.wave.timer << endl;
         b << yellow("Position") << "        :  " << +gb.apu.ch1.wave.position << endl;
         b << yellow("Duty Cycle") << "      :  " << duty_cycle(gb.apu.ch1.wave.duty_cycle) << endl;
-
-        b << subheader2("volume sweep", width) << endl;
-        b << yellow("Countdown") << "       :  " << +gb.apu.ch1.volume_sweep.countdown << endl;
-        b << yellow("Direction") << "       :  " << +gb.apu.ch1.volume_sweep.direction << endl;
-        b << yellow("Pending") << "         :  " << +gb.apu.ch1.volume_sweep.pending_update << endl;
 
         b << subheader2("period sweep", width) << endl;
 
@@ -2566,6 +2561,12 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Rec. Countdown") << "  :  " << +gb.apu.ch1.period_sweep.recalculation.countdown << endl;
         b << yellow("Rec. Increment") << "  :  " << +gb.apu.ch1.period_sweep.recalculation.increment << endl;
         b << yellow("Rec. From Trig.") << " :  " << +gb.apu.ch1.period_sweep.recalculation.from_trigger << endl;
+
+        b << subheader2("volume sweep", width) << endl;
+
+        b << yellow("Countdown") << "       :  " << +gb.apu.ch1.volume_sweep.countdown << endl;
+        b << yellow("Direction") << "       :  " << +gb.apu.ch1.volume_sweep.direction << endl;
+        b << yellow("Pending") << "         :  " << +gb.apu.ch1.volume_sweep.pending_update << endl;
 
         return b;
     };
@@ -2590,6 +2591,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         };
 
         b << subheader("channel 2", width) << endl;
+
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch2 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch2.dac ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("Output") << "         :  " << +gb.apu.ch2.digital_output << endl;
@@ -2597,13 +2599,14 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch2.length_timer << endl;
         b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch2.trigger_delay << endl;
 
-        b << subheader2("wave", width) << endl;
+        b << subheader2("square wave", width) << endl;
 
         b << yellow("Timer") << "          :  " << +gb.apu.ch2.wave.timer << endl;
         b << yellow("Position") << "       :  " << +gb.apu.ch2.wave.position << endl;
         b << yellow("Duty Cycle") << "     :  " << duty_cycle(gb.apu.ch2.wave.duty_cycle) << endl;
 
         b << subheader2("volume sweep", width) << endl;
+
         b << yellow("Countdown") << "      :  " << +gb.apu.ch2.volume_sweep.countdown << endl;
         b << yellow("Direction") << "      :  " << +gb.apu.ch2.volume_sweep.direction << endl;
         b << yellow("Pending") << "        :  " << +gb.apu.ch2.volume_sweep.pending_update << endl;
@@ -2649,25 +2652,39 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("channel 4", width) << endl;
         b << yellow("Enabled") << "        :  " << (gb.apu.nr52.ch4 ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("DAC") << "            :  " << (gb.apu.ch4.dac ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("Output") << "         :  " << test_bit<0>(gb.apu.ch4.lfsr) << endl;
+        b << yellow("Output") << "         :  " << test_bit<0>(gb.apu.ch4.lfsr.lfsr) << endl;
         b << yellow("Volume") << "         :  " << +gb.apu.ch4.volume << endl;
         b << yellow("Length Timer") << "   :  " << +gb.apu.ch4.length_timer << endl;
-        b << endl;
-
-        b << subheader2("wave", width) << endl;
-
-        b << yellow("Timer") << "          :  " << +gb.apu.ch4.wave.timer << endl;
-        b << endl;
-        b << endl;
-
-        b << subheader2("volume sweep", width) << endl;
-        b << yellow("Countdown") << "      :  " << +gb.apu.ch4.volume_sweep.countdown << endl;
-        b << yellow("Direction") << "      :  " << +gb.apu.ch4.volume_sweep.direction << endl;
-        b << yellow("Pending") << "        :  " << +gb.apu.ch4.volume_sweep.pending_update << endl;
+        b << yellow("Trigger Delay") << "  :  " << +gb.apu.ch4.trigger_delay << endl;
 
         b << subheader2("lfsr", width) << endl;
 
-        b << yellow("LFSR") << "           :  " << +gb.apu.ch4.lfsr << endl;
+        b << yellow("Div. Countd.") << "   :  " << +gb.apu.ch4.lfsr.divider_countdown << endl;
+        b << yellow("Shift Counter") << "  :  " << gb.apu.ch4.lfsr.shift_counter << endl;
+        b << yellow("Divider") << "        :  " << +gb.apu.ch4.lfsr.divider << endl;
+        b << yellow("Shift") << "          :  " << +gb.apu.ch4.lfsr.shift << endl;
+        b << yellow("Width") << "          :  " << (gb.apu.ch4.lfsr.width ? "8" : "16") << endl;
+
+        b << subheader2("", width) << endl;
+
+        b << yellow("LFSR[15:12]") << "    :  " << test_bit<15>(gb.apu.ch4.lfsr.lfsr)
+          << test_bit<14>(gb.apu.ch4.lfsr.lfsr) << test_bit<13>(gb.apu.ch4.lfsr.lfsr)
+          << test_bit<12>(gb.apu.ch4.lfsr.lfsr) << endl;
+        b << yellow("LFSR[11:8]") << "     :  " << test_bit<11>(gb.apu.ch4.lfsr.lfsr)
+          << test_bit<10>(gb.apu.ch4.lfsr.lfsr) << test_bit<9>(gb.apu.ch4.lfsr.lfsr)
+          << test_bit<8>(gb.apu.ch4.lfsr.lfsr) << endl;
+        b << yellow("LFSR[7:4]") << "      :  " << test_bit<7>(gb.apu.ch4.lfsr.lfsr)
+          << test_bit<6>(gb.apu.ch4.lfsr.lfsr) << test_bit<5>(gb.apu.ch4.lfsr.lfsr) << test_bit<4>(gb.apu.ch4.lfsr.lfsr)
+          << endl;
+        b << yellow("LFSR[3:0]") << "      :  " << test_bit<3>(gb.apu.ch4.lfsr.lfsr)
+          << test_bit<2>(gb.apu.ch4.lfsr.lfsr) << test_bit<1>(gb.apu.ch4.lfsr.lfsr)
+          << yellow(test_bit<0>(gb.apu.ch4.lfsr.lfsr)) << endl;
+
+        b << subheader2("volume sweep", width) << endl;
+
+        b << yellow("Countdown") << "      :  " << +gb.apu.ch4.volume_sweep.countdown << endl;
+        b << yellow("Direction") << "      :  " << +gb.apu.ch4.volume_sweep.direction << endl;
+        b << yellow("Pending") << "        :  " << +gb.apu.ch4.volume_sweep.pending_update << endl;
 
         return b;
     };

@@ -241,39 +241,6 @@ inline void advance_square_wave_position(Channel& ch) {
     // Update current output
     ch.digital_output = SQUARE_WAVES[ch.wave.duty_cycle][ch.wave.position];
 }
-
-template <typename Channel, typename ChannelOnFlag, typename Nrx1, typename Nrx3, typename Nrx4>
-inline void tick_square_wave(Channel& ch, const ChannelOnFlag& ch_on, const Nrx1& nrx1, const Nrx3& nrx3,
-                             const Nrx4& nrx4) {
-    ch.just_sampled = false;
-
-    ch.tick_edge = !ch.tick_edge;
-
-    if (ch_on && ch.tick_edge) {
-        // Wave position does not change immediately after channel's trigger.
-        if (!ch.trigger_delay) {
-            if (++ch.wave.timer == 2048) {
-                ASSERT(ch.wave.duty_cycle < 4);
-                ASSERT(ch.wave.position < 8);
-
-                // Advance square wave position
-                advance_square_wave_position(ch);
-
-                // Reload period timer
-                ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
-                ASSERT(ch.wave.timer < 2048);
-
-                ch.just_sampled = true;
-            }
-        } else {
-            --ch.trigger_delay;
-        }
-
-        // Reload duty cycle.
-        // Note: there's a window in which, if the channel samples, it outputs accordingly to the "old" duty cycle.
-        ch.wave.duty_cycle = nrx1.duty_cycle;
-    }
-}
 } // namespace
 
 const Apu::RegisterUpdater Apu::REGISTER_UPDATERS[] {&Apu::update_nr10,
@@ -373,7 +340,7 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint64(sampling.ticks);
     parcel.write_double(sampling.next_tick);
 
-    parcel.write_bool(apu_clock_edge);
+    parcel.write_uint8(apu_clock);
     parcel.write_bool(prev_div_edge_bit);
     parcel.write_uint8(div_apu);
 #ifdef ENABLE_CGB
@@ -499,20 +466,24 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_bool(ch4.dac);
     parcel.write_uint8(ch4.volume);
     parcel.write_uint8(ch4.length_timer);
-    parcel.write_bool(ch4.tick_edge);
-    parcel.write_uint16(ch4.wave.timer);
+    parcel.write_bool(ch4.trigger_delay);
     parcel.write_bool(ch4.volume_sweep.direction);
     parcel.write_uint8(ch4.volume_sweep.countdown);
     parcel.write_bool(ch4.volume_sweep.reloaded);
     parcel.write_bool(ch4.volume_sweep.pending_update);
-    parcel.write_uint16(ch4.lfsr);
+    parcel.write_uint16(ch4.lfsr.lfsr);
+    parcel.write_uint8(ch4.lfsr.divider_countdown);
+    parcel.write_uint16(ch4.lfsr.shift_counter);
+    parcel.write_uint8(ch4.lfsr.divider);
+    parcel.write_uint8(ch4.lfsr.shift);
+    parcel.write_bool(ch4.lfsr.width);
 }
 
 void Apu::load_state(Parcel& parcel) {
     sampling.ticks = parcel.read_uint64();
     sampling.next_tick = parcel.read_double();
 
-    apu_clock_edge = parcel.read_bool();
+    apu_clock = parcel.read_uint8();
     prev_div_edge_bit = parcel.read_bool();
     div_apu = parcel.read_uint8();
 #ifdef ENABLE_CGB
@@ -637,20 +608,24 @@ void Apu::load_state(Parcel& parcel) {
     ch4.dac = parcel.read_bool();
     ch4.volume = parcel.read_uint8();
     ch4.length_timer = parcel.read_uint8();
-    ch4.tick_edge = parcel.read_bool();
-    ch4.wave.timer = parcel.read_uint16();
+    ch4.trigger_delay = parcel.read_uint8();
     ch4.volume_sweep.direction = parcel.read_bool();
     ch4.volume_sweep.countdown = parcel.read_uint8();
     ch4.volume_sweep.reloaded = parcel.read_bool();
     ch4.volume_sweep.pending_update = parcel.read_bool();
-    ch4.lfsr = parcel.read_uint16();
+    ch4.lfsr.lfsr = parcel.read_uint16();
+    ch4.lfsr.divider_countdown = parcel.read_uint8();
+    ch4.lfsr.shift_counter = parcel.read_uint16();
+    ch4.lfsr.divider = parcel.read_uint8();
+    ch4.lfsr.shift = parcel.read_uint8();
+    ch4.lfsr.width = parcel.read_bool();
 }
 
 void Apu::reset() {
     sampling.ticks = 0;
     sampling.next_tick = 0.0;
 
-    apu_clock_edge = false;
+    apu_clock = 0;
     prev_div_edge_bit = false;
     div_apu = 2;
 #ifdef ENABLE_CGB
@@ -784,13 +759,17 @@ void Apu::reset() {
     ch4.dac = false;
     ch4.volume = 0;
     ch4.length_timer = 0;
-    ch4.tick_edge = false;
-    ch4.wave.timer = 0;
+    ch4.trigger_delay = 0;
     ch4.volume_sweep.direction = false;
     ch4.volume_sweep.countdown = 0;
     ch4.volume_sweep.reloaded = false;
     ch4.volume_sweep.pending_update = false;
-    ch4.lfsr = 0;
+    ch4.lfsr.lfsr = 0;
+    ch4.lfsr.divider_countdown = 0;
+    ch4.lfsr.shift_counter = 0;
+    ch4.lfsr.divider = 0;
+    ch4.lfsr.shift = 0;
+    ch4.lfsr.width = false;
 }
 
 uint8_t Apu::read_nr10() const {
@@ -1021,7 +1000,7 @@ void Apu::turn_on() {
 #ifdef ENABLE_CGB
     div_apu_bit_selector = speed_switch_controller.is_double_speed_mode() ? 5 : 4;
 #endif
-    apu_clock_edge = true;
+    apu_clock = 0;
 }
 
 void Apu::turn_off() {
@@ -1099,7 +1078,7 @@ void Apu::turn_off() {
     ch3.wave.position.low_nibble = false;
 
     ch4.dac = false;
-    ch4.tick_edge = false;
+    // ch4.tick_edge = false;
     ch4.volume_sweep.reloaded = false;
     ch4.volume_sweep.pending_update = false;
 }
@@ -1109,11 +1088,11 @@ void Apu::tick_even() {
     flush_pending_write();
 
     if (nr52.enable) {
-        tick_square_wave(ch1, nr52.ch1, nr11, nr13, nr14);
-        tick_square_wave(ch2, nr52.ch2, nr21, nr23, nr24);
-        tick_noise();
+        tick_square_wave_channel(ch1, nr52.ch1, nr11, nr13, nr14);
+        tick_square_wave_channel(ch2, nr52.ch2, nr21, nr23, nr24);
+        tick_noise_channel();
 
-        apu_clock_edge = !apu_clock_edge;
+        apu_clock = mod<4>(apu_clock + 1);
     }
 
     tick_sampler();
@@ -1135,7 +1114,7 @@ void Apu::tick_odd() {
 
         tick_div_apu();
 
-        tick_wave();
+        tick_wave_channel();
     }
 
     tick_sampler();
@@ -1221,51 +1200,40 @@ void Apu::tick_sampler() {
     }
 }
 
-inline void Apu::tick_period_sweep() {
-    if (nr52.ch1) {
-        if (keep_bits<3>(--ch1.period_sweep.pace_countdown) == 0) {
-            // Pace countdown expired: handle period sweep.
-            period_sweep_done();
-        }
-    }
-}
+template <typename Channel, typename ChannelOnFlag, typename Nrx1, typename Nrx3, typename Nrx4>
+inline void Apu::tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, const Nrx1& nrx1, const Nrx3& nrx3,
+                                          const Nrx4& nrx4) {
+    ch.just_sampled = false;
 
-void Apu::tick_period_sweep_reload() {
-    if (ch1.period_sweep.restart_countdown) {
-        --ch1.period_sweep.restart_countdown;
-    }
+    ch.tick_edge = !ch.tick_edge;
 
-    if (ch1.period_sweep.reload.countdown) {
-        if (--ch1.period_sweep.reload.countdown == 0) {
-            period_sweep_reload_done();
-        }
-    }
-}
+    if (ch_on && ch.tick_edge) {
+        // Wave position does not change immediately after channel's trigger.
+        if (!ch.trigger_delay) {
+            if (++ch.wave.timer == 2048) {
+                ASSERT(ch.wave.duty_cycle < 4);
+                ASSERT(ch.wave.position < 8);
 
-void Apu::tick_period_sweep_recalculation() {
-    if (ch1.period_sweep.recalculation.instant) {
-        // Recalculation is instantly handled for step 0
-        ch1.period_sweep.recalculation.instant = false;
-        period_sweep_recalculation_done();
-    } else if (!apu_clock_edge) {
-        // Period sweep recalculation ticks only once per M-Cycle:
-        // it is aligned with the time the APU has been turned on.
-        if (ch1.period_sweep.recalculation.trigger_counter < ch1.period_sweep.recalculation.target_trigger_counter) {
-            // Recalculation takes some extra cycles (from 2 to 4) after the trigger.
-            ++ch1.period_sweep.recalculation.trigger_counter;
-        } else if (ch1.period_sweep.recalculation.countdown) {
-            // Recalculation countdown is advanced (only if step is 0, otherwise it is paused).
-            if (nr10.step) {
-                if (--ch1.period_sweep.recalculation.countdown == 0) {
-                    // Recalculation countdown expired: handle period sweep recalculation.
-                    period_sweep_recalculation_done();
-                }
+                // Advance square wave position
+                advance_square_wave_position(ch);
+
+                // Reload period timer
+                ch.wave.timer = concat(nrx4.period_high, nrx3.period_low);
+                ASSERT(ch.wave.timer < 2048);
+
+                ch.just_sampled = true;
             }
+        } else {
+            --ch.trigger_delay;
         }
+
+        // Reload duty cycle.
+        // Note: there's a window in which, if the channel samples, it outputs accordingly to the "old" duty cycle.
+        ch.wave.duty_cycle = nrx1.duty_cycle;
     }
 }
 
-void Apu::tick_wave() {
+void Apu::tick_wave_channel() {
 #ifndef ENABLE_CGB
     ch3.just_sampled = false;
 #endif
@@ -1308,20 +1276,82 @@ void Apu::tick_wave() {
     }
 }
 
-void Apu::tick_noise() {
-    ch4.tick_edge = !ch4.tick_edge;
+void Apu::tick_noise_channel() {
+    if (nr52.ch4) {
+        if (!ch4.trigger_delay) {
+            // Noise channel is usually ticked at 512KHz, and it's aligned with the internal APU clock.
+            // The only exception is divider 0: the channel is ticked at twice that speed (1MHz) instead.
+            if (apu_clock == 2 || (apu_clock == 0 && ch4.lfsr.divider == 0)) {
+                // Decrease divider countdown
+                ch4.lfsr.divider_countdown = keep_bits<4>(ch4.lfsr.divider_countdown - 1);
+                if (ch4.lfsr.divider_countdown == 0) {
+                    // LFSR is advanced if there's a raising edge in the shift counter
+                    // (shifted accordingly to the NR43 clock shift value).
+                    // Note: if shift is either 14 or 15 LFSR never ticks.
+                    const bool prev_shift_bit = test_bit(ch4.lfsr.shift_counter, ch4.lfsr.shift);
+                    ch4.lfsr.shift_counter = keep_bits<14>(ch4.lfsr.shift_counter + 1);
+                    const bool new_shift_bit = test_bit(ch4.lfsr.shift_counter, ch4.lfsr.shift);
 
-    if (nr52.ch4 && ch4.tick_edge) {
-        uint8_t D = nr43.clock_divider ? 2 * nr43.clock_divider : 1;
+                    if (!prev_shift_bit && new_shift_bit) {
+                        tick_lfsr();
+                        ch4.lfsr.shift = nr43.clock_shift;
+                    }
 
-        if (++ch4.wave.timer >= 2 * D << nr43.clock_shift) {
-            const bool b = test_bit<0>(ch4.lfsr) == test_bit<1>(ch4.lfsr);
-            set_bit<15>(ch4.lfsr, b);
-            if (nr43.lfsr_width) {
-                set_bit<7>(ch4.lfsr, b);
+                    // Reload divider (divider 0 is reloaded as 1)
+                    ch4.lfsr.divider = nr43.clock_divider;
+                    ch4.lfsr.divider_countdown = nr43.clock_divider > 0 ? nr43.clock_divider : 1;
+                }
             }
-            ch4.lfsr = ch4.lfsr >> 1;
-            ch4.wave.timer = 0;
+        } else if (apu_clock == 0 || apu_clock == 2) {
+            --ch4.trigger_delay;
+        }
+
+        // Reload shift and width mode from NR43 registers
+        ch4.lfsr.shift = nr43.clock_shift;
+        ch4.lfsr.width = nr43.lfsr_width;
+    }
+}
+
+inline void Apu::tick_period_sweep() {
+    if (nr52.ch1) {
+        if (keep_bits<3>(--ch1.period_sweep.pace_countdown) == 0) {
+            // Pace countdown expired: handle period sweep.
+            period_sweep_done();
+        }
+    }
+}
+
+void Apu::tick_period_sweep_reload() {
+    if (ch1.period_sweep.restart_countdown) {
+        --ch1.period_sweep.restart_countdown;
+    }
+
+    if (ch1.period_sweep.reload.countdown) {
+        if (--ch1.period_sweep.reload.countdown == 0) {
+            period_sweep_reload_done();
+        }
+    }
+}
+
+void Apu::tick_period_sweep_recalculation() {
+    if (ch1.period_sweep.recalculation.instant) {
+        // Recalculation is instantly handled for step 0
+        ch1.period_sweep.recalculation.instant = false;
+        period_sweep_recalculation_done();
+    } else if (test_bit<0>(apu_clock)) {
+        // Period sweep recalculation ticks only once per M-Cycle:
+        // it is aligned with the time the APU has been turned on.
+        if (ch1.period_sweep.recalculation.trigger_counter < ch1.period_sweep.recalculation.target_trigger_counter) {
+            // Recalculation takes some extra cycles (from 2 to 4) after the trigger.
+            ++ch1.period_sweep.recalculation.trigger_counter;
+        } else if (ch1.period_sweep.recalculation.countdown) {
+            // Recalculation countdown is advanced (only if step is 0, otherwise it is paused).
+            if (nr10.step) {
+                if (--ch1.period_sweep.recalculation.countdown == 0) {
+                    // Recalculation countdown expired: handle period sweep recalculation.
+                    period_sweep_recalculation_done();
+                }
+            }
         }
     }
 }
@@ -1416,6 +1446,19 @@ void Apu::period_sweep_recalculation_done() {
     ch1.period_sweep.recalculation.from_trigger = false;
 }
 
+void Apu::tick_lfsr() {
+    // Update LFSR: XNOR between bit 0 and bit 1 is set to bit 15 (and bit 7 as well in 7-bit mode)
+    const bool b = !(test_bit<0>(ch4.lfsr.lfsr) ^ test_bit<1>(ch4.lfsr.lfsr));
+
+    set_bit<15>(ch4.lfsr.lfsr, b);
+    if (ch4.lfsr.width) {
+        set_bit<7>(ch4.lfsr.lfsr, b);
+    }
+
+    // Shift LFSR
+    ch4.lfsr.lfsr = ch4.lfsr.lfsr >> 1;
+}
+
 #ifdef ENABLE_CGB
 void Apu::update_pcm() {
     DigitalAudioSample digital_output = compute_digital_audio_sample();
@@ -1495,8 +1538,7 @@ inline uint8_t Apu::compute_ch4_digital_output() const {
         ASSERT(ch4.volume <= 0xF);
 
         // Scale by volume
-        const bool random_output = test_bit<0>(ch4.lfsr);
-        digital_output = random_output ? ch4.volume : 0;
+        digital_output = test_bit<0>(ch4.lfsr.lfsr) * ch4.volume;
 
         ASSERT(digital_output <= 0xF);
     }
@@ -1603,7 +1645,9 @@ void Apu::update_nr10(uint8_t value) {
         return;
     }
 
+#ifdef ENABLE_CGB
     uint8_t prev_direction = nr10.direction;
+#endif
     uint8_t prev_step = nr10.step;
 
     nr10.pace = get_bits_range<Specs::Bits::Audio::NR10::PACE>(value);
@@ -1657,8 +1701,8 @@ void Apu::update_nr10(uint8_t value) {
             // (this should happen only in double speed mode). It seems that the countdown is ticked anyhow if
             // the recalculation is about to be completed (regardless the old/new step values)
             const bool tick_sweep =
-                !apu_clock_edge && ((ch1.period_sweep.recalculation.countdown && prev_step == 0 && nr10.step) ||
-                                    ch1.period_sweep.recalculation.countdown == 1);
+                test_bit<0>(apu_clock) && ((ch1.period_sweep.recalculation.countdown && prev_step == 0 && nr10.step) ||
+                                           ch1.period_sweep.recalculation.countdown == 1);
 #else
             // On DMG: the ticking always happens (contrarily to CGB single speed mode) if the previous step was 0
             // and the new one is positive.
@@ -2107,6 +2151,35 @@ void Apu::update_nr43(uint8_t value) {
     nr43.clock_shift = get_bits_range<Specs::Bits::Audio::NR43::CLOCK_SHIFT>(value);
     nr43.lfsr_width = test_bit<Specs::Bits::Audio::NR43::LFSR_WIDTH>(value);
     nr43.clock_divider = get_bits_range<Specs::Bits::Audio::NR43::CLOCK_DIVIDER>(value);
+
+    if (nr52.ch4) {
+        // Glitch.
+        // If the new NR43 shift value would make a raising edge in the shift counter while the old NR43 shift value
+        // would not, then LFSR is ticked. Furthermore, it seems that if the shift counter is about to tick, the new
+        // shift counter value (incremented by one) is used for the glitch instead.
+        uint8_t next_shift_counter = ch4.lfsr.shift_counter;
+        if (ch4.trigger_delay == 0 && (apu_clock == 2 || (apu_clock == 0 && ch4.lfsr.divider == 0)) &&
+            ch4.lfsr.divider_countdown == 1) {
+            next_shift_counter = keep_bits<14>(next_shift_counter + 1);
+        }
+
+        const bool prev_shift_bit = test_bit(next_shift_counter, ch4.lfsr.shift);
+        const bool new_shift_bit = test_bit(next_shift_counter, nr43.clock_shift);
+
+        if (!prev_shift_bit && new_shift_bit) {
+            tick_lfsr();
+        }
+
+        // Shift and width are reloaded the next noise channel tick
+
+        // The divider register is reloaded instantly.
+        // The only exception seems to be divider 0: in this case the noise chanel
+        // retains the old value and the divider is reloaded as soon as it elapses
+        // (and then the channel will tick at 1MHz instead of the usual 512KHz).
+        if (nr43.clock_divider) {
+            ch4.lfsr.divider = nr43.clock_divider;
+        }
+    }
 }
 
 void Apu::update_nr44(uint8_t value) {
@@ -2129,10 +2202,70 @@ void Apu::update_nr44(uint8_t value) {
 
     // Writing with the Trigger bit set reloads the channel configurations
     if (nr44.trigger) {
+        uint8_t reloaded_divider_countdown = nr43.clock_divider > 0 ? nr43.clock_divider : 1;
+
+        if (nr52.ch4) {
+            // Glitch.
+            // If divider countdown is about to expire, the shift counter is incremented anyway.
+            if (ch4.trigger_delay == 0 && ch4.lfsr.divider_countdown == 1 && (apu_clock == 1 || apu_clock == 2)) {
+                ch4.lfsr.shift_counter++;
+            }
+
+            // The retrigger timing of CH4 is crazy difficult to grasp, the following are just an approximation
+            // of the results obtained from the trigger and (one) retrigger test roms, but I've the certainty that
+            // the following logic is wrong, since the (double) retrigger tests are failing.
+            if (nr43.clock_divider == 0) {
+                // Glitch.
+                // It happens that if CH4 is retriggered with divider 0 with a certain alignment
+                // (still to figure what does the alignment depends on) the divider countdown is reloaded with a period
+                // of 0 instead of 1: this leads the next tick of the noise channel to underflow the countdown register
+                // to 15, which effectively adds a delay of 16 ticks to the channel.
+                // TODO: try to figure out the exact pattern of this glitch also with double retrigger test roms.
+                constexpr std::array<uint8_t, 4> retrigger_delays {{3, 3, 2, 3}};
+                ASSERT(ch4.trigger_delay < retrigger_delays.size());
+                if ((ch4.trigger_delay == 1 && (apu_clock == 1 || apu_clock == 2)) ||
+                    (ch4.trigger_delay == 0 && (apu_clock == 0 || apu_clock == 3))) {
+                    ch4.lfsr.shift_counter++;
+                    reloaded_divider_countdown = 0;
+                }
+                ch4.trigger_delay = retrigger_delays[ch4.trigger_delay] -
+                                    (ch4.trigger_delay == 0 && (apu_clock == 0 || apu_clock == 3));
+
+            } else if (nr43.clock_divider == 1) {
+                // Glitch.
+                // Divider 1 seems to be a special case as well: why?
+                // TODO: try to figure out the exact pattern of this glitch also with double retrigger test roms.
+                constexpr std::array<uint8_t, 4> retrigger_delays {{3, 3, 4, 3}};
+                ASSERT(ch4.trigger_delay < retrigger_delays.size());
+                ch4.trigger_delay = retrigger_delays[ch4.trigger_delay] -
+                                    2 * (ch4.trigger_delay == 0 && ch4.lfsr.shift_counter == 0) /* even more WTF */;
+            } else {
+                // This is the "standard" case: both the retrigger and double retrigger roms are passing with this
+                // logic.
+                constexpr std::array<uint8_t, 4> retrigger_delays {{3, 4, 2, 3}};
+                ASSERT(ch4.trigger_delay < retrigger_delays.size());
+                ch4.trigger_delay = retrigger_delays[ch4.trigger_delay];
+            }
+        } else {
+            // Divider 1 seems to be a special case
+            ch4.trigger_delay = 3 + (nr43.clock_divider == 1);
+
+            // Shift counter is reset (but not on retrigger)
+            ch4.lfsr.shift_counter = 0;
+        }
+
         if (ch4.dac) {
             // If the DAC is on, the channel is turned on as well
             nr52.ch4 = true;
         }
+
+        // LFSR is reset and both shift and divider are reloaded
+        ch4.lfsr.lfsr = 0;
+
+        ch4.lfsr.divider_countdown = reloaded_divider_countdown;
+
+        ch4.lfsr.shift = nr43.clock_shift;
+        ch4.lfsr.divider = nr43.clock_divider;
 
         ch4.volume = nr42.initial_volume;
 
@@ -2140,8 +2273,6 @@ void Apu::update_nr44(uint8_t value) {
         ch4.volume_sweep.countdown = nr42.sweep_pace;
         ch4.volume_sweep.reloaded = false;
         ch4.volume_sweep.pending_update = false;
-
-        ch4.lfsr = 0;
 
         // If length timer is 0, it is reloaded with the maximum value (64) as well
         // [blargg/03-trigger]

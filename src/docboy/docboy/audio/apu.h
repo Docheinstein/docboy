@@ -244,15 +244,21 @@ private:
     void tick_div_apu_raising_edge();
     void tick_sampler();
 
+    template <typename Channel, typename ChannelOnFlag, typename Nrx1, typename Nrx3, typename Nrx4>
+    void tick_square_wave_channel(Channel& ch, const ChannelOnFlag& ch_on, const Nrx1& nrx1, const Nrx3& nrx3,
+                                  const Nrx4& nrx4);
+    void tick_wave_channel();
+    void tick_noise_channel();
+
     void tick_period_sweep();
     void tick_period_sweep_reload();
     void tick_period_sweep_recalculation();
-    void tick_wave();
-    void tick_noise();
 
     void period_sweep_done();
     void period_sweep_reload_done();
     void period_sweep_recalculation_done();
+
+    void tick_lfsr();
 
 #ifdef ENABLE_CGB
     void update_pcm();
@@ -332,7 +338,7 @@ private:
         double next_tick {};
     } sampling;
 
-    bool apu_clock_edge {};
+    uint8_t apu_clock {};
     bool prev_div_edge_bit {};
     uint8_t div_apu {};
 #ifdef ENABLE_CGB
@@ -456,11 +462,7 @@ private:
 
         uint8_t length_timer {};
 
-        bool tick_edge {};
-
-        struct {
-            uint16_t timer {};
-        } wave;
+        uint8_t trigger_delay {};
 
         struct {
             bool direction {};
@@ -469,7 +471,17 @@ private:
             bool pending_update {};
         } volume_sweep;
 
-        uint16_t lfsr {};
+        struct {
+            uint16_t lfsr {};
+
+            uint8_t divider_countdown {};
+            uint16_t shift_counter {};
+
+            uint8_t divider {};
+            uint8_t shift {};
+
+            bool width {};
+        } lfsr;
     } ch4 {};
 };
 

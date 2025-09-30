@@ -230,6 +230,9 @@ const std::vector<Section>& build_or_get_test_roms_sections_from_json(const std:
 
 void run_test_roms_from_params(const std::string& roms_folder, const std::string& results_folder,
                                const std::vector<RunnerAdapter::Params>& all_params) {
+    ASSERT(is_directory(roms_folder));
+    ASSERT(is_directory(results_folder));
+
     RunnerAdapter adapter {roms_folder, results_folder};
     for (const auto& params : all_params) {
         REQUIRE(adapter.run(params));
@@ -238,6 +241,9 @@ void run_test_roms_from_params(const std::string& roms_folder, const std::string
 
 void run_test_roms_from_json(const std::string& roms_folder, const std::string& results_folder,
                              const std::string& json_path, const std::string& section_filter) {
+    ASSERT(is_directory(roms_folder));
+    ASSERT(is_directory(results_folder));
+
     // Since Catch will re-enter this branch multiple times, for each section, parse and cache the json only once.
     const std::vector<Section>& sections = build_or_get_test_roms_sections_from_json(json_path);
 
@@ -257,45 +263,66 @@ void run_test_roms_from_json(const std::string& roms_folder, const std::string& 
     }
 }
 
-void run_framebuffer_test_roms_from_folder(const std::string& roms_folder, const std::string& result) {
+void run_framebuffer_test_roms_from_folder(const std::string& roms_folder, const std::string& result,
+                                           const std::string& test_name_filter) {
+    ASSERT(is_directory(roms_folder));
+    ASSERT(is_file(result));
+
     RunnerAdapter adapter {};
     SECTION(roms_folder) {
         for (const auto& entry : iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
-                REQUIRE(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
+                if (test_name_filter.empty() || contains(entry.path, test_name_filter)) {
+                    REQUIRE(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
+                }
             }
         }
     }
 }
 
-void run_framebuffer_test_roms_from_folder_recursive(const std::string& roms_folder, const std::string& result) {
+void run_framebuffer_test_roms_from_folder_recursive(const std::string& roms_folder, const std::string& result,
+                                                     const std::string& test_name_filter) {
+    ASSERT(is_directory(roms_folder));
+    ASSERT(is_file(result));
+
     RunnerAdapter adapter {};
     SECTION(roms_folder) {
         for (const auto& entry : recursive_iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
-                REQUIRE(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
+                if (test_name_filter.empty() || contains(entry.path, test_name_filter)) {
+                    REQUIRE(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
+                }
             }
         }
     }
 }
 
-void run_memory_test_roms_from_folder(const std::string& roms_folder, const MemoryExpectation& expectation) {
+void run_memory_test_roms_from_folder(const std::string& roms_folder, const MemoryExpectation& expectation,
+                                      const std::string& test_name_filter) {
+    ASSERT(is_directory(roms_folder));
     RunnerAdapter adapter {};
     SECTION(roms_folder) {
         for (const auto& entry : iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
-                REQUIRE(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
+                if (test_name_filter.empty() || contains(entry.path, test_name_filter)) {
+                    REQUIRE(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
+                }
             }
         }
     }
 }
 
-void run_memory_test_roms_from_folder_recursive(const std::string& roms_folder, const MemoryExpectation& expectation) {
+void run_memory_test_roms_from_folder_recursive(const std::string& roms_folder, const MemoryExpectation& expectation,
+                                                const std::string& test_name_filter) {
+    ASSERT(is_directory(roms_folder));
+
     RunnerAdapter adapter {};
     SECTION(roms_folder) {
         for (const auto& entry : recursive_iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
-                REQUIRE(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
+                if (test_name_filter.empty() || contains(entry.path, test_name_filter)) {
+                    REQUIRE(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
+                }
             }
         }
     }
