@@ -68,6 +68,7 @@ Preferences make_default_preferences() {
     prefs.keys.player2.down = SDLK_K;
 #endif
     prefs.scaling = 2;
+    prefs.scaling_filter = UiController::ScalingFilter::NearestNeighbor;
     prefs.x = 200;
     prefs.y = 200;
 #ifdef ENABLE_AUDIO
@@ -343,6 +344,7 @@ int main(int argc, char* argv[]) {
 
     // Scaling preferences
     ui_controller.set_scaling(prefs.scaling);
+    ui_controller.set_scaling_filter(prefs.scaling_filter);
 
     // Palette preferences
 #ifdef ENABLE_CGB
@@ -677,7 +679,8 @@ int main(int argc, char* argv[]) {
 #ifndef ENABLE_CGB
     prefs.dmg_palette = ui_controller.get_current_appearance().lcd;
 #endif
-    prefs.scaling = window.get_scaling();
+    prefs.scaling = ui_controller.get_scaling();
+    prefs.scaling_filter = ui_controller.get_scaling_filter();
 
     const auto update_preferences_keys_from_joypad_mapping =
         [](Preferences::Keys& keys, const std::map<Joypad::Key, SDL_Keycode>& joypad_mapping) {

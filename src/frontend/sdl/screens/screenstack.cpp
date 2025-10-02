@@ -1,4 +1,5 @@
 #include "screens/screenstack.h"
+
 #include "screens/screen.h"
 
 void ScreenStack::push(std::unique_ptr<Screen> screen) {

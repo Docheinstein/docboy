@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "controllers/navcontroller.h"
+#include "controllers/uicontroller.h"
 
 #include "screens/screen.h"
 #include "screens/screenstack.h"
@@ -26,6 +27,8 @@ private:
     void redraw_overlay();
 
     bool is_in_menu() const;
+
+    void on_scaling_filter_changed(UiController::ScalingFilter filter) const;
 
     SDL_Texture* game_texture1 {};
 #ifdef ENABLE_TWO_PLAYERS_MODE

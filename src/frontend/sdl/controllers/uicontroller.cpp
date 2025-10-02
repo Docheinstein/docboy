@@ -29,6 +29,21 @@ uint32_t UiController::get_scaling() const {
     return window.get_scaling();
 }
 
+void UiController::set_scaling_filter(ScalingFilter filter) {
+    scaling_filter = filter;
+    if (scaling_filter_changed_callback) {
+        scaling_filter_changed_callback(scaling_filter);
+    }
+}
+
+UiController::ScalingFilter UiController::get_scaling_filter() const {
+    return scaling_filter;
+}
+
+void UiController::set_scaling_filter_changed_callback(std::function<void(ScalingFilter)>&& callback) {
+    scaling_filter_changed_callback = std::move(callback);
+}
+
 const UiController::UiAppearance& UiController::add_appearance(const LcdAppearance& rgb565, const std::string& name,
                                                                std::optional<uint16_t> optional_accent) {
     const auto rgb565_to_rgba8888 = [](uint16_t p) {

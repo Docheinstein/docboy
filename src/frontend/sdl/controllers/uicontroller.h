@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -38,6 +39,13 @@ public:
         std::size_t index {};
     };
 
+    enum class ScalingFilter : uint8_t {
+        NearestNeighbor,
+        Linear,
+    };
+
+    static constexpr uint8_t NUM_SCALING_FILTERS = 2;
+
     explicit UiController(Window& window, RunController& runner);
 
     // Size
@@ -47,6 +55,11 @@ public:
     // Scaling
     void set_scaling(uint32_t scaling);
     uint32_t get_scaling() const;
+
+    void set_scaling_filter(ScalingFilter scaling);
+    ScalingFilter get_scaling_filter() const;
+
+    void set_scaling_filter_changed_callback(std::function<void(ScalingFilter)>&& callback);
 
     // Palettes
     const UiAppearance& add_appearance(const LcdAppearance& rgb565, const std::string& name,
@@ -66,6 +79,9 @@ private:
 
     UiAppearance current_appearance {};
     std::vector<UiAppearance> appearances;
+
+    ScalingFilter scaling_filter {ScalingFilter::NearestNeighbor};
+    std::function<void(ScalingFilter)> scaling_filter_changed_callback {};
 };
 
 #endif // UICONTROLLER_H

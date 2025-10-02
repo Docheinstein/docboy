@@ -1,31 +1,49 @@
 #include "screens/gamescreen.h"
 
+#include "SDL3/SDL.h"
+
 #include "controllers/corecontroller.h"
 #include "controllers/maincontroller.h"
 #include "controllers/runcontroller.h"
 #include "controllers/uicontroller.h"
-#include "screens/mainscreen.h"
 
 #include "extra/img/imgmanip.h"
 #include "extra/png/iopng.h"
 
+#include "utils/asserts.h"
 #include "utils/io.h"
-#include "utils/rompicker.h"
 
-#include "SDL3/SDL.h"
-#include "gamemainscreen.h"
+#include "screens/gamemainscreen.h"
 
 #ifdef ENABLE_DEBUGGER
 #include "controllers/debuggercontroller.h"
 #endif
 
+namespace {
+SDL_ScaleMode scaling_filter_to_texture_scale_mode(UiController::ScalingFilter filter) {
+    switch (filter) {
+    case UiController::ScalingFilter::NearestNeighbor:
+        return SDL_SCALEMODE_NEAREST;
+    case UiController::ScalingFilter::Linear:
+        return SDL_SCALEMODE_LINEAR;
+    default:
+        ASSERT_NO_ENTRY();
+        return SDL_SCALEMODE_NEAREST;
+    }
+}
+} // namespace
+
 GameScreen::GameScreen(Context context) :
     Screen {context} {
+
+    SDL_ScaleMode texture_scale_mode =
+        scaling_filter_to_texture_scale_mode(context.controllers.ui.get_scaling_filter());
+
     game_framebuffer1 = runner.get_core1().get_framebuffer();
 
     game_texture1 = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING,
                                       Specs::Display::WIDTH, Specs::Display::HEIGHT);
-    SDL_SetTextureScaleMode(game_texture1, SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureScaleMode(game_texture1, texture_scale_mode);
 
 #ifdef ENABLE_TWO_PLAYERS_MODE
     if (runner.is_two_players_mode()) {
@@ -33,13 +51,13 @@ GameScreen::GameScreen(Context context) :
 
         game_texture2 = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING,
                                           Specs::Display::WIDTH, Specs::Display::HEIGHT);
-        SDL_SetTextureScaleMode(game_texture2, SDL_SCALEMODE_NEAREST);
+        SDL_SetTextureScaleMode(game_texture2, texture_scale_mode);
     }
 #endif
 
     game_overlay_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                              static_cast<int>(ui.get_width()), static_cast<int>(ui.get_height()));
-    SDL_SetTextureScaleMode(game_overlay_texture, SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureScaleMode(game_overlay_texture, texture_scale_mode);
     SDL_SetTextureBlendMode(game_overlay_texture, SDL_BLENDMODE_BLEND);
 
     ASSERT(runner.get_core1().is_rom_loaded());
@@ -54,8 +72,13 @@ GameScreen::GameScreen(Context context) :
     runner.set_paused(false);
 
     // Pause the emulation if menu is visible
-    menu.screen_stack.set_on_screen_changed_callback([this]() {
+    menu.screen_stack.set_on_screen_changed_callback([this] {
         runner.set_paused(is_in_menu());
+    });
+
+    // Listen to any change of scaling filter
+    context.controllers.ui.set_scaling_filter_changed_callback([this](UiController::ScalingFilter filter) {
+        on_scaling_filter_changed(filter);
     });
 }
 
@@ -332,4 +355,16 @@ void GameScreen::redraw_overlay() {
 
 bool GameScreen::is_in_menu() const {
     return menu.screen_stack.top;
+}
+
+void GameScreen::on_scaling_filter_changed(UiController::ScalingFilter filter) const {
+    SDL_ScaleMode texture_scale_mode = scaling_filter_to_texture_scale_mode(filter);
+
+    SDL_SetTextureScaleMode(game_texture1, texture_scale_mode);
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (runner.is_two_players_mode()) {
+        SDL_SetTextureScaleMode(game_texture2, texture_scale_mode);
+    }
+#endif
+    SDL_SetTextureScaleMode(game_overlay_texture, texture_scale_mode);
 }

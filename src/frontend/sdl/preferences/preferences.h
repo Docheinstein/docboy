@@ -30,6 +30,7 @@ struct Preferences {
 #endif
     } keys {};
     uint32_t scaling {};
+    UiController::ScalingFilter scaling_filter {};
     int x {};
     int y {};
 #ifdef ENABLE_AUDIO
