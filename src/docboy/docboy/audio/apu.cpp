@@ -1,6 +1,8 @@
 #include "docboy/audio/apu.h"
 
+#include <algorithm>
 #include <array>
+#include <limits>
 
 #include "docboy/bootrom/helpers.h"
 #include "docboy/timers/timers.h"
@@ -9,12 +11,15 @@
 #include "docboy/speedswitch/speedswitchcontroller.h"
 #endif
 
+#include "utils/algo.h"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
 #include "utils/bits.h"
 #include "utils/parcel.h"
 
 namespace {
+constexpr double HIGH_PASS_FILTER_CUTOFF_FREQUENCY = 5; // Hz
+
 constexpr bool SQUARE_WAVES[][8] {
     {false, false, false, false, false, false, false, true}, /* 12.5 % */
     {true, false, false, false, false, false, false, true},  /* 25.0 % */
@@ -152,18 +157,32 @@ generate_nrx2_glitch_table() {
     return table;
 }
 
+inline double compute_high_pass_filter_alpha(double cutoff_frequency, double sample_rate) {
+    static constexpr double PI = 3.14159265358979323846;
+    return 1.0 / (2.0 * PI * cutoff_frequency / sample_rate + 1.0);
+}
+
+inline double apply_high_pass_filter(double alpha, double input_analog_volume, double& delta) {
+    double output_analog_volume = alpha * (input_analog_volume + delta);
+    delta = output_analog_volume - input_analog_volume;
+    return output_analog_volume;
+}
+
 inline int16_t digital_to_analog_volume(uint8_t digital_volume) {
     ASSERT(digital_volume <= 0xF);
-    int32_t analog_volume = INT16_MAX - (UINT16_MAX / 15) * digital_volume;
-    ASSERT(analog_volume >= INT16_MIN && analog_volume <= INT16_MAX);
+    int32_t analog_volume =
+        std::numeric_limits<int16_t>::max() - (std::numeric_limits<uint16_t>::max() / 15) * digital_volume;
+    ASSERT(analog_volume >= std::numeric_limits<int16_t>::min() &&
+           analog_volume <= std::numeric_limits<int16_t>::max());
     return static_cast<int16_t>(analog_volume);
 }
 
-inline int16_t scale_analog_volume_by_master_volume(int16_t input_analog_volume, uint8_t master_volume) {
+inline double scale_analog_volume_by_master_volume(double input_analog_volume, uint8_t master_volume) {
     ASSERT(master_volume < 8);
-    int32_t output_analog_volume = input_analog_volume * (1 + master_volume) / 8;
-    ASSERT(output_analog_volume >= INT16_MIN && output_analog_volume <= INT16_MAX);
-    return static_cast<int16_t>(output_analog_volume);
+    double output_analog_volume = input_analog_volume * (1.0 + master_volume) / 8.0;
+    ASSERT(output_analog_volume >= std::numeric_limits<int16_t>::min() &&
+           output_analog_volume <= std::numeric_limits<int16_t>::max());
+    return output_analog_volume;
 }
 
 template <typename Channel, typename ChannelOnFlag>
@@ -307,17 +326,22 @@ Apu::Apu(Timers& timers, const uint16_t& pc) :
 }
 #endif
 
-void Apu::set_volume(float volume) {
-    ASSERT(volume >= 0.0f && volume <= 1.0f);
+void Apu::set_volume(double volume) {
+    ASSERT(volume >= 0.0 && volume <= 1.0);
     master_volume = volume;
 }
 
 void Apu::set_sample_rate(double rate) {
     sampling.period = static_cast<double>(Specs::Frequencies::CLOCK) / rate;
+    high_pass_filter.alpha = compute_high_pass_filter_alpha(HIGH_PASS_FILTER_CUTOFF_FREQUENCY, rate);
 }
 
 void Apu::set_audio_sample_callback(std::function<void(AudioSample)>&& callback) {
     audio_sample_callback = std::move(callback);
+}
+
+void Apu::set_high_pass_filter_enabled(bool enabled) {
+    high_pass_filter.enabled = enabled;
 }
 
 void Apu::tick_t0() {
@@ -463,10 +487,11 @@ void Apu::save_state(Parcel& parcel) const {
     parcel.write_uint8(ch3.wave.position.byte);
     parcel.write_bool(ch3.wave.position.low_nibble);
     parcel.write_uint16(ch3.wave.timer);
+
     parcel.write_bool(ch4.dac);
     parcel.write_uint8(ch4.volume);
     parcel.write_uint8(ch4.length_timer);
-    parcel.write_bool(ch4.trigger_delay);
+    parcel.write_uint8(ch4.trigger_delay);
     parcel.write_bool(ch4.volume_sweep.direction);
     parcel.write_uint8(ch4.volume_sweep.countdown);
     parcel.write_bool(ch4.volume_sweep.reloaded);
@@ -1516,7 +1541,7 @@ inline uint8_t Apu::compute_ch2_digital_output() const {
 inline uint8_t Apu::compute_ch3_digital_output() const {
     uint8_t digital_output {};
 
-    if (nr52.ch3 && nr32.volume) {
+    if (nr52.ch3) {
         ASSERT(nr30.dac);
         ASSERT(nr32.volume <= 0b11);
         ASSERT(ch3.digital_output <= 0x0F);
@@ -1524,6 +1549,7 @@ inline uint8_t Apu::compute_ch3_digital_output() const {
         // Scale by volume
         digital_output = ch3.digital_output >> (nr32.volume - 1);
 
+        ASSERT(!(nr32.volume == 0 && digital_output != 0));
         ASSERT(digital_output <= 0xF);
     }
 
@@ -1555,77 +1581,53 @@ Apu::DigitalAudioSample Apu::compute_digital_audio_sample() const {
     };
 }
 
-Apu::AudioSample Apu::compute_audio_sample() const {
-    struct {
-        int16_t ch1 {};
-        int16_t ch2 {};
-        int16_t ch3 {};
-        int16_t ch4 {};
-    } analog_output;
-
-    // Note that DAC does its work even if channel is off.
-
+Apu::AudioSample Apu::compute_audio_sample() {
     // TODO: consider caching channel outputs instead of recomputing them each time (shared with PCM).
+    static constexpr auto ANALOG_MIN = std::numeric_limits<int16_t>::min();
+    static constexpr auto ANALOG_MAX = std::numeric_limits<int16_t>::max();
+    static constexpr auto ANALOG_ZERO = static_cast<int16_t>(0);
 
-    // CH1
-    if (ch1.dac) {
-        analog_output.ch1 = digital_to_analog_volume(compute_ch1_digital_output());
-    }
+    // Scale digital output [0,15] into analog range [-32768,32767]
+    int16_t analog_ch1 = ch1.dac ? digital_to_analog_volume(compute_ch1_digital_output()) : ANALOG_ZERO;
+    int16_t analog_ch2 = ch2.dac ? digital_to_analog_volume(compute_ch2_digital_output()) : ANALOG_ZERO;
+    int16_t analog_ch3 = nr30.dac ? digital_to_analog_volume(compute_ch3_digital_output()) : ANALOG_ZERO;
+    int16_t analog_ch4 = ch4.dac ? digital_to_analog_volume(compute_ch4_digital_output()) : ANALOG_ZERO;
 
-    // CH2
-    if (ch2.dac) {
-        analog_output.ch2 = digital_to_analog_volume(compute_ch2_digital_output());
-    }
+    // Honor NR51 regarding the enabled channels
+    int16_t analog_ch1_left = nr51.ch1_left ? analog_ch1 : ANALOG_ZERO;
+    int16_t analog_ch2_left = nr51.ch2_left ? analog_ch2 : ANALOG_ZERO;
+    int16_t analog_ch3_left = nr51.ch3_left ? analog_ch3 : ANALOG_ZERO;
+    int16_t analog_ch4_left = nr51.ch4_left ? analog_ch4 : ANALOG_ZERO;
+    int16_t analog_ch1_right = nr51.ch1_right ? analog_ch1 : ANALOG_ZERO;
+    int16_t analog_ch2_right = nr51.ch2_right ? analog_ch2 : ANALOG_ZERO;
+    int16_t analog_ch3_right = nr51.ch3_right ? analog_ch3 : ANALOG_ZERO;
+    int16_t analog_ch4_right = nr51.ch4_right ? analog_ch4 : ANALOG_ZERO;
 
-    // CH3
-    if (nr30.dac) {
-        analog_output.ch3 = digital_to_analog_volume(compute_ch3_digital_output());
-    }
+    // Mix the analog volumes of the channel in a unique analog volume (still in range [-32768,32767])
+    double analog_left = 0.25 * (analog_ch1_left + analog_ch2_left + analog_ch3_left + analog_ch4_left);
+    double analog_right = 0.25 * (analog_ch1_right + analog_ch2_right + analog_ch3_right + analog_ch4_right);
 
-    // CH4
-    if (ch4.dac) {
-        analog_output.ch4 = digital_to_analog_volume(compute_ch4_digital_output());
-    }
-
-    // Mix channels
-    struct {
-        struct ChannelStereoAnalogOutput {
-            int16_t left, right;
-        } ch1, ch2, ch3, ch4;
-    } analog_stereo_output {};
-
-    analog_stereo_output.ch1.left = nr51.ch1_left ? analog_output.ch1 : (int16_t)0;
-    analog_stereo_output.ch2.left = nr51.ch2_left ? analog_output.ch2 : (int16_t)0;
-    analog_stereo_output.ch3.left = nr51.ch3_left ? analog_output.ch3 : (int16_t)0;
-    analog_stereo_output.ch4.left = nr51.ch4_left ? analog_output.ch4 : (int16_t)0;
-    analog_stereo_output.ch1.right = nr51.ch1_right ? analog_output.ch1 : (int16_t)0;
-    analog_stereo_output.ch2.right = nr51.ch2_right ? analog_output.ch2 : (int16_t)0;
-    analog_stereo_output.ch3.right = nr51.ch3_right ? analog_output.ch3 : (int16_t)0;
-    analog_stereo_output.ch4.right = nr51.ch4_right ? analog_output.ch4 : (int16_t)0;
-
-    int32_t analog_left = (analog_stereo_output.ch1.left + analog_stereo_output.ch2.left +
-                           analog_stereo_output.ch3.left + analog_stereo_output.ch4.left) /
-                          4;
-    int32_t analog_right = (analog_stereo_output.ch1.right + analog_stereo_output.ch2.right +
-                            analog_stereo_output.ch3.right + analog_stereo_output.ch4.right) /
-                           4;
-
-    ASSERT(analog_left >= INT16_MIN && analog_left <= INT16_MAX);
-    ASSERT(analog_right >= INT16_MIN && analog_right <= INT16_MAX);
-
-    AudioSample sample {static_cast<int16_t>(analog_left), static_cast<int16_t>(analog_right)};
+    ASSERT(analog_left >= ANALOG_MIN && analog_left <= ANALOG_MAX);
+    ASSERT(analog_right >= ANALOG_MIN && analog_right <= ANALOG_MAX);
 
     // Scale by NR50 volume
-    sample.left = scale_analog_volume_by_master_volume(sample.left, nr50.volume_left);
-    sample.right = scale_analog_volume_by_master_volume(sample.right, nr50.volume_right);
+    analog_left = scale_analog_volume_by_master_volume(analog_left, nr50.volume_left);
+    analog_right = scale_analog_volume_by_master_volume(analog_right, nr50.volume_right);
 
     // Scale by software volume (physical knob)
     ASSERT(master_volume >= 0.0f && master_volume <= 1.0f);
+    analog_left *= master_volume;
+    analog_right *= master_volume;
 
-    sample.left = static_cast<int16_t>(static_cast<float>(sample.left) * master_volume);
-    sample.right = static_cast<int16_t>(static_cast<float>(sample.right) * master_volume);
+    if (high_pass_filter.enabled) {
+        // Apply HPF to remove any DC offset (gradually centers the waveform to analog 0).
+        // This happens also in the real hardware.
+        analog_left = apply_high_pass_filter(high_pass_filter.alpha, analog_left, high_pass_filter.delta.left);
+        analog_right = apply_high_pass_filter(high_pass_filter.alpha, analog_right, high_pass_filter.delta.right);
+    }
 
-    return sample;
+    // Theoretically, the HPF might yield values outside the [INT16_MIN, INT16_MAX] range, we need to clamp the values
+    return {clamp(analog_left, ANALOG_MIN, ANALOG_MAX), clamp(analog_right, ANALOG_MIN, ANALOG_MAX)};
 }
 
 void Apu::flush_pending_write() {

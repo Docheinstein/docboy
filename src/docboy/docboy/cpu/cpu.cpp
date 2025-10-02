@@ -15,7 +15,6 @@
 
 #include "utils/arrays.h"
 #include "utils/asserts.h"
-#include "utils/casts.h"
 #include "utils/formatters.h"
 
 namespace {
@@ -731,11 +730,11 @@ void Cpu::save_state(Parcel& parcel) const {
     parcel.write_uint16(hl);
     parcel.write_uint16(sp);
 
-    parcel.write_uint8((uint8_t)ime);
+    parcel.write_uint8(static_cast<uint8_t>(ime));
 
     parcel.write_uint8(phase);
 
-    parcel.write_uint8((uint8_t)interrupt.state);
+    parcel.write_uint8(static_cast<uint8_t>(interrupt.state));
     parcel.write_uint8(interrupt.remaining_ticks);
 
     parcel.write_bool(fetching_cb);
@@ -762,7 +761,7 @@ void Cpu::save_state(Parcel& parcel) const {
     parcel.write_uint8(instruction.cycle_microop);
 #endif
 
-    parcel.write_uint8((uint8_t)io.state);
+    parcel.write_uint8(static_cast<uint8_t>(io.state));
     parcel.write_uint8(io.data);
     parcel.write_bool(b);
     parcel.write_uint8(u);
@@ -1160,8 +1159,8 @@ static constexpr InterruptsTimings INTERRUPTS_TIMINGS = generate_interrupt_timin
                     std::cerr << "Switch : " << speed_switch_controller.is_switching_speed() << std::endl;
 #endif
                     std::cerr << "T      : " << +t << std::endl;
-                    std::cerr << "IF     : " << bin((uint8_t)interrupts.IF) << std::endl;
-                    std::cerr << "IE     : " << bin((uint8_t)interrupts.IE) << std::endl;
+                    std::cerr << "IF     : " << bin(static_cast<uint8_t>(interrupts.IF)) << std::endl;
+                    std::cerr << "IE     : " << bin(static_cast<uint8_t>(interrupts.IE)) << std::endl;
                     std::cerr << "VBlank : " << test_bit<Specs::Bits::Interrupts::VBLANK>(interrupts.IF & interrupts.IE)
                               << std::endl;
                     std::cerr << "STAT   : " << test_bit<Specs::Bits::Interrupts::STAT>(interrupts.IF & interrupts.IE)
@@ -1831,7 +1830,7 @@ void Cpu::ld_rr_rrs_m0() {
 template <Cpu::Register16 rr1, Cpu::Register16 rr2>
 void Cpu::ld_rr_rrs_m1() {
     uu = read_reg16<rr2>();
-    auto [result, h, c] = sum_carry<3, 7>(uu, to_signed(io.data));
+    auto [result, h, c] = sum_carry<3, 7>(uu, static_cast<int8_t>(io.data));
     write_reg16<rr1>(result);
     reset_flag<(Flag::Z)>();
     reset_flag<(Flag::N)>();
@@ -2067,7 +2066,7 @@ void Cpu::add_rr_s_m0() {
 
 template <Cpu::Register16 rr>
 void Cpu::add_rr_s_m1() {
-    auto [result, h, c] = sum_carry<3, 7>(read_reg16<rr>(), to_signed(io.data));
+    auto [result, h, c] = sum_carry<3, 7>(read_reg16<rr>(), static_cast<int8_t>(io.data));
     write_reg16<rr>(result);
     reset_flag<(Flag::Z)>();
     reset_flag<(Flag::N)>();
@@ -2491,7 +2490,7 @@ void Cpu::jr_s_m0() {
 }
 
 void Cpu::jr_s_m1() {
-    pc = (int16_t)pc + to_signed(io.data);
+    pc = static_cast<int16_t>(pc) + static_cast<int8_t>(io.data);
 }
 
 void Cpu::jr_s_m2() {
@@ -2510,7 +2509,7 @@ void Cpu::jr_c_s_m0() {
 template <Cpu::Flag f, bool y>
 void Cpu::jr_c_s_m1() {
     if (check_flag<f, y>()) {
-        pc = pc + to_signed(io.data);
+        pc = pc + static_cast<int8_t>(io.data);
     } else {
         fetch();
     }

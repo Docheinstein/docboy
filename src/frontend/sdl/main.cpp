@@ -76,6 +76,7 @@ Preferences make_default_preferences() {
     prefs.audio_player_source = 1;
 #endif
     prefs.volume = 100;
+    prefs.high_pass_filter = true;
     prefs.dynamic_sample_rate.enabled = true;
     prefs.dynamic_sample_rate.max_latency = 50;
     prefs.dynamic_sample_rate.moving_average_factor = 0.005;
@@ -112,6 +113,26 @@ void ensure_file_exists(const std::string& path) {
     }
 }
 
+void list_audio_devices() {
+    int count {};
+
+    SDL_AudioDeviceID* devices_ids = SDL_GetAudioPlaybackDevices(&count);
+    if (!devices_ids) {
+        std::cerr << "ERROR: SDL failed to retrieve audio devices: '" << SDL_GetError() << "'" << std::endl;
+        exit(1);
+    }
+
+    std::sort(devices_ids, devices_ids + count);
+
+    for (int i = 0; i < count; i++) {
+        SDL_AudioDeviceID device_id = devices_ids[i];
+        const char* device_name = SDL_GetAudioDeviceName(device_id);
+        std::cout << device_id << ": " << (device_name ? device_name : "Unknown") << std::endl;
+    }
+
+    SDL_free(devices_ids);
+}
+
 // GameBoy and Core
 GameBoy gb {};
 Core core {gb};
@@ -126,7 +147,7 @@ std::unique_ptr<Core> core2;
 int main(int argc, char* argv[]) {
     // Parse command line arguments
     struct {
-        std::string rom;
+        std::string rom {};
 #ifdef ENABLE_TWO_PLAYERS_MODE
         std::optional<std::string> second_rom;
 #endif
@@ -141,7 +162,8 @@ int main(int argc, char* argv[]) {
         bool attach_debugger {};
 #endif
 #ifdef ENABLE_AUDIO
-        std::string audio_device_name {};
+        uint32_t audio_device_id {SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK};
+        bool list_audio_devices {};
 #endif
     } args;
 
@@ -162,7 +184,8 @@ int main(int argc, char* argv[]) {
 #endif
 #ifdef ENABLE_AUDIO
     // (mostly for development)
-    args_parser.add_argument(args.audio_device_name, "--audio-device-name", "-a").help("Override output audio device");
+    args_parser.add_argument(args.audio_device_id, "--audio-device", "-a").help("Set preferred audio device");
+    args_parser.add_argument(args.list_audio_devices, "--list-audio-devices", "-l").help("List audio devices");
 #endif
 
     // Parse command line arguments
@@ -202,7 +225,7 @@ int main(int argc, char* argv[]) {
     ensure_file_exists(args.boot_rom);
     if (file_size(args.boot_rom) != BootRom::Size) {
         std::cerr << "ERROR: invalid boot rom '" << args.boot_rom << "'" << std::endl;
-        return 3;
+        return 1;
     }
 #endif
 
@@ -214,15 +237,21 @@ int main(int argc, char* argv[]) {
 #endif
 
     if (!SDL_Init(sdl_init_flags)) {
-        std::cerr << "ERROR: SDL initialization failed '" << SDL_GetError() << "'" << std::endl;
-        return 4;
+        std::cerr << "ERROR: SDL initialization failed: '" << SDL_GetError() << "'" << std::endl;
+        return 1;
+    }
+
+    // Eventually just list audio devices and quit
+    if (args.list_audio_devices) {
+        list_audio_devices();
+        return 0;
     }
 
 #ifdef NFD
     // Initialize NFD
     if (NFD_Init() != NFD_OKAY) {
-        std::cerr << "ERROR: NFD initialization failed '" << NFD_GetError() << "'" << std::endl;
-        return 5;
+        std::cerr << "ERROR: NFD initialization failed: '" << NFD_GetError() << "'" << std::endl;
+        return 1;
     }
 #endif
 
@@ -355,41 +384,22 @@ int main(int argc, char* argv[]) {
 #endif
 
 #ifdef ENABLE_AUDIO
-    const SDL_AudioSpec audio_device_spec_hint = {SDL_AUDIO_S16, Apu::NUM_CHANNELS, 32768};
+    static constexpr SDL_AudioSpec AUDIO_DEVICE_SPEC_HINT {SDL_AUDIO_S16, Apu::NUM_CHANNELS, 32768};
 
     // Eventually use user-specified audio device
-    SDL_AudioDeviceID audio_output_device_id {SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK};
-
-    if (!args.audio_device_name.empty()) {
-        int count {};
-        SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&count);
-
-        int i;
-        for (i = 0; i < count; i++) {
-            const auto device_id = devices[i];
-            if (SDL_GetAudioDeviceName(device_id) == args.audio_device_name) {
-                audio_output_device_id = device_id;
-                break;
-            }
-        }
-
-        if (i == count) {
-            std::cerr << "WARN: failed to find audio device '" << args.audio_device_name << "'; using default one"
-                      << std::endl;
-        }
-    }
+    SDL_AudioDeviceID audio_output_device_id = args.audio_device_id;
 
     // Open audio device
-    const SDL_AudioDeviceID audio_device = SDL_OpenAudioDevice(audio_output_device_id, &audio_device_spec_hint);
+    const SDL_AudioDeviceID audio_device = SDL_OpenAudioDevice(audio_output_device_id, &AUDIO_DEVICE_SPEC_HINT);
     if (!audio_device) {
-        std::cerr << "ERROR: SDL audio device initialization failed '" << SDL_GetError() << "'" << std::endl;
-        return 6;
+        std::cerr << "ERROR: SDL audio device initialization failed: '" << SDL_GetError() << "'" << std::endl;
+        return 1;
     }
 
     SDL_AudioSpec audio_device_spec;
     if (!SDL_GetAudioDeviceFormat(audio_device, &audio_device_spec, nullptr)) {
-        std::cerr << "ERROR: failed to retrieve format of SDL audio device '" << SDL_GetError() << "'" << std::endl;
-        return 7;
+        std::cerr << "ERROR: failed to retrieve format of SDL audio device: '" << SDL_GetError() << "'" << std::endl;
+        return 1;
     }
 
     const uint32_t audio_device_sample_rate = audio_device_spec.freq;
@@ -400,8 +410,8 @@ int main(int argc, char* argv[]) {
     // Create audio stream
     SDL_AudioStream* audio_stream = SDL_CreateAudioStream(&audio_stream_spec, &audio_device_spec);
     if (!audio_stream) {
-        std::cerr << "ERROR: SDL audio stream initialization failed '" << SDL_GetError() << "'" << std::endl;
-        return 8;
+        std::cerr << "ERROR: SDL audio stream initialization failed: '" << SDL_GetError() << "'" << std::endl;
+        return 1;
     }
 
     // Set audio sample rate accordingly to opened audio device
@@ -439,15 +449,26 @@ int main(int argc, char* argv[]) {
 #endif
 
     main_controller.set_volume_changed_callback([two_players_mode](uint8_t volume /* [0, 100] */) {
-        core.set_audio_volume(static_cast<float>(volume) / 100);
+        core.set_audio_volume(static_cast<double>(volume) / 100);
 
 #ifdef ENABLE_TWO_PLAYERS_MODE
         if (two_players_mode) {
-            core2->set_audio_volume(static_cast<float>(volume) / 100);
+            core2->set_audio_volume(static_cast<double>(volume) / 100);
         }
 #endif
     });
     main_controller.set_volume(prefs.volume);
+
+    main_controller.set_high_pass_filter_enabled_changed_callback([two_players_mode](bool enabled) {
+        core.set_audio_high_pass_filter_enabled(enabled);
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+        if (two_players_mode) {
+            core2->set_audio_high_pass_filter_enabled(enabled);
+        }
+#endif
+    });
+    main_controller.set_high_pass_filter_enabled(prefs.high_pass_filter);
 
     struct {
         bool enabled {};
@@ -688,6 +709,7 @@ int main(int argc, char* argv[]) {
     prefs.audio_player_source = main_controller.get_audio_player_source();
 #endif
     prefs.volume = main_controller.get_volume();
+    prefs.high_pass_filter = main_controller.is_high_pass_filter_enabled();
 
     prefs.dynamic_sample_rate.enabled = main_controller.is_dynamic_sample_rate_control_enabled();
     prefs.dynamic_sample_rate.max_latency =

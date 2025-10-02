@@ -13,8 +13,6 @@
 #include "docboy/speedswitch/speedswitchcontroller.h"
 #endif
 
-#include "utils/casts.h"
-
 using namespace Specs::Bits::Video::LCDC;
 using namespace Specs::Bits::Video::STAT;
 
@@ -1959,7 +1957,7 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
                                         0x0000 + TILE_BYTES * tile_number
                                         :
                                         // signed addressing mode with 0x9000 as (global) base address
-                                        0x1000 + TILE_BYTES * to_signed(tile_number);
+                                        0x1000 + TILE_BYTES * static_cast<int8_t>(tile_number);
     uint8_t tile_y = mod<TILE_HEIGHT>(ly + scy);
 
 #ifdef ENABLE_CGB
@@ -2003,7 +2001,7 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
                                         0x0000 + TILE_BYTES * tile_number
                                         :
                                         // signed addressing mode with 0x9000 as (global) base address
-                                        0x1000 + TILE_BYTES * to_signed(tile_number);
+                                        0x1000 + TILE_BYTES * static_cast<int8_t>(tile_number);
 
     uint8_t tile_y = mod<TILE_HEIGHT>(w.wly);
 

@@ -91,6 +91,21 @@ public:
         audio.volume_changed_callback = std::move(callback);
     }
 
+    void set_high_pass_filter_enabled(bool enabled) {
+        audio.high_pass_filter_enabled = enabled;
+        if (audio.high_pass_filter_enabled_changed_callback) {
+            audio.high_pass_filter_enabled_changed_callback(audio.high_pass_filter_enabled);
+        }
+    }
+
+    bool is_high_pass_filter_enabled() const {
+        return audio.high_pass_filter_enabled;
+    }
+
+    void set_high_pass_filter_enabled_changed_callback(std::function<void(bool enabled)>&& callback) {
+        audio.high_pass_filter_enabled_changed_callback = std::move(callback);
+    }
+
     void set_dynamic_sample_rate_control_enabled(bool enabled) {
         audio.dynamic_sample_rate_control.enabled = enabled;
         if (audio.dynamic_sample_rate_control_settings_changed) {
@@ -158,6 +173,8 @@ private:
 #endif
         uint8_t volume {100};
         std::function<void(uint8_t)> volume_changed_callback {};
+        bool high_pass_filter_enabled {true};
+        std::function<void(bool)> high_pass_filter_enabled_changed_callback {};
         struct {
             bool enabled {true};
             double max_latency {50};

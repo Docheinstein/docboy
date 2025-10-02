@@ -639,8 +639,16 @@ void Core::reset() {
 }
 
 #ifdef ENABLE_AUDIO
-void Core::set_audio_sample_callback(std::function<void(const Apu::AudioSample)>&& audio_callback) const {
+void Core::set_audio_sample_callback(std::function<void(Apu::AudioSample)>&& audio_callback) const {
     gb.apu.set_audio_sample_callback(std::move(audio_callback));
+}
+
+void Core::set_audio_volume(double volume) const {
+    gb.apu.set_volume(volume);
+}
+
+void Core::set_audio_high_pass_filter_enabled(bool enabled) const {
+    gb.apu.set_high_pass_filter_enabled(enabled);
 }
 #endif
 

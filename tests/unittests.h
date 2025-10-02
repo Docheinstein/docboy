@@ -5,7 +5,7 @@
 
 #include "testutils/runners.h"
 
-#include "utils/casts.h"
+#include "utils/algo.h"
 #include "utils/memory.h"
 #include "utils/strings.h"
 
@@ -275,13 +275,30 @@ TEST_CASE("math", "[math][unit]") {
     }
 }
 
-TEST_CASE("casts", "[casts][unit]") {
-    SECTION("unsigned_to_signed") {
-        REQUIRE(to_signed((uint8_t)0) == 0);
-        REQUIRE(to_signed((uint8_t)127) == 127);
-        REQUIRE(to_signed((uint8_t)128) == -128);
-        REQUIRE(to_signed((uint8_t)129) == -127);
-        REQUIRE(to_signed((uint8_t)255) == -1);
+TEST_CASE("algo", "[algo][unit]") {
+    SECTION("clamp") {
+        REQUIRE(clamp(6, 2, 8) == 6);
+        REQUIRE(clamp(6, 2.0, 8.0) == 6.0);
+        REQUIRE(clamp(2, 2.0, 8.0) == 2.0);
+        REQUIRE(clamp(8, 2.0, 8.0) == 8.0);
+        REQUIRE(clamp(10, 2.0, 8.0) == 8.0);
+        REQUIRE(clamp(1, 2.0, 8.0) == 2.0);
+        REQUIRE(clamp(32767.0, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max()) == 32767.0);
+        REQUIRE(clamp(-32768.0, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max()) == -32768.0);
+        REQUIRE(clamp(32767.00000001, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max()) ==
+                32767.0);
+        REQUIRE(clamp(-32768.000000001, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max()) ==
+                -32768.0);
+    }
+
+    SECTION("casts") {
+        SECTION("unsigned_to_signed") {
+            REQUIRE(static_cast<int8_t>(static_cast<uint8_t>(0)) == 0);
+            REQUIRE(static_cast<int8_t>(static_cast<uint8_t>(127)) == 127);
+            REQUIRE(static_cast<int8_t>(static_cast<uint8_t>(128)) == -128);
+            REQUIRE(static_cast<int8_t>(static_cast<uint8_t>(129)) == -127);
+            REQUIRE(static_cast<int8_t>(static_cast<uint8_t>(255)) == -1);
+        }
     }
 }
 

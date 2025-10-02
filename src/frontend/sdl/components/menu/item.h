@@ -1,6 +1,9 @@
 #ifndef MENUITEM_H
 #define MENUITEM_H
 
+#include <functional>
+#include <string>
+
 struct MenuItem {
     enum class Justification { Left, Center, Right };
 

@@ -44,9 +44,8 @@ public:
         gb.apu.set_sample_rate(sample_rate);
     }
 
-    void set_audio_volume(float volume) const {
-        gb.apu.set_volume(volume);
-    }
+    void set_audio_volume(double volume) const;
+    void set_audio_high_pass_filter_enabled(bool enabled) const;
 #endif
 
     // Save/Load RAM

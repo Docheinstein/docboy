@@ -30,11 +30,10 @@ public:
     explicit Apu(Timers& timers, const uint16_t& pc);
 #endif
 
-    void set_volume(float volume /* [0:1]*/);
-
-    void set_sample_rate(double rate);
-
-    void set_audio_sample_callback(std::function<void(const AudioSample sample)>&& callback);
+    void set_volume(double volume /* [0:1]*/);
+    void set_sample_rate(double rate /* Hz */);
+    void set_audio_sample_callback(std::function<void(AudioSample sample)>&& callback);
+    void set_high_pass_filter_enabled(bool enabled);
 
     void tick_t0();
     void tick_t1();
@@ -272,7 +271,7 @@ private:
     uint8_t compute_ch3_digital_output() const;
     uint8_t compute_ch4_digital_output() const;
     DigitalAudioSample compute_digital_audio_sample() const;
-    AudioSample compute_audio_sample() const;
+    AudioSample compute_audio_sample();
 
     void flush_pending_write();
 
@@ -330,13 +329,22 @@ private:
 
     std::function<void(AudioSample)> audio_sample_callback {};
 
-    float master_volume {1.0f};
+    double master_volume {1.0f};
 
     struct {
         uint64_t ticks {};
         double period {};
         double next_tick {};
     } sampling;
+
+    struct {
+        bool enabled {};
+        double alpha {};
+        struct {
+            double left {};
+            double right {};
+        } delta;
+    } high_pass_filter;
 
     uint8_t apu_clock {};
     bool prev_div_edge_bit {};

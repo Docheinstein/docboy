@@ -147,6 +147,7 @@ void read_preferences(const std::string& path, Preferences& p) {
     ini_reader.add_property("audio_player_source", p.audio_player_source, parse_integer<uint8_t>);
 #endif
     ini_reader.add_property("volume", p.volume, parse_integer<uint8_t, 0, 100>);
+    ini_reader.add_property("high_pass_filter", p.high_pass_filter, parse_bool);
     ini_reader.add_property("dynamic_sample_rate_control", p.dynamic_sample_rate.enabled, parse_bool);
     ini_reader.add_property("dynamic_sample_rate_control_max_latency", p.dynamic_sample_rate.max_latency,
                             parse_integer<uint32_t>);
@@ -210,6 +211,7 @@ void write_preferences(const std::string& path, const Preferences& p) {
     properties.emplace("audio_player_source", std::to_string(p.audio_player_source));
 #endif
     properties.emplace("volume", std::to_string(p.volume));
+    properties.emplace("high_pass_filter", std::to_string(p.high_pass_filter));
     properties.emplace("dynamic_sample_rate_control", std::to_string(p.dynamic_sample_rate.enabled));
     properties.emplace("dynamic_sample_rate_control_max_latency", std::to_string(p.dynamic_sample_rate.max_latency));
     properties.emplace("dynamic_sample_rate_control_moving_average_factor",

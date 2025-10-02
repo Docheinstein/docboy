@@ -40,6 +40,13 @@ AudioOptionsScreen::AudioOptionsScreen(Context context) :
                                                on_increase_volume();
                                            }});
 
+    items.high_pass_filter_enabled_label = &menu.add_item(Label {"High-Pass Filter", MenuItem::Justification::Center});
+
+    items.high_pass_filter_enabled = &menu.add_item(Spinner {[this] {
+                                                                 on_change_high_pass_filter_enabled();
+                                                             },
+                                                             MenuItem::Justification::Center});
+
     items.dynamic_sample_rate_control.enabled_label =
         &menu.add_item(Label {"Dynamic Rate Ctrl", MenuItem::Justification::Center});
 
@@ -100,6 +107,10 @@ void AudioOptionsScreen::redraw() {
     items.volume->visible = audio_enabled;
     items.volume->text = "Volume  " + std::to_string(main.get_volume());
 
+    items.high_pass_filter_enabled_label->visible = audio_enabled;
+    items.high_pass_filter_enabled->visible = audio_enabled;
+    items.high_pass_filter_enabled->text = std::string {main.is_high_pass_filter_enabled() ? "Enabled" : "Disabled"};
+
     items.dynamic_sample_rate_control.enabled_label->visible = audio_enabled;
     items.dynamic_sample_rate_control.enabled->visible = audio_enabled;
     items.dynamic_sample_rate_control.enabled->text =
@@ -133,6 +144,15 @@ void AudioOptionsScreen::on_change_audio_enabled() {
     redraw();
 }
 
+#ifdef ENABLE_TWO_PLAYERS_MODE
+void AudioOptionsScreen::on_change_audio_player_source() {
+    main.set_audio_player_source(main.get_audio_player_source() == MainController::AUDIO_PLAYER_SOURCE_1
+                                     ? MainController::AUDIO_PLAYER_SOURCE_2
+                                     : MainController::AUDIO_PLAYER_SOURCE_1);
+    redraw();
+}
+#endif
+
 void AudioOptionsScreen::on_decrease_volume() {
     int32_t volume = std::max(main.get_volume() - VOLUME_STEP, 0);
     ASSERT(volume >= 0 && volume <= MainController::VOLUME_MAX);
@@ -147,10 +167,8 @@ void AudioOptionsScreen::on_increase_volume() {
     redraw();
 }
 
-void AudioOptionsScreen::on_change_audio_player_source() {
-    main.set_audio_player_source(main.get_audio_player_source() == MainController::AUDIO_PLAYER_SOURCE_1
-                                     ? MainController::AUDIO_PLAYER_SOURCE_2
-                                     : MainController::AUDIO_PLAYER_SOURCE_1);
+void AudioOptionsScreen::on_change_high_pass_filter_enabled() {
+    main.set_high_pass_filter_enabled(!main.is_high_pass_filter_enabled());
     redraw();
 }
 

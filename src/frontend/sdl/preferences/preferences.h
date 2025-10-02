@@ -1,7 +1,6 @@
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
-#include <array>
 #include <string>
 
 #include "SDL3/SDL.h"
@@ -39,6 +38,7 @@ struct Preferences {
     uint8_t audio_player_source {};
 #endif
     uint8_t volume {};
+    bool high_pass_filter {};
     struct {
         bool enabled {};
         uint32_t max_latency {};

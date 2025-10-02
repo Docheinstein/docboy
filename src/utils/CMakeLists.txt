@@ -1,10 +1,10 @@
 add_library(utils STATIC)
 
 target_sources(utils PRIVATE
+    utils/algo.h
     utils/arrays.h
     utils/asserts.h
     utils/bits.h
-    utils/casts.h
     utils/exceptions.h
     utils/fillqueue.h
     utils/formatters.h

@@ -20,6 +20,8 @@ private:
         MenuItem* audio_player_source {};
 #endif
         MenuItem* volume {};
+        MenuItem* high_pass_filter_enabled_label {};
+        MenuItem* high_pass_filter_enabled {};
         struct {
             MenuItem* enabled_label {};
             MenuItem* enabled {};
@@ -34,12 +36,14 @@ private:
 
     void on_change_audio_enabled();
 
-    void on_decrease_volume();
-    void on_increase_volume();
-
 #ifdef ENABLE_TWO_PLAYERS_MODE
     void on_change_audio_player_source();
 #endif
+
+    void on_decrease_volume();
+    void on_increase_volume();
+
+    void on_change_high_pass_filter_enabled();
 
     void on_change_dynamic_sample_rate_control();
 
