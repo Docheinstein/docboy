@@ -958,8 +958,10 @@ void Ppu::vblank_last_line_453() {
     // It seems that the first OAM entry is read here, at dot 453, before the beginning of OAM Scan.
     oam_scan_read_request();
 
-    // It seems that STAT's mode is reset the last cycle (to investigate)
+#ifndef ENABLE_CGB
+    // On DMG it seems that STAT's mode is reset the last cycle (to investigate)
     update_mode<HBLANK>();
+#endif
 
     dots = 454;
 
