@@ -18,11 +18,11 @@ IniReader::Result IniReader::parse(const std::string& filename) {
         std::vector<std::string> tokens;
         split(line, std::back_inserter(tokens), '=');
 
-        std::vector<std::string> trimmed_tokens;
-        std::transform(tokens.begin(), tokens.end(), std::back_inserter(trimmed_tokens), [](const std::string& token) {
-            return trim(token);
-        });
-        return trimmed_tokens;
+        for (auto& token : tokens) {
+            trim(token);
+        }
+
+        return tokens;
     };
 
     // Read lines one by one

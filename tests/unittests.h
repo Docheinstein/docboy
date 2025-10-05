@@ -304,8 +304,23 @@ TEST_CASE("algo", "[algo][unit]") {
 
 TEST_CASE("strings", "[str][unit]") {
     SECTION("trim") {
-        REQUIRE(trim("  abc ") == "abc");
-        REQUIRE(trim("abc") == "abc");
+        std::string s;
+
+        s = "  abc ";
+        ltrim(s);
+        REQUIRE(s == "abc ");
+
+        s = "  abc ";
+        rtrim(s);
+        REQUIRE(s == "  abc");
+
+        s = "  abc ";
+        trim(s);
+        REQUIRE(s == "abc");
+
+        s = "abc";
+        trim(s);
+        REQUIRE(s == "abc");
     }
 
     SECTION("lpad") {

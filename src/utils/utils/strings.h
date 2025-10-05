@@ -57,7 +57,9 @@ std::string join(const Container& container, SepType sep, Transform&& transform)
     return ss;
 }
 
-std::string trim(const std::string& s);
+void ltrim(std::string& s);
+void rtrim(std::string& s);
+void trim(std::string& s);
 
 bool equals_ignore_case(const std::string& s1, const std::string& s2);
 

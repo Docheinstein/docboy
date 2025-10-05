@@ -346,6 +346,10 @@ private:
     bool is_glitched_line_0 {};
     uint8_t glitched_line_0_hblank_delay {}; // [0, 2]
 
+#ifndef ENABLE_CGB
+    bool vblank_last_line_stat_mode_hblank_glitch {};
+#endif
+
     uint8_t next_ly {};
 
 #ifdef ENABLE_DEBUGGER

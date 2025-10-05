@@ -1,6 +1,5 @@
 #include "strings.h"
 
-namespace {
 void ltrim(std::string& s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
                 return !std::isspace(ch);
@@ -15,13 +14,10 @@ void rtrim(std::string& s) {
                 .base(),
             s.end());
 }
-} // namespace
 
-std::string trim(const std::string& s) {
-    std::string out = s;
-    ltrim(out);
-    rtrim(out);
-    return out;
+void trim(std::string& s) {
+    ltrim(s);
+    rtrim(s);
 }
 
 bool equals_ignore_case(const std::string& s1, const std::string& s2) {

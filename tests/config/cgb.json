@@ -8096,6 +8096,66 @@
             ]
         },
         {
+            "rom": "docboy/ppu/hblank_stat_interrupt_ly143.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_stat_interrupt_ly144.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_stat_interrupt_ly152.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_stat_interrupt_ly153.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_stat_interrupt_ly154.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_stat_interrupt_ly155.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/hblank_timing_scx0_round1.gbc",
             "memory": [
                 {
@@ -8197,6 +8257,66 @@
         },
         {
             "rom": "docboy/ppu/ly_143_ly_timing_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round3.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round5.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/ly_153_lyc_eq_ly_lyc0_timing_round6.gbc",
             "memory": [
                 {
                     "address": 65520,
@@ -64388,6 +64508,66 @@
         },
         {
             "rom": "docboy/double_speed/ppu/double_speed_ppu_hblank_if_b_scx3_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_stat_mode_ly153_nops428.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_stat_mode_ly153_nops429.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_stat_mode_ly153_nops430.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_stat_mode_ly153_nops431.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_stat_mode_ly153_nops432.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_stat_mode_ly153_nops433.gbc",
             "memory": [
                 {
                     "address": 65520,

@@ -281,6 +281,9 @@ void Ppu::turn_off() {
     tick_selector = &Ppu::oam_scan_after_turn_on;
 
     is_glitched_line_0 = true;
+#ifndef ENABLE_CGB
+    glitched_line_0_hblank_delay = false;
+#endif
 
     enable_lyc_eq_ly_irq = true;
 
@@ -340,17 +343,21 @@ inline void Ppu::tick_stat() {
     // There are a few exceptions, though:
     // 1) For the first line after PPU is turned off, STAT's mode appears as HBlank during OAM Scan.
     // 2) During DMA transfer, STAT's mode appears as HBlank during OAM Scan.
+    // 3) On DMG, during the transition between VBlank and OAM Scan, STAT's mode appears as HBlank.
     // Note that the "internal" PPU mode remains the same (e.g. STAT interrupt does not take into account this quirk).
-    if (mode == OAM_SCAN && (is_glitched_line_0 || dma_controller.is_active())) {
-        stat.mode = HBLANK;
-    } else {
-        // The difference between stat_mode and stat.mode is subtle:
-        // * stat.mode contains the "unglitched" STAT mode (as seen by HDMA, for example).
-        // * stat_mode contains the mode that is read by reading STAT (FF41).
-        // These two are always the same, except on CGB double speed mode,
-        // where HBlank seems to take 1 extra T-Cycle to be visible through STAT's read.
-        stat.mode = mode;
-    }
+    const bool force_hblank_mode = mode == OAM_SCAN && (is_glitched_line_0 || dma_controller.is_active()
+#ifndef ENABLE_CGB
+                                                        || vblank_last_line_stat_mode_hblank_glitch
+#endif
+                                                       );
+
+    stat.mode = force_hblank_mode ? HBLANK : mode;
+
+    // The difference between stat_mode and stat.mode is subtle:
+    // * stat.mode contains the "unglitched" STAT mode (as seen by HDMA, for example).
+    // * stat_mode contains the mode that is read by reading STAT (FF41).
+    // These two are always the same, except on CGB double speed mode,
+    // where HBlank seems to take 1 extra T-Cycle to be visible through STAT's read.
 
 #ifdef ENABLE_CGB
     if (!delay_stat_mode_update) {
@@ -959,8 +966,12 @@ void Ppu::vblank_last_line_453() {
     oam_scan_read_request();
 
 #ifndef ENABLE_CGB
-    // On DMG it seems that STAT's mode is reset the last cycle (to investigate)
-    update_mode<HBLANK>();
+    // On DMG, reading STAT the last few cycles of VBlank yields mode HBlank.
+    // Nevertheless, this mode change does not cause a STAT interrupt for HBlank mode.
+    vblank_last_line_stat_mode_hblank_glitch = true;
+
+    // I guess "internal" mode is changed to OAM Scan
+    update_mode<OAM_SCAN>();
 #endif
 
     dots = 454;
@@ -1155,7 +1166,15 @@ void Ppu::enter_new_frame() {
     // Reset window activation state
     w.active_for_frame = false;
 
+#ifdef ENABLE_CGB
     update_mode<OAM_SCAN>();
+#else
+    // End of HBlank mode glitch
+    vblank_last_line_stat_mode_hblank_glitch = false;
+
+    // We should already be in OAM Scan mode at this point
+    ASSERT(mode == OAM_SCAN);
+#endif
 
     enter_oam_scan();
 
@@ -2135,6 +2154,9 @@ void Ppu::save_state(Parcel& parcel) const {
 
     parcel.write_bool(is_glitched_line_0);
     parcel.write_uint8(glitched_line_0_hblank_delay);
+#ifndef ENABLE_CGB
+    parcel.write_bool(vblank_last_line_stat_mode_hblank_glitch);
+#endif
     parcel.write_uint8(next_ly);
 
     parcel.write_uint8(registers.oam.a);
@@ -2288,6 +2310,9 @@ void Ppu::load_state(Parcel& parcel) {
 
     is_glitched_line_0 = parcel.read_bool();
     glitched_line_0_hblank_delay = parcel.read_uint8();
+#ifndef ENABLE_CGB
+    vblank_last_line_stat_mode_hblank_glitch = parcel.read_bool();
+#endif
     next_ly = parcel.read_uint8();
 
     registers.oam.a = parcel.read_uint8();
@@ -2457,6 +2482,9 @@ void Ppu::reset() {
 
     is_glitched_line_0 = false;
     glitched_line_0_hblank_delay = 0;
+#ifndef ENABLE_CGB
+    vblank_last_line_stat_mode_hblank_glitch = false;
+#endif
 
     next_ly = 0;
 

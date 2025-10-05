@@ -544,10 +544,13 @@ void detach_sigint_handler() {
 }
 #endif
 
-std::string to_string(const DisassembledInstructionReference& instr) {
+std::string to_string(const DisassembledInstructionReference& instr, bool rpad = true) {
     std::stringstream ss;
-    ss << hex(instr.address) << "  :  " << std::left << std::setw(9) << hex(instr.instruction) << "   " << std::left
-       << std::setw(23) << instruction_mnemonic(instr.instruction, instr.address);
+    ss << hex(instr.address) << "  :  " << std::left << std::setw(9) << hex(instr.instruction) << "   " << std::left;
+    if (rpad) {
+        ss << std::setw(23);
+    }
+    ss << instruction_mnemonic(instr.instruction, instr.address);
     return ss.str();
 }
 
@@ -812,7 +815,7 @@ DebuggerFrontend::handle_command<FrontendDumpDisassembleCommand>(const FrontendD
     std::vector<DisassembledInstructionReference> disassembled = backend.get_disassembled_instructions();
     for (uint32_t i = 0; i < disassembled.size(); i++) {
         const auto& instr = disassembled[i];
-        std::cerr << to_string(instr) << std::endl;
+        std::cerr << to_string(instr, false /* no right padding */) << std::endl;
         if (i < disassembled.size() - 1 && instr.address + instr.instruction.size() != disassembled[i + 1].address) {
             std::cerr << std::endl; // next instruction is not adjacent to this one
         }
@@ -983,7 +986,11 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
 
         const bool m_trace = (trace & TraceFlagMCycle) || (trace & TraceFlagTCycle);
         const bool t_trace = (trace & TraceFlagTCycle);
+#ifdef ENABLE_CGB
+        const bool is_m_cycle = tick % 4 == 0 || (gb.speed_switch_controller.is_double_speed_mode() && tick % 2 == 0);
+#else
         const bool is_m_cycle = tick % 4 == 0;
+#endif
         const bool is_new_instruction = cpu.instruction.microop.counter == 0;
 
         if (!(t_trace || (is_m_cycle && m_trace) || (is_m_cycle && is_new_instruction))) {
@@ -1059,7 +1066,7 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
 
         if (trace & TraceFlagPpu) {
             const Ppu& ppu = gb.ppu;
-            ss << "Mode:" << +gb.ppu.stat.mode << " Dots:" << std::setw(12) << ppu.dots << "  ";
+            ss << "LY:" << +gb.ppu.ly << " Mode:" << +gb.ppu.stat.mode << " Dots:" << std::setw(12) << ppu.dots << "  ";
         }
 
         if (trace & TraceFlagHash) {
@@ -2187,6 +2194,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             ASSERT_NO_ENTRY();
             return "Unknown";
         }() << endl;
+        b << yellow("LY") << "                  :  " << +gb.ppu.ly << endl;
         b << yellow("Last Stat IRQ") << "       :  " << gb.ppu.last_stat_irq << endl;
         b << yellow("LYC_EQ_LY En.") << "       :  " << gb.ppu.enable_lyc_eq_ly_irq << endl;
 
