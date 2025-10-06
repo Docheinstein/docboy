@@ -3,7 +3,6 @@
 #include "utils/arrays.h"
 #include "utils/bits.h"
 #include "utils/exceptions.h"
-#include "utils/formatters.h"
 
 /*
  * ROM access.
@@ -28,13 +27,14 @@
  * 0xA000 - 0xBFFF   | S             | A[0:12]
  */
 
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
-Mbc5<RomSize, RamSize, Battery>::Mbc5(const uint8_t *data, uint32_t length) {
-    ASSERT(length <= array_size(rom), "Mbc5: actual ROM size (" + std::to_string(length) + ") exceeds nominal ROM size (" +  std::to_string(array_size(rom)) + ")");
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+Mbc5<RomSize, RamSize, Battery>::Mbc5(const uint8_t* data, uint32_t length) {
+    ASSERT(length <= array_size(rom), "Mbc5: actual ROM size (" + std::to_string(length) +
+                                          ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 }
 
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 uint8_t Mbc5<RomSize, RamSize, Battery>::read_rom(uint16_t address) const {
     ASSERT(address < 0x8000);
 
@@ -49,7 +49,7 @@ uint8_t Mbc5<RomSize, RamSize, Battery>::read_rom(uint16_t address) const {
     return rom[rom_address];
 }
 
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 void Mbc5<RomSize, RamSize, Battery>::write_rom(uint16_t address, uint8_t value) {
     ASSERT(address < 0x8000);
 
@@ -68,7 +68,7 @@ void Mbc5<RomSize, RamSize, Battery>::write_rom(uint16_t address, uint8_t value)
     if (address < 0x6000) {
         // 0x3000 - 0x3FFF
         if (address < 0x4000) {
-            rom_bank_selector = concat(keep_bits<1>(value) ,keep_bits<8>(rom_bank_selector));
+            rom_bank_selector = concat(keep_bits<1>(value), keep_bits<8>(rom_bank_selector));
             return;
         }
 
@@ -78,8 +78,7 @@ void Mbc5<RomSize, RamSize, Battery>::write_rom(uint16_t address, uint8_t value)
     }
 }
 
-
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 uint8_t Mbc5<RomSize, RamSize, Battery>::read_ram(uint16_t address) const {
     ASSERT(address >= 0xA000 && address < 0xC000);
 
@@ -95,7 +94,7 @@ uint8_t Mbc5<RomSize, RamSize, Battery>::read_ram(uint16_t address) const {
     return 0xFF;
 }
 
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 void Mbc5<RomSize, RamSize, Battery>::write_ram(uint16_t address, uint8_t value) {
     ASSERT(address >= 0xA000 && address < 0xC000);
 
@@ -109,16 +108,15 @@ void Mbc5<RomSize, RamSize, Battery>::write_ram(uint16_t address, uint8_t value)
     }
 }
 
-
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t *Mbc5<RomSize, RamSize, Battery>::get_ram_save_data() {
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint8_t* Mbc5<RomSize, RamSize, Battery>::get_ram_save_data() {
     if constexpr (Ram && Battery) {
         return ram;
     }
     return nullptr;
 }
 
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 uint32_t Mbc5<RomSize, RamSize, Battery>::get_ram_save_size() const {
     if constexpr (Ram && Battery) {
         return RamSize;
@@ -127,20 +125,19 @@ uint32_t Mbc5<RomSize, RamSize, Battery>::get_ram_save_size() const {
 }
 
 #ifdef ENABLE_DEBUGGER
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t *Mbc5<RomSize, RamSize, Battery>::get_rom_data() {
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint8_t* Mbc5<RomSize, RamSize, Battery>::get_rom_data() {
     return rom;
 }
 
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 uint32_t Mbc5<RomSize, RamSize, Battery>::get_rom_size() const {
     return RomSize;
 }
 #endif
 
-
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
-void Mbc5<RomSize, RamSize, Battery>::save_state(Parcel &parcel) const {
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+void Mbc5<RomSize, RamSize, Battery>::save_state(Parcel& parcel) const {
     parcel.write_bool(ram_enabled);
     parcel.write_uint16(rom_bank_selector);
     parcel.write_uint8(ram_bank_selector);
@@ -150,8 +147,8 @@ void Mbc5<RomSize, RamSize, Battery>::save_state(Parcel &parcel) const {
     }
 }
 
-template<uint32_t RomSize, uint32_t RamSize, bool Battery>
-void Mbc5<RomSize, RamSize, Battery>::load_state(Parcel &parcel) {
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+void Mbc5<RomSize, RamSize, Battery>::load_state(Parcel& parcel) {
     ram_enabled = parcel.read_bool();
     rom_bank_selector = parcel.read_uint16();
     ram_bank_selector = parcel.read_uint8();
