@@ -8236,6 +8236,16 @@
             ]
         },
         {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode0.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/ly0_stat_hblank_interrupt.gbc",
             "memory": [
                 {

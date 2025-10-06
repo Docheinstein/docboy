@@ -4180,6 +4180,106 @@
             ]
         },
         {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode0.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode0_change_lyc_eq_ly_during_mode2.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode0_lyc_eq_ly_next.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode0_lyc_eq_ly_prev.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode0_mode2.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode0_mode2_change_lyc_eq_ly_during_mode2.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode0_mode2_lyc_eq_ly_next.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode0_mode2_lyc_eq_ly_prev.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode2_lyc_eq_ly_next.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_to_oam_clear_last_stat_irq_mode2_lyc_eq_ly_prev.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/ly_143_ly_timing_round1.gb",
             "memory": [
                 {

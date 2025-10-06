@@ -2507,7 +2507,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 
     const auto make_apu_general_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
-        b << yellow("Clock") << "        :  " << gb.apu.apu_clock << endl;
+        b << yellow("Clock") << "          :  " << gb.apu.apu_clock << endl;
         return b;
     };
 

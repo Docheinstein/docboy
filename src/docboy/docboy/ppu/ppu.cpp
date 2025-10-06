@@ -376,15 +376,34 @@ inline void Ppu::update_stat_irq(bool irq) {
 }
 
 inline void Ppu::update_stat_irq_for_oam_mode() {
+    ASSERT(enable_lyc_eq_ly_irq);
+    ASSERT(last_ly == ly);
+    ASSERT(last_lyc == lyc);
+
     // OAM mode interrupt is not checked every dot: it is checked only here during mode transition.
     // Furthermore, it seems that having a pending LYC_EQ_LY signal high prevents the STAT IRQ to go low.
     // [daid/ppu_scanline_bgp]
-    bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && is_lyc_eq_ly();
-    update_stat_irq(stat.oam_int || lyc_eq_ly_irq);
+    bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && (last_lyc == last_ly);
+    bool lyc_eq_next_ly_irq = stat.lyc_eq_ly_int && (last_lyc == last_ly + 1);
+    bool irq = stat.oam_int || lyc_eq_ly_irq;
+
+    pending_stat_irq = last_stat_irq < irq;
+
+    // Actually, from the tests it seems that the only case in which the STAT IRQ is reset
+    // (and consequently there's an opportunity to trigger an interrupt on raising edge)
+    // is when LY_EQ_LYC is true for the next LY.
+    // TODO: This is bizarre by the way, find a more reasonable way to represent this oddity.
+    if (lyc_eq_next_ly_irq) {
+        last_stat_irq = irq;
+    }
 }
 
 inline void Ppu::update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq() {
-    bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && is_lyc_eq_ly();
+    ASSERT(enable_lyc_eq_ly_irq);
+    ASSERT(last_ly == ly);
+    ASSERT(last_lyc == lyc);
+
+    bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && (last_lyc == last_ly);
     bool irq = stat.oam_int || lyc_eq_ly_irq;
     pending_stat_irq = last_stat_irq < irq;
 }

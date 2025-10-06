@@ -6,8 +6,8 @@
 #include "runtests.h"
 
 TEST_CASE("dmg", "[emulation]") {
-    run_test_roms_from_json(TESTS_ROOT_FOLDER "/roms/dmg/", TESTS_ROOT_FOLDER "/results/dmg/",
-                            TESTS_ROOT_FOLDER "/config/dmg.json", "ppu");
+    run_test_roms_from_json(TESTS_ROOT_FOLDER "/roms/dmg/", TESTS_ROaOT_FOLDER "/results/dmg/",
+                            TESTS_ROOT_FOLDER "/config/dmg.json");
 }
 
 #endif // DMGTESTS_H
