@@ -31142,6 +31142,46 @@
             ]
         },
         {
+            "rom": "docboy/double_speed/apu/ch2/double_speed_apu_ch2_wave_after_trigger_duty50_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/apu/ch2/double_speed_apu_ch2_wave_after_trigger_duty50_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/apu/ch2/double_speed_apu_ch2_wave_after_trigger_duty75_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/apu/ch2/double_speed_apu_ch2_wave_after_trigger_duty75_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/double_speed/apu/ch2/speed_switch_to_double_apu_ch2_volume_sweep_divapu2_divbit00_round1.gbc",
             "memory": [
                 {
