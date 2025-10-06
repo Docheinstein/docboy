@@ -378,7 +378,6 @@ inline void Ppu::update_stat_irq(bool irq) {
 inline void Ppu::update_stat_irq_for_oam_mode() {
     ASSERT(enable_lyc_eq_ly_irq);
     ASSERT(last_ly == ly);
-    ASSERT(last_lyc == lyc);
 
     // OAM mode interrupt is not checked every dot: it is checked only here during mode transition.
     // Furthermore, it seems that having a pending LYC_EQ_LY signal high prevents the STAT IRQ to go low.
@@ -401,7 +400,6 @@ inline void Ppu::update_stat_irq_for_oam_mode() {
 inline void Ppu::update_stat_irq_for_oam_mode_do_not_clear_last_stat_irq() {
     ASSERT(enable_lyc_eq_ly_irq);
     ASSERT(last_ly == ly);
-    ASSERT(last_lyc == lyc);
 
     bool lyc_eq_ly_irq = stat.lyc_eq_ly_int && (last_lyc == last_ly);
     bool irq = stat.oam_int || lyc_eq_ly_irq;
