@@ -2207,14 +2207,15 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 #ifdef ENABLE_CGB
         b << subheader("bg palettes", width) << endl;
 
-        const auto bg_palette = [this, &b](uint8_t i) -> Text {
-            uint16_t rgb555 = gb.ppu.bg_palettes[2 * i] << 8 | gb.ppu.bg_palettes[2 * i + 1];
+        const auto bg_palette = [this](uint8_t palette_num, uint8_t palette_color_index) -> Text {
+            uint8_t word_index = 8 * palette_num + 2 * palette_color_index;
+            uint16_t rgb555 = concat(gb.ppu.bg_palettes[word_index], gb.ppu.bg_palettes[word_index + 1]);
             return color(hex(rgb555), RGB555_TO_ANSI_COLORS[rgb555]);
         };
 
         for (uint8_t i = 0; i < 8; i++) {
-            b << yellow("BGP") << yellow(i) << "              : " << bg_palette(i) << " " << bg_palette(i + 1) << " "
-              << bg_palette(i + 2) << " " << bg_palette(i + 3) << endl;
+            b << yellow("BGP") << yellow(i) << "              : " << bg_palette(i, 0) << " " << bg_palette(i, 1) << " "
+              << bg_palette(i, 2) << " " << bg_palette(i, 3) << endl;
         }
 #endif
 
@@ -2379,15 +2380,17 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
 #ifdef ENABLE_CGB
         b << subheader("obj palettes", width) << endl;
 
-        const auto obj_palette = [this, &b](uint8_t i) -> Text {
-            uint16_t rgb555 = gb.ppu.obj_palettes[2 * i] << 8 | gb.ppu.obj_palettes[2 * i + 1];
+        const auto obj_palette = [this](uint8_t palette_num, uint8_t palette_color_index) -> Text {
+            uint8_t word_index = 8 * palette_num + 2 * palette_color_index;
+            uint16_t rgb555 = concat(gb.ppu.obj_palettes[word_index], gb.ppu.obj_palettes[word_index + 1]);
             return color(hex(rgb555), RGB555_TO_ANSI_COLORS[rgb555]);
         };
 
         for (uint8_t i = 0; i < 8; i++) {
-            b << yellow("OBJP") << yellow(i) << "               : " << obj_palette(i) << " " << obj_palette(i + 1)
-              << " " << obj_palette(i + 2) << " " << obj_palette(i + 3) << endl;
+            b << yellow("OBJP") << yellow(i) << "              : " << obj_palette(i, 0) << " " << obj_palette(i, 1)
+              << " " << obj_palette(i, 2) << " " << obj_palette(i, 3) << endl;
         }
+
 #endif
 
         // OAM Registers
