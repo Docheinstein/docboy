@@ -22538,6 +22538,166 @@
             ]
         },
         {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu0_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu0_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu1_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu1_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu2_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu2_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu3_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu3_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu4_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu4_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu5_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu5_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu6_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu6_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu7_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu7_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/apu/ch2/ch2_volume_sweep_round1.gbc",
             "memory": [
                 {
