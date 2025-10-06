@@ -12,7 +12,7 @@
 #include "SDL3/SDL.h"
 
 namespace {
-constexpr uint8_t VOLUME_STEP = 10;
+constexpr uint8_t VOLUME_STEP = 5;
 constexpr double MOVING_AVERAGE_FACTOR_STEP = 0.005;
 constexpr double MAX_PITCH_FACTOR_STEP = 0.005;
 constexpr double MAX_LATENCY_STEP = 1;
