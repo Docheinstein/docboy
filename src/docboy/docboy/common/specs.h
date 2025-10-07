@@ -275,14 +275,14 @@ namespace Bits {
             constexpr uint8_t INPUT_LEFT_OR_B = 1;
             constexpr uint8_t INPUT_RIGHT_OR_A = 0;
         } // namespace P1
-    }     // namespace Joypad
+    } // namespace Joypad
 
     namespace Timers {
         namespace TAC {
             constexpr uint8_t ENABLE = 2;
             constexpr BitRange CLOCK_SELECTOR = {1, 0};
         } // namespace TAC
-    }     // namespace Timers
+    } // namespace Timers
 
     namespace Video {
         namespace LCDC {
@@ -422,7 +422,7 @@ namespace Bits {
             constexpr BitRange CGB_PALETTE = {2, 0};
 #endif
         } // namespace Attributes
-    }     // namespace OAM
+    } // namespace OAM
 
 #ifdef ENABLE_CGB
     namespace Background {
@@ -433,7 +433,7 @@ namespace Bits {
             constexpr uint8_t BANK = 3;
             constexpr BitRange PALETTE = {2, 0};
         } // namespace Attributes
-    }     // namespace Background
+    } // namespace Background
 #endif
 
 #ifdef ENABLE_CGB
@@ -442,7 +442,7 @@ namespace Bits {
             constexpr uint8_t HBLANK_TRANSFER = 7;
             constexpr BitRange TRANSFER_LENGTH = {6, 0};
         } // namespace HDMA5
-    }     // namespace Hdma
+    } // namespace Hdma
 #endif
 
     namespace Serial {
@@ -453,7 +453,7 @@ namespace Bits {
 #endif
             constexpr uint8_t CLOCK_SELECT = 0;
         } // namespace SC
-    }     // namespace Serial
+    } // namespace Serial
 
     namespace Rtc {
         namespace DH {
@@ -461,7 +461,7 @@ namespace Bits {
             constexpr uint8_t STOPPED = 6;
             constexpr uint8_t DAY = 0;
         } // namespace DH
-    }     // namespace Rtc
+    } // namespace Rtc
 
 #ifdef ENABLE_CGB
     namespace SpeedSwitch {
@@ -546,6 +546,8 @@ namespace Cartridge {
             constexpr uint32_t MBC5_RUMBLE = 0x1C;
             constexpr uint32_t MBC5_RUMBLE_RAM = 0x1D;
             constexpr uint32_t MBC5_RUMBLE_RAM_BATTERY = 0x1E;
+            constexpr uint32_t HUC3 = 0xFE;
+            constexpr uint32_t HUC1_RAM_BATTERY = 0xFF;
         } // namespace Mbc
 
         namespace Rom {

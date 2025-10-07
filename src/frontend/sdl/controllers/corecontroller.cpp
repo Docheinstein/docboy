@@ -80,7 +80,6 @@ bool CoreController::load_save() const {
     std::vector<uint8_t> data = read_file(get_save_path(), &ok);
 
     if (!ok) {
-        std::cerr << "WARN: failed to load save from '" << get_save_path() << "'" << std::endl;
         return false;
     }
 

@@ -7,6 +7,7 @@
 #include <regex>
 #include <utility>
 
+#include "docboy/cartridge/huc1/huc1.h"
 #include "docboy/cartridge/mbc1/mbc1.h"
 #include "docboy/cartridge/mbc1/mbc1m.h"
 #include "docboy/cartridge/mbc2/mbc2.h"
@@ -1390,6 +1391,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
             case Mbc::MBC5_RUMBLE_RAM:
             case Mbc::MBC5_RUMBLE_RAM_BATTERY:
                 return "MBC5";
+            case Mbc::HUC1_RAM_BATTERY:
+                return "HuC1";
             }
             ASSERT_NO_ENTRY();
             return {};
@@ -2096,6 +2099,123 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                     } else if (ram == Ram::KB_128) {
                         mbc5(static_cast<const Mbc5<8 * MB, 128 * KB, false>&>(cartridge));
                     }
+                }
+            }
+        } else if (mbc == Mbc::HUC1_RAM_BATTERY) {
+            const auto huc1 = [&b](auto&& cart) {
+                b << yellow("Ram Enabled") << "                  :  " << !cart.ir_enabled << endl;
+                b << yellow("IR Enabled") << "                   :  " << cart.ir_enabled << endl;
+                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.rom_bank_selector) << endl;
+                b << yellow("Ram Bank Selector") << "            :  " << hex(cart.ram_bank_selector) << endl;
+            };
+
+            if (rom == Rom::KB_32) {
+                if (ram == Ram::NONE) {
+                    huc1(static_cast<const HuC1<32 * KB, 0>&>(cartridge));
+                } else if (ram == Ram::KB_8) {
+                    huc1(static_cast<const HuC1<32 * KB, 8 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_32) {
+                    huc1(static_cast<const HuC1<32 * KB, 32 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_64) {
+                    huc1(static_cast<const HuC1<32 * KB, 64 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_128) {
+                    huc1(static_cast<const HuC1<32 * KB, 128 * KB>&>(cartridge));
+                }
+            } else if (rom == Rom::KB_64) {
+                if (ram == Ram::NONE) {
+                    huc1(static_cast<const HuC1<64 * KB, 0>&>(cartridge));
+                } else if (ram == Ram::KB_8) {
+                    huc1(static_cast<const HuC1<64 * KB, 8 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_32) {
+                    huc1(static_cast<const HuC1<64 * KB, 32 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_64) {
+                    huc1(static_cast<const HuC1<64 * KB, 64 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_128) {
+                    huc1(static_cast<const HuC1<64 * KB, 128 * KB>&>(cartridge));
+                }
+            } else if (rom == Rom::KB_128) {
+                if (ram == Ram::NONE) {
+                    huc1(static_cast<const HuC1<128 * KB, 0>&>(cartridge));
+                } else if (ram == Ram::KB_8) {
+                    huc1(static_cast<const HuC1<128 * KB, 8 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_32) {
+                    huc1(static_cast<const HuC1<128 * KB, 32 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_64) {
+                    huc1(static_cast<const HuC1<128 * KB, 64 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_128) {
+                    huc1(static_cast<const HuC1<128 * KB, 128 * KB>&>(cartridge));
+                }
+            } else if (rom == Rom::KB_256) {
+                if (ram == Ram::NONE) {
+                    huc1(static_cast<const HuC1<256 * KB, 0>&>(cartridge));
+                } else if (ram == Ram::KB_8) {
+                    huc1(static_cast<const HuC1<256 * KB, 8 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_32) {
+                    huc1(static_cast<const HuC1<256 * KB, 32 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_64) {
+                    huc1(static_cast<const HuC1<256 * KB, 64 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_128) {
+                    huc1(static_cast<const HuC1<256 * KB, 128 * KB>&>(cartridge));
+                }
+            } else if (rom == Rom::KB_512) {
+                if (ram == Ram::NONE) {
+                    huc1(static_cast<const HuC1<512 * KB, 0>&>(cartridge));
+                } else if (ram == Ram::KB_8) {
+                    huc1(static_cast<const HuC1<512 * KB, 8 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_32) {
+                    huc1(static_cast<const HuC1<512 * KB, 32 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_64) {
+                    huc1(static_cast<const HuC1<512 * KB, 64 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_128) {
+                    huc1(static_cast<const HuC1<512 * KB, 128 * KB>&>(cartridge));
+                }
+            } else if (rom == Rom::MB_1) {
+                if (ram == Ram::NONE) {
+                    huc1(static_cast<const HuC1<1 * MB, 0>&>(cartridge));
+                } else if (ram == Ram::KB_8) {
+                    huc1(static_cast<const HuC1<1 * MB, 8 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_32) {
+                    huc1(static_cast<const HuC1<1 * MB, 32 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_64) {
+                    huc1(static_cast<const HuC1<1 * MB, 64 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_128) {
+                    huc1(static_cast<const HuC1<1 * MB, 128 * KB>&>(cartridge));
+                }
+            } else if (rom == Rom::MB_2) {
+                if (ram == Ram::NONE) {
+                    huc1(static_cast<const HuC1<2 * MB, 0>&>(cartridge));
+                } else if (ram == Ram::KB_8) {
+                    huc1(static_cast<const HuC1<2 * MB, 8 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_32) {
+                    huc1(static_cast<const HuC1<2 * MB, 32 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_64) {
+                    huc1(static_cast<const HuC1<2 * MB, 64 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_128) {
+                    huc1(static_cast<const HuC1<2 * MB, 128 * KB>&>(cartridge));
+                }
+            } else if (rom == Rom::MB_4) {
+                if (ram == Ram::NONE) {
+                    huc1(static_cast<const HuC1<4 * MB, 0>&>(cartridge));
+                } else if (ram == Ram::KB_8) {
+                    huc1(static_cast<const HuC1<4 * MB, 8 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_32) {
+                    huc1(static_cast<const HuC1<4 * MB, 32 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_64) {
+                    huc1(static_cast<const HuC1<4 * MB, 64 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_128) {
+                    huc1(static_cast<const HuC1<4 * MB, 128 * KB>&>(cartridge));
+                }
+            } else if (rom == Rom::MB_8) {
+                if (ram == Ram::NONE) {
+                    huc1(static_cast<const HuC1<8 * MB, 0>&>(cartridge));
+                } else if (ram == Ram::KB_8) {
+                    huc1(static_cast<const HuC1<8 * MB, 8 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_32) {
+                    huc1(static_cast<const HuC1<8 * MB, 32 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_64) {
+                    huc1(static_cast<const HuC1<8 * MB, 64 * KB>&>(cartridge));
+                } else if (ram == Ram::KB_128) {
+                    huc1(static_cast<const HuC1<8 * MB, 128 * KB>&>(cartridge));
                 }
             }
         }
