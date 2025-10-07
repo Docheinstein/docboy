@@ -111,6 +111,16 @@
             ]
         },
         {
+            "rom": "docboy/boot/boot_vram0.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/boot/boot_vram1.gbc",
             "memory": [
                 {
@@ -7882,7 +7892,8 @@
         {
             "rom": "daid/ppu_scanline_bgp.gbc",
             "framebuffer": "daid/ppu_scanline_bgp.png",
-            "enabled": false
+            "enabled": false,
+            "comment": "TODO: maybe needs CGB compatibility mode?"
         },
         {
             "rom": "mattcurrie/cgb-acid2.gbc",
@@ -31861,8 +31872,7 @@
                     "value": 1,
                     "fail_value": 2
                 }
-            ],
-            "enabled": false
+            ]
         },
         {
             "rom": "docboy/double_speed/apu/ch3/double_speed_apu_ch3_length_timer_128_round2.gbc",
@@ -31872,8 +31882,7 @@
                     "value": 1,
                     "fail_value": 2
                 }
-            ],
-            "enabled": false
+            ]
         },
         {
             "rom": "docboy/double_speed/apu/ch3/double_speed_apu_ch3_length_timer_1_round1.gbc",
@@ -32896,6 +32905,16 @@
             ]
         },
         {
+            "rom": "docboy/double_speed/apu/ch3/speed_switch_to_double_apu_ch3_length_timer_128_div_round0.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/double_speed/apu/ch3/speed_switch_to_double_apu_ch3_length_timer_128_div_round1.gbc",
             "memory": [
                 {
@@ -32903,19 +32922,7 @@
                     "value": 1,
                     "fail_value": 2
                 }
-            ],
-            "enabled": false
-        },
-        {
-            "rom": "docboy/double_speed/apu/ch3/speed_switch_to_double_apu_ch3_length_timer_128_div_round2.gbc",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ],
-            "enabled": false
+            ]
         },
         {
             "rom": "docboy/double_speed/apu/ch3/speed_switch_to_double_apu_ch3_length_timer_128_round1.gbc",
@@ -59515,8 +59522,7 @@
     "double_speed/core": [
         {
             "rom": "daid/speed_switch_timing_div.gbc",
-            "framebuffer": "daid/speed_switch_timing_div.png",
-            "enabled": false
+            "framebuffer": "daid/speed_switch_timing_div.png"
         },
         {
             "rom": "daid/speed_switch_timing_ly.gbc",
