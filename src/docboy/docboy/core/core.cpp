@@ -448,20 +448,33 @@ void Core::detach_serial_link() const {
     gb.serial.detach();
 }
 
-bool Core::can_save_ram() const {
-    return get_ram_save_size() > 0;
+void Core::save(void* data) const {
+    memcpy(data, gb.cartridge_slot.cartridge->get_ram_save_data(), gb.cartridge_slot.cartridge->get_ram_save_size());
+    memcpy(static_cast<uint8_t*>(data) + gb.cartridge_slot.cartridge->get_ram_save_size(),
+           gb.cartridge_slot.cartridge->get_rtc_save_data(), gb.cartridge_slot.cartridge->get_rtc_save_size());
 }
 
-uint32_t Core::get_ram_save_size() const {
-    return gb.cartridge_slot.cartridge->get_ram_save_size();
+void Core::load(const void* data) const {
+    memcpy(gb.cartridge_slot.cartridge->get_ram_save_data(), data, gb.cartridge_slot.cartridge->get_ram_save_size());
+    memcpy(gb.cartridge_slot.cartridge->get_rtc_save_data(),
+           static_cast<const uint8_t*>(data) + gb.cartridge_slot.cartridge->get_ram_save_size(),
+           gb.cartridge_slot.cartridge->get_rtc_save_size());
 }
 
-void Core::save_ram(void* data) const {
-    memcpy(data, gb.cartridge_slot.cartridge->get_ram_save_data(), get_ram_save_size());
+bool Core::can_save() const {
+    return get_save_size() > 0;
 }
 
-void Core::load_ram(const void* data) const {
-    memcpy(gb.cartridge_slot.cartridge->get_ram_save_data(), data, get_ram_save_size());
+uint32_t Core::get_save_size() const {
+    return gb.cartridge_slot.cartridge->get_ram_save_size() + gb.cartridge_slot.cartridge->get_rtc_save_size();
+}
+
+void Core::save_state(void* data) const {
+    memcpy(data, parcelize_state().get_data(), get_state_size());
+}
+
+void Core::load_state(const void* data) {
+    unparcelize_state(Parcel {data, get_state_size()});
 }
 
 uint32_t Core::get_state_size() const {
@@ -472,14 +485,6 @@ uint32_t Core::get_state_size() const {
 
     ASSERT(rom_state_size != STATE_SAVE_SIZE_UNKNOWN);
     return rom_state_size;
-}
-
-void Core::save_state(void* data) const {
-    memcpy(data, parcelize_state().get_data(), get_state_size());
-}
-
-void Core::load_state(const void* data) {
-    unparcelize_state(Parcel {data, get_state_size()});
 }
 
 Parcel Core::parcelize_state() const {

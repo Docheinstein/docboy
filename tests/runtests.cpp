@@ -80,6 +80,10 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
             params.force_check = force_check_element.get_bool();
         }
 
+        if (auto limit_speed_element = object["limit_speed"]; limit_speed_element.error() == simdjson::SUCCESS) {
+            params.limit_speed = limit_speed_element.get_bool();
+        }
+
         if (auto inputs_elements = object["inputs"]; inputs_elements.error() == simdjson::SUCCESS) {
             std::vector<JoypadInput> inputs {};
 

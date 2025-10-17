@@ -13232,311 +13232,246 @@
     "mbc/mbc3": [
         {
             "rom": "aaaaaa123456789/rtc3test-1.gb",
-            "framebuffer": "aaaaaa123456789/rtc3test-1.png"
+            "framebuffer": "aaaaaa123456789/rtc3test-1.png",
+            "limit_speed": true
         },
         {
             "rom": "aaaaaa123456789/rtc3test-2.gb",
-            "framebuffer": "aaaaaa123456789/rtc3test-2.png"
+            "framebuffer": "aaaaaa123456789/rtc3test-2.png",
+            "limit_speed": true
         },
         {
             "rom": "aaaaaa123456789/rtc3test-3.gb",
             "framebuffer": "aaaaaa123456789/rtc3test-3.png",
-            "max_ticks": 250000000
+            "max_ticks": 250000000,
+            "limit_speed": true
         },
         {
             "rom": "cpp/latch-rtc-test.gb",
             "framebuffer": "cpp/latch-rtc-test.png",
-            "palette": "grey"
+            "palette": "grey",
+            "limit_speed": true
         },
         {
             "rom": "cpp/ramg-mbc3-test.gb",
             "framebuffer": "cpp/ramg-mbc3-test.png",
-            "palette": "grey"
+            "palette": "grey",
+            "limit_speed": true
         },
         {
             "rom": "cpp/rtc-invalid-banks-test.gb",
             "framebuffer": "cpp/rtc-invalid-banks-test.png",
-            "palette": "grey"
+            "palette": "grey",
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/no_rtc.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_initial_values.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_default_enabled.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_latch_0_to_1.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_latch01.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_latch_0_to_2.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_latch02.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_latch_0_to_3.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_latch10.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_latch_1_to_0.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_latch11.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_latch_1_to_1.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_tick_disabled.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_latch_4_to_3.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_tick_disabled_after.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_reset_on_write_minutes_multiple.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_latch_read.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_reset_on_write_seconds_multiple.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_latch_read_stopped.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_reset_on_write_seconds_round1.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_disabled_latch0.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_reset_on_write_seconds_round2.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_disabled_latch01.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_stopped.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_disabled_latch010.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_unmap_tick_then_map.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_disabled_latch1.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_write_latch_read.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_disabled_stopped_latch0.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_write_latch_read_without_reload.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_disabled_stopped_latch01.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_write_out_of_range_tick.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_disabled_stopped_latch010.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_write_read_out_of_range.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_disabled_stopped_latch1.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_write_read_out_of_range_unused_bits.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
+            ],
+            "limit_speed": true
         },
         {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_latch0.gb",
+            "rom": "docboy/mbc/mbc3/mbc3_without_rtc_tick.gb",
             "memory": [
                 {
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
                 }
-            ]
-        },
-        {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_latch01.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_latch010.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_latch1.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_out_of_range.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_out_of_range_unused_bits.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_stopped_latch0.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_stopped_latch01.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_stopped_latch010.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/mbc/mbc3/rtc_write_read_stopped_latch1.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
+            ],
+            "limit_speed": true
         }
     ],
     "mbc/mbc5": [
@@ -13627,6 +13562,109 @@
                 21,
                 34
             ]
+        }
+    ],
+    "mbc/huc3": [
+        {
+            "rom": "docboy/mbc/huc3/huc3_command_3x.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
+            "rom": "docboy/mbc/huc3/huc3_command_4x.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
+            "rom": "docboy/mbc/huc3/huc3_command_5x.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
+            "rom": "docboy/mbc/huc3/huc3_command_10.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
+            "rom": "docboy/mbc/huc3/huc3_command_62.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
+            "rom": "docboy/mbc/huc3/huc3_ram_ro.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
+            "rom": "docboy/mbc/huc3/huc3_ram_rw.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
+            "rom": "docboy/mbc/huc3/huc3_scratchpad.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
+            "rom": "docboy/mbc/huc3/huc3_tick.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true,
+            "enabled": false,
+            "comment": "Disabled because it takes a long time (1 real minute)"
         }
     ],
     "boot": [

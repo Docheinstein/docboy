@@ -1,6 +1,8 @@
 #include "docboy/cartridge/factory.h"
 
 #include "docboy/cartridge/cartridge.h"
+#include "docboy/cartridge/huc1/huc1.h"
+#include "docboy/cartridge/huc3/huc3.h"
 #include "docboy/cartridge/mbc1/mbc1.h"
 #include "docboy/cartridge/mbc1/mbc1m.h"
 #include "docboy/cartridge/mbc2/mbc2.h"
@@ -9,7 +11,6 @@
 #include "docboy/cartridge/nombc/nombc.h"
 #include "docboy/cartridge/romram/romram.h"
 #include "docboy/common/specs.h"
-#include "huc1/huc1.h"
 
 #include "utils/exceptions.h"
 #include "utils/formatters.h"
@@ -55,11 +56,14 @@ namespace Info {
         constexpr uint16_t Rom = bits<Rom::KB_32>();
         constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_2, Ram::KB_8, Ram::KB_32>();
     } // namespace RomRam
+    namespace HuC3 {
+        constexpr uint16_t Rom =
+            bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1, Rom::MB_2>();
+        constexpr uint16_t Ram = bits<Ram::KB_32>();
+    } // namespace HuC3
     namespace HuC1 {
-        // TODO: figure out which Rom/Ram sizes are actually legal and used.
-        constexpr uint16_t Rom = bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1,
-                                      Rom::MB_2, Rom::MB_4, Rom::MB_8>();
-        constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_8, Ram::KB_32, Ram::KB_64, Ram::KB_128>();
+        constexpr uint16_t Rom = bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1>();
+        constexpr uint16_t Ram = bits<Ram::KB_32>();
     } // namespace HuC1
 } // namespace Info
 
@@ -258,7 +262,9 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
     case Mbc::MBC5_RAM_BATTERY:
     case Mbc::MBC5_RUMBLE_RAM_BATTERY:
         return create<Mbc5_NoBattery, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
-    case Mbc::HUC1_RAM_BATTERY:
+    case Mbc::HUC3:
+        return create<HuC3, Info::HuC3::Rom, Info::HuC3::Ram>(data, rom, ram);
+    case Mbc::HUC1:
         return create<HuC1, Info::HuC1::Rom, Info::HuC1::Ram>(data, rom, ram);
     default:
         FATAL("unknown MBC type: 0x" + hex(mbc));
@@ -285,7 +291,7 @@ std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename
     auto cartridge = ::create(data, mbc, rom, ram);
 
     if (!cartridge) {
-        FATAL("unexpected cartridge specs: ROM=" + std::to_string(rom) + ", RAM=" + std::to_string(ram));
+        FATAL("cartridge not supported: MBC=0x" + hex(mbc) + ", ROM=0x" + hex(rom) + ", RAM=0x" + hex(ram));
     }
 
     return cartridge;

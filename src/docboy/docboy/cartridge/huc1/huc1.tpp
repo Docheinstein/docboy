@@ -1,5 +1,6 @@
 #include <cstring>
 
+#include "utils/arrays.h"
 #include "utils/asserts.h"
 #include "utils/bits.h"
 #include "utils/parcel.h"
@@ -62,13 +63,9 @@ uint8_t HuC1<RomSize, RamSize>::read_ram(uint16_t address) const {
         return 0xC0;
     }
 
-    if constexpr (Ram) {
-        uint32_t ram_address = (ram_bank_selector << 13) | keep_bits<13>(address);
-        ram_address = mask_by_pow2<RamSize>(ram_address);
-        return ram[ram_address];
-    }
-
-    return 0xFF;
+    uint32_t ram_address = (ram_bank_selector << 13) | keep_bits<13>(address);
+    ram_address = mask_by_pow2<RamSize>(ram_address);
+    return ram[ram_address];
 }
 
 template <uint32_t RomSize, uint32_t RamSize>
@@ -82,28 +79,20 @@ void HuC1<RomSize, RamSize>::write_ram(uint16_t address, uint8_t value) {
         // 01: send IR signal
         // Since we don't have a working implementation of IR, just ignore the value.
     } else {
-        if constexpr (Ram) {
-            uint32_t ram_address = (ram_bank_selector << 13) | keep_bits<13>(address);
-            ram_address = mask_by_pow2<RamSize>(ram_address);
-            ram[ram_address] = value;
-        }
+        uint32_t ram_address = (ram_bank_selector << 13) | keep_bits<13>(address);
+        ram_address = mask_by_pow2<RamSize>(ram_address);
+        ram[ram_address] = value;
     }
 }
 
 template <uint32_t RomSize, uint32_t RamSize>
-uint8_t* HuC1<RomSize, RamSize>::get_ram_save_data() {
-    if constexpr (Ram) {
-        return ram;
-    }
-    return nullptr;
+void* HuC1<RomSize, RamSize>::get_ram_save_data() {
+    return ram;
 }
 
 template <uint32_t RomSize, uint32_t RamSize>
 uint32_t HuC1<RomSize, RamSize>::get_ram_save_size() const {
-    if constexpr (Ram) {
-        return RamSize;
-    }
-    return 0;
+    return RamSize;
 }
 
 #ifdef ENABLE_DEBUGGER
@@ -123,10 +112,7 @@ void HuC1<RomSize, RamSize>::save_state(Parcel& parcel) const {
     parcel.write_bool(ir_enabled);
     parcel.write_uint8(rom_bank_selector);
     parcel.write_uint8(ram_bank_selector);
-    parcel.write_bytes(rom, RomSize);
-    if constexpr (Ram) {
-        parcel.write_bytes(ram, RamSize);
-    }
+    parcel.write_bytes(ram, RamSize);
 }
 
 template <uint32_t RomSize, uint32_t RamSize>
@@ -134,10 +120,7 @@ void HuC1<RomSize, RamSize>::load_state(Parcel& parcel) {
     ir_enabled = parcel.read_bool();
     rom_bank_selector = parcel.read_uint8();
     ram_bank_selector = parcel.read_uint8();
-    parcel.read_bytes(rom, RomSize);
-    if constexpr (Ram) {
-        parcel.read_bytes(ram, RamSize);
-    }
+    parcel.read_bytes(ram, RamSize);
 }
 
 template <uint32_t RomSize, uint32_t RamSize>

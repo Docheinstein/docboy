@@ -48,11 +48,11 @@ public:
     void set_audio_high_pass_filter_enabled(bool enabled) const;
 #endif
 
-    // Save/Load RAM
-    void save_ram(void* data) const;
-    void load_ram(const void* data) const;
-    bool can_save_ram() const;
-    uint32_t get_ram_save_size() const;
+    // Save/Load RAM/RTC
+    void save(void* data) const;
+    void load(const void* data) const;
+    bool can_save() const;
+    uint32_t get_save_size() const;
 
     // Save/Load State
     void save_state(void* data) const;

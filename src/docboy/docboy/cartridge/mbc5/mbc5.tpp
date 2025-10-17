@@ -109,7 +109,7 @@ void Mbc5<RomSize, RamSize, Battery>::write_ram(uint16_t address, uint8_t value)
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t* Mbc5<RomSize, RamSize, Battery>::get_ram_save_data() {
+void* Mbc5<RomSize, RamSize, Battery>::get_ram_save_data() {
     if constexpr (Ram && Battery) {
         return ram;
     }
@@ -141,7 +141,6 @@ void Mbc5<RomSize, RamSize, Battery>::save_state(Parcel& parcel) const {
     parcel.write_bool(ram_enabled);
     parcel.write_uint16(rom_bank_selector);
     parcel.write_uint8(ram_bank_selector);
-    parcel.write_bytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.write_bytes(ram, RamSize);
     }
@@ -152,7 +151,6 @@ void Mbc5<RomSize, RamSize, Battery>::load_state(Parcel& parcel) {
     ram_enabled = parcel.read_bool();
     rom_bank_selector = parcel.read_uint16();
     ram_bank_selector = parcel.read_uint8();
-    parcel.read_bytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.read_bytes(ram, RamSize);
     }

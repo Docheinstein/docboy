@@ -53,12 +53,12 @@ Path CoreController::get_rom() const {
 }
 
 bool CoreController::write_save() const {
-    if (!core.can_save_ram()) {
+    if (!core.can_save()) {
         return false;
     }
 
-    std::vector<uint8_t> data(core.get_ram_save_size());
-    core.save_ram(data.data());
+    std::vector<uint8_t> data(core.get_save_size());
+    core.save(data.data());
 
     bool ok;
     write_file(get_save_path(), data.data(), data.size(), &ok);
@@ -72,7 +72,7 @@ bool CoreController::write_save() const {
 }
 
 bool CoreController::load_save() const {
-    if (!core.can_save_ram()) {
+    if (!core.can_save()) {
         return false;
     }
 
@@ -83,7 +83,7 @@ bool CoreController::load_save() const {
         return false;
     }
 
-    core.load_ram(data.data());
+    core.load(data.data());
     return true;
 }
 

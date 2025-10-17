@@ -27,6 +27,8 @@ target_sources(docboy PRIVATE
         docboy/cartridge/factory.h
         docboy/cartridge/huc1/huc1.h
         docboy/cartridge/huc1/huc1.tpp
+        docboy/cartridge/huc3/huc3.h
+        docboy/cartridge/huc3/huc3.tpp
         docboy/cartridge/mbc1/mbc1.h
         docboy/cartridge/mbc1/mbc1.tpp
         docboy/cartridge/mbc1/mbc1m.h
@@ -40,7 +42,6 @@ target_sources(docboy PRIVATE
         docboy/cartridge/nombc/nombc.tpp
         docboy/cartridge/romram/romram.h
         docboy/cartridge/romram/romram.tpp
-        docboy/cartridge/rtc/rtc.h
         docboy/cartridge/slot.cpp
         docboy/cartridge/slot.h
         docboy/common/macros.h

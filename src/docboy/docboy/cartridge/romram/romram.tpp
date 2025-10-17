@@ -15,7 +15,7 @@
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 RomRam<RomSize, RamSize, Battery>::RomRam(const uint8_t* data, uint32_t length) {
     ASSERT(length <= array_size(rom), "RomRam: actual ROM size (" + std::to_string(length) +
-                                         ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
+                                          ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 }
 
@@ -55,7 +55,7 @@ void RomRam<RomSize, RamSize, Battery>::write_ram(uint16_t address, uint8_t valu
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t* RomRam<RomSize, RamSize, Battery>::get_ram_save_data() {
+void* RomRam<RomSize, RamSize, Battery>::get_ram_save_data() {
     if constexpr (Ram && Battery) {
         return ram;
     }
@@ -72,7 +72,7 @@ uint32_t RomRam<RomSize, RamSize, Battery>::get_ram_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t *RomRam<RomSize, RamSize, Battery>::get_rom_data() {
+uint8_t* RomRam<RomSize, RamSize, Battery>::get_rom_data() {
     return rom;
 }
 
@@ -84,7 +84,6 @@ uint32_t RomRam<RomSize, RamSize, Battery>::get_rom_size() const {
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 void RomRam<RomSize, RamSize, Battery>::save_state(Parcel& parcel) const {
-    parcel.write_bytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.write_bytes(ram, RamSize);
     }
@@ -92,7 +91,6 @@ void RomRam<RomSize, RamSize, Battery>::save_state(Parcel& parcel) const {
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 void RomRam<RomSize, RamSize, Battery>::load_state(Parcel& parcel) {
-    parcel.read_bytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.read_bytes(ram, RamSize);
     }

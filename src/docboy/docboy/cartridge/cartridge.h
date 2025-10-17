@@ -19,10 +19,17 @@ public:
         if (need_ticks) {
             on_tick();
         }
-    };
+    }
 
-    virtual uint8_t* get_ram_save_data() = 0;
+    virtual void* get_ram_save_data() = 0;
     virtual uint32_t get_ram_save_size() const = 0;
+
+    virtual void* get_rtc_save_data() {
+        return nullptr;
+    }
+    virtual uint32_t get_rtc_save_size() const {
+        return 0;
+    }
 
 #ifdef ENABLE_DEBUGGER
     virtual uint8_t* get_rom_data() = 0;

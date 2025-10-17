@@ -3,13 +3,13 @@
 #include "utils/arrays.h"
 #include "utils/asserts.h"
 #include "utils/bits.h"
-#include "utils/parcel.h"
 #include "utils/formatters.h"
+#include "utils/parcel.h"
 
 template <uint32_t RamSize>
 NoMbc<RamSize>::NoMbc(const uint8_t* data, uint32_t length) {
     ASSERT(length <= array_size(rom), "NoMbc: actual ROM size (" + std::to_string(length) +
-                                         ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
+                                          ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 }
 
@@ -43,7 +43,7 @@ void NoMbc<RamSize>::write_ram(uint16_t address, uint8_t value) {
 }
 
 template <uint32_t RamSize>
-uint8_t* NoMbc<RamSize>::get_ram_save_data() {
+void* NoMbc<RamSize>::get_ram_save_data() {
     if constexpr (Ram) {
         return ram;
     }
@@ -60,7 +60,7 @@ uint32_t NoMbc<RamSize>::get_ram_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RamSize>
-uint8_t *NoMbc<RamSize>::get_rom_data() {
+uint8_t* NoMbc<RamSize>::get_rom_data() {
     return rom;
 }
 
@@ -72,7 +72,6 @@ uint32_t NoMbc<RamSize>::get_rom_size() const {
 
 template <uint32_t RamSize>
 void NoMbc<RamSize>::save_state(Parcel& parcel) const {
-    parcel.write_bytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.write_bytes(ram, RamSize);
     }
@@ -80,7 +79,6 @@ void NoMbc<RamSize>::save_state(Parcel& parcel) const {
 
 template <uint32_t RamSize>
 void NoMbc<RamSize>::load_state(Parcel& parcel) {
-    parcel.read_bytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.read_bytes(ram, RamSize);
     }

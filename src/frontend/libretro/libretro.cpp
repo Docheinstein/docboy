@@ -9,6 +9,9 @@ constexpr unsigned TWO_PLAYERS_MODE_ID = 0x101;
 constexpr unsigned PLAYER_1_RETRO_MEMORY_SAVE_RAM = 0x100 | RETRO_MEMORY_SAVE_RAM;
 constexpr unsigned PLAYER_2_RETRO_MEMORY_SAVE_RAM = 0x200 | RETRO_MEMORY_SAVE_RAM;
 
+constexpr unsigned PLAYER_1_RETRO_MEMORY_SAVE_RTC = 0x100 | RETRO_MEMORY_RTC;
+constexpr unsigned PLAYER_2_RETRO_MEMORY_SAVE_RTC = 0x200 | RETRO_MEMORY_RTC;
+
 constexpr uint32_t AUDIO_SAMPLE_RATE = 32768;
 
 constexpr uint32_t CYCLES_PER_BURST = 4;
@@ -350,45 +353,57 @@ bool retro_unserialize(const void* data, size_t size) {
 
 void* retro_get_memory_data(unsigned id) {
     if (num_players == 2) {
+        // Two players mode
         switch (id) {
         case PLAYER_1_RETRO_MEMORY_SAVE_RAM:
             return gameboy[0].cartridge_slot.cartridge->get_ram_save_data();
+        case PLAYER_1_RETRO_MEMORY_SAVE_RTC:
+            return gameboy[0].cartridge_slot.cartridge->get_rtc_save_data();
         case PLAYER_2_RETRO_MEMORY_SAVE_RAM:
             return gameboy[1].cartridge_slot.cartridge->get_ram_save_data();
-        case RETRO_MEMORY_RTC:
+        case PLAYER_2_RETRO_MEMORY_SAVE_RTC:
+            return gameboy[1].cartridge_slot.cartridge->get_rtc_save_data();
         default:
             return nullptr;
         }
-    } else {
-        switch (id) {
-        case RETRO_MEMORY_SAVE_RAM:
-            return gameboy[0].cartridge_slot.cartridge->get_ram_save_data();
-        case RETRO_MEMORY_RTC:
-        default:
-            return nullptr;
-        }
+    }
+
+    // One player mode
+    switch (id) {
+    case RETRO_MEMORY_SAVE_RAM:
+        return gameboy[0].cartridge_slot.cartridge->get_ram_save_data();
+    case RETRO_MEMORY_RTC:
+        return gameboy[0].cartridge_slot.cartridge->get_rtc_save_data();
+    default:
+        return nullptr;
     }
 }
 
 size_t retro_get_memory_size(unsigned id) {
     if (num_players == 2) {
+        // Two players mode
         switch (id) {
         case PLAYER_1_RETRO_MEMORY_SAVE_RAM:
             return gameboy[0].cartridge_slot.cartridge->get_ram_save_size();
+        case PLAYER_1_RETRO_MEMORY_SAVE_RTC:
+            return gameboy[0].cartridge_slot.cartridge->get_rtc_save_size();
         case PLAYER_2_RETRO_MEMORY_SAVE_RAM:
             return gameboy[1].cartridge_slot.cartridge->get_ram_save_size();
-        case RETRO_MEMORY_RTC:
+        case PLAYER_2_RETRO_MEMORY_SAVE_RTC:
+            return gameboy[1].cartridge_slot.cartridge->get_rtc_save_size();
         default:
             return 0;
         }
-    } else {
-        switch (id) {
-        case RETRO_MEMORY_SAVE_RAM:
-            return gameboy[0].cartridge_slot.cartridge->get_ram_save_size();
-        case RETRO_MEMORY_RTC:
-        default:
-            return 0;
-        }
+    }
+
+    // One player mode
+    switch (id) {
+    case RETRO_MEMORY_SAVE_RAM:
+        return gameboy[0].cartridge_slot.cartridge->get_ram_save_size();
+    case RETRO_MEMORY_RTC:
+        return gameboy[0].cartridge_slot.cartridge->get_rtc_save_size();
+    default:
+        return 0;
     }
 }
 

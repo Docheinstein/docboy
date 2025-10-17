@@ -17,7 +17,7 @@ public:
     uint8_t read_ram(uint16_t address) const override;
     void write_ram(uint16_t address, uint8_t value) override;
 
-    uint8_t* get_ram_save_data() override;
+    void* get_ram_save_data() override;
     uint32_t get_ram_save_size() const override;
 
 #ifdef ENABLE_DEBUGGER
@@ -31,8 +31,6 @@ public:
     void reset() override;
 
 private:
-    static constexpr bool Ram = RamSize > 0;
-
     bool ir_enabled {};
 
     uint8_t rom_bank_selector {};

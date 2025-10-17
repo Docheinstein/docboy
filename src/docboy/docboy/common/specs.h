@@ -547,7 +547,7 @@ namespace Cartridge {
             constexpr uint32_t MBC5_RUMBLE_RAM = 0x1D;
             constexpr uint32_t MBC5_RUMBLE_RAM_BATTERY = 0x1E;
             constexpr uint32_t HUC3 = 0xFE;
-            constexpr uint32_t HUC1_RAM_BATTERY = 0xFF;
+            constexpr uint32_t HUC1 = 0xFF;
         } // namespace Mbc
 
         namespace Rom {

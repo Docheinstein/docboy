@@ -1,6 +1,7 @@
 #ifndef RUNNERS_H
 #define RUNNERS_H
 
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -126,6 +127,11 @@ public:
         return static_cast<RunnerImpl&>(*this);
     }
 
+    RunnerImpl& limit_speed(bool limit) {
+        limit_speed_ = limit;
+        return static_cast<RunnerImpl&>(*this);
+    }
+
     RunnerImpl& schedule_inputs(std::vector<JoypadInput> inputs) {
         inputs_ = std::move(inputs);
         // Eventually add BOOT_DURATION time to inputs timing
@@ -142,6 +148,12 @@ public:
         impl->on_run();
 
         bool has_ever_checked {false};
+
+        static constexpr std::chrono::nanoseconds FRAME_TIME {1000000000LLU * Specs::Ppu::DOTS_PER_FRAME /
+                                                              Specs::Frequencies::CLOCK};
+        std::chrono::high_resolution_clock::time_point next_frame_time =
+            std::chrono::high_resolution_clock::now() + FRAME_TIME;
+        uint64_t frame_ticks = 0;
 
         for (tick = core.ticks; tick <= max_ticks_ && can_run; tick += 4) {
             // Eventually submit scheduled Joypad input.
@@ -176,6 +188,18 @@ public:
                     break;
                 }
             }
+
+            if (limit_speed_) {
+                // Eventually run at real speed, not faster (this is useful for RTC tests).
+                if (frame_ticks == Specs::Ppu::DOTS_PER_FRAME) {
+                    frame_ticks = 0;
+                    while (std::chrono::high_resolution_clock::now() < next_frame_time) { /* busy wait */
+                    }
+                    next_frame_time += FRAME_TIME;
+                }
+
+                frame_ticks += 4;
+            }
         }
 
         if (has_ever_checked) {
@@ -198,6 +222,7 @@ protected:
     uint64_t check_interval_ticks_ {UINT64_MAX};
     std::optional<uint8_t> stop_at_instruction_ {};
     bool force_check_ {};
+    bool limit_speed_ {};
 
     std::vector<JoypadInput> inputs_ {};
 
@@ -651,6 +676,7 @@ struct BaseRunnerParams {
     uint64_t max_ticks {DEFAULT_MAX_DURATION};
     std::optional<uint8_t> stop_at_instruction {};
     bool force_check {};
+    bool limit_speed {};
     std::vector<JoypadInput> inputs {};
 };
 
@@ -722,6 +748,7 @@ struct RunnerAdapter {
                 .max_ticks(pf.max_ticks)
                 .stop_at_instruction(pf.stop_at_instruction)
                 .force_check(pf.force_check)
+                .limit_speed(pf.limit_speed)
                 .schedule_inputs(pf.inputs)
                 .run();
         }
@@ -736,6 +763,7 @@ struct RunnerAdapter {
                 .max_ticks(ps.max_ticks)
                 .stop_at_instruction(ps.stop_at_instruction)
                 .force_check(ps.force_check)
+                .limit_speed(ps.limit_speed)
                 .schedule_inputs(ps.inputs)
                 .run();
         }
@@ -750,6 +778,7 @@ struct RunnerAdapter {
                 .max_ticks(pm.max_ticks)
                 .stop_at_instruction(pm.stop_at_instruction)
                 .force_check(pm.force_check)
+                .limit_speed(pm.limit_speed)
                 .schedule_inputs(pm.inputs)
                 .run();
         }
@@ -768,6 +797,7 @@ struct RunnerAdapter {
                 .max_ticks(pf2p.max_ticks)
                 .stop_at_instruction(pf2p.stop_at_instruction)
                 .force_check(pf2p.force_check)
+                .limit_speed(pf2p.limit_speed)
                 .schedule_inputs(pf2p.inputs)
                 .run();
         }

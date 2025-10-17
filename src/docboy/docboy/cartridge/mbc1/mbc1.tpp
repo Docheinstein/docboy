@@ -44,7 +44,7 @@
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
 Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::Mbc1(const uint8_t* data, uint32_t length) {
     ASSERT(length <= array_size(rom), "Mbc1: actual ROM size (" + std::to_string(length) +
-                                         ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
+                                          ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 }
 
@@ -82,8 +82,8 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::write_rom(uint16_t ad
         }
         // 0x2000 - 0x3FFF
         rom_bank_selector = keep_bits<5 /* always 5 bits: not related to RomBankSelectorBits */>(value) > 0
-                              ? keep_bits<RomBankSelectorBits>(value)
-                              : 0b1;
+                                ? keep_bits<RomBankSelectorBits>(value)
+                                : 0b1;
         return;
     }
 
@@ -135,7 +135,7 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::write_ram(uint16_t ad
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-uint8_t* Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_ram_save_data() {
+void* Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_ram_save_data() {
     if constexpr (Ram && Battery) {
         return ram;
     }
@@ -152,7 +152,7 @@ uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_ram_save_size
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
-uint8_t *Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_rom_data() {
+uint8_t* Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_rom_data() {
     return rom;
 }
 
@@ -168,7 +168,6 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::save_state(Parcel& pa
     parcel.write_uint8(rom_bank_selector);
     parcel.write_uint8(upper_rom_bank_selector_ram_bank_selector);
     parcel.write_uint8(banking_mode);
-    parcel.write_bytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.write_bytes(ram, RamSize);
     }
@@ -180,7 +179,6 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::load_state(Parcel& pa
     rom_bank_selector = parcel.read_uint8();
     upper_rom_bank_selector_ram_bank_selector = parcel.read_uint8();
     banking_mode = parcel.read_uint8();
-    parcel.read_bytes(rom, RomSize);
     if constexpr (Ram) {
         parcel.read_bytes(ram, RamSize);
     }
@@ -192,6 +190,5 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::reset() {
     rom_bank_selector = 0b1;
     upper_rom_bank_selector_ram_bank_selector = 0;
     banking_mode = 0;
-
     memset(ram, 0, RamSize);
 }

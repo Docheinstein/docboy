@@ -1,15 +1,15 @@
-#ifndef MBC3_H
-#define MBC3_H
+#ifndef HUC3_H
+#define HUC3_H
 
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
-class Mbc3 final : public ICartridge {
+template <uint32_t RomSize, uint32_t RamSize>
+class HuC3 final : public ICartridge {
 public:
     DEBUGGABLE_CLASS()
 
-    Mbc3(const uint8_t* data, uint32_t length);
+    HuC3(const uint8_t* data, uint32_t length);
 
     uint8_t read_rom(uint16_t address) const override;
     void write_rom(uint16_t address, uint8_t value) override;
@@ -36,38 +36,44 @@ public:
     void reset() override;
 
 private:
-    static constexpr bool Ram = RamSize > 0;
+    void execute_rtc_command();
 
-    struct RtcRegisters {
-        uint8_t seconds {};
-        uint8_t minutes {};
-        uint8_t hours {};
-        uint8_t days_low {};
-        uint8_t days_high {};
-    };
-
-    void tick_rtc(int64_t delta);
-
-    bool ram_enabled {};
-    uint8_t rom_bank_selector {};
-    uint8_t ram_bank_selector_rtc_register_selector {};
+    enum class RamMapping : uint8_t {
+        RamReadOnly = 0x00,
+        RamReadWrite = 0x0A,
+        RtcWrite = 0x0B,
+        RtcRead = 0x0C,
+        RtcSemaphore = 0x0D,
+        IR = 0x0E,
+    } ram_mapping {};
 
     struct Rtc {
+        uint8_t command {};
+        uint8_t argument {};
+        uint8_t read {};
+        uint8_t address {};
         uint32_t cycles_since_last_tick {};
 #pragma pack(push, 1)
         // These fields must have no padding in between because we need
         // to serialize RTC as a unique consecutive chunk of data.
         int64_t last_tick_time {};
-        RtcRegisters clock {};
+        uint8_t memory[256] {};
+        struct {
+            uint16_t minutes {};
+            uint16_t days {};
+        } clock;
 #pragma pack(pop)
-        RtcRegisters latched {};
-        uint8_t latch {};
-    } rtc;
+    } rtc {};
+
+    void tick_rtc(int64_t delta);
+
+    uint16_t rom_bank_selector {};
+    uint8_t ram_bank_selector {};
 
     uint8_t rom[RomSize] {};
     uint8_t ram[RamSize] {};
 };
 
-#include "docboy/cartridge/mbc3/mbc3.tpp"
+#include "docboy/cartridge/huc3/huc3.tpp"
 
-#endif // MBC3_H
+#endif // HUC3_H
