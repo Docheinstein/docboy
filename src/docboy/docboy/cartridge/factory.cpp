@@ -23,6 +23,9 @@ constexpr bool NoBattery = false;
 constexpr bool Timer = true;
 constexpr bool NoTimer = false;
 
+constexpr bool Rumble = true;
+constexpr bool NoRumble = false;
+
 constexpr uint32_t KB = 1 << 10;
 constexpr uint32_t MB = 1 << 20;
 
@@ -98,10 +101,16 @@ template <uint32_t RomSize, uint32_t RamSize>
 using Mbc3_Battery_Timer = Mbc3<RomSize, RamSize, Battery, Timer>;
 
 template <uint32_t RomSize, uint32_t RamSize>
-using Mbc5_Battery = Mbc5<RomSize, RamSize, Battery>;
+using Mbc5_Battery_NoRumble = Mbc5<RomSize, RamSize, Battery, NoRumble>;
 
 template <uint32_t RomSize, uint32_t RamSize>
-using Mbc5_NoBattery = Mbc5<RomSize, RamSize, NoBattery>;
+using Mbc5_Battery_Rumble = Mbc5<RomSize, RamSize, Battery, Rumble>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc5_NoBattery_NoRumble = Mbc5<RomSize, RamSize, NoBattery, NoRumble>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mbc5_NoBattery_Rumble = Mbc5<RomSize, RamSize, NoBattery, Rumble>;
 
 template <uint32_t RomSize, uint32_t RamSize>
 using RomRam_Battery = RomRam<RomSize, RamSize, Battery>;
@@ -256,12 +265,14 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
         return create<Mbc3_Battery_NoTimer, Info::Mbc3::Rom, Info::Mbc3::Ram>(data, rom, ram);
     case Mbc::MBC5:
     case Mbc::MBC5_RAM:
+        return create<Mbc5_NoBattery_NoRumble, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
     case Mbc::MBC5_RUMBLE:
     case Mbc::MBC5_RUMBLE_RAM:
-        return create<Mbc5_Battery, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
+        return create<Mbc5_NoBattery_Rumble, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
     case Mbc::MBC5_RAM_BATTERY:
+        return create<Mbc5_Battery_NoRumble, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
     case Mbc::MBC5_RUMBLE_RAM_BATTERY:
-        return create<Mbc5_NoBattery, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
+        return create<Mbc5_Battery_Rumble, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
     case Mbc::HUC3:
         return create<HuC3, Info::HuC3::Rom, Info::HuC3::Ram>(data, rom, ram);
     case Mbc::HUC1:

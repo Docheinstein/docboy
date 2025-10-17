@@ -657,6 +657,10 @@ void Core::set_audio_high_pass_filter_enabled(bool enabled) const {
 }
 #endif
 
+void Core::set_rumble_callback(std::function<void(bool)>&& rumble_callback) const {
+    gb.cartridge_slot.cartridge->set_rumble_callback(std::move(rumble_callback));
+}
+
 #ifdef ENABLE_DEBUGGER
 void Core::attach_debugger(DebuggerBackend& dbg) {
     debugger = &dbg;

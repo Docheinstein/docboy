@@ -48,6 +48,9 @@ public:
     void set_audio_high_pass_filter_enabled(bool enabled) const;
 #endif
 
+    // Rumble
+    void set_rumble_callback(std::function<void(bool)>&& rumble_callback) const;
+
     // Save/Load RAM/RTC
     void save(void* data) const;
     void load(const void* data) const;

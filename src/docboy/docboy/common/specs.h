@@ -511,12 +511,12 @@ namespace Cartridge {
                 constexpr uint16_t START = 0x013F;
                 constexpr uint16_t END = 0x0142;
             } // namespace MANUFACTURER
-            constexpr uint16_t CGB = 0x0143;
+            constexpr uint16_t CGB_FLAG = 0x0143;
             namespace NEW_LICENSEE {
                 constexpr uint16_t START = 0x0144;
                 constexpr uint16_t END = 0x0145;
             } // namespace NEW_LICENSEE
-            constexpr uint16_t SGB = 0x0146;
+            constexpr uint16_t SGB_FLAG = 0x0146;
             constexpr uint16_t TYPE = 0x0147;
             constexpr uint16_t ROM_SIZE = 0x0148;
             constexpr uint16_t RAM_SIZE = 0x0149;
@@ -570,6 +570,11 @@ namespace Cartridge {
             constexpr uint32_t KB_128 = 0x4;
             constexpr uint32_t KB_64 = 0x5;
         } // namespace Ram
+
+        namespace CgbFlag {
+            constexpr uint8_t DMG_AND_CGB = 0x80;
+            constexpr uint8_t CGB_ONLY = 0xC0;
+        } // namespace CgbFlag
 
         constexpr uint8_t NINTENDO_LOGO[] = {0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83,
                                              0x00, 0x0C, 0x00, 0x0D, 0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E,

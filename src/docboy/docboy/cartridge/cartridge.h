@@ -2,6 +2,7 @@
 #define CARTRIDGE_H
 
 #include <cstdint>
+#include <functional>
 
 class Parcel;
 
@@ -19,6 +20,9 @@ public:
         if (need_ticks) {
             on_tick();
         }
+    }
+
+    virtual void set_rumble_callback(std::function<void(bool)>&& rumble_callback) {
     }
 
     virtual void* get_ram_save_data() = 0;

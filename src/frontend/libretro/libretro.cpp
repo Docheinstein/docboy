@@ -1,5 +1,7 @@
 #include "libretro.h"
+
 #include "docboy/core/core.h"
+
 #include <cstdarg>
 #include <cstring>
 
@@ -23,6 +25,7 @@ retro_video_refresh_t video_cb;
 retro_audio_sample_batch_t audio_batch_cb;
 retro_input_poll_t input_poll_cb;
 retro_input_state_t input_state_cb;
+retro_rumble_interface rumble {};
 
 uint8_t num_players {1};
 
@@ -51,6 +54,11 @@ void audio_sample_cb(const Apu::AudioSample sample) {
     }
 }
 
+void rumble_cb(uint8_t player, bool enabled) {
+    if (rumble.set_rumble_state) {
+        rumble.set_rumble_state(player, RETRO_RUMBLE_STRONG, enabled ? 0xFFFF : 0x0000);
+    }
+}
 } // namespace
 
 void retro_init(void) {
@@ -217,8 +225,15 @@ void retro_run(void) {
 bool retro_load_game(const struct retro_game_info* info) {
     enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
     if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt)) {
-        retro_log(RETRO_LOG_ERROR, "RGB565 is not supported.\n");
+        retro_log(RETRO_LOG_ERROR, "RGB565 not supported.\n");
         return false;
+    }
+
+    bool rumble_supported = environ_cb(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble);
+    if (rumble_supported) {
+        retro_log(RETRO_LOG_INFO, "Rumble supported.\n");
+    } else {
+        retro_log(RETRO_LOG_INFO, "Rumble not supported.\n");
     }
 
     static const struct retro_controller_description controllers[] = {
@@ -249,6 +264,12 @@ bool retro_load_game(const struct retro_game_info* info) {
     retro_log(RETRO_LOG_INFO, "Loading rom %s\n", info->path);
     core[0].load_rom(info->path);
 
+    if (rumble_supported) {
+        core[0].set_rumble_callback([](const bool enabled) {
+            rumble_cb(0, enabled);
+        });
+    }
+
     return true;
 }
 
@@ -272,8 +293,15 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info* info, 
 
     enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
     if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt)) {
-        retro_log(RETRO_LOG_ERROR, "RGB565 is not supported.\n");
+        retro_log(RETRO_LOG_ERROR, "RGB565 not supported.\n");
         return false;
+    }
+
+    bool rumble_supported = environ_cb(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble);
+    if (rumble_supported) {
+        retro_log(RETRO_LOG_INFO, "Rumble supported.\n");
+    } else {
+        retro_log(RETRO_LOG_INFO, "Rumble not supported.\n");
     }
 
     static const struct retro_controller_description controllers[] = {
@@ -326,6 +354,12 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info* info, 
 
         // Attach the cores each other through the serial link.
         core[i].attach_serial_link(gameboy[1 - i].serial);
+
+        if (rumble_supported) {
+            core[i].set_rumble_callback([i](const bool enabled) {
+                rumble_cb(i, enabled);
+            });
+        }
     }
 
     return true;

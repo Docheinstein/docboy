@@ -295,8 +295,18 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
             FATAL("unexpected rom size");
         }
 
-        char title[16] {};
-        memcpy(title, &rom_data[MemoryLayout::TITLE::START], 16);
+        char title[17] {};
+        memcpy(title, &rom_data[MemoryLayout::TITLE::START], MemoryLayout::TITLE::END - MemoryLayout::TITLE::START + 1);
+#ifdef ENABLE_CGB
+        // Bit 15 is used for CGB flag instead of title for CGB-era cartridges.
+        if (rom_data[MemoryLayout::CGB_FLAG] == CgbFlag::DMG_AND_CGB ||
+            rom_data[MemoryLayout::CGB_FLAG] == CgbFlag::CGB_ONLY) {
+            title[15] = '\0';
+        }
+        title[16] = '\0';
+
+#endif
+
         cartridge_info->title = title;
         cartridge_info->mbc = rom_data[MemoryLayout::TYPE];
         cartridge_info->rom = rom_data[MemoryLayout::ROM_SIZE];
