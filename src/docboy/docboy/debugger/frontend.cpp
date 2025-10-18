@@ -161,19 +161,19 @@ struct FrontendCommandInfo {
 };
 
 enum TraceFlag : uint32_t {
-    TraceFlagInstruction = 1 << 0,
-    TraceFlagRegisters = 1 << 1,
-    TraceFlagInterrupts = 1 << 2,
-    TraceFlagTimers = 1 << 3,
-    TraceFlagDma = 1 << 4,
-    TraceFlagStack = 1 << 5,
-    TraceFlagMemory = 1 << 6,
-    TraceFlagPpu = 1 << 7,
-    TraceFlagSerial = 1 << 8,
-    TraceFlagHash = 1 << 9,
-    TraceFlagMCycle = 1 << 10,
-    TraceFlagTCycle = 1 << 11,
-    MaxTraceFlag = (TraceFlagTCycle << 1) - 1,
+    TraceFlagInstruction = 1 << 1,
+    TraceFlagRegisters = 1 << 2,
+    TraceFlagInterrupts = 1 << 3,
+    TraceFlagTimers = 1 << 4,
+    TraceFlagDma = 1 << 5,
+    TraceFlagStack = 1 << 6,
+    TraceFlagMemory = 1 << 7,
+    TraceFlagPpu = 1 << 8,
+    TraceFlagSerial = 1 << 9,
+    TraceFlagHash = 1 << 10,
+    TraceFlagMCycle = 1 << 11,
+    TraceFlagTCycle = 1 << 12,
+    TraceFlagMax = TraceFlagTCycle,
 };
 
 template <typename T>
@@ -475,12 +475,22 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          }
          return cmd;
      }},
-    {std::regex(R"(trace\s*(\d+)?)"), "trace [<level>]", "Set the trace level or toggle it (output on stderr)",
+    {std::regex(R"(trace\s*([\w ]+)?)"), "trace [<flag1>] [<flagN>]", "Set the trace modes (output on stderr)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
-         const std::string& level = groups[0];
+         const std::string& modes = groups[0];
          FrontendTraceCommand cmd;
-         if (!level.empty()) {
-             cmd.level = std::stoi(level);
+         if (!modes.empty()) {
+             cmd.level = 0;
+             std::vector<std::string> modes_tokens {};
+             split(modes, std::back_inserter(modes_tokens));
+             for (auto& mode_str : modes_tokens) {
+                 auto mode = strtou(mode_str);
+                 if (!mode) {
+                     return std::nullopt;
+                 }
+
+                 cmd.level = *cmd.level | (1U << *mode);
+             }
          }
          return cmd;
      }},
@@ -771,34 +781,36 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendTraceCommand>(co
     if (cmd.level) {
         trace = *cmd.level;
     } else {
-        trace = trace ? 0 : MaxTraceFlag;
+        trace = trace ? 0 : ((TraceFlagMax << 1) - 1);
     }
 
-    std::cout << "Trace          :     | " << trace << std::endl;
-    std::cout << "> Instructions : " << (static_cast<bool>(trace & TraceFlagInstruction) ? "ON " : "OFF") << " | "
-              << TraceFlagInstruction << std::endl;
-    std::cout << "> Registers    : " << (static_cast<bool>(trace & TraceFlagRegisters) ? "ON " : "OFF") << " | "
-              << TraceFlagRegisters << std::endl;
-    std::cout << "> Interrupts   : " << (static_cast<bool>(trace & TraceFlagInterrupts) ? "ON " : "OFF") << " | "
-              << TraceFlagInterrupts << std::endl;
-    std::cout << "> Timers       : " << (static_cast<bool>(trace & TraceFlagTimers) ? "ON " : "OFF") << " | "
-              << TraceFlagTimers << std::endl;
-    std::cout << "> DMA          : " << (static_cast<bool>(trace & TraceFlagDma) ? "ON " : "OFF") << " | "
-              << TraceFlagDma << std::endl;
-    std::cout << "> Stack        : " << (static_cast<bool>(trace & TraceFlagStack) ? "ON " : "OFF") << " | "
-              << TraceFlagStack << std::endl;
-    std::cout << "> Memory       : " << (static_cast<bool>(trace & TraceFlagMemory) ? "ON " : "OFF") << " | "
-              << TraceFlagMemory << std::endl;
-    std::cout << "> PPU          : " << (static_cast<bool>(trace & TraceFlagPpu) ? "ON " : "OFF") << " | "
-              << TraceFlagPpu << std::endl;
-    std::cout << "> Serial       : " << (static_cast<bool>(trace & TraceFlagSerial) ? "ON " : "OFF") << " | "
-              << TraceFlagSerial << std::endl;
-    std::cout << "> Hash         : " << (static_cast<bool>(trace & TraceFlagHash) ? "ON " : "OFF") << " | "
-              << TraceFlagHash << std::endl;
-    std::cout << "> M-Cycles     : " << (static_cast<bool>(trace & TraceFlagMCycle) ? "ON " : "OFF") << " | "
-              << TraceFlagMCycle << std::endl;
-    std::cout << "> T-Cycles     : " << (static_cast<bool>(trace & TraceFlagTCycle) ? "ON " : "OFF") << " | "
-              << TraceFlagTCycle << std::endl;
+    using namespace Tui;
+
+    std::cout << "(1) Instructions : "
+              << ((static_cast<bool>(trace & TraceFlagInstruction) ? green("ON ") : darkgray("OFF")).str())
+              << std::endl;
+    std::cout << "(2) Registers    : "
+              << ((static_cast<bool>(trace & TraceFlagRegisters) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(3) Interrupts   : "
+              << ((static_cast<bool>(trace & TraceFlagInterrupts) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(4) Timers       : "
+              << ((static_cast<bool>(trace & TraceFlagTimers) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(5) DMA          : "
+              << ((static_cast<bool>(trace & TraceFlagDma) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(6) Stack        : "
+              << ((static_cast<bool>(trace & TraceFlagStack) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(7) Memory       : "
+              << ((static_cast<bool>(trace & TraceFlagMemory) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(8) PPU          : "
+              << ((static_cast<bool>(trace & TraceFlagPpu) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(9) Serial       : "
+              << ((static_cast<bool>(trace & TraceFlagSerial) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(10) Hash        : "
+              << ((static_cast<bool>(trace & TraceFlagHash) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(11) M-Cycles    : "
+              << ((static_cast<bool>(trace & TraceFlagMCycle) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(12) T-Cycles    : "
+              << ((static_cast<bool>(trace & TraceFlagTCycle) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
 
     if (trace) {
         // Allocate enough space for the trace buffer (only the first time).
