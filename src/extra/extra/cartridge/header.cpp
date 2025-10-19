@@ -368,6 +368,12 @@ CartridgeHeader CartridgeHeader::parse(const ICartridge& cartridge) {
     // CGB flag (0x143)
     h.cgb_flag = data[0x043];
 
+    // Bit 0x143 is used for CGB flag instead of title in CGB_era roms
+    if (h.cgb_flag == Specs::Cartridge::Header::CgbFlag::DMG_AND_CGB ||
+        h.cgb_flag == Specs::Cartridge::Header::CgbFlag::CGB_ONLY) {
+        h.title[0x043 - 0x034] = '\0';
+    }
+
     // New licensee code (0x144 - 0x145)
     memcpy_range(h.new_licensee_code.data(), data, 0x044, 0x045);
 
