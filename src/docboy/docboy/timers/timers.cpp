@@ -49,7 +49,12 @@ void Timers::load_state(Parcel& parcel) {
 }
 
 void Timers::reset() {
+#ifdef ENABLE_CGB
+    // TODO: what's the starting div16 with bootrom on CGB?
+    div16 = if_bootrom_else(0x0008, 0x1EA0);
+#else
     div16 = if_bootrom_else(0x0008, 0xABCC); // [mooneye/boot_div-dmgABCmgb.gb]
+#endif
     tima = 0;
     tma = 0;
     tac.enable = false;

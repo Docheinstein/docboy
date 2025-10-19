@@ -651,8 +651,14 @@ void Apu::reset() {
     sampling.next_tick = 0.0;
 
     apu_clock = 0;
+    // TODO: adjust DIV_APU and prev_div_edge_bit with bootrom.
+#ifdef ENABLE_CGB
+    prev_div_edge_bit = true;
+    div_apu = 1;
+#else
     prev_div_edge_bit = false;
     div_apu = 2;
+#endif
 #ifdef ENABLE_CGB
     div_apu_bit_selector = 4;
 #endif
@@ -1103,7 +1109,6 @@ void Apu::turn_off() {
     ch3.wave.position.low_nibble = false;
 
     ch4.dac = false;
-    // ch4.tick_edge = false;
     ch4.volume_sweep.reloaded = false;
     ch4.volume_sweep.pending_update = false;
 }

@@ -7902,7 +7902,8 @@
         {
             "rom": "mattcurrie/cgb-acid-hell.gbc",
             "framebuffer": "mattcurrie/cgb-acid-hell.png",
-            "enabled": false
+            "enabled": false,
+            "comment": "This does not pass even on real CGB-E!"
         },
         {
             "rom": "magen/bg_oam_priority.gbc",
@@ -22549,6 +22550,106 @@
             ]
         },
         {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_divbit00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_divbit00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_divbit01_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_divbit01_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_divbit10_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_divbit10_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_divbit11_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_divbit11_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_no_reset_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/ch2/ch2_volume_sweep_no_reset_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu0_round1.gbc",
             "memory": [
                 {
@@ -22700,26 +22801,6 @@
         },
         {
             "rom": "docboy/apu/ch2/ch2_volume_sweep_retrigger_divapu7_round2.gbc",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/apu/ch2/ch2_volume_sweep_round1.gbc",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/apu/ch2/ch2_volume_sweep_round2.gbc",
             "memory": [
                 {
                     "address": 65520,
@@ -59539,7 +59620,8 @@
         {
             "rom": "daid/stop_instr_gbc_mode3.gb",
             "framebuffer": "daid/stop_instr_gbc_mode3.png",
-            "enabled": false
+            "enabled": false,
+            "comment": "TODO: maybe needs CGB compatibility mode?"
         },
         {
             "rom": "docboy/double_speed/core/double_speed_cpu_speed.gbc",
