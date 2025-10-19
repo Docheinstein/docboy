@@ -149,6 +149,10 @@
                     "fail_value": 2
                 }
             ]
+        },
+        {
+            "rom": "docboy/boot/visual/boot_halt.gbc",
+            "framebuffer": "docboy/boot/boot_halt.png"
         }
     ],
     "banks": [

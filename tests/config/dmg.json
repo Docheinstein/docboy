@@ -13902,6 +13902,10 @@
             ]
         },
         {
+            "rom": "docboy/boot/visual/boot_halt.gb",
+            "framebuffer": "docboy/boot/boot_halt.png"
+        },
+        {
             "rom": "gbmicrotest/boot/poweron_bgp_000.gb",
             "memory": [
                 {
