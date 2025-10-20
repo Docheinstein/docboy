@@ -94,21 +94,26 @@ public:
 
     void reset();
 
+    bool save_state(const std::string& path) const;
+    bool load_state(const std::string& path);
+
     const Core& get_core() const;
 
 private:
+    void clear();
+
     void pull_command(const ExecutionState& state);
 
     std::optional<DisassembledInstruction> do_disassemble(uint16_t addr);
 
-    template <typename CommandType>
-    void init_command_state();
+    // template <typename CommandType>
+    // void init_command_state();
 
     template <typename CommandType>
     void init_command_state(const CommandType& cmd);
 
-    template <typename CommandType, typename CommandStateType>
-    void handle_command();
+    // template <typename CommandType, typename CommandStateType>
+    // void handle_command();
 
     template <typename CommandType, typename CommandStateType>
     void handle_command(const CommandType& cmd, CommandStateType& state);

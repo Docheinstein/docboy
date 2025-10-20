@@ -109,10 +109,10 @@ uint32_t HuC1<RomSize, RamSize>::get_rom_size() const {
 
 template <uint32_t RomSize, uint32_t RamSize>
 void HuC1<RomSize, RamSize>::save_state(Parcel& parcel) const {
-    parcel.write_bool(ir_enabled);
-    parcel.write_uint8(rom_bank_selector);
-    parcel.write_uint8(ram_bank_selector);
-    parcel.write_bytes(ram, RamSize);
+    PARCEL_WRITE_BOOL(parcel, ir_enabled);
+    PARCEL_WRITE_UINT8(parcel, rom_bank_selector);
+    PARCEL_WRITE_UINT8(parcel, ram_bank_selector);
+    PARCEL_WRITE_BYTES(parcel, ram, RamSize);
 }
 
 template <uint32_t RomSize, uint32_t RamSize>

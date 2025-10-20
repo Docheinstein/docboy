@@ -51,8 +51,8 @@ void OamBus::save_state(Parcel& parcel) const {
     VideoBus::save_state(parcel);
 
 #ifndef ENABLE_CGB
-    parcel.write_bool(mcycle_write.happened);
-    parcel.write_uint8(mcycle_write.previous_data);
+    PARCEL_WRITE_BOOL(parcel, mcycle_write.happened);
+    PARCEL_WRITE_UINT8(parcel, mcycle_write.previous_data);
 #endif
 }
 

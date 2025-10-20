@@ -299,24 +299,24 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::load_state(Parcel& parcel) {
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::save_state(Parcel& parcel) const {
-    parcel.write_bool(ram_enabled);
-    parcel.write_uint8(rom_bank_selector);
-    parcel.write_uint8(ram_bank_selector_rtc_register_selector);
-    parcel.write_uint32(rtc.cycles_since_last_tick);
-    parcel.write_int64(rtc.last_tick_time);
-    parcel.write_uint8(rtc.clock.seconds);
-    parcel.write_uint8(rtc.clock.minutes);
-    parcel.write_uint8(rtc.clock.hours);
-    parcel.write_uint8(rtc.clock.days_low);
-    parcel.write_uint8(rtc.clock.days_high);
-    parcel.write_uint8(rtc.latched.seconds);
-    parcel.write_uint8(rtc.latched.minutes);
-    parcel.write_uint8(rtc.latched.hours);
-    parcel.write_uint8(rtc.latched.days_low);
-    parcel.write_uint8(rtc.latched.days_high);
-    parcel.write_uint8(rtc.latch);
+    PARCEL_WRITE_BOOL(parcel, ram_enabled);
+    PARCEL_WRITE_UINT8(parcel, rom_bank_selector);
+    PARCEL_WRITE_UINT8(parcel, ram_bank_selector_rtc_register_selector);
+    PARCEL_WRITE_UINT32(parcel, rtc.cycles_since_last_tick);
+    PARCEL_WRITE_INT64(parcel, rtc.last_tick_time);
+    PARCEL_WRITE_UINT8(parcel, rtc.clock.seconds);
+    PARCEL_WRITE_UINT8(parcel, rtc.clock.minutes);
+    PARCEL_WRITE_UINT8(parcel, rtc.clock.hours);
+    PARCEL_WRITE_UINT8(parcel, rtc.clock.days_low);
+    PARCEL_WRITE_UINT8(parcel, rtc.clock.days_high);
+    PARCEL_WRITE_UINT8(parcel, rtc.latched.seconds);
+    PARCEL_WRITE_UINT8(parcel, rtc.latched.minutes);
+    PARCEL_WRITE_UINT8(parcel, rtc.latched.hours);
+    PARCEL_WRITE_UINT8(parcel, rtc.latched.days_low);
+    PARCEL_WRITE_UINT8(parcel, rtc.latched.days_high);
+    PARCEL_WRITE_UINT8(parcel, rtc.latch);
     if constexpr (Ram) {
-        parcel.write_bytes(ram, RamSize);
+        PARCEL_WRITE_BYTES(parcel, ram, RamSize);
     }
 }
 

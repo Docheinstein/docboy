@@ -72,11 +72,11 @@ void Dma::tick() {
 }
 
 void Dma::save_state(Parcel& parcel) const {
-    parcel.write_uint8(request.countdown);
-    parcel.write_uint16(request.source);
-    parcel.write_uint8(state);
-    parcel.write_uint16(source);
-    parcel.write_uint8(cursor);
+    PARCEL_WRITE_UINT8(parcel, request.countdown);
+    PARCEL_WRITE_UINT16(parcel, request.source);
+    PARCEL_WRITE_UINT8(parcel, state);
+    PARCEL_WRITE_UINT16(parcel, source);
+    PARCEL_WRITE_UINT8(parcel, cursor);
 }
 
 void Dma::load_state(Parcel& parcel) {

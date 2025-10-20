@@ -12,7 +12,7 @@ void VramBankController::write_vbk(uint8_t value) {
 }
 
 void VramBankController::save_state(Parcel& parcel) const {
-    parcel.write_bool(vbk.bank);
+    PARCEL_WRITE_BOOL(parcel, vbk.bank);
 }
 
 void VramBankController::load_state(Parcel& parcel) {

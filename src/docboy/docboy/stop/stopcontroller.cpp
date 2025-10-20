@@ -100,10 +100,10 @@ void StopController::enter_stop_mode() {
 }
 
 void StopController::save_state(Parcel& parcel) const {
-    parcel.write_bool(stopped);
-    parcel.write_bool(requested);
+    PARCEL_WRITE_BOOL(parcel, stopped);
+    PARCEL_WRITE_BOOL(parcel, requested);
 #ifndef ENABLE_CGB
-    parcel.write_uint16(ppu_shutdown_countdown);
+    PARCEL_WRITE_UINT16(parcel, ppu_shutdown_countdown);
 #endif
 }
 

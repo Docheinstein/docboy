@@ -7,11 +7,78 @@
 #include "docboy/debugger/helpers.h"
 #include "docboy/debugger/mnemonics.h"
 
+#include "utils/io.h"
 #include "utils/std.h"
 
 namespace {
 constexpr uint32_t MAX_HISTORY_SIZE = 600; // ~10 sec
 constexpr uint32_t MAX_CALLSTACK_SIZE = 8192;
+
+template <typename T>
+struct CommandTraits;
+
+struct TCycleCommandTraits {
+    static constexpr bool AllowExecutionOnTCycle = true;
+};
+
+struct MCycleCommandTraits {
+    static constexpr bool AllowExecutionOnTCycle = false;
+};
+
+template <>
+struct CommandTraits<TickCommand> : TCycleCommandTraits {
+    using StateType = TickCommandState;
+};
+
+template <>
+struct CommandTraits<DotCommand> : TCycleCommandTraits {
+    using StateType = DotCommandState;
+};
+
+template <>
+struct CommandTraits<StepCommand> : MCycleCommandTraits {
+    using StateType = StepCommandState;
+};
+
+template <>
+struct CommandTraits<MicroStepCommand> : MCycleCommandTraits {
+    using StateType = MicroStepCommandState;
+};
+
+template <>
+struct CommandTraits<NextCommand> : MCycleCommandTraits {
+    using StateType = NextCommandState;
+};
+
+template <>
+struct CommandTraits<MicroNextCommand> : MCycleCommandTraits {
+    using StateType = MicroNextCommandState;
+};
+
+template <>
+struct CommandTraits<FrameCommand> : TCycleCommandTraits {
+    using StateType = FrameCommandState;
+};
+
+template <>
+struct CommandTraits<FrameBackCommand> : TCycleCommandTraits {
+    using StateType = FrameBackCommandState;
+};
+
+template <>
+struct CommandTraits<ScanlineCommand> : TCycleCommandTraits {
+    using StateType = ScanlineCommandState;
+};
+
+template <>
+struct CommandTraits<ContinueCommand> : MCycleCommandTraits {
+    using StateType = ContinueCommandState;
+};
+
+template <>
+struct CommandTraits<AbortCommand> : MCycleCommandTraits {
+    using StateType = AbortCommandState;
+};
 
 uint32_t hash_combine(uint32_t h1, uint32_t h2) {
     return h1 + h2 * 0xDEECE66D;
@@ -20,6 +87,198 @@ uint32_t hash_combine(uint32_t h1, uint32_t h2) {
 
 DebuggerBackend::DebuggerBackend(Core& core_) :
     core {core_} {
+}
+
+// ===================== COMMANDS STATE INITIALIZATION =========================
+
+// Tick
+template <>
+void DebuggerBackend::init_command_state<TickCommand>(const TickCommand& cmd) {
+    command_state = TickCommandState {core.ticks + cmd.count};
+}
+
+// Dot
+template <>
+void DebuggerBackend::init_command_state<DotCommand>(const DotCommand& cmd) {
+    command_state = DotCommandState {core.gb.ppu.cycles + cmd.count};
+}
+
+// Step
+template <>
+void DebuggerBackend::init_command_state<StepCommand>(const StepCommand& cmd) {
+    command_state = StepCommandState();
+}
+
+// MicroStep
+template <>
+void DebuggerBackend::init_command_state<MicroStepCommand>(const MicroStepCommand& cmd) {
+    command_state = MicroStepCommandState();
+}
+
+// Next
+template <>
+void DebuggerBackend::init_command_state<NextCommand>(const NextCommand& cmd) {
+    command_state = NextCommandState {0, core.gb.cpu.sp};
+}
+
+// MicroNext
+template <>
+void DebuggerBackend::init_command_state<MicroNextCommand>(const MicroNextCommand& cmd) {
+    command_state = MicroNextCommandState {0, core.gb.cpu.sp};
+}
+
+// Frame
+template <>
+void DebuggerBackend::init_command_state<FrameCommand>(const FrameCommand& cmd) {
+    command_state = FrameCommandState {};
+}
+
+// FrameBack
+template <>
+void DebuggerBackend::init_command_state<FrameBackCommand>(const FrameBackCommand& cmd) {
+    command_state = FrameBackCommandState {};
+}
+
+// Scanline
+template <>
+void DebuggerBackend::init_command_state<ScanlineCommand>(const ScanlineCommand& cmd) {
+    command_state = ScanlineCommandState {};
+}
+
+// Continue
+template <>
+void DebuggerBackend::init_command_state<ContinueCommand>(const ContinueCommand& cmd) {
+    command_state = ContinueCommandState();
+}
+
+// Abort
+template <>
+void DebuggerBackend::init_command_state<AbortCommand>(const AbortCommand& cmd) {
+    command_state = AbortCommandState();
+}
+
+// ===================== COMMANDS IMPLEMENTATION ===============================
+
+// Tick
+template <>
+void DebuggerBackend::handle_command<TickCommand, TickCommandState>(const TickCommand& cmd, TickCommandState& state) {
+    if (core.ticks >= state.target) {
+        pull_command(ExecutionCompleted());
+    }
+}
+
+// Dot
+template <>
+void DebuggerBackend::handle_command<DotCommand, DotCommandState>(const DotCommand& cmd, DotCommandState& state) {
+    if (core.gb.ppu.cycles >= state.target) {
+        pull_command(ExecutionCompleted());
+    }
+}
+
+// Step
+template <>
+void DebuggerBackend::handle_command<StepCommand, StepCommandState>(const StepCommand& cmd, StepCommandState& state) {
+    Cpu& cpu = core.gb.cpu;
+    if (!DebuggerHelpers::is_in_isr(cpu) && cpu.instruction.microop.counter == 0) {
+        if (++state.counter >= cmd.count) {
+            pull_command(ExecutionCompleted());
+        }
+    }
+}
+
+// MicroStep
+template <>
+void DebuggerBackend::handle_command<MicroStepCommand, MicroStepCommandState>(const MicroStepCommand& cmd,
+                                                                              MicroStepCommandState& state) {
+    if (++state.counter >= cmd.count) {
+        pull_command(ExecutionCompleted());
+    }
+}
+
+// Next
+template <>
+void DebuggerBackend::handle_command<NextCommand, NextCommandState>(const NextCommand& cmd, NextCommandState& state) {
+    Cpu& cpu = core.gb.cpu;
+    if (!DebuggerHelpers::is_in_isr(cpu) && cpu.instruction.microop.counter == 0) {
+        if (cpu.sp == state.stack_level) {
+            ++state.counter;
+        }
+        if (state.counter >= cmd.count || cpu.sp > state.stack_level) {
+            pull_command(ExecutionCompleted());
+        }
+    }
+}
+
+// MicroNext
+template <>
+void DebuggerBackend::handle_command<MicroNextCommand, MicroNextCommandState>(const MicroNextCommand& cmd,
+                                                                              MicroNextCommandState& state) {
+    Cpu& cpu = core.gb.cpu;
+    if (cpu.sp == state.stack_level) {
+        ++state.counter;
+    }
+    if (state.counter >= cmd.count || cpu.sp > state.stack_level) {
+        pull_command(ExecutionCompleted());
+    }
+}
+
+// Frame
+template <>
+void DebuggerBackend::handle_command<FrameCommand, FrameCommandState>(const FrameCommand& cmd,
+                                                                      FrameCommandState& state) {
+    bool is_new_frame = core.gb.ppu.tick_selector == &Ppu::vblank && core.gb.ppu.ly == 144 && core.gb.ppu.dots == 0;
+    if (is_new_frame) {
+        if (++state.counter >= cmd.count) {
+            pull_command(ExecutionCompleted());
+        }
+    }
+}
+
+// FrameBack
+template <>
+void DebuggerBackend::handle_command<FrameBackCommand, FrameBackCommandState>(const FrameBackCommand& cmd,
+                                                                              FrameBackCommandState& state) {
+    // Unwind the history stack until the specific frame
+    for (uint32_t i = 0; i < cmd.count - 1 && history.size() > 1; i++) {
+        history.pop_back();
+    }
+
+    if (history.empty()) {
+        return;
+    }
+
+    // Load the state
+    core.load_state(history.back().data());
+    history.pop_back();
+
+    pull_command(ExecutionCompleted());
+}
+
+// Scanline
+template <>
+void DebuggerBackend::handle_command<ScanlineCommand, ScanlineCommandState>(const ScanlineCommand& cmd,
+                                                                            ScanlineCommandState& state) {
+    bool is_new_line =
+        core.gb.ppu.lcdc.enable && core.gb.ppu.tick_selector == &Ppu::oam_scan_even && core.gb.ppu.dots == 0;
+    if (is_new_line) {
+        if (++state.counter >= cmd.count) {
+            pull_command(ExecutionCompleted());
+        }
+    }
+}
+
+// Continue
+template <>
+void DebuggerBackend::handle_command<ContinueCommand, ContinueCommandState>(const ContinueCommand& cmd,
+                                                                            ContinueCommandState& state) {
+    // nop
+}
+
+// Abort
+template <>
+void DebuggerBackend::handle_command<AbortCommand, AbortCommandState>(const AbortCommand& cmd,
+                                                                      AbortCommandState& state) {
+    run = false;
 }
 
 void DebuggerBackend::attach_frontend(DebuggerFrontend& frontend_) {
@@ -146,72 +405,44 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
     }
 
     // Handle current command
-
-    const Command& cmd = *command;
-
-    // T-Cycle commands (PPU)
-    if (std::holds_alternative<TickCommand>(cmd)) {
-        handle_command<TickCommand, TickCommandState>();
-    } else if (std::holds_alternative<DotCommand>(cmd)) {
-        handle_command<DotCommand, DotCommandState>();
-    } else if (std::holds_alternative<FrameCommand>(cmd)) {
-        handle_command<FrameCommand, FrameCommandState>();
-    } else if (std::holds_alternative<FrameBackCommand>(cmd)) {
-        handle_command<FrameBackCommand, FrameBackCommandState>();
-    } else if (std::holds_alternative<ScanlineCommand>(cmd)) {
-        handle_command<ScanlineCommand, ScanlineCommandState>();
-    } else if (is_aligned_with_instruction) {
-        // M-Cycle commands (CPU)
-        if (std::holds_alternative<DotCommand>(cmd)) {
-            handle_command<DotCommand, DotCommandState>();
-        } else if (std::holds_alternative<StepCommand>(cmd)) {
-            handle_command<StepCommand, StepCommandState>();
-        } else if (std::holds_alternative<MicroStepCommand>(cmd)) {
-            handle_command<MicroStepCommand, MicroStepCommandState>();
-        } else if (std::holds_alternative<NextCommand>(cmd)) {
-            handle_command<NextCommand, NextCommandState>();
-        } else if (std::holds_alternative<MicroNextCommand>(cmd)) {
-            handle_command<MicroNextCommand, MicroNextCommandState>();
-        } else if (std::holds_alternative<FrameCommand>(cmd)) {
-            handle_command<FrameCommand, FrameCommandState>();
-        } else if (std::holds_alternative<FrameBackCommand>(cmd)) {
-            handle_command<FrameBackCommand, FrameBackCommandState>();
-        } else if (std::holds_alternative<ContinueCommand>(cmd)) {
-            handle_command<ContinueCommand, ContinueCommandState>();
-        } else if (std::holds_alternative<AbortCommand>(cmd)) {
-            handle_command<AbortCommand, AbortCommandState>();
-        }
-    }
+    std::visit(
+        [this, is_aligned_with_instruction](auto&& cmd) {
+            using CmdType = std::decay_t<decltype(cmd)>;
+            using CmdTraits = CommandTraits<CmdType>;
+            using CmdStateType = typename CmdTraits::StateType;
+            if (is_aligned_with_instruction || CmdTraits::AllowExecutionOnTCycle) {
+                handle_command<CmdType, CmdStateType>(cmd, std::get<CmdStateType>(*command_state));
+            }
+        },
+        *command);
 }
 
 void DebuggerBackend::reset() {
-    // Reset core
+    clear();
     core.reset();
+}
 
-    // Reset debugger state
-    command = std::nullopt;
-    command_state = std::nullopt;
-    run = true;
-    interrupted = false;
-    cartridge_info = std::nullopt;
-    breakpoints.clear();
-    watchpoints.clear();
-    memset(watchpoints_at_address, 0, sizeof(watchpoints_at_address));
-    for (uint32_t i = 0; i < array_size(disassembled_instructions); i++) {
-        disassembled_instructions[i] = std::nullopt;
-    }
-    watchpoint_hit = std::nullopt;
-    next_point_id = 0;
-    allow_memory_callbacks = true;
-    history.clear();
-    last_instruction = std::nullopt;
-    call_stack.clear();
-    memory_hash = 0;
+bool DebuggerBackend::save_state(const std::string& path) const {
+    std::vector<uint8_t> data(core.get_state_size());
+    core.save_state(data.data());
 
-    // Eventually notify observers
-    if (on_reset_callback) {
-        on_reset_callback();
+    bool ok;
+    write_file(path, data.data(), data.size(), &ok);
+
+    return ok;
+}
+
+bool DebuggerBackend::load_state(const std::string& path) {
+    bool ok;
+    std::vector<uint8_t> data = read_file(path, &ok);
+
+    if (data.size() != core.get_state_size()) {
+        return false;
     }
+
+    clear();
+    core.load_state(data.data());
+    return true;
 }
 
 void DebuggerBackend::notify_memory_read(uint16_t address) {
@@ -506,32 +737,11 @@ std::optional<DisassembledInstruction> DebuggerBackend::do_disassemble(uint16_t 
 
 void DebuggerBackend::pull_command(const ExecutionState& state) {
     command = frontend->pull_command(state);
-
-    const Command& cmd = *command;
-
-    if (std::holds_alternative<TickCommand>(cmd)) {
-        init_command_state<TickCommand>();
-    } else if (std::holds_alternative<DotCommand>(cmd)) {
-        init_command_state<DotCommand>();
-    } else if (std::holds_alternative<StepCommand>(cmd)) {
-        init_command_state<StepCommand>();
-    } else if (std::holds_alternative<MicroStepCommand>(cmd)) {
-        init_command_state<MicroStepCommand>();
-    } else if (std::holds_alternative<NextCommand>(cmd)) {
-        init_command_state<NextCommand>();
-    } else if (std::holds_alternative<MicroNextCommand>(cmd)) {
-        init_command_state<MicroNextCommand>();
-    } else if (std::holds_alternative<FrameCommand>(cmd)) {
-        init_command_state<FrameCommand>();
-    } else if (std::holds_alternative<FrameBackCommand>(cmd)) {
-        init_command_state<FrameBackCommand>();
-    } else if (std::holds_alternative<ScanlineCommand>(cmd)) {
-        init_command_state<ScanlineCommand>();
-    } else if (std::holds_alternative<ContinueCommand>(cmd)) {
-        init_command_state<ContinueCommand>();
-    } else if (std::holds_alternative<AbortCommand>(cmd)) {
-        init_command_state<AbortCommand>();
-    }
+    std::visit(
+        [this](auto&& cmd) {
+            init_command_state(cmd);
+        },
+        *command);
 }
 
 void DebuggerBackend::interrupt() {
@@ -542,9 +752,36 @@ const Core& DebuggerBackend::get_core() const {
     return core;
 }
 
+void DebuggerBackend::clear() {
+    // Reset debugger state
+    command = std::nullopt;
+    command_state = std::nullopt;
+    run = true;
+    interrupted = false;
+    cartridge_info = std::nullopt;
+    breakpoints.clear();
+    watchpoints.clear();
+    memset(watchpoints_at_address, 0, sizeof(watchpoints_at_address));
+    for (uint32_t i = 0; i < array_size(disassembled_instructions); i++) {
+        disassembled_instructions[i] = std::nullopt;
+    }
+    watchpoint_hit = std::nullopt;
+    next_point_id = 0;
+    allow_memory_callbacks = true;
+    history.clear();
+    last_instruction = std::nullopt;
+    call_stack.clear();
+    memory_hash = 0;
+
+    // Eventually notify observers
+    if (on_reset_callback) {
+        on_reset_callback();
+    }
+}
+
 void DebuggerBackend::proceed() {
     command = ContinueCommand();
-    init_command_state<ContinueCommand>();
+    init_command_state<ContinueCommand>(std::get<ContinueCommand>(*command));
 }
 
 const std::vector<DisassembledInstructionReference>& DebuggerBackend::get_call_stack() const {
@@ -572,206 +809,4 @@ uint32_t DebuggerBackend::state_hash() const {
     h = hash_combine(h, memory_hash);
 
     return h;
-}
-
-// ===================== COMMANDS STATE INITIALIZATION =========================
-
-template <typename CommandType>
-void DebuggerBackend::init_command_state() {
-    init_command_state(std::get<CommandType>(*command));
-}
-
-// Tick
-template <>
-void DebuggerBackend::init_command_state<TickCommand>(const TickCommand& cmd) {
-    command_state = TickCommandState {core.ticks + cmd.count};
-}
-
-// Dot
-template <>
-void DebuggerBackend::init_command_state<DotCommand>(const DotCommand& cmd) {
-    command_state = DotCommandState {core.gb.ppu.cycles + cmd.count};
-}
-
-// Step
-template <>
-void DebuggerBackend::init_command_state<StepCommand>(const StepCommand& cmd) {
-    command_state = StepCommandState();
-}
-
-// MicroStep
-template <>
-void DebuggerBackend::init_command_state<MicroStepCommand>(const MicroStepCommand& cmd) {
-    command_state = MicroStepCommandState();
-}
-
-// Next
-template <>
-void DebuggerBackend::init_command_state<NextCommand>(const NextCommand& cmd) {
-    command_state = NextCommandState {0, core.gb.cpu.sp};
-}
-
-// MicroNext
-template <>
-void DebuggerBackend::init_command_state<MicroNextCommand>(const MicroNextCommand& cmd) {
-    command_state = MicroNextCommandState {0, core.gb.cpu.sp};
-}
-
-// Frame
-template <>
-void DebuggerBackend::init_command_state<FrameCommand>(const FrameCommand& cmd) {
-    command_state = FrameCommandState {};
-}
-
-// FrameBack
-template <>
-void DebuggerBackend::init_command_state<FrameBackCommand>(const FrameBackCommand& cmd) {
-    command_state = FrameBackCommandState {};
-}
-
-// Scanline
-template <>
-void DebuggerBackend::init_command_state<ScanlineCommand>(const ScanlineCommand& cmd) {
-    command_state = ScanlineCommandState {};
-}
-
-// Continue
-template <>
-void DebuggerBackend::init_command_state<ContinueCommand>(const ContinueCommand& cmd) {
-    command_state = ContinueCommandState();
-}
-
-// Abort
-template <>
-void DebuggerBackend::init_command_state<AbortCommand>(const AbortCommand& cmd) {
-    command_state = AbortCommandState();
-}
-
-// ===================== COMMANDS IMPLEMENTATION ===============================
-
-// Tick
-template <>
-void DebuggerBackend::handle_command<TickCommand, TickCommandState>(const TickCommand& cmd, TickCommandState& state) {
-    if (core.ticks >= state.target) {
-        pull_command(ExecutionCompleted());
-    }
-}
-
-// Dot
-template <>
-void DebuggerBackend::handle_command<DotCommand, DotCommandState>(const DotCommand& cmd, DotCommandState& state) {
-    if (core.gb.ppu.cycles >= state.target) {
-        pull_command(ExecutionCompleted());
-    }
-}
-
-// Step
-template <>
-void DebuggerBackend::handle_command<StepCommand, StepCommandState>(const StepCommand& cmd, StepCommandState& state) {
-    Cpu& cpu = core.gb.cpu;
-    if (!DebuggerHelpers::is_in_isr(cpu) && cpu.instruction.microop.counter == 0) {
-        if (++state.counter >= cmd.count) {
-            pull_command(ExecutionCompleted());
-        }
-    }
-}
-
-// MicroStep
-template <>
-void DebuggerBackend::handle_command<MicroStepCommand, MicroStepCommandState>(const MicroStepCommand& cmd,
-                                                                              MicroStepCommandState& state) {
-    if (++state.counter >= cmd.count) {
-        pull_command(ExecutionCompleted());
-    }
-}
-
-// Next
-template <>
-void DebuggerBackend::handle_command<NextCommand, NextCommandState>(const NextCommand& cmd, NextCommandState& state) {
-    Cpu& cpu = core.gb.cpu;
-    if (!DebuggerHelpers::is_in_isr(cpu) && cpu.instruction.microop.counter == 0) {
-        if (cpu.sp == state.stack_level) {
-            ++state.counter;
-        }
-        if (state.counter >= cmd.count || cpu.sp > state.stack_level) {
-            pull_command(ExecutionCompleted());
-        }
-    }
-}
-
-// MicroNext
-template <>
-void DebuggerBackend::handle_command<MicroNextCommand, MicroNextCommandState>(const MicroNextCommand& cmd,
-                                                                              MicroNextCommandState& state) {
-    Cpu& cpu = core.gb.cpu;
-    if (cpu.sp == state.stack_level) {
-        ++state.counter;
-    }
-    if (state.counter >= cmd.count || cpu.sp > state.stack_level) {
-        pull_command(ExecutionCompleted());
-    }
-}
-
-// Frame
-template <>
-void DebuggerBackend::handle_command<FrameCommand, FrameCommandState>(const FrameCommand& cmd,
-                                                                      FrameCommandState& state) {
-    bool is_new_frame = core.gb.ppu.tick_selector == &Ppu::vblank && core.gb.ppu.ly == 144 && core.gb.ppu.dots == 0;
-    if (is_new_frame) {
-        if (++state.counter >= cmd.count) {
-            pull_command(ExecutionCompleted());
-        }
-    }
-}
-
-// FrameBack
-template <>
-void DebuggerBackend::handle_command<FrameBackCommand, FrameBackCommandState>(const FrameBackCommand& cmd,
-                                                                              FrameBackCommandState& state) {
-    // Unwind the history stack until the specific frame
-    for (uint32_t i = 0; i < cmd.count - 1 && history.size() > 1; i++) {
-        history.pop_back();
-    }
-
-    if (history.empty()) {
-        return;
-    }
-
-    // Load the state
-    core.load_state(history.back().data());
-    history.pop_back();
-
-    pull_command(ExecutionCompleted());
-}
-
-// Scanline
-template <>
-void DebuggerBackend::handle_command<ScanlineCommand, ScanlineCommandState>(const ScanlineCommand& cmd,
-                                                                            ScanlineCommandState& state) {
-    bool is_new_line =
-        core.gb.ppu.lcdc.enable && core.gb.ppu.tick_selector == &Ppu::oam_scan_even && core.gb.ppu.dots == 0;
-    if (is_new_line) {
-        if (++state.counter >= cmd.count) {
-            pull_command(ExecutionCompleted());
-        }
-    }
-}
-
-// Continue
-template <>
-void DebuggerBackend::handle_command<ContinueCommand, ContinueCommandState>(const ContinueCommand& cmd,
-                                                                            ContinueCommandState& state) {
-    // nop
-}
-
-// Abort
-template <>
-void DebuggerBackend::handle_command<AbortCommand, AbortCommandState>(const AbortCommand& cmd,
-                                                                      AbortCommandState& state) {
-    run = false;
-}
-
-template <typename CommandType, typename CommandStateType>
-void DebuggerBackend::handle_command() {
-    handle_command(std::get<CommandType>(*command), std::get<CommandStateType>(*command_state));
 }

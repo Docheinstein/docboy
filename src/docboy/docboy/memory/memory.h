@@ -34,7 +34,7 @@ public:
     }
 
     void save_state(Parcel& parcel) const {
-        parcel.write_bytes(data, Size * sizeof(UInt8));
+        PARCEL_WRITE_BYTES(parcel, data, Size * sizeof(UInt8));
     }
     void load_state(Parcel& parcel) {
         parcel.read_bytes(data, Size * sizeof(UInt8));

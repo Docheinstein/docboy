@@ -21,3 +21,6 @@ target_link_libraries(runcmpframebuffer PRIVATE testutils docboy utils extra)
 
 add_executable(benchmark benchmark.cpp)
 target_link_libraries(benchmark PRIVATE testutils docboy utils args)
+
+add_executable(dumpstate dumpstate.cpp)
+target_link_libraries(dumpstate PRIVATE testutils docboy utils)

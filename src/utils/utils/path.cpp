@@ -25,15 +25,14 @@ std::string Path::string() const {
     return s;
 }
 
-Path Path::with_extension(const std::string& extension) const {
-    return Path {*this}.replace_extension(extension);
-}
-
-Path& Path::replace_extension(const std::string& extension) {
+Path& Path::with_extension(const std::string& extension) {
     std::string& last_part = parts.back();
     std::size_t dot = last_part.find_last_of('.');
     if (dot != std::string::npos) {
         last_part.replace(dot + 1, std::string::npos, extension);
+    } else {
+        last_part.append(".");
+        last_part.append(extension);
     }
 
     return *this;

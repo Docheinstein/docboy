@@ -65,16 +65,16 @@ void SpeedSwitchController::switch_speed() {
 }
 
 void SpeedSwitchController::save_state(Parcel& parcel) const {
-    parcel.write_uint32(speed_switch_exit_countdown);
-    parcel.write_uint8(speed_switch_enter_countdown);
-    parcel.write_bool(timers_block.blocked);
-    parcel.write_uint8(timers_block.countdown);
-    parcel.write_bool(interrupts_block.blocked);
-    parcel.write_uint8(interrupts_block.countdown);
-    parcel.write_bool(dma_block.blocked);
-    parcel.write_uint8(dma_block.countdown);
-    parcel.write_bool(ppu_block.blocked);
-    parcel.write_bool(interrupts_double_speed);
+    PARCEL_WRITE_UINT32(parcel, speed_switch_exit_countdown);
+    PARCEL_WRITE_UINT8(parcel, speed_switch_enter_countdown);
+    PARCEL_WRITE_BOOL(parcel, timers_block.blocked);
+    PARCEL_WRITE_UINT8(parcel, timers_block.countdown);
+    PARCEL_WRITE_BOOL(parcel, interrupts_block.blocked);
+    PARCEL_WRITE_UINT8(parcel, interrupts_block.countdown);
+    PARCEL_WRITE_BOOL(parcel, dma_block.blocked);
+    PARCEL_WRITE_UINT8(parcel, dma_block.countdown);
+    PARCEL_WRITE_BOOL(parcel, ppu_block.blocked);
+    PARCEL_WRITE_BOOL(parcel, interrupts_double_speed);
 }
 
 void SpeedSwitchController::load_state(Parcel& parcel) {

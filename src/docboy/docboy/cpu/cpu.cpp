@@ -720,59 +720,59 @@ void Cpu::tick_t3() {
 }
 
 void Cpu::save_state(Parcel& parcel) const {
-    parcel.write_bool(halted);
-    parcel.write_bool(fetching);
+    PARCEL_WRITE_BOOL(parcel, halted);
+    PARCEL_WRITE_BOOL(parcel, fetching);
 
-    parcel.write_uint16(pc);
-    parcel.write_uint16(af);
-    parcel.write_uint16(bc);
-    parcel.write_uint16(de);
-    parcel.write_uint16(hl);
-    parcel.write_uint16(sp);
+    PARCEL_WRITE_UINT16(parcel, pc);
+    PARCEL_WRITE_UINT16(parcel, af);
+    PARCEL_WRITE_UINT16(parcel, bc);
+    PARCEL_WRITE_UINT16(parcel, de);
+    PARCEL_WRITE_UINT16(parcel, hl);
+    PARCEL_WRITE_UINT16(parcel, sp);
 
-    parcel.write_uint8(static_cast<uint8_t>(ime));
+    PARCEL_WRITE_UINT8(parcel, static_cast<uint8_t>(ime));
 
-    parcel.write_uint8(phase);
+    PARCEL_WRITE_UINT8(parcel, phase);
 
-    parcel.write_uint8(static_cast<uint8_t>(interrupt.state));
-    parcel.write_uint8(interrupt.remaining_ticks);
+    PARCEL_WRITE_UINT8(parcel, static_cast<uint8_t>(interrupt.state));
+    PARCEL_WRITE_UINT8(parcel, interrupt.remaining_ticks);
 
-    parcel.write_bool(fetching_cb);
+    PARCEL_WRITE_BOOL(parcel, fetching_cb);
 
     if (static_cast<size_t>(instruction.microop.selector - &instructions[0][0]) <
         array_size(instructions) * INSTR_LEN) {
-        parcel.write_uint8(STATE_INSTRUCTION_FLAG_NORMAL);
-        parcel.write_uint16(instruction.microop.selector - &instructions[0][0]);
+        PARCEL_WRITE_UINT8(parcel, STATE_INSTRUCTION_FLAG_NORMAL);
+        PARCEL_WRITE_UINT16(parcel, instruction.microop.selector - &instructions[0][0]);
     } else if (static_cast<size_t>(instruction.microop.selector - &instructions_cb[0][0]) <
                array_size(instructions_cb) * INSTR_LEN) {
-        parcel.write_uint8(STATE_INSTRUCTION_FLAG_CB);
-        parcel.write_uint16(instruction.microop.selector - &instructions_cb[0][0]);
+        PARCEL_WRITE_UINT8(parcel, STATE_INSTRUCTION_FLAG_CB);
+        PARCEL_WRITE_UINT16(parcel, instruction.microop.selector - &instructions_cb[0][0]);
     } else if (static_cast<size_t>(instruction.microop.selector - &isr[0]) < INSTR_LEN) {
-        parcel.write_uint8(STATE_INSTRUCTION_FLAG_ISR);
-        parcel.write_uint16(instruction.microop.selector - &isr[0]);
+        PARCEL_WRITE_UINT8(parcel, STATE_INSTRUCTION_FLAG_ISR);
+        PARCEL_WRITE_UINT16(parcel, instruction.microop.selector - &isr[0]);
     } else {
         ASSERT_NO_ENTRY();
     }
 
-    parcel.write_uint8(instruction.microop.counter);
+    PARCEL_WRITE_UINT8(parcel, instruction.microop.counter);
 
 #ifdef ENABLE_DEBUGGER
-    parcel.write_uint16(instruction.address);
-    parcel.write_uint8(instruction.cycle_microop);
+    PARCEL_WRITE_UINT16(parcel, instruction.address);
+    PARCEL_WRITE_UINT8(parcel, instruction.cycle_microop);
 #endif
 
-    parcel.write_uint8(static_cast<uint8_t>(io.state));
-    parcel.write_uint8(io.data);
-    parcel.write_bool(b);
-    parcel.write_uint8(u);
-    parcel.write_uint8(u2);
-    parcel.write_uint8(lsb);
-    parcel.write_uint8(msb);
-    parcel.write_uint16(uu);
-    parcel.write_uint16(addr);
+    PARCEL_WRITE_UINT8(parcel, static_cast<uint8_t>(io.state));
+    PARCEL_WRITE_UINT8(parcel, io.data);
+    PARCEL_WRITE_BOOL(parcel, b);
+    PARCEL_WRITE_UINT8(parcel, u);
+    PARCEL_WRITE_UINT8(parcel, u2);
+    PARCEL_WRITE_UINT8(parcel, lsb);
+    PARCEL_WRITE_UINT8(parcel, msb);
+    PARCEL_WRITE_UINT16(parcel, uu);
+    PARCEL_WRITE_UINT16(parcel, addr);
 
 #ifdef ENABLE_DEBUGGER
-    parcel.write_uint64(cycles);
+    PARCEL_WRITE_UINT64(parcel, cycles);
 #endif
 }
 

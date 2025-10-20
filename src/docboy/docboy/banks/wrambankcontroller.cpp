@@ -16,7 +16,7 @@ void WramBankController::write_svbk(uint8_t value) {
 }
 
 void WramBankController::save_state(Parcel& parcel) const {
-    parcel.write_uint8(svbk.bank);
+    PARCEL_WRITE_UINT8(parcel, svbk.bank);
 }
 
 void WramBankController::load_state(Parcel& parcel) {

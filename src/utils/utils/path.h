@@ -17,8 +17,7 @@ public:
 
     std::string filename() const;
 
-    Path with_extension(const std::string& extension) const;
-    Path& replace_extension(const std::string& extension);
+    Path& with_extension(const std::string& extension);
 
     std::string string() const;
 

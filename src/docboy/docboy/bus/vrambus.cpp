@@ -22,9 +22,9 @@ VramBus::VramBus(Vram* vram) :
 
 void VramBus::save_state(Parcel& parcel) const {
     VideoBus::save_state(parcel);
-    parcel.write_uint8(readers);
+    PARCEL_WRITE_UINT8(parcel, readers);
 #ifdef ENABLE_CGB
-    parcel.write_bool(vram_bank);
+    PARCEL_WRITE_BOOL(parcel, vram_bank);
 #endif
 }
 

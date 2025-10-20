@@ -346,7 +346,8 @@ CartridgeHeader CartridgeHeader::parse(const ICartridge& cartridge) {
 
     CartridgeHeader h;
 
-    for (uint16_t i = 0x100; i <= 0x150; i++) {
+    // WTF?
+    for (uint16_t i = 0x100; i < 0x150; i++) {
         h.data.push_back(cartridge.read_rom(i));
     }
 

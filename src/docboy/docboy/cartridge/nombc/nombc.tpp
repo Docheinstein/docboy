@@ -73,7 +73,7 @@ uint32_t NoMbc<RamSize>::get_rom_size() const {
 template <uint32_t RamSize>
 void NoMbc<RamSize>::save_state(Parcel& parcel) const {
     if constexpr (Ram) {
-        parcel.write_bytes(ram, RamSize);
+        PARCEL_WRITE_BYTES(parcel, ram, RamSize);
     }
 }
 

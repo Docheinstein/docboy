@@ -25,6 +25,7 @@
 #include "utils/formatters.h"
 #include "utils/hexdump.h"
 #include "utils/memory.h"
+#include "utils/path.h"
 #include "utils/strings.h"
 
 #include "tui/block.h"
@@ -140,6 +141,12 @@ struct FrontendTraceCommand {
 struct FrontendDumpDisassembleCommand {};
 
 struct FrontendResetCommand {};
+struct FrontendSaveStateCommand {
+    std::string path {};
+};
+struct FrontendLoadStateCommand {
+    std::string path {};
+};
 
 struct FrontendHelpCommand {};
 struct FrontendQuitCommand {};
@@ -151,7 +158,8 @@ using FrontendCommand =
                  FrontendKeyCommand, FrontendTickCommand, FrontendDotCommand, FrontendStepCommand,
                  FrontendMicroStepCommand, FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand,
                  FrontendScanlineCommand, FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand,
-                 FrontendDumpDisassembleCommand, FrontendResetCommand, FrontendHelpCommand, FrontendQuitCommand>;
+                 FrontendDumpDisassembleCommand, FrontendResetCommand, FrontendSaveStateCommand,
+                 FrontendLoadStateCommand, FrontendHelpCommand, FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
     std::regex regex;
@@ -175,6 +183,10 @@ enum TraceFlag : uint32_t {
     TraceFlagTCycle = 1 << 12,
     TraceFlagMax = TraceFlagTCycle,
 };
+
+std::string get_state_path(const std::string& rom) {
+    return ((temp_directory_path() / rom).with_extension("state").string());
+}
 
 template <typename T>
 T parse_hex(const std::string& s, bool* ok) {
@@ -501,6 +513,18 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
     {std::regex(R"(r)"), "r", "Reset the emulator to its initial state",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          return FrontendResetCommand {};
+     }},
+    {std::regex(R"(save\s*(.*)?)"), "save [<path>]", "Save state to <path>",
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         std::string path = groups[0];
+         trim(path);
+         return FrontendSaveStateCommand {std::move(path)};
+     }},
+    {std::regex(R"(load\s*(.*)?)"), "load [<path>]", "Load state from <path>",
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         std::string path = groups[0];
+         trim(path);
+         return FrontendLoadStateCommand {path};
      }},
     {std::regex(R"(h(?:elp)?)"), "h", "Display help",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
@@ -848,6 +872,42 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendResetCommand>(co
     return std::nullopt;
 }
 
+// Save state
+template <>
+std::optional<Command> DebuggerFrontend::handle_command<FrontendSaveStateCommand>(const FrontendSaveStateCommand& cmd) {
+    if (core.ticks % 4 != 0) {
+        std::cout << "Failed to save state: phase must be T0 to save" << std::endl;
+        return std::nullopt;
+    }
+
+    // If a path is not given, use a default one in a temporary directory.
+    std::string state_path = !cmd.path.empty() ? cmd.path : get_state_path(backend.get_cartridge_info().title);
+
+    if (backend.save_state(state_path)) {
+        std::cout << "Saved state to '" << state_path << "'" << std::endl;
+    } else {
+        std::cout << "Failed to save state to '" << state_path << "'" << std::endl;
+    }
+
+    return std::nullopt;
+}
+
+// Load state
+template <>
+std::optional<Command> DebuggerFrontend::handle_command<FrontendLoadStateCommand>(const FrontendLoadStateCommand& cmd) {
+    // If a path is not given, use a default one in a temporary directory.
+    std::string state_path = !cmd.path.empty() ? cmd.path : get_state_path(backend.get_cartridge_info().title);
+
+    if (backend.load_state(state_path)) {
+        std::cout << "Loaded state from '" << state_path << "'" << std::endl;
+        reset();
+        reprint_ui = true;
+    } else {
+        std::cout << "Failed to load from '" << state_path << "'" << std::endl;
+    }
+    return std::nullopt;
+}
+
 // Help
 template <>
 std::optional<Command> DebuggerFrontend::handle_command<FrontendHelpCommand>(const FrontendHelpCommand& cmd) {
@@ -936,59 +996,11 @@ Command DebuggerFrontend::pull_command(const ExecutionState& state) {
             continue;
         }
 
-        const FrontendCommand& cmd = *parse_result;
-
-        if (std::holds_alternative<FrontendBreakpointCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendBreakpointCommand>(cmd));
-        } else if (std::holds_alternative<FrontendWatchpointCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendWatchpointCommand>(cmd));
-        } else if (std::holds_alternative<FrontendDeleteCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendDeleteCommand>(cmd));
-        } else if (std::holds_alternative<FrontendAutoDisassembleCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendAutoDisassembleCommand>(cmd));
-        } else if (std::holds_alternative<FrontendExamineCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendExamineCommand>(cmd));
-        } else if (std::holds_alternative<FrontendSearchBytesCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendSearchBytesCommand>(cmd));
-        } else if (std::holds_alternative<FrontendSearchInstructionsCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendSearchInstructionsCommand>(cmd));
-        } else if (std::holds_alternative<FrontendDisplayCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendDisplayCommand>(cmd));
-        } else if (std::holds_alternative<FrontendUndisplayCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendUndisplayCommand>(cmd));
-        } else if (std::holds_alternative<FrontendKeyCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendKeyCommand>(cmd));
-        } else if (std::holds_alternative<FrontendTickCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendTickCommand>(cmd));
-        } else if (std::holds_alternative<FrontendDotCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendDotCommand>(cmd));
-        } else if (std::holds_alternative<FrontendStepCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendStepCommand>(cmd));
-        } else if (std::holds_alternative<FrontendMicroStepCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendMicroStepCommand>(cmd));
-        } else if (std::holds_alternative<FrontendNextCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendNextCommand>(cmd));
-        } else if (std::holds_alternative<FrontendMicroNextCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendMicroNextCommand>(cmd));
-        } else if (std::holds_alternative<FrontendFrameCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendFrameCommand>(cmd));
-        } else if (std::holds_alternative<FrontendFrameBackCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendFrameBackCommand>(cmd));
-        } else if (std::holds_alternative<FrontendScanlineCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendScanlineCommand>(cmd));
-        } else if (std::holds_alternative<FrontendContinueCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendContinueCommand>(cmd));
-        } else if (std::holds_alternative<FrontendTraceCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendTraceCommand>(cmd));
-        } else if (std::holds_alternative<FrontendDumpDisassembleCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendDumpDisassembleCommand>(cmd));
-        } else if (std::holds_alternative<FrontendResetCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendResetCommand>(cmd));
-        } else if (std::holds_alternative<FrontendHelpCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendHelpCommand>(cmd));
-        } else if (std::holds_alternative<FrontendQuitCommand>(cmd)) {
-            cmd_to_send = handle_command(std::get<FrontendQuitCommand>(cmd));
-        }
+        cmd_to_send = std::visit(
+            [this](auto&& cmd) {
+                return handle_command(cmd);
+            },
+            *parse_result);
     } while (!cmd_to_send);
 
     return *cmd_to_send;

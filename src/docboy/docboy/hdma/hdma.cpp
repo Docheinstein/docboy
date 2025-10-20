@@ -288,25 +288,25 @@ void Hdma::tick_phase() {
 }
 
 void Hdma::save_state(Parcel& parcel) const {
-    parcel.write_uint8(hdma1);
-    parcel.write_uint8(hdma2);
-    parcel.write_uint8(hdma3);
-    parcel.write_uint8(hdma4);
-    parcel.write_uint8(last_stat_mode);
-    parcel.write_bool(last_halted);
-    parcel.write_bool(active);
-    parcel.write_uint8(state);
-    parcel.write_uint8(mode);
-    parcel.write_uint16(source.address);
-    parcel.write_uint16(source.cursor);
-    parcel.write_bool(source.valid);
-    parcel.write_uint16(destination.address);
-    parcel.write_uint16(destination.cursor);
-    parcel.write_uint16(remaining_bytes);
-    parcel.write_uint8(remaining_chunks.state);
-    parcel.write_uint8(remaining_chunks.count);
-    parcel.write_uint8(unblock);
-    parcel.write_bool(dma_oam_conflict);
+    PARCEL_WRITE_UINT8(parcel, hdma1);
+    PARCEL_WRITE_UINT8(parcel, hdma2);
+    PARCEL_WRITE_UINT8(parcel, hdma3);
+    PARCEL_WRITE_UINT8(parcel, hdma4);
+    PARCEL_WRITE_UINT8(parcel, last_stat_mode);
+    PARCEL_WRITE_BOOL(parcel, last_halted);
+    PARCEL_WRITE_BOOL(parcel, active);
+    PARCEL_WRITE_UINT8(parcel, state);
+    PARCEL_WRITE_UINT8(parcel, mode);
+    PARCEL_WRITE_UINT16(parcel, source.address);
+    PARCEL_WRITE_UINT16(parcel, source.cursor);
+    PARCEL_WRITE_BOOL(parcel, source.valid);
+    PARCEL_WRITE_UINT16(parcel, destination.address);
+    PARCEL_WRITE_UINT16(parcel, destination.cursor);
+    PARCEL_WRITE_UINT16(parcel, remaining_bytes);
+    PARCEL_WRITE_UINT8(parcel, remaining_chunks.state);
+    PARCEL_WRITE_UINT8(parcel, remaining_chunks.count);
+    PARCEL_WRITE_UINT8(parcel, unblock);
+    PARCEL_WRITE_BOOL(parcel, dma_oam_conflict);
 }
 
 void Hdma::load_state(Parcel& parcel) {

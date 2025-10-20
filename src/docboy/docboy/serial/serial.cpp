@@ -136,17 +136,17 @@ void Serial::write_sc(uint8_t value) {
 }
 
 void Serial::save_state(Parcel& parcel) const {
-    parcel.write_uint8(sb);
-    parcel.write_bool(sc.transfer_enable);
+    PARCEL_WRITE_UINT8(parcel, sb);
+    PARCEL_WRITE_BOOL(parcel, sc.transfer_enable);
 #ifdef ENABLE_CGB
-    parcel.write_bool(sc.clock_speed);
+    PARCEL_WRITE_BOOL(parcel, sc.clock_speed);
 #endif
-    parcel.write_bool(sc.clock_select);
+    PARCEL_WRITE_BOOL(parcel, sc.clock_select);
 
-    parcel.write_uint8(progress);
-    parcel.write_uint16(master.div_mask);
-    parcel.write_bool(master.prev_div_bit);
-    parcel.write_bool(master.toggle);
+    PARCEL_WRITE_UINT8(parcel, progress);
+    PARCEL_WRITE_UINT16(parcel, master.div_mask);
+    PARCEL_WRITE_BOOL(parcel, master.prev_div_bit);
+    PARCEL_WRITE_BOOL(parcel, master.toggle);
 }
 
 void Serial::load_state(Parcel& parcel) {

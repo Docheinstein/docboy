@@ -189,12 +189,12 @@ void CoreController::set_key_mapping(SDL_Keycode keycode, Joypad::Key joypad_key
 
 std::string CoreController::get_save_path() const {
     ASSERT(is_rom_loaded());
-    return rom.path.with_extension("sav").string();
+    return Path {rom.path}.with_extension("sav").string();
 }
 
 std::string CoreController::get_state_path() const {
     ASSERT(is_rom_loaded());
-    return rom.path.with_extension("state").string();
+    return Path {rom.path}.with_extension("state").string();
 }
 
 #ifdef ENABLE_TWO_PLAYERS_MODE

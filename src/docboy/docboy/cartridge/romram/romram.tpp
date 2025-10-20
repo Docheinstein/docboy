@@ -85,7 +85,7 @@ uint32_t RomRam<RomSize, RamSize, Battery>::get_rom_size() const {
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 void RomRam<RomSize, RamSize, Battery>::save_state(Parcel& parcel) const {
     if constexpr (Ram) {
-        parcel.write_bytes(ram, RamSize);
+        PARCEL_WRITE_BYTES(parcel, ram, RamSize);
     }
 }
 

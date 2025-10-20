@@ -120,9 +120,9 @@ uint32_t Mbc2<RomSize, Battery>::get_rom_size() const {
 
 template <uint32_t RomSize, bool Battery>
 void Mbc2<RomSize, Battery>::save_state(Parcel& parcel) const {
-    parcel.write_bool(ram_enabled);
-    parcel.write_uint8(rom_bank_selector);
-    parcel.write_bytes(ram, RamSize);
+    PARCEL_WRITE_BOOL(parcel, ram_enabled);
+    PARCEL_WRITE_UINT8(parcel, rom_bank_selector);
+    PARCEL_WRITE_BYTES(parcel, ram, RamSize);
 }
 
 template <uint32_t RomSize, bool Battery>

@@ -164,12 +164,12 @@ uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_rom_size() co
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
 void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::save_state(Parcel& parcel) const {
-    parcel.write_bool(ram_enabled);
-    parcel.write_uint8(rom_bank_selector);
-    parcel.write_uint8(upper_rom_bank_selector_ram_bank_selector);
-    parcel.write_uint8(banking_mode);
+    PARCEL_WRITE_BOOL(parcel, ram_enabled);
+    PARCEL_WRITE_UINT8(parcel, rom_bank_selector);
+    PARCEL_WRITE_UINT8(parcel, upper_rom_bank_selector_ram_bank_selector);
+    PARCEL_WRITE_UINT8(parcel, banking_mode);
     if constexpr (Ram) {
-        parcel.write_bytes(ram, RamSize);
+        PARCEL_WRITE_BYTES(parcel, ram, RamSize);
     }
 }
 

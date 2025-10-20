@@ -7,10 +7,10 @@ void UndocumentedRegisters::write_ff75(uint8_t value) {
 }
 
 void UndocumentedRegisters::save_state(Parcel& parcel) const {
-    parcel.write_uint8(ff72);
-    parcel.write_uint8(ff73);
-    parcel.write_uint8(ff74);
-    parcel.write_uint8(ff75);
+    PARCEL_WRITE_UINT8(parcel, ff72);
+    PARCEL_WRITE_UINT8(parcel, ff73);
+    PARCEL_WRITE_UINT8(parcel, ff74);
+    PARCEL_WRITE_UINT8(parcel, ff75);
 }
 
 void UndocumentedRegisters::load_state(Parcel& parcel) {

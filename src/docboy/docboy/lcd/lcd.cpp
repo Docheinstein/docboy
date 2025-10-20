@@ -13,11 +13,11 @@ void Lcd::set_appearance(const Appearance& a) {
 }
 
 void Lcd::save_state(Parcel& parcel) const {
-    parcel.write_bytes(pixels, sizeof(pixels));
-    parcel.write_uint16(cursor);
+    PARCEL_WRITE_BYTES(parcel, pixels, sizeof(pixels));
+    PARCEL_WRITE_UINT16(parcel, cursor);
 #ifdef ENABLE_DEBUGGER
-    parcel.write_uint8(x);
-    parcel.write_uint8(y);
+    PARCEL_WRITE_UINT8(parcel, x);
+    PARCEL_WRITE_UINT8(parcel, y);
 #endif
 }
 

@@ -15,7 +15,7 @@ void Boot::write_boot(uint8_t value) {
 }
 
 void Boot::save_state(Parcel& parcel) const {
-    parcel.write_uint8(boot);
+    PARCEL_WRITE_UINT8(parcel, boot);
 }
 
 void Boot::load_state(Parcel& parcel) {

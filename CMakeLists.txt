@@ -28,6 +28,8 @@ option(ENABLE_TWO_PLAYERS_MODE "Enable two players mode (serial link)" ON)
 
 option(ENABLE_ASSERTS "Enable asserts" OFF)
 
+option(ENABLE_STATE_DEBUG_SYMBOLS "Add debug symbols to state files" OFF)
+
 # Build in Release mode by default
 if (CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE Release)
@@ -77,6 +79,10 @@ endif ()
 
 if (ENABLE_ASSERTS)
     add_compile_definitions(ENABLE_ASSERTS)
+endif()
+
+if (ENABLE_STATE_DEBUG_SYMBOLS)
+    add_compile_definitions(ENABLE_STATE_DEBUG_SYMBOLS)
 endif()
 
 check_include_file("unistd.h" HAS_UNISTD)

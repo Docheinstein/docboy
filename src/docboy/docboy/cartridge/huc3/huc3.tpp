@@ -245,19 +245,19 @@ uint32_t HuC3<RomSize, RamSize>::get_rom_size() const {
 
 template <uint32_t RomSize, uint32_t RamSize>
 void HuC3<RomSize, RamSize>::save_state(Parcel& parcel) const {
-    parcel.write_uint8(static_cast<uint8_t>(ram_mapping));
-    parcel.write_uint8(rtc.command);
-    parcel.write_uint8(rtc.argument);
-    parcel.write_uint8(rtc.read);
-    parcel.write_uint8(rtc.address);
-    parcel.write_uint32(rtc.cycles_since_last_tick);
-    parcel.write_int64(rtc.last_tick_time);
-    parcel.write_bytes(rtc.memory, sizeof(rtc.memory));
-    parcel.write_uint16(rtc.clock.minutes);
-    parcel.write_uint16(rtc.clock.days);
-    parcel.write_uint16(rom_bank_selector);
-    parcel.write_uint8(ram_bank_selector);
-    parcel.write_bytes(ram, RamSize);
+    PARCEL_WRITE_UINT8(parcel, static_cast<uint8_t>(ram_mapping));
+    PARCEL_WRITE_UINT8(parcel, rtc.command);
+    PARCEL_WRITE_UINT8(parcel, rtc.argument);
+    PARCEL_WRITE_UINT8(parcel, rtc.read);
+    PARCEL_WRITE_UINT8(parcel, rtc.address);
+    PARCEL_WRITE_UINT32(parcel, rtc.cycles_since_last_tick);
+    PARCEL_WRITE_INT64(parcel, rtc.last_tick_time);
+    PARCEL_WRITE_BYTES(parcel, rtc.memory, sizeof(rtc.memory));
+    PARCEL_WRITE_UINT16(parcel, rtc.clock.minutes);
+    PARCEL_WRITE_UINT16(parcel, rtc.clock.days);
+    PARCEL_WRITE_UINT16(parcel, rom_bank_selector);
+    PARCEL_WRITE_UINT8(parcel, ram_bank_selector);
+    PARCEL_WRITE_BYTES(parcel, ram, RamSize);
 }
 
 template <uint32_t RomSize, uint32_t RamSize>

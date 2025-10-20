@@ -17,9 +17,9 @@ uint8_t Infrared::read_rp() const {
 }
 
 void Infrared::save_state(Parcel& parcel) const {
-    parcel.write_uint8(rp.read_enable);
-    parcel.write_bool(rp.receiving);
-    parcel.write_bool(rp.emitting);
+    PARCEL_WRITE_UINT8(parcel, rp.read_enable);
+    PARCEL_WRITE_BOOL(parcel, rp.receiving);
+    PARCEL_WRITE_BOOL(parcel, rp.emitting);
 }
 
 void Infrared::load_state(Parcel& parcel) {

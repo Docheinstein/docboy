@@ -1,8 +1,8 @@
 #include "utils/bits.h"
 #include "utils/parcel.h"
 
-template<typename Impl>
-template<Device::Type Dev>
+template <typename Impl>
+template <Device::Type Dev>
 uint8_t VideoBus<Impl>::flush_read_request() {
     ASSERT(test_bit<Bus::template R<Dev>>(this->requests));
 
@@ -17,8 +17,8 @@ uint8_t VideoBus<Impl>::flush_read_request() {
     return Bus::flush_read_request<Dev>();
 }
 
-template<typename Impl>
-template<Device::Type Dev>
+template <typename Impl>
+template <Device::Type Dev>
 void VideoBus<Impl>::flush_write_request(uint8_t value) {
     ASSERT(test_bit<Bus::template W<Dev>>(this->requests));
 
@@ -33,37 +33,37 @@ void VideoBus<Impl>::flush_write_request(uint8_t value) {
     return Bus::flush_write_request<Dev>(value);
 }
 
-template<typename Impl>
-template<Device::Type Dev>
+template <typename Impl>
+template <Device::Type Dev>
 void VideoBus<Impl>::acquire() {
     set_bit<Dev>(acquirers);
 }
 
-template<typename Impl>
-template<Device::Type Dev>
+template <typename Impl>
+template <Device::Type Dev>
 void VideoBus<Impl>::release() {
     reset_bit<Dev>(acquirers);
 }
 
-template<typename Impl>
+template <typename Impl>
 bool VideoBus<Impl>::is_acquired() const {
     return acquirers;
 }
 
-template<typename Impl>
-template<Device::Type Dev>
+template <typename Impl>
+template <Device::Type Dev>
 bool VideoBus<Impl>::is_acquired_by() const {
     return test_bit<Dev>(acquirers);
 }
 
-template<typename Impl>
-void VideoBus<Impl>::save_state(Parcel &parcel) const {
+template <typename Impl>
+void VideoBus<Impl>::save_state(Parcel& parcel) const {
     Bus::save_state(parcel);
-    parcel.write_uint16(acquirers);
+    PARCEL_WRITE_UINT16(parcel, acquirers);
 }
 
-template<typename Impl>
-void VideoBus<Impl>::load_state(Parcel &parcel) {
+template <typename Impl>
+void VideoBus<Impl>::load_state(Parcel& parcel) {
     Bus::load_state(parcel);
     acquirers = parcel.read_uint16();
 }
@@ -74,23 +74,23 @@ void VideoBus<Impl>::reset() {
     acquirers = 0;
 }
 
-template<typename BusType, Device::Type Dev>
+template <typename BusType, Device::Type Dev>
 void VideoBusView<BusType, Dev>::acquire() {
     this->bus.template acquire<Dev>();
 }
 
-template<typename BusType, Device::Type Dev>
+template <typename BusType, Device::Type Dev>
 void VideoBusView<BusType, Dev>::release() {
     this->bus.template release<Dev>();
 }
 
-template<typename BusType, Device::Type Dev>
-template<Device::Type SomeDev>
+template <typename BusType, Device::Type Dev>
+template <Device::Type SomeDev>
 bool VideoBusView<BusType, Dev>::is_acquired_by() const {
     return this->bus.template is_acquired_by<SomeDev>();
 }
 
-template<typename BusType, Device::Type Dev>
+template <typename BusType, Device::Type Dev>
 bool VideoBusView<BusType, Dev>::is_acquired_by_this() const {
     return this->bus.template is_acquired_by<Dev>();
 }

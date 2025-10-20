@@ -12,10 +12,10 @@ void Bus::load_state(Parcel& parcel) {
 }
 
 void Bus::save_state(Parcel& parcel) const {
-    parcel.write_uint16(requests);
-    parcel.write_uint16(address);
-    parcel.write_uint8(data);
-    parcel.write_uint8(decay);
+    PARCEL_WRITE_UINT16(parcel, requests);
+    PARCEL_WRITE_UINT16(parcel, address);
+    PARCEL_WRITE_UINT8(parcel, data);
+    PARCEL_WRITE_UINT8(parcel, decay);
 }
 
 void Bus::reset() {

@@ -158,14 +158,14 @@ uint32_t Mbc5<RomSize, RamSize, Battery, Rumble>::get_rom_size() const {
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
 void Mbc5<RomSize, RamSize, Battery, Rumble>::save_state(Parcel& parcel) const {
-    parcel.write_bool(ram_enabled);
-    parcel.write_uint16(rom_bank_selector);
-    parcel.write_uint8(ram_bank_selector);
+    PARCEL_WRITE_BOOL(parcel, ram_enabled);
+    PARCEL_WRITE_UINT16(parcel, rom_bank_selector);
+    PARCEL_WRITE_UINT8(parcel, ram_bank_selector);
     if constexpr (Rumble) {
-        parcel.write_bool(rumble);
+        PARCEL_WRITE_BOOL(parcel, rumble);
     }
     if constexpr (Ram) {
-        parcel.write_bytes(ram, RamSize);
+        PARCEL_WRITE_BYTES(parcel, ram, RamSize);
     }
 }
 

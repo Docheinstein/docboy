@@ -490,9 +490,8 @@ uint32_t Core::get_state_size() const {
 Parcel Core::parcelize_state() const {
     Parcel p;
 
-    p.write_uint32(STATE_WATERMARK);
-
-    p.write_uint64(ticks);
+    PARCEL_WRITE_UINT32(p, STATE_WATERMARK);
+    PARCEL_WRITE_UINT64(p, ticks);
 
     gb.cpu.save_state(p);
     gb.ppu.save_state(p);

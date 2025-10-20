@@ -44,7 +44,7 @@ void WramBus::write_wram2(uint16_t address, uint8_t value) {
 
 void WramBus::save_state(Parcel& parcel) const {
     Bus::save_state(parcel);
-    parcel.write_uint8(wram2_bank);
+    PARCEL_WRITE_UINT8(parcel, wram2_bank);
 }
 
 void WramBus::load_state(Parcel& parcel) {

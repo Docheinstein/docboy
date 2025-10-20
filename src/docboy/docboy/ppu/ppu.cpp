@@ -2070,41 +2070,41 @@ inline void Ppu::restore_bg_win_fetch() {
 }
 
 void Ppu::save_state(Parcel& parcel) const {
-    parcel.write_bool(lcdc.enable);
-    parcel.write_bool(lcdc.win_tile_map);
-    parcel.write_bool(lcdc.win_enable);
-    parcel.write_bool(lcdc.bg_win_tile_data);
-    parcel.write_bool(lcdc.bg_tile_map);
-    parcel.write_bool(lcdc.obj_size);
-    parcel.write_bool(lcdc.obj_enable);
-    parcel.write_bool(lcdc.bg_win_enable);
+    PARCEL_WRITE_BOOL(parcel, lcdc.enable);
+    PARCEL_WRITE_BOOL(parcel, lcdc.win_tile_map);
+    PARCEL_WRITE_BOOL(parcel, lcdc.win_enable);
+    PARCEL_WRITE_BOOL(parcel, lcdc.bg_win_tile_data);
+    PARCEL_WRITE_BOOL(parcel, lcdc.bg_tile_map);
+    PARCEL_WRITE_BOOL(parcel, lcdc.obj_size);
+    PARCEL_WRITE_BOOL(parcel, lcdc.obj_enable);
+    PARCEL_WRITE_BOOL(parcel, lcdc.bg_win_enable);
 
-    parcel.write_bool(stat.lyc_eq_ly_int);
-    parcel.write_bool(stat.oam_int);
-    parcel.write_bool(stat.vblank_int);
-    parcel.write_bool(stat.hblank_int);
-    parcel.write_bool(stat.lyc_eq_ly);
-    parcel.write_uint8(stat.mode);
+    PARCEL_WRITE_BOOL(parcel, stat.lyc_eq_ly_int);
+    PARCEL_WRITE_BOOL(parcel, stat.oam_int);
+    PARCEL_WRITE_BOOL(parcel, stat.vblank_int);
+    PARCEL_WRITE_BOOL(parcel, stat.hblank_int);
+    PARCEL_WRITE_BOOL(parcel, stat.lyc_eq_ly);
+    PARCEL_WRITE_UINT8(parcel, stat.mode);
 
-    parcel.write_uint8(scy);
-    parcel.write_uint8(scx);
-    parcel.write_uint8(ly);
-    parcel.write_uint8(lyc);
-    parcel.write_uint8(dma);
-    parcel.write_uint8(bgp);
-    parcel.write_uint8(obp0);
-    parcel.write_uint8(obp1);
-    parcel.write_uint8(wy);
-    parcel.write_uint8(wx);
+    PARCEL_WRITE_UINT8(parcel, scy);
+    PARCEL_WRITE_UINT8(parcel, scx);
+    PARCEL_WRITE_UINT8(parcel, ly);
+    PARCEL_WRITE_UINT8(parcel, lyc);
+    PARCEL_WRITE_UINT8(parcel, dma);
+    PARCEL_WRITE_UINT8(parcel, bgp);
+    PARCEL_WRITE_UINT8(parcel, obp0);
+    PARCEL_WRITE_UINT8(parcel, obp1);
+    PARCEL_WRITE_UINT8(parcel, wy);
+    PARCEL_WRITE_UINT8(parcel, wx);
 
 #ifdef ENABLE_CGB
-    parcel.write_bool(bcps.auto_increment);
-    parcel.write_uint8(bcps.address);
+    PARCEL_WRITE_BOOL(parcel, bcps.auto_increment);
+    PARCEL_WRITE_UINT8(parcel, bcps.address);
 
-    parcel.write_bool(ocps.auto_increment);
-    parcel.write_uint8(ocps.address);
+    PARCEL_WRITE_BOOL(parcel, ocps.auto_increment);
+    PARCEL_WRITE_UINT8(parcel, ocps.address);
 
-    parcel.write_bool(opri.priority_mode);
+    PARCEL_WRITE_BOOL(parcel, opri.priority_mode);
 #endif
 
     {
@@ -2114,124 +2114,124 @@ void Ppu::save_state(Parcel& parcel) const {
             ++i;
         }
         ASSERT(i < array_size(TICK_SELECTORS));
-        parcel.write_uint8(i);
+        PARCEL_WRITE_UINT8(parcel, i);
 
         i = 0;
         while (i < (uint8_t)array_size(FETCHER_TICK_SELECTORS) && fetcher_tick_selector != FETCHER_TICK_SELECTORS[i]) {
             ++i;
         }
         ASSERT(i < array_size(FETCHER_TICK_SELECTORS));
-        parcel.write_uint8(i);
+        PARCEL_WRITE_UINT8(parcel, i);
     }
 
-    parcel.write_bool(last_stat_irq);
-    parcel.write_bool(enable_lyc_eq_ly_irq);
-    parcel.write_bool(pending_stat_irq);
+    PARCEL_WRITE_BOOL(parcel, last_stat_irq);
+    PARCEL_WRITE_BOOL(parcel, enable_lyc_eq_ly_irq);
+    PARCEL_WRITE_BOOL(parcel, pending_stat_irq);
 #ifdef ENABLE_CGB
-    parcel.write_uint8(stat_mode);
-    parcel.write_bool(delay_stat_mode_update);
+    PARCEL_WRITE_UINT8(parcel, stat_mode);
+    PARCEL_WRITE_BOOL(parcel, delay_stat_mode_update);
 #endif
 
 #ifndef ENABLE_CGB
-    parcel.write_bool(stat_write.pending);
-    parcel.write_uint8(stat_write.value);
+    PARCEL_WRITE_BOOL(parcel, stat_write.pending);
+    PARCEL_WRITE_UINT8(parcel, stat_write.value);
 #endif
-    parcel.write_uint16(dots);
-    parcel.write_uint8(lx);
-    parcel.write_uint8(mode);
-    parcel.write_uint8(last_ly);
-    parcel.write_uint8(last_lyc);
-    parcel.write_uint8(last_bgp);
-    parcel.write_uint8(last_wx);
+    PARCEL_WRITE_UINT16(parcel, dots);
+    PARCEL_WRITE_UINT8(parcel, lx);
+    PARCEL_WRITE_UINT8(parcel, mode);
+    PARCEL_WRITE_UINT8(parcel, last_ly);
+    PARCEL_WRITE_UINT8(parcel, last_lyc);
+    PARCEL_WRITE_UINT8(parcel, last_bgp);
+    PARCEL_WRITE_UINT8(parcel, last_wx);
 
-    parcel.write_bool(last_lcdc.enable);
-    parcel.write_bool(last_lcdc.win_tile_map);
-    parcel.write_bool(last_lcdc.win_enable);
-    parcel.write_bool(last_lcdc.bg_win_tile_data);
-    parcel.write_bool(last_lcdc.bg_tile_map);
-    parcel.write_bool(last_lcdc.obj_size);
-    parcel.write_bool(last_lcdc.obj_enable);
-    parcel.write_bool(last_lcdc.bg_win_enable);
+    PARCEL_WRITE_BOOL(parcel, last_lcdc.enable);
+    PARCEL_WRITE_BOOL(parcel, last_lcdc.win_tile_map);
+    PARCEL_WRITE_BOOL(parcel, last_lcdc.win_enable);
+    PARCEL_WRITE_BOOL(parcel, last_lcdc.bg_win_tile_data);
+    PARCEL_WRITE_BOOL(parcel, last_lcdc.bg_tile_map);
+    PARCEL_WRITE_BOOL(parcel, last_lcdc.obj_size);
+    PARCEL_WRITE_BOOL(parcel, last_lcdc.obj_enable);
+    PARCEL_WRITE_BOOL(parcel, last_lcdc.bg_win_enable);
 
-    parcel.write_bytes(bg_fifo.data, sizeof(bg_fifo.data));
-    parcel.write_uint8(bg_fifo.cursor);
+    PARCEL_WRITE_BYTES(parcel, bg_fifo.data, sizeof(bg_fifo.data));
+    PARCEL_WRITE_UINT8(parcel, bg_fifo.cursor);
 
-    parcel.write_bytes(obj_fifo.data, sizeof(obj_fifo.data));
-    parcel.write_uint8(obj_fifo.start);
-    parcel.write_uint8(obj_fifo.end);
-    parcel.write_uint8(obj_fifo.count);
+    PARCEL_WRITE_BYTES(parcel, obj_fifo.data, sizeof(obj_fifo.data));
+    PARCEL_WRITE_UINT8(parcel, obj_fifo.start);
+    PARCEL_WRITE_UINT8(parcel, obj_fifo.end);
+    PARCEL_WRITE_UINT8(parcel, obj_fifo.count);
 
-    parcel.write_bytes(oam_entries, sizeof(oam_entries));
+    PARCEL_WRITE_BYTES(parcel, oam_entries, sizeof(oam_entries));
 #ifdef ENABLE_ASSERTS
-    parcel.write_uint8(oam_entries_count);
-    parcel.write_uint8(oam_entries_not_served_count);
+    PARCEL_WRITE_UINT8(parcel, oam_entries_count);
+    PARCEL_WRITE_UINT8(parcel, oam_entries_not_served_count);
 #endif
 
-    parcel.write_bool(is_fetching_sprite);
+    PARCEL_WRITE_BOOL(parcel, is_fetching_sprite);
 
-    parcel.write_bool(is_glitched_line_0);
-    parcel.write_uint8(glitched_line_0_hblank_delay);
+    PARCEL_WRITE_BOOL(parcel, is_glitched_line_0);
+    PARCEL_WRITE_UINT8(parcel, glitched_line_0_hblank_delay);
 #ifndef ENABLE_CGB
-    parcel.write_bool(vblank_last_line_stat_mode_hblank_glitch);
+    PARCEL_WRITE_BOOL(parcel, vblank_last_line_stat_mode_hblank_glitch);
 #endif
-    parcel.write_uint8(next_ly);
+    PARCEL_WRITE_UINT8(parcel, next_ly);
 
-    parcel.write_uint8(registers.oam.a);
-    parcel.write_uint8(registers.oam.b);
+    PARCEL_WRITE_UINT8(parcel, registers.oam.a);
+    PARCEL_WRITE_UINT8(parcel, registers.oam.b);
 
-    parcel.write_uint8(oam_scan.count);
-    parcel.write_uint8(oam_scan.index);
+    PARCEL_WRITE_UINT8(parcel, oam_scan.count);
+    PARCEL_WRITE_UINT8(parcel, oam_scan.index);
 
-    parcel.write_uint8(pixel_transfer.initial_scx.to_discard);
-    parcel.write_uint8(pixel_transfer.initial_scx.discarded);
+    PARCEL_WRITE_UINT8(parcel, pixel_transfer.initial_scx.to_discard);
+    PARCEL_WRITE_UINT8(parcel, pixel_transfer.initial_scx.discarded);
 
-    parcel.write_uint8(w.wly);
-    parcel.write_bool(w.active);
-    parcel.write_bool(w.just_activated);
+    PARCEL_WRITE_UINT8(parcel, w.wly);
+    PARCEL_WRITE_BOOL(parcel, w.active);
+    PARCEL_WRITE_BOOL(parcel, w.just_activated);
 
 #if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
     for (uint8_t i = 0; i < decltype(w.line_triggers)::Size; i++) {
-        parcel.write_uint8(i < w.line_triggers.size() ? w.line_triggers[i] : UINT8_MAX);
+        PARCEL_WRITE_UINT8(parcel, i < w.line_triggers.size() ? w.line_triggers[i] : UINT8_MAX);
     }
 #endif
 
-    parcel.write_uint8(bwf.lx);
-    parcel.write_uint8(bwf.tilemap_tile_vram_addr);
+    PARCEL_WRITE_UINT8(parcel, bwf.lx);
+    PARCEL_WRITE_UINT8(parcel, bwf.tilemap_tile_vram_addr);
 #ifdef ENABLE_CGB
-    parcel.write_uint8(bwf.attributes);
+    PARCEL_WRITE_UINT8(parcel, bwf.attributes);
 #endif
 #ifdef ENABLE_DEBUGGER
-    parcel.write_uint8(bwf.tilemap_x);
-    parcel.write_uint8(bwf.tilemap_y);
-    parcel.write_uint8(bwf.tilemap_vram_addr);
+    PARCEL_WRITE_UINT8(parcel, bwf.tilemap_x);
+    PARCEL_WRITE_UINT8(parcel, bwf.tilemap_y);
+    PARCEL_WRITE_UINT8(parcel, bwf.tilemap_vram_addr);
 #endif
-    parcel.write_bool(bwf.interrupted_fetch.has_data);
-    parcel.write_uint8(bwf.interrupted_fetch.tile_data_low);
-    parcel.write_uint8(bwf.interrupted_fetch.tile_data_high);
+    PARCEL_WRITE_BOOL(parcel, bwf.interrupted_fetch.has_data);
+    PARCEL_WRITE_UINT8(parcel, bwf.interrupted_fetch.tile_data_low);
+    PARCEL_WRITE_UINT8(parcel, bwf.interrupted_fetch.tile_data_high);
 
-    parcel.write_uint8(wf.tilemap_x);
+    PARCEL_WRITE_UINT8(parcel, wf.tilemap_x);
 
-    parcel.write_uint8(of.entry.number);
-    parcel.write_uint8(of.entry.y);
+    PARCEL_WRITE_UINT8(parcel, of.entry.number);
+    PARCEL_WRITE_UINT8(parcel, of.entry.y);
 #ifdef ENABLE_ASSERTS
-    parcel.write_uint8(of.entry.x);
+    PARCEL_WRITE_UINT8(parcel, of.entry.x);
 #endif
-    parcel.write_uint8(of.tile_number);
-    parcel.write_uint8(of.attributes);
+    PARCEL_WRITE_UINT8(parcel, of.tile_number);
+    PARCEL_WRITE_UINT8(parcel, of.attributes);
 
-    parcel.write_uint16(psf.tile_data_vram_address);
-    parcel.write_uint8(psf.tile_data_low);
-    parcel.write_uint8(psf.tile_data_high);
+    PARCEL_WRITE_UINT16(parcel, psf.tile_data_vram_address);
+    PARCEL_WRITE_UINT8(parcel, psf.tile_data_low);
+    PARCEL_WRITE_UINT8(parcel, psf.tile_data_high);
 
 #ifdef ENABLE_CGB
-    parcel.write_bytes(bg_palettes, sizeof(bg_palettes));
-    parcel.write_bytes(obj_palettes, sizeof(obj_palettes));
+    PARCEL_WRITE_BYTES(parcel, bg_palettes, sizeof(bg_palettes));
+    PARCEL_WRITE_BYTES(parcel, obj_palettes, sizeof(obj_palettes));
 
-    parcel.write_bool(color_resolver_enabled);
+    PARCEL_WRITE_BOOL(parcel, color_resolver_enabled);
 #endif
 
 #ifdef ENABLE_DEBUGGER
-    parcel.write_uint64(cycles);
+    PARCEL_WRITE_UINT64(parcel, cycles);
 #endif
 }
 

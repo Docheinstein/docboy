@@ -159,7 +159,7 @@ void Mmu::lock_boot_rom() {
 
 void Mmu::save_state(Parcel& parcel) const {
     const auto save_request = [this, &parcel](const BusAccess* request) {
-        parcel.write_uint8([this, request] {
+        auto request_uint8 = [this, request] {
             if (!request) {
                 return STATE_NO_REQUEST;
             }
@@ -185,7 +185,9 @@ void Mmu::save_state(Parcel& parcel) const {
 
             ASSERT_NO_ENTRY();
             return (uint8_t)0;
-        }());
+        }();
+
+        PARCEL_WRITE_UINT8(parcel, request_uint8);
     };
 
     for (uint32_t i = 0; i < array_size(requests); i++) {
@@ -193,7 +195,7 @@ void Mmu::save_state(Parcel& parcel) const {
     }
 
 #ifdef ENABLE_BOOTROM
-    parcel.write_bool(boot_rom_locked);
+    PARCEL_WRITE_BOOL(parcel, boot_rom_locked);
 #endif
 }
 

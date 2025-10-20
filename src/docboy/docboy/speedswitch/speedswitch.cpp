@@ -17,8 +17,8 @@ uint8_t SpeedSwitch::read_key1() const {
 }
 
 void SpeedSwitch::save_state(Parcel& parcel) const {
-    parcel.write_bool(key1.current_speed);
-    parcel.write_bool(key1.switch_speed);
+    PARCEL_WRITE_BOOL(parcel, key1.current_speed);
+    PARCEL_WRITE_BOOL(parcel, key1.switch_speed);
 }
 
 void SpeedSwitch::load_state(Parcel& parcel) {

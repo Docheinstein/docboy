@@ -53,9 +53,9 @@ public:
     }
 
     void save_state(Parcel& parcel) const {
-        parcel.write_uint8(IF);
-        parcel.write_uint8(IE);
-        parcel.write_bool(block_interrupts);
+        PARCEL_WRITE_UINT8(parcel, IF);
+        PARCEL_WRITE_UINT8(parcel, IE);
+        PARCEL_WRITE_BOOL(parcel, block_interrupts);
     }
 
     void load_state(Parcel& parcel) {

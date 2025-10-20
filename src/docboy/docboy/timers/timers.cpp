@@ -29,13 +29,13 @@ void Timers::tick() {
 }
 
 void Timers::save_state(Parcel& parcel) const {
-    parcel.write_uint16(div16);
-    parcel.write_uint8(tima);
-    parcel.write_uint8(tma);
-    parcel.write_bool(tac.enable);
-    parcel.write_uint8(tac.clock_selector);
-    parcel.write_uint8(tima_state);
-    parcel.write_bool(last_div_bit_and_tac_enable);
+    PARCEL_WRITE_UINT16(parcel, div16);
+    PARCEL_WRITE_UINT8(parcel, tima);
+    PARCEL_WRITE_UINT8(parcel, tma);
+    PARCEL_WRITE_BOOL(parcel, tac.enable);
+    PARCEL_WRITE_UINT8(parcel, tac.clock_selector);
+    PARCEL_WRITE_UINT8(parcel, tima_state);
+    PARCEL_WRITE_BOOL(parcel, last_div_bit_and_tac_enable);
 }
 
 void Timers::load_state(Parcel& parcel) {
