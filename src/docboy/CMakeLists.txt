@@ -73,6 +73,7 @@ target_sources(docboy PRIVATE
         docboy/memory/fwd/wram1fwd.h
         docboy/memory/fwd/wram2fwd.h
         docboy/memory/hram.h
+        docboy/memory/hram.cpp
         docboy/memory/memory.h
         docboy/memory/notusable.h
         docboy/memory/oam.h

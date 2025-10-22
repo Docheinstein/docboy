@@ -658,11 +658,11 @@ private:
     SpeedSwitchController& speed_switch_controller;
 #endif
 
+#pragma pack(push, 1)
     Instruction instructions[256];
     Instruction instructions_cb[256];
     Instruction isr;
-
-    Instruction& nop {instructions[0]};
+#pragma pack(pop)
 
     uint16_t af {};
     uint16_t bc {};

@@ -427,11 +427,12 @@ void Apu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_BOOL(parcel, nr52.ch1);
     wave_ram.save_state(parcel);
 
-    uint8_t i = 0;
-    while (i < (uint8_t)array_size(REGISTER_UPDATERS) && pending_write.updater != REGISTER_UPDATERS[i]) {
-        ++i;
+    uint8_t register_updater_index = 0;
+    while (register_updater_index < (uint8_t)array_size(REGISTER_UPDATERS) &&
+           pending_write.updater != REGISTER_UPDATERS[register_updater_index]) {
+        ++register_updater_index;
     }
-    PARCEL_WRITE_UINT8(parcel, i);
+    PARCEL_WRITE_UINT8(parcel, register_updater_index);
     PARCEL_WRITE_UINT8(parcel, pending_write.value);
 
     PARCEL_WRITE_BOOL(parcel, ch1.dac);
@@ -650,14 +651,14 @@ void Apu::reset() {
     sampling.ticks = 0;
     sampling.next_tick = 0.0;
 
-    apu_clock = 0;
+    apu_clock = if_bootrom_else(0, 1);
     // TODO: adjust DIV_APU and prev_div_edge_bit with bootrom.
 #ifdef ENABLE_CGB
     prev_div_edge_bit = true;
     div_apu = 1;
 #else
     prev_div_edge_bit = false;
-    div_apu = 2;
+    div_apu = if_bootrom_else(0, 18);
 #endif
 #ifdef ENABLE_CGB
     div_apu_bit_selector = 4;
@@ -668,38 +669,38 @@ void Apu::reset() {
     nr10.direction = false;
     nr10.step = 0;
     nr11.duty_cycle = if_bootrom_else(0, 0b10);
-    nr11.initial_length_timer = if_bootrom_else(0, 0b111111);
+    nr11.initial_length_timer = 0;
     nr12.initial_volume = if_bootrom_else(0, 0b1111);
     nr12.envelope_direction = false;
     nr12.sweep_pace = if_bootrom_else(0, 0b011);
-    nr13.period_low = if_bootrom_else(0, 0b11111111);
-    nr14.trigger = true;
+    nr13.period_low = if_bootrom_else(0, 0xC1);
+    nr14.trigger = if_bootrom_else(false, true);
     nr14.length_enable = false;
-    nr14.period_high = 0b111;
+    nr14.period_high = if_bootrom_else(0, 0b111);
     nr21.duty_cycle = 0;
-    nr21.initial_length_timer = if_bootrom_else(0, 0b111111);
+    nr21.initial_length_timer = 0;
     nr22.initial_volume = false;
     nr22.envelope_direction = false;
     nr22.sweep_pace = false;
-    nr23.period_low = if_bootrom_else(0, 0b11111111);
-    nr24.trigger = true;
+    nr23.period_low = 0;
+    nr24.trigger = false;
     nr24.length_enable = false;
-    nr24.period_high = 0b111;
+    nr24.period_high = 0;
     nr30.dac = false;
-    nr31.initial_length_timer = if_bootrom_else(0, 0b11111111);
+    nr31.initial_length_timer = 0;
     nr32.volume = 0;
-    nr33.period_low = if_bootrom_else(0, 0b11111111);
-    nr34.trigger = true;
+    nr33.period_low = 0;
+    nr34.trigger = false;
     nr34.length_enable = false;
-    nr34.period_high = 0b111;
-    nr41.initial_length_timer = if_bootrom_else(0, 0b111111);
+    nr34.period_high = 0;
+    nr41.initial_length_timer = 0;
     nr42.initial_volume = 0;
     nr42.envelope_direction = false;
     nr42.sweep_pace = 0;
     nr43.clock_shift = 0;
     nr43.lfsr_width = false;
     nr43.clock_divider = 0;
-    nr44.trigger = true;
+    nr44.trigger = false;
     nr44.length_enable = false;
     nr50.vin_left = false;
     nr50.volume_left = if_bootrom_else(0, 0b111);
@@ -713,11 +714,11 @@ void Apu::reset() {
     nr51.ch3_right = false;
     nr51.ch2_right = if_bootrom_else(false, true);
     nr51.ch1_right = if_bootrom_else(false, true);
-    nr52.enable = true;
+    nr52.enable = if_bootrom_else(false, true);
     nr52.ch4 = false;
     nr52.ch3 = false;
     nr52.ch2 = false;
-    nr52.ch1 = true;
+    nr52.ch1 = if_bootrom_else(false, true);
 
     for (uint16_t i = 0; i < decltype(wave_ram)::Size; i++) {
 #ifdef ENABLE_CGB
@@ -728,26 +729,26 @@ void Apu::reset() {
     }
 
     pending_write.updater = nullptr;
-    pending_write.value = 0;
+    pending_write.value = if_bootrom_else(0, 135);
 
     // Length timers are not reset
     // [blargg/08-len_ctr_during_power
 
     ch1.dac = true;
     ch1.volume = 0;
-    ch1.length_timer = 0;
+    ch1.length_timer = if_bootrom_else(0, 64);
     ch1.trigger_delay = 0;
     ch1.digital_output = false;
     ch1.just_sampled = false;
-    ch1.tick_edge = false;
-    ch1.wave.position = 0;
-    ch1.wave.timer = concat(nr14.period_high, nr13.period_low);
-    ch1.wave.duty_cycle = 0;
+    ch1.tick_edge = if_bootrom_else(false, true);
+    ch1.wave.position = if_bootrom_else(0, 2);
+    ch1.wave.timer = if_bootrom_else(0, 2041);
+    ch1.wave.duty_cycle = nr11.duty_cycle;
     ch1.volume_sweep.direction = false;
-    ch1.volume_sweep.countdown = 0;
+    ch1.volume_sweep.countdown = if_bootrom_else(0, 1);
     ch1.volume_sweep.reloaded = false;
     ch1.volume_sweep.pending_update = false;
-    ch1.period_sweep.pace_countdown = 0;
+    ch1.period_sweep.pace_countdown = if_bootrom_else(0, 0x5D);
     ch1.period_sweep.period = 0;
     ch1.period_sweep.increment = 0;
     ch1.period_sweep.restart_countdown = 0;
@@ -759,7 +760,7 @@ void Apu::reset() {
     ch1.period_sweep.recalculation.countdown = 0;
     ch1.period_sweep.recalculation.instant = false;
     ch1.period_sweep.recalculation.increment = 0;
-    ch1.period_sweep.recalculation.from_trigger = false;
+    ch1.period_sweep.recalculation.from_trigger = if_bootrom_else(false, true);
 
     ch2.dac = false;
     ch2.volume = 0;
@@ -767,7 +768,7 @@ void Apu::reset() {
     ch2.trigger_delay = 0;
     ch2.digital_output = false;
     ch2.just_sampled = false;
-    ch2.tick_edge = false;
+    ch2.tick_edge = if_bootrom_else(false, true);
     ch2.wave.position = 0;
     ch2.wave.timer = concat(nr24.period_high, nr23.period_low);
     ch2.wave.duty_cycle = 0;

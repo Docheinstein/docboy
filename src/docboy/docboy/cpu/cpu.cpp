@@ -858,27 +858,28 @@ void Cpu::reset() {
 
     fetching_cb = false;
 
-    instruction.microop.selector = nop;
-    instruction.microop.counter = 0;
+    instruction.microop.selector =
+        if_bootrom_else(&instructions[0x00 /* NOP */][0], &instructions[0xE0 /* LDH (a8),A */][2]);
+    instruction.microop.counter = if_bootrom_else(0, 2);
 
 #ifdef ENABLE_TESTS
     instruction.opcode = 0;
 #endif
 
 #ifdef ENABLE_DEBUGGER
-    instruction.address = 0;
-    instruction.cycle_microop = 0;
+    instruction.address = if_bootrom_else(0, 0xFE);
+    instruction.cycle_microop = if_bootrom_else(0, 2);
 #endif
 
     io.state = IO::State::Idle;
-    io.data = 0;
+    io.data = if_bootrom_else(0, 1);
 
     b = false;
-    u = 0;
+    u = if_bootrom_else(0, 0xFC);
     u2 = 0;
-    lsb = 0;
+    lsb = if_bootrom_else(0, 0xA8);
     msb = 0;
-    uu = 0;
+    uu = if_bootrom_else(0, 0x139);
     addr = 0;
 
 #ifdef ENABLE_DEBUGGER
@@ -1508,7 +1509,7 @@ void Cpu::stop_m0() {
     } else {
         // This effectively makes STOP use one more byte
         // as it resumes with a NOP that fetches again.
-        instruction.microop.selector = nop;
+        instruction.microop.selector = &instructions[0x00 /* NOP */][0];
     }
 
     read(pc);

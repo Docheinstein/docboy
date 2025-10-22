@@ -1,5 +1,7 @@
 #include "docboy/bus/vrambus.h"
 
+#include "docboy/bootrom/helpers.h"
+
 VramBus::VramBus(Vram* vram) :
     VideoBus {},
     vram {vram} {
@@ -38,6 +40,11 @@ void VramBus::load_state(Parcel& parcel) {
 
 void VramBus::reset() {
     VideoBus::reset();
+
+    address = if_bootrom_else(0, 0x9904);
+    data = if_bootrom_else(0xFF, 0x01);
+    decay = if_bootrom_else(0, 6);
+
     readers = 0;
 #ifdef ENABLE_CGB
     vram_bank = false;

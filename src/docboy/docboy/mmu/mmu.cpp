@@ -256,7 +256,10 @@ void Mmu::reset() {
     }
 #endif
 
-    for (uint32_t i = 0; i < array_size(requests); i++) {
-        requests[i] = nullptr;
-    }
+    requests[Device::Cpu] = if_bootrom_else(static_cast<BusAccess*>(nullptr),
+                                            &bus_accessors[Device::Cpu][Specs::MemoryLayout::HRAM::START]);
+    requests[Device::Dma] = nullptr;
+#ifdef ENABLE_CGB
+    requests[Device::Hdma] = nullptr;
+#endif
 }

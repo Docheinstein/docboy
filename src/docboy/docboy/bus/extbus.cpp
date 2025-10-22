@@ -1,4 +1,6 @@
 #include "docboy/bus/extbus.h"
+
+#include "docboy/bootrom/helpers.h"
 #include "docboy/cartridge/slot.h"
 #include "docboy/memory/wram1.h"
 #include "docboy/memory/wram2.h"
@@ -50,4 +52,9 @@ ExtBus::ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2* wram2) :
         memory_accessors[i] = &wram1[i - Specs::MemoryLayout::ECHO_RAM::START];
     }
 #endif
+}
+
+void ExtBus::reset() {
+    Bus::reset();
+    address = if_bootrom_else(0, 0x14D);
 }

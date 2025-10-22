@@ -50,6 +50,8 @@ public:
 #endif
 #endif
 
+    void reset();
+
 #ifdef ENABLE_BOOTROM
     BootRom& boot_rom;
 #endif

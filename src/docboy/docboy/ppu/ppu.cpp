@@ -5,7 +5,6 @@
 #include "docboy/dma/dma.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
-#include "docboy/memory/memory.h"
 #include "docboy/ppu/pixelmap.h"
 
 #ifdef ENABLE_CGB
@@ -2108,20 +2107,22 @@ void Ppu::save_state(Parcel& parcel) const {
 #endif
 
     {
-        uint8_t i = 0;
+        uint8_t tick_selector_index = 0;
 
-        while (i < (uint8_t)array_size(TICK_SELECTORS) && tick_selector != TICK_SELECTORS[i]) {
-            ++i;
+        while (tick_selector_index < (uint8_t)array_size(TICK_SELECTORS) &&
+               tick_selector != TICK_SELECTORS[tick_selector_index]) {
+            ++tick_selector_index;
         }
-        ASSERT(i < array_size(TICK_SELECTORS));
-        PARCEL_WRITE_UINT8(parcel, i);
+        ASSERT(tick_selector_index < array_size(TICK_SELECTORS));
+        PARCEL_WRITE_UINT8(parcel, tick_selector_index);
 
-        i = 0;
-        while (i < (uint8_t)array_size(FETCHER_TICK_SELECTORS) && fetcher_tick_selector != FETCHER_TICK_SELECTORS[i]) {
-            ++i;
+        uint8_t fetcher_tick_selector_index = 0;
+        while (fetcher_tick_selector_index < (uint8_t)array_size(FETCHER_TICK_SELECTORS) &&
+               fetcher_tick_selector != FETCHER_TICK_SELECTORS[fetcher_tick_selector_index]) {
+            ++fetcher_tick_selector_index;
         }
-        ASSERT(i < array_size(FETCHER_TICK_SELECTORS));
-        PARCEL_WRITE_UINT8(parcel, i);
+        ASSERT(fetcher_tick_selector_index < array_size(FETCHER_TICK_SELECTORS));
+        PARCEL_WRITE_UINT8(parcel, fetcher_tick_selector_index);
     }
 
     PARCEL_WRITE_BOOL(parcel, last_stat_irq);
@@ -2414,7 +2415,7 @@ void Ppu::reset() {
     stat.mode = VBLANK;
 #else
     stat.lyc_eq_ly = if_bootrom_else(false, true);
-    stat.mode = if_bootrom_else(HBLANK, VBLANK);
+    stat.mode = if_bootrom_else(OAM_SCAN, VBLANK);
 #endif
 
     scy = 0;
@@ -2451,9 +2452,9 @@ void Ppu::reset() {
     // TODO: with bootrom
     tick_selector = &Ppu::vblank;
 #else
-    tick_selector = if_bootrom_else(&Ppu::oam_scan_even, &Ppu::vblank_last_line_7);
+    tick_selector = if_bootrom_else(&Ppu::oam_scan_after_turn_on, &Ppu::vblank_last_line_7);
 #endif
-    fetcher_tick_selector = &Ppu::bg_prefetcher_get_tile_0;
+    fetcher_tick_selector = if_bootrom_else(&Ppu::bg_prefetcher_get_tile_0, &Ppu::bgwin_pixel_slice_fetcher_push);
 
     last_stat_irq = false;
     enable_lyc_eq_ly_irq = true;
@@ -2470,7 +2471,7 @@ void Ppu::reset() {
 #else
     dots = if_bootrom_else(0, 395);
 #endif
-    lx = 0;
+    lx = if_bootrom_else(0, 168);
 
     mode = stat.mode;
 
@@ -2478,6 +2479,7 @@ void Ppu::reset() {
     last_lyc = lyc;
     last_bgp = if_bootrom_else(0, 0xFC);
     last_wx = 0;
+    last_lcdc = lcdc;
 
     bg_fifo.clear();
     obj_fifo.clear();
@@ -2487,8 +2489,8 @@ void Ppu::reset() {
     }
 
 #ifdef ENABLE_ASSERTS
-    oam_entries_count = 0;
-    oam_entries_not_served_count = 0;
+    oam_entries_count = if_bootrom_else(0, 1);
+    oam_entries_not_served_count = if_bootrom_else(0, 1);
 #endif
 
 #ifdef ENABLE_DEBUGGER
@@ -2511,11 +2513,11 @@ void Ppu::reset() {
     timings.hblank = 0;
 #endif
 
-    registers.oam.a = 0;
-    registers.oam.a = 0;
+    registers.oam.a = if_bootrom_else(0, 0x63);
+    registers.oam.b = if_bootrom_else(0, 0x45);
 
-    oam_scan.count = 0;
-    oam_scan.index = 0;
+    oam_scan.count = if_bootrom_else(0, 1);
+    oam_scan.index = if_bootrom_else(0, 40);
 
     pixel_transfer.initial_scx.to_discard = 0;
     pixel_transfer.initial_scx.discarded = 0;
@@ -2528,12 +2530,12 @@ void Ppu::reset() {
     w.line_triggers.clear();
 #endif
 
-    bwf.lx = 0;
-    bwf.tilemap_tile_vram_addr = 0;
+    bwf.lx = if_bootrom_else(0, 168);
+    bwf.tilemap_tile_vram_addr = if_bootrom_else(0, 52);
 
 #ifdef ENABLE_DEBUGGER
-    bwf.tilemap_x = 0;
-    bwf.tilemap_y = 0;
+    bwf.tilemap_x = if_bootrom_else(0, 20);
+    bwf.tilemap_y = if_bootrom_else(0, 17);
     bwf.tilemap_vram_addr = 0;
 #endif
 
@@ -2550,7 +2552,7 @@ void Ppu::reset() {
     of.tile_number = 0;
     of.attributes = 0;
 
-    psf.tile_data_vram_address = 0;
+    psf.tile_data_vram_address = if_bootrom_else(0, 14);
     psf.tile_data_low = 0;
     psf.tile_data_high = 0;
 

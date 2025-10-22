@@ -617,7 +617,7 @@ void Core::reset() {
 #ifdef ENABLE_CGB
     gb.not_usable.reset();
 #endif
-    gb.hram.reset(RANDOM_DATA);
+    gb.hram.reset(HRAM_INITIAL_DATA);
     gb.boot.reset();
     gb.timers.reset();
     gb.serial.reset();

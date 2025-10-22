@@ -1,5 +1,7 @@
 #include "docboy/bus/oambus.h"
 
+#include "docboy/bootrom/helpers.h"
+
 #ifdef ENABLE_CGB
 OamBus::OamBus(Oam& oam, NotUsable& not_usable) :
 #else
@@ -67,6 +69,8 @@ void OamBus::load_state(Parcel& parcel) {
 
 void OamBus::reset() {
     VideoBus::reset();
+
+    address = if_bootrom_else(0, 0xFE9C);
 
 #ifndef ENABLE_CGB
     mcycle_write.happened = false;

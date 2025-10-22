@@ -67,7 +67,7 @@ extern std::string boot_rom;
 
 // TODO: tests with bootrom for CGB
 #ifdef ENABLE_BOOTROM
-constexpr uint64_t BOOT_DURATION = 23'440'328;
+constexpr uint64_t BOOT_DURATION = 23'440'324;
 #else
 constexpr uint64_t BOOT_DURATION = 0;
 #endif

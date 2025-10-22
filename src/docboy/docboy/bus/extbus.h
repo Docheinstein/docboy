@@ -18,6 +18,8 @@ public:
     ExtBus(CartridgeSlot& cartridge_slot, Wram1& wram1, Wram2* wram2);
 #endif
 
+    void reset();
+
 private:
     CartridgeSlot& cartridge_slot;
 

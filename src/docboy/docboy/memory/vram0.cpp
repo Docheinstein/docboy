@@ -1,4 +1,4 @@
-#include "vram0.h"
+#include "docboy/memory/vram0.h"
 
 #ifdef ENABLE_CGB
 const uint8_t VRAM0_INITIAL_DATA[Specs::MemoryLayout::VRAM::SIZE] = {

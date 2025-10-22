@@ -300,3 +300,10 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
 
     /* FFFF */ memory_accessors[Specs::MemoryLayout::IE] = &interrupts.IE;
 }
+
+void CpuBus::reset() {
+    Bus::reset();
+    address = if_bootrom_else(0, 0xFF50);
+    data = if_bootrom_else(0xFF, 0x01);
+    decay = if_bootrom_else(0, 3);
+}

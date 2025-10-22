@@ -319,7 +319,7 @@ private:
 #endif
 
     uint16_t dots {}; // [0, 456)
-    uint8_t lx {};    // LX=X+8, therefore [0, 168)
+    uint8_t lx {};    // LX=X+8, therefore [0, 168]
 
     uint8_t mode {};
 
