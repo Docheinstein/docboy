@@ -97,10 +97,10 @@ int main(int argc, const char* argv[]) {
 
     while (cursor < content.size()) {
         // We expect each serialized field having the following information:
-        // - Label type (always Types.String)
+        // - Label type (always ParcelDataTypes::String)
         // - Label length (uint32)
         // - Label (C-string)
-        // - Data type (one of Types)
+        // - Data type (one of ParcelDataTypes)
         // - Data
         uint8_t label_type;
         read_data(&label_type, sizeof(label_type));
@@ -115,10 +115,10 @@ int main(int argc, const char* argv[]) {
         uint32_t label_size;
         read_data(&label_size, sizeof(label_size));
 
-        std::string label;
-        label.resize(label_size + 1);
-        label[label_size] = '\0';
-        read_data(label.data(), label_size);
+        std::vector<char> label_cstr {};
+        label_cstr.resize(label_size + 1);
+        label_cstr[label_size] = '\0';
+        read_data(label_cstr.data(), label_size);
 
         uint8_t data_type;
         read_data(&data_type, sizeof(data_type));
@@ -127,7 +127,7 @@ int main(int argc, const char* argv[]) {
             return 1;
         }
 
-        std::cout << "[" << rpad(parcel_data_type_to_string(data_type), 7) << "] " << label << " = ";
+        std::cout << "[" << rpad(parcel_data_type_to_string(data_type), 7) << "] " << label_cstr.data() << " = ";
         switch (data_type) {
         case Bool: {
             bool b;
@@ -192,11 +192,11 @@ int main(int argc, const char* argv[]) {
         case String: {
             uint32_t len;
             read_data(&len, sizeof(len));
-            std::string s;
-            s.resize(len);
-            s[len] = '\0';
-            read_data(s.data(), len);
-            std::cout << s << std::endl;
+            std::string cstr;
+            cstr.resize(len);
+            cstr[len] = '\0';
+            read_data(cstr.data(), len);
+            std::cout << cstr.data() << std::endl;
             break;
         }
         case Bytes: {
