@@ -2701,6 +2701,7 @@ uint8_t Ppu::read_opri() const {
 }
 
 void Ppu::write_opri(uint8_t value) {
+    // TODO: honor this flag
     opri.priority_mode = test_bit<Specs::Bits::Video::OPRI::PRIORITY_MODE>(value);
 }
 

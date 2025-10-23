@@ -1,6 +1,10 @@
 {
     "boot": [
         {
+            "rom": "magen/key0_lock_after_boot.gbc",
+            "framebuffer": "magen/green.png"
+        },
+        {
             "rom": "docboy/boot/boot_bg_palettes.gbc",
             "memory": [
                 {
@@ -1294,6 +1298,10 @@
         }
     ],
     "hdma": [
+        {
+            "rom": "magen/hblank_vram_dma.gbc",
+            "framebuffer": "magen/green.png"
+        },
         {
             "rom": "docboy/hdma/gdma_basic_transfer.gbc",
             "memory": [
@@ -7918,6 +7926,10 @@
             "framebuffer": "magen/oam_internal_priority.png"
         },
         {
+            "rom": "magen/ppu_disabled_state.gbc",
+            "framebuffer": "magen/green.png"
+        },
+        {
             "rom": "samesuite/ppu/blocking_bgpi_increase.gb",
             "framebuffer": "samesuite/ppu/blocking_bgpi_increase.png"
         },
@@ -10796,6 +10808,24 @@
         {
             "rom": "docboy/ppu/visual/win_attrs_lcdc_bit_6.gbc",
             "framebuffer": "docboy/ppu/win_attrs_lcdc_bit_6.png"
+        }
+    ],
+    "mbc/mbc1": [
+        {
+            "rom": "magen/mbc_oob_sram_mbc1.gbc",
+            "framebuffer": "magen/green.png"
+        }
+    ],
+    "mbc/mbc3": [
+        {
+            "rom": "magen/mbc_oob_sram_mbc3.gbc",
+            "framebuffer": "magen/green.png"
+        }
+    ],
+    "mbc/mbc5": [
+        {
+            "rom": "magen/mbc_oob_sram_mbc5.gbc",
+            "framebuffer": "magen/green.png"
         }
     ],
     "apu": [

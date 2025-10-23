@@ -180,6 +180,7 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF49 */ memory_accessors[Specs::Registers::Video::OBP1] = &ppu.obp1;
     /* FF4A */ memory_accessors[Specs::Registers::Video::WY] = &ppu.wy;
     /* FF4B */ memory_accessors[Specs::Registers::Video::WX] = &ppu.wx;
+    // TODO: implement FF4C for DMG compatibility mode
     /* FF4C */ memory_accessors[0xFF4C] = open_bus_access;
 #ifdef ENABLE_CGB
     /* FF4D */ memory_accessors[Specs::Registers::SpeedSwitch::KEY1] = {
