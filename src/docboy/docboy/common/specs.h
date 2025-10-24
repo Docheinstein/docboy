@@ -31,9 +31,23 @@ namespace Ppu {
 } // namespace Ppu
 
 namespace MemoryLayout {
-    namespace BOOTROM {
+    namespace BOOTROM0 {
         constexpr uint16_t START = 0x0000;
         constexpr uint16_t END = 0x00FF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace BOOTROM0
+    namespace BOOTROM1 {
+        constexpr uint16_t START = 0x0200;
+        constexpr uint16_t END = 0x08FF;
+        constexpr uint16_t SIZE = END - START + 1;
+    } // namespace BOOTROM1
+    namespace BOOTROM {
+        constexpr uint16_t START = 0x0000;
+#ifdef ENABLE_CGB
+        constexpr uint16_t END = BOOTROM1::END;
+#else
+        constexpr uint16_t END = BOOTROM0::END;
+#endif
         constexpr uint16_t SIZE = END - START + 1;
     } // namespace BOOTROM
     namespace ROM0 {

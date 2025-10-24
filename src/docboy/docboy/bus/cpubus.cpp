@@ -78,9 +78,16 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
 
 #ifdef ENABLE_BOOTROM
     /* 0x0000 - 0x00FF */
-    for (uint16_t i = Specs::MemoryLayout::BOOTROM::START; i <= Specs::MemoryLayout::BOOTROM::END; i++) {
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM0::START; i <= Specs::MemoryLayout::BOOTROM0::END; i++) {
         memory_accessors[i] = &boot_rom[i];
     }
+#ifdef ENABLE_CGB
+    // On CGB bios is split in two (with cartridge header in between)
+    /* 0x0200 - 0x08FF */
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM1::START; i <= Specs::MemoryLayout::BOOTROM1::END; i++) {
+        memory_accessors[i] = &boot_rom[i];
+    }
+#endif
 #endif
 
     /* FF00 */ memory_accessors[Specs::Registers::Joypad::P1] = {NonTrivial<&Joypad::read_p1> {&joypad},

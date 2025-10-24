@@ -2410,9 +2410,8 @@ void Ppu::reset() {
     stat.vblank_int = false;
     stat.hblank_int = false;
 #ifdef ENABLE_CGB
-    // TODO: with bootrom
     stat.lyc_eq_ly = false;
-    stat.mode = VBLANK;
+    stat.mode = if_bootrom_else(OAM_SCAN, VBLANK);
 #else
     stat.lyc_eq_ly = if_bootrom_else(false, true);
     stat.mode = if_bootrom_else(OAM_SCAN, VBLANK);
@@ -2421,8 +2420,7 @@ void Ppu::reset() {
     scy = 0;
     scx = 0;
 #ifdef ENABLE_CGB
-    // TODO: with bootrom
-    ly = 0x90;
+    ly = if_bootrom_else(0, 0x90);
 #else
     ly = 0;
 #endif
@@ -2449,8 +2447,7 @@ void Ppu::reset() {
 #endif
 
 #ifdef ENABLE_CGB
-    // TODO: with bootrom
-    tick_selector = &Ppu::vblank;
+    tick_selector = if_bootrom_else(&Ppu::oam_scan_after_turn_on, &Ppu::vblank);
 #else
     tick_selector = if_bootrom_else(&Ppu::oam_scan_after_turn_on, &Ppu::vblank_last_line_7);
 #endif

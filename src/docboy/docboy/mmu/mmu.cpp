@@ -9,6 +9,7 @@
 #include "docboy/bus/wrambus.h"
 
 #include "utils/arrays.h"
+#include "utils/formatters.h"
 #include "utils/parcel.h"
 
 namespace {
@@ -47,18 +48,36 @@ Mmu::Mmu(ExtBus& ext_bus, CpuBus& cpu_bus, VramBus& vram_bus, OamBus& oam_bus) :
 
 #ifdef ENABLE_BOOTROM
     /* 0x0000 - 0x00FF */
-    for (uint16_t i = Specs::MemoryLayout::BOOTROM::START; i <= Specs::MemoryLayout::BOOTROM::END; i++) {
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM0::START; i <= Specs::MemoryLayout::BOOTROM0::END; i++) {
         init_accessors(i, &cpu_bus);
     }
 #else
     /* 0x0000 - 0x00FF */
-    for (uint16_t i = Specs::MemoryLayout::BOOTROM::START; i <= Specs::MemoryLayout::BOOTROM::END; i++) {
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM0::START; i <= Specs::MemoryLayout::BOOTROM0::END; i++) {
         init_accessors(i, &ext_bus);
     }
 #endif
 
-    /* 0x0100 - 0x7FFF */
-    for (uint16_t i = Specs::MemoryLayout::BOOTROM::END + 1; i <= Specs::MemoryLayout::ROM1::END; i++) {
+    /* 0x0100 - 0x01FF */
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM0::END + 1; i < Specs::MemoryLayout::BOOTROM1::START; i++) {
+        init_accessors(i, &ext_bus);
+    }
+
+#if defined(ENABLE_BOOTROM) && defined(ENABLE_CGB)
+    // On CGB bios is split in two (with cartridge header in between)
+    /* 0x0200 - 0x8FF */
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM1::START; i <= Specs::MemoryLayout::BOOTROM1::END; i++) {
+        init_accessors(i, &cpu_bus);
+    }
+#else
+    /* 0x0200 - 0x8FF */
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM1::START; i <= Specs::MemoryLayout::BOOTROM1::END; i++) {
+        init_accessors(i, &ext_bus);
+    }
+#endif
+
+    /* 0x0900 - 0x7FFF */
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM1::END + 1; i <= Specs::MemoryLayout::ROM1::END; i++) {
         init_accessors(i, &ext_bus);
     }
 
@@ -150,10 +169,15 @@ void Mmu::init_accessors(uint16_t address, Bus* bus) {
 void Mmu::lock_boot_rom() {
     ASSERT(!boot_rom_locked);
     boot_rom_locked = true;
-    // Remap Boot Rom address range [0x0000 - 0x00FF] to EXT Bus.
-    for (uint16_t i = Specs::MemoryLayout::BOOTROM::START; i <= Specs::MemoryLayout::BOOTROM::END; i++) {
+    // Remap Boot Rom memory area from CPU bus to EXT Bus (to access ROM cartridge).
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM0::START; i <= Specs::MemoryLayout::BOOTROM0::END; i++) {
         init_accessors(i, &ext_bus);
     }
+#ifdef ENABLE_CGB
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM1::START; i <= Specs::MemoryLayout::BOOTROM1::END; i++) {
+        init_accessors(i, &ext_bus);
+    }
+#endif
 }
 #endif
 
@@ -247,13 +271,14 @@ void Mmu::load_state(Parcel& parcel) {
 void Mmu::reset() {
 #ifdef ENABLE_BOOTROM
     boot_rom_locked = false;
-    for (uint16_t i = Specs::MemoryLayout::BOOTROM::START; i <= Specs::MemoryLayout::BOOTROM::END; i++) {
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM0::START; i <= Specs::MemoryLayout::BOOTROM0::END; i++) {
         init_accessors(i, &cpu_bus);
     }
-#else
-    for (uint16_t i = Specs::MemoryLayout::BOOTROM::START; i <= Specs::MemoryLayout::BOOTROM::END; i++) {
-        init_accessors(i, &ext_bus);
+#ifdef ENABLE_CGB
+    for (uint16_t i = Specs::MemoryLayout::BOOTROM1::START; i <= Specs::MemoryLayout::BOOTROM1::END; i++) {
+        init_accessors(i, &cpu_bus);
     }
+#endif
 #endif
 
     requests[Device::Cpu] = if_bootrom_else(static_cast<BusAccess*>(nullptr),
