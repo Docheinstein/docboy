@@ -16,10 +16,10 @@
 #include "docboy/cartridge/mbc5/mbc5.h"
 #include "docboy/cartridge/nombc/nombc.h"
 #include "docboy/core/core.h"
+#include "docboy/debugger/ansi.h"
 #include "docboy/debugger/backend.h"
 #include "docboy/debugger/helpers.h"
 #include "docboy/debugger/mnemonics.h"
-#include "docboy/debugger/rgbtoansi.h"
 #include "docboy/debugger/shared.h"
 
 #include "utils/formatters.h"
@@ -2538,9 +2538,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("bg palettes", width) << endl;
 
         const auto bg_palette = [this](uint8_t palette_num, uint8_t palette_color_index) -> Text {
-            uint8_t word_index = 8 * palette_num + 2 * palette_color_index;
-            uint16_t rgb555 = concat(gb.ppu.bg_palettes[word_index], gb.ppu.bg_palettes[word_index + 1]);
-            return color(hex(rgb555), RGB555_TO_ANSI_COLORS[rgb555]);
+            const uint8_t* palette = &gb.ppu.bg_palettes[8 * palette_num + 2 * palette_color_index];
+            uint16_t bgr555 = keep_bits<15>(concat(palette[1], palette[0]));
+            return color(hex(bgr555), BGR555_TO_ANSI_COLORS[bgr555]);
         };
 
         for (uint8_t i = 0; i < 8; i++) {
@@ -2711,9 +2711,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
         b << subheader("obj palettes", width) << endl;
 
         const auto obj_palette = [this](uint8_t palette_num, uint8_t palette_color_index) -> Text {
-            uint8_t word_index = 8 * palette_num + 2 * palette_color_index;
-            uint16_t rgb555 = concat(gb.ppu.obj_palettes[word_index], gb.ppu.obj_palettes[word_index + 1]);
-            return color(hex(rgb555), RGB555_TO_ANSI_COLORS[rgb555]);
+            const uint8_t* palette = &gb.ppu.obj_palettes[8 * palette_num + 2 * palette_color_index];
+            uint16_t bgr555 = keep_bits<15>(concat(palette[1], palette[0]));
+            return color(hex(bgr555), BGR555_TO_ANSI_COLORS[bgr555]);
         };
 
         for (uint8_t i = 0; i < 8; i++) {

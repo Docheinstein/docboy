@@ -15,33 +15,22 @@ CGB pixel color format:
 
 
 if __name__ == "__main__":
-	with Path(sys.argv[1]).open("w") as f:
-		rgb565s = []
-		for pixel in range(2**15):
-			r5 = (pixel & 0x001F)
-			assert(r5 < 32)
+	rgb565s = []
+	for pixel in range(2**15):
+		r5 = (pixel & 0x001F)
+		assert(r5 < 32)
 
-			g5 = (pixel & 0x03E0) >> 5
-			assert(g5 < 32)
+		g5 = (pixel & 0x03E0) >> 5
+		assert(g5 < 32)
 
-			b5 = (pixel & 0x7C00) >> 10
-			assert(b5 < 32)
+		b5 = (pixel & 0x7C00) >> 10
+		assert(b5 < 32)
 
-			g6 = int(round(g5 * 63 / 31))
-			rgb565 = r5 << 11 | g6 << 5 | b5
-			rgb565s.append(rgb565)
+		g6 = int(round(g5 * 63 / 31))
+		rgb565 = r5 << 11 | g6 << 5 | b5
+		rgb565s.append(rgb565)
 
-		array = "{" + ",\n".join([str(p) for p in rgb565s]) + "}"
-		file = f"""\
-#ifndef COLORMAP_H
-#define COLORMAP_H
-
-#include <cstdint>
-
-constexpr uint16_t CGB_PALETTE[]{array};
-
-#endif // COLORMAP_H
-"""
-		f.write(f"{file}\n")
+	array = "{" + ",\n".join([str(p) for p in rgb565s]) + "}"
+	print(array)
 
 

@@ -5,9 +5,8 @@ from pathlib import Path
 Script for generate the all the possible mappings between a 16 bit value
 and the array of 8 pixels (4 color each) that would be produced by the PPU.
 
-usage: python generate-ppu-pixel-mapping.py <output>
+usage: python generate-ppu-pixel-mapping.py
 """
-
 
 def encode(h, l):
 	row = []
@@ -20,7 +19,8 @@ def encode(h, l):
 
 
 if __name__ == "__main__":
-	with Path(sys.argv[1]).open("w") as f:
-		for H in range(0, 2**8):
-			for L in range(0, 2 ** 8):
-				f.write(f"{encode(H, L)},\n")
+	out = ""
+	for H in range(0, 2**8):
+		for L in range(0, 2 ** 8):
+			out += f"{encode(H, L)},\n"
+	print(out)

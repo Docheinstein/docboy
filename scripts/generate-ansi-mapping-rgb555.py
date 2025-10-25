@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 
 """
-Script for generate the all the possible mappings between a RGB565 and ANSI color codes (256 colors)
+Script for generate the all the possible mappings between a RGB555 and ANSI color codes (256 colors)
 
-usage: python generate-rgb565-to-ansi-mapping <output>
+usage: python generate-ansi-mapping-rgb555
 """
 
 ansi_colors_rgb = [
@@ -267,56 +267,45 @@ ansi_colors_rgb = [
 ]
 
 if __name__ == "__main__":
-    with Path(sys.argv[1]).open("w") as f:
-        rgb565_to_ansi_indexes = []
-        for rgb565 in range(2**16):
-            r5 = (rgb565 & 0xF800) >> 11
-            g6 = (rgb565 & 0x07E0) >> 5
-            b5 = (rgb565 & 0x001F)
+    rgb555_to_ansi_indexes = []
+    for rgb555 in range(2**16):
+        r5 = (rgb555 & 0x7C00) >> 10
+        g5 = (rgb555 & 0x03E0) >> 5
+        b5 = (rgb555 & 0x001F)
 
-            r255 = int(round(r5 * 255 / 31))
-            g255 = int(round(g6 * 255 / 63))
-            b255 = int(round(b5 * 255 / 31))
+        r255 = int(round(r5 * 255 / 31))
+        g255 = int(round(g5 * 255 / 31))
+        b255 = int(round(b5 * 255 / 31))
 
-            assert(r255 >= 0 and r255<= 255)
-            assert(g255 >= 0 and g255 <= 255)
-            assert(b255 >= 0 and b255 <= 255)
+        assert(r255 >= 0 and r255<= 255)
+        assert(g255 >= 0 and g255 <= 255)
+        assert(b255 >= 0 and b255 <= 255)
 
-            best_color_idx = None
-            min_dist = None
+        best_color_idx = None
+        min_dist = None
 
-            for idx, c in enumerate(ansi_colors_rgb):
-                r = (c & 0xFF0000) >> 16
-                g = (c & 0x00FF00) >> 8
-                b = (c & 0x0000FF)
+        for idx, c in enumerate(ansi_colors_rgb):
+            r = (c & 0xFF0000) >> 16
+            g = (c & 0x00FF00) >> 8
+            b = (c & 0x0000FF)
 
-                assert(r >= 0 and r <= 255)
-                assert(g >= 0 and g <= 255)
-                assert(b >= 0 and b <= 255)
+            assert(r >= 0 and r <= 255)
+            assert(g >= 0 and g <= 255)
+            assert(b >= 0 and b <= 255)
 
-                dr = abs(r - r255)
-                dg = abs(g - g255)
-                db = abs(b - b255)
+            dr = abs(r - r255)
+            dg = abs(g - g255)
+            db = abs(b - b255)
 
-                dist = dr + dg + db
+            dist = dr + dg + db
 
-                if best_color_idx is None or dist < min_dist:
-                    best_color_idx = idx
-                    min_dist = dist
+            if best_color_idx is None or dist < min_dist:
+                best_color_idx = idx
+                min_dist = dist
 
-            rgb565_to_ansi_indexes.append(best_color_idx)
+        rgb555_to_ansi_indexes.append(best_color_idx)
 
-        array = "{" + ",\n".join([str(p) for p in rgb565_to_ansi_indexes]) + "}"
-        file = f"""\
-#ifndef COLORMAP_H
-#define COLORMAP_H
-
-#include <cstdint>
-
-constexpr uint16_t RGB565_TO_ANSI[]{array};
-
-#endif // COLORMAP_H
-"""
-        f.write(f"{file}\n")
+    array = "{" + ",\n".join([f"0x{p:04X}" for p in rgb555_to_ansi_indexes]) + "}"
+    print(array)
 
 

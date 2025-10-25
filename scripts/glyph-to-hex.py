@@ -1,4 +1,4 @@
-
+# Modify `glyph` as you wish and re-run script.
 glyph = """\
 10000000\
 11000000\
