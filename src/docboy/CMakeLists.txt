@@ -141,6 +141,7 @@ if (ENABLE_DEBUGGER)
     endif()
 
     target_sources(docboy PRIVATE
+            docboy/debugger/ansi.h
             docboy/debugger/backend.cpp
             docboy/debugger/backend.h
             docboy/debugger/frontend.cpp
@@ -151,7 +152,6 @@ if (ENABLE_DEBUGGER)
             docboy/debugger/memwatcher.h
             docboy/debugger/mnemonics.cpp
             docboy/debugger/mnemonics.h
-            docboy/debugger/rgbtoansi.h
             docboy/debugger/shared.h
     )
 
