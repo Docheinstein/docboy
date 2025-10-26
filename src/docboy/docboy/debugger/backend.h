@@ -106,14 +106,8 @@ private:
 
     std::optional<DisassembledInstruction> do_disassemble(uint16_t addr);
 
-    // template <typename CommandType>
-    // void init_command_state();
-
     template <typename CommandType>
     void init_command_state(const CommandType& cmd);
-
-    // template <typename CommandType, typename CommandStateType>
-    // void handle_command();
 
     template <typename CommandType, typename CommandStateType>
     void handle_command(const CommandType& cmd, CommandStateType& state);
