@@ -27,6 +27,9 @@ set(PNG_TESTS OFF CACHE BOOL "Build the libpng tests")
 set(PNG_TOOLS OFF CACHE BOOL "Build the libpng tools")
 set(SKIP_INSTALL_ALL ON)
 
+# Add prefix to libpng functions to avoid conflicts with libraries dynamically linking libpng (e.g. GTK, used by NFD).
+set(PNG_PREFIX "docboy_")
+
 # Force libpng to use our zlib for generation of the pnglibconf.h.
 set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib")
 set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/zlib")
