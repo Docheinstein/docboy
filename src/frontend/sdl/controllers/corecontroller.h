@@ -19,6 +19,10 @@ class CoreController {
 public:
     explicit CoreController(Core& core);
 
+#ifdef ENABLE_BOOTROM
+    void load_boot_rom(const std::string& rom_path);
+#endif
+
     // Rom
     void load_rom(const std::string& rom_path);
     bool is_rom_loaded() const;
@@ -85,6 +89,13 @@ private:
     std::string get_state_path() const;
 
     Core& core;
+
+#ifdef ENABLE_BOOTROM
+    struct {
+        Path path {};
+        bool is_loaded {};
+    } boot_rom;
+#endif
 
     struct {
         Path path {};

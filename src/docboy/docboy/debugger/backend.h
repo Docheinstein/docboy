@@ -54,6 +54,10 @@ public:
 
     void attach_frontend(DebuggerFrontend& frontend);
 
+    void load_symbols(const std::string& path);
+    std::optional<DebugSymbol> get_symbol(uint16_t addr) const;
+    const std::unordered_map<uint16_t, DebugSymbol>& get_symbols() const;
+
     void notify_tick(uint64_t tick);
     void notify_memory_read(uint16_t address);
     void notify_memory_write(uint16_t address);
@@ -122,6 +126,8 @@ private:
     bool interrupted {};
 
     std::optional<CartridgeInfo> cartridge_info {};
+
+    std::unordered_map<uint16_t, DebugSymbol> symbols;
 
     std::vector<Breakpoint> breakpoints;
     std::vector<Watchpoint> watchpoints;

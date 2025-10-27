@@ -15,6 +15,20 @@ CoreController::CoreController(Core& core) :
     core {core} {
 }
 
+#ifdef ENABLE_BOOTROM
+void CoreController::load_boot_rom(const std::string& boot_rom_path) {
+    if (!file_exists(boot_rom_path)) {
+        std::cerr << "ERROR: failed to load '" << boot_rom_path << "'" << std::endl;
+        exit(1);
+    }
+
+    boot_rom.path = Path {boot_rom_path};
+    boot_rom.is_loaded = true;
+
+    core.load_boot_rom(boot_rom_path);
+}
+#endif
+
 void CoreController::load_rom(const std::string& rom_path) {
     if (rom.is_loaded) {
         // Eventually save current RAM state if a ROM is already loaded
@@ -22,7 +36,7 @@ void CoreController::load_rom(const std::string& rom_path) {
     }
 
     if (!file_exists(rom_path)) {
-        std::cerr << "WARN: failed to load '" << rom_path << "'" << std::endl;
+        std::cerr << "ERROR: failed to load '" << rom_path << "'" << std::endl;
         exit(1);
     }
 
@@ -38,8 +52,8 @@ void CoreController::load_rom(const std::string& rom_path) {
 #ifdef ENABLE_DEBUGGER
     if (is_debugger_attached()) {
         // Reattach the debugger
-        attach_debugger();
-        attach_debugger(debugger.callbacks.on_pulling_command, debugger.callbacks.on_command_pulled, true);
+        detach_debugger();
+        attach_debugger(debugger.callbacks.on_pulling_command, debugger.callbacks.on_command_pulled);
     }
 #endif
 }
@@ -147,6 +161,21 @@ bool CoreController::attach_debugger(const std::function<void()>& on_pulling_com
     debugger.callbacks.on_command_pulled = on_command_pulled;
     debugger.frontend->set_on_pulling_command_callback(debugger.callbacks.on_pulling_command);
     debugger.frontend->set_on_command_pulled_callback(debugger.callbacks.on_command_pulled);
+
+    // Eventually load symbols from .sym file(s), if available in the same folder of the ROM(s)
+#ifdef ENABLE_BOOTROM
+    if (boot_rom.is_loaded) {
+        if (std::string sym_path = Path {boot_rom.path}.with_extension("sym").string(); file_exists(sym_path)) {
+            debugger.backend->load_symbols(sym_path);
+        }
+    }
+#endif
+
+    if (rom.is_loaded) {
+        if (std::string sym_path = Path {rom.path}.with_extension("sym").string(); file_exists(sym_path)) {
+            debugger.backend->load_symbols(sym_path);
+        }
+    }
 
     if (proceed_execution) {
         debugger.backend->proceed();

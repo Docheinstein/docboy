@@ -1126,7 +1126,7 @@ void DebuggerFrontend::set_on_command_pulled_callback(std::function<bool(const s
 
 // ================================= UI ========================================
 
-void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
+void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
     using namespace Tui;
 
     const auto title = [](const Text& text, uint16_t width, const std::string& sep = DASH) {
@@ -3464,8 +3464,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                 }
             }
 
+            bool show_symbols = !backend.get_symbols().empty();
+
             if (!code_view.empty()) {
-                const auto disassembler_entry = [this](const DisassembledInstructionEntry& entry) {
+                const auto disassembler_entry = [this, show_symbols, width](const DisassembledInstructionEntry& entry) {
                     Text t {};
                     if (backend.get_breakpoint(entry.address)) {
                         t += red(Text {Token {DOT, 1}});
@@ -3485,6 +3487,25 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
                     }
 
                     t += instr_text;
+
+                    // Eventually print friendly debug symbol name
+                    if (show_symbols) {
+                        const uint32_t symbol_name_max_width = width - 58;
+
+                        t += "  ";
+                        std::string sym_name = "";
+
+                        if (auto symbol = backend.get_symbol(entry.address)) {
+                            sym_name = symbol->name;
+                            // Truncate the name with ellipsis if it's too long
+                            if (sym_name.size() > symbol_name_max_width) {
+                                sym_name = sym_name.substr(0, symbol_name_max_width / 2 - 2) + "..." +
+                                           sym_name.substr(sym_name.size() - symbol_name_max_width / 2 + 2);
+                            }
+                        }
+
+                        t += rpad(sym_name, symbol_name_max_width);
+                    }
 
                     if (entry.type == DisassembledInstructionEntry::Type::Current) {
                         auto [min, max] = instruction_duration(entry.instruction);
@@ -3747,15 +3768,35 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     r1->add_node(make_horizontal_line_divider());
     r1->add_node(std::move(c4));
 
-    static constexpr uint32_t CODE_WIDTH = 56;
+    static constexpr uint32_t MINIMUM_CODE_WIDTH = 56;
+    static constexpr uint32_t MINIMUM_DISPLAY_WIDTH = 32;
     static constexpr uint32_t CALL_STACK_WIDTH = 36;
     static constexpr uint32_t BREAKPOINTS_WIDTH = 52;
     static constexpr uint32_t WATCHPOINTS_WIDTH = 30;
-    static constexpr uint32_t DISPLAY_WIDTH =
-        FULL_WIDTH - CODE_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH - 4;
+
+    static constexpr uint32_t MAXIMUM_CODE_WIDTH =
+        FULL_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH - MINIMUM_DISPLAY_WIDTH - 4;
+
+    if (!code_block_width) {
+        // Use a larger CODE block if the rom has debug symbols
+        uint32_t longest_symbol_name = 0;
+        const auto& debug_symbols = backend.get_symbols();
+        for (const auto& [address, symbol] : debug_symbols) {
+            longest_symbol_name = std::max(longest_symbol_name, static_cast<uint32_t>(symbol.name.size()));
+        }
+
+        code_block_width = std::min(MINIMUM_CODE_WIDTH + longest_symbol_name, MAXIMUM_CODE_WIDTH);
+    }
+
+    const uint32_t display_width =
+        FULL_WIDTH - code_block_width - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH - 4;
+
+    ASSERT(code_block_width >= MINIMUM_CODE_WIDTH);
+    ASSERT(code_block_width <= MAXIMUM_CODE_WIDTH);
+    ASSERT(display_width >= MINIMUM_DISPLAY_WIDTH);
 
     auto r2 {make_horizontal_layout()};
-    r2->add_node(make_code_block(CODE_WIDTH));
+    r2->add_node(make_code_block(code_block_width));
     r2->add_node(make_horizontal_line_divider());
     r2->add_node(make_call_stack_block(CALL_STACK_WIDTH));
     r2->add_node(make_horizontal_line_divider());
@@ -3763,7 +3804,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) const {
     r2->add_node(make_horizontal_line_divider());
     r2->add_node(make_watchpoints_block(WATCHPOINTS_WIDTH));
     r2->add_node(make_horizontal_line_divider());
-    r2->add_node(make_display_block(DISPLAY_WIDTH));
+    r2->add_node(make_display_block(display_width));
 
     auto root {make_vertical_layout()};
     root->add_node(std::move(r1));

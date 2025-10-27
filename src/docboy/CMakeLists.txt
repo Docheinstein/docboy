@@ -153,6 +153,8 @@ if (ENABLE_DEBUGGER)
             docboy/debugger/mnemonics.cpp
             docboy/debugger/mnemonics.h
             docboy/debugger/shared.h
+            docboy/debugger/symparser.h
+            docboy/debugger/symparser.cpp
     )
 
     target_link_libraries(docboy PRIVATE tui)

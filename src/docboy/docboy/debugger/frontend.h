@@ -48,7 +48,7 @@ private:
     template <typename FrontendCommandType>
     std::optional<Command> handle_command(const FrontendCommandType& cmd);
 
-    void print_ui(const ExecutionState& state) const;
+    void print_ui(const ExecutionState& state);
 
     std::string dump_memory(uint16_t from, uint32_t n, MemoryOutputFormat fmt, std::optional<uint8_t> fmt_arg,
                             bool raw) const;
@@ -73,6 +73,8 @@ private:
     } auto_disassemble_instructions {};
 
     std::optional<uint16_t> temporary_breakpoint {};
+
+    uint32_t code_block_width {};
 
     bool reprint_ui {};
 

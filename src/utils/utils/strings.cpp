@@ -48,12 +48,12 @@ bool contains(const std::string& heystack, const std::string& needle) {
     return heystack.find(needle) != std::string::npos;
 }
 
-std::optional<uint64_t> strtou(const std::string& s) {
+std::optional<uint64_t> strtou(const std::string& s, uint8_t base) {
     const char* cstr = s.c_str();
     char* endptr {};
     errno = 0;
 
-    auto val = std::strtoull(cstr, &endptr, 10);
+    auto val = std::strtoull(cstr, &endptr, base);
 
     if (errno || endptr == cstr || *endptr != '\0') {
         return std::nullopt;
@@ -62,12 +62,12 @@ std::optional<uint64_t> strtou(const std::string& s) {
     return val;
 }
 
-std::optional<int64_t> strtoi(const std::string& s) {
+std::optional<int64_t> strtoi(const std::string& s, uint8_t base) {
     const char* cstr = s.c_str();
     char* endptr {};
     errno = 0;
 
-    auto val = std::strtoll(cstr, &endptr, 10);
+    auto val = std::strtoll(cstr, &endptr, base);
 
     if (errno || endptr == cstr || *endptr != '\0') {
         return std::nullopt;

@@ -79,7 +79,7 @@ std::string to_string_with_precision(const T value) {
     return ss.str();
 }
 
-std::optional<uint64_t> strtou(const std::string& s);
-std::optional<int64_t> strtoi(const std::string& s);
+std::optional<uint64_t> strtou(const std::string& s, uint8_t base = 10);
+std::optional<int64_t> strtoi(const std::string& s, uint8_t base = 10);
 
 #endif // UTILSSTRINGS_H

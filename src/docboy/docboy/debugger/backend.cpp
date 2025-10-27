@@ -6,6 +6,7 @@
 #include "docboy/debugger/frontend.h"
 #include "docboy/debugger/helpers.h"
 #include "docboy/debugger/mnemonics.h"
+#include "docboy/debugger/symparser.h"
 
 #include "utils/io.h"
 #include "utils/std.h"
@@ -283,6 +284,27 @@ void DebuggerBackend::handle_command<AbortCommand, AbortCommandState>(const Abor
 
 void DebuggerBackend::attach_frontend(DebuggerFrontend& frontend_) {
     frontend = &frontend_;
+}
+
+void DebuggerBackend::load_symbols(const std::string& path) {
+    // TODO: handle prefix of address (<BANK> or BOOT)
+    auto symbol_list = DebugSymbolsParser::parse_sym_file(path);
+
+    for (auto& symbol : symbol_list) {
+        symbols.emplace(symbol.address, std::move(symbol));
+    }
+}
+
+std::optional<DebugSymbol> DebuggerBackend::get_symbol(uint16_t addr) const {
+    if (symbols.find(addr) != symbols.end()) {
+        return symbols.at(addr);
+    }
+
+    return std::nullopt;
+}
+
+const std::unordered_map<uint16_t, DebugSymbol>& DebuggerBackend::get_symbols() const {
+    return symbols;
 }
 
 void DebuggerBackend::notify_tick(uint64_t tick) {

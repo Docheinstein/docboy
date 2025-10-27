@@ -258,12 +258,6 @@ int main(int argc, char* argv[]) {
 
     bool two_players_mode = false;
 
-    // Setup GameBoy(s) and Core(s)
-#ifdef ENABLE_BOOTROM
-    // Load Boot ROM
-    core.load_boot_rom(args.boot_rom);
-#endif
-
 #ifdef ENABLE_TWO_PLAYERS_MODE
     // Eventually create second GameBoy and Core
     two_players_mode = args.second_rom.has_value();
@@ -271,11 +265,6 @@ int main(int argc, char* argv[]) {
     if (two_players_mode) {
         gb2 = std::make_unique<GameBoy>();
         core2 = std::make_unique<Core>(*gb2);
-
-#ifdef ENABLE_BOOTROM
-        // Load Boot ROM
-        core2->load_boot_rom(args.boot_rom);
-#endif
     }
 #endif
 
@@ -563,6 +552,18 @@ int main(int argc, char* argv[]) {
     });
 #endif
 
+    // Load Boot ROM(s)
+#ifdef ENABLE_BOOTROM
+    core_controller1.load_boot_rom(args.boot_rom);
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode) {
+        core_controller2->load_boot_rom(args.boot_rom);
+    }
+#endif
+#endif
+
+    // Load ROM(s)
     bool all_roms_loaded = false;
 
 #ifdef ENABLE_TWO_PLAYERS_MODE

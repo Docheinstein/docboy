@@ -117,4 +117,11 @@ struct ExecutionWatchpointHit {
 using ExecutionState =
     std::variant<ExecutionCompleted, ExecutionInterrupted, ExecutionBreakpointHit, ExecutionWatchpointHit>;
 
+// Entry of a .sym file
+struct DebugSymbol {
+    bool boot {};
+    uint32_t bank {};
+    uint16_t address {};
+    std::string name {};
+};
 #endif // SHARED_H
