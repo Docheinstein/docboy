@@ -291,6 +291,18 @@ TEST_CASE("algo", "[algo][unit]") {
                 -32768.0);
     }
 
+    SECTION("divide") {
+        REQUIRE(divide(10U, 3U) == std::make_pair(3U, 1U));
+        REQUIRE(divide(9U, 3U) == std::make_pair(3U, 0U));
+        REQUIRE(divide(8U, 3U) == std::make_pair(2U, 2U));
+    }
+
+    SECTION("divide_and_round_up") {
+        REQUIRE(divide_and_round_up(10U, 3U) == 4U);
+        REQUIRE(divide_and_round_up(9U, 3U) == 3U);
+        REQUIRE(divide_and_round_up(8U, 3U) == 3U);
+    }
+
     SECTION("casts") {
         SECTION("unsigned_to_signed") {
             REQUIRE(static_cast<int8_t>(static_cast<uint8_t>(0)) == 0);

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "utils/algo.h"
 #include "utils/formatters.h"
 
 template <typename T = uint8_t>
@@ -14,13 +15,24 @@ std::string hexdump(const T* data, uint32_t length, uint32_t base_addr = 0, bool
     std::string asciistr;
 
     size_t i;
-    for (i = 0; i < length; i++) {
+    uint32_t line_cursor = 0;
+    uint32_t until = divide_and_round_up(length, columns) * columns;
+
+    for (i = 0; i < until; i++) {
         if (show_addresses && i % columns == 0) {
             ss << hex<uint32_t>(base_addr + i) << " | ";
         }
 
-        T c = data[i];
-        hex(c, ss);
+        T c;
+        if (i < length) {
+            c = data[i];
+            hex(c, ss);
+        } else {
+            // Last row
+            ss << "  ";
+            c = ' ';
+        }
+
         if (show_ascii) {
             asciistr += isprint(c) ? static_cast<char>(c) : '.';
         }
@@ -32,23 +44,14 @@ std::string hexdump(const T* data, uint32_t length, uint32_t base_addr = 0, bool
             if ((i + 1) < length) {
                 ss << std::endl;
             }
+            line_cursor = 0;
         } else {
             ss << " ";
-            if ((i + 1) % 8 == 0)
+            if ((line_cursor + 1) % 8 == 0) {
                 ss << " ";
+            }
+            ++line_cursor;
         }
-    }
-    if (show_ascii) {
-        i = i % columns;
-        while (i < columns) {
-            ss << " ";
-            if (i + 1 < columns)
-                ss << "  ";
-            if ((i + 1) % 8 == 0)
-                ss << " ";
-            ++i;
-        }
-        ss << " | " << asciistr;
     }
 
     return ss.str();
