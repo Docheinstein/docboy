@@ -580,16 +580,6 @@ void detach_sigint_handler() {
 }
 #endif
 
-std::string to_string(const DisassembledInstructionReference& instr, bool rpad = true) {
-    std::stringstream ss;
-    ss << hex(instr.address) << "  :  " << std::left << std::setw(9) << hex(instr.instruction) << "   " << std::left;
-    if (rpad) {
-        ss << std::setw(23);
-    }
-    ss << instruction_mnemonic(instr.instruction, instr.address);
-    return ss.str();
-}
-
 constexpr uint32_t TRACE_BUFFER_CAPACITY = 100'000;
 
 #ifdef TERM_SUPPORTS_UNICODE
@@ -853,7 +843,7 @@ DebuggerFrontend::handle_command<FrontendDumpDisassembleCommand>(const FrontendD
     std::vector<DisassembledInstructionReference> disassembled = backend.get_disassembled_instructions();
     for (uint32_t i = 0; i < disassembled.size(); i++) {
         const auto& instr = disassembled[i];
-        std::cerr << to_string(instr, false /* no right padding */) << std::endl;
+        std::cerr << instruction_to_string(instr) << std::endl;
         if (i < disassembled.size() - 1 && instr.address + instr.instruction.size() != disassembled[i + 1].address) {
             std::cerr << std::endl; // next instruction is not adjacent to this one
         }
@@ -3476,7 +3466,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                     }
                     t += " ";
 
-                    Text instr_text {to_string(entry)};
+                    Text instr_text {rpad(instruction_to_string(entry), 44)};
 
                     if (entry.type == DisassembledInstructionEntry::Type::Current) {
                         instr_text = green(std::move(instr_text));
@@ -3487,25 +3477,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                     }
 
                     t += instr_text;
-
-                    // Eventually print friendly debug symbol name
-                    if (show_symbols) {
-                        const uint32_t symbol_name_max_width = width - 58;
-
-                        t += "  ";
-                        std::string sym_name = "";
-
-                        if (auto symbol = backend.get_symbol(entry.address)) {
-                            sym_name = symbol->name;
-                            // Truncate the name with ellipsis if it's too long
-                            if (sym_name.size() > symbol_name_max_width) {
-                                sym_name = sym_name.substr(0, symbol_name_max_width / 2 - 2) + "..." +
-                                           sym_name.substr(sym_name.size() - symbol_name_max_width / 2 + 2);
-                            }
-                        }
-
-                        t += rpad(sym_name, symbol_name_max_width);
-                    }
 
                     if (entry.type == DisassembledInstructionEntry::Type::Current) {
                         auto [min, max] = instruction_duration(entry.instruction);
@@ -3520,13 +3491,21 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                     return t;
                 };
 
-                // Fill gaps between non-consecutive instructions with ...
                 std::list<DisassembledInstructionEntry>::const_iterator last_entry;
                 for (auto entry = code_view.begin(); entry != code_view.end(); entry++) {
+                    // Fill gaps between non-consecutive instructions with ...
                     if (entry != code_view.begin() &&
-                        last_entry->address + last_entry->instruction.size() < entry->address)
+                        last_entry->address + last_entry->instruction.size() < entry->address) {
                         b << "  " << darkgray("...") << endl;
+                    }
+
+                    // Eventually print debug symbol
+                    if (std::string sym_name = get_debug_symbol(entry->address, width - 1); !sym_name.empty()) {
+                        b << sym_name << ":" << endl;
+                    }
+
                     b << disassembler_entry(*entry) << endl;
+
                     last_entry = entry;
                 }
             }
@@ -3546,13 +3525,13 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         const auto& callstack = backend.get_call_stack();
         if (callstack.size() <= MAX_CALLSTACK_SIZE) {
             for (const auto& entry : callstack) {
-                b << to_string(entry) << endl;
+                b << instruction_to_string(entry) << endl;
             }
         } else {
-            uint8_t disassemble_width = to_string(callstack[0], false /* without rpad */).size();
+            uint8_t disassemble_width = instruction_to_string(callstack[0]).size();
             uint8_t i = 0;
             while (i < MAX_CALLSTACK_SIZE / 2) {
-                b << to_string(callstack[i++]) << endl;
+                b << instruction_to_string(callstack[i++]) << endl;
             }
             std::string breaker =
                 std::string(" (hiding ") + std::to_string(callstack.size() - MAX_CALLSTACK_SIZE) + " entries) ";
@@ -3560,7 +3539,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
             std::string dots_post = std::string((disassemble_width - breaker.size() - dots_pre.size()), '.');
             b << darkgray(dots_pre + breaker + dots_post) << endl;
             while (i < MAX_CALLSTACK_SIZE) {
-                b << to_string(callstack[i++]) << endl;
+                b << instruction_to_string(callstack[i++]) << endl;
             }
         }
 
@@ -3778,14 +3757,14 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         FULL_WIDTH - CALL_STACK_WIDTH - BREAKPOINTS_WIDTH - WATCHPOINTS_WIDTH - MINIMUM_DISPLAY_WIDTH - 4;
 
     if (!code_block_width) {
-        // Use a larger CODE block if the rom has debug symbols
+        // Use a CODE block width large enough to accommodate the widest symbol name (up to a limit)
         uint32_t longest_symbol_name = 0;
         const auto& debug_symbols = backend.get_symbols();
         for (const auto& [address, symbol] : debug_symbols) {
             longest_symbol_name = std::max(longest_symbol_name, static_cast<uint32_t>(symbol.name.size()));
         }
 
-        code_block_width = std::min(MINIMUM_CODE_WIDTH + longest_symbol_name, MAXIMUM_CODE_WIDTH);
+        code_block_width = std::clamp(longest_symbol_name, MINIMUM_CODE_WIDTH, MAXIMUM_CODE_WIDTH);
     }
 
     const uint32_t display_width =
@@ -3818,6 +3797,28 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
     Presenter(std::cout).present(*root);
 }
 
+std::string DebuggerFrontend::instruction_to_string(const DisassembledInstructionReference& instr) const {
+    std::stringstream ss;
+    ss << hex(instr.address) << "  :  " << std::left << std::setw(9) << hex(instr.instruction) << "   " << std::left;
+    ss << instruction_mnemonic(instr.instruction, instr.address);
+    return ss.str();
+}
+
+std::string DebuggerFrontend::get_debug_symbol(uint16_t address, uint8_t max_length) {
+    std::string sym_name;
+
+    if (auto symbol = backend.get_symbol(address)) {
+        sym_name = symbol->name;
+        // Truncate the name with ellipsis if it's too long
+        if (max_length && sym_name.size() > max_length) {
+            sym_name =
+                sym_name.substr(0, max_length / 2 - 2) + "..." + sym_name.substr(sym_name.size() - max_length / 2 + 2);
+        }
+    }
+
+    return sym_name;
+}
+
 std::string DebuggerFrontend::dump_memory(uint16_t from, uint32_t n, MemoryOutputFormat fmt,
                                           std::optional<uint8_t> fmt_arg, bool raw) const {
     std::string s;
@@ -3844,7 +3845,7 @@ std::string DebuggerFrontend::dump_memory(uint16_t from, uint32_t n, MemoryOutpu
             if (!disas)
                 FATAL("failed to disassemble at address " + std::to_string(address));
 
-            s += to_string(DisassembledInstructionReference {static_cast<uint16_t>(address), *disas}) +
+            s += instruction_to_string(DisassembledInstructionReference {static_cast<uint16_t>(address), *disas}) +
                  ((i < n - 1) ? "\n" : "");
             address += disas->size();
             i++;
