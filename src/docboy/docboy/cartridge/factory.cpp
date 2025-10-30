@@ -281,19 +281,25 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
         FATAL("unknown MBC type: 0x" + hex(mbc));
     }
 }
-} // namespace
 
-std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename) {
+std::vector<uint8_t> load_from_file(const std::string& filename) {
     bool ok;
 
-    const std::vector<uint8_t> data = read_file(filename, &ok);
+    std::vector<uint8_t> data = read_file(filename, &ok);
     if (!ok) {
         FATAL("failed to read file '" + filename + "'");
     }
 
-    if (data.size() < MemoryLayout::SIZE) {
+    if (data.size() <= MemoryLayout::END) {
         FATAL("rom size is too small");
     }
+
+    return data;
+}
+} // namespace
+
+std::pair<std::unique_ptr<ICartridge>, CartridgeHeader> CartridgeFactory::create(const std::string& filename) {
+    const std::vector<uint8_t> data = load_from_file(filename);
 
     const uint8_t mbc = data[MemoryLayout::TYPE];
     const uint8_t rom = data[MemoryLayout::ROM_SIZE];
@@ -305,5 +311,21 @@ std::unique_ptr<ICartridge> CartridgeFactory::create(const std::string& filename
         FATAL("cartridge not supported: MBC=0x" + hex(mbc) + ", ROM=0x" + hex(rom) + ", RAM=0x" + hex(ram));
     }
 
-    return cartridge;
+    CartridgeHeader header {};
+    memcpy(&header, data.data() + MemoryLayout::START, MemoryLayout::SIZE);
+
+    static_assert(sizeof(CartridgeHeader) == MemoryLayout::SIZE);
+
+    return std::make_pair(std::move(cartridge), header);
+}
+
+CartridgeHeader CartridgeFactory::create_header(const std::string& filename) {
+    const std::vector<uint8_t> data = load_from_file(filename);
+
+    CartridgeHeader header {};
+    memcpy(&header, data.data() + MemoryLayout::START, MemoryLayout::SIZE);
+
+    static_assert(sizeof(CartridgeHeader) == MemoryLayout::SIZE);
+
+    return header;
 }

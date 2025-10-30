@@ -6,10 +6,18 @@
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/ppu/pixelmap.h"
+#include "utils/hexdump.h"
 
 #ifdef ENABLE_CGB
+#include "docboy/cartridge/header.h"
 #include "docboy/hdma/hdma.h"
 #include "docboy/speedswitch/speedswitchcontroller.h"
+#endif
+
+#ifdef ENABLE_CGB
+#ifndef ENABLE_BOOTROM
+#include "docboy/ppu/dmgmodepal.h"
+#endif
 #endif
 
 using namespace Specs::Bits::Video::LCDC;
@@ -137,8 +145,14 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo};
 
 #ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
          OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller) :
+#else
+Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
+         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller,
+         CartridgeHeader& header) :
+#endif
 #else
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
          Dma& dma_controller) :
@@ -154,6 +168,10 @@ Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, 
 #ifdef ENABLE_CGB
     ,
     speed_switch_controller {speed_switch_controller}
+#ifndef ENABLE_BOOTROM
+    ,
+    header {header}
+#endif
 #endif
 {
 }
@@ -2580,6 +2598,15 @@ void Ppu::reset() {
 
 #ifndef ENABLE_BOOTROM
     oam.acquire();
+#endif
+
+#ifdef ENABLE_CGB
+#ifndef ENABLE_BOOTROM
+    // Eventually load palettes based on the cartridge's header in DMG compatibility mode
+    if (!test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag())) {
+        load_dmg_mode_palettes_from_header(header, bg_palettes, obj_palettes);
+    }
+#endif
 #endif
 }
 

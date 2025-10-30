@@ -89,18 +89,17 @@ Preferences make_default_preferences() {
     return prefs;
 }
 
-void dump_cartridge_info(const ICartridge& cartridge) {
-    const auto header = CartridgeHeader::parse(cartridge);
-    std::cout << "Title             :  " << header.title_as_string() << "\n";
-    std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     ("
-              << header.cartridge_type_description() << ")\n";
+void dump_cartridge_info(const CartridgeHeader& header) {
+    std::cout << "Title             :  " << title_as_string(header) << "\n";
+    std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     (" << cartridge_type_description(header)
+              << ")\n";
     std::cout << "Licensee (new)    :  " << hex(header.new_licensee_code) << "  ("
-              << header.new_licensee_code_description() << ")\n";
+              << new_licensee_code_description(header) << ")\n";
     std::cout << "Licensee (old)    :  " << hex(header.old_licensee_code) << "     ("
-              << header.old_licensee_code_description() << ")\n";
-    std::cout << "ROM Size          :  " << hex(header.rom_size) << "     (" << header.rom_size_description() << ")\n";
-    std::cout << "RAM Size          :  " << hex(header.ram_size) << "     (" << header.ram_size_description() << ")\n";
-    std::cout << "CGB flag          :  " << hex(header.cgb_flag) << "     (" << header.cgb_flag_description() << ")\n";
+              << old_licensee_code_description(header) << ")\n";
+    std::cout << "ROM Size          :  " << hex(header.rom_size) << "     (" << rom_size_description(header) << ")\n";
+    std::cout << "RAM Size          :  " << hex(header.ram_size) << "     (" << ram_size_description(header) << ")\n";
+    std::cout << "CGB flag          :  " << hex(header.cgb_flag()) << "     (" << cgb_flag_description(header) << ")\n";
     std::cout << "SGB flag          :  " << hex(header.sgb_flag) << "\n";
     std::cout << "Destination Code  :  " << hex(header.destination_code) << "\n";
     std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";
@@ -196,7 +195,7 @@ int main(int argc, char* argv[]) {
 
     // Eventually just dump cartridge info and quit
     if (!args.rom.empty() && args.dump_cartridge_info) {
-        dump_cartridge_info(*CartridgeFactory::create(args.rom));
+        dump_cartridge_info(CartridgeFactory::create_header(args.rom));
         return 0;
     }
 

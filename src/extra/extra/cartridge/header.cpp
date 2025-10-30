@@ -4,7 +4,6 @@
 #include <map>
 
 #include "docboy/cartridge/cartridge.h"
-#include "docboy/common/specs.h"
 
 #include "utils/bits.h"
 
@@ -271,37 +270,23 @@ const std::map<uint8_t, std::string> RAM_SIZE_DESCRIPTION_MAP = {
     {0x03, "32 KiB (4 banks)"}, {0x04, "128 KiB (16 banks)"}, {0x05, "64 KiB (8 banks)"}};
 } // namespace
 
-bool CartridgeHeader::is_nintendo_logo_valid() const {
-    return memcmp(nintendo_logo.data(), Specs::Cartridge::Header::NINTENDO_LOGO,
-                  sizeof(Specs::Cartridge::Header::NINTENDO_LOGO)) == 0;
-}
-
-bool CartridgeHeader::is_header_checksum_valid() const {
-    uint8_t expected_header_checksum = 0;
-    for (uint16_t address = 0x134 - 0x100; address <= 0x14C - 0x100; address++) {
-        expected_header_checksum = expected_header_checksum - data[address] - 1;
-    }
-
-    return expected_header_checksum == header_checksum;
-}
-
-std::string CartridgeHeader::title_as_string() const {
+std::string title_as_string(const CartridgeHeader& header) {
     std::string title_string {};
-    title_string.resize(title.size() + 1);
-    memcpy(title_string.data(), title.data(), title.size());
-    title_string[title.size()] = '\0';
+    title_string.resize(sizeof(header.title) + 1);
+    memcpy(title_string.data(), header.title, sizeof(header.title));
+    title_string[sizeof(header.title)] = '\0';
     return title_string;
 }
 
-std::string CartridgeHeader::cgb_flag_description() const {
-    if (const auto it = CGB_FLAG_DESCRIPTION_MAP.find(cgb_flag); it != CGB_FLAG_DESCRIPTION_MAP.end()) {
+std::string cgb_flag_description(const CartridgeHeader& header) {
+    if (const auto it = CGB_FLAG_DESCRIPTION_MAP.find(header.cgb_flag()); it != CGB_FLAG_DESCRIPTION_MAP.end()) {
         return it->second;
     }
     return "Unknown";
 }
 
-std::string CartridgeHeader::new_licensee_code_description() const {
-    uint16_t new_licensee_code_ext = concat(new_licensee_code[0], new_licensee_code[1]);
+std::string new_licensee_code_description(const CartridgeHeader& header) {
+    uint16_t new_licensee_code_ext = concat(header.new_licensee_code[0], header.new_licensee_code[1]);
     if (const auto it = NEW_LICENSEE_CODE_DESCRIPTION_MAP.find(new_licensee_code_ext);
         it != NEW_LICENSEE_CODE_DESCRIPTION_MAP.end()) {
         return it->second;
@@ -309,101 +294,32 @@ std::string CartridgeHeader::new_licensee_code_description() const {
     return "Unknown";
 }
 
-std::string CartridgeHeader::cartridge_type_description() const {
-    if (const auto it = CARTRIDGE_TYPE_DESCRIPTION_MAP.find(cartridge_type);
+std::string cartridge_type_description(const CartridgeHeader& header) {
+    if (const auto it = CARTRIDGE_TYPE_DESCRIPTION_MAP.find(header.cartridge_type);
         it != CARTRIDGE_TYPE_DESCRIPTION_MAP.end()) {
         return it->second;
     }
     return "Unknown";
 }
 
-std::string CartridgeHeader::rom_size_description() const {
-    if (const auto it = ROM_SIZE_DESCRIPTION_MAP.find(rom_size); it != ROM_SIZE_DESCRIPTION_MAP.end()) {
+std::string rom_size_description(const CartridgeHeader& header) {
+    if (const auto it = ROM_SIZE_DESCRIPTION_MAP.find(header.rom_size); it != ROM_SIZE_DESCRIPTION_MAP.end()) {
         return it->second;
     }
     return "Unknown";
 }
 
-std::string CartridgeHeader::ram_size_description() const {
-    if (const auto it = RAM_SIZE_DESCRIPTION_MAP.find(ram_size); it != RAM_SIZE_DESCRIPTION_MAP.end()) {
+std::string ram_size_description(const CartridgeHeader& header) {
+    if (const auto it = RAM_SIZE_DESCRIPTION_MAP.find(header.ram_size); it != RAM_SIZE_DESCRIPTION_MAP.end()) {
         return it->second;
     }
     return "Unknown";
 }
 
-std::string CartridgeHeader::old_licensee_code_description() const {
-    if (const auto it = OLD_LICENSEE_CODE_DESCRIPTION_MAP.find(old_licensee_code);
+std::string old_licensee_code_description(const CartridgeHeader& header) {
+    if (const auto it = OLD_LICENSEE_CODE_DESCRIPTION_MAP.find(header.old_licensee_code);
         it != OLD_LICENSEE_CODE_DESCRIPTION_MAP.end()) {
         return it->second;
     }
     return "Unknown";
-}
-
-CartridgeHeader CartridgeHeader::parse(const ICartridge& cartridge) {
-    const auto memcpy_range = [](uint8_t* dest, const uint8_t* src, size_t from, size_t to) {
-        memcpy(dest, src + from, to - from + 1);
-    };
-
-    CartridgeHeader h;
-
-    // WTF?
-    for (uint16_t i = 0x100; i < 0x150; i++) {
-        h.data.push_back(cartridge.read_rom(i));
-    }
-
-    const uint8_t* data = h.data.data();
-
-    // Raw data
-    h.data.resize(0x050);
-    memcpy_range(h.data.data(), data, 0x000, 0x04F);
-
-    // Entry point (0x100 - 0x103)
-    memcpy_range(h.entry_point.data(), data, 0x000, 0x003);
-
-    // Nintendo Logo (0x104 - 0x133)
-    memcpy_range(h.nintendo_logo.data(), data, 0x004, 0x033);
-
-    // Title (0x134 - 0x143)
-    memcpy_range(h.title.data(), data, 0x034, 0x043);
-
-    // CGB flag (0x143)
-    h.cgb_flag = data[0x043];
-
-    // Bit 0x143 is used for CGB flag instead of title in CGB_era roms
-    if (h.cgb_flag == Specs::Cartridge::Header::CgbFlag::DMG_AND_CGB ||
-        h.cgb_flag == Specs::Cartridge::Header::CgbFlag::CGB_ONLY) {
-        h.title[0x043 - 0x034] = '\0';
-    }
-
-    // New licensee code (0x144 - 0x145)
-    memcpy_range(h.new_licensee_code.data(), data, 0x044, 0x045);
-
-    // SGB flag (0x146)
-    h.sgb_flag = data[0x046];
-
-    // Cartridge type (0x147)
-    h.cartridge_type = data[0x047];
-
-    // Cartridge type (0x148)
-    h.rom_size = data[0x048];
-
-    // Cartridge type (0x149)
-    h.ram_size = data[0x049];
-
-    // Destination code (0x14A)
-    h.destination_code = data[0x04A];
-
-    // Old licensee code (0x14B)
-    h.old_licensee_code = data[0x04B];
-
-    // ROM version number (0x14C)
-    h.rom_version_number = data[0x04C];
-
-    // Header checksum (0x14D)
-    h.header_checksum = data[0x04D];
-
-    // Global checksum (0x14E - 0x14F)
-    memcpy_range(h.global_checksum.data(), data, 0x04E, 0x04F);
-
-    return h;
 }

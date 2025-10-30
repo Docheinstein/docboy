@@ -25,6 +25,7 @@ target_sources(docboy PRIVATE
         docboy/cartridge/cartridge.h
         docboy/cartridge/factory.cpp
         docboy/cartridge/factory.h
+        docboy/cartridge/header.h
         docboy/cartridge/huc1/huc1.h
         docboy/cartridge/huc1/huc1.tpp
         docboy/cartridge/huc3/huc3.h
@@ -117,6 +118,13 @@ if (ENABLE_CGB)
             docboy/undoc/undocregs.cpp
             docboy/undoc/undocregs.h
     )
+
+    if (NOT ENABLE_BOOTROM)
+        target_sources(docboy PRIVATE
+                docboy/ppu/dmgmodepal.h
+                docboy/ppu/dmgmodepal.cpp
+        )
+    endif()
 endif()
 
 if (ENABLE_BOOTROM)

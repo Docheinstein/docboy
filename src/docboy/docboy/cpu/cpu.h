@@ -36,8 +36,8 @@ public:
 
     void reset();
 
-    bool halted;
-    bool fetching;
+    bool halted {};
+    bool fetching {};
 
     uint16_t pc {};
 

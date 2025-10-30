@@ -3,12 +3,14 @@
 
 #include <memory>
 #include <string>
-#include <vector>
+
+#include "docboy/cartridge/header.h"
 
 class ICartridge;
 
 namespace CartridgeFactory {
-std::unique_ptr<ICartridge> create(const std::string& filename);
-};
+std::pair<std::unique_ptr<ICartridge>, CartridgeHeader> create(const std::string& filename);
+CartridgeHeader create_header(const std::string& filename);
+}; // namespace CartridgeFactory
 
 #endif // CARTRIDGEFACTORY_H

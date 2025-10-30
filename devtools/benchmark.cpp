@@ -34,9 +34,6 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    Path rom_path {args.rom};
-    std::unique_ptr<ICartridge> cartridge {CartridgeFactory::create(rom_path.string())};
-
     core.load_rom(args.rom);
 
     core.set_audio_sample_rate(32768);
@@ -49,7 +46,6 @@ int main(int argc, char* argv[]) {
     const auto elapsed_millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
     const auto speedup = [](uint64_t frames, auto millis) {
-        constexpr auto millis_per_frame = 1000.0 / Specs::FPS;
         return 1000.0 * (double)frames / (Specs::FPS * millis);
     };
 

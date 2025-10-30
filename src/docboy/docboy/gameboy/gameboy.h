@@ -9,6 +9,7 @@
 #include "docboy/bus/extbus.h"
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
+#include "docboy/cartridge/header.h"
 #include "docboy/cartridge/slot.h"
 #include "docboy/cpu/cpu.h"
 #include "docboy/cpu/idu.h"
@@ -55,7 +56,11 @@ public:
 
     // Video
 #ifdef ENABLE_CGB
+#ifndef ENABLE_BOOTROM
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, speed_switch_controller, cartridge_header};
+#else
     Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, speed_switch_controller};
+#endif
 #else
     Ppu ppu {lcd, interrupts, vram_bus, oam_bus, dma};
 #endif
@@ -80,6 +85,7 @@ public:
 #endif
 
     // Cartridge
+    CartridgeHeader cartridge_header {};
     CartridgeSlot cartridge_slot {};
 
     // Memory

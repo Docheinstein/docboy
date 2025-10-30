@@ -268,6 +268,12 @@ namespace Bits {
         constexpr uint8_t C = 4;
     } // namespace Flags
 
+    namespace Cartridge {
+        namespace CgbFlag {
+            constexpr uint8_t CGB_GAME = 7;
+        }
+    } // namespace Cartridge
+
     namespace Boot {
         constexpr uint8_t BOOT_ENABLE = 0;
     } // namespace Boot
@@ -505,9 +511,9 @@ namespace Bytes {
 namespace Cartridge {
     namespace Header {
         namespace MemoryLayout {
-            constexpr uint16_t START = 0x0000;
+            constexpr uint16_t START = 0x0100;
             constexpr uint16_t END = 0x014F;
-            constexpr uint16_t SIZE = 0x0150;
+            constexpr uint16_t SIZE = END - START + 1;
 
             namespace ENTRY_POINT {
                 constexpr uint16_t START = 0x0100;

@@ -539,6 +539,7 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
         ASSERT(core.gb.cartridge_slot.cartridge);
 
         // Deduce cartridge info.
+        const CartridgeHeader& header = core.gb.cartridge_header;
         const uint8_t* rom_data = core.gb.cartridge_slot.cartridge->get_rom_data();
         const uint32_t rom_size = core.gb.cartridge_slot.cartridge->get_rom_size();
 
@@ -549,21 +550,20 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
         }
 
         char title[17] {};
-        memcpy(title, &rom_data[MemoryLayout::TITLE::START], MemoryLayout::TITLE::END - MemoryLayout::TITLE::START + 1);
-#ifdef ENABLE_CGB
-        // Bit 15 is used for CGB flag instead of title for CGB-era cartridges.
-        if (rom_data[MemoryLayout::CGB_FLAG] == CgbFlag::DMG_AND_CGB ||
-            rom_data[MemoryLayout::CGB_FLAG] == CgbFlag::CGB_ONLY) {
-            title[15] = '\0';
-        }
+        memcpy(title, header.title, sizeof(header.title));
         title[16] = '\0';
 
+#ifdef ENABLE_CGB
+        // Bit 15 is used for CGB flag instead of title for CGB-era cartridges.
+        if (header.cgb_flag() == CgbFlag::DMG_AND_CGB || header.cgb_flag() == CgbFlag::CGB_ONLY) {
+            title[15] = '\0';
+        }
 #endif
 
         cartridge_info->title = title;
-        cartridge_info->mbc = rom_data[MemoryLayout::TYPE];
-        cartridge_info->rom = rom_data[MemoryLayout::ROM_SIZE];
-        cartridge_info->ram = rom_data[MemoryLayout::RAM_SIZE];
+        cartridge_info->mbc = header.cartridge_type;
+        cartridge_info->rom = header.rom_size;
+        cartridge_info->ram = header.ram_size;
         cartridge_info->multicart = false;
 
         // All the known multicart are MBC1 of 1 MB.

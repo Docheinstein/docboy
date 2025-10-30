@@ -436,7 +436,9 @@ void Core::load_boot_rom(const std::string& filename) {
 #endif
 
 void Core::load_rom(const std::string& filename) {
-    gb.cartridge_slot.attach(CartridgeFactory::create(filename));
+    auto [cartridge, header] = CartridgeFactory::create(filename);
+    gb.cartridge_slot.attach(std::move(cartridge));
+    gb.cartridge_header = header;
     reset();
 }
 
@@ -600,7 +602,9 @@ void Core::reset() {
     gb.dma.reset();
     gb.apu.reset();
     gb.stop_controller.reset();
-    gb.cartridge_slot.cartridge->reset();
+    if (gb.cartridge_slot.cartridge) {
+        gb.cartridge_slot.cartridge->reset();
+    }
     gb.vram[0].reset(VRAM0_INITIAL_DATA);
 #ifdef ENABLE_CGB
     gb.vram[1].reset();

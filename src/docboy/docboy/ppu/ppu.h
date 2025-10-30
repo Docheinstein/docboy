@@ -1,8 +1,6 @@
 #ifndef PPU_H
 #define PPU_H
 
-#include <vector>
-
 #include "docboy/bus/oambus.h"
 #include "docboy/bus/vrambus.h"
 
@@ -18,14 +16,21 @@ class Dma;
 class Hdma;
 class Parcel;
 class SpeedSwitchController;
+struct CartridgeHeader;
 
 class Ppu {
     DEBUGGABLE_CLASS()
 
 public:
 #ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
     Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller);
+#else
+    Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
+        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller,
+        CartridgeHeader& header);
+#endif
 #else
     Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
         Dma& dma_controller);
@@ -36,6 +41,10 @@ public:
 #ifdef ENABLE_CGB
     void enable_color_resolver();
     void disable_color_resolver();
+#endif
+
+#ifdef ENABLE_CGB
+    void load_cgb_dmg_mode_palettes(const uint8_t* bgp0, const uint8_t* objp0, const uint8_t* objp1);
 #endif
 
     void save_state(Parcel& parcel) const;
@@ -297,6 +306,9 @@ private:
 #ifdef ENABLE_CGB
     // TODO: bad: PPU shouldn't know speed_switch_controller
     SpeedSwitchController& speed_switch_controller;
+#ifndef ENABLE_BOOTROM
+    CartridgeHeader& header;
+#endif
 #endif
 
     TickSelector tick_selector {};
@@ -361,8 +373,8 @@ private:
 #endif
 
     struct {
-        OamBus::Word oam;
-    } registers;
+        OamBus::Word oam {};
+    } registers {};
 
     // Oam Scan
     struct {
