@@ -208,7 +208,7 @@ constexpr DmgModePalettes compute_dmg_mode_non_ambiguous_palettes(uint8_t cksum_
     return palette;
 }
 
-constexpr DmgModePalettes DEFAULT_PALETTE = compute_dmg_mode_non_ambiguous_palettes(0);
+constexpr DmgModePalettes DEFAULT_PALETTES = compute_dmg_mode_non_ambiguous_palettes(0);
 
 constexpr std::array<DmgModePalettesByChecksum, 256> compute_dmg_mode_palettes() {
     // Compute the DMG mode palettes associated with every possible checksum.
@@ -296,17 +296,27 @@ DmgModePalettes compute_dmg_mode_palettes_from_header(const CartridgeHeader& hea
     }
 
     // Use default palette otherwise
-    return DEFAULT_PALETTE;
+    return DEFAULT_PALETTES;
 }
 } // namespace
 
 void load_dmg_mode_palettes_from_header(const CartridgeHeader& header, uint8_t* bg_palettes, uint8_t* obj_palettes) {
     ASSERT(!test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag()));
 
-    // TODO: check nintendo license code too: non-nintendo license codes should fallback to default palette
+    DmgModePalettes palettes = DEFAULT_PALETTES;
 
-    // Compute the DMG mode palettes (BGP0, OBJP0, OBJP1)
-    DmgModePalettes palettes = compute_dmg_mode_palettes_from_header(header);
+    // Compute the DMG mode palettes (BGP0, OBJP0, OBJP1).
+    // Note that the DMG mode palette selection is run only if either:
+    // 1) The old licensee code is 0x01 (Nintendo)
+    // 2) The old licensee code is 0x33 (use new licensee) and new licensee code is "01" (Nintendo)
+    // Otherwise, the default palette is used instead.
+    if (header.old_licensee_code == Specs::Cartridge::Header::OldLicensee::NINTENDO ||
+        (header.old_licensee_code == Specs::Cartridge::Header::OldLicensee::USE_NEW_LICENSEE &&
+         memcmp(header.new_licensee_code, Specs::Cartridge::Header::NewLicensee::NINTENDO,
+                sizeof(header.new_licensee_code)) == 0)) {
+        palettes = compute_dmg_mode_palettes_from_header(header);
+    }
+
     memcpy(bg_palettes, palettes.bgp0, PALETTE_SIZE);
     memcpy(obj_palettes, palettes.objp0, PALETTE_SIZE);
     memcpy(obj_palettes + PALETTE_SIZE, palettes.objp1, PALETTE_SIZE);

@@ -41,10 +41,10 @@ void dump_cartridge_info(const CartridgeHeader& header) {
     std::cout << "Title             :  " << title_as_string(header) << "\n";
     std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     (" << cartridge_type_description(header)
               << ")\n";
-    std::cout << "Licensee (new)    :  " << hex(header.new_licensee_code) << "  ("
-              << new_licensee_code_description(header) << ")\n";
     std::cout << "Licensee (old)    :  " << hex(header.old_licensee_code) << "     ("
               << old_licensee_code_description(header) << ")\n";
+    std::cout << "Licensee (new)    :  " << new_licensee_code_as_string(header) << "     ("
+              << new_licensee_code_description(header) << ")\n";
     std::cout << "ROM Size          :  " << hex(header.rom_size) << "     (" << rom_size_description(header) << ")\n";
     std::cout << "RAM Size          :  " << hex(header.ram_size) << "     (" << ram_size_description(header) << ")\n";
     std::cout << "CGB flag          :  " << hex(header.cgb_flag()) << "     (" << cgb_flag_description(header) << ")\n";

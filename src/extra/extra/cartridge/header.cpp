@@ -4,8 +4,10 @@
 #include <map>
 
 #include "docboy/cartridge/cartridge.h"
+#include "docboy/common/specs.h"
 
 #include "utils/bits.h"
+#include "utils/strings.h"
 
 namespace {
 const std::map<uint8_t, std::string> CGB_FLAG_DESCRIPTION_MAP = {
@@ -13,68 +15,68 @@ const std::map<uint8_t, std::string> CGB_FLAG_DESCRIPTION_MAP = {
     {0xC0, "The game works on CGB only"},
 };
 
-const std::map<uint16_t, std::string> NEW_LICENSEE_CODE_DESCRIPTION_MAP = {
-    {0x00, "None"},
-    {0x01, "Nintendo R&D1"},
-    {0x08, "Capcom"},
-    {0x13, "Electronic Arts"},
-    {0x18, "Hudson Soft"},
-    {0x19, "b-ai"},
-    {0x20, "kss"},
-    {0x22, "pow"},
-    {0x24, "PCM Complete"},
-    {0x25, "san-x"},
-    {0x28, "Kemco Japan"},
-    {0x29, "seta"},
-    {0x30, "Viacom"},
-    {0x31, "Nintendo"},
-    {0x32, "Bandai"},
-    {0x33, "Ocean/Acclaim"},
-    {0x34, "Konami"},
-    {0x35, "Hector"},
-    {0x37, "Taito"},
-    {0x38, "Hudson"},
-    {0x39, "Banpresto"},
-    {0x41, "Ubi Soft"},
-    {0x42, "Atlus"},
-    {0x44, "Malibu"},
-    {0x46, "angel"},
-    {0x47, "Bullet-Proof"},
-    {0x49, "irem"},
-    {0x50, "Absolute"},
-    {0x51, "Acclaim"},
-    {0x52, "Activision"},
-    {0x53, "American sammy"},
-    {0x54, "Konami"},
-    {0x55, "Hi tech entertainment"},
-    {0x56, "LJN"},
-    {0x57, "Matchbox"},
-    {0x58, "Mattel"},
-    {0x59, "Milton Bradley"},
-    {0x60, "Titus"},
-    {0x61, "Virgin"},
-    {0x64, "LucasArts"},
-    {0x67, "Ocean"},
-    {0x69, "Electronic Arts"},
-    {0x70, "Infogrames"},
-    {0x71, "Interplay"},
-    {0x72, "Broderbund"},
-    {0x73, "sculptured"},
-    {0x75, "sci"},
-    {0x78, "THQ"},
-    {0x79, "Accolade"},
-    {0x80, "misawa"},
-    {0x83, "lozc"},
-    {0x86, "Tokuma Shoten Intermedia"},
-    {0x87, "Tsukuda Original"},
-    {0x91, "Chunsoft"},
-    {0x92, "Video system"},
-    {0x93, "Ocean/Acclaim"},
-    {0x95, "Varie"},
-    {0x96, "Yonezawa/s’pal"},
-    {0x97, "Kaneko"},
-    {0x99, "Pack in soft"},
-    {0xA4, "Konami (Yu-Gi-Oh!)"},
+const std::map<std::string, std::string> NEW_LICENSEE_CODE_DESCRIPTION_MAP = {
+    {"00", "None"},
+    {"01", "Nintendo R&D1"},
+    {"08", "Capcom"},
+    {"13", "Electronic Arts"},
+    {"18", "Hudson Soft"},
+    {"19", "b-ai"},
+    {"20", "kss"},
+    {"22", "pow"},
+    {"24", "PCM Complete"},
+    {"25", "san-x"},
+    {"28", "Kemco Japan"},
+    {"29", "seta"},
+    {"30", "Viacom"},
+    {"31", "Nintendo"},
+    {"32", "Bandai"},
+    {"33", "Ocean/Acclaim"},
+    {"34", "Konami"},
+    {"35", "Hector"},
+    {"37", "Taito"},
+    {"38", "Hudson"},
+    {"39", "Banpresto"},
+    {"41", "Ubi Soft"},
+    {"42", "Atlus"},
+    {"44", "Malibu"},
+    {"46", "angel"},
+    {"47", "Bullet-Proof"},
+    {"49", "irem"},
+    {"50", "Absolute"},
+    {"51", "Acclaim"},
+    {"52", "Activision"},
+    {"53", "American sammy"},
+    {"54", "Konami"},
+    {"55", "Hi tech entertainment"},
+    {"56", "LJN"},
+    {"57", "Matchbox"},
+    {"58", "Mattel"},
+    {"59", "Milton Bradley"},
+    {"60", "Titus"},
+    {"61", "Virgin"},
+    {"64", "LucasArts"},
+    {"67", "Ocean"},
+    {"69", "Electronic Arts"},
+    {"70", "Infogrames"},
+    {"71", "Interplay"},
+    {"72", "Broderbund"},
+    {"73", "sculptured"},
+    {"75", "sci"},
+    {"78", "THQ"},
+    {"79", "Accolade"},
+    {"80", "misawa"},
+    {"83", "lozc"},
+    {"86", "Tokuma Shoten Intermedia"},
+    {"87", "Tsukuda Original"},
+    {"91", "Chunsoft"},
+    {"92", "Video system"},
+    {"93", "Ocean/Acclaim"},
+    {"95", "Varie"},
+    {"96", "Yonezawa/s’pal"},
+    {"97", "Kaneko"},
+    {"99", "Pack in soft"},
+    {"A4", "Konami (Yu-Gi-Oh!)"},
 };
 
 const std::map<uint8_t, std::string> CARTRIDGE_TYPE_DESCRIPTION_MAP = {
@@ -271,11 +273,20 @@ const std::map<uint8_t, std::string> RAM_SIZE_DESCRIPTION_MAP = {
 } // namespace
 
 std::string title_as_string(const CartridgeHeader& header) {
-    std::string title_string {};
-    title_string.resize(sizeof(header.title) + 1);
-    memcpy(title_string.data(), header.title, sizeof(header.title));
-    title_string[sizeof(header.title)] = '\0';
-    return title_string;
+    const auto* title_cstr = reinterpret_cast<const char*>(header.title);
+    std::string title {title_cstr, strnlen(title_cstr, sizeof(header.title))};
+#ifdef ENABLE_CGB
+    if (title.size() == 16) {
+        // Bit 15 is used for CGB flag instead of title for CGB-era cartridges.
+        uint8_t cgb_flag = header.cgb_flag();
+        if (cgb_flag == Specs::Cartridge::Header::CgbFlag::DMG_AND_CGB ||
+            cgb_flag == Specs::Cartridge::Header::CgbFlag::CGB_ONLY) {
+            title[15] = '\0';
+        }
+    }
+#endif
+
+    return title;
 }
 
 std::string cgb_flag_description(const CartridgeHeader& header) {
@@ -285,9 +296,12 @@ std::string cgb_flag_description(const CartridgeHeader& header) {
     return "Unknown";
 }
 
+std::string new_licensee_code_as_string(const CartridgeHeader& header) {
+    return std::string {reinterpret_cast<const char*>(header.new_licensee_code), 2};
+}
+
 std::string new_licensee_code_description(const CartridgeHeader& header) {
-    uint16_t new_licensee_code_ext = concat(header.new_licensee_code[0], header.new_licensee_code[1]);
-    if (const auto it = NEW_LICENSEE_CODE_DESCRIPTION_MAP.find(new_licensee_code_ext);
+    if (const auto it = NEW_LICENSEE_CODE_DESCRIPTION_MAP.find(new_licensee_code_as_string(header));
         it != NEW_LICENSEE_CODE_DESCRIPTION_MAP.end()) {
         return it->second;
     }

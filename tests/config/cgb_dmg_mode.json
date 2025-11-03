@@ -1019,6 +1019,38 @@
         {
             "rom": "docboy/ppu/palettes_checksum_fe.gb",
             "framebuffer": "docboy/ppu/palettes_checksum_fe.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_old_license_00_new_license_00_checksum_00.gb",
+            "framebuffer": "docboy/ppu/palettes_old_license_00_new_license_00_checksum_00.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_old_license_00_new_license_00_checksum_01.gb",
+            "framebuffer": "docboy/ppu/palettes_old_license_00_new_license_00_checksum_01.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_old_license_00_new_license_01_checksum_00.gb",
+            "framebuffer": "docboy/ppu/palettes_old_license_00_new_license_01_checksum_00.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_old_license_00_new_license_01_checksum_01.gb",
+            "framebuffer": "docboy/ppu/palettes_old_license_00_new_license_01_checksum_01.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_old_license_33_new_license_00_checksum_00.gb",
+            "framebuffer": "docboy/ppu/palettes_old_license_33_new_license_00_checksum_00.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_old_license_33_new_license_00_checksum_01.gb",
+            "framebuffer": "docboy/ppu/palettes_old_license_33_new_license_00_checksum_01.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_old_license_33_new_license_01_checksum_00.gb",
+            "framebuffer": "docboy/ppu/palettes_old_license_33_new_license_01_checksum_00.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_old_license_33_new_license_01_checksum_01.gb",
+            "framebuffer": "docboy/ppu/palettes_old_license_33_new_license_01_checksum_01.png"
         }
     ]
 }
