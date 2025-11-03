@@ -6,6 +6,7 @@
 #include "utils/formatters.h"
 
 // usage: paleteframebuffer <in_file>
+
 int main(int argc, const char* argv[]) {
     if (argc < 2) {
         std::cerr << "usage: paleteframebuffer <in_file>" << std::endl;

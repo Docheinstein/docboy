@@ -19,6 +19,9 @@ target_link_libraries(rgb888to565 PRIVATE testutils utils extra)
 add_executable(runcmpframebuffer runcmpframebuffer.cpp)
 target_link_libraries(runcmpframebuffer PRIVATE testutils docboy utils extra)
 
+add_executable(runtakeframebuffer runtakeframebuffer.cpp)
+target_link_libraries(runtakeframebuffer PRIVATE testutils docboy utils extra)
+
 add_executable(benchmark benchmark.cpp)
 target_link_libraries(benchmark PRIVATE testutils docboy utils args)
 

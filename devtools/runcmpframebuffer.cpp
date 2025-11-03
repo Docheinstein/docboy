@@ -12,8 +12,8 @@ int main(int argc, const char* argv[]) {
 
     const bool result = FramebufferRunner()
                             .rom(argv[1])
-                            .check_interval_ticks(DURATION_VERY_SHORT)
-                            .max_ticks(DURATION_SHORT)
+                            .check_interval_ticks(DEFAULT_CHECK_INTERVAL)
+                            .max_ticks(DEFAULT_MAX_DURATION)
                             .force_check(true)
                             .expect_framebuffer(argv[2])
                             .run();

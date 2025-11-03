@@ -1,0 +1,1024 @@
+{
+    "ppu": [
+        {
+            "rom": "docboy/ppu/palettes_checksum_00.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_00.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_01.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_01.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_02.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_02.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_03.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_03.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_04.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_04.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_05.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_05.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_06.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_06.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_07.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_07.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_08.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_08.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_09.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_09.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_0a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_0a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_0b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_0b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_0c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_0c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_0d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_0d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_0e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_0e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_0f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_0f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_10.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_10.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_11.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_11.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_12.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_12.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_13.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_13.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_14.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_14.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_15.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_15.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_16.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_16.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_17.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_17.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_18.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_18.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_19.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_19.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_1a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_1a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_1b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_1b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_1c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_1c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_1d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_1d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_1e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_1e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_1f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_1f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_20.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_20.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_21.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_21.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_22.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_22.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_23.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_23.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_24.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_24.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_25.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_25.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_26.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_26.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_27.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_27.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_28.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_28.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_29.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_29.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_2a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_2a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_2b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_2b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_2c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_2c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_2d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_2d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_2e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_2e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_2f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_2f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_30.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_30.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_31.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_31.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_32.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_32.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_33.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_33.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_34.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_34.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_35.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_35.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_36.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_36.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_37.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_37.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_38.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_38.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_39.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_39.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_3a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_3a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_3b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_3b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_3c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_3c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_3d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_3d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_3e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_3e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_3f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_3f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_40.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_40.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_41.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_41.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_42.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_42.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_43.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_43.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_44.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_44.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_45.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_45.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_46.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_46.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_47.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_47.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_48.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_48.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_49.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_49.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_4a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_4a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_4b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_4b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_4c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_4c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_4d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_4d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_4e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_4e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_4f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_4f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_50.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_50.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_51.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_51.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_52.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_52.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_53.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_53.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_54.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_54.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_55.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_55.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_56.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_56.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_57.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_57.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_58.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_58.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_59.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_59.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_5a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_5a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_5b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_5b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_5c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_5c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_5d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_5d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_5e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_5e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_5f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_5f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_60.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_60.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_61.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_61.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_62.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_62.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_63.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_63.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_64.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_64.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_65.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_65.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_66.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_66.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_67.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_67.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_68.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_68.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_69.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_69.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_6a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_6a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_6b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_6b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_6c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_6c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_6d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_6d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_6e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_6e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_6f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_6f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_70.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_70.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_71.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_71.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_72.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_72.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_73.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_73.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_74.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_74.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_75.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_75.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_76.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_76.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_77.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_77.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_78.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_78.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_79.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_79.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_7a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_7a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_7b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_7b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_7c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_7c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_7d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_7d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_7e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_7e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_7f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_7f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_80.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_80.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_81.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_81.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_82.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_82.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_83.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_83.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_84.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_84.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_85.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_85.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_86.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_86.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_87.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_87.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_88.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_88.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_89.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_89.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_8a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_8a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_8b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_8b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_8c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_8c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_8d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_8d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_8e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_8e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_8f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_8f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_90.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_90.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_91.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_91.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_92.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_92.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_93.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_93.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_94.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_94.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_95.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_95.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_96.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_96.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_97.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_97.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_98.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_98.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_99.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_99.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_9a.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_9a.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_9b.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_9b.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_9c.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_9c.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_9d.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_9d.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_9e.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_9e.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_9f.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_9f.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a0.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a0.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a1.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a1.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a2.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a2.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a3.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a3.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a4.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a4.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a5.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a5.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a6.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a6.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a7.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a7.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a8.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a8.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_a9.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_a9.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_aa.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_aa.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ab.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ab.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ac.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ac.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ad.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ad.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ae.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ae.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_af.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_af.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b0.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b0.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b1.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b1.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b2.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b2.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b3.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b3.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b4.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b4.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b5.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b5.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b6.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b6.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b7.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b7.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b8.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b8.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_b9.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_b9.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ba.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ba.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_bb.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_bb.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_bc.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_bc.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_bd.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_bd.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_be.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_be.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_bf.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_bf.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c0.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c0.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c1.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c1.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c2.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c2.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c3.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c3.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c4.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c4.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c5.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c5.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c6.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c6.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c7.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c7.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c8.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c8.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_c9.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_c9.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ca.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ca.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_cb.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_cb.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_cc.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_cc.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_cd.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_cd.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ce.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ce.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_cf.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_cf.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d0.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d0.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d1.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d1.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d2.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d2.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d3.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d3.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d4.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d4.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d5.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d5.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d6.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d6.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d7.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d7.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d8.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d8.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_d9.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_d9.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_da.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_da.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_db.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_db.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_dc.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_dc.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_dd.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_dd.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_de.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_de.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_df.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_df.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e0.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e0.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e1.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e1.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e2.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e2.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e3.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e3.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e4.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e4.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e5.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e5.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e6.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e6.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e7.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e7.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e8.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e8.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_e9.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_e9.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ea.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ea.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_eb.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_eb.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ec.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ec.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ed.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ed.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ee.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ee.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_ef.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_ef.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f0.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f0.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f1.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f1.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f2.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f2.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f3.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f3.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f4.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f4.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f5.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f5.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f6.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f6.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f7.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f7.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f8.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f8.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_f9.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_f9.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_fa.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_fa.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_fb.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_fb.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_fc.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_fc.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_fd.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_fd.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_checksum_fe.gb",
+            "framebuffer": "docboy/ppu/palettes_checksum_fe.png"
+        }
+    ]
+}
