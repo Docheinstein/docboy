@@ -39,7 +39,7 @@ void ensure_file_exists(const std::string& path) {
 
 void dump_cartridge_info(const CartridgeHeader& header) {
     std::cout << "Title             :  " << title_as_string(header) << "\n";
-    std::cout << "Cartridge type    :  " << hex(header.cartridge_type) << "     (" << cartridge_type_description(header)
+    std::cout << "Cartridge Type    :  " << hex(header.cartridge_type) << "     (" << cartridge_type_description(header)
               << ")\n";
     std::cout << "Licensee (old)    :  " << hex(header.old_licensee_code) << "     ("
               << old_licensee_code_description(header) << ")\n";
@@ -47,11 +47,12 @@ void dump_cartridge_info(const CartridgeHeader& header) {
               << new_licensee_code_description(header) << ")\n";
     std::cout << "ROM Size          :  " << hex(header.rom_size) << "     (" << rom_size_description(header) << ")\n";
     std::cout << "RAM Size          :  " << hex(header.ram_size) << "     (" << ram_size_description(header) << ")\n";
-    std::cout << "CGB flag          :  " << hex(header.cgb_flag()) << "     (" << cgb_flag_description(header) << ")\n";
-    std::cout << "SGB flag          :  " << hex(header.sgb_flag) << "\n";
+    std::cout << "CGB Flag          :  " << hex(header.cgb_flag()) << "     (" << cgb_flag_description(header) << ")\n";
+    std::cout << "SGB Flag          :  " << hex(header.sgb_flag) << "\n";
     std::cout << "Destination Code  :  " << hex(header.destination_code) << "\n";
     std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";
-    std::cout << "Header checksum   :  " << hex(header.header_checksum) << "\n";
+    std::cout << "Header Checksum   :  " << hex(header.header_checksum) << "\n";
+    std::cout << "Title Checksum    :  " << hex(title_checksum(header)) << "\n";
 }
 
 GameBoy gb {};

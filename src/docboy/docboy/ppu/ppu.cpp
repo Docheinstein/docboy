@@ -2581,12 +2581,8 @@ void Ppu::reset() {
     // OBJ palettes are random/unreliable.
     memcpy(obj_palettes, RANDOM_DATA, sizeof(obj_palettes));
 #else
-    for (uint32_t i = 0; i < 64; i++) {
-        bg_palettes[i] = 0;
-    }
-    for (uint32_t i = 0; i < 64; i++) {
-        obj_palettes[i] = 0;
-    }
+    memcpy(bg_palettes, RANDOM_DATA, sizeof(bg_palettes));
+    memcpy(obj_palettes, RANDOM_DATA, sizeof(obj_palettes));
 #endif
 
     color_resolver_enabled = true;
