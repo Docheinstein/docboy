@@ -1,6 +1,22 @@
 {
     "ppu": [
         {
+            "rom": "docboy/ppu/palettes_cgb_flag_01_checksum_01.gb",
+            "framebuffer": "docboy/ppu/palettes_cgb_flag_01_checksum_01.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_cgb_flag_80_checksum_01.gb",
+            "framebuffer": "docboy/ppu/palettes_cgb_flag_80_checksum_01.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_cgb_flag_81_checksum_01.gb",
+            "framebuffer": "docboy/ppu/palettes_cgb_flag_81_checksum_01.png"
+        },
+        {
+            "rom": "docboy/ppu/palettes_cgb_flag_c0_checksum_01.gb",
+            "framebuffer": "docboy/ppu/palettes_cgb_flag_c0_checksum_01.png"
+        },
+        {
             "rom": "docboy/ppu/palettes_checksum_00.gb",
             "framebuffer": "docboy/ppu/palettes_checksum_00.png"
         },

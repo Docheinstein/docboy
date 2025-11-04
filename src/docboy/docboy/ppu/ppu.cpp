@@ -2578,11 +2578,11 @@ void Ppu::reset() {
         bg_palettes[2 * i] = 0xFF;
         bg_palettes[2 * i + 1] = 0x7F;
     }
-    // OBJ palettes are random.
+    // OBJ palettes are random/unreliable.
     memcpy(obj_palettes, RANDOM_DATA, sizeof(obj_palettes));
 #else
     for (uint32_t i = 0; i < 64; i++) {
-        obj_palettes[i] = 0;
+        bg_palettes[i] = 0;
     }
     for (uint32_t i = 0; i < 64; i++) {
         obj_palettes[i] = 0;

@@ -297,7 +297,14 @@ std::string cgb_flag_description(const CartridgeHeader& header) {
 }
 
 std::string new_licensee_code_as_string(const CartridgeHeader& header) {
-    return std::string {reinterpret_cast<const char*>(header.new_licensee_code), 2};
+    std::string str {};
+    str.resize(2);
+    for (uint8_t i = 0; i < sizeof(header.new_licensee_code); i++) {
+        // We want to keep this display string of a fixed size of 2,
+        // therefore any non-printable character (including \0) with a space.
+        str[i] = isprint(header.new_licensee_code[i]) ? static_cast<char>(header.new_licensee_code[i]) : ' ';
+    }
+    return str;
 }
 
 std::string new_licensee_code_description(const CartridgeHeader& header) {

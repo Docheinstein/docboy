@@ -264,13 +264,13 @@ constexpr std::array<DmgModePalettesByChecksum, 256> compute_dmg_mode_palettes()
 uint8_t compute_title_checksum(const CartridgeHeader& header) {
     // The following logic mimics the CGB bootrom
 
-    // Sum-up all the title's letters
+    // Sum-up all the title's letters (including CGB Flag bit)
     uint8_t checksum = 0;
 
-    // TODO: up to 15 or 14?
-    for (uint8_t i = 0; i < 16; i++) {
+    for (uint8_t i = 0; i < sizeof(header.title); i++) {
         checksum += header.title[i];
     }
+
     return checksum;
 }
 
