@@ -381,7 +381,7 @@ void CpuBus::init_accessors_for_operating_mode() {
     // | HDMA3    |   yes    |      no      |    no    |
     // | HDMA4    |   yes    |      no      |    no    |
     // | HDMA5    |   yes    |      no      |    no    |
-    // | KEY1     |   yes    |      ?       |    no    |
+    // | KEY1     |   yes    |      yes     |    no    |
     // | RP       |   yes    |      yes     |    no    |
     // +----------+----------+--------------+----------+
 
@@ -396,6 +396,10 @@ void CpuBus::init_accessors_for_operating_mode() {
         /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = OPEN_BUS;
 
         if (operating_mode.key0.dmg_ext_mode) {
+            /* FF4D */ memory_accessors[Specs::Registers::SpeedSwitch::KEY1] = {
+                NonTrivial<&SpeedSwitch::read_key1> {&speed_switch},
+                NonTrivial<&SpeedSwitch::write_key1> {&speed_switch}};
+
             /* FF56 */ memory_accessors[Specs::Registers::Infrared::RP] = {NonTrivial<&Infrared::read_rp> {&infrared},
                                                                            NonTrivial<&Infrared::write_rp> {&infrared}};
 
@@ -409,6 +413,8 @@ void CpuBus::init_accessors_for_operating_mode() {
                 NonTrivial<&WramBankController::read_svbk> {&wram_bank_controller},
                 NonTrivial<&WramBankController::write_svbk> {&wram_bank_controller}};
         } else {
+            /* FF4D */ memory_accessors[Specs::Registers::SpeedSwitch::KEY1] = OPEN_BUS;
+
             /* FF56 */ memory_accessors[Specs::Registers::Infrared::RP] = OPEN_BUS;
 
             /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = OPEN_BUS;

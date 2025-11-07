@@ -55,6 +55,18 @@
             ]
         }
     ],
+    "key1": [
+        {
+            "rom": "docboy/key1/key1_write_read.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        }
+    ],
     "mode": [
         {
             "rom": "docboy/mode/mode_cgb_flag_8a.gb",
