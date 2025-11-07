@@ -542,7 +542,7 @@ constexpr const char* IO_MNEMONICS[256] = {
     /* FF30 */ "WAVE 0",  "WAVE 1",  "WAVE 2",  "WAVE 3",  "WAVE 4",  "WAVE 5",  "WAVE 6",  "WAVE 7",
     /* FF38 */ "WAVE 8",  "WAVE 9",  "WAVE A",  "WAVE B",  "WAVE C",  "WAVE D",  "WAVE E",  "WAVE F",
     /* FF40 */ "LCDC",    "STAT",    "SCY",     "SCX",     "LY",      "LYC",     "DMA",     "BGP",
-    /* FF48 */ "OBP0",    "OBP1",    "WY",      "WX",      "UNKNOWN", "KEY1",    "UNKNOWN", "VBK",
+    /* FF48 */ "OBP0",    "OBP1",    "WY",      "WX",      "KEY0",    "KEY1",    "UNKNOWN", "VBK",
     /* FF50 */ "BOOT",    "HDMA1",   "HDMA2",   "HDMA3",   "HDMA4",   "HDMA5",   "RP",      "UNKNOWN",
     /* FF58 */ "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN",
     /* FF60 */ "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN",

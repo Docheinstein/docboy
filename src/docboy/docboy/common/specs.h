@@ -217,6 +217,10 @@ namespace Registers {
     } // namespace Video
 
 #ifdef ENABLE_CGB
+    namespace OperatingMode {
+        constexpr uint16_t KEY0 = 0xFF4C;
+        constexpr uint16_t CGB_REGISTERS[] = {KEY0};
+    } // namespace OperatingMode
     namespace SpeedSwitch {
         constexpr uint16_t KEY1 = 0xFF4D;
         constexpr uint16_t CGB_REGISTERS[] = {KEY1};
@@ -484,6 +488,11 @@ namespace Bits {
     } // namespace Rtc
 
 #ifdef ENABLE_CGB
+    namespace OperatingMode {
+        constexpr BitRange MODE = {3, 2};
+        constexpr uint8_t DMG_EXT_MODE = 3;
+        constexpr uint8_t DMG_MODE = 2;
+    } // namespace OperatingMode
     namespace SpeedSwitch {
         constexpr uint8_t CURRENT_SPEED = 7;
         constexpr uint8_t SPEED_SWITCH = 0;
@@ -497,6 +506,16 @@ namespace Bits {
         constexpr uint8_t EMITTING = 0;
     } // namespace Infrared
 #endif
+
+#ifdef ENABLE_CGB
+    namespace VramBank {
+        constexpr uint8_t BANK = 0;
+    } // namespace VramBank
+    namespace WramBank {
+        constexpr BitRange BANK = {2, 0};
+    } // namespace WramBank
+#endif
+
 } // namespace Bits
 
 namespace Bytes {

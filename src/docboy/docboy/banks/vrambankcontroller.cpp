@@ -3,11 +3,11 @@
 #include "docboy/bus/vrambus.h"
 
 uint8_t VramBankController::read_vbk() const {
-    return 0xFE | vbk.bank;
+    return 0xFE | vbk.bank << Specs::Bits::VramBank::BANK;
 }
 
 void VramBankController::write_vbk(uint8_t value) {
-    vbk.bank = test_bit<0>(value);
+    vbk.bank = test_bit<Specs::Bits::VramBank::BANK>(value);
     vram_bus.set_vram_bank(vbk.bank);
 }
 

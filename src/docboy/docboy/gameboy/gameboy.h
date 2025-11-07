@@ -36,6 +36,7 @@
 #include "docboy/hdma/hdma.h"
 #include "docboy/ir/infrared.h"
 #include "docboy/memory/notusable.h"
+#include "docboy/mode/operatingmode.h"
 #include "docboy/speedswitch/speedswitch.h"
 #include "docboy/speedswitch/speedswitchcontroller.h"
 #include "docboy/undoc/undocregs.h"
@@ -57,9 +58,9 @@ public:
     // Video
 #ifdef ENABLE_CGB
 #ifndef ENABLE_BOOTROM
-    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, speed_switch_controller, cartridge_header};
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, operating_mode, speed_switch_controller, cartridge_header};
 #else
-    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, speed_switch_controller};
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, operating_mode, speed_switch_controller};
 #endif
 #else
     Ppu ppu {lcd, interrupts, vram_bus, oam_bus, dma};
@@ -149,6 +150,7 @@ public:
         vram_bank_controller,
         wram_bank_controller,
         hdma,
+        operating_mode,
         speed_switch,
         infrared,
         undocumented_registers,
@@ -170,6 +172,7 @@ public:
                     vram_bank_controller,
                     wram_bank_controller,
                     hdma,
+                    operating_mode,
                     speed_switch,
                     infrared,
                     undocumented_registers};
@@ -216,11 +219,16 @@ public:
                stop_controller.stopped,
                speed_switch_controller};
 
-#ifdef ENABLE_CGB
+    // Operating mode
+#ifdef ENABLE_BOOTROM
+    OperatingMode operating_mode {};
+#else
+    OperatingMode operating_mode {cartridge_header};
+#endif
+
     // Speed Switch
     SpeedSwitch speed_switch {};
     SpeedSwitchController speed_switch_controller {speed_switch, interrupts, timers, cpu.halted};
-#endif
 
     // Other CGB components
     Infrared infrared {};

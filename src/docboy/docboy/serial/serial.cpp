@@ -89,6 +89,7 @@ void Serial::serial_write_bit(bool bit) {
 }
 
 uint8_t Serial::read_sc() const {
+    // TODO: in DMG mode bit 1 is fixed to 1?
 #ifdef ENABLE_CGB
     return 0b01111100 | sc.transfer_enable << Specs::Bits::Serial::SC::TRANSFER_ENABLE |
            sc.clock_speed << Specs::Bits::Serial::SC::CLOCK_SPEED |

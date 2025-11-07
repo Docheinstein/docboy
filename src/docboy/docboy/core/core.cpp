@@ -495,6 +495,10 @@ Parcel Core::parcelize_state() const {
     PARCEL_WRITE_UINT32(p, STATE_WATERMARK);
     PARCEL_WRITE_UINT64(p, ticks);
 
+#ifdef ENABLE_CGB
+    gb.operating_mode.save_state(p);
+#endif
+
     gb.cpu.save_state(p);
     gb.ppu.save_state(p);
     gb.lcd.save_state(p);
@@ -546,6 +550,10 @@ void Core::unparcelize_state(Parcel&& p) {
 
     ticks = p.read_uint64();
 
+#ifdef ENABLE_CGB
+    gb.operating_mode.load_state(p);
+#endif
+
     gb.cpu.load_state(p);
     gb.ppu.load_state(p);
     gb.lcd.load_state(p);
@@ -595,6 +603,13 @@ void Core::reset() {
     rom_state_size = STATE_SAVE_SIZE_UNKNOWN;
 
     ticks = 0;
+
+#ifdef ENABLE_CGB
+    // Note: operating mode should be initialized before all the other components.
+    // This because other components might have a different initialization
+    // based on the CGB operating mode (CGB mode or DMG compatibility mode).
+    gb.operating_mode.reset();
+#endif
 
     gb.cpu.reset();
     gb.ppu.reset();

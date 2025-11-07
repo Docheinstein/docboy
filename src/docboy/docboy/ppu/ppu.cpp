@@ -9,13 +9,14 @@
 #include "utils/hexdump.h"
 
 #ifdef ENABLE_CGB
-#include "docboy/cartridge/header.h"
 #include "docboy/hdma/hdma.h"
+#include "docboy/mode/operatingmode.h"
 #include "docboy/speedswitch/speedswitchcontroller.h"
 #endif
 
 #ifdef ENABLE_CGB
 #ifndef ENABLE_BOOTROM
+#include "docboy/cartridge/header.h"
 #include "docboy/ppu/dmgmodepal.h"
 #endif
 #endif
@@ -147,11 +148,12 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
 #ifdef ENABLE_CGB
 #ifdef ENABLE_BOOTROM
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller) :
+         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, OperatingMode& operating_mode,
+         SpeedSwitchController& speed_switch_controller) :
 #else
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller,
-         CartridgeHeader& header) :
+         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, OperatingMode& operating_mode,
+         SpeedSwitchController& speed_switch_controller, CartridgeHeader& header) :
 #endif
 #else
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
@@ -167,6 +169,7 @@ Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, 
     dma_controller {dma_controller}
 #ifdef ENABLE_CGB
     ,
+    operating_mode {operating_mode},
     speed_switch_controller {speed_switch_controller}
 #ifndef ENABLE_BOOTROM
     ,
@@ -690,6 +693,7 @@ void Ppu::pixel_transfer_lx8() {
                                   (!lcdc_.bg_win_enable || bg_pixel.color_index == 0 ||
                                    (!test_bit<Specs::Bits::OAM::Attributes::BG_OVER_OBJ>(obj_pixel.attributes) &&
                                     !test_bit<Specs::Bits::Background::Attributes::PRIORITY>(bg_pixel.attributes)));
+            // TODO: DMG mode?
 #else
             const bool show_obj = lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
                                   (bg_pixel.color_index == 0 ||
@@ -697,12 +701,33 @@ void Ppu::pixel_transfer_lx8() {
 #endif
 
             if (show_obj) {
+                // Resolve OBJ color against palette.
 #ifdef ENABLE_CGB
-                const uint8_t obj_palette_index =
-                    get_bits_range<Specs::Bits::OAM::Attributes::CGB_PALETTE>(obj_pixel.attributes);
-                ASSERT(obj_palette_index < 8);
-                const uint8_t* obj_palette = &obj_palettes[8 * obj_palette_index];
-                color = resolve_color(obj_pixel.color_index, obj_palette);
+                uint8_t color_index;
+                const uint8_t* obj_palette;
+
+                if (operating_mode.key0.dmg_mode || operating_mode.key0.dmg_ext_mode) {
+                    // In DMG mode color index is resolved through OBP0 or OBP1 first as in DMG,
+                    // then such index is used to find the real CGB color in OBJP0 or OBJP1 palette.
+                    uint8_t obp;
+                    if (test_bit<Specs::Bits::OAM::Attributes::DMG_PALETTE>(obj_pixel.attributes)) {
+                        obp = obp1;
+                        obj_palette = &obj_palettes[8];
+                    } else {
+                        obp = obp0;
+                        obj_palette = &obj_palettes[0];
+                    }
+                    color_index = resolve_color(obj_pixel.color_index, obp);
+                } else {
+                    // CGB mode
+                    obj_palette = &obj_palettes[8 * get_bits_range<Specs::Bits::OAM::Attributes::CGB_PALETTE>(
+                                                        obj_pixel.attributes)];
+                    color_index = obj_pixel.color_index;
+                }
+
+                ASSERT(color_index < 4);
+
+                color = resolve_color(color_index, obj_palette);
 #else
                 color = resolve_color(obj_pixel.color_index,
                                       test_bit<Specs::Bits::OAM::Attributes::DMG_PALETTE>(obj_pixel.attributes) ? obp1
@@ -712,15 +737,34 @@ void Ppu::pixel_transfer_lx8() {
         }
 
         if (color == NO_COLOR) {
+            // Resolve BG color against palette.
+
             // There is 1 T-cycle delay between BGP and the BGP value the PPU sees.
             // During this T-Cycle, the PPU sees the last BGP ORed with the new BGP.
             // [mealybug/m3_bgp_change]
 #ifdef ENABLE_CGB
-            const uint8_t bg_palette_index =
-                get_bits_range<Specs::Bits::Background::Attributes::PALETTE>(bg_pixel.attributes);
-            ASSERT(bg_palette_index < 8);
-            const uint8_t* bg_palette = &bg_palettes[8 * bg_palette_index];
-            color = resolve_color(bg_pixel.color_index, bg_palette);
+            uint8_t color_index;
+            const uint8_t* bg_palette;
+
+            if (operating_mode.key0.dmg_mode || operating_mode.key0.dmg_ext_mode) {
+                // In DMG mode color index is resolved through BGP first, as in DMG,
+                // then such index is used to find the real CGB color in the BG palette.
+                bg_palette = bg_palettes;
+
+                // TODO: does the BGP or bug affects also CGB in DMG mode?
+                const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
+                color_index = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_)
+                                                  : 0 /* TODO: test with BG_WIN_ENABLE disabled*/;
+            } else {
+                // CGB mode
+                bg_palette =
+                    &bg_palettes[8 * get_bits_range<Specs::Bits::Background::Attributes::PALETTE>(bg_pixel.attributes)];
+                color_index = bg_pixel.color_index;
+            }
+
+            ASSERT(color_index < 8);
+
+            color = resolve_color(color_index, bg_palette);
 #else
             const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
             color = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_) : 0;
@@ -1242,9 +1286,15 @@ inline void Ppu::update_mode() {
     mode = Mode;
 }
 
+inline uint8_t Ppu::resolve_color(const uint8_t color_index, const uint8_t palette) {
+    ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
+    return keep_bits<BITS_PER_PIXEL>(palette >> (BITS_PER_PIXEL * color_index));
+}
+
 #ifdef ENABLE_CGB
 inline uint16_t Ppu::resolve_color(const uint8_t color_index, const uint8_t* palette) {
     if (!color_resolver_enabled) {
+        // TODO: consider switching obj_palettes and bg_palettes pointers under the hood to avoid to check here?
         // Push black pixels instead.
         return 0x0000;
     }
@@ -1252,11 +1302,6 @@ inline uint16_t Ppu::resolve_color(const uint8_t color_index, const uint8_t* pal
     ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
     const uint8_t* palette_color_word = &palette[2 * color_index];
     return keep_bits<15>(concat(palette_color_word[1], palette_color_word[0]));
-}
-#else
-inline uint8_t Ppu::resolve_color(const uint8_t color_index, const uint8_t palette) {
-    ASSERT(color_index < NUMBER_OF_COLOR_INDEXES);
-    return keep_bits<BITS_PER_PIXEL>(palette >> (BITS_PER_PIXEL * color_index));
 }
 #endif
 
@@ -2682,11 +2727,13 @@ void Ppu::write_bcps(uint8_t value) {
 }
 
 uint8_t Ppu::read_bcpd() const {
+    ASSERT(!operating_mode.key0.dmg_ext_mode && !operating_mode.key0.dmg_mode);
     ASSERT(bcps.address < array_size(bg_palettes));
     return bg_palettes[bcps.address];
 }
 
 void Ppu::write_bcpd(uint8_t value) {
+    ASSERT(!operating_mode.key0.dmg_ext_mode && !operating_mode.key0.dmg_mode);
     ASSERT(bcps.address < array_size(bg_palettes));
     bg_palettes[bcps.address] = value;
     if (bcps.auto_increment) {
@@ -2704,11 +2751,13 @@ void Ppu::write_ocps(uint8_t value) {
 }
 
 uint8_t Ppu::read_ocpd() const {
+    ASSERT(!operating_mode.key0.dmg_ext_mode && !operating_mode.key0.dmg_mode);
     ASSERT(ocps.address < array_size(obj_palettes));
     return obj_palettes[ocps.address];
 }
 
 void Ppu::write_ocpd(uint8_t value) {
+    ASSERT(!operating_mode.key0.dmg_ext_mode && !operating_mode.key0.dmg_mode);
     ASSERT(ocps.address < array_size(obj_palettes));
     obj_palettes[ocps.address] = value;
     if (ocps.auto_increment) {
@@ -2722,6 +2771,7 @@ uint8_t Ppu::read_opri() const {
 
 void Ppu::write_opri(uint8_t value) {
     // TODO: honor this flag
+    // TODO: can be changed out of boot rom? In DMG mode? In CGB mode?
     opri.priority_mode = test_bit<Specs::Bits::Video::OPRI::PRIORITY_MODE>(value);
 }
 

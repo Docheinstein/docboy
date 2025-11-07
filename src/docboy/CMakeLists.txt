@@ -111,6 +111,8 @@ if (ENABLE_CGB)
             docboy/hdma/hdma.h
             docboy/ir/infrared.cpp
             docboy/ir/infrared.h
+            docboy/mode/operatingmode.cpp
+            docboy/mode/operatingmode.h
             docboy/speedswitch/speedswitch.cpp
             docboy/speedswitch/speedswitch.h
             docboy/speedswitch/speedswitchcontroller.cpp

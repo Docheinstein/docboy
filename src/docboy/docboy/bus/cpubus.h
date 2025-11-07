@@ -17,6 +17,7 @@ class Apu;
 class Ppu;
 class VramBankController;
 class WramBankController;
+class OperatingMode;
 class SpeedSwitch;
 class Hdma;
 class Infrared;
@@ -33,8 +34,8 @@ public:
 #ifdef ENABLE_CGB
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
            Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller,
-           WramBankController& wram_bank_controller, Hdma& hdma, SpeedSwitch& speedswitch, Infrared& infrared,
-           UndocumentedRegisters& undocumented_registers);
+           WramBankController& wram_bank_controller, Hdma& hdma, OperatingMode& operating_mode,
+           SpeedSwitch& speed_switch, Infrared& infrared, UndocumentedRegisters& undocumented_registers);
 #else
     CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
            Boot& boot, Apu& apu, Ppu& ppu, Dma& dma);
@@ -43,14 +44,31 @@ public:
 #ifdef ENABLE_CGB
     CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
            Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
-           Hdma& hdma, SpeedSwitch& speedswitch, Infrared& infrared, UndocumentedRegisters& undocumented_registers);
+           Hdma& hdma, OperatingMode& operating_mode, SpeedSwitch& speed_switch, Infrared& infrared,
+           UndocumentedRegisters& undocumented_registers);
 #else
     CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
            Ppu& ppu, Dma& dma);
 #endif
 #endif
 
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
+
     void reset();
+
+#if defined(ENABLE_CGB) && defined(ENABLE_BOOTROM)
+    void lock_boot_rom();
+#endif
+
+private:
+#ifdef ENABLE_CGB
+    void init_accessors_for_operating_mode();
+#endif
+
+#if defined(ENABLE_CGB) && defined(ENABLE_BOOTROM)
+    bool boot_rom_locked {};
+#endif
 
 #ifdef ENABLE_BOOTROM
     BootRom& boot_rom;
@@ -75,10 +93,15 @@ public:
 
     Hdma& hdma;
 
+    OperatingMode& operating_mode;
     SpeedSwitch& speed_switch;
 
     Infrared& infrared;
     UndocumentedRegisters& undocumented_registers;
 #endif
+
+    const NonTrivialReadFunctor read_ff;
+    const NonTrivialWriteFunctor write_nop;
+    const MemoryAccess open_bus_access;
 };
 #endif // CPUBUS_H

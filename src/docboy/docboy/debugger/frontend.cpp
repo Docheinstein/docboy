@@ -1178,6 +1178,21 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
         b << header("GAMEBOY", width) << endl;
 
+        b << yellow("Mode") << "     :  " <<
+            [&]() {
+#ifdef ENABLE_CGB
+                if (gb.operating_mode.key0.dmg_ext_mode) {
+                    return "CGB: DMG ext";
+                }
+                if (gb.operating_mode.key0.dmg_mode) {
+                    return "CGB: DMG";
+                }
+                return "CGB";
+#else
+                return "DMG";
+#endif
+            }()
+          << endl;
         b << yellow("T-Cycle") << "  :  " << core.ticks << endl;
         b << yellow("M-Cycle") << "  :  " << core.ticks / 4 << endl;
 
@@ -3334,7 +3349,11 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         b << ios(Specs::Registers::Hdma::CGB_REGISTERS, array_size(Specs::Registers::Hdma::CGB_REGISTERS)) << endl;
         b << subheader("banks", width) << endl;
         b << ios(Specs::Registers::Banks::CGB_REGISTERS, array_size(Specs::Registers::Banks::CGB_REGISTERS)) << endl;
-        b << subheader("speedswitch", width) << endl;
+        b << subheader("operating mode", width) << endl;
+        b << ios(Specs::Registers::OperatingMode::CGB_REGISTERS,
+                 array_size(Specs::Registers::OperatingMode::CGB_REGISTERS))
+          << endl;
+        b << subheader("speed switch", width) << endl;
         b << ios(Specs::Registers::SpeedSwitch::CGB_REGISTERS, array_size(Specs::Registers::SpeedSwitch::CGB_REGISTERS))
           << endl;
         b << subheader("ir", width) << endl;

@@ -174,9 +174,13 @@ void Mmu::lock_boot_rom() {
         init_accessors(i, &ext_bus);
     }
 #ifdef ENABLE_CGB
+    // Remap also second memory area (after cartridge header) in CGB.
     for (uint16_t i = Specs::MemoryLayout::BOOTROM1::START; i <= Specs::MemoryLayout::BOOTROM1::END; i++) {
         init_accessors(i, &ext_bus);
     }
+
+    // Some registers accessed through CPU bus will eventually become unaccessible (e.g. KEY0).
+    cpu_bus.lock_boot_rom();
 #endif
 }
 #endif

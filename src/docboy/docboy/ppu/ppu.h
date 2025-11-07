@@ -15,6 +15,7 @@ class Interrupts;
 class Dma;
 class Hdma;
 class Parcel;
+class OperatingMode;
 class SpeedSwitchController;
 struct CartridgeHeader;
 
@@ -25,11 +26,12 @@ public:
 #ifdef ENABLE_CGB
 #ifdef ENABLE_BOOTROM
     Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller);
+        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, OperatingMode& operating_mode,
+        SpeedSwitchController& speed_switch_controller);
 #else
     Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller,
-        CartridgeHeader& header);
+        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, OperatingMode& operating_mode,
+        SpeedSwitchController& speed_switch_controller, CartridgeHeader& header);
 #endif
 #else
     Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
@@ -237,10 +239,9 @@ private:
     template <uint8_t mode>
     void update_mode();
 
+    uint8_t resolve_color(uint8_t color_index, uint8_t palette);
 #ifdef ENABLE_CGB
     uint16_t resolve_color(uint8_t color_index, const uint8_t* palette /* 8 bytes */);
-#else
-    uint8_t resolve_color(uint8_t color_index, uint8_t palette);
 #endif
 
     void increase_lx();
@@ -304,6 +305,7 @@ private:
     OamBus::View<Device::Ppu> oam;
     Dma& dma_controller;
 #ifdef ENABLE_CGB
+    OperatingMode& operating_mode;
     // TODO: bad: PPU shouldn't know speed_switch_controller
     SpeedSwitchController& speed_switch_controller;
 #ifndef ENABLE_BOOTROM

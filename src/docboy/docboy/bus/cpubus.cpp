@@ -15,6 +15,7 @@
 #include "docboy/banks/wrambankcontroller.h"
 #include "docboy/hdma/hdma.h"
 #include "docboy/ir/infrared.h"
+#include "docboy/mode/operatingmode.h"
 #include "docboy/speedswitch/speedswitch.h"
 #include "docboy/undoc/undocregs.h"
 #endif
@@ -27,8 +28,8 @@
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Boot& boot, Apu& apu, Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller,
-               WramBankController& wram_bank_controller, Hdma& hdma, SpeedSwitch& speed_switch, Infrared& infrared,
-               UndocumentedRegisters& undocumented_registers) :
+               WramBankController& wram_bank_controller, Hdma& hdma, OperatingMode& operating_mode,
+               SpeedSwitch& speed_switch, Infrared& infrared, UndocumentedRegisters& undocumented_registers) :
 #else
 CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts,
                Boot& boot, Apu& apu, Ppu& ppu, Dma& dma) :
@@ -37,7 +38,7 @@ CpuBus::CpuBus(BootRom& boot_rom, Hram& hram, Joypad& joypad, Serial& serial, Ti
 #ifdef ENABLE_CGB
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
                Ppu& ppu, Dma& dma, VramBankController& vram_bank_controller, WramBankController& wram_bank_controller,
-               Hdma& hdma, SpeedSwitch& speed_switch, Infrared& infrared,
+               Hdma& hdma, OperatingMode& operating_mode, SpeedSwitch& speed_switch, Infrared& infrared,
                UndocumentedRegisters& undocumented_registers) :
 #else
 CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Interrupts& interrupts, Boot& boot, Apu& apu,
@@ -64,18 +65,17 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     vram_bank_controller {vram_bank_controller},
     wram_bank_controller {wram_bank_controller},
     hdma {hdma},
+    operating_mode {operating_mode},
     speed_switch {speed_switch},
     infrared {infrared},
     undocumented_registers {undocumented_registers}
 #endif
-{
-
+    ,
     // clang-format off
-    const NonTrivialReadFunctor read_ff {[](void*, uint16_t) -> uint8_t { return 0xFF;}, nullptr};
-    const NonTrivialWriteFunctor write_nop {[](void*, uint16_t, uint8_t) {}, nullptr};
-    const MemoryAccess open_bus_access {read_ff, write_nop};
-    // clang-format on
-
+    read_ff {[](void*, uint16_t) -> uint8_t { return 0xFF; }, nullptr},
+    write_nop {[](void*, uint16_t, uint8_t) {}, nullptr},
+    open_bus_access {read_ff, write_nop} // clang-format on
+{
 #ifdef ENABLE_BOOTROM
     /* 0x0000 - 0x00FF */
     for (uint16_t i = Specs::MemoryLayout::BOOTROM0::START; i <= Specs::MemoryLayout::BOOTROM0::END; i++) {
@@ -187,8 +187,17 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF49 */ memory_accessors[Specs::Registers::Video::OBP1] = &ppu.obp1;
     /* FF4A */ memory_accessors[Specs::Registers::Video::WY] = &ppu.wy;
     /* FF4B */ memory_accessors[Specs::Registers::Video::WX] = &ppu.wx;
-    // TODO: implement FF4C for DMG compatibility mode
+#ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
+    /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = {
+        NonTrivial<&OperatingMode::read_key0> {&operating_mode},
+        NonTrivial<&OperatingMode::write_key0> {&operating_mode}};
+#else
+    /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = open_bus_access;
+#endif
+#else
     /* FF4C */ memory_accessors[0xFF4C] = open_bus_access;
+#endif
 #ifdef ENABLE_CGB
     /* FF4D */ memory_accessors[Specs::Registers::SpeedSwitch::KEY1] = {
         NonTrivial<&SpeedSwitch::read_key1> {&speed_switch}, NonTrivial<&SpeedSwitch::write_key1> {&speed_switch}};
@@ -309,9 +318,86 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FFFF */ memory_accessors[Specs::MemoryLayout::IE] = &interrupts.IE;
 }
 
+void CpuBus::save_state(Parcel& parcel) const {
+    Bus::save_state(parcel);
+#if defined(ENABLE_CGB) && defined(ENABLE_BOOTROM)
+    PARCEL_WRITE_BOOL(parcel, boot_rom_locked);
+#endif
+}
+
+void CpuBus::load_state(Parcel& parcel) {
+    Bus::load_state(parcel);
+#ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
+    boot_rom_locked = parcel.read_bool();
+
+    if (boot_rom_locked) {
+        /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = open_bus_access;
+    } else {
+        /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = {
+            NonTrivial<&OperatingMode::read_key0> {&operating_mode},
+            NonTrivial<&OperatingMode::write_key0> {&operating_mode}};
+    }
+#endif
+    init_accessors_for_operating_mode();
+#endif
+}
+
 void CpuBus::reset() {
     Bus::reset();
     address = if_bootrom_else(0, 0xFF50);
     data = if_bootrom_else(0xFF, 0x01);
     decay = if_bootrom_else(0, 3);
+#ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
+    /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = {
+        NonTrivial<&OperatingMode::read_key0> {&operating_mode},
+        NonTrivial<&OperatingMode::write_key0> {&operating_mode}};
+#endif
+    init_accessors_for_operating_mode();
+#endif
 }
+
+#if defined(ENABLE_CGB) && defined(ENABLE_BOOTROM)
+void CpuBus::lock_boot_rom() {
+    ASSERT(!boot_rom_locked);
+    boot_rom_locked = true;
+
+    // After boot rom is unmapped, KEY0 (CGB/DMG mode) is unmapped as well and can't be written anymore.
+    /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = open_bus_access;
+
+    // In DMG (or DMG ext) mode, other registers are disabled as well.
+    init_accessors_for_operating_mode();
+}
+#endif
+
+#ifdef ENABLE_CGB
+void CpuBus::init_accessors_for_operating_mode() {
+    if (operating_mode.key0.dmg_mode || operating_mode.key0.dmg_ext_mode) {
+        /* FF69 */ memory_accessors[Specs::Registers::Video::BCPD] = open_bus_access;
+        /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = open_bus_access;
+
+        if (!operating_mode.key0.dmg_ext_mode) {
+            /* FF6B */ memory_accessors[Specs::Registers::Video::OPRI] = open_bus_access;
+
+            /* FF4F */ memory_accessors[Specs::Registers::Banks::VBK] = {
+                NonTrivial<&VramBankController::read_vbk> {&vram_bank_controller}, write_nop};
+            /* FF70 */ memory_accessors[Specs::Registers::Banks::SVBK] = open_bus_access;
+        }
+    } else {
+        /* FF69 */ memory_accessors[Specs::Registers::Video::BCPD] = {NonTrivial<&Ppu::read_bcpd> {&ppu},
+                                                                      NonTrivial<&Ppu::write_bcpd> {&ppu}};
+        /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = {NonTrivial<&Ppu::read_ocpd> {&ppu},
+                                                                      NonTrivial<&Ppu::write_ocpd> {&ppu}};
+        /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = {NonTrivial<&Ppu::read_opri> {&ppu},
+                                                                      NonTrivial<&Ppu::write_opri> {&ppu}};
+
+        /* FF4F */ memory_accessors[Specs::Registers::Banks::VBK] = {
+            NonTrivial<&VramBankController::read_vbk> {&vram_bank_controller},
+            NonTrivial<&VramBankController::write_vbk> {&vram_bank_controller}};
+        /* FF70 */ memory_accessors[Specs::Registers::Banks::SVBK] = {
+            NonTrivial<&WramBankController::read_svbk> {&wram_bank_controller},
+            NonTrivial<&WramBankController::write_svbk> {&wram_bank_controller}};
+    }
+}
+#endif
