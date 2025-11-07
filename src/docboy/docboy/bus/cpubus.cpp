@@ -376,7 +376,7 @@ void CpuBus::init_accessors_for_operating_mode() {
     // | HDMA4    |   yes    |      no      |    no    |
     // | HDMA5    |   yes    |      no      |    no    |
     // | KEY1     |   yes    |      ?       |    no    |
-    // | IR       |   yes    |      ?       |    no    |
+    // | RP       |   yes    |      yes     |    no    |
     // +----------+----------+--------------+----------+
 
 #ifdef ENABLE_BOOTROM
@@ -400,6 +400,8 @@ void CpuBus::init_accessors_for_operating_mode() {
         /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = open_bus_access;
 
         if (!operating_mode.key0.dmg_ext_mode) {
+            /* FF56 */ memory_accessors[Specs::Registers::Infrared::RP] = open_bus_access;
+
             /* FF6B */ memory_accessors[Specs::Registers::Video::OPRI] = open_bus_access;
 
             /* FF4F */ memory_accessors[Specs::Registers::Banks::VBK] = {
@@ -413,6 +415,9 @@ void CpuBus::init_accessors_for_operating_mode() {
         /* FF54 */ memory_accessors[Specs::Registers::Hdma::HDMA4] = {read_ff, NonTrivial<&Hdma::write_hdma4> {&hdma}};
         /* FF55 */ memory_accessors[Specs::Registers::Hdma::HDMA5] = {NonTrivial<&Hdma::read_hdma5> {&hdma},
                                                                       NonTrivial<&Hdma::write_hdma5> {&hdma}};
+
+        /* FF56 */ memory_accessors[Specs::Registers::Infrared::RP] = {NonTrivial<&Infrared::read_rp> {&infrared},
+                                                                       NonTrivial<&Infrared::write_rp> {&infrared}};
 
         /* FF69 */ memory_accessors[Specs::Registers::Video::BCPD] = {NonTrivial<&Ppu::read_bcpd> {&ppu},
                                                                       NonTrivial<&Ppu::write_bcpd> {&ppu}};

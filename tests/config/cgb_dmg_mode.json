@@ -43,6 +43,18 @@
             ]
         }
     ],
+    "ir": [
+        {
+            "rom": "docboy/ir/rp_write_read.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        }
+    ],
     "key0": [
         {
             "rom": "docboy/key0/key0_write_read.gb",
