@@ -30,7 +30,7 @@ void OperatingMode::write_key0(uint8_t value) {
 
     // Indeed, bit 3 allow to enter the so called PGB modes, in which LCD is operated by an external signal.
     // In PGB mode (sometimes called DMG ext mode), some functionalities of CGB are disabled as in DMG mode,
-    // but others continue to work as in CGB mode.
+    // but others continue to work as in CGB mode (see CpuBus for the list of functionalities enabled in each mode).
     //
     // Note that in DMG ext mode, the palettes are not loaded as in DMG mode (and neither they can't be written to,
     // because BCPD is locked as well), so the hardware enters an irreversible blank-palettes state.
@@ -38,21 +38,6 @@ void OperatingMode::write_key0(uint8_t value) {
     // Bit 3 has priority over bit 2: it means that if both bits are set (e.g. CGB flag equals to 0x8F),
     // DMG ext mode is entered.
     //
-    // +----------+----------+--------------+----------+
-    // | Function | CGB mode | DMG ext mode | DMG mode |
-    // +----------+----------+--------------+----------+
-    // | BGPS     |   yes    |      yes     |    yes   |
-    // | BGPD     |   yes    |      no      |    no    |
-    // | OBPS     |   yes    |      yes     |    yes   |
-    // | OBPD     |   yes    |      no      |    no    |
-    // | OPRI     |   yes    |      yes     |    no    |
-    // | VBK      |   yes    |      yes     |    no    |
-    // | SVBK     |   yes    |      yes     |    no    |
-    // | HDMA     |   yes    |      ?       |    no    |
-    // | KEY1     |   yes    |      ?       |    no    |
-    // | IR       |   yes    |      ?       |    no    |
-    // +----------+----------+--------------+----------+
-
     key0.dmg_ext_mode = get_bit<Specs::Bits::OperatingMode::DMG_EXT_MODE>(value);
     key0.dmg_mode = get_bit<Specs::Bits::OperatingMode::DMG_MODE>(value);
 }

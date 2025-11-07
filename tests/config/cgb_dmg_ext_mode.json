@@ -21,6 +21,28 @@
             ]
         }
     ],
+    "hdma": [
+        {
+            "rom": "docboy/hdma/gdma_basic_transfer.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/hdma/hdma_basic_transfer.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        }
+    ],
     "mode": [
         {
             "rom": "docboy/mode/mode_cgb_flag_8a.gb",

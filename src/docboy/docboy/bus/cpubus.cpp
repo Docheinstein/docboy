@@ -214,12 +214,12 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
 #endif
     /* FF50 */ memory_accessors[Specs::Registers::Boot::BOOT] = {&boot.boot, NonTrivial<&Boot::write_boot> {&boot}};
 #ifdef ENABLE_CGB
-    /* FF51 */ memory_accessors[0xFF51] = {read_ff, NonTrivial<&Hdma::write_hdma1> {&hdma}};
-    /* FF52 */ memory_accessors[0xFF52] = {read_ff, NonTrivial<&Hdma::write_hdma2> {&hdma}};
-    /* FF53 */ memory_accessors[0xFF53] = {read_ff, NonTrivial<&Hdma::write_hdma3> {&hdma}};
-    /* FF54 */ memory_accessors[0xFF54] = {read_ff, NonTrivial<&Hdma::write_hdma4> {&hdma}};
-    /* FF55 */ memory_accessors[0xFF55] = {NonTrivial<&Hdma::read_hdma5> {&hdma},
-                                           NonTrivial<&Hdma::write_hdma5> {&hdma}};
+    /* FF51 */ memory_accessors[Specs::Registers::Hdma::HDMA1] = {read_ff, NonTrivial<&Hdma::write_hdma1> {&hdma}};
+    /* FF52 */ memory_accessors[Specs::Registers::Hdma::HDMA2] = {read_ff, NonTrivial<&Hdma::write_hdma2> {&hdma}};
+    /* FF53 */ memory_accessors[Specs::Registers::Hdma::HDMA3] = {read_ff, NonTrivial<&Hdma::write_hdma3> {&hdma}};
+    /* FF54 */ memory_accessors[Specs::Registers::Hdma::HDMA4] = {read_ff, NonTrivial<&Hdma::write_hdma4> {&hdma}};
+    /* FF55 */ memory_accessors[Specs::Registers::Hdma::HDMA5] = {NonTrivial<&Hdma::read_hdma5> {&hdma},
+                                                                  NonTrivial<&Hdma::write_hdma5> {&hdma}};
 #else
     /* FF51 */ memory_accessors[0xFF51] = open_bus_access;
     /* FF52 */ memory_accessors[0xFF52] = open_bus_access;
@@ -330,14 +330,6 @@ void CpuBus::load_state(Parcel& parcel) {
 #ifdef ENABLE_CGB
 #ifdef ENABLE_BOOTROM
     boot_rom_locked = parcel.read_bool();
-
-    if (boot_rom_locked) {
-        /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = open_bus_access;
-    } else {
-        /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = {
-            NonTrivial<&OperatingMode::read_key0> {&operating_mode},
-            NonTrivial<&OperatingMode::write_key0> {&operating_mode}};
-    }
 #endif
     init_accessors_for_operating_mode();
 #endif
@@ -350,9 +342,7 @@ void CpuBus::reset() {
     decay = if_bootrom_else(0, 3);
 #ifdef ENABLE_CGB
 #ifdef ENABLE_BOOTROM
-    /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = {
-        NonTrivial<&OperatingMode::read_key0> {&operating_mode},
-        NonTrivial<&OperatingMode::write_key0> {&operating_mode}};
+    boot_rom_locked = false;
 #endif
     init_accessors_for_operating_mode();
 #endif
@@ -362,18 +352,50 @@ void CpuBus::reset() {
 void CpuBus::lock_boot_rom() {
     ASSERT(!boot_rom_locked);
     boot_rom_locked = true;
-
-    // After boot rom is unmapped, KEY0 (CGB/DMG mode) is unmapped as well and can't be written anymore.
-    /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = open_bus_access;
-
-    // In DMG (or DMG ext) mode, other registers are disabled as well.
     init_accessors_for_operating_mode();
 }
 #endif
 
 #ifdef ENABLE_CGB
 void CpuBus::init_accessors_for_operating_mode() {
+    // Enable or disable registers based on the current operating mode.
+    //
+    // +----------+----------+--------------+----------+
+    // | Function | CGB mode | DMG ext mode | DMG mode |
+    // +----------+----------+--------------+----------+
+    // | BGPS     |   yes    |      yes     |    yes   |
+    // | BGPD     |   yes    |      no      |    no    |
+    // | OBPS     |   yes    |      yes     |    yes   |
+    // | OBPD     |   yes    |      no      |    no    |
+    // | OPRI     |   yes    |      yes     |    no    |
+    // | VBK      |   yes    |      yes     |    no    |
+    // | SVBK     |   yes    |      yes     |    no    |
+    // | HDMA1    |   yes    |      no      |    no    |
+    // | HDMA2    |   yes    |      no      |    no    |
+    // | HDMA3    |   yes    |      no      |    no    |
+    // | HDMA4    |   yes    |      no      |    no    |
+    // | HDMA5    |   yes    |      no      |    no    |
+    // | KEY1     |   yes    |      ?       |    no    |
+    // | IR       |   yes    |      ?       |    no    |
+    // +----------+----------+--------------+----------+
+
+#ifdef ENABLE_BOOTROM
+    if (boot_rom_locked) {
+        // After boot rom is unmapped, KEY0 (CGB/DMG mode) is unmapped as well and can't be written anymore.
+        /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = open_bus_access;
+    } else {
+        /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = {
+            NonTrivial<&OperatingMode::read_key0> {&operating_mode},
+            NonTrivial<&OperatingMode::write_key0> {&operating_mode}};
+    }
+#endif
     if (operating_mode.key0.dmg_mode || operating_mode.key0.dmg_ext_mode) {
+        /* FF51 */ memory_accessors[Specs::Registers::Hdma::HDMA1] = open_bus_access;
+        /* FF52 */ memory_accessors[Specs::Registers::Hdma::HDMA2] = open_bus_access;
+        /* FF53 */ memory_accessors[Specs::Registers::Hdma::HDMA3] = open_bus_access;
+        /* FF54 */ memory_accessors[Specs::Registers::Hdma::HDMA4] = open_bus_access;
+        /* FF55 */ memory_accessors[Specs::Registers::Hdma::HDMA5] = open_bus_access;
+
         /* FF69 */ memory_accessors[Specs::Registers::Video::BCPD] = open_bus_access;
         /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = open_bus_access;
 
@@ -385,6 +407,13 @@ void CpuBus::init_accessors_for_operating_mode() {
             /* FF70 */ memory_accessors[Specs::Registers::Banks::SVBK] = open_bus_access;
         }
     } else {
+        /* FF51 */ memory_accessors[Specs::Registers::Hdma::HDMA1] = {read_ff, NonTrivial<&Hdma::write_hdma1> {&hdma}};
+        /* FF52 */ memory_accessors[Specs::Registers::Hdma::HDMA2] = {read_ff, NonTrivial<&Hdma::write_hdma2> {&hdma}};
+        /* FF53 */ memory_accessors[Specs::Registers::Hdma::HDMA3] = {read_ff, NonTrivial<&Hdma::write_hdma3> {&hdma}};
+        /* FF54 */ memory_accessors[Specs::Registers::Hdma::HDMA4] = {read_ff, NonTrivial<&Hdma::write_hdma4> {&hdma}};
+        /* FF55 */ memory_accessors[Specs::Registers::Hdma::HDMA5] = {NonTrivial<&Hdma::read_hdma5> {&hdma},
+                                                                      NonTrivial<&Hdma::write_hdma5> {&hdma}};
+
         /* FF69 */ memory_accessors[Specs::Registers::Video::BCPD] = {NonTrivial<&Ppu::read_bcpd> {&ppu},
                                                                       NonTrivial<&Ppu::write_bcpd> {&ppu}};
         /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = {NonTrivial<&Ppu::read_ocpd> {&ppu},
