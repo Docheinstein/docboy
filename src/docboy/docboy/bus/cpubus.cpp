@@ -385,6 +385,10 @@ void CpuBus::init_accessors_for_operating_mode() {
     // | RP       |   yes    |      yes     |    no    |
     // | PCM12    |   yes    |      yes     |    yes   |
     // | PCM34    |   yes    |      yes     |    yes   |
+    // | FF72     |   yes    |      yes     |    yes   |
+    // | FF73     |   yes    |      yes     |    yes   |
+    // | FF74     |   yes    |      yes     |    yes   |
+    // | FF75     |   yes    |      yes     |    yes   |
     // +----------+----------+--------------+----------+
 
     if (operating_mode.key0.dmg_mode || operating_mode.key0.dmg_ext_mode) {
