@@ -120,33 +120,34 @@ void BusView<BusType, Dev>::flush_write_request(uint8_t value) {
     bus.template flush_write_request<Dev>(value);
 }
 
-inline Bus::MemoryAccess::MemoryAccess(UInt8* rw) {
+constexpr Bus::MemoryAccess::MemoryAccess(UInt8* rw) {
     read.trivial = rw;
     write.trivial = rw;
 }
 
-inline Bus::MemoryAccess::MemoryAccess(const UInt8* r, UInt8* w) {
+constexpr Bus::MemoryAccess::MemoryAccess(const UInt8* r, UInt8* w) {
     read.trivial = r;
     write.trivial = w;
 }
 
-inline Bus::MemoryAccess::MemoryAccess(Bus::NonTrivialReadFunctor r, UInt8* w) {
+constexpr Bus::MemoryAccess::MemoryAccess(Bus::NonTrivialReadFunctor r, UInt8* w) {
     read.non_trivial = r;
     write.trivial = w;
 }
 
-inline Bus::MemoryAccess::MemoryAccess(const UInt8* r, Bus::NonTrivialWriteFunctor w) {
+constexpr Bus::MemoryAccess::MemoryAccess(const UInt8* r, Bus::NonTrivialWriteFunctor w) {
     read.trivial = r;
     write.non_trivial = w;
 }
 
-inline Bus::MemoryAccess::MemoryAccess(Bus::NonTrivialReadFunctor r, Bus::NonTrivialWriteFunctor w) {
+constexpr Bus::MemoryAccess::MemoryAccess(Bus::NonTrivialReadFunctor r, Bus::NonTrivialWriteFunctor w) {
     read.non_trivial = r;
     write.non_trivial = w;
 }
 
 template <typename T>
-std::enable_if_t<HasReadMemberFunctionV<T> && HasWriteMemberFunctionV<T>, Bus::MemoryAccess&> Bus::MemoryAccess::operator=(T* t) {
+std::enable_if_t<HasReadMemberFunctionV<T> && HasWriteMemberFunctionV<T>, Bus::MemoryAccess&>
+Bus::MemoryAccess::operator=(T* t) {
     *this = MemoryAccess {NonTrivialRead<&T::read> {t}, NonTrivialWrite<&T::write> {t}};
     return *this;
 }

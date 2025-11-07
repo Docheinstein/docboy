@@ -66,6 +66,15 @@ private:
     void init_accessors_for_operating_mode();
 #endif
 
+    static constexpr NonTrivialReadFunctor READ_FF {[](void*, uint16_t) -> uint8_t {
+                                                        return 0xFF;
+                                                    },
+                                                    nullptr};
+    static constexpr NonTrivialWriteFunctor WRITE_NOP {[](void*, uint16_t, uint8_t) {
+                                                       },
+                                                       nullptr};
+    static constexpr MemoryAccess OPEN_BUS {READ_FF, WRITE_NOP};
+
 #if defined(ENABLE_CGB) && defined(ENABLE_BOOTROM)
     bool boot_rom_locked {};
 #endif
@@ -99,9 +108,5 @@ private:
     Infrared& infrared;
     UndocumentedRegisters& undocumented_registers;
 #endif
-
-    const NonTrivialReadFunctor read_ff;
-    const NonTrivialWriteFunctor write_nop;
-    const MemoryAccess open_bus_access;
 };
 #endif // CPUBUS_H

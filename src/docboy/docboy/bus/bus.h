@@ -100,12 +100,12 @@ protected:
             NonTrivialWriteFunctor non_trivial {};
         } write {};
 
-        MemoryAccess() = default;
-        MemoryAccess(UInt8* rw);
-        MemoryAccess(const UInt8* r, UInt8* w);
-        MemoryAccess(NonTrivialReadFunctor r, UInt8* w);
-        MemoryAccess(const UInt8* r, NonTrivialWriteFunctor w);
-        MemoryAccess(NonTrivialReadFunctor r, NonTrivialWriteFunctor w);
+        constexpr MemoryAccess() = default;
+        constexpr MemoryAccess(UInt8* rw);
+        constexpr MemoryAccess(const UInt8* r, UInt8* w);
+        constexpr MemoryAccess(NonTrivialReadFunctor r, UInt8* w);
+        constexpr MemoryAccess(const UInt8* r, NonTrivialWriteFunctor w);
+        constexpr MemoryAccess(NonTrivialReadFunctor r, NonTrivialWriteFunctor w);
 
         template <typename T>
         std::enable_if_t<HasReadMemberFunctionV<T> && HasWriteMemberFunctionV<T>, MemoryAccess&> operator=(T* t);
