@@ -1,4 +1,26 @@
 {
+    "apu": [
+        {
+            "rom": "docboy/apu/pcm12_ch1_read.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/apu/pcm12_ch2_read.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        }
+    ],
     "banks": [
         {
             "rom": "docboy/banks/svbk_write_read.gb",

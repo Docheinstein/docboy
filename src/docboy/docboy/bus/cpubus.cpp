@@ -383,6 +383,8 @@ void CpuBus::init_accessors_for_operating_mode() {
     // | HDMA5    |   yes    |      no      |    no    |
     // | KEY1     |   yes    |      yes     |    no    |
     // | RP       |   yes    |      yes     |    no    |
+    // | PCM12    |   yes    |      yes     |    yes   |
+    // | PCM34    |   yes    |      yes     |    yes   |
     // +----------+----------+--------------+----------+
 
     if (operating_mode.key0.dmg_mode || operating_mode.key0.dmg_ext_mode) {
