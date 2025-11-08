@@ -1945,11 +1945,11 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
     // "The smaller the X coordinate, the higher the priority."
     // "When X coordinates are identical, the object located first in OAM has higher priority."
 
-    const uint8_t obj_fifoSize = obj_fifo.size();
+    const uint8_t obj_fifo_size = obj_fifo.size();
     uint8_t i = 0;
 
     // Handle conflict between the new and the old obj pixels
-    while (i < obj_fifoSize) {
+    while (i < obj_fifo_size) {
         const ObjPixel& fifo_obj_pixel = obj_fifo[i];
         const ObjPixel& obj_pixel = obj_pixels[i];
 
@@ -1957,14 +1957,17 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
 
         // Overwrite pixel in fifo with pixel in sprite if:
         // 1. Pixel in sprite is opaque and pixel in fifo is transparent
-        // 2. Both pixels in sprite and fifo are opaque but pixel in sprite has:
-        //    > [lower x, or if x is equal, in CGB mode]
-        //    > lowest oam number.
+        // 2. If both pixels are opaque, the rule depend on the operating mode:
+        //    DMG, or in CGB if OPRI priority bit is 1 (i.e. DMG mode):
+        //      > sprite pixel has lower x coordinate, or, if x are identical, it is located in OAM first
+        //    CGB
+        //      > sprite pixel is located in OAM first
 #ifdef ENABLE_CGB
+
         const bool overwrite_obj_pixel =
             (is_obj_opaque(obj_pixel.color_index) && !is_obj_opaque(fifo_obj_pixel.color_index)) ||
             ((is_obj_opaque(obj_pixel.color_index) && is_obj_opaque(fifo_obj_pixel.color_index)) &&
-             (obj_pixel.number < fifo_obj_pixel.number));
+             (!opri.priority_mode || obj_pixel.x == fifo_obj_pixel.x) && obj_pixel.number < fifo_obj_pixel.number);
 #else
         const bool overwrite_obj_pixel =
             (is_obj_opaque(obj_pixel.color_index) && !is_obj_opaque(fifo_obj_pixel.color_index)) ||
@@ -2643,9 +2646,14 @@ void Ppu::reset() {
 
 #ifdef ENABLE_CGB
 #ifndef ENABLE_BOOTROM
-    // Eventually load palettes based on the cartridge's header in DMG compatibility mode
     if (!test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag())) {
+        // DMG mode.
+
+        // Eventually load palettes based on the cartridge's header in DMG compatibility mode
         load_dmg_mode_palettes_from_header(header, bg_palettes, obj_palettes);
+
+        // Set OPRI object priority bit to 1
+        opri.priority_mode = true;
     }
 #endif
 #endif
@@ -2727,13 +2735,11 @@ void Ppu::write_bcps(uint8_t value) {
 }
 
 uint8_t Ppu::read_bcpd() const {
-    ASSERT(!operating_mode.key0.dmg_ext_mode && !operating_mode.key0.dmg_mode);
     ASSERT(bcps.address < array_size(bg_palettes));
     return bg_palettes[bcps.address];
 }
 
 void Ppu::write_bcpd(uint8_t value) {
-    ASSERT(!operating_mode.key0.dmg_ext_mode && !operating_mode.key0.dmg_mode);
     ASSERT(bcps.address < array_size(bg_palettes));
     bg_palettes[bcps.address] = value;
     if (bcps.auto_increment) {
@@ -2751,13 +2757,11 @@ void Ppu::write_ocps(uint8_t value) {
 }
 
 uint8_t Ppu::read_ocpd() const {
-    ASSERT(!operating_mode.key0.dmg_ext_mode && !operating_mode.key0.dmg_mode);
     ASSERT(ocps.address < array_size(obj_palettes));
     return obj_palettes[ocps.address];
 }
 
 void Ppu::write_ocpd(uint8_t value) {
-    ASSERT(!operating_mode.key0.dmg_ext_mode && !operating_mode.key0.dmg_mode);
     ASSERT(ocps.address < array_size(obj_palettes));
     obj_palettes[ocps.address] = value;
     if (ocps.auto_increment) {
@@ -2770,8 +2774,6 @@ uint8_t Ppu::read_opri() const {
 }
 
 void Ppu::write_opri(uint8_t value) {
-    // TODO: honor this flag
-    // TODO: can be changed out of boot rom? In DMG mode? In CGB mode?
     opri.priority_mode = test_bit<Specs::Bits::Video::OPRI::PRIORITY_MODE>(value);
 }
 

@@ -11126,6 +11126,14 @@
             "force_check": true
         },
         {
+            "rom": "docboy/ppu/visual/obj_priority.gbc",
+            "framebuffer": "docboy/ppu/obj_priority.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/obj_priority_alt.gbc",
+            "framebuffer": "docboy/ppu/obj_priority_alt.png"
+        },
+        {
             "rom": "docboy/ppu/visual/stop_during_hblank.gb",
             "framebuffer": "docboy/ppu/stop_during_hblank.png",
             "check_interval_ticks": 30000000,
