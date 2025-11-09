@@ -88,8 +88,13 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF00 */ memory_accessors[Specs::Registers::Joypad::P1] = {NonTrivial<&Joypad::read_p1> {&joypad},
                                                                  NonTrivial<&Joypad::write_p1> {&joypad}};
     /* FF01 */ memory_accessors[Specs::Registers::Serial::SB] = &serial.sb;
-    /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {NonTrivial<&Serial::read_sc> {&serial},
-                                                                 NonTrivial<&Serial::write_sc> {&serial}};
+#ifdef ENABLE_CGB
+    /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {NonTrivial<&Serial::read_sc_cgb> {&serial},
+                                                                 NonTrivial<&Serial::write_sc_cgb> {&serial}};
+#else
+    /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {NonTrivial<&Serial::read_sc_dmg> {&serial},
+                                                                 NonTrivial<&Serial::write_sc_dmg> {&serial}};
+#endif
     /* FF03 */ memory_accessors[0xFF03] = OPEN_BUS;
     /* FF04 */ memory_accessors[Specs::Registers::Timers::DIV] = {NonTrivial<&Timers::read_div> {&timers},
                                                                   NonTrivial<&Timers::write_div> {&timers}};
@@ -388,6 +393,7 @@ void CpuBus::init_accessors_for_operating_mode() {
     // | HDMA5    |   yes    |      no      |    no    |
     // | KEY1     |   yes    |      yes     |    no    |
     // | RP       |   yes    |      yes     |    no    |
+    // | SC[1]    |   yes    |      yes     |    no    |
     // | PCM12    |   yes    |      yes     |    yes   |
     // | PCM34    |   yes    |      yes     |    yes   |
     // | FF72     |   yes    |      yes     |    yes   |
@@ -407,13 +413,17 @@ void CpuBus::init_accessors_for_operating_mode() {
         /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = OPEN_BUS;
 
         if (operating_mode.key0.dmg_ext_mode) {
+            // DMG ext mode.
+
+            /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {NonTrivial<&Serial::read_sc_cgb> {&serial},
+                                                                         NonTrivial<&Serial::write_sc_cgb> {&serial}};
+
             /* FF4D */ memory_accessors[Specs::Registers::SpeedSwitch::KEY1] = {
                 NonTrivial<&SpeedSwitch::read_key1> {&speed_switch},
                 NonTrivial<&SpeedSwitch::write_key1> {&speed_switch}};
 
             /* FF56 */ memory_accessors[Specs::Registers::Infrared::RP] = {NonTrivial<&Infrared::read_rp> {&infrared},
                                                                            NonTrivial<&Infrared::write_rp> {&infrared}};
-
 #ifdef ENABLE_BOOTROM
             /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = {
                 NonTrivial<&Ppu::read_opri> {&ppu}, NonTrivial<&Ppu::write_opri_effective> {&ppu}};
@@ -429,6 +439,11 @@ void CpuBus::init_accessors_for_operating_mode() {
                 NonTrivial<&WramBankController::read_svbk> {&wram_bank_controller},
                 NonTrivial<&WramBankController::write_svbk> {&wram_bank_controller}};
         } else {
+            // DMG mode.
+
+            /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {NonTrivial<&Serial::read_sc_dmg> {&serial},
+                                                                         NonTrivial<&Serial::write_sc_dmg> {&serial}};
+
             /* FF4D */ memory_accessors[Specs::Registers::SpeedSwitch::KEY1] = OPEN_BUS;
 
             /* FF56 */ memory_accessors[Specs::Registers::Infrared::RP] = OPEN_BUS;
@@ -440,6 +455,9 @@ void CpuBus::init_accessors_for_operating_mode() {
             /* FF70 */ memory_accessors[Specs::Registers::Banks::SVBK] = OPEN_BUS;
         }
     } else {
+        /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {NonTrivial<&Serial::read_sc_cgb> {&serial},
+                                                                     NonTrivial<&Serial::write_sc_cgb> {&serial}};
+
         /* FF51 */ memory_accessors[Specs::Registers::Hdma::HDMA1] = {READ_FF, NonTrivial<&Hdma::write_hdma1> {&hdma}};
         /* FF52 */ memory_accessors[Specs::Registers::Hdma::HDMA2] = {READ_FF, NonTrivial<&Hdma::write_hdma2> {&hdma}};
         /* FF53 */ memory_accessors[Specs::Registers::Hdma::HDMA3] = {READ_FF, NonTrivial<&Hdma::write_hdma3> {&hdma}};

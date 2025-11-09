@@ -1076,7 +1076,8 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
         }
 
         if (trace & TraceFlagSerial) {
-            ss << "SB:" << hex((uint8_t)gb.serial.sb) << " SC:" << hex((uint8_t)gb.serial.read_sc())
+            ss << "SB:" << hex((uint8_t)gb.serial.sb)
+               << " SC:" << hex(backend.read_memory(Specs::Registers::Serial::SC))
                << " Progress:" << +gb.serial.progress << " ";
         }
 

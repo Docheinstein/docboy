@@ -41,6 +41,16 @@
                     "fail_value": 2
                 }
             ]
+        },
+        {
+            "rom": "docboy/boot/boot_regs_serial.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
         }
     ],
     "banks": [
@@ -1323,6 +1333,18 @@
         {
             "rom": "docboy/ppu/visual/palettes_old_license_33_new_license_01_checksum_01.gb",
             "framebuffer": "docboy/ppu/palettes_old_license_33_new_license_01_checksum_01.png"
+        }
+    ],
+    "serial": [
+        {
+            "rom": "docboy/serial/sc_write_read.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
         }
     ],
     "undocumented": [

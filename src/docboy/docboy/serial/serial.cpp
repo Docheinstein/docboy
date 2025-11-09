@@ -88,17 +88,28 @@ void Serial::serial_write_bit(bool bit) {
     }
 }
 
-uint8_t Serial::read_sc() const {
-    // TODO: in DMG mode bit 1 is fixed to 1?
+uint8_t Serial::read_sc_dmg() const {
+    return 0b01111110 | sc.transfer_enable << Specs::Bits::Serial::SC::TRANSFER_ENABLE |
+           sc.clock_select << Specs::Bits::Serial::SC::CLOCK_SELECT;
+}
+
+void Serial::write_sc_dmg(uint8_t value) {
+    // Note: in DMG or CGB DMG mode CLOCK_SPEED is ignored.
+    write_sc(get_bits<Specs::Bits::Serial::SC::TRANSFER_ENABLE, Specs::Bits::Serial::SC::CLOCK_SELECT>(value));
+}
+
 #ifdef ENABLE_CGB
+uint8_t Serial::read_sc_cgb() const {
     return 0b01111100 | sc.transfer_enable << Specs::Bits::Serial::SC::TRANSFER_ENABLE |
            sc.clock_speed << Specs::Bits::Serial::SC::CLOCK_SPEED |
            sc.clock_select << Specs::Bits::Serial::SC::CLOCK_SELECT;
-#else
-    return 0b01111110 | sc.transfer_enable << Specs::Bits::Serial::SC::TRANSFER_ENABLE |
-           sc.clock_select << Specs::Bits::Serial::SC::CLOCK_SELECT;
-#endif
 }
+
+void Serial::write_sc_cgb(uint8_t value) {
+    write_sc(get_bits<Specs::Bits::Serial::SC::TRANSFER_ENABLE, Specs::Bits::Serial::SC::CLOCK_SPEED,
+                      Specs::Bits::Serial::SC::CLOCK_SELECT>(value));
+}
+#endif
 
 void Serial::write_sc(uint8_t value) {
     // Writing to SC aborts the current transfer (at least for the master).
@@ -168,32 +179,14 @@ void Serial::reset() {
     sb = 0;
     sc.transfer_enable = false;
 #ifdef ENABLE_CGB
-#ifdef ENABLE_BOOTROM
     sc.clock_speed = false;
-#else
-    sc.clock_speed = true;
-#endif
 #endif
 
-#ifdef ENABLE_CGB
-#ifdef ENABLE_BOOTROM
     sc.clock_select = false;
-#else
-    sc.clock_select = true;
-#endif
-#else
-    sc.clock_select = false;
-#endif
 
     progress = 0;
 
-#ifdef ENABLE_CGB
-    master.div_mask = sc.clock_speed ? bit<2> : bit<7>;
-#else
     master.div_mask = bit<7>;
-#endif
-
     master.prev_div_bit = timers.div16 & master.div_mask;
-
     master.toggle = false;
 }

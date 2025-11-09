@@ -19,8 +19,13 @@ public:
 
     void tick();
 
-    uint8_t read_sc() const;
-    void write_sc(uint8_t value);
+    uint8_t read_sc_dmg() const;
+    void write_sc_dmg(uint8_t value);
+
+#ifdef ENABLE_CGB
+    uint8_t read_sc_cgb() const;
+    void write_sc_cgb(uint8_t value);
+#endif
 
     void attach(ISerialEndpoint& endpoint);
     void detach();
@@ -46,6 +51,8 @@ public:
     } sc {};
 
 private:
+    void write_sc(uint8_t value);
+
     Timers& timers;
     Interrupts& interrupts;
 
