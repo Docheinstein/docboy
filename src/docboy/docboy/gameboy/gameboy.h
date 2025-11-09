@@ -49,7 +49,19 @@
 class GameBoy {
 public:
 #ifdef ENABLE_CGB
-    Cpu cpu {idu, interrupts, mmu, joypad, stop_controller, speed_switch, speed_switch_controller};
+#ifdef ENABLE_BOOTROM
+    Cpu cpu {idu, interrupts, mmu, joypad, stop_controller, speed_switch, speed_switch_controller, operating_mode};
+#else
+    Cpu cpu {idu,
+             interrupts,
+             mmu,
+             joypad,
+             stop_controller,
+             speed_switch,
+             speed_switch_controller,
+             operating_mode,
+             cartridge_header};
+#endif
 #else
     Cpu cpu {idu, interrupts, mmu, joypad, stop_controller};
 #endif
@@ -57,10 +69,10 @@ public:
 
     // Video
 #ifdef ENABLE_CGB
-#ifndef ENABLE_BOOTROM
-    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, operating_mode, speed_switch_controller, cartridge_header};
+#ifdef ENABLE_BOOTROM
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, speed_switch_controller, operating_mode};
 #else
-    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, operating_mode, speed_switch_controller};
+    Ppu ppu {lcd, interrupts, hdma, vram_bus, oam_bus, dma, speed_switch_controller, operating_mode, cartridge_header};
 #endif
 #else
     Ppu ppu {lcd, interrupts, vram_bus, oam_bus, dma};
@@ -136,25 +148,23 @@ public:
 
 #ifdef ENABLE_BOOTROM
 #ifdef ENABLE_CGB
-    CpuBus cpu_bus {
-        boot_rom,
-        hram,
-        joypad,
-        serial,
-        timers,
-        interrupts,
-        boot,
-        apu,
-        ppu,
-        dma,
-        vram_bank_controller,
-        wram_bank_controller,
-        hdma,
-        operating_mode,
-        speed_switch,
-        infrared,
-        undocumented_registers,
-    };
+    CpuBus cpu_bus {boot_rom,
+                    hram,
+                    joypad,
+                    serial,
+                    timers,
+                    interrupts,
+                    boot,
+                    apu,
+                    ppu,
+                    dma,
+                    vram_bank_controller,
+                    wram_bank_controller,
+                    hdma,
+                    speed_switch,
+                    infrared,
+                    undocumented_registers,
+                    operating_mode};
 #else
     CpuBus cpu_bus {boot_rom, hram, joypad, serial, timers, interrupts, boot, apu, ppu, dma};
 #endif

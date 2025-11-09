@@ -26,12 +26,12 @@ public:
 #ifdef ENABLE_CGB
 #ifdef ENABLE_BOOTROM
     Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, OperatingMode& operating_mode,
-        SpeedSwitchController& speed_switch_controller);
+        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller,
+        OperatingMode& operating_mode);
 #else
     Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, OperatingMode& operating_mode,
-        SpeedSwitchController& speed_switch_controller, CartridgeHeader& header);
+        OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller,
+        OperatingMode& operating_mode, CartridgeHeader& header);
 #endif
 #else
     Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
@@ -308,9 +308,9 @@ private:
     OamBus::View<Device::Ppu> oam;
     Dma& dma_controller;
 #ifdef ENABLE_CGB
-    OperatingMode& operating_mode;
     // TODO: bad: PPU shouldn't know speed_switch_controller
     SpeedSwitchController& speed_switch_controller;
+    OperatingMode& operating_mode;
 #ifndef ENABLE_BOOTROM
     CartridgeHeader& header;
 #endif

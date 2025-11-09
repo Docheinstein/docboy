@@ -104,7 +104,7 @@ void dump_cartridge_info(const CartridgeHeader& header) {
     std::cout << "Destination Code  :  " << hex(header.destination_code) << "\n";
     std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";
     std::cout << "Header Checksum   :  " << hex(header.header_checksum) << "\n";
-    std::cout << "Title Checksum    :  " << hex(title_checksum(header)) << "\n";
+    std::cout << "Title Checksum    :  " << hex(header.title_checksum()) << "\n";
 }
 
 void ensure_file_exists(const std::string& path) {

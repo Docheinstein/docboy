@@ -14,6 +14,4 @@ std::string rom_size_description(const CartridgeHeader& header);
 std::string ram_size_description(const CartridgeHeader& header);
 std::string old_licensee_code_description(const CartridgeHeader& header);
 
-uint8_t title_checksum(const CartridgeHeader& header);
-
 #endif // CARTRIDGEHEADERHELPERS_H

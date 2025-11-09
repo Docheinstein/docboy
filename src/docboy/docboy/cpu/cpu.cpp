@@ -9,8 +9,12 @@
 #include "docboy/stop/stopcontroller.h"
 
 #ifdef ENABLE_CGB
+#include "docboy/mode/operatingmode.h"
 #include "docboy/speedswitch/speedswitch.h"
 #include "docboy/speedswitch/speedswitchcontroller.h"
+#ifndef ENABLE_BOOTROM
+#include "docboy/cartridge/header.h"
+#endif
 #endif
 
 #include "utils/arrays.h"
@@ -142,8 +146,14 @@ constexpr InterruptsTimings generate_interrupt_timing_table() {
 } // namespace
 
 #ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
 Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller,
-         SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller) :
+         SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller, OperatingMode& operating_mode) :
+#else
+Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller,
+         SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller, OperatingMode& operating_mode,
+         CartridgeHeader& header) :
+#endif
 #else
 Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad,
          StopController& stop_controller) :
@@ -156,6 +166,10 @@ Cpu::Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& j
 #ifdef ENABLE_CGB
     speed_switch {speed_switch},
     speed_switch_controller {speed_switch_controller},
+    operating_mode {operating_mode},
+#ifndef ENABLE_BOOTROM
+    header {header},
+#endif
 #endif
     // clang-format off
     instructions {
@@ -836,12 +850,33 @@ void Cpu::reset() {
     fetching = false;
 
 #ifdef ENABLE_CGB
-    pc = if_bootrom_else(0, 0x0100);
-    af = if_bootrom_else(0, 0x1180);
+#ifdef ENABLE_BOOTROM
+    pc = 0x0000;
+    af = 0x0000;
     bc = 0x0000;
-    de = if_bootrom_else(0, 0xFF56);
-    hl = if_bootrom_else(0, 0x000D);
+    de = 0x0000;
+    hl = 0x0000;
+    sp = 0x0000;
+#else
+    pc = 0x0100;
+    af = 0x1180;
     sp = if_bootrom_else(0, 0xFFFE);
+
+    if (test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag())) {
+        bc = 0x0000;
+        de = 0xFF56;
+        hl = 0x000D;
+    } else {
+        // In DMG mode the values of BC, DE and HL depend on the title checksum.
+        const uint8_t cksum = header.title_checksum();
+        const bool is_copy_logo_cksum = cksum == 0x43 || cksum == 0x58;
+
+        bc = cksum << 8 | 0x00;
+        de = 0x0008;
+        hl = is_copy_logo_cksum ? 0x991A : 0x007C;
+    }
+#endif
+
 #else
     pc = if_bootrom_else(0, 0x0100);
     af = if_bootrom_else(0, 0x01B0);

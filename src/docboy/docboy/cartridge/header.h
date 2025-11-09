@@ -21,6 +21,16 @@ struct CartridgeHeader {
     uint8_t cgb_flag() const {
         return title[15];
     }
+
+#ifdef ENABLE_CGB
+    uint8_t title_checksum() const {
+        uint8_t cksum = 0;
+        for (const uint8_t c : title) {
+            cksum += c;
+        }
+        return cksum;
+    }
+#endif
 };
 
 static_assert(sizeof(CartridgeHeader) == 0x50);

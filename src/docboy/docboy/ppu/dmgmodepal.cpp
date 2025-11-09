@@ -261,24 +261,11 @@ constexpr std::array<DmgModePalettesByChecksum, 256> compute_dmg_mode_palettes()
     return palettes;
 }
 
-uint8_t compute_title_checksum(const CartridgeHeader& header) {
-    // The following logic mimics the CGB bootrom
-
-    // Sum-up all the title's letters (including CGB Flag bit)
-    uint8_t checksum = 0;
-
-    for (uint8_t i = 0; i < sizeof(header.title); i++) {
-        checksum += header.title[i];
-    }
-
-    return checksum;
-}
-
 DmgModePalettes compute_dmg_mode_palettes_from_header(const CartridgeHeader& header) {
     static constexpr std::array<DmgModePalettesByChecksum, 256> DMG_MODE_PALETTES_BY_CHECKSUM =
         compute_dmg_mode_palettes();
 
-    uint8_t cksum = compute_title_checksum(header);
+    uint8_t cksum = header.title_checksum();
     const auto& palettes_of_checksum = DMG_MODE_PALETTES_BY_CHECKSUM[cksum];
 
     if (!palettes_of_checksum.ambiguous) {

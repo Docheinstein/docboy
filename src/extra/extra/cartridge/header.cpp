@@ -344,11 +344,3 @@ std::string old_licensee_code_description(const CartridgeHeader& header) {
     }
     return "Unknown";
 }
-
-uint8_t title_checksum(const CartridgeHeader& header) {
-    uint8_t cksum = 0;
-    for (uint8_t i = 0; i < sizeof(header.title); i++) {
-        cksum += header.title[i];
-    }
-    return cksum;
-}

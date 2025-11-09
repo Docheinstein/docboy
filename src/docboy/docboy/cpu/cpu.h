@@ -12,7 +12,9 @@ class Joypad;
 class StopController;
 class SpeedSwitch;
 class SpeedSwitchController;
+class OperatingMode;
 class Parcel;
+struct CartridgeHeader;
 
 class Cpu {
     DEBUGGABLE_CLASS()
@@ -20,8 +22,14 @@ class Cpu {
 
 public:
 #ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
     Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller,
-        SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller);
+        SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller, OperatingMode& operating_mode);
+#else
+    Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller,
+        SpeedSwitch& speed_switch, SpeedSwitchController& speed_switch_controller, OperatingMode& operating_mode,
+        CartridgeHeader& header);
+#endif
 #else
     Cpu(Idu& idu, Interrupts& interrupts, Mmu::View<Device::Cpu> mmu, Joypad& joypad, StopController& stop_controller);
 #endif
@@ -656,6 +664,11 @@ private:
     // TODO: architectural: should CPU know them?
     SpeedSwitch& speed_switch;
     SpeedSwitchController& speed_switch_controller;
+    OperatingMode& operating_mode;
+
+#ifndef ENABLE_BOOTROM
+    CartridgeHeader& header;
+#endif
 #endif
 
 #pragma pack(push, 1)

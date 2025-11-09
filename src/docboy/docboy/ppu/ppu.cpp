@@ -148,12 +148,12 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
 #ifdef ENABLE_CGB
 #ifdef ENABLE_BOOTROM
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, OperatingMode& operating_mode,
-         SpeedSwitchController& speed_switch_controller) :
+         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller,
+         OperatingMode& operating_mode) :
 #else
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, Hdma& hdma, VramBus::View<Device::Ppu> vram_bus,
-         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, OperatingMode& operating_mode,
-         SpeedSwitchController& speed_switch_controller, CartridgeHeader& header) :
+         OamBus::View<Device::Ppu> oam_bus, Dma& dma_controller, SpeedSwitchController& speed_switch_controller,
+         OperatingMode& operating_mode, CartridgeHeader& header) :
 #endif
 #else
 Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, OamBus::View<Device::Ppu> oam_bus,
@@ -169,8 +169,8 @@ Ppu::Ppu(Lcd& lcd, Interrupts& interrupts, VramBus::View<Device::Ppu> vram_bus, 
     dma_controller {dma_controller}
 #ifdef ENABLE_CGB
     ,
-    operating_mode {operating_mode},
-    speed_switch_controller {speed_switch_controller}
+    speed_switch_controller {speed_switch_controller},
+    operating_mode {operating_mode}
 #ifndef ENABLE_BOOTROM
     ,
     header {header}
