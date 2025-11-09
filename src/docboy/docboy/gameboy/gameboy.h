@@ -130,7 +130,11 @@ public:
 #else
     Boot boot {};
 #endif
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    Joypad joypad {interrupts, cartridge_header};
+#else
     Joypad joypad {interrupts};
+#endif
     Serial serial {timers, interrupts};
     Timers timers {interrupts};
     Interrupts interrupts {};

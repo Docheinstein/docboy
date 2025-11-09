@@ -43,6 +43,26 @@
             ]
         },
         {
+            "rom": "docboy/boot/boot_regs_interrupts.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_regs_joypad.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/boot/boot_regs_serial.gb",
             "memory": [
                 {

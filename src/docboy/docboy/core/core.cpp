@@ -519,6 +519,7 @@ Parcel Core::parcelize_state() const {
 #endif
     gb.hram.save_state(p);
     gb.boot.save_state(p);
+    gb.joypad.save_state(p);
     gb.serial.save_state(p);
     gb.timers.save_state(p);
     gb.interrupts.save_state(p);
@@ -574,6 +575,7 @@ void Core::unparcelize_state(Parcel&& p) {
 #endif
     gb.hram.load_state(p);
     gb.boot.load_state(p);
+    gb.joypad.load_state(p);
     gb.serial.load_state(p);
     gb.timers.load_state(p);
     gb.interrupts.load_state(p);
@@ -639,6 +641,7 @@ void Core::reset() {
     gb.hram.reset(HRAM_INITIAL_DATA);
     gb.boot.reset();
     gb.timers.reset();
+    gb.joypad.reset();
     gb.serial.reset();
     gb.interrupts.reset();
     gb.ext_bus.reset();

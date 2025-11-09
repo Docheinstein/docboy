@@ -9,6 +9,8 @@
 #include "utils/bits.h"
 
 class Interrupts;
+class Parcel;
+struct CartridgeHeader;
 
 class Joypad {
 public:
@@ -28,10 +30,19 @@ public:
         Released = 1,
     };
 
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    Joypad(Interrupts& interrupts, CartridgeHeader& header);
+#else
     explicit Joypad(Interrupts& interrupts);
+#endif
 
     uint8_t read_p1() const;
     void write_p1(uint8_t value);
+
+    void save_state(Parcel& parcel) const;
+    void load_state(Parcel& parcel);
+
+    void reset();
 
     void set_key_state(Key key, KeyState state);
 
@@ -44,6 +55,9 @@ public:
 
 private:
     Interrupts& interrupts;
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    CartridgeHeader& header;
+#endif
 
     uint8_t keys {0b11111111};
 };
