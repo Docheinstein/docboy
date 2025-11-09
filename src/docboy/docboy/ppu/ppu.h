@@ -78,6 +78,9 @@ public:
 
     uint8_t read_opri() const;
     void write_opri(uint8_t value);
+#ifdef ENABLE_BOOTROM
+    void write_opri_effective(uint8_t value);
+#endif
 #endif
 
     struct Lcdc : Composite<Specs::Registers::Video::LCDC> {
@@ -454,6 +457,8 @@ private:
 
     // CGB Quirks
     bool color_resolver_enabled {};
+
+    bool obj_priority_mode {};
 #endif
 
 #ifdef ENABLE_DEBUGGER

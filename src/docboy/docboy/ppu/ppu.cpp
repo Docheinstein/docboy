@@ -1962,12 +1962,14 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
         //      > sprite pixel has lower x coordinate, or, if x are identical, it is located in OAM first
         //    CGB
         //      > sprite pixel is located in OAM first
+        // Note: changes to OPRI out of boot rom has no effect: therefore we use the cached obj_priority_mode,
+        // that is the priority mode that was set when boot rom got locked.
 #ifdef ENABLE_CGB
 
         const bool overwrite_obj_pixel =
             (is_obj_opaque(obj_pixel.color_index) && !is_obj_opaque(fifo_obj_pixel.color_index)) ||
             ((is_obj_opaque(obj_pixel.color_index) && is_obj_opaque(fifo_obj_pixel.color_index)) &&
-             (!opri.priority_mode || obj_pixel.x == fifo_obj_pixel.x) && obj_pixel.number < fifo_obj_pixel.number);
+             (!obj_priority_mode || obj_pixel.x == fifo_obj_pixel.x) && obj_pixel.number < fifo_obj_pixel.number);
 #else
         const bool overwrite_obj_pixel =
             (is_obj_opaque(obj_pixel.color_index) && !is_obj_opaque(fifo_obj_pixel.color_index)) ||
@@ -2295,6 +2297,7 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_BYTES(parcel, obj_palettes, sizeof(obj_palettes));
 
     PARCEL_WRITE_BOOL(parcel, color_resolver_enabled);
+    PARCEL_WRITE_BOOL(parcel, obj_priority_mode);
 #endif
 
 #ifdef ENABLE_DEBUGGER
@@ -2454,6 +2457,7 @@ void Ppu::load_state(Parcel& parcel) {
     parcel.read_bytes(obj_palettes, sizeof(obj_palettes));
 
     color_resolver_enabled = parcel.read_bool();
+    obj_priority_mode = parcel.read_bool();
 #endif
 
 #ifdef ENABLE_DEBUGGER
@@ -2634,6 +2638,7 @@ void Ppu::reset() {
 #endif
 
     color_resolver_enabled = true;
+    obj_priority_mode = false;
 #endif
 
 #ifdef ENABLE_DEBUGGER
@@ -2653,7 +2658,7 @@ void Ppu::reset() {
         load_dmg_mode_palettes_from_header(header, bg_palettes, obj_palettes);
 
         // Set OPRI object priority bit to 1
-        opri.priority_mode = true;
+        opri.priority_mode = obj_priority_mode = true;
     }
 #endif
 #endif
@@ -2774,9 +2779,18 @@ uint8_t Ppu::read_opri() const {
 }
 
 void Ppu::write_opri(uint8_t value) {
+    // Writing to OPRI out of boot rom has no effect on actual obj priority mode.
+    // Underlying register is still writable/readable though.
     opri.priority_mode = test_bit<Specs::Bits::Video::OPRI::PRIORITY_MODE>(value);
 }
 
+#ifdef ENABLE_BOOTROM
+void Ppu::write_opri_effective(uint8_t value) {
+    // Writing to OPRI in boot rom actually changes the obj priority mode.
+    write_opri(value);
+    obj_priority_mode = opri.priority_mode;
+}
+#endif
 #endif
 
 #ifdef ENABLE_DEBUGGER

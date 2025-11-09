@@ -254,8 +254,13 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
                                                                   NonTrivial<&Ppu::write_ocps> {&ppu}};
     /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = {NonTrivial<&Ppu::read_ocpd> {&ppu},
                                                                   NonTrivial<&Ppu::write_ocpd> {&ppu}};
+#ifdef ENABLE_BOOTROM
+    /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = {NonTrivial<&Ppu::read_opri> {&ppu},
+                                                                  NonTrivial<&Ppu::write_opri_effective> {&ppu}};
+#else
     /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = {NonTrivial<&Ppu::read_opri> {&ppu},
                                                                   NonTrivial<&Ppu::write_opri> {&ppu}};
+#endif
 #else
     /* FF68 */ memory_accessors[0xFF68] = OPEN_BUS;
     /* FF69 */ memory_accessors[0xFF69] = OPEN_BUS;
@@ -409,8 +414,13 @@ void CpuBus::init_accessors_for_operating_mode() {
             /* FF56 */ memory_accessors[Specs::Registers::Infrared::RP] = {NonTrivial<&Infrared::read_rp> {&infrared},
                                                                            NonTrivial<&Infrared::write_rp> {&infrared}};
 
+#ifdef ENABLE_BOOTROM
+            /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = {
+                NonTrivial<&Ppu::read_opri> {&ppu}, NonTrivial<&Ppu::write_opri_effective> {&ppu}};
+#else
             /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = {NonTrivial<&Ppu::read_opri> {&ppu},
                                                                           NonTrivial<&Ppu::write_opri> {&ppu}};
+#endif
 
             /* FF4F */ memory_accessors[Specs::Registers::Banks::VBK] = {
                 NonTrivial<&VramBankController::read_vbk> {&vram_bank_controller},
@@ -444,8 +454,13 @@ void CpuBus::init_accessors_for_operating_mode() {
                                                                       NonTrivial<&Ppu::write_bcpd> {&ppu}};
         /* FF6B */ memory_accessors[Specs::Registers::Video::OCPD] = {NonTrivial<&Ppu::read_ocpd> {&ppu},
                                                                       NonTrivial<&Ppu::write_ocpd> {&ppu}};
+#ifdef ENABLE_BOOTROM
+        /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = {NonTrivial<&Ppu::read_opri> {&ppu},
+                                                                      NonTrivial<&Ppu::write_opri_effective> {&ppu}};
+#else
         /* FF6C */ memory_accessors[Specs::Registers::Video::OPRI] = {NonTrivial<&Ppu::read_opri> {&ppu},
                                                                       NonTrivial<&Ppu::write_opri> {&ppu}};
+#endif
 
         /* FF4F */ memory_accessors[Specs::Registers::Banks::VBK] = {
             NonTrivial<&VramBankController::read_vbk> {&vram_bank_controller},
