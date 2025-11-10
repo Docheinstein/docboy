@@ -43,6 +43,26 @@
             ]
         },
         {
+            "rom": "docboy/boot/boot_regs_audio.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_regs_audio_off.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/boot/boot_regs_cgb.gb",
             "memory": [
                 {
@@ -94,6 +114,16 @@
         },
         {
             "rom": "docboy/boot/boot_regs_serial.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_regs_timers.gb",
             "memory": [
                 {
                     "address": 65520,
