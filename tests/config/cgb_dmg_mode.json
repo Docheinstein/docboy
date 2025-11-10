@@ -23,6 +23,16 @@
     ],
     "boot": [
         {
+            "rom": "docboy/boot/boot_regs_cgb.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/boot/boot_regs_cpu_checksum_1a.gb",
             "memory": [
                 {

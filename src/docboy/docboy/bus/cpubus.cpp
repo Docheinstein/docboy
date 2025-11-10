@@ -398,7 +398,7 @@ void CpuBus::init_accessors_for_operating_mode() {
     // | PCM34    |   yes    |      yes     |    yes   |
     // | FF72     |   yes    |      yes     |    yes   |
     // | FF73     |   yes    |      yes     |    yes   |
-    // | FF74     |   yes    |      yes     |    yes   |
+    // | FF74     |   yes    |      yes     |    no    |
     // | FF75     |   yes    |      yes     |    yes   |
     // +----------+----------+--------------+----------+
 
@@ -438,6 +438,8 @@ void CpuBus::init_accessors_for_operating_mode() {
             /* FF70 */ memory_accessors[Specs::Registers::Banks::SVBK] = {
                 NonTrivial<&WramBankController::read_svbk> {&wram_bank_controller},
                 NonTrivial<&WramBankController::write_svbk> {&wram_bank_controller}};
+
+            /* FF74 */ memory_accessors[Specs::Registers::Undocumented::FF74] = &undocumented_registers.ff74;
         } else {
             // DMG mode.
 
@@ -453,6 +455,8 @@ void CpuBus::init_accessors_for_operating_mode() {
             /* FF4F */ memory_accessors[Specs::Registers::Banks::VBK] = {
                 NonTrivial<&VramBankController::read_vbk> {&vram_bank_controller}, WRITE_NOP};
             /* FF70 */ memory_accessors[Specs::Registers::Banks::SVBK] = OPEN_BUS;
+
+            /* FF74 */ memory_accessors[Specs::Registers::Undocumented::FF74] = OPEN_BUS;
         }
     } else {
         /* FF02 */ memory_accessors[Specs::Registers::Serial::SC] = {NonTrivial<&Serial::read_sc_cgb> {&serial},
@@ -486,6 +490,8 @@ void CpuBus::init_accessors_for_operating_mode() {
         /* FF70 */ memory_accessors[Specs::Registers::Banks::SVBK] = {
             NonTrivial<&WramBankController::read_svbk> {&wram_bank_controller},
             NonTrivial<&WramBankController::write_svbk> {&wram_bank_controller}};
+
+        /* FF74 */ memory_accessors[Specs::Registers::Undocumented::FF74] = &undocumented_registers.ff74;
     }
 }
 #endif

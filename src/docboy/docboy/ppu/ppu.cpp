@@ -2466,6 +2466,10 @@ void Ppu::load_state(Parcel& parcel) {
 }
 
 void Ppu::reset() {
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    const bool cgb_flag = test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag());
+#endif
+
     lcdc.enable = if_bootrom_else(false, true);
     lcdc.win_tile_map = false;
     lcdc.win_enable = false;
@@ -2508,12 +2512,24 @@ void Ppu::reset() {
 
 #ifdef ENABLE_CGB
     bcps.auto_increment = true;
+#ifndef ENABLE_BOOTROM
+    bcps.address = cgb_flag ? 0 : 8;
+#else
     bcps.address = 0;
+#endif
 
     ocps.auto_increment = true;
+#ifndef ENABLE_BOOTROM
+    ocps.address = cgb_flag ? 1 : 16;
+#else
     ocps.address = 1;
+#endif
 
+#ifndef ENABLE_BOOTROM
+    opri.priority_mode = !cgb_flag;
+#else
     opri.priority_mode = false;
+#endif
 #endif
 
 #ifdef ENABLE_CGB
@@ -2625,20 +2641,29 @@ void Ppu::reset() {
 
 #ifdef ENABLE_CGB
 #ifndef ENABLE_BOOTROM
-    // BG palettes are all initialized as white.
-    for (uint32_t i = 0; i < 32; i++) {
-        bg_palettes[2 * i] = 0xFF;
-        bg_palettes[2 * i + 1] = 0x7F;
+    if (cgb_flag) {
+        // BG palettes are all initialized as white.
+        for (uint32_t i = 0; i < 32; i++) {
+            bg_palettes[2 * i] = 0xFF;
+            bg_palettes[2 * i + 1] = 0x7F;
+        }
+        // OBJ palettes are random/unreliable.
+        memcpy(obj_palettes, RANDOM_DATA, sizeof(obj_palettes));
+    } else {
+        load_dmg_mode_palettes_from_header(header, bg_palettes, obj_palettes);
     }
-    // OBJ palettes are random/unreliable.
-    memcpy(obj_palettes, RANDOM_DATA, sizeof(obj_palettes));
 #else
     memcpy(bg_palettes, RANDOM_DATA, sizeof(bg_palettes));
     memcpy(obj_palettes, RANDOM_DATA, sizeof(obj_palettes));
 #endif
 
     color_resolver_enabled = true;
+
+#ifndef ENABLE_BOOTROM
+    obj_priority_mode = !cgb_flag;
+#else
     obj_priority_mode = false;
+#endif
 #endif
 
 #ifdef ENABLE_DEBUGGER
@@ -2647,20 +2672,6 @@ void Ppu::reset() {
 
 #ifndef ENABLE_BOOTROM
     oam.acquire();
-#endif
-
-#ifdef ENABLE_CGB
-#ifndef ENABLE_BOOTROM
-    if (!test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag())) {
-        // DMG mode.
-
-        // Eventually load palettes based on the cartridge's header in DMG compatibility mode
-        load_dmg_mode_palettes_from_header(header, bg_palettes, obj_palettes);
-
-        // Set OPRI object priority bit to 1
-        opri.priority_mode = obj_priority_mode = true;
-    }
-#endif
 #endif
 }
 
