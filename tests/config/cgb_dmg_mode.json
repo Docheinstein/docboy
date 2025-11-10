@@ -23,6 +23,26 @@
     ],
     "boot": [
         {
+            "rom": "docboy/boot/boot_ppu_phase_round1.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_ppu_phase_round2.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/boot/boot_regs_cgb.gb",
             "memory": [
                 {
@@ -74,6 +94,16 @@
         },
         {
             "rom": "docboy/boot/boot_regs_serial.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_regs_video.gb",
             "memory": [
                 {
                     "address": 65520,

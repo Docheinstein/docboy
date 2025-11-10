@@ -2494,7 +2494,11 @@ void Ppu::reset() {
     scy = 0;
     scx = 0;
 #ifdef ENABLE_CGB
-    ly = if_bootrom_else(0, 0x90);
+#ifdef ENABLE_BOOTROM
+    ly = 0;
+#else
+    ly = cgb_flag ? 0x90 : 0x94;
+#endif
 #else
     ly = 0;
 #endif
@@ -2549,8 +2553,11 @@ void Ppu::reset() {
 #endif
 
 #ifdef ENABLE_CGB
-    // TODO: with bootrom
-    dots = if_bootrom_else(0, 163);
+#ifdef ENABLE_BOOTROM
+    dots = 0;
+#else
+    dots = cgb_flag ? 163 : 351;
+#endif
 #else
     dots = if_bootrom_else(0, 395);
 #endif

@@ -165,10 +165,10 @@ public:
                     vram_bank_controller,
                     wram_bank_controller,
                     hdma,
+                    operating_mode,
                     speed_switch,
                     infrared,
-                    undocumented_registers,
-                    operating_mode};
+                    undocumented_registers};
 #else
     CpuBus cpu_bus {boot_rom, hram, joypad, serial, timers, interrupts, boot, apu, ppu, dma};
 #endif
