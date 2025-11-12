@@ -284,6 +284,10 @@
             "framebuffer": "little-things-gb/double-halt-cancel.png"
         },
         {
+            "rom": "little-things-gb/whichboot.gb",
+            "framebuffer": "little-things-gb/whichboot.png"
+        },
+        {
             "rom": "daid/stop_instr.gb",
             "framebuffer": "daid/stop_instr.png",
             "palette": "grey",

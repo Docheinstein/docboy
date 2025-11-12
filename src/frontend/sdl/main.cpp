@@ -93,15 +93,18 @@ void dump_cartridge_info(const CartridgeHeader& header) {
     using namespace CartridgeHeaderHelpers;
 
     std::cout << "Title             :  " << title_as_string(header) << "\n";
-    std::cout << "Cartridge Type    :  " << hex(header.cartridge_type) << "     (" << cartridge_type_description(header)
-              << ")\n";
-    std::cout << "Licensee (old)    :  " << hex(header.old_licensee_code) << "     ("
+    std::cout << "Cartridge Type    :  " << hex(header.cartridge_type) << "             ("
+              << cartridge_type_description(header) << ")\n";
+    std::cout << "Licensee (old)    :  " << hex(header.old_licensee_code) << "             ("
               << old_licensee_code_description(header) << ")\n";
-    std::cout << "Licensee (new)    :  " << new_licensee_code_as_string(header) << "     ("
+    std::cout << "Licensee (new)    :  " << new_licensee_code_as_string(header) << "   ("
               << new_licensee_code_description(header) << ")\n";
-    std::cout << "ROM Size          :  " << hex(header.rom_size) << "     (" << rom_size_description(header) << ")\n";
-    std::cout << "RAM Size          :  " << hex(header.ram_size) << "     (" << ram_size_description(header) << ")\n";
-    std::cout << "CGB Flag          :  " << hex(cgb_flag(header)) << "     (" << cgb_flag_description(header) << ")\n";
+    std::cout << "ROM Size          :  " << hex(header.rom_size) << "             (" << rom_size_description(header)
+              << ")\n";
+    std::cout << "RAM Size          :  " << hex(header.ram_size) << "             (" << ram_size_description(header)
+              << ")\n";
+    std::cout << "CGB Flag          :  " << hex(cgb_flag(header)) << "             (" << cgb_flag_description(header)
+              << ")\n";
     std::cout << "SGB Flag          :  " << hex(header.sgb_flag) << "\n";
     std::cout << "Destination Code  :  " << hex(header.destination_code) << "\n";
     std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";

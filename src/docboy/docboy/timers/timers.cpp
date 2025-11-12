@@ -50,8 +50,11 @@ void Timers::load_state(Parcel& parcel) {
 
 void Timers::reset() {
 #ifdef ENABLE_CGB
-    // TODO: what's the starting div16 with bootrom on CGB?
-    div16 = if_bootrom_else(0x0008, 0x1EA0);
+    // On CGB accurate prediction of DIV is fairly complex, that's because the boot rom takes different paths
+    // based on the cartridge header (old licensee code, new licensee code, cgb flag, title checksum).
+    // Here we've hardcoded 0x1E9C as starting value, that is the initial DIV value of a CGB game (CGB flag 0x80)
+    // with old licensee code 0x33 and new licensee code 0x00 0x00 (as in little-things-gb/whichboot.gb).
+    div16 = if_bootrom_else(0x0008, 0x1E9C);
 #else
     div16 = if_bootrom_else(0x0008, 0xABCC); // [mooneye/boot_div-dmgABCmgb.gb]
 #endif

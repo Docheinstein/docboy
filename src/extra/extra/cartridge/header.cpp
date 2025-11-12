@@ -7,6 +7,7 @@
 #include "docboy/common/specs.h"
 
 #include "utils/bits.h"
+#include "utils/formatters.h"
 #include "utils/strings.h"
 
 namespace {
@@ -298,14 +299,14 @@ std::string cgb_flag_description(const CartridgeHeader& header) {
 }
 
 std::string new_licensee_code_as_string(const CartridgeHeader& header) {
-    std::string str {};
+    std::string str;
     str.resize(2);
     for (uint8_t i = 0; i < sizeof(header.new_licensee_code); i++) {
         // We want to keep this display string of a fixed size of 2,
         // therefore any non-printable character (including \0) with a space.
         str[i] = isprint(header.new_licensee_code[i]) ? static_cast<char>(header.new_licensee_code[i]) : ' ';
     }
-    return str;
+    return hex(header.new_licensee_code, 2) + " (\"" + str + "\")";
 }
 
 std::string new_licensee_code_description(const CartridgeHeader& header) {

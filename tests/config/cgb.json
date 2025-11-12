@@ -1,11 +1,35 @@
 {
     "boot": [
         {
+            "rom": "little-things-gb/whichboot.gb",
+            "framebuffer": "little-things-gb/whichboot.png"
+        },
+        {
             "rom": "magen/key0_lock_after_boot.gbc",
             "framebuffer": "magen/green.png"
         },
         {
             "rom": "docboy/boot/boot_bg_palettes.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_phase_old_license_33_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_phase_old_license_33_round2.gbc",
             "memory": [
                 {
                     "address": 65520,
@@ -22739,26 +22763,6 @@
         },
         {
             "rom": "docboy/apu/ch2/ch2_volume_sweep_divbit11_round2.gbc",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/apu/ch2/ch2_volume_sweep_no_reset_round1.gbc",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ]
-        },
-        {
-            "rom": "docboy/apu/ch2/ch2_volume_sweep_no_reset_round2.gbc",
             "memory": [
                 {
                     "address": 65520,

@@ -37,26 +37,6 @@ void ensure_file_exists(const std::string& path) {
     }
 }
 
-void dump_cartridge_info(const CartridgeHeader& header) {
-    using namespace CartridgeHeaderHelpers;
-
-    std::cout << "Title             :  " << title_as_string(header) << "\n";
-    std::cout << "Cartridge Type    :  " << hex(header.cartridge_type) << "     (" << cartridge_type_description(header)
-              << ")\n";
-    std::cout << "Licensee (old)    :  " << hex(header.old_licensee_code) << "     ("
-              << old_licensee_code_description(header) << ")\n";
-    std::cout << "Licensee (new)    :  " << new_licensee_code_as_string(header) << "     ("
-              << new_licensee_code_description(header) << ")\n";
-    std::cout << "ROM Size          :  " << hex(header.rom_size) << "     (" << rom_size_description(header) << ")\n";
-    std::cout << "RAM Size          :  " << hex(header.ram_size) << "     (" << ram_size_description(header) << ")\n";
-    std::cout << "CGB Flag          :  " << hex(cgb_flag(header)) << "     (" << cgb_flag_description(header) << ")\n";
-    std::cout << "SGB Flag          :  " << hex(header.sgb_flag) << "\n";
-    std::cout << "Destination Code  :  " << hex(header.destination_code) << "\n";
-    std::cout << "Rom Version Num.  :  " << hex(header.rom_version_number) << "\n";
-    std::cout << "Header Checksum   :  " << hex(header.header_checksum) << "\n";
-    std::cout << "Title Checksum    :  " << hex(title_checksum(header)) << "\n";
-}
-
 GameBoy gb {};
 Core core {gb};
 } // namespace
@@ -67,8 +47,6 @@ int main(int argc, char* argv[]) {
         std::string boot_rom;
         uint64_t ticks_to_run {};
         bool serial {};
-        float scaling {};
-        bool dump_cartridge_info {};
 #ifdef ENABLE_DEBUGGER
         bool attach_debugger {};
 #endif
@@ -80,8 +58,6 @@ int main(int argc, char* argv[]) {
 #endif
     parser.add_argument(args.rom, "rom").help("ROM");
     parser.add_argument(args.serial, "--serial", "-s").help("Display serial console");
-    parser.add_argument(args.scaling, "--scaling", "-z").help("Scaling factor");
-    parser.add_argument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
     parser.add_argument(args.ticks_to_run, "-t").help("Ticks to run");
 #ifdef ENABLE_DEBUGGER
     parser.add_argument(args.attach_debugger, "--debugger", "-d").help("Attach debugger");
@@ -98,11 +74,6 @@ int main(int argc, char* argv[]) {
     ensure_file_exists(args.rom);
 
     Path rom_path {args.rom};
-
-    if (args.dump_cartridge_info) {
-        dump_cartridge_info(CartridgeFactory::create_header(rom_path.string()));
-        return 0;
-    }
 
 #ifdef ENABLE_BOOTROM
     core.load_boot_rom(args.boot_rom);
