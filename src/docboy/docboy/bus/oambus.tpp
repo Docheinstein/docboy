@@ -1,5 +1,4 @@
 #include "docboy/memory/oam.h"
-#include "oambus.h"
 
 template <Device::Type Dev>
 void OamBus::View<Dev>::read_word_request(uint16_t addr) {
@@ -164,7 +163,8 @@ inline void OamBus::write_word(const uint8_t addr, uint16_t word) {
     oam[addr + 1] = get_byte<0>(word);
 }
 
-inline void OamBus::write_row(const uint8_t row_addr, const uint16_t w0, const uint16_t w1, const uint16_t w2, const uint16_t w3) {
+inline void OamBus::write_row(const uint8_t row_addr, const uint16_t w0, const uint16_t w1, const uint16_t w2,
+                              const uint16_t w3) {
     write_word(row_addr + 0, w0);
     write_word(row_addr + 2, w1);
     write_word(row_addr + 4, w2);
@@ -573,7 +573,6 @@ inline void OamBus::oam_bug_read_9c_0_4() {
     //  (t) | target   |      |  t0  |  t1  |  t2  |  t3  |  =>  |  f*  |  n1* |  n2* |  n3* |
     //  ...
     //  (a) | 0x98     |      |  n0  |  n1  |  n2  |  n3  |  =>  |  f*  |  n1  |  n2  |  n3  |
-
 
     const uint8_t target_row_addr = discard_bits<3>(address);
 

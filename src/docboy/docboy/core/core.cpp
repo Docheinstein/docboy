@@ -3,7 +3,6 @@
 #include "docboy/core/core.h"
 
 #include "docboy/cartridge/factory.h"
-#include "docboy/common/randomdata.h"
 #include "docboy/memory/vram0.h"
 
 #ifdef ENABLE_BOOTROM
@@ -506,9 +505,10 @@ Parcel Core::parcelize_state() const {
     gb.apu.save_state(p);
     gb.stop_controller.save_state(p);
     gb.cartridge_slot.cartridge->save_state(p);
-    for (std::size_t i = 0; i < array_size(gb.vram); i++) {
-        gb.vram[i].save_state(p);
-    }
+    gb.vram0.save_state(p);
+#ifdef ENABLE_CGB
+    gb.vram1.save_state(p);
+#endif
     gb.wram1.save_state(p);
     for (std::size_t i = 0; i < array_size(gb.wram2); i++) {
         gb.wram2[i].save_state(p);
@@ -562,9 +562,10 @@ void Core::unparcelize_state(Parcel&& p) {
     gb.apu.load_state(p);
     gb.stop_controller.load_state(p);
     gb.cartridge_slot.cartridge->load_state(p);
-    for (std::size_t i = 0; i < array_size(gb.vram); i++) {
-        gb.vram[i].load_state(p);
-    }
+    gb.vram0.load_state(p);
+#ifdef ENABLE_CGB
+    gb.vram1.load_state(p);
+#endif
     gb.wram1.load_state(p);
     for (std::size_t i = 0; i < array_size(gb.wram2); i++) {
         gb.wram2[i].load_state(p);
@@ -622,23 +623,19 @@ void Core::reset() {
     if (gb.cartridge_slot.cartridge) {
         gb.cartridge_slot.cartridge->reset();
     }
-    gb.vram[0].reset(VRAM0_INITIAL_DATA);
+    gb.vram0.reset();
 #ifdef ENABLE_CGB
-    gb.vram[1].reset();
+    gb.vram1.reset();
 #endif
-    gb.wram1.reset(RANDOM_DATA);
+    gb.wram1.reset();
     for (std::size_t i = 0; i < array_size(gb.wram2); i++) {
-        gb.wram2[i].reset(RANDOM_DATA);
+        gb.wram2[i].reset();
     }
-#ifdef ENABLE_CGB
     gb.oam.reset();
-#else
-    gb.oam.reset(RANDOM_DATA);
-#endif
 #ifdef ENABLE_CGB
     gb.not_usable.reset();
 #endif
-    gb.hram.reset(HRAM_INITIAL_DATA);
+    gb.hram.reset();
     gb.boot.reset();
     gb.timers.reset();
     gb.joypad.reset();

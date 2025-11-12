@@ -1,4 +1,5 @@
-#include "docboy/memory/vram.h"
+#include "docboy/memory/vram0.h"
+#include "docboy/memory/vram1.h"
 
 template <Device::Type Dev, uint8_t Bank>
 uint8_t VramBus::read(uint16_t vram_address) {
@@ -10,7 +11,14 @@ uint8_t VramBus::read(uint16_t vram_address) {
 
     set_bit<Dev>(readers);
 
-    return vram[Bank][vram_address];
+#ifdef ENABLE_CGB
+    if constexpr (Bank == 0) {
+        return vram0[vram_address];
+    }
+    return vram1[vram_address];
+#else
+    return vram0[vram_address];
+#endif
 }
 
 template <Device::Type Dev>

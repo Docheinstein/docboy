@@ -1,4 +1,7 @@
 #include "docboy/bus/oambus.h"
+#ifdef ENABLE_CGB
+#include "docboy/memory/notusable.h"
+#endif
 
 #include "docboy/bootrom/helpers.h"
 

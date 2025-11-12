@@ -2,8 +2,9 @@
 #define OAMBUS_H
 
 #include "docboy/bus/videobus.h"
-#include "docboy/memory/fwd/notusablefwd.h"
-#include "docboy/memory/fwd/oamfwd.h"
+
+class NotUsable;
+class Oam;
 
 class OamBus final : public VideoBus<OamBus> {
 public:

@@ -2,10 +2,11 @@
 #define CPUBUS_H
 
 #include "docboy/bus/bus.h"
-#include "docboy/memory/fwd/hramfwd.h"
+
+class Hram;
 
 #ifdef ENABLE_BOOTROM
-#include "docboy/bootrom/fwd/bootromfwd.h"
+#include "docboy/bootrom/bootrom.h"
 #endif
 
 class Joypad;

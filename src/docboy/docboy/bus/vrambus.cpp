@@ -1,10 +1,25 @@
 #include "docboy/bus/vrambus.h"
 
-#include "docboy/bootrom/helpers.h"
+#include "docboy/memory/vram0.h"
+#ifdef ENABLE_CGB
+#include "docboy/memory/vram1.h"
+#endif
 
-VramBus::VramBus(Vram* vram) :
+#include "docboy/bootrom/helpers.h"
+#include "docboy/common/specs.h"
+
+#ifdef ENABLE_CGB
+VramBus::VramBus(Vram0& vram0, Vram1& vram1) :
+#else
+VramBus::VramBus(Vram0& vram0) :
+#endif
     VideoBus {},
-    vram {vram} {
+    vram0 {vram0}
+#ifdef ENABLE_CGB
+    ,
+    vram1 {vram1}
+#endif
+{
     /* 0x8000 - 0x9FFF */
 #ifdef ENABLE_CGB
     for (uint16_t i = Specs::MemoryLayout::VRAM::START; i <= Specs::MemoryLayout::VRAM::END; i++) {
@@ -15,7 +30,7 @@ VramBus::VramBus(Vram* vram) :
     }
 #else
     for (uint16_t i = Specs::MemoryLayout::VRAM::START; i <= Specs::MemoryLayout::VRAM::END; i++) {
-        memory_accessors[i] = &vram[0][i - Specs::MemoryLayout::VRAM::START];
+        memory_accessors[i] = &vram0[i - Specs::MemoryLayout::VRAM::START];
     }
 #endif
 
@@ -59,10 +74,17 @@ void VramBus::set_vram_bank(bool bank) {
 
 #ifdef ENABLE_CGB
 uint8_t VramBus::read_vram(uint16_t address) const {
-    return vram[vram_bank][address - Specs::MemoryLayout::VRAM::START];
+    if (vram_bank) {
+        return vram1[address - Specs::MemoryLayout::VRAM::START];
+    }
+    return vram0[address - Specs::MemoryLayout::VRAM::START];
 }
 
 void VramBus::write_vram(uint16_t address, uint8_t value) {
-    vram[vram_bank][address - Specs::MemoryLayout::VRAM::START] = value;
+    if (vram_bank) {
+        vram1[address - Specs::MemoryLayout::VRAM::START] = value;
+    } else {
+        vram0[address - Specs::MemoryLayout::VRAM::START] = value;
+    }
 }
 #endif

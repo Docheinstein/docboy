@@ -20,7 +20,7 @@
 #include "docboy/memory/hram.h"
 #include "docboy/memory/memory.h"
 #include "docboy/memory/oam.h"
-#include "docboy/memory/vram.h"
+#include "docboy/memory/vram0.h"
 #include "docboy/memory/wram1.h"
 #include "docboy/memory/wram2.h"
 #include "docboy/mmu/mmu.h"
@@ -36,6 +36,7 @@
 #include "docboy/hdma/hdma.h"
 #include "docboy/ir/infrared.h"
 #include "docboy/memory/notusable.h"
+#include "docboy/memory/vram1.h"
 #include "docboy/mode/operatingmode.h"
 #include "docboy/speedswitch/speedswitch.h"
 #include "docboy/speedswitch/speedswitchcontroller.h"
@@ -102,10 +103,14 @@ public:
     CartridgeSlot cartridge_slot {};
 
     // Memory
-#ifdef ENABLE_CGB
-    Vram vram[2] {};
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    Vram0 vram0 {cartridge_header};
 #else
-    Vram vram[1] {};
+    Vram0 vram0 {};
+#endif
+
+#ifdef ENABLE_CGB
+    Vram1 vram1 {};
 #endif
 
     Wram1 wram1 {};
@@ -194,7 +199,11 @@ public:
     CpuBus cpu_bus {hram, joypad, serial, timers, interrupts, boot, apu, ppu, dma};
 #endif
 #endif
-    VramBus vram_bus {vram};
+#ifdef ENABLE_CGB
+    VramBus vram_bus {vram0, vram1};
+#else
+    VramBus vram_bus {vram0};
+#endif
 
 #ifdef ENABLE_CGB
     OamBus oam_bus {oam, not_usable};

@@ -1,5 +1,6 @@
 #include "docboy/memory/hram.h"
 
+namespace {
 #ifdef ENABLE_CGB
 // TODO: check HRAM content on CGB
 extern const uint8_t HRAM_INITIAL_DATA[Specs::MemoryLayout::HRAM::SIZE] = {
@@ -21,3 +22,8 @@ extern const uint8_t HRAM_INITIAL_DATA[Specs::MemoryLayout::HRAM::SIZE] = {
     194, 119, 161, 45,  47,  29,  182, 105, 43,  245, 222, 179, 57,  1,   46,  0,   149,
 };
 #endif
+} // namespace
+
+void Hram::reset() {
+    Memory::reset(HRAM_INITIAL_DATA);
+}

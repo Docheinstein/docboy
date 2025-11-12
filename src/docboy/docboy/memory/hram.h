@@ -1,9 +1,12 @@
 #ifndef HRAM_H
 #define HRAM_H
 
-#include "docboy/memory/fwd/hramfwd.h"
+#include "docboy/common/specs.h"
 #include "docboy/memory/memory.h"
 
-extern const uint8_t HRAM_INITIAL_DATA[Specs::MemoryLayout::HRAM::SIZE];
+class Hram : public Memory<Specs::MemoryLayout::HRAM::START, Specs::MemoryLayout::HRAM::END> {
+public:
+    void reset();
+};
 
 #endif // HRAM_H

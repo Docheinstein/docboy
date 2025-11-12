@@ -11,7 +11,6 @@ target_sources(docboy PRIVATE
         docboy/bus/device.h
         docboy/bus/extbus.cpp
         docboy/bus/extbus.h
-        docboy/bus/fwd/busfwd.h
         docboy/bus/oambus.cpp
         docboy/bus/oambus.h
         docboy/bus/oambus.tpp
@@ -46,8 +45,6 @@ target_sources(docboy PRIVATE
         docboy/cartridge/slot.cpp
         docboy/cartridge/slot.h
         docboy/common/macros.h
-        docboy/common/randomdata.cpp
-        docboy/common/randomdata.h
         docboy/common/specs.h
         docboy/core/core.cpp
         docboy/core/core.h
@@ -65,25 +62,22 @@ target_sources(docboy PRIVATE
         docboy/lcd/lcd.cpp
         docboy/lcd/lcd.h
         docboy/memory/cell.h
-        docboy/memory/fwd/cellfwd.h
-        docboy/memory/fwd/hramfwd.h
-        docboy/memory/fwd/memoryfwd.h
-        docboy/memory/fwd/notusablefwd.h
-        docboy/memory/fwd/oamfwd.h
-        docboy/memory/fwd/vramfwd.h
-        docboy/memory/fwd/wram1fwd.h
-        docboy/memory/fwd/wram2fwd.h
         docboy/memory/hram.h
         docboy/memory/hram.cpp
         docboy/memory/memory.h
         docboy/memory/notusable.h
         docboy/memory/oam.h
+        docboy/memory/oam.cpp
+        docboy/memory/randomdata.cpp
+        docboy/memory/randomdata.h
         docboy/memory/traits.h
-        docboy/memory/vram.h
         docboy/memory/vram0.cpp
         docboy/memory/vram0.h
+        docboy/memory/vram1.h
         docboy/memory/wram1.h
+        docboy/memory/wram1.cpp
         docboy/memory/wram2.h
+        docboy/memory/wram2.cpp
         docboy/mmu/mmu.cpp
         docboy/mmu/mmu.h
         docboy/mmu/mmu.tpp
@@ -137,7 +131,6 @@ if (ENABLE_BOOTROM)
             docboy/bootrom/factory.cpp
             docboy/bootrom/factory.h
             docboy/bootrom/helpers.h
-            docboy/bootrom/fwd/bootromfwd.h
     )
 endif ()
 

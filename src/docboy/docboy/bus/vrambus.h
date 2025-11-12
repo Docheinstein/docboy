@@ -2,7 +2,9 @@
 #define VRAMBUS_H
 
 #include "docboy/bus/videobus.h"
-#include "docboy/memory/fwd/vramfwd.h"
+
+class Vram0;
+class Vram1;
 
 class VramBus final : public VideoBus<VramBus> {
 public:
@@ -17,8 +19,11 @@ public:
         uint8_t read(uint16_t address);
     };
 
-    explicit VramBus(Vram* vram);
-
+#ifdef ENABLE_CGB
+    explicit VramBus(Vram0& vram0, Vram1& vram1);
+#else
+    explicit VramBus(Vram0& vram);
+#endif
     template <Device::Type Dev, uint8_t Bank>
     uint8_t read(uint16_t vram_address);
 
@@ -45,7 +50,10 @@ private:
     void write_vram(uint16_t address, uint8_t value);
 #endif
 
-    Vram* vram;
+    Vram0& vram0;
+#ifdef ENABLE_CGB
+    Vram1& vram1;
+#endif
 
     uint8_t readers {};
 

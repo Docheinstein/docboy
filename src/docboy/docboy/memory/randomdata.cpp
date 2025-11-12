@@ -1,4 +1,4 @@
-#include "docboy/common/randomdata.h"
+#include "docboy/memory/randomdata.h"
 
 const uint8_t RANDOM_DATA[4096] = {
     2,   242, 66,  199, 25,  31,  106, 172, 198, 179, 45,  111, 51,  101, 138, 179, 61,  48,  84,  252, 200, 126, 184,

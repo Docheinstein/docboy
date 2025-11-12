@@ -5,7 +5,7 @@
 
 #include "docboy/bus/device.h"
 #include "docboy/common/macros.h"
-#include "docboy/memory/fwd/cellfwd.h"
+#include "docboy/memory/cell.h"
 #include "docboy/memory/traits.h"
 
 #include "utils/asserts.h"

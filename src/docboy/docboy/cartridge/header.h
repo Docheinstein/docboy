@@ -22,7 +22,6 @@ struct CartridgeHeader {
         return title[15];
     }
 
-#ifdef ENABLE_CGB
     uint8_t title_checksum() const {
         uint8_t cksum = 0;
         for (const uint8_t c : title) {
@@ -30,7 +29,6 @@ struct CartridgeHeader {
         }
         return cksum;
     }
-#endif
 };
 
 static_assert(sizeof(CartridgeHeader) == 0x50);

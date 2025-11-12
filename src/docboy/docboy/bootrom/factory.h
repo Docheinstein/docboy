@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "docboy/bootrom/fwd/bootromfwd.h"
+#include "docboy/bootrom/bootrom.h"
 
 namespace BootRomFactory {
 void load(BootRom& boot_rom, const std::string& filename);

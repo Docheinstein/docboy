@@ -2,8 +2,9 @@
 #define WRAMBUS_H
 
 #include "docboy/bus/bus.h"
-#include "docboy/memory/fwd/wram1fwd.h"
-#include "docboy/memory/fwd/wram2fwd.h"
+
+class Wram1;
+class Wram2;
 
 class WramBus final : public Bus {
 

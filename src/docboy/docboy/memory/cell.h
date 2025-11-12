@@ -1,7 +1,10 @@
 #ifndef CELL_H
 #define CELL_H
 
-#include "docboy/memory/fwd/cellfwd.h"
+#include <cstdint>
+
+template <uint32_t Address>
+struct Composite;
 
 #ifdef ENABLE_DEBUGGER
 
@@ -151,6 +154,7 @@ protected:
 };
 
 #else
+using UInt8 = uint8_t;
 
 constexpr UInt8 make_uint8(const uint16_t address) {
     return {};

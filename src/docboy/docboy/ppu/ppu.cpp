@@ -1,10 +1,10 @@
 #include "docboy/ppu/ppu.h"
 
 #include "docboy/bootrom/helpers.h"
-#include "docboy/common/randomdata.h"
 #include "docboy/dma/dma.h"
 #include "docboy/interrupts/interrupts.h"
 #include "docboy/lcd/lcd.h"
+#include "docboy/memory/randomdata.h"
 #include "docboy/ppu/pixelmap.h"
 #include "utils/hexdump.h"
 
