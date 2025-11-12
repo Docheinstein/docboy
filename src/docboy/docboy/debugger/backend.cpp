@@ -550,7 +550,7 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
             FATAL("unexpected rom size");
         }
 
-        cartridge_info->title = title_as_string(header);
+        cartridge_info->title = CartridgeHeaderHelpers::title_as_string(header);
         cartridge_info->mbc = header.cartridge_type;
         cartridge_info->rom = header.rom_size;
         cartridge_info->ram = header.ram_size;

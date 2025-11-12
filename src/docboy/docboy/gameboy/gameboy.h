@@ -127,7 +127,11 @@ public:
     NotUsable not_usable {};
 #endif
 
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    Hram hram {cartridge_header};
+#else
     Hram hram {};
+#endif
 
     // IO
 #ifdef ENABLE_BOOTROM

@@ -272,15 +272,16 @@ const std::map<uint8_t, std::string> RAM_SIZE_DESCRIPTION_MAP = {
     {0x03, "32 KiB (4 banks)"}, {0x04, "128 KiB (16 banks)"}, {0x05, "64 KiB (8 banks)"}};
 } // namespace
 
+namespace CartridgeHeaderHelpers {
 std::string title_as_string(const CartridgeHeader& header) {
     const auto* title_cstr = reinterpret_cast<const char*>(header.title);
     std::string title {title_cstr, strnlen(title_cstr, sizeof(header.title))};
 #ifdef ENABLE_CGB
     if (title.size() == 16) {
         // Bit 15 is used for CGB flag instead of title for CGB-era cartridges.
-        uint8_t cgb_flag = header.cgb_flag();
-        if (cgb_flag == Specs::Cartridge::Header::CgbFlag::DMG_AND_CGB ||
-            cgb_flag == Specs::Cartridge::Header::CgbFlag::CGB_ONLY) {
+        uint8_t flag = cgb_flag(header);
+        if (flag == Specs::Cartridge::Header::CgbFlag::DMG_AND_CGB ||
+            flag == Specs::Cartridge::Header::CgbFlag::CGB_ONLY) {
             title[15] = '\0';
         }
     }
@@ -290,7 +291,7 @@ std::string title_as_string(const CartridgeHeader& header) {
 }
 
 std::string cgb_flag_description(const CartridgeHeader& header) {
-    if (const auto it = CGB_FLAG_DESCRIPTION_MAP.find(header.cgb_flag()); it != CGB_FLAG_DESCRIPTION_MAP.end()) {
+    if (const auto it = CGB_FLAG_DESCRIPTION_MAP.find(cgb_flag(header)); it != CGB_FLAG_DESCRIPTION_MAP.end()) {
         return it->second;
     }
     return "Unknown";
@@ -344,3 +345,4 @@ std::string old_licensee_code_description(const CartridgeHeader& header) {
     }
     return "Unknown";
 }
+} // namespace CartridgeHeaderHelpers

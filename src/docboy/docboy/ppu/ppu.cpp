@@ -2467,7 +2467,7 @@ void Ppu::load_state(Parcel& parcel) {
 
 void Ppu::reset() {
 #if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
-    const bool cgb_flag = test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag());
+    const bool cgb_game = CartridgeHeaderHelpers::is_cgb_game(header);
 #endif
 
     lcdc.enable = if_bootrom_else(false, true);
@@ -2497,7 +2497,7 @@ void Ppu::reset() {
 #ifdef ENABLE_BOOTROM
     ly = 0;
 #else
-    ly = cgb_flag ? 0x90 : 0x94;
+    ly = cgb_game ? 0x90 : 0x94;
 #endif
 #else
     ly = 0;
@@ -2517,20 +2517,20 @@ void Ppu::reset() {
 #ifdef ENABLE_CGB
     bcps.auto_increment = true;
 #ifndef ENABLE_BOOTROM
-    bcps.address = cgb_flag ? 0 : 8;
+    bcps.address = cgb_game ? 0 : 8;
 #else
     bcps.address = 0;
 #endif
 
     ocps.auto_increment = true;
 #ifndef ENABLE_BOOTROM
-    ocps.address = cgb_flag ? 1 : 16;
+    ocps.address = cgb_game ? 1 : 16;
 #else
     ocps.address = 1;
 #endif
 
 #ifndef ENABLE_BOOTROM
-    opri.priority_mode = !cgb_flag;
+    opri.priority_mode = !cgb_game;
 #else
     opri.priority_mode = false;
 #endif
@@ -2556,7 +2556,7 @@ void Ppu::reset() {
 #ifdef ENABLE_BOOTROM
     dots = 0;
 #else
-    dots = cgb_flag ? 163 : 351;
+    dots = cgb_game ? 163 : 351;
 #endif
 #else
     dots = if_bootrom_else(0, 395);
@@ -2648,7 +2648,7 @@ void Ppu::reset() {
 
 #ifdef ENABLE_CGB
 #ifndef ENABLE_BOOTROM
-    if (cgb_flag) {
+    if (cgb_game) {
         // BG palettes are all initialized as white.
         for (uint32_t i = 0; i < 32; i++) {
             bg_palettes[2 * i] = 0xFF;
@@ -2667,7 +2667,7 @@ void Ppu::reset() {
     color_resolver_enabled = true;
 
 #ifndef ENABLE_BOOTROM
-    obj_priority_mode = !cgb_flag;
+    obj_priority_mode = !cgb_game;
 #else
     obj_priority_mode = false;
 #endif

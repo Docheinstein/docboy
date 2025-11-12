@@ -265,7 +265,7 @@ DmgModePalettes compute_dmg_mode_palettes_from_header(const CartridgeHeader& hea
     static constexpr std::array<DmgModePalettesByChecksum, 256> DMG_MODE_PALETTES_BY_CHECKSUM =
         compute_dmg_mode_palettes();
 
-    uint8_t cksum = header.title_checksum();
+    uint8_t cksum = CartridgeHeaderHelpers::title_checksum(header);
     const auto& palettes_of_checksum = DMG_MODE_PALETTES_BY_CHECKSUM[cksum];
 
     if (!palettes_of_checksum.ambiguous) {
@@ -288,7 +288,7 @@ DmgModePalettes compute_dmg_mode_palettes_from_header(const CartridgeHeader& hea
 } // namespace
 
 void load_dmg_mode_palettes_from_header(const CartridgeHeader& header, uint8_t* bg_palettes, uint8_t* obj_palettes) {
-    ASSERT(!test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag()));
+    ASSERT(!CartridgeHeaderHelpers::is_cgb_game(header));
 
     DmgModePalettes palettes = DEFAULT_PALETTES;
 

@@ -17,20 +17,17 @@ struct CartridgeHeader {
     uint8_t rom_version_number;
     uint8_t header_checksum;
     uint8_t global_checksum[2];
-
-    uint8_t cgb_flag() const {
-        return title[15];
-    }
-
-    uint8_t title_checksum() const {
-        uint8_t cksum = 0;
-        for (const uint8_t c : title) {
-            cksum += c;
-        }
-        return cksum;
-    }
 };
 
 static_assert(sizeof(CartridgeHeader) == 0x50);
+
+namespace CartridgeHeaderHelpers {
+uint8_t cgb_flag(const CartridgeHeader& header);
+uint8_t title_checksum(const CartridgeHeader& header);
+
+uint8_t is_cgb_game(const CartridgeHeader& header);
+bool is_copy_logo_title_checksum(uint8_t cksum);
+bool is_dmg_mode_copy_logo(const CartridgeHeader& header);
+} // namespace CartridgeHeaderHelpers
 
 #endif // CARTRIDGEHEADER_H

@@ -25,6 +25,7 @@ target_sources(docboy PRIVATE
         docboy/cartridge/factory.cpp
         docboy/cartridge/factory.h
         docboy/cartridge/header.h
+        docboy/cartridge/header.cpp
         docboy/cartridge/huc1/huc1.h
         docboy/cartridge/huc1/huc1.tpp
         docboy/cartridge/huc3/huc3.h

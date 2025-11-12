@@ -15,6 +15,16 @@
             ]
         },
         {
+            "rom": "docboy/boot/boot_hram.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/boot/boot_oam.gbc",
             "memory": [
                 {

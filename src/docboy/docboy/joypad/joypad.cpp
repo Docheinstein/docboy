@@ -57,7 +57,7 @@ void Joypad::load_state(Parcel& parcel) {
 
 void Joypad::reset() {
 #if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
-    if (test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag())) {
+    if (CartridgeHeaderHelpers::is_cgb_game(header)) {
         p1.select_buttons = false;
         p1.select_dpad = false;
     } else {

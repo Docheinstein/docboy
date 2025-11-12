@@ -68,8 +68,8 @@ void OperatingMode::reset() {
     // - If bit 7 of CGB flag (0x143) is set, copy CGB flag to KEY0 (usually leads to CGB mode, but can be anything
     // actually).
     // - Otherwise, write 0x04 to KEY0, that is DMG mode.
-    uint8_t cgb_flag = header.cgb_flag();
-    if (test_bit<7>(cgb_flag)) {
+    uint8_t cgb_flag = CartridgeHeaderHelpers::cgb_flag(header);
+    if (test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(cgb_flag)) {
         key0.dmg_ext_mode = get_bit<Specs::Bits::OperatingMode::DMG_EXT_MODE>(cgb_flag);
         key0.dmg_mode = get_bit<Specs::Bits::OperatingMode::DMG_MODE>(cgb_flag);
     } else {

@@ -862,14 +862,14 @@ void Cpu::reset() {
     af = 0x1180;
     sp = if_bootrom_else(0, 0xFFFE);
 
-    if (test_bit<Specs::Bits::Cartridge::CgbFlag::CGB_GAME>(header.cgb_flag())) {
+    if (CartridgeHeaderHelpers::is_cgb_game(header)) {
         bc = 0x0000;
         de = 0xFF56;
         hl = 0x000D;
     } else {
         // In DMG mode the values of BC, DE and HL depend on the title checksum.
-        const uint8_t cksum = header.title_checksum();
-        const bool is_copy_logo_cksum = cksum == 0x43 || cksum == 0x58;
+        const uint8_t cksum = CartridgeHeaderHelpers::title_checksum(header);
+        const bool is_copy_logo_cksum = CartridgeHeaderHelpers::is_copy_logo_title_checksum(cksum);
 
         bc = cksum << 8 | 0x00;
         de = 0x0008;
