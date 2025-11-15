@@ -735,7 +735,8 @@ inline void Ppu::begin_increase_ly() {
     // a different value (which follows a periodic and very specific pattern).
     // Contrarily to some documentation, this happens both in single speed mode and in
     // double speed mode (depending on the T-Cycle CPU/PPU are aligned each other).
-    // It never happens in DMG.
+    // It never happens in DMG or DMG Mode (or maybe it happens also there but the
+    // fixed CPU/PPU alignment does not reveal it?).
     static constexpr std::array<uint8_t, 153> LY_UPDATE_TABLE = generate_ly_update_table();
     next_ly = ly + 1;
     ly = LY_UPDATE_TABLE[ly];
@@ -984,23 +985,22 @@ void Ppu::pixel_transfer_lx8() {
             const ObjPixel obj_pixel = obj_fifo.pop_front();
 
             // Take OBJ pixel instead of the BG pixel only if all are satisfied:
-            // - OBJ are still enabled
+            // - LCDC.OBJ_ENABLE is 1
             // - OBJ pixel is opaque
             // - either one of these is satisfied:
             //   > the BG color is 0
-            //   > [LCDC.BG_WIN_ENABLE is disabled, in CGB mode]
-            //   > BG_OVER_OBJ is disabled [and BG priority is disabled, in CGB mod
+            //   > LCDC.BG_WIN_ENABLE is disabled
+            //   > BG_OVER_OBJ is disabled [and BG priority is disabled as well, in CGB mode]
+            const bool show_obj =
+                lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
+                (!lcdc_.bg_win_enable || bg_pixel.color_index == 0 ||
+                 (
 #ifdef ENABLE_CGB
-            const bool show_obj = lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
-                                  (!lcdc_.bg_win_enable || bg_pixel.color_index == 0 ||
-                                   (!test_bit<Specs::Bits::OAM::Attributes::BG_OVER_OBJ>(obj_pixel.attributes) &&
-                                    !test_bit<Specs::Bits::Background::Attributes::PRIORITY>(bg_pixel.attributes)));
-            // TODO: DMG mode?
-#else
-            const bool show_obj = lcdc_.obj_enable && is_obj_opaque(obj_pixel.color_index) &&
-                                  (bg_pixel.color_index == 0 ||
-                                   !test_bit<Specs::Bits::OAM::Attributes::BG_OVER_OBJ>(obj_pixel.attributes));
+                     // Check BG priority attribute in CGB mode as well
+                     (!operating_mode.is_cgb_mode() ||
+                      !test_bit<Specs::Bits::Background::Attributes::PRIORITY>(bg_pixel.attributes)) &&
 #endif
+                     !test_bit<Specs::Bits::OAM::Attributes::BG_OVER_OBJ>(obj_pixel.attributes)));
 
             if (show_obj) {
                 // Resolve OBJ color against palette.
@@ -1008,7 +1008,11 @@ void Ppu::pixel_transfer_lx8() {
                 uint8_t color_index;
                 const uint8_t* obj_palette;
 
-                if (operating_mode.key0.dmg_mode || operating_mode.key0.dmg_ext_mode) {
+                if (operating_mode.is_cgb_mode()) {
+                    obj_palette = &obj_palettes[8 * get_bits_range<Specs::Bits::OAM::Attributes::CGB_PALETTE>(
+                                                        obj_pixel.attributes)];
+                    color_index = obj_pixel.color_index;
+                } else {
                     // In DMG mode color index is resolved through OBP0 or OBP1 first as in DMG,
                     // then such index is used to find the real CGB color in OBJP0 or OBJP1 palette.
                     uint8_t obp;
@@ -1020,11 +1024,6 @@ void Ppu::pixel_transfer_lx8() {
                         obj_palette = &obj_palettes[0];
                     }
                     color_index = resolve_color(obj_pixel.color_index, obp);
-                } else {
-                    // CGB mode
-                    obj_palette = &obj_palettes[8 * get_bits_range<Specs::Bits::OAM::Attributes::CGB_PALETTE>(
-                                                        obj_pixel.attributes)];
-                    color_index = obj_pixel.color_index;
                 }
 
                 ASSERT(color_index < 4);
@@ -1048,7 +1047,11 @@ void Ppu::pixel_transfer_lx8() {
             uint8_t color_index;
             const uint8_t* bg_palette;
 
-            if (operating_mode.key0.dmg_mode || operating_mode.key0.dmg_ext_mode) {
+            if (operating_mode.is_cgb_mode()) {
+                bg_palette =
+                    &bg_palettes[8 * get_bits_range<Specs::Bits::Background::Attributes::PALETTE>(bg_pixel.attributes)];
+                color_index = bg_pixel.color_index;
+            } else {
                 // In DMG mode color index is resolved through BGP first, as in DMG,
                 // then such index is used to find the real CGB color in the BG palette.
                 bg_palette = bg_palettes;
@@ -1057,11 +1060,6 @@ void Ppu::pixel_transfer_lx8() {
                 const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
                 color_index = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_)
                                                   : 0 /* TODO: test with BG_WIN_ENABLE disabled*/;
-            } else {
-                // CGB mode
-                bg_palette =
-                    &bg_palettes[8 * get_bits_range<Specs::Bits::Background::Attributes::PALETTE>(bg_pixel.attributes)];
-                color_index = bg_pixel.color_index;
             }
 
             ASSERT(color_index < 8);

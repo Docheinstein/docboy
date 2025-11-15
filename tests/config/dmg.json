@@ -10635,6 +10635,14 @@
             ]
         },
         {
+            "rom": "docboy/ppu/visual/bg_obj_overlap_bg_win_off.gb",
+            "framebuffer": "docboy/ppu/bg_obj_overlap_bg_win_off.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/bg_obj_overlap_bg_win_on.gb",
+            "framebuffer": "docboy/ppu/bg_obj_overlap_bg_win_on.png"
+        },
+        {
             "rom": "docboy/ppu/visual/change_bgp_from_boot.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_boot.png",
             "stop_at_instruction": 64

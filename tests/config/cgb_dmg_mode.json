@@ -589,6 +589,14 @@
             ]
         },
         {
+            "rom": "docboy/ppu/visual/bg_obj_overlap_bg_win_off.gb",
+            "framebuffer": "docboy/ppu/bg_obj_overlap_bg_win_off.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/bg_obj_overlap_bg_win_on.gb",
+            "framebuffer": "docboy/ppu/bg_obj_overlap_bg_win_on.png"
+        },
+        {
             "rom": "docboy/ppu/visual/bgp.gb",
             "framebuffer": "docboy/ppu/bgp.png"
         },

@@ -11370,6 +11370,14 @@
             "framebuffer": "docboy/ppu/bg_attrs_lcdc_bit_3.png"
         },
         {
+            "rom": "docboy/ppu/visual/bg_obj_overlap_bg_win_off.gbc",
+            "framebuffer": "docboy/ppu/bg_obj_overlap_bg_win_off.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/bg_obj_overlap_bg_win_on.gbc",
+            "framebuffer": "docboy/ppu/bg_obj_overlap_bg_win_on.png"
+        },
+        {
             "rom": "docboy/ppu/visual/halt_ppu_off.gbc",
             "framebuffer": "docboy/ppu/halt_ppu_off.png",
             "check_interval_ticks": 30000000,

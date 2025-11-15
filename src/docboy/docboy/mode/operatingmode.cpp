@@ -40,6 +40,9 @@ void OperatingMode::write_key0(uint8_t value) {
     //
     key0.dmg_ext_mode = get_bit<Specs::Bits::OperatingMode::DMG_EXT_MODE>(value);
     key0.dmg_mode = get_bit<Specs::Bits::OperatingMode::DMG_MODE>(value);
+
+    // Cached for convenience.
+    cgb_mode = !key0.dmg_mode && !key0.dmg_ext_mode;
 }
 
 uint8_t OperatingMode::read_key0() const {
@@ -51,11 +54,13 @@ uint8_t OperatingMode::read_key0() const {
 void OperatingMode::save_state(Parcel& parcel) const {
     PARCEL_WRITE_BOOL(parcel, key0.dmg_ext_mode);
     PARCEL_WRITE_BOOL(parcel, key0.dmg_mode);
+    PARCEL_WRITE_BOOL(parcel, cgb_mode);
 }
 
 void OperatingMode::load_state(Parcel& parcel) {
     key0.dmg_ext_mode = parcel.read_bool();
     key0.dmg_mode = parcel.read_bool();
+    cgb_mode = parcel.read_bool();
 }
 
 void OperatingMode::reset() {
@@ -77,4 +82,6 @@ void OperatingMode::reset() {
         key0.dmg_mode = true;
     }
 #endif
+
+    cgb_mode = !key0.dmg_mode && !key0.dmg_ext_mode;
 }
