@@ -605,9 +605,7 @@ void Ppu::turn_off() {
     tick_selector = &Ppu::oam_scan_after_turn_on;
 
     is_glitched_line_0 = true;
-#ifndef ENABLE_CGB
-    glitched_line_0_hblank_delay = false;
-#endif
+    glitched_line_0_hblank_delay = 0;
 
     enable_lyc_eq_ly_irq = true;
 
@@ -3036,6 +3034,7 @@ void Ppu::write_stat(uint8_t value) {
 #else
     // STAT write takes effect 1 T-Cycle later on DMG, and during this T-Cycle it behaves as if FF
     // would have been written, i.e. all the STAT interrupts are enabled.
+    // Verified: it happens only in DMG, not in CGB DMG mode.
     stat_write.pending = true;
     stat_write.value = value;
 

@@ -1659,6 +1659,18 @@
             ]
         }
     ],
+    "stat_write_bug": [
+        {
+            "rom": "docboy/stat_write_bug/stat_write_bug_hblank.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        }
+    ],
     "undocumented": [
         {
             "rom": "docboy/undocumented/ff72_write_read.gb",

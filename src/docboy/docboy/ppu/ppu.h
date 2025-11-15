@@ -45,10 +45,6 @@ public:
     void disable_color_resolver();
 #endif
 
-#ifdef ENABLE_CGB
-    void load_cgb_dmg_mode_palettes(const uint8_t* bgp0, const uint8_t* objp0, const uint8_t* objp1);
-#endif
-
     void save_state(Parcel& parcel) const;
     void load_state(Parcel& parcel);
 
