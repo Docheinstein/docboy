@@ -1348,6 +1348,7 @@ void Ppu::vblank_last_line_453() {
 #ifndef ENABLE_CGB
     // On DMG, reading STAT the last few cycles of VBlank yields mode HBlank.
     // Nevertheless, this mode change does not cause a STAT interrupt for HBlank mode.
+    // Verified: it happens only in DMG, not in CGB DMG mode.
     vblank_last_line_stat_mode_hblank_glitch = true;
 
     // I guess "internal" mode is changed to OAM Scan

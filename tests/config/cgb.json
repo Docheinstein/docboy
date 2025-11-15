@@ -11300,6 +11300,36 @@
             ]
         },
         {
+            "rom": "docboy/ppu/vblank_read_stat_last_line_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/vblank_read_stat_last_line_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/vblank_read_stat_last_line_round3.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/visual/bg_attr_bank.gbc",
             "framebuffer": "docboy/ppu/bg_attr_bank.png"
         },

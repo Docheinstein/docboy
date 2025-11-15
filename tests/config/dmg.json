@@ -10344,6 +10344,36 @@
             ]
         },
         {
+            "rom": "docboy/ppu/vblank_read_stat_last_line_round1.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/vblank_read_stat_last_line_round2.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/vblank_read_stat_last_line_round3.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/write_ly_ignored.gb",
             "memory": [
                 {
