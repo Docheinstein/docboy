@@ -323,7 +323,8 @@ uint16_t compute_initial_cgb_div16(const CartridgeHeader& header) {
         DMG_MODE_DIV16_BY_HEADER[CartridgeHeaderHelpers::is_cgb_game(
             header)][header.old_licensee_code == Specs::Cartridge::Header::OldLicensee::NINTENDO
                          ? 0
-                         : (header.old_licensee_code == Specs::Cartridge::Header::OldLicensee::NINTENDO ? 1 : 2)]
+                         : (header.old_licensee_code == Specs::Cartridge::Header::OldLicensee::USE_NEW_LICENSEE ? 1
+                                                                                                                : 2)]
                                 [header.new_licensee_code[0] == Specs::Cartridge::Header::NewLicensee::NINTENDO[0]]
                                 [header.new_licensee_code[1] == Specs::Cartridge::Header::NewLicensee::NINTENDO[1]];
 
@@ -344,6 +345,8 @@ uint16_t compute_initial_cgb_div16(const CartridgeHeader& header) {
     // The fourth letter of the title affects the timing.
     const uint8_t fourth_letter = header.title[3];
     const auto& ambiguous_checksum_prediction_table = DMG_MODE_AMBIGUOUS_CHECKSUM_DIV16[title_checksum];
+    ASSERT(ambiguous_checksum_prediction_table[0].first && ambiguous_checksum_prediction_table[1].first);
+
     for (const auto& [letter, div16] : ambiguous_checksum_prediction_table) {
         if (!letter /* default index case */ || *letter == fourth_letter) {
             checksum_div16 = div16;
@@ -351,7 +354,7 @@ uint16_t compute_initial_cgb_div16(const CartridgeHeader& header) {
         }
     }
 
-    ASSERT(checksum_div16 > PREDICTION_SENTINEL);
+    ASSERT(checksum_div16 > SENTINEL);
     return base_div16 + checksum_div16;
 }
 

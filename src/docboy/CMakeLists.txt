@@ -115,13 +115,6 @@ if (ENABLE_CGB)
             docboy/undoc/undocregs.cpp
             docboy/undoc/undocregs.h
     )
-
-    if (NOT ENABLE_BOOTROM)
-        target_sources(docboy PRIVATE
-                docboy/ppu/dmgmodepal.h
-                docboy/ppu/dmgmodepal.cpp
-        )
-    endif()
 endif()
 
 if (ENABLE_BOOTROM)
