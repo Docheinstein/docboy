@@ -145,7 +145,11 @@ public:
     Joypad joypad {interrupts};
 #endif
     Serial serial {timers, interrupts};
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    Timers timers {interrupts, cartridge_header};
+#else
     Timers timers {interrupts};
+#endif
     Interrupts interrupts {};
 
     // Buses

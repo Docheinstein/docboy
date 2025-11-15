@@ -1,10 +1,362 @@
 #include "docboy/timers/timers.h"
 
 #include "docboy/bootrom/helpers.h"
+#include "docboy/cartridge/header.h"
 #include "docboy/interrupts/interrupts.h"
 
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+#include "docboy/cartridge/header.h"
+#include <optional>
+#endif
+
+#include "utils/asserts.h"
 #include "utils/parcel.h"
 
+namespace {
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+constexpr uint16_t DMG_MODE_CHECKSUM_DIV16[256] = {
+    0x28D4, 0x388C, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3634, 0x0000,
+    0x3784, 0x3784, 0x34CC, 0x3784, 0x3784, 0x3784, 0x2E44, 0x3144, 0x2D94, 0x347C, 0x0000, 0x29A4, 0x3784, 0x3784,
+    0x3784, 0x2954, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x0000, 0x0000, 0x376C,
+    0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x2AE4, 0x30F4, 0x2D4C, 0x3784,
+    0x3784, 0x2DF4, 0x3784, 0x3784, 0x2AD4, 0x27D4, 0x328C, 0x34A4, 0x3784, 0x3784, 0x3784, 0x34B4, 0x3784, 0x3784,
+    0x0000, 0x3784, 0x3784, 0x34DC, 0x3784, 0x2D14, 0x3784, 0x3784, 0x356C, 0x3784, 0x3784, 0x3784, 0x385C, 0x3784,
+    0x3784, 0x3784, 0x3784, 0x3784, 0x356C, 0x2F8C, 0x3784, 0x3784, 0x2F6C, 0x397C, 0x3784, 0x3784, 0x3784, 0x0000,
+    0x3784, 0x3784, 0x3784, 0x3784, 0x0000, 0x38D4, 0x364C, 0x336C, 0x0000, 0x39DC, 0x3784, 0x39AC, 0x3784, 0x3394,
+    0x314C, 0x3664, 0x3784, 0x3784, 0x3784, 0x31B4, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784,
+    0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x363C, 0x3784, 0x2C24, 0x3784, 0x3784, 0x368C,
+    0x29A4, 0x3784, 0x3784, 0x3784, 0x2D44, 0x3784, 0x2EE4, 0x3784, 0x3784, 0x347C, 0x3784, 0x2D04, 0x3784, 0x3214,
+    0x3104, 0x3784, 0x3484, 0x387C, 0x3784, 0x3784, 0x3784, 0x3784, 0x35EC, 0x3784, 0x3784, 0x0000, 0x3784, 0x3784,
+    0x306C, 0x3784, 0x2FF4, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x0000, 0x3784, 0x3784,
+    0x3784, 0x36C4, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3224, 0x3784, 0x0000, 0x3784, 0x3784, 0x3784, 0x3784,
+    0x3784, 0x3784, 0x0000, 0x3784, 0x3784, 0x2FEC, 0x3784, 0x3784, 0x3784, 0x3784, 0x356C, 0x3784, 0x3784, 0x2D5C,
+    0x3784, 0x0000, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x2CC4, 0x3784, 0x3784, 0x3784, 0x3784,
+    0x382C, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784, 0x36B4, 0x3784, 0x3784, 0x3784, 0x3784, 0x3784,
+    0x3784, 0x3784, 0x353C, 0x3784, 0x312C, 0x3784, 0x0000, 0x3784, 0x355C, 0x358C, 0x3784, 0x3784, 0x3784, 0x3784,
+    0x3784, 0x3784, 0x3784, 0x3154};
+
+constexpr std::pair<std::optional<uint8_t>, uint16_t> DMG_MODE_AMBIGUOUS_CHECKSUM_DIV16[256][4] = {
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    /* 0x0D */ {{'R', 0x3ec4}, {'E', 0x35e8}, {std::nullopt, 0x381c}},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    /* 0x18 */ {{'K', 0x3bd4}, {'I', 0x3728}, {std::nullopt, 0x375c}},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    /* 0x27 */ {{'B', 0x3af4}, {'N', 0x3c10}, {std::nullopt, 0x36fc}},
+    /* 0x28 */ {{'F', 0x33ec}, {'A', 0x3a88}, {std::nullopt, 0x363c}},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    /* 0x46 */ {{'E', 0x333c}, {'R', 0x3be0}, {std::nullopt, 0x360c}},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    /* 0x61 */ {{'E', 0x374c}, {'A', 0x3c40}, {std::nullopt, 0x372c}},
+    {},
+    {},
+    {},
+    {},
+    /* 0x66 */ {{'E', 0x33fc}, {'L', 0x3758}, {std::nullopt, 0x378c}},
+    {},
+    {},
+    {},
+    /* 0x6A */ {{'K', 0x3c34}, {'I', 0x34a8}, {std::nullopt, 0x37bc}},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    /* 0xA5 */ {{'A', 0x3a5c}, {'R', 0x34f8}, {std::nullopt, 0x366c}},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    /* 0xB3 */ {{'B', 0x39d4}, {'U', 0x3228}, {'R', 0x3cfc}, {std::nullopt, 0x3638}},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    /* 0xBF */ {{' ', 0x357c}, {'C', 0x3b80}, {std::nullopt, 0x37ec}},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    /* 0xC6 */ {{'A', 0x3994}, {' ', 0x3668}, {std::nullopt, 0x369c}},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {{'R', 0x372c}, {'I', 0x3cc0}, {std::nullopt, 0x36cc}}, /* 0xD3 */
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {{'-', 0x3ec4}, {' ', 0x3518}, {std::nullopt, 0x384c}}, /* 0xF4 */
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {}};
+
+// Indexed as:
+// [cgb_flag & 0x80]
+// [0: old_Licensee == 0x01, 1: old_Licensee == 0x33, 2: else]
+// [new_licensee[0] == 0x30]
+// [new_licensee[1] == 0x31]
+constexpr uint16_t DMG_MODE_DIV16_BY_HEADER[2][3][2][2] = {
+    {
+        {{0x0000, 0x0000}, {0x0000, 0x0000}},
+        {{0x2678, 0x2678}, {0x269c, 0x0020}},
+        {{0x267c, 0x267c}, {0x267c, 0x267c}},
+    },
+    {
+        {{0x2fa8, 0x2fa8}, {0x2fa8, 0x2fa8}},
+        {{0x1e9c, 0x1e9c}, {0x1ec0, 0x2fc8}},
+        {{0x1ea0, 0x1ea0}, {0x1ea0, 0x1ea0}},
+    },
+
+};
+
+uint16_t compute_initial_cgb_div16(const CartridgeHeader& header) {
+    // TODO: does this logic cover all the possible cases, or there's something else of the header to consider?
+
+    static constexpr uint16_t SENTINEL = 0x100;
+
+    // If the rom does not need to compute the title checksum (i.e. either is a CGB game or is a DMG not licensed by
+    // nintendo) then the DIV16 is "trivial" to predict and is given by the DMG_MODE_DIV16_BY_HEADER table.
+    uint16_t base_div16 =
+        DMG_MODE_DIV16_BY_HEADER[CartridgeHeaderHelpers::is_cgb_game(
+            header)][header.old_licensee_code == Specs::Cartridge::Header::OldLicensee::NINTENDO
+                         ? 0
+                         : (header.old_licensee_code == Specs::Cartridge::Header::OldLicensee::NINTENDO ? 1 : 2)]
+                                [header.new_licensee_code[0] == Specs::Cartridge::Header::NewLicensee::NINTENDO[0]]
+                                [header.new_licensee_code[1] == Specs::Cartridge::Header::NewLicensee::NINTENDO[1]];
+
+    if (base_div16 > SENTINEL) {
+        // Checksum does not affect the rom's boot time: our prediction is good to go.
+        return base_div16;
+    }
+
+    // Prediction of DIV16 is more complex: we need to use the title checksum.
+    const uint8_t title_checksum = CartridgeHeaderHelpers::title_checksum(header);
+    uint16_t checksum_div16 = DMG_MODE_CHECKSUM_DIV16[title_checksum];
+
+    if (checksum_div16 > SENTINEL) {
+        // The title checksum is not an ambiguous checksum: the prediction is good to go.
+        return base_div16 + checksum_div16;
+    }
+
+    // The fourth letter of the title affects the timing.
+    const uint8_t fourth_letter = header.title[3];
+    const auto& ambiguous_checksum_prediction_table = DMG_MODE_AMBIGUOUS_CHECKSUM_DIV16[title_checksum];
+    for (const auto& [letter, div16] : ambiguous_checksum_prediction_table) {
+        if (!letter /* default index case */ || *letter == fourth_letter) {
+            checksum_div16 = div16;
+            break;
+        }
+    }
+
+    ASSERT(checksum_div16 > PREDICTION_SENTINEL);
+    return base_div16 + checksum_div16;
+}
+
+#endif
+} // namespace
 /* TIMA overflow timing example.
  *   t                  CPU                              Timer
  * CPU   |
@@ -18,9 +370,17 @@
  *       | [writing TMA writes TIMA too]
  * DMA   |                                      Reload -> None
  */
-
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+Timers::Timers(Interrupts& interrupts, CartridgeHeader& header) :
+#else
 Timers::Timers(Interrupts& interrupts) :
-    interrupts {interrupts} {
+#endif
+    interrupts {interrupts}
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    ,
+    header {header}
+#endif
+{
 }
 
 void Timers::tick() {
@@ -50,11 +410,13 @@ void Timers::load_state(Parcel& parcel) {
 
 void Timers::reset() {
 #ifdef ENABLE_CGB
+#ifdef ENABLE_BOOTROM
+    div16 = 0x0008;
+#else
     // On CGB accurate prediction of DIV is fairly complex, that's because the boot rom takes different paths
-    // based on the cartridge header (old licensee code, new licensee code, cgb flag, title checksum).
-    // Here we've hardcoded 0x1E9C as starting value, that is the initial DIV value of a CGB game (CGB flag 0x80)
-    // with old licensee code 0x33 and new licensee code 0x00 0x00 (as in little-things-gb/whichboot.gb).
-    div16 = if_bootrom_else(0x0008, 0x1E9C);
+    // based on the cartridge header (old licensee code, new licensee code, cgb flag, title checksum, ...).
+    div16 = compute_initial_cgb_div16(header);
+#endif
 #else
     div16 = if_bootrom_else(0x0008, 0xABCC); // [mooneye/boot_div-dmgABCmgb.gb]
 #endif

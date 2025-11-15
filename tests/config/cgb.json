@@ -19,7 +19,7 @@
             ]
         },
         {
-            "rom": "docboy/boot/boot_div_phase_old_license_33_round1.gbc",
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_00_new_license_00_round1.gbc",
             "memory": [
                 {
                     "address": 65520,
@@ -29,7 +29,507 @@
             ]
         },
         {
-            "rom": "docboy/boot/boot_div_phase_old_license_33_round2.gbc",
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_00_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_00_new_license_3030_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_00_new_license_3030_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_00_new_license_3031_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_00_new_license_3031_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_01_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_01_new_license_3030_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_01_new_license_3030_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_01_new_license_3031_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_01_new_license_3031_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_33_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_33_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_33_new_license_3030_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_33_new_license_3030_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_33_new_license_3031_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_00_old_license_33_new_license_3031_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_00_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_00_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_00_new_license_3030_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_00_new_license_3030_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_00_new_license_3031_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_00_new_license_3031_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_01_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_01_new_license_3030_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_01_new_license_3030_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_01_new_license_3031_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_01_new_license_3031_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_33_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_33_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_33_new_license_3030_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_33_new_license_3030_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_33_new_license_3031_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_00_cgb_flag_80_old_license_33_new_license_3031_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_16_cgb_flag_00_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_16_cgb_flag_00_old_license_01_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_46A_cgb_flag_00_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_46A_cgb_flag_00_old_license_01_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_46E_cgb_flag_00_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_46E_cgb_flag_00_old_license_01_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_46R_cgb_flag_00_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_46R_cgb_flag_00_old_license_01_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_6F_cgb_flag_00_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_6F_cgb_flag_00_old_license_01_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_BF__cgb_flag_00_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_BF__cgb_flag_00_old_license_01_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_EA_cgb_flag_00_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_EA_cgb_flag_00_old_license_01_new_license_00_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_F4-_cgb_flag_00_old_license_01_new_license_00_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/boot/boot_div_title_F4-_cgb_flag_00_old_license_01_new_license_00_round2.gbc",
             "memory": [
                 {
                     "address": 65520,

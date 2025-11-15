@@ -11,12 +11,17 @@
 
 class Parcel;
 class Interrupts;
+struct CartridgeHeader;
 
 class Timers {
 public:
     DEBUGGABLE_CLASS()
 
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    Timers(Interrupts& interrupts, CartridgeHeader& header);
+#else
     explicit Timers(Interrupts& interrupts);
+#endif
 
     void tick();
 
@@ -59,6 +64,10 @@ private:
     void handle_pending_tima_reload();
 
     Interrupts& interrupts;
+
+#if defined(ENABLE_CGB) && !defined(ENABLE_BOOTROM)
+    const CartridgeHeader& header;
+#endif
 
     TimaReloadState::Type tima_state {};
     bool last_div_bit_and_tac_enable {};

@@ -271,6 +271,18 @@ const std::map<uint8_t, std::string> ROM_SIZE_DESCRIPTION_MAP = {
 const std::map<uint8_t, std::string> RAM_SIZE_DESCRIPTION_MAP = {
     {0x00, "No RAM"},           {0x01, "2 KiB (unofficial)"}, {0x02, "8 KiB (1 banks)"},
     {0x03, "32 KiB (4 banks)"}, {0x04, "128 KiB (16 banks)"}, {0x05, "64 KiB (8 banks)"}};
+
+std::string new_licensee_code_as_short_string(const CartridgeHeader& header) {
+    std::string str;
+    str.resize(2);
+    for (uint8_t i = 0; i < sizeof(header.new_licensee_code); i++) {
+        // We want to keep this display string of a fixed size of 2,
+        // therefore any non-printable character (including \0) with a space.
+        str[i] = isprint(header.new_licensee_code[i]) ? static_cast<char>(header.new_licensee_code[i]) : ' ';
+    }
+    return str;
+}
+
 } // namespace
 
 namespace CartridgeHeaderHelpers {
@@ -299,18 +311,11 @@ std::string cgb_flag_description(const CartridgeHeader& header) {
 }
 
 std::string new_licensee_code_as_string(const CartridgeHeader& header) {
-    std::string str;
-    str.resize(2);
-    for (uint8_t i = 0; i < sizeof(header.new_licensee_code); i++) {
-        // We want to keep this display string of a fixed size of 2,
-        // therefore any non-printable character (including \0) with a space.
-        str[i] = isprint(header.new_licensee_code[i]) ? static_cast<char>(header.new_licensee_code[i]) : ' ';
-    }
-    return hex(header.new_licensee_code, 2) + " (\"" + str + "\")";
+    return hex(header.new_licensee_code, 2) + " (\"" + new_licensee_code_as_short_string(header) + "\")";
 }
 
 std::string new_licensee_code_description(const CartridgeHeader& header) {
-    if (const auto it = NEW_LICENSEE_CODE_DESCRIPTION_MAP.find(new_licensee_code_as_string(header));
+    if (const auto it = NEW_LICENSEE_CODE_DESCRIPTION_MAP.find(new_licensee_code_as_short_string(header));
         it != NEW_LICENSEE_CODE_DESCRIPTION_MAP.end()) {
         return it->second;
     }
