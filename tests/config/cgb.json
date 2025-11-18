@@ -11060,6 +11060,26 @@
             ]
         },
         {
+            "rom": "docboy/ppu/oam_stat_interrupt_during_last_hblank.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/oam_stat_interrupt_during_vblank.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/ocps_increment.gbc",
             "memory": [
                 {

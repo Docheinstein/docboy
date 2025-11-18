@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <map>
 #include <optional>
 
 #include "docboy/debugger/shared.h"
@@ -56,7 +57,7 @@ public:
 
     void load_symbols(const std::string& path);
     std::optional<DebugSymbol> get_symbol(uint16_t addr) const;
-    const std::unordered_map<uint16_t, DebugSymbol>& get_symbols() const;
+    const std::map<uint16_t, DebugSymbol>& get_symbols() const;
 
     void notify_tick(uint64_t tick);
     void notify_memory_read(uint16_t address);
@@ -127,7 +128,7 @@ private:
 
     std::optional<CartridgeInfo> cartridge_info {};
 
-    std::unordered_map<uint16_t, DebugSymbol> symbols;
+    std::map<uint16_t, DebugSymbol> symbols;
 
     std::vector<Breakpoint> breakpoints;
     std::vector<Watchpoint> watchpoints;

@@ -641,9 +641,12 @@ inline void Ppu::raise_stat_irq() {
 
         const bool hblank_irq = stat.hblank_int && mode == HBLANK;
 
-        // VBlank interrupt is raised either with VBLANK or OAM STAT's flag when entering VBLANK.
+#ifdef ENABLE_CGB
+        const bool vblank_irq = stat.vblank_int && mode == VBLANK;
+#else
+        // In DMG (but not in CGB DMG mode) VBlank interrupt is raised either with VBLANK or OAM STAT's flag set.
         const bool vblank_irq = (stat.vblank_int || stat.oam_int) && mode == VBLANK;
-
+#endif
         // Eventually schedule raise of STAT interrupt.
         update_stat_irq(lyc_eq_ly_irq || hblank_irq || vblank_irq);
     }
@@ -1058,8 +1061,7 @@ void Ppu::pixel_transfer_lx8() {
 
                 // TODO: does the BGP or bug affects also CGB in DMG mode?
                 const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
-                color_index = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_)
-                                                  : 0 /* TODO: test with BG_WIN_ENABLE disabled*/;
+                color_index = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_) : 0;
             }
 
             ASSERT(color_index < 8);
@@ -1505,7 +1507,7 @@ inline void Ppu::enter_hblank() {
 #ifdef ENABLE_CGB
         // On CGB with double speed mode it seems that HBlank takes
         // 1 extra T-Cycle to be visible through STAT's read.
-        // Other STAT modes seems to be visible at the right time.
+        // Other STAT modes seem to be visible at the right time.
         if (speed_switch_controller.is_double_speed_mode()) {
             delay_stat_mode_update = true;
         }
@@ -1525,6 +1527,7 @@ void Ppu::enter_vblank() {
 
     // It seems that the VBlank mode timing is different between DMG and CGB.
     // In CGB, VBlank mode is set 1 dot later.
+    // TODO: verify if this delay exists also in DMG mode.
 #ifdef ENABLE_CGB
     update_mode<VBLANK>();
 #else

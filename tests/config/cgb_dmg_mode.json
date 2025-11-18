@@ -529,6 +529,26 @@
             ]
         },
         {
+            "rom": "docboy/ppu/oam_stat_interrupt_during_last_hblank.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/oam_stat_interrupt_during_vblank.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/ocpd_write_read.gb",
             "memory": [
                 {

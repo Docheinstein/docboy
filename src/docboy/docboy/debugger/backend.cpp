@@ -304,7 +304,7 @@ std::optional<DebugSymbol> DebuggerBackend::get_symbol(uint16_t addr) const {
     return std::nullopt;
 }
 
-const std::unordered_map<uint16_t, DebugSymbol>& DebuggerBackend::get_symbols() const {
+const std::map<uint16_t, DebugSymbol>& DebuggerBackend::get_symbols() const {
     return symbols;
 }
 

@@ -139,6 +139,7 @@ struct FrontendTraceCommand {
 };
 
 struct FrontendDumpDisassembleCommand {};
+struct FrontendShowSymbolsCommand {};
 
 struct FrontendResetCommand {};
 struct FrontendSaveStateCommand {
@@ -158,8 +159,8 @@ using FrontendCommand =
                  FrontendKeyCommand, FrontendTickCommand, FrontendDotCommand, FrontendStepCommand,
                  FrontendMicroStepCommand, FrontendNextCommand, FrontendMicroNextCommand, FrontendFrameCommand,
                  FrontendScanlineCommand, FrontendFrameBackCommand, FrontendContinueCommand, FrontendTraceCommand,
-                 FrontendDumpDisassembleCommand, FrontendResetCommand, FrontendSaveStateCommand,
-                 FrontendLoadStateCommand, FrontendHelpCommand, FrontendQuitCommand>;
+                 FrontendDumpDisassembleCommand, FrontendShowSymbolsCommand, FrontendResetCommand,
+                 FrontendSaveStateCommand, FrontendLoadStateCommand, FrontendHelpCommand, FrontendQuitCommand>;
 
 struct FrontendCommandInfo {
     std::regex regex;
@@ -510,6 +511,10 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          return FrontendDumpDisassembleCommand {};
      }},
+    {std::regex(R"(symbols)"), "symbols", "Show the symbols (if .sym is available)",
+     [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
+         return FrontendShowSymbolsCommand {};
+     }},
     {std::regex(R"(r)"), "r", "Reset the emulator to its initial state",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          return FrontendResetCommand {};
@@ -849,6 +854,23 @@ DebuggerFrontend::handle_command<FrontendDumpDisassembleCommand>(const FrontendD
         }
     }
     std::cout << "Dumped " << disassembled.size() << " instructions" << std::endl;
+
+    return std::nullopt;
+}
+
+// ShowSymbols
+template <>
+std::optional<Command>
+DebuggerFrontend::handle_command<FrontendShowSymbolsCommand>(const FrontendShowSymbolsCommand& cmd) {
+    const std::map<uint16_t, DebugSymbol>& symbols = backend.get_symbols();
+    if (!symbols.empty()) {
+        for (const auto& [_, symbol] : symbols) {
+            std::cout << (symbol.boot ? "BOOT" : hex<uint8_t, 2>(symbol.bank)) << ":" << hex(symbol.address) << " "
+                      << symbol.name << std::endl;
+        }
+    } else {
+        std::cout << "No symbols loaded" << std::endl;
+    }
 
     return std::nullopt;
 }
