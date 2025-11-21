@@ -400,12 +400,15 @@ const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
     &Ppu::oam_scan_77,
     &Ppu::oam_scan_done,
     &Ppu::oam_scan_after_turn_on,
+    &Ppu::oam_scan_after_turn_on_78,
+    &Ppu::oam_scan_after_turn_on_79,
     &Ppu::pixel_transfer_dummy_lx0,
     &Ppu::pixel_transfer_discard_lx0,
     &Ppu::pixel_transfer_discard_lx0_wx0_scx7,
     &Ppu::pixel_transfer_lx0,
     &Ppu::pixel_transfer_lx8,
     &Ppu::hblank,
+    &Ppu::hblank_452,
     &Ppu::hblank_453,
     &Ppu::hblank_454,
     &Ppu::hblank_455,
@@ -795,11 +798,13 @@ void Ppu::oam_scan_odd() {
     // Submit a read request to read two bytes from OAM (Y and X) for the next OAM entry.
     oam_scan_read_request();
 
+#ifndef ENABLE_CGB
     if (dots == 75) {
-        // OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
+        // On DMG, OAM bus seems to be released (i.e. writes to OAM works normally) just for this cycle
         // [mooneye/lcdon_write_timing]
         oam.release();
     }
+#endif
 
     ++dots;
 
@@ -809,9 +814,12 @@ void Ppu::oam_scan_odd() {
 void Ppu::oam_scan_77() {
     ASSERT(dots == 77);
 
-    // OAM bus is re-acquired this cycle
+#ifndef ENABLE_CGB
+    // On DMG, OAM bus is re-acquired this cycle.
+    // (On CGB it remains acquired).
     // [mooneye/lcdon_write_timing]
     oam.acquire();
+#endif
 
     // VRAM bus is acquired one cycle before STAT is updated
     // [mooneye/lcdon_timing]
@@ -835,16 +843,38 @@ void Ppu::oam_scan_done() {
 }
 
 void Ppu::oam_scan_after_turn_on() {
+    ASSERT(dots < 78);
     ASSERT(!oam.is_acquired_by_this());
 
     // First OAM Scan after PPU turn on does nothing.
-    if (++dots == 79) {
-        // Mode is updated to Pixel Transfer one dot earlier it actually comes in.
-        ASSERT(mode == OAM_SCAN);
-        update_mode<PIXEL_TRANSFER>();
-    } else if (dots == 80) {
-        enter_pixel_transfer();
+
+    if (++dots == 78) {
+#ifdef ENABLE_CGB
+        // On CGB OAM bus is acquired earlier even for first scanline.
+        oam.acquire();
+#endif
+        tick_selector = &Ppu::oam_scan_after_turn_on_78;
     }
+}
+
+void Ppu::oam_scan_after_turn_on_78() {
+    ASSERT(dots == 78);
+
+    // Mode is updated to Pixel Transfer one dot earlier it actually comes in.
+    ASSERT(mode == OAM_SCAN);
+    update_mode<PIXEL_TRANSFER>();
+
+    tick_selector = &Ppu::oam_scan_after_turn_on_79;
+
+    dots = 79;
+}
+
+void Ppu::oam_scan_after_turn_on_79() {
+    ASSERT(dots == 79);
+
+    enter_pixel_transfer();
+
+    dots = 80;
 }
 
 void Ppu::pixel_transfer_dummy_lx0() {
@@ -1102,21 +1132,35 @@ void Ppu::hblank() {
     ASSERT(lx == 168);
     ASSERT(ly < 143);
 
-    if (++dots == 453) {
-        // Eventually raise OAM interrupt
-        update_stat_irq_for_oam_mode();
-
-        begin_increase_ly();
-
-        tick_selector = &Ppu::hblank_453;
+    if (++dots == 452) {
+#ifdef ENABLE_CGB
+        // On CGB, OAM bus is acquired here (while on DMG it's acquired later).
+        oam.acquire();
+#endif
+        tick_selector = &Ppu::hblank_452;
     }
+}
+
+void Ppu::hblank_452() {
+    ASSERT(dots == 452);
+
+    // Eventually raise OAM interrupt
+    update_stat_irq_for_oam_mode();
+
+    begin_increase_ly();
+
+    dots = 453;
+
+    tick_selector = &Ppu::hblank_453;
 }
 
 void Ppu::hblank_453() {
     ASSERT(dots == 453);
 
-    // OAM bus is acquired here.
+#ifndef ENABLE_CGB
+    // On DMG, OAM bus is acquired here.
     oam.acquire();
+#endif
 
     reset_oam_scan_entries();
 
@@ -1224,8 +1268,13 @@ void Ppu::hblank_first_line_after_turn_on() {
     ASSERT(ly == 0);
 
     ++dots;
+    ++glitched_line_0_hblank_delay;
 
-    if (++glitched_line_0_hblank_delay == 2) {
+    if (glitched_line_0_hblank_delay == 1) {
+        // VRAM and OAM bus are released 1 dot before mode is updated.
+        vram.release();
+        oam.release();
+    } else if (glitched_line_0_hblank_delay == 2) {
         // STAT is updated to HBlank mode 2 dots later the first line PPU is turned on.
         update_mode<HBLANK>();
 
@@ -1233,7 +1282,7 @@ void Ppu::hblank_first_line_after_turn_on() {
 
         tick_selector = &Ppu::hblank;
 
-        // Not necessary for anything else: reset this.
+        // At the moment this flag is not necessary for anything else: reset this.
         is_glitched_line_0 = false;
     }
 }
@@ -1495,10 +1544,11 @@ inline void Ppu::enter_hblank() {
 
     if (is_glitched_line_0) {
         // HBlank mode is delayed by 2 dots the first line PPU is turned on.
-        // It seems that only STAT is delayed by 2 dots; but bus are released now anyhow.
         tick_selector = &Ppu::hblank_first_line_after_turn_on;
 
         glitched_line_0_hblank_delay = 0;
+
+        // VRAM and OAM buses are released the next dot.
     } else {
         update_mode<HBLANK>();
 
@@ -1512,10 +1562,10 @@ inline void Ppu::enter_hblank() {
             delay_stat_mode_update = true;
         }
 #endif
-    }
 
-    vram.release();
-    oam.release();
+        vram.release();
+        oam.release();
+    }
 }
 
 void Ppu::enter_vblank() {

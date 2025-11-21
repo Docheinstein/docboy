@@ -509,6 +509,51 @@
     ],
     "ppu": [
         {
+            "rom": "mooneye/ppu/hblank_ly_scx_timing-GS.gb",
+            "framebuffer": "mooneye/ppu/hblank_ly_scx_timing-GS.png"
+        },
+        {
+            "rom": "mooneye/ppu/intr_1_2_timing-GS.gb",
+            "framebuffer": "mooneye/ppu/intr_1_2_timing-GS.png"
+        },
+        {
+            "rom": "mooneye/ppu/intr_2_0_timing.gb",
+            "framebuffer": "mooneye/ppu/intr_2_0_timing.png"
+        },
+        {
+            "rom": "mooneye/ppu/intr_2_mode0_timing_sprites.gb",
+            "framebuffer": "mooneye/ppu/ok.png"
+        },
+        {
+            "rom": "mooneye/ppu/intr_2_mode3_timing.gb",
+            "framebuffer": "mooneye/ppu/intr_2_mode3_timing.png"
+        },
+        {
+            "rom": "mooneye/ppu/intr_2_oam_ok_timing.gb",
+            "framebuffer": "mooneye/ppu/intr_2_oam_ok_timing.png"
+        },
+        {
+            "rom": "mooneye/ppu/lcdon_timing-GS.gb",
+            "framebuffer": "mooneye/ppu/lcdon_timing-GS.png",
+            "enabled": false
+        },
+        {
+            "rom": "mooneye/ppu/lcdon_write_timing-GS.gb",
+            "framebuffer": "mooneye/ppu/lcdon_write_timing-GS.png"
+        },
+        {
+            "rom": "mooneye/ppu/stat_irq_blocking.gb",
+            "framebuffer": "mooneye/ppu/ok.png"
+        },
+        {
+            "rom": "mooneye/ppu/stat_lyc_onoff.gb",
+            "framebuffer": "mooneye/ppu/ok.png"
+        },
+        {
+            "rom": "mooneye/ppu/vblank_stat_intr-GS.gb",
+            "framebuffer": "mooneye/ppu/vblank_stat_intr-GS.png"
+        },
+        {
             "rom": "docboy/ppu/bcpd_write_read.gb",
             "memory": [
                 {
@@ -540,6 +585,16 @@
         },
         {
             "rom": "docboy/ppu/oam_stat_interrupt_during_vblank.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/oam_write_block_timing.gb",
             "memory": [
                 {
                     "address": 65520,
@@ -600,6 +655,16 @@
         },
         {
             "rom": "docboy/ppu/vblank_read_stat_last_line_round3.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/vram_write_block_timing.gb",
             "memory": [
                 {
                     "address": 65520,

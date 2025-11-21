@@ -196,6 +196,8 @@ private:
     void oam_scan_77();
     void oam_scan_done();
     void oam_scan_after_turn_on();
+    void oam_scan_after_turn_on_78();
+    void oam_scan_after_turn_on_79();
 
     void pixel_transfer_dummy_lx0();
     void pixel_transfer_discard_lx0();
@@ -204,6 +206,7 @@ private:
     void pixel_transfer_lx8();
 
     void hblank();
+    void hblank_452();
     void hblank_453();
     void hblank_454();
     void hblank_455();

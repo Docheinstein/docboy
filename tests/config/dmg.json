@@ -7134,6 +7134,26 @@
             ]
         },
         {
+            "rom": "docboy/ppu/oam_write_block_timing.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/oam_write_block_ly0_timing.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/pixel_transfer_timing_0_sprites_scx0_round1.gb",
             "memory": [
                 {
@@ -10385,6 +10405,16 @@
         },
         {
             "rom": "docboy/ppu/vblank_read_stat_last_line_round3.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/vram_write_block_timing.gb",
             "memory": [
                 {
                     "address": 65520,

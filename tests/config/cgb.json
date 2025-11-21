@@ -11050,6 +11050,26 @@
             ]
         },
         {
+            "rom": "docboy/ppu/oam_write_block_ly0_timing.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/oam_write_block_timing.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/ocpd_write_read.gbc",
             "memory": [
                 {
@@ -11320,6 +11340,106 @@
             ]
         },
         {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx0_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx0_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx1_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx1_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx2_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx2_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx3_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx3_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx4_round1.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/turn_on_pixel_transfer_timing_scx4_round2.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/vblank_read_stat_last_line_round1.gbc",
             "memory": [
                 {
@@ -11341,6 +11461,16 @@
         },
         {
             "rom": "docboy/ppu/vblank_read_stat_last_line_round3.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/vram_write_block_timing.gbc",
             "memory": [
                 {
                     "address": 65520,
@@ -65495,6 +65625,86 @@
             ]
         },
         {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_oam_write_block_timing_ly0_1_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_oam_write_block_timing_ly0_2_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_oam_write_block_timing_ly0_3_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_oam_write_block_timing_ly0_4_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_oam_write_block_timing_ly1_1_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_oam_write_block_timing_ly1_2_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_oam_write_block_timing_ly1_3_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_oam_write_block_timing_ly1_4_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/double_speed/ppu/double_speed_ppu_stat_mode_ly153_nops428.gbc",
             "memory": [
                 {
@@ -65546,6 +65756,86 @@
         },
         {
             "rom": "docboy/double_speed/ppu/double_speed_ppu_stat_mode_ly153_nops433.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_vram_write_block_timing_ly0_1_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_vram_write_block_timing_ly0_2_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_vram_write_block_timing_ly0_3_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_vram_write_block_timing_ly0_4_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_vram_write_block_timing_ly1_1_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_vram_write_block_timing_ly1_2_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_vram_write_block_timing_ly1_3_out_of_4.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/double_speed/ppu/double_speed_ppu_vram_write_block_timing_ly1_4_out_of_4.gbc",
             "memory": [
                 {
                     "address": 65520,

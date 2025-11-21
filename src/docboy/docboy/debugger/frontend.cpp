@@ -2501,7 +2501,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         b << yellow("Phase") << "               :  " << [this]() -> Text {
             if (gb.ppu.tick_selector == &Ppu::oam_scan_even || gb.ppu.tick_selector == &Ppu::oam_scan_odd ||
                 gb.ppu.tick_selector == &Ppu::oam_scan_77 || gb.ppu.tick_selector == &Ppu::oam_scan_done ||
-                gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on)
+                gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on ||
+                gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on_78 ||
+                gb.ppu.tick_selector == &Ppu::oam_scan_after_turn_on_79)
                 return "Oam Scan";
             if (gb.ppu.tick_selector == &Ppu::pixel_transfer_dummy_lx0 ||
                 gb.ppu.tick_selector == &Ppu::pixel_transfer_discard_lx0 ||
@@ -2525,8 +2527,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
                 return t;
             }
-            if (gb.ppu.tick_selector == &Ppu::hblank || gb.ppu.tick_selector == &Ppu::hblank_453 ||
-                gb.ppu.tick_selector == &Ppu::hblank_454 || gb.ppu.tick_selector == &Ppu::hblank_455) {
+            if (gb.ppu.tick_selector == &Ppu::hblank || gb.ppu.tick_selector == &Ppu::hblank_452 ||
+                gb.ppu.tick_selector == &Ppu::hblank_453 || gb.ppu.tick_selector == &Ppu::hblank_454 ||
+                gb.ppu.tick_selector == &Ppu::hblank_455) {
                 return "HBlank";
             }
             if (gb.ppu.tick_selector == &Ppu::hblank_last_line || gb.ppu.tick_selector == &Ppu::hblank_last_line_453 ||
