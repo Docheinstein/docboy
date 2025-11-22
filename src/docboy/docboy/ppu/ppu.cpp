@@ -872,9 +872,9 @@ void Ppu::oam_scan_after_turn_on_78() {
 void Ppu::oam_scan_after_turn_on_79() {
     ASSERT(dots == 79);
 
-    enter_pixel_transfer();
-
     dots = 80;
+
+    enter_pixel_transfer();
 }
 
 void Ppu::pixel_transfer_dummy_lx0() {
