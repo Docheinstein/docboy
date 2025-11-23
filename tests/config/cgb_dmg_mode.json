@@ -534,8 +534,7 @@
         },
         {
             "rom": "mooneye/ppu/lcdon_timing-GS.gb",
-            "framebuffer": "mooneye/ppu/lcdon_timing-GS.png",
-            "enabled": false
+            "framebuffer": "mooneye/ppu/lcdon_timing-GS.png"
         },
         {
             "rom": "mooneye/ppu/lcdon_write_timing-GS.gb",
