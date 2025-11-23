@@ -11178,6 +11178,10 @@
             "stop_at_instruction": 64
         },
         {
+            "rom": "docboy/ppu/visual/change_bgp_or_bug.gb",
+            "framebuffer": "docboy/ppu/change_bgp_or_bug.png"
+        },
+        {
             "rom": "docboy/ppu/visual/change_scy_nops21_sprite_x0.gb",
             "framebuffer": "docboy/ppu/change_scy_nops21_sprite_x0.png"
         },

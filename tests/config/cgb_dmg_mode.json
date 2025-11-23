@@ -685,6 +685,14 @@
             "framebuffer": "docboy/ppu/bgp.png"
         },
         {
+            "rom": "docboy/ppu/visual/change_bgp_or_bug_checksum_d1.gb",
+            "framebuffer": "docboy/ppu/change_bgp_or_bug_checksum_d1.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bgp_or_bug_checksum_d1_first_dot.gb",
+            "framebuffer": "docboy/ppu/change_bgp_or_bug_checksum_d1_first_dot.png"
+        },
+        {
             "rom": "docboy/ppu/visual/obj_priority.gb",
             "framebuffer": "docboy/ppu/obj_priority.png"
         },

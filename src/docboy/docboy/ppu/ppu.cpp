@@ -505,7 +505,7 @@ void Ppu::tick() {
         // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt.
         raise_stat_irq();
 
-        // There is 1 T-cycle delay between BGP and the BGP value the PPU sees.
+        // On DMG there is 1 T-cycle delay between BGP and the BGP value the PPU sees.
         // During this T-Cycle, the PPU sees the last BGP ORed with the new one.
         // Therefore, we store the last BGP value here so that we can use (BGP | LAST_BGP)
         // for resolving BG color.
@@ -1083,10 +1083,6 @@ void Ppu::pixel_transfer_lx8() {
 
         if (color == NO_COLOR) {
             // Resolve BG color against palette.
-
-            // There is 1 T-cycle delay between BGP and the BGP value the PPU sees.
-            // During this T-Cycle, the PPU sees the last BGP ORed with the new BGP.
-            // [mealybug/m3_bgp_change]
 #ifdef ENABLE_CGB
             uint8_t color_index;
             const uint8_t* bg_palette;
@@ -1100,15 +1096,18 @@ void Ppu::pixel_transfer_lx8() {
                 // then such index is used to find the real CGB color in the BG palette.
                 bg_palette = bg_palettes;
 
-                // TODO: does the BGP or bug affects also CGB in DMG mode?
-                const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
-                color_index = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_) : 0;
+                // Note: BGP OR bug does not happen on CGB in DMG Mode.
+                color_index = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp) : 0;
             }
 
             ASSERT(color_index < 8);
 
             color = resolve_color(color_index, bg_palette);
 #else
+            // On DMG there is 1 T-cycle delay between BGP and the BGP value the PPU sees.
+            // During this T-Cycle, the PPU sees the last BGP ORed with the new BGP.
+            // Verified: it does not happen in CGB in DMG Mode.
+            // [mealybug/m3_bgp_change]
             const uint8_t bgp_ = (uint8_t)bgp | last_bgp;
             color = lcdc_.bg_win_enable ? resolve_color(bg_pixel.color_index, bgp_) : 0;
 #endif
