@@ -509,6 +509,132 @@
     ],
     "ppu": [
         {
+            "rom": "mealybug/m2_win_en_toggle.gb",
+            "framebuffer": "mealybug/m2_win_en_toggle.png"
+        },
+        {
+            "rom": "mealybug/m3_bgp_change.gb",
+            "framebuffer": "mealybug/m3_bgp_change.png"
+        },
+        {
+            "rom": "mealybug/m3_bgp_change_sprites.gb",
+            "framebuffer": "mealybug/m3_bgp_change_sprites.png"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_bg_en_change.gb",
+            "framebuffer": "mealybug/m3_lcdc_bg_en_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_bg_map_change.gb",
+            "framebuffer": "mealybug/m3_lcdc_bg_map_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_obj_en_change.gb",
+            "framebuffer": "mealybug/m3_lcdc_obj_en_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_obj_en_change_variant.gb",
+            "framebuffer": "mealybug/m3_lcdc_obj_en_change_variant.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_obj_size_change.gb",
+            "framebuffer": "mealybug/m3_lcdc_obj_size_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_obj_size_change_scx.gb",
+            "framebuffer": "mealybug/m3_lcdc_obj_size_change_scx.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_tile_sel_change.gb",
+            "framebuffer": "mealybug/m3_lcdc_tile_sel_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_tile_sel_win_change.gb",
+            "framebuffer": "mealybug/m3_lcdc_tile_sel_win_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_win_en_change_multiple.gb",
+            "framebuffer": "mealybug/m3_lcdc_win_en_change_multiple.png"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_win_en_change_multiple_wx.gb",
+            "framebuffer": "mealybug/m3_lcdc_win_en_change_multiple_wx.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy is wrong as well"
+        },
+        {
+            "rom": "mealybug/m3_lcdc_win_map_change.gb",
+            "framebuffer": "mealybug/m3_lcdc_win_map_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_obp0_change.gb",
+            "framebuffer": "mealybug/m3_obp0_change.png"
+        },
+        {
+            "rom": "mealybug/m3_scx_high_5_bits.gb",
+            "framebuffer": "mealybug/m3_scx_high_5_bits.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_scx_low_3_bits.gb",
+            "framebuffer": "mealybug/m3_scx_low_3_bits.png"
+        },
+        {
+            "rom": "mealybug/m3_scy_change.gb",
+            "framebuffer": "mealybug/m3_scy_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy got it right"
+        },
+        {
+            "rom": "mealybug/m3_window_timing.gb",
+            "framebuffer": "mealybug/m3_window_timing.png"
+        },
+        {
+            "rom": "mealybug/m3_window_timing_wx_0.gb",
+            "framebuffer": "mealybug/m3_window_timing_wx_0.png"
+        },
+        {
+            "rom": "mealybug/m3_wx_4_change.gb",
+            "framebuffer": "mealybug/m3_wx_4_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy is wrong as well"
+        },
+        {
+            "rom": "mealybug/m3_wx_4_change_sprites.gb",
+            "framebuffer": "mealybug/m3_wx_4_change_sprites.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy is wrong as well"
+        },
+        {
+            "rom": "mealybug/m3_wx_5_change.gb",
+            "framebuffer": "mealybug/m3_wx_5_change.png"
+        },
+        {
+            "rom": "mealybug/m3_wx_6_change.gb",
+            "framebuffer": "mealybug/m3_wx_6_change.png",
+            "enabled": false,
+            "comment": "Different from DMG: SameBoy is wrong as well"
+        },
+        {
             "rom": "mooneye/ppu/hblank_ly_scx_timing-GS.gb",
             "framebuffer": "mooneye/ppu/hblank_ly_scx_timing-GS.png"
         },
