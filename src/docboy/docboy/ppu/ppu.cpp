@@ -424,6 +424,7 @@ const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
     &Ppu::vblank_last_line,
     &Ppu::vblank_last_line_2,
     &Ppu::vblank_last_line_3,
+    &Ppu::vblank_last_line_4,
     &Ppu::vblank_last_line_7,
     &Ppu::vblank_last_line_453,
     &Ppu::vblank_last_line_454,
@@ -617,13 +618,23 @@ void Ppu::turn_off() {
 }
 
 inline bool Ppu::is_lyc_eq_ly() const {
+#ifdef ENABLE_CGB
+    // CGB seems to differ from DMG regarding the LYC_EQ_LY flag edge cases.
+    // * In particular, LYC_EQ_LY remains set (if it was set, i.e. LYC=LY) also for dot 454 (while on DMG it's always
+    // 0).
+    // * The last scanline (LY = 153 = 0), even if LY is set to 0 at dot 4 (or maybe 5?), LYC_EQ_LY remains set until
+    // dot 6. My hypothesis, mostly to make things works, is that while on DMG LYC_EQ_LY is disabled for dot 454 and
+    // last scanline dots 2:6, on CGB the LYC_EQ_LY flag retain its previous state for such periods (TODO: validate the
+    // hypothesis).
+    return enable_lyc_eq_ly_irq ? (last_lyc == last_ly) : stat.lyc_eq_ly;
+#else
     // In addition to the condition (LYC == LY), LYC_EQ_LY IRQ might be disabled for several reasons.
     // Remarkably:
     // * LYC_EQ_LY is always 0 at dot 454
     // * The last scanline (LY = 153 = 0) the LY values differs from what LYC_EQ_LY reads and from the related IRQ.
     // [mooneye/lcdon_timing, daid/ppu_scanline_bgp]
-
-    return (last_lyc == last_ly && enable_lyc_eq_ly_irq);
+    return (last_lyc == last_ly) && enable_lyc_eq_ly_irq;
+#endif
 }
 
 inline void Ppu::raise_stat_irq() {
@@ -1338,22 +1349,21 @@ void Ppu::vblank_last_line() {
     ASSERT(ly == 153);
 
     if (++dots == 2) {
-        // LY is reset to 0
+#ifndef ENABLE_CGB
+        // on DMG, LY is reset to 0 here
         ly = 0;
+#endif
 
         tick_selector = &Ppu::vblank_last_line_2;
     }
 }
 
 void Ppu::vblank_last_line_2() {
-    ASSERT(ly == 0);
     ASSERT(dots == 2);
 
-    ++dots;
+    dots = 3;
 
     // LYC_EQ_LY IRQ is disabled for dot 2 through 6.
-    // TODO: why is LYC_EQ_LY disabled for 4 dots for LY==153,
-    //       while just for 1 dot for the other scanlines?
     ASSERT(enable_lyc_eq_ly_irq);
     enable_lyc_eq_ly_irq = false;
 
@@ -1361,8 +1371,22 @@ void Ppu::vblank_last_line_2() {
 }
 
 void Ppu::vblank_last_line_3() {
+    ASSERT(dots == 3);
+
+#ifdef ENABLE_CGB
+    // Contrarily to DMG, on CGB LY is reset to 0 later.
+    // TODO: from tests LY could be reset to 0 either here or one dot later.
+    ly = 0;
+#endif
+
+    dots = 4;
+
+    tick_selector = &Ppu::vblank_last_line_4;
+}
+
+void Ppu::vblank_last_line_4() {
     ASSERT(ly == 0);
-    ASSERT(dots >= 3);
+    ASSERT(dots >= 4);
 
     if (++dots == 7) {
         // Enable LYC_EQ_LY IRQ again.

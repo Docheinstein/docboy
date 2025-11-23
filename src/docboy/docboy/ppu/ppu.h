@@ -223,6 +223,7 @@ private:
     void vblank_last_line();
     void vblank_last_line_2();
     void vblank_last_line_3();
+    void vblank_last_line_4();
     void vblank_last_line_7();
     void vblank_last_line_453();
     void vblank_last_line_454();

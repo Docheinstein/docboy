@@ -4724,6 +4724,16 @@
             ]
         },
         {
+            "rom": "docboy/ppu/ly_153_lyc_eq_ly_lyc153_timing_round4.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/ly_153_timing_round1.gb",
             "memory": [
                 {
@@ -6435,6 +6445,66 @@
         },
         {
             "rom": "docboy/ppu/ly_timing_scx5_round2.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/lyc_eq_ly_disabled_glitch_ly0_lyc0_timing.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/lyc_eq_ly_disabled_glitch_ly0_lyc1_timing.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/lyc_eq_ly_disabled_glitch_ly0_lyc2_timing.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/lyc_eq_ly_disabled_glitch_ly1_lyc0_timing.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/lyc_eq_ly_disabled_glitch_ly1_lyc1_timing.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/lyc_eq_ly_disabled_glitch_ly1_lyc2_timing.gb",
             "memory": [
                 {
                     "address": 65520,

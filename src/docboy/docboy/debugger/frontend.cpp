@@ -2545,7 +2545,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                 return "VBlank";
             }
             if (gb.ppu.tick_selector == &Ppu::vblank_last_line || gb.ppu.tick_selector == &Ppu::vblank_last_line_2 ||
-                gb.ppu.tick_selector == &Ppu::vblank_last_line_3 || gb.ppu.tick_selector == &Ppu::vblank_last_line_7 ||
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_3 || gb.ppu.tick_selector == &Ppu::vblank_last_line_4 ||
+                gb.ppu.tick_selector == &Ppu::vblank_last_line_7 ||
                 gb.ppu.tick_selector == &Ppu::vblank_last_line_453 ||
                 gb.ppu.tick_selector == &Ppu::vblank_last_line_454 ||
                 gb.ppu.tick_selector == &Ppu::vblank_last_line_455) {
