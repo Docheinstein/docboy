@@ -57,6 +57,11 @@ public:
     uint8_t read_stat() const;
     void write_stat(uint8_t value);
 
+#ifdef ENABLE_CGB
+    void write_scy(uint8_t value);
+    void write_scx(uint8_t value);
+#endif
+
     void write_dma(uint8_t value);
 
 #ifdef ENABLE_CGB
@@ -143,16 +148,12 @@ private:
     using FetcherTickSelector = void (Ppu::*)();
     using PixelColorIndex = uint8_t;
 
+    struct BgPixel {
+        PixelColorIndex color_index;
 #ifdef ENABLE_CGB
-    struct BgPixel {
-        PixelColorIndex color_index;
         uint8_t attributes;
-    };
-#else
-    struct BgPixel {
-        PixelColorIndex color_index;
-    };
 #endif
+    };
 
     struct ObjPixel {
         PixelColorIndex color_index;
@@ -169,6 +170,11 @@ private:
 #endif
     };
 
+    struct PendingWrite {
+        uint8_t countdown {};
+        uint8_t value {};
+    };
+
     // PPU helpers
     void turn_on();
     void turn_off();
@@ -177,6 +183,7 @@ private:
 
     void raise_stat_irq();
 
+    void tick_pending_write();
     void tick_stat();
 
     void update_stat_irq(bool irq);
@@ -187,6 +194,7 @@ private:
     void end_increase_ly();
 
     void write_stat_real(uint8_t value);
+    void write_lcdc_real(uint8_t value);
 
     void tick_window();
 
@@ -328,13 +336,6 @@ private:
     bool delay_stat_mode_update {};
 #endif
 
-#ifndef ENABLE_CGB
-    struct {
-        bool pending {};
-        uint8_t value {};
-    } stat_write {};
-#endif
-
     uint16_t dots {}; // [0, 456)
     uint8_t lx {};    // LX=X+8, therefore [0, 168]
 
@@ -342,9 +343,25 @@ private:
 
     uint8_t last_ly {};  // LY delayed by 1 t-cycle
     uint8_t last_lyc {}; // LYC delayed by 1 t-cycle
-    uint8_t last_bgp {}; // BGP delayed by 1 t-cycle
-    uint8_t last_wx {};  // WX delayed by 1 t-cycle
-    Lcdc last_lcdc {};   // LCDC delayed by 1 t-cycle
+#ifndef ENABLE_CGB
+    uint8_t last_bgp {}; // BGP delayed by 1 t-cycles
+#endif
+    uint8_t last_wx {}; // WX delayed by 1 t-cycle
+#ifndef ENABLE_CGB
+    Lcdc last_lcdc {}; // LCDC delayed by 1 t-cycle
+#endif
+
+    struct {
+#ifdef ENABLE_CGB
+        PendingWrite lcdc {};
+        PendingWrite scy {};
+        PendingWrite scx {};
+#endif
+
+#ifndef ENABLE_CGB
+        PendingWrite stat {};
+#endif
+    } pending_write;
 
     FillQueue<BgPixel, 8> bg_fifo {};
     Queue<ObjPixel, 8> obj_fifo {};
@@ -414,8 +431,8 @@ private:
         uint16_t tilemap_tile_vram_addr {};
 
 #ifdef ENABLE_CGB
-        bool attributes_enabled {};
         uint8_t attributes {};
+        uint8_t scy {};
 #endif
 
 #ifdef ENABLE_DEBUGGER

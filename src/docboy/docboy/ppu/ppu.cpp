@@ -505,28 +505,33 @@ void Ppu::tick() {
         // Update STAT's LYC_EQ_LY and eventually raise STAT interrupt.
         raise_stat_irq();
 
+#ifndef ENABLE_CGB
         // On DMG there is 1 T-cycle delay between BGP and the BGP value the PPU sees.
         // During this T-Cycle, the PPU sees the last BGP ORed with the new one.
         // Therefore, we store the last BGP value here so that we can use (BGP | LAST_BGP)
         // for resolving BG color.
         // [mealybug/m3_bgp_change]
+        // Verified: CGB is not affected.
         last_bgp = bgp;
+#endif
 
         // It seems that there is 1 T-cycle delay between WX and the WX value the PPU sees.
         // Therefore, we store the last WX here and we use it for the next T-cycle.
-        // (TODO: Still not sure about this)
         // [mealybug/m3_wx_5_change]
         last_wx = wx;
 
-        // This is needed for:
+#ifndef ENABLE_CGB
+        // On DMG, this is needed for:
         // 1) LCDC.WIN_ENABLE, because it seems that the t-cycle window is turned on
         //    (and it was off), window is activated also for LX == WX + 1, not only for LX == WX.
         //    [mealybug/m3_lcdc_win_en_change_multiple_wx]
         // 2) LCDC.BG_WIN_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
         //    [mealybug/m3_lcdc_bg_en_change]
         // 3) LCDC.OBJ_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
-        //        [mealybug/m3_lcdc_obj_en_change]
+        //    [mealybug/m3_lcdc_obj_en_change]
+        // Verified: CGB is not affected (it sees LCDC delayed by 2 T-Cycles by default)
         last_lcdc = lcdc;
+#endif
 
         // It seems that there is a 1 T-cycle delay for the LY value used for the comparison LYC == LY.
         // This is supported by the fact that for LY = 153, LYC_EQ_LY STAT flag is raised for LYC = 153
@@ -540,6 +545,10 @@ void Ppu::tick() {
         ++cycles;
 #endif
     }
+
+    // Writes to PPU registers have delayed effects.
+    // This happens mostly on CGB, where some registers are seen with delay of 2 T-Cycles.
+    tick_pending_write();
 
     // Update STAT's mode (usually it matches the "internal" PPU mode, but there are few exceptions).
     tick_stat();
@@ -669,15 +678,32 @@ inline void Ppu::raise_stat_irq() {
     stat.lyc_eq_ly = lyc_eq_ly;
 }
 
-inline void Ppu::tick_stat() {
-#ifndef ENABLE_CGB
-    // On DMG, STAT write takes 1 T-Cycle to have effect.
-    if (stat_write.pending) {
-        stat_write.pending = false;
-        write_stat_real(stat_write.value);
+inline void Ppu::tick_pending_write() {
+#ifdef ENABLE_CGB
+    // ON CGB some register (LCDC, SCX, SCY, ...) write takes 2 T-Cycle to have effect.
+    // [mealybug/m3_lcdc_*_change (DMG mode)]
+    if (pending_write.lcdc.countdown && --pending_write.lcdc.countdown == 0) {
+        write_lcdc_real(pending_write.lcdc.value);
+    }
+    if (pending_write.scy.countdown && --pending_write.scy.countdown == 0) {
+        scy = pending_write.scy.value;
+    }
+    if (pending_write.scx.countdown && --pending_write.scx.countdown == 0) {
+        scx = pending_write.scx.value;
     }
 #endif
 
+#ifndef ENABLE_CGB
+    // On DMG, STAT write takes 1 T-Cycle to have effect.
+    if (pending_write.stat.countdown) {
+        ASSERT(pending_write.stat.countdown == 1);
+        pending_write.stat.countdown = 0;
+        write_stat_real(pending_write.stat.value);
+    }
+#endif
+}
+
+inline void Ppu::tick_stat() {
     // Usually, reading from STAT yields the correct "internal" PPU mode.
     // There are a few exceptions, though:
     // 1) For the first line after PPU is turned off, STAT's mode appears as HBlank during OAM Scan.
@@ -769,10 +795,20 @@ inline void Ppu::end_increase_ly() {
 }
 
 inline void Ppu::write_stat_real(uint8_t value) {
-    stat.lyc_eq_ly_int = test_bit<Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT>(value);
-    stat.oam_int = test_bit<Specs::Bits::Video::STAT::OAM_INTERRUPT>(value);
-    stat.vblank_int = test_bit<Specs::Bits::Video::STAT::VBLANK_INTERRUPT>(value);
-    stat.hblank_int = test_bit<Specs::Bits::Video::STAT::HBLANK_INTERRUPT>(value);
+    stat.lyc_eq_ly_int = test_bit<LYC_EQ_LY_INTERRUPT>(value);
+    stat.oam_int = test_bit<OAM_INTERRUPT>(value);
+    stat.vblank_int = test_bit<VBLANK_INTERRUPT>(value);
+    stat.hblank_int = test_bit<HBLANK_INTERRUPT>(value);
+}
+
+inline void Ppu::write_lcdc_real(uint8_t value) {
+    lcdc.win_tile_map = test_bit<WIN_TILE_MAP>(value);
+    lcdc.win_enable = test_bit<WIN_ENABLE>(value);
+    lcdc.bg_win_tile_data = test_bit<BG_WIN_TILE_DATA>(value);
+    lcdc.bg_tile_map = test_bit<BG_TILE_MAP>(value);
+    lcdc.obj_size = test_bit<OBJ_SIZE>(value);
+    lcdc.obj_enable = test_bit<OBJ_ENABLE>(value);
+    lcdc.bg_win_enable = test_bit<BG_WIN_ENABLE>(value);
 }
 
 inline void Ppu::tick_window() {
@@ -937,7 +973,7 @@ void Ppu::pixel_transfer_discard_lx0() {
         bg_fifo.pop_front();
 
         if (++pixel_transfer.initial_scx.discarded == pixel_transfer.initial_scx.to_discard) {
-            // All the SCX % 8 pixels have been discard
+            // All the SCX % 8 pixels have been discarded.
             tick_selector = &Ppu::pixel_transfer_lx0;
         }
     }
@@ -1019,11 +1055,16 @@ void Ppu::pixel_transfer_lx8() {
         // Pop out a pixel from BG fifo
         const BgPixel bg_pixel = bg_fifo.pop_front();
 
-        // It seems that there is a 1 T-cycle delay between the real LCDC
+#ifdef ENABLE_CGB
+        const Lcdc lcdc_ = lcdc;
+#else
+        // On DMG, it seems that there is a 1 T-cycle delay between the real LCDC
         // and the LCDC the PPU sees, both for LCDC.OBJ_ENABLE and LCDC.BG_WIN_ENABLE.
-        // LX == 8 seems to be an expection to this rule.
-        // [mealybug/m3_lcdc_bg_en_change, mealybug/m3_lcdc_obj_en_change]
+        // LX == 8 seems to be an exception to this rule.
+        // [mealybug/m3_lcdc_bg_en_change, mealybug/m3_lcdc_obj_en_change].
+        // Verified: LX == 8 is not a special case on CGB.
         Lcdc lcdc_ = lx == 8 ? lcdc : last_lcdc;
+#endif
 
         if (obj_fifo.is_not_empty()) {
             const ObjPixel obj_pixel = obj_fifo.pop_front();
@@ -1716,13 +1757,18 @@ inline void Ppu::check_window_activation() {
     // - at some point in the frame LY was equal to WY
     // - window should is enabled LCDC
     // - pixel transfer LX matches WX
-    //     furthermore, it seems that if LCDC.WIN_ENABLE was off and
-    //     is turned on while LX == WX + 1, window is activated
-    //     (even if it would be late by 1-cycle to be activated).
-    //     [mealybug/m3_lcdc_win_en_change_multiple_wx]
+    // Furthermore, on DMG there's a glitch that cause window to be
+    // triggered even late by 1 dot (i.e. a BG/OBJ pixel is pushed instead and
+    // all the window pixels are shifted right by 1 pixel).
+    // This happens if LCDC.WIN_ENABLE was off and is turned on while LX == WX + 1.
+    // [mealybug/m3_lcdc_win_en_change_multiple_wx]
+    // Verified: this glitch does not happen on CGB.
     if (w.active_for_frame && !w.active && lcdc.win_enable &&
-        (lx == last_wx /* standard case */ ||
-         (lx == last_wx + 1 && !last_lcdc.win_enable /* window just enabled case */))) {
+        (lx == last_wx /* standard case */
+#ifndef ENABLE_CGB
+         || (lx == last_wx + 1 && !last_lcdc.win_enable /* DMG glitch: window late by 1 dot case */)
+#endif
+             )) {
         setup_fetcher_for_window();
     }
 }
@@ -1860,6 +1906,15 @@ void Ppu::bg_prefetcher_get_tile_0() {
     // based on the tilemap X and Y coordinate and the tile map to use.
     // [mealybug/m3_lcdc_bg_map_change].
     setup_bg_pixel_slice_fetcher_tilemap_tile_address();
+
+#ifdef ENABLE_CGB
+    // Differently from DMG, on CGB there's no way to create a bitplane desync effect
+    // by changing SCY between the tile data low/high fetches.
+    // That is, the same SCY is used for both low and high byte of the tile,
+    // and it's computed exactly here.
+    // [mealybug/m3_scy_change (DMG mode)].
+    bwf.scy = scy;
+#endif
 
     setup_bg_pixel_slice_fetcher_tile_data_address();
 
@@ -2440,7 +2495,13 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
                                         :
                                         // signed addressing mode with 0x9000 as (global) base address
                                         0x1000 + TILE_BYTES * static_cast<int8_t>(tile_number);
+
+#ifdef ENABLE_CGB
+    // On CGB the same SCY (deduced during the GetTile phase) is used for both high and low byte of tile data.
+    uint8_t tile_y = mod<TILE_HEIGHT>(ly + bwf.scy);
+#else
     uint8_t tile_y = mod<TILE_HEIGHT>(ly + scy);
+#endif
 
 #ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::Background::Attributes::Y_FLIP>(bwf.attributes)) {
@@ -2578,18 +2639,17 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_BOOL(parcel, delay_stat_mode_update);
 #endif
 
-#ifndef ENABLE_CGB
-    PARCEL_WRITE_BOOL(parcel, stat_write.pending);
-    PARCEL_WRITE_UINT8(parcel, stat_write.value);
-#endif
     PARCEL_WRITE_UINT16(parcel, dots);
     PARCEL_WRITE_UINT8(parcel, lx);
     PARCEL_WRITE_UINT8(parcel, mode);
     PARCEL_WRITE_UINT8(parcel, last_ly);
     PARCEL_WRITE_UINT8(parcel, last_lyc);
+#ifndef ENABLE_CGB
     PARCEL_WRITE_UINT8(parcel, last_bgp);
+#endif
     PARCEL_WRITE_UINT8(parcel, last_wx);
 
+#ifndef ENABLE_CGB
     PARCEL_WRITE_BOOL(parcel, last_lcdc.enable);
     PARCEL_WRITE_BOOL(parcel, last_lcdc.win_tile_map);
     PARCEL_WRITE_BOOL(parcel, last_lcdc.win_enable);
@@ -2598,6 +2658,21 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_BOOL(parcel, last_lcdc.obj_size);
     PARCEL_WRITE_BOOL(parcel, last_lcdc.obj_enable);
     PARCEL_WRITE_BOOL(parcel, last_lcdc.bg_win_enable);
+#endif
+
+#ifdef ENABLE_CGB
+    PARCEL_WRITE_UINT8(parcel, pending_write.lcdc.countdown);
+    PARCEL_WRITE_UINT8(parcel, pending_write.lcdc.value);
+    PARCEL_WRITE_UINT8(parcel, pending_write.scy.countdown);
+    PARCEL_WRITE_UINT8(parcel, pending_write.scy.value);
+    PARCEL_WRITE_UINT8(parcel, pending_write.scx.countdown);
+    PARCEL_WRITE_UINT8(parcel, pending_write.scx.value);
+#endif
+
+#ifndef ENABLE_CGB
+    PARCEL_WRITE_UINT8(parcel, pending_write.stat.countdown);
+    PARCEL_WRITE_UINT8(parcel, pending_write.stat.value);
+#endif
 
     PARCEL_WRITE_BYTES(parcel, bg_fifo.data, sizeof(bg_fifo.data));
     PARCEL_WRITE_UINT8(parcel, bg_fifo.cursor);
@@ -2645,6 +2720,7 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, bwf.tilemap_tile_vram_addr);
 #ifdef ENABLE_CGB
     PARCEL_WRITE_UINT8(parcel, bwf.attributes);
+    PARCEL_WRITE_UINT8(parcel, bwf.scy);
 #endif
 #ifdef ENABLE_DEBUGGER
     PARCEL_WRITE_UINT8(parcel, bwf.tilemap_x);
@@ -2735,18 +2811,17 @@ void Ppu::load_state(Parcel& parcel) {
     stat_mode = parcel.read_uint8();
     delay_stat_mode_update = parcel.read_bool();
 #endif
-#ifndef ENABLE_CGB
-    stat_write.pending = parcel.read_bool();
-    stat_write.value = parcel.read_uint8();
-#endif
     dots = parcel.read_uint16();
     lx = parcel.read_uint8();
     mode = parcel.read_uint8();
     last_ly = parcel.read_uint8();
     last_lyc = parcel.read_uint8();
+#ifndef ENABLE_CGB
     last_bgp = parcel.read_uint8();
+#endif
     last_wx = parcel.read_uint8();
 
+#ifndef ENABLE_CGB
     last_lcdc.enable = parcel.read_bool();
     last_lcdc.win_tile_map = parcel.read_bool();
     last_lcdc.win_enable = parcel.read_bool();
@@ -2755,6 +2830,21 @@ void Ppu::load_state(Parcel& parcel) {
     last_lcdc.obj_size = parcel.read_bool();
     last_lcdc.obj_enable = parcel.read_bool();
     last_lcdc.bg_win_enable = parcel.read_bool();
+#endif
+
+#ifdef ENABLE_CGB
+    PARCEL_WRITE_UINT8(parcel, pending_write.lcdc.countdown);
+    PARCEL_WRITE_UINT8(parcel, pending_write.lcdc.value);
+    PARCEL_WRITE_UINT8(parcel, pending_write.scy.countdown);
+    PARCEL_WRITE_UINT8(parcel, pending_write.scy.value);
+    PARCEL_WRITE_UINT8(parcel, pending_write.scx.countdown);
+    PARCEL_WRITE_UINT8(parcel, pending_write.scx.value);
+#endif
+
+#ifndef ENABLE_CGB
+    PARCEL_WRITE_UINT8(parcel, pending_write.stat.countdown);
+    PARCEL_WRITE_UINT8(parcel, pending_write.stat.value);
+#endif
 
     parcel.read_bytes(bg_fifo.data, sizeof(bg_fifo.data));
     bg_fifo.cursor = parcel.read_uint8();
@@ -2805,6 +2895,7 @@ void Ppu::load_state(Parcel& parcel) {
     bwf.tilemap_tile_vram_addr = parcel.read_uint8();
 #ifdef ENABLE_CGB
     bwf.attributes = parcel.read_uint8();
+    bwf.scy = parcel.read_uint8();
 #endif
 #ifdef ENABLE_DEBUGGER
     bwf.tilemap_x = parcel.read_uint8();
@@ -2944,9 +3035,27 @@ void Ppu::reset() {
 
     last_ly = ly;
     last_lyc = lyc;
+#ifndef ENABLE_CGB
     last_bgp = if_bootrom_else(0, 0xFC);
+#endif
     last_wx = 0;
+#ifndef ENABLE_CGB
     last_lcdc = lcdc;
+#endif
+
+#ifdef ENABLE_CGB
+    pending_write.lcdc.countdown = 0;
+    pending_write.lcdc.value = 0;
+    pending_write.scy.countdown = 0;
+    pending_write.scy.value = 0;
+    pending_write.scx.countdown = 0;
+    pending_write.scx.value = 0;
+#endif
+
+#ifndef ENABLE_CGB
+    pending_write.stat.countdown = 0;
+    pending_write.stat.value = 0;
+#endif
 
     bg_fifo.clear();
     obj_fifo.clear();
@@ -2999,6 +3108,11 @@ void Ppu::reset() {
 
     bwf.lx = if_bootrom_else(0, 168);
     bwf.tilemap_tile_vram_addr = if_bootrom_else(0, 52);
+
+#ifdef ENABLE_CGB
+    bwf.attributes = 0;
+    bwf.scy = 0;
+#endif
 
 #ifdef ENABLE_DEBUGGER
     bwf.tilemap_x = if_bootrom_else(0, 20);
@@ -3060,41 +3174,36 @@ void Ppu::reset() {
 }
 
 uint8_t Ppu::read_lcdc() const {
-    return lcdc.enable << Specs::Bits::Video::LCDC::LCD_ENABLE |
-           lcdc.win_tile_map << Specs::Bits::Video::LCDC::WIN_TILE_MAP |
-           lcdc.win_enable << Specs::Bits::Video::LCDC::WIN_ENABLE |
-           lcdc.bg_win_tile_data << Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA |
-           lcdc.bg_tile_map << Specs::Bits::Video::LCDC::BG_TILE_MAP |
-           lcdc.obj_size << Specs::Bits::Video::LCDC::OBJ_SIZE |
-           lcdc.obj_enable << Specs::Bits::Video::LCDC::OBJ_ENABLE |
-           lcdc.bg_win_enable << Specs::Bits::Video::LCDC::BG_WIN_ENABLE;
+    return lcdc.enable << LCD_ENABLE | lcdc.win_tile_map << WIN_TILE_MAP | lcdc.win_enable << WIN_ENABLE |
+           lcdc.bg_win_tile_data << BG_WIN_TILE_DATA | lcdc.bg_tile_map << BG_TILE_MAP | lcdc.obj_size << OBJ_SIZE |
+           lcdc.obj_enable << OBJ_ENABLE | lcdc.bg_win_enable << BG_WIN_ENABLE;
 }
 
 void Ppu::write_lcdc(uint8_t value) {
-    const bool en = test_bit<Specs::Bits::Video::LCDC::LCD_ENABLE>(value);
+    const bool en = test_bit<LCD_ENABLE>(value);
     if (en != lcdc.enable) {
+        // Enabling or disabling the PPU happen instantly both on DMG and CGB.
         en ? turn_on() : turn_off();
         lcdc.enable = en;
     }
-    lcdc.win_tile_map = test_bit<Specs::Bits::Video::LCDC::WIN_TILE_MAP>(value);
-    lcdc.win_enable = test_bit<Specs::Bits::Video::LCDC::WIN_ENABLE>(value);
-    lcdc.bg_win_tile_data = test_bit<Specs::Bits::Video::LCDC::BG_WIN_TILE_DATA>(value);
-    lcdc.bg_tile_map = test_bit<Specs::Bits::Video::LCDC::BG_TILE_MAP>(value);
-    lcdc.obj_size = test_bit<Specs::Bits::Video::LCDC::OBJ_SIZE>(value);
-    lcdc.obj_enable = test_bit<Specs::Bits::Video::LCDC::OBJ_ENABLE>(value);
-    lcdc.bg_win_enable = test_bit<Specs::Bits::Video::LCDC::BG_WIN_ENABLE>(value);
+
+#ifdef ENABLE_CGB
+    // On CGB PPU sees updates to LCDC with a delay of 2 T-Cycles.
+    // [mealybug/m3_lcdc_*_change (DMG mode)]
+    pending_write.lcdc.countdown = 2;
+    pending_write.lcdc.value = value;
+#else
+    write_lcdc_real(value);
+#endif
 }
 
 uint8_t Ppu::read_stat() const {
 #ifndef ENABLE_CGB
-    ASSERT(!stat_write.pending);
+    ASSERT(pending_write.stat.countdown == 0);
 #endif
 
-    return 0b10000000 | stat.lyc_eq_ly_int << Specs::Bits::Video::STAT::LYC_EQ_LY_INTERRUPT |
-           stat.oam_int << Specs::Bits::Video::STAT::OAM_INTERRUPT |
-           stat.vblank_int << Specs::Bits::Video::STAT::VBLANK_INTERRUPT |
-           stat.hblank_int << Specs::Bits::Video::STAT::HBLANK_INTERRUPT |
-           stat.lyc_eq_ly << Specs::Bits::Video::STAT::LYC_EQ_LY |
+    return 0b10000000 | stat.lyc_eq_ly_int << LYC_EQ_LY_INTERRUPT | stat.oam_int << OAM_INTERRUPT |
+           stat.vblank_int << VBLANK_INTERRUPT | stat.hblank_int << HBLANK_INTERRUPT | stat.lyc_eq_ly << LYC_EQ_LY |
 #ifdef ENABLE_CGB
            stat_mode
 #else
@@ -3110,8 +3219,8 @@ void Ppu::write_stat(uint8_t value) {
     // STAT write takes effect 1 T-Cycle later on DMG, and during this T-Cycle it behaves as if FF
     // would have been written, i.e. all the STAT interrupts are enabled.
     // Verified: it happens only in DMG, not in CGB DMG mode.
-    stat_write.pending = true;
-    stat_write.value = value;
+    pending_write.stat.countdown = 1;
+    pending_write.stat.value = value;
 
     stat.lyc_eq_ly_int = true;
     stat.oam_int = true;
@@ -3119,6 +3228,22 @@ void Ppu::write_stat(uint8_t value) {
     stat.hblank_int = true;
 #endif
 }
+
+#ifdef ENABLE_CGB
+void Ppu::write_scy(uint8_t value) {
+    // On CGB PPU sees updates to SCY with a delay of 2 T-Cycles.
+    // [mealybug/m3_scy_change (DMG mode)]
+    pending_write.scy.countdown = 2;
+    pending_write.scy.value = value;
+}
+
+void Ppu::write_scx(uint8_t value) {
+    // On CGB PPU sees updates to SCX with a delay of 2 T-Cycles.
+    // [mealybug/m3_scx_high_5_bits (DMG mode)]
+    pending_write.scx.countdown = 2;
+    pending_write.scx.value = value;
+}
+#endif
 
 void Ppu::write_dma(uint8_t value) {
     dma = value;

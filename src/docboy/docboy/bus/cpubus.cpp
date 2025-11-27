@@ -177,8 +177,13 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
                                                                   NonTrivial<&Ppu::write_lcdc> {&ppu}};
     /* FF41 */ memory_accessors[Specs::Registers::Video::STAT] = {NonTrivial<&Ppu::read_stat> {&ppu},
                                                                   NonTrivial<&Ppu::write_stat> {&ppu}};
+#ifdef ENABLE_CGB
+    /* FF42 */ memory_accessors[Specs::Registers::Video::SCY] = {&ppu.scy, NonTrivial<&Ppu::write_scy> {&ppu}};
+    /* FF43 */ memory_accessors[Specs::Registers::Video::SCX] = {&ppu.scx, NonTrivial<&Ppu::write_scx> {&ppu}};
+#else
     /* FF42 */ memory_accessors[Specs::Registers::Video::SCY] = &ppu.scy;
     /* FF43 */ memory_accessors[Specs::Registers::Video::SCX] = &ppu.scx;
+#endif
     /* FF44 */ memory_accessors[Specs::Registers::Video::LY] = {&ppu.ly, WRITE_NOP};
     /* FF45 */ memory_accessors[Specs::Registers::Video::LYC] = &ppu.lyc;
     /* FF46 */ memory_accessors[Specs::Registers::Video::DMA] = {&ppu.dma, NonTrivial<&Ppu::write_dma> {&ppu}};

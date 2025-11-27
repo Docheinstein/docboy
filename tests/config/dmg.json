@@ -3454,6 +3454,26 @@
             ]
         },
         {
+            "rom": "docboy/ppu/hblank_interrupt_turn_off_timing_round1.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_interrupt_turn_off_timing_round2.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/ppu/hblank_raises_hblank_stat_interrupt.gb",
             "memory": [
                 {
@@ -10763,6 +10783,10 @@
             "framebuffer": "docboy/ppu/bg_obj_overlap_bg_win_on.png"
         },
         {
+            "rom": "docboy/ppu/visual/change_bg_win_enable_during_pixel_transfer.gb",
+            "framebuffer": "docboy/ppu/change_bg_win_enable_during_pixel_transfer.png"
+        },
+        {
             "rom": "docboy/ppu/visual/change_bgp_from_boot.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_boot.png",
             "stop_at_instruction": 64
@@ -11284,6 +11308,18 @@
             "rom": "docboy/ppu/visual/change_win_map_wx22.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx22.png",
             "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/enable_win_during_pixel_transfer_round1.gb",
+            "framebuffer": "docboy/ppu/enable_win_during_pixel_transfer_round1.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/enable_win_during_pixel_transfer_round2.gb",
+            "framebuffer": "docboy/ppu/enable_win_during_pixel_transfer_round2.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/enable_win_during_pixel_transfer_round3.gb",
+            "framebuffer": "docboy/ppu/enable_win_during_pixel_transfer_round3.png"
         },
         {
             "rom": "docboy/ppu/visual/halt_ppu_off.gb",

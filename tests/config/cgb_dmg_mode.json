@@ -522,39 +522,27 @@
         },
         {
             "rom": "mealybug/m3_lcdc_bg_en_change.gb",
-            "framebuffer": "mealybug/m3_lcdc_bg_en_change.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_lcdc_bg_en_change.png"
         },
         {
             "rom": "mealybug/m3_lcdc_bg_map_change.gb",
-            "framebuffer": "mealybug/m3_lcdc_bg_map_change.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_lcdc_bg_map_change.png"
         },
         {
             "rom": "mealybug/m3_lcdc_obj_en_change.gb",
-            "framebuffer": "mealybug/m3_lcdc_obj_en_change.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_lcdc_obj_en_change.png"
         },
         {
             "rom": "mealybug/m3_lcdc_obj_en_change_variant.gb",
-            "framebuffer": "mealybug/m3_lcdc_obj_en_change_variant.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_lcdc_obj_en_change_variant.png"
         },
         {
             "rom": "mealybug/m3_lcdc_obj_size_change.gb",
-            "framebuffer": "mealybug/m3_lcdc_obj_size_change.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_lcdc_obj_size_change.png"
         },
         {
             "rom": "mealybug/m3_lcdc_obj_size_change_scx.gb",
-            "framebuffer": "mealybug/m3_lcdc_obj_size_change_scx.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_lcdc_obj_size_change_scx.png"
         },
         {
             "rom": "mealybug/m3_lcdc_tile_sel_change.gb",
@@ -580,9 +568,7 @@
         },
         {
             "rom": "mealybug/m3_lcdc_win_map_change.gb",
-            "framebuffer": "mealybug/m3_lcdc_win_map_change.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_lcdc_win_map_change.png"
         },
         {
             "rom": "mealybug/m3_obp0_change.gb",
@@ -590,9 +576,7 @@
         },
         {
             "rom": "mealybug/m3_scx_high_5_bits.gb",
-            "framebuffer": "mealybug/m3_scx_high_5_bits.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_scx_high_5_bits.png"
         },
         {
             "rom": "mealybug/m3_scx_low_3_bits.gb",
@@ -600,9 +584,7 @@
         },
         {
             "rom": "mealybug/m3_scy_change.gb",
-            "framebuffer": "mealybug/m3_scy_change.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_scy_change.png"
         },
         {
             "rom": "mealybug/m3_window_timing.gb",
@@ -690,6 +672,26 @@
         },
         {
             "rom": "docboy/ppu/bcps_write_read.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_interrupt_turn_off_timing_round1.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/hblank_interrupt_turn_off_timing_round2.gb",
             "memory": [
                 {
                     "address": 65520,
@@ -811,12 +813,24 @@
             "framebuffer": "docboy/ppu/bgp.png"
         },
         {
+            "rom": "docboy/ppu/visual/change_bg_win_enable_during_pixel_transfer.gb",
+            "framebuffer": "docboy/ppu/change_bg_win_enable_during_pixel_transfer.png"
+        },
+        {
             "rom": "docboy/ppu/visual/change_bgp_or_bug_checksum_d1.gb",
             "framebuffer": "docboy/ppu/change_bgp_or_bug_checksum_d1.png"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_or_bug_checksum_d1_first_dot.gb",
             "framebuffer": "docboy/ppu/change_bgp_or_bug_checksum_d1_first_dot.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/enable_win_during_pixel_transfer_round1.gb",
+            "framebuffer": "docboy/ppu/enable_win_during_pixel_transfer_round1.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/enable_win_during_pixel_transfer_round2.gb",
+            "framebuffer": "docboy/ppu/enable_win_during_pixel_transfer_round2.png"
         },
         {
             "rom": "docboy/ppu/visual/obj_priority.gb",
