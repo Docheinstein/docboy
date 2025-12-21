@@ -1305,6 +1305,10 @@
             "framebuffer": "docboy/ppu/enable_win_during_pixel_transfer_round2.png"
         },
         {
+            "rom": "docboy/ppu/visual/oam_attributes_bank.gb",
+            "framebuffer": "docboy/ppu/oam_attributes_bank.png"
+        },
+        {
             "rom": "docboy/ppu/visual/obj_priority.gb",
             "framebuffer": "docboy/ppu/obj_priority.png"
         },

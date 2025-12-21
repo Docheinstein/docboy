@@ -2307,6 +2307,14 @@ void Ppu::obj_prefetcher_get_tile_1() {
     of.tile_number = registers.oam.a;
     of.attributes = registers.oam.b;
 
+#ifdef ENABLE_CGB
+    if (!operating_mode.is_cgb_mode())
+#endif
+    {
+        // The lower nibble of attributes is used only in CGB mode.
+        of.attributes = discard_bits<4>(of.attributes);
+    }
+
     fetcher_tick_selector = &Ppu::obj_pixel_slice_fetcher_get_tile_data_low_0;
 }
 
@@ -2447,11 +2455,11 @@ inline void Ppu::setup_obj_pixel_slice_fetcher_tile_data_address() {
 
     const uint8_t obj_y = of.entry.y - TILE_DOUBLE_HEIGHT;
 
-    // The OBJ tileY is always mapped within the range [0:objHeight).
+    // The OBJ tile Y is always mapped within the range [0:height_mask].
     uint8_t tile_y = (ly - obj_y) & height_mask;
 
     if (test_bit<Specs::Bits::OAM::Attributes::Y_FLIP>(of.attributes)) {
-        // Take the opposite row within objHeight.
+        // Take the opposite row within object height.
         tile_y ^= height_mask;
     }
 
@@ -2480,7 +2488,7 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tilemap_tile_address() {
 
 inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
 #ifdef ENABLE_CGB
-    bwf.attributes = vram.read<1>(bwf.tilemap_tile_vram_addr);
+    bwf.attributes = operating_mode.is_cgb_mode() ? vram.read<1>(bwf.tilemap_tile_vram_addr) : 0;
 #endif
 
     const uint8_t tile_number = vram.read<0>(bwf.tilemap_tile_vram_addr);
@@ -2502,6 +2510,7 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
 
 #ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::Background::Attributes::Y_FLIP>(bwf.attributes)) {
+        ASSERT(operating_mode.is_cgb_mode());
         // Take the opposite row within tile height.
         tile_y ^= 0x7;
     }
@@ -2530,7 +2539,7 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
 
 inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
 #ifdef ENABLE_CGB
-    bwf.attributes = vram.read<1>(bwf.tilemap_tile_vram_addr);
+    bwf.attributes = operating_mode.is_cgb_mode() ? vram.read<1>(bwf.tilemap_tile_vram_addr) : 0;
 #endif
 
     const uint8_t tile_number = vram.read<0>(bwf.tilemap_tile_vram_addr);
@@ -2547,7 +2556,8 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
 
 #ifdef ENABLE_CGB
     if (test_bit<Specs::Bits::Background::Attributes::Y_FLIP>(bwf.attributes)) {
-        // Take the opposite row within objHeight.
+        ASSERT(operating_mode.is_cgb_mode());
+        // Take the opposite row within tile height.
         tile_y ^= 0x7;
     }
 #endif
@@ -2557,9 +2567,10 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
     psf.tile_data_vram_address = vram_tile_addr + TILE_ROW_BYTES * tile_y;
 }
 
-void Ppu::read_bgwin_tile_data_low() {
+inline void Ppu::read_bgwin_tile_data_low() {
 #ifdef ENABLE_CGB
-    if (operating_mode.is_cgb_mode() && test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+        ASSERT(operating_mode.is_cgb_mode());
         psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
     } else {
         psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
@@ -2574,9 +2585,10 @@ void Ppu::read_bgwin_tile_data_low() {
 #endif
 }
 
-void Ppu::read_bgwin_tile_data_high() {
+inline void Ppu::read_bgwin_tile_data_high() {
 #ifdef ENABLE_CGB
-    if (operating_mode.is_cgb_mode() && test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+        ASSERT(operating_mode.is_cgb_mode());
         psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
     } else {
         psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
@@ -2591,9 +2603,10 @@ void Ppu::read_bgwin_tile_data_high() {
 #endif
 }
 
-void Ppu::read_obj_tile_data_low() {
+inline void Ppu::read_obj_tile_data_low() {
 #ifdef ENABLE_CGB
-    if (operating_mode.is_cgb_mode() && test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
+    if (test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
+        ASSERT(operating_mode.is_cgb_mode());
         psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
     } else {
         psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
@@ -2606,9 +2619,10 @@ void Ppu::read_obj_tile_data_low() {
 #endif
 }
 
-void Ppu::read_obj_tile_data_high() {
+inline void Ppu::read_obj_tile_data_high() {
 #ifdef ENABLE_CGB
-    if (operating_mode.is_cgb_mode() && test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
+    if (test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
+        ASSERT(operating_mode.is_cgb_mode());
         psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
     } else {
         psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
