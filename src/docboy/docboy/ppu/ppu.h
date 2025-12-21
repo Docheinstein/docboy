@@ -276,6 +276,7 @@ private:
     void bg_pixel_slice_fetcher_get_tile_data_low_0();
     void bg_pixel_slice_fetcher_get_tile_data_low_1();
     void bg_pixel_slice_fetcher_get_tile_data_high_0();
+    void bg_pixel_slice_fetcher_get_tile_data_high_1();
 
     void win_prefetcher_activating();
     void win_prefetcher_get_tile_0();
@@ -283,6 +284,7 @@ private:
     void win_pixel_slice_fetcher_get_tile_data_low_0();
     void win_pixel_slice_fetcher_get_tile_data_low_1();
     void win_pixel_slice_fetcher_get_tile_data_high_0();
+    void win_pixel_slice_fetcher_get_tile_data_high_1();
 
     void bgwin_pixel_slice_fetcher_get_tile_data_high_1();
     void bgwin_pixel_slice_fetcher_push();
@@ -301,6 +303,17 @@ private:
     void setup_win_pixel_slice_fetcher_tilemap_tile_address();
     void setup_win_pixel_slice_fetcher_tile_data_address();
 
+    void read_bgwin_tile_data_low();
+    void read_bgwin_tile_data_high();
+    void read_obj_tile_data_low();
+    void read_obj_tile_data_high();
+
+#ifdef ENABLE_CGB
+    void handle_bg_tile_data_sel_change_low_glitch();
+    void handle_bg_tile_data_sel_change_high_glitch();
+    void handle_win_tile_data_sel_change_low_glitch();
+    void handle_win_tile_data_sel_change_high_glitch();
+#endif
     void cache_bg_win_fetch();
     void restore_bg_win_fetch();
 
@@ -347,9 +360,7 @@ private:
     uint8_t last_bgp {}; // BGP delayed by 1 t-cycles
 #endif
     uint8_t last_wx {}; // WX delayed by 1 t-cycle
-#ifndef ENABLE_CGB
-    Lcdc last_lcdc {}; // LCDC delayed by 1 t-cycle
-#endif
+    Lcdc last_lcdc {};  // LCDC delayed by 1 t-cycle
 
     struct {
 #ifdef ENABLE_CGB
@@ -465,6 +476,10 @@ private:
         uint16_t tile_data_vram_address {};
         uint8_t tile_data_low {};
         uint8_t tile_data_high {};
+
+#ifdef ENABLE_CGB
+        uint8_t last_unsigned_fetch_data {};
+#endif
     } psf;
 
 #ifdef ENABLE_CGB

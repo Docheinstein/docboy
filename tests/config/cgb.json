@@ -11728,6 +11728,46 @@
             "framebuffer": "docboy/ppu/bg_obj_overlap_bg_win_on.png"
         },
         {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops26.gbc",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops26.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops27.gbc",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops27.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops28.gbc",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops28.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29.gbc",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops30.gbc",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops30.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops26.gbc",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops26.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops27.gbc",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops27.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops28.gbc",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops28.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops29.gbc",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops29.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops30.gbc",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops30.png"
+        },
+        {
             "rom": "docboy/ppu/visual/halt_ppu_off.gbc",
             "framebuffer": "docboy/ppu/halt_ppu_off.png",
             "check_interval_ticks": 30000000,

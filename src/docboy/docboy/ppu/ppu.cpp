@@ -520,7 +520,6 @@ void Ppu::tick() {
         // [mealybug/m3_wx_5_change]
         last_wx = wx;
 
-#ifndef ENABLE_CGB
         // On DMG, this is needed for:
         // 1) LCDC.WIN_ENABLE, because it seems that the t-cycle window is turned on
         //    (and it was off), window is activated also for LX == WX + 1, not only for LX == WX.
@@ -530,8 +529,10 @@ void Ppu::tick() {
         // 3) LCDC.OBJ_ENABLE, because it seems that there is a 1 T-cycle delay for this bit
         //    [mealybug/m3_lcdc_obj_en_change]
         // Verified: CGB is not affected (it sees LCDC delayed by 2 T-Cycles by default)
+        // On CGB, this is needed for:
+        // 1) LCDC.BG_WIN_TILE_DATA selector change glitch.
+        //    [mealybug/m3_lcdc_tile_sel_change (DMG mode)]
         last_lcdc = lcdc;
-#endif
 
         // It seems that there is a 1 T-cycle delay for the LY value used for the comparison LYC == LY.
         // This is supported by the fact that for LY = 153, LYC_EQ_LY STAT flag is raised for LYC = 153
@@ -1937,21 +1938,21 @@ void Ppu::bg_pixel_slice_fetcher_get_tile_data_low_0() {
     // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
     setup_bg_pixel_slice_fetcher_tile_data_address();
 
-#ifdef ENABLE_CGB
-    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
-        psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
-    } else {
-        psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
-    }
-#else
-    psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
-#endif
+    // Read tile data from VRAM.
+    read_bgwin_tile_data_low();
 
     fetcher_tick_selector = &Ppu::bg_pixel_slice_fetcher_get_tile_data_low_1;
 }
 
 void Ppu::bg_pixel_slice_fetcher_get_tile_data_low_1() {
     ASSERT(!is_fetching_sprite);
+
+#ifdef ENABLE_CGB
+    // In CGB, changing BG_WIN_TILE_DATA between GetTileData0 and GetTileData1 may affect
+    // the fetched tile data in an unexpected way (BG_WIN_TILE_DATA_SEL glitch).
+    // [mealybug/m3_lcdc_tile_sel_change (DMG mode)]
+    handle_bg_tile_data_sel_change_low_glitch();
+#endif
 
     fetcher_tick_selector = &Ppu::bg_pixel_slice_fetcher_get_tile_data_high_0;
 }
@@ -1967,17 +1968,21 @@ void Ppu::bg_pixel_slice_fetcher_get_tile_data_high_0() {
     // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
     setup_bg_pixel_slice_fetcher_tile_data_address();
 
+    // Read tile data from VRAM.
+    read_bgwin_tile_data_high();
+
+    fetcher_tick_selector = &Ppu::bg_pixel_slice_fetcher_get_tile_data_high_1;
+}
+
+void Ppu::bg_pixel_slice_fetcher_get_tile_data_high_1() {
 #ifdef ENABLE_CGB
-    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
-        psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
-    } else {
-        psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
-    }
-#else
-    psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
+    // In CGB, changing BG_WIN_TILE_DATA between GetTileData0 and GetTileData1 may affect
+    // the fetched tile data in an unexpected way (BG_WIN_TILE_DATA_SEL glitch).
+    // [mealybug/m3_lcdc_tile_sel_change (DMG mode)]
+    handle_bg_tile_data_sel_change_high_glitch();
 #endif
 
-    fetcher_tick_selector = &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1;
+    bgwin_pixel_slice_fetcher_get_tile_data_high_1();
 }
 
 // Some random notes about window //
@@ -2103,15 +2108,8 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_low_0() {
     // [mealybug/m3_lcdc_tile_sel_win_change]
     setup_win_pixel_slice_fetcher_tile_data_address();
 
-#ifdef ENABLE_CGB
-    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
-        psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
-    } else {
-        psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
-    }
-#else
-    psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
-#endif
+    // Read tile data from VRAM.
+    read_bgwin_tile_data_low();
 
     fetcher_tick_selector = &Ppu::win_pixel_slice_fetcher_get_tile_data_low_1;
 }
@@ -2124,6 +2122,13 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_low_1() {
         bg_pixel_slice_fetcher_get_tile_data_low_1();
         return;
     }
+
+#ifdef ENABLE_CGB
+    // In CGB, changing BG_WIN_TILE_DATA between GetTileData0 and GetTileData1 may affect
+    // the fetched tile data in an unexpected way (BG_WIN_TILE_DATA_SEL glitch).
+    // [mealybug/m3_lcdc_tile_sel_change (DMG mode)]
+    handle_win_tile_data_sel_change_low_glitch();
+#endif
 
     fetcher_tick_selector = &Ppu::win_pixel_slice_fetcher_get_tile_data_high_0;
 }
@@ -2145,17 +2150,21 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_0() {
     // [mealybug/m3_lcdc_tile_sel_win_change]
     setup_win_pixel_slice_fetcher_tile_data_address();
 
+    // Read tile data from VRAM.
+    read_bgwin_tile_data_high();
+
+    fetcher_tick_selector = &Ppu::win_pixel_slice_fetcher_get_tile_data_high_1;
+}
+
+void Ppu::win_pixel_slice_fetcher_get_tile_data_high_1() {
 #ifdef ENABLE_CGB
-    if (test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
-        psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
-    } else {
-        psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
-    }
-#else
-    psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
+    // In CGB, changing BG_WIN_TILE_DATA between GetTileData0 and GetTileData1 may affect
+    // the fetched tile data in an unexpected way (BG_WIN_TILE_DATA_SEL glitch).
+    // [mealybug/m3_lcdc_tile_sel_change (DMG mode)]
+    handle_win_tile_data_sel_change_high_glitch();
 #endif
 
-    fetcher_tick_selector = &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1;
+    bgwin_pixel_slice_fetcher_get_tile_data_high_1();
 }
 
 void Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1() {
@@ -2318,15 +2327,8 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_low_1() {
     // [mealybug/m3_lcdc_obj_size_change, mealybug/m3_lcdc_obj_size_change_scx]
     setup_obj_pixel_slice_fetcher_tile_data_address();
 
-#ifdef ENABLE_CGB
-    if (test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
-        psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
-    } else {
-        psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
-    }
-#else
-    psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
-#endif
+    // Read tile data from VRAM.
+    read_obj_tile_data_low();
 
     fetcher_tick_selector = &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_0;
 }
@@ -2351,15 +2353,8 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
     // [mealybug/m3_lcdc_obj_size_change, mealybug/m3_lcdc_obj_size_change_scx]
     setup_obj_pixel_slice_fetcher_tile_data_address();
 
-#ifdef ENABLE_CGB
-    if (test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
-        psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
-    } else {
-        psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
-    }
-#else
-    psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
-#endif
+    // Read tile data from VRAM.
+    read_obj_tile_data_high();
 
     PixelColorIndex obj_pixels_colors[8];
     const uint8_t (*pixels_map_ptr)[8] = test_bit<Specs::Bits::OAM::Attributes::X_FLIP>(of.attributes)
@@ -2560,6 +2555,164 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
     psf.tile_data_vram_address = vram_tile_addr + TILE_ROW_BYTES * tile_y;
 }
 
+void Ppu::read_bgwin_tile_data_low() {
+#ifdef ENABLE_CGB
+    if (operating_mode.is_cgb_mode() && test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+        psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
+    } else {
+        psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
+    }
+
+    // Cache the last fetch of unsigned addressing mode, as we may need for BG_WIN_TILE_DATA_SEL change glitch.
+    if (lcdc.bg_win_tile_data) {
+        psf.last_unsigned_fetch_data = psf.tile_data_low;
+    }
+#else
+    psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
+#endif
+}
+
+void Ppu::read_bgwin_tile_data_high() {
+#ifdef ENABLE_CGB
+    if (operating_mode.is_cgb_mode() && test_bit<Specs::Bits::Background::Attributes::BANK>(bwf.attributes)) {
+        psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
+    } else {
+        psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
+    }
+
+    // Cache the last fetch of unsigned addressing mode, as we may need for BG_WIN_TILE_DATA_SEL change glitch.
+    if (lcdc.bg_win_tile_data) {
+        psf.last_unsigned_fetch_data = psf.tile_data_high;
+    }
+#else
+    psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
+#endif
+}
+
+void Ppu::read_obj_tile_data_low() {
+#ifdef ENABLE_CGB
+    if (operating_mode.is_cgb_mode() && test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
+        psf.tile_data_low = vram.read<1>(psf.tile_data_vram_address);
+    } else {
+        psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
+    }
+
+    // Cache the last fetch of unsigned addressing mode, as we may need for BG_WIN_TILE_DATA_SEL change glitch.
+    psf.last_unsigned_fetch_data = psf.tile_data_low;
+#else
+    psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
+#endif
+}
+
+void Ppu::read_obj_tile_data_high() {
+#ifdef ENABLE_CGB
+    if (operating_mode.is_cgb_mode() && test_bit<Specs::Bits::OAM::Attributes::BANK>(of.attributes)) {
+        psf.tile_data_high = vram.read<1>(psf.tile_data_vram_address + 1);
+    } else {
+        psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
+    }
+
+    // Cache the last fetch of unsigned addressing mode, as we may need for BG_WIN_TILE_DATA_SEL change glitch.
+    psf.last_unsigned_fetch_data = psf.tile_data_high;
+#else
+    psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
+#endif
+}
+
+#ifdef ENABLE_CGB
+inline void Ppu::handle_bg_tile_data_sel_change_low_glitch() {
+    // On CGB, if LCDC.BG_WIN_TILE_DATA is changed between Low0/Low1 or between High0/High1, nasty things can happen.
+    // In particular, it seems that:
+    // - If BG_WIN_TILE_DATA is reset (and was set), i.e. addressing mode changes from unsigned to signed, then the tile
+    //   data is read accordingly to the new addressing mode (as if the flag was clear also during Low0 or High0,
+    //   respectively).
+    if (last_lcdc.bg_win_tile_data && !lcdc.bg_win_tile_data) {
+        setup_bg_pixel_slice_fetcher_tile_data_address();
+        read_bgwin_tile_data_low();
+    }
+
+    // - If BG_WIN_TILE_DATA is set (and was reset), i.e. addressing mode changes from signed to unsigned, then the tile
+    //   data is taken from the last tile data that has ever been read in unsigned addressing mode.
+    //   Note that since sprites also are fetched using unsigned addressing mode, here we might end up using tile data
+    //   coming from fetched sprites!
+    //   Furthermore, it seems that this glitch occurs only if the block used for the fetch is the $9000:$97FF
+    //   (0-127 in signed addressing mode), whereas nothing happens if the fetch uses the $8800:$8FFF block
+    //   (128-255 in unsigned address mode); probably because block $8800:$8FFF is shared for the same tile
+    //   numbers both for signed and unsigned addressing mode.
+    else if (!last_lcdc.bg_win_tile_data && lcdc.bg_win_tile_data && !test_bit<11>(psf.tile_data_vram_address)) {
+        psf.tile_data_low = psf.last_unsigned_fetch_data;
+    }
+
+    // TODO: it's strange that a VRAM read may happen here, in T1, while normally it happens in T0.
+    //   But the "standard" VRAM access case is forced to happen during T0, otherwise CGB's HDMA conflict timing tests
+    //   are failing. Check if/what is wrong about the current VRAM/HDMA read/conflict timing (making PPU reads 2
+    //   T-cycles long is not enough).
+    // As a reminder, this is the current PPU VRAM/HDMA read/conflict model:
+    //   |          Phase         | VRAM access  |
+    //   -----------------------------------------
+    //   | BG GetTile 0           |     Read     |
+    //   | BG GetTile 1           |              |
+    //   | BG GetTileDataLow 0    |     Read     |
+    //   | BG GetTileDataLow 1    |              | <- we would read from VRAM here because of this glitch
+    //   | BG GetTileDataHigh 0   |     Read     |
+    //   | BG GetTileDataHigh 1   |              | <- we would read from VRAM here because of this glitch
+    //   | BG GetTileDataPush     |              |
+    //
+    //   |          Phase         | VRAM access  |
+    //   -----------------------------------------
+    //   | OBJ GetTile 0          |              |
+    //   | OBJ GetTile 1          |              |
+    //   | OBJ GetTileDataLow 0   |              |
+    //   | OBJ GetTileDataLow 1   |     Read     |
+    //   | OBJ GetTileDataHigh 0  |              |
+    //   | OBJ GetTileDataHigh 1  |     Read     |
+    //
+    //   |   Phase of HDMA write  |   Phase of HDMA flush    |     Outcome     |
+    //   -----------------------------------------------------------------------
+    //   | BG GetTile 0           |  BG GetTile 1            |                 |
+    //   | BG GetTile 1           |  BG GetTileDataLow 0     |                 |
+    //   | BG GetTileDataLow 0    |  BG GetTileDataLow 1     |                 |
+    //   | BG GetTileDataLow 1    |  BG GetTileDataHigh 0    |                 |
+    //   | BG GetTileDataHigh 0   |  BG GetTileDataHigh 1    |                 |
+    //   | BG GetTileDataHigh 1   |  BG GetTileDataPush      |     Success     |
+    //   | BG GetTileDataPush     |  BG GetTileDataPush      |     Success     |
+    //
+    //   | OBJ GetTile 0          |  OBJ GetTile 1           |     Success     |
+    //   | OBJ GetTile 1          |  OBJ GetTileDataLow 0    |     Success     |
+    //   | OBJ GetTileDataLow 0   |  OBJ GetTileDataLow 1    |                 |
+    //   | OBJ GetTileDataLow 1   |  OBJ GetTileDataHigh 0   |                 |
+    //   | OBJ GetTileDataHigh 0  |  OBJ GetTileDataHigh 1   |                 |
+    //   | OBJ GetTileDataHigh 1  |  BG GetTileDataPush      |                 |
+}
+
+inline void Ppu::handle_bg_tile_data_sel_change_high_glitch() {
+    if (last_lcdc.bg_win_tile_data && !lcdc.bg_win_tile_data) {
+        setup_bg_pixel_slice_fetcher_tile_data_address();
+        read_bgwin_tile_data_high();
+    } else if (!last_lcdc.bg_win_tile_data && lcdc.bg_win_tile_data && !test_bit<11>(psf.tile_data_vram_address)) {
+        psf.tile_data_high = psf.last_unsigned_fetch_data;
+    }
+}
+
+inline void Ppu::handle_win_tile_data_sel_change_low_glitch() {
+    if (last_lcdc.bg_win_tile_data && !lcdc.bg_win_tile_data) {
+        setup_win_pixel_slice_fetcher_tile_data_address();
+        read_bgwin_tile_data_low();
+    } else if (!last_lcdc.bg_win_tile_data && lcdc.bg_win_tile_data && !test_bit<11>(psf.tile_data_vram_address)) {
+        psf.tile_data_low = psf.last_unsigned_fetch_data;
+    }
+}
+
+inline void Ppu::handle_win_tile_data_sel_change_high_glitch() {
+    if (last_lcdc.bg_win_tile_data && !lcdc.bg_win_tile_data) {
+        setup_win_pixel_slice_fetcher_tile_data_address();
+        read_bgwin_tile_data_high();
+    } else if (!last_lcdc.bg_win_tile_data && lcdc.bg_win_tile_data && !test_bit<11>(psf.tile_data_vram_address)) {
+        psf.tile_data_high = psf.last_unsigned_fetch_data;
+    }
+}
+#endif
+
 inline void Ppu::cache_bg_win_fetch() {
     bwf.interrupted_fetch.tile_data_low = psf.tile_data_low;
     bwf.interrupted_fetch.tile_data_high = psf.tile_data_high;
@@ -2649,7 +2802,6 @@ void Ppu::save_state(Parcel& parcel) const {
 #endif
     PARCEL_WRITE_UINT8(parcel, last_wx);
 
-#ifndef ENABLE_CGB
     PARCEL_WRITE_BOOL(parcel, last_lcdc.enable);
     PARCEL_WRITE_BOOL(parcel, last_lcdc.win_tile_map);
     PARCEL_WRITE_BOOL(parcel, last_lcdc.win_enable);
@@ -2658,7 +2810,6 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_BOOL(parcel, last_lcdc.obj_size);
     PARCEL_WRITE_BOOL(parcel, last_lcdc.obj_enable);
     PARCEL_WRITE_BOOL(parcel, last_lcdc.bg_win_enable);
-#endif
 
 #ifdef ENABLE_CGB
     PARCEL_WRITE_UINT8(parcel, pending_write.lcdc.countdown);
@@ -2746,6 +2897,10 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, psf.tile_data_high);
 
 #ifdef ENABLE_CGB
+    PARCEL_WRITE_UINT8(parcel, psf.last_unsigned_fetch_data);
+#endif
+
+#ifdef ENABLE_CGB
     PARCEL_WRITE_BYTES(parcel, bg_palettes, sizeof(bg_palettes));
     PARCEL_WRITE_BYTES(parcel, obj_palettes, sizeof(obj_palettes));
 
@@ -2821,7 +2976,6 @@ void Ppu::load_state(Parcel& parcel) {
 #endif
     last_wx = parcel.read_uint8();
 
-#ifndef ENABLE_CGB
     last_lcdc.enable = parcel.read_bool();
     last_lcdc.win_tile_map = parcel.read_bool();
     last_lcdc.win_enable = parcel.read_bool();
@@ -2830,7 +2984,6 @@ void Ppu::load_state(Parcel& parcel) {
     last_lcdc.obj_size = parcel.read_bool();
     last_lcdc.obj_enable = parcel.read_bool();
     last_lcdc.bg_win_enable = parcel.read_bool();
-#endif
 
 #ifdef ENABLE_CGB
     PARCEL_WRITE_UINT8(parcel, pending_write.lcdc.countdown);
@@ -2919,6 +3072,9 @@ void Ppu::load_state(Parcel& parcel) {
     psf.tile_data_vram_address = parcel.read_uint16();
     psf.tile_data_low = parcel.read_uint8();
     psf.tile_data_high = parcel.read_uint8();
+#ifdef ENABLE_CGB
+    psf.last_unsigned_fetch_data = parcel.read_uint8();
+#endif
 
 #ifdef ENABLE_CGB
     parcel.read_bytes(bg_palettes, sizeof(bg_palettes));
@@ -3039,9 +3195,7 @@ void Ppu::reset() {
     last_bgp = if_bootrom_else(0, 0xFC);
 #endif
     last_wx = 0;
-#ifndef ENABLE_CGB
     last_lcdc = lcdc;
-#endif
 
 #ifdef ENABLE_CGB
     pending_write.lcdc.countdown = 0;
@@ -3136,6 +3290,9 @@ void Ppu::reset() {
     psf.tile_data_vram_address = if_bootrom_else(0, 14);
     psf.tile_data_low = 0;
     psf.tile_data_high = 0;
+#ifdef ENABLE_CGB
+    psf.last_unsigned_fetch_data = 0;
+#endif
 
 #ifdef ENABLE_CGB
 #ifndef ENABLE_BOOTROM

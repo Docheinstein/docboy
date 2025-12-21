@@ -10783,6 +10783,26 @@
             "framebuffer": "docboy/ppu/bg_obj_overlap_bg_win_on.png"
         },
         {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops26.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops26.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops27.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops27.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops28.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops28.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops30.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops30.png"
+        },
+        {
             "rom": "docboy/ppu/visual/change_bg_win_enable_during_pixel_transfer.gb",
             "framebuffer": "docboy/ppu/change_bg_win_enable_during_pixel_transfer.png"
         },
@@ -11308,6 +11328,26 @@
             "rom": "docboy/ppu/visual/change_win_map_wx22.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx22.png",
             "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops26.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops26.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops27.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops27.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops28.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops28.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops29.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops29.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops30.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops30.png"
         },
         {
             "rom": "docboy/ppu/visual/enable_win_during_pixel_transfer_round1.gb",

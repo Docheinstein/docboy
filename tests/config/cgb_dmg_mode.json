@@ -546,15 +546,11 @@
         },
         {
             "rom": "mealybug/m3_lcdc_tile_sel_change.gb",
-            "framebuffer": "mealybug/m3_lcdc_tile_sel_change.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_lcdc_tile_sel_change.png"
         },
         {
             "rom": "mealybug/m3_lcdc_tile_sel_win_change.gb",
-            "framebuffer": "mealybug/m3_lcdc_tile_sel_win_change.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy got it right"
+            "framebuffer": "mealybug/m3_lcdc_tile_sel_win_change.png"
         },
         {
             "rom": "mealybug/m3_lcdc_win_en_change_multiple.gb",
@@ -813,6 +809,462 @@
             "framebuffer": "docboy/ppu/bgp.png"
         },
         {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift0_delay0.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift0_delay0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift1_delay0.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift1_delay0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift2_delay0.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift2_delay0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift2_delay0_alt_sprite_data.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift2_delay0_alt_sprite_data.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift3_delay0.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift3_delay0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift4_delay0.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift4_delay0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift5_delay0.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift5_delay0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift6_delay0.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift6_delay0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift7_delay0.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift7_delay0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift0_delay4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift0_delay4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift1_delay4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift1_delay4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift2_delay4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift2_delay4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift3_delay4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift3_delay4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift4_delay4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift4_delay4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift5_delay4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift5_delay4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift6_delay4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift6_delay4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift7_delay4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift7_delay4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay0.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay0_alt_sprite_data.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay0_alt_sprite_data.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay0_alt_sprite_data_var2.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay0_alt_sprite_data_var2.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay0_alt_sprite_data_var3.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay0_alt_sprite_data_var3.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay0_alt_sprite_data_var4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay0_alt_sprite_data_var4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay1.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay1.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay2.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay2.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay3.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay3.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_shift8_delay5.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_shift8_delay5.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var1.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var1.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var2.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var2.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var3.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var3.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var5.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var5.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var6.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var6.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var7.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var7.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var8.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var8.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var9.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var9.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var10.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var10.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var11.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var11.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var12.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var12.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var13.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var13.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var14.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var14.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var15.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var15.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var16.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var16.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var17.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var17.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var18.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var18.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var19.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var19.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var20.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var20.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var21.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var21.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var22.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var22.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var23.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var23.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var24.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var24.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var25.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var25.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var26.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var26.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var27.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var27.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var28.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var28.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var29.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var29.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var30.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var30.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var31.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var31.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var32.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var32.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var33.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var33.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var34.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var34.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var35.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var35.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var36.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var36.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var37.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var37.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var38.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var38.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var39.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var39.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var40.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var40.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var41.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var41.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var42.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var42.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var43.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var43.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var43_alt.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var43_alt.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var43_alt2.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var43_alt2.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var43_alt3.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var43_alt3.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var43_alt4.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var43_alt4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var44.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var44.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_mealybug_var44_alt.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_mealybug_var44_alt.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops26.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops26.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops27.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops27.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops28.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops28.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_a.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_a.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_b.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_b.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_c.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_c.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_d.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_d.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var1.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var1.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var2.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var2.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var3.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var3.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops28.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops28.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops29.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops29.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops30.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops30.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops31.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops31.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops32.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops32.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops85.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops85.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops98.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops98.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops99.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops99.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops100.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops100.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops101.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops101.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var4_nops102.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var4_nops102.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var5_nops30.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var5_nops30.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var5_nops30_alt.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var5_nops30_alt.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var6_nops30.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var6_nops30.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var7_vblank_noop.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var7_vblank_noop.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var7_vblank_nops_12.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var7_vblank_nops_12.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var7_vblank_nops_17.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var7_vblank_nops_17.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var7_vblank_nops_100.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var7_vblank_nops_100.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var9_vblank_nops_55.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var9_vblank_nops_55.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var9_vblank_nops_56.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var9_vblank_nops_56.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops29_var10.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops29_var10.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops30.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops30.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops34.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops34.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops35.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops35.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops36.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops36.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops37.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops37.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_bg_tile_data_glitch_sprites_nops38.gb",
+            "framebuffer": "docboy/ppu/change_bg_tile_data_glitch_sprites_nops38.png"
+        },
+        {
             "rom": "docboy/ppu/visual/change_bg_win_enable_during_pixel_transfer.gb",
             "framebuffer": "docboy/ppu/change_bg_win_enable_during_pixel_transfer.png"
         },
@@ -823,6 +1275,26 @@
         {
             "rom": "docboy/ppu/visual/change_bgp_or_bug_checksum_d1_first_dot.gb",
             "framebuffer": "docboy/ppu/change_bgp_or_bug_checksum_d1_first_dot.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops26.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops26.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops27.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops27.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops28.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops28.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops29.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops29.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops30.gb",
+            "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops30.png"
         },
         {
             "rom": "docboy/ppu/visual/enable_win_during_pixel_transfer_round1.gb",

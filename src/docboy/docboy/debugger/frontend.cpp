@@ -2687,6 +2687,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                 if (gb.ppu.fetcher_tick_selector == &Ppu::bg_pixel_slice_fetcher_get_tile_data_high_0) {
                     return "BG High0";
                 }
+                if (gb.ppu.fetcher_tick_selector == &Ppu::bg_pixel_slice_fetcher_get_tile_data_high_1) {
+                    return "BG High1";
+                }
                 if (gb.ppu.fetcher_tick_selector == &Ppu::win_pixel_slice_fetcher_get_tile_data_low_0) {
                     return "WIN Low0";
                 }
@@ -2695,6 +2698,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                 }
                 if (gb.ppu.fetcher_tick_selector == &Ppu::win_pixel_slice_fetcher_get_tile_data_high_0) {
                     return "WIN High0";
+                }
+                if (gb.ppu.fetcher_tick_selector == &Ppu::win_pixel_slice_fetcher_get_tile_data_high_1) {
+                    return "WIN High1";
                 }
                 if (gb.ppu.fetcher_tick_selector == &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1) {
                     return "BG/WIN High1";
