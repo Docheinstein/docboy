@@ -438,12 +438,14 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
     &Ppu::bg_pixel_slice_fetcher_get_tile_data_low_0,
     &Ppu::bg_pixel_slice_fetcher_get_tile_data_low_1,
     &Ppu::bg_pixel_slice_fetcher_get_tile_data_high_0,
+    &Ppu::bg_pixel_slice_fetcher_get_tile_data_high_1,
     &Ppu::win_prefetcher_activating,
     &Ppu::win_prefetcher_get_tile_0,
     &Ppu::win_prefetcher_get_tile_1,
     &Ppu::win_pixel_slice_fetcher_get_tile_data_low_0,
     &Ppu::win_pixel_slice_fetcher_get_tile_data_low_1,
     &Ppu::win_pixel_slice_fetcher_get_tile_data_high_0,
+    &Ppu::win_pixel_slice_fetcher_get_tile_data_high_1,
     &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1,
     &Ppu::bgwin_pixel_slice_fetcher_push,
     &Ppu::obj_prefetcher_get_tile_0,
@@ -2986,17 +2988,17 @@ void Ppu::load_state(Parcel& parcel) {
     last_lcdc.bg_win_enable = parcel.read_bool();
 
 #ifdef ENABLE_CGB
-    PARCEL_WRITE_UINT8(parcel, pending_write.lcdc.countdown);
-    PARCEL_WRITE_UINT8(parcel, pending_write.lcdc.value);
-    PARCEL_WRITE_UINT8(parcel, pending_write.scy.countdown);
-    PARCEL_WRITE_UINT8(parcel, pending_write.scy.value);
-    PARCEL_WRITE_UINT8(parcel, pending_write.scx.countdown);
-    PARCEL_WRITE_UINT8(parcel, pending_write.scx.value);
+    pending_write.lcdc.countdown = parcel.read_uint8();
+    pending_write.lcdc.value = parcel.read_uint8();
+    pending_write.scy.countdown = parcel.read_uint8();
+    pending_write.scy.value = parcel.read_uint8();
+    pending_write.scx.countdown = parcel.read_uint8();
+    pending_write.scx.value = parcel.read_uint8();
 #endif
 
 #ifndef ENABLE_CGB
-    PARCEL_WRITE_UINT8(parcel, pending_write.stat.countdown);
-    PARCEL_WRITE_UINT8(parcel, pending_write.stat.value);
+    pending_write.stat.countdown = parcel.read_uint8();
+    pending_write.stat.value = parcel.read_uint8();
 #endif
 
     parcel.read_bytes(bg_fifo.data, sizeof(bg_fifo.data));
