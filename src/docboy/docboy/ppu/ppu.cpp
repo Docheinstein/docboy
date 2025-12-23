@@ -1910,6 +1910,9 @@ void Ppu::bg_prefetcher_get_tile_0() {
     // [mealybug/m3_lcdc_bg_map_change].
     setup_bg_pixel_slice_fetcher_tilemap_tile_address();
 
+    // Read the tile number (and the attributes, in CGB mode) from VRAM.
+    read_bgwin_tile_number_and_attributes();
+
 #ifdef ENABLE_CGB
     // Differently from DMG, on CGB there's no way to create a bitplane desync effect
     // by changing SCY between the tile data low/high fetches.
@@ -1918,8 +1921,6 @@ void Ppu::bg_prefetcher_get_tile_0() {
     // [mealybug/m3_scy_change (DMG mode)].
     bwf.scy = scy;
 #endif
-
-    setup_bg_pixel_slice_fetcher_tile_data_address();
 
     fetcher_tick_selector = &Ppu::bg_prefetcher_get_tile_1;
 }
@@ -2065,12 +2066,14 @@ void Ppu::win_prefetcher_get_tile_0() {
         // [mealybug/m3_lcdc_win_map_change].
         setup_win_pixel_slice_fetcher_tilemap_tile_address();
 
-        setup_win_pixel_slice_fetcher_tile_data_address();
+        // Read the tile number (and the attributes, in CGB mode) from VRAM.
+        read_bgwin_tile_number_and_attributes();
 
         fetcher_tick_selector = &Ppu::win_prefetcher_get_tile_1;
     }
 
     if (w.just_activated) {
+        // TODO: does this happen also on CGB?
         // The window activation shifts back the BG prefetcher by one tile.
         // Note that this happens here (not when the window is triggered),
         // therefore there is a 1 t-cycle window opportunity to show
@@ -2487,19 +2490,13 @@ inline void Ppu::setup_bg_pixel_slice_fetcher_tilemap_tile_address() {
 }
 
 inline void Ppu::setup_bg_pixel_slice_fetcher_tile_data_address() {
-#ifdef ENABLE_CGB
-    bwf.attributes = operating_mode.is_cgb_mode() ? vram.read<1>(bwf.tilemap_tile_vram_addr) : 0;
-#endif
-
-    const uint8_t tile_number = vram.read<0>(bwf.tilemap_tile_vram_addr);
-
     const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
                                         ?
                                         // unsigned addressing mode with 0x8000 as (global) base address
-                                        0x0000 + TILE_BYTES * tile_number
+                                        0x0000 + TILE_BYTES * bwf.tile_number
                                         :
                                         // signed addressing mode with 0x9000 as (global) base address
-                                        0x1000 + TILE_BYTES * static_cast<int8_t>(tile_number);
+                                        0x1000 + TILE_BYTES * static_cast<int8_t>(bwf.tile_number);
 
 #ifdef ENABLE_CGB
     // On CGB the same SCY (deduced during the GetTile phase) is used for both high and low byte of tile data.
@@ -2538,19 +2535,13 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tilemap_tile_address() {
 }
 
 inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
-#ifdef ENABLE_CGB
-    bwf.attributes = operating_mode.is_cgb_mode() ? vram.read<1>(bwf.tilemap_tile_vram_addr) : 0;
-#endif
-
-    const uint8_t tile_number = vram.read<0>(bwf.tilemap_tile_vram_addr);
-
     const uint16_t vram_tile_addr = lcdc.bg_win_tile_data
                                         ?
                                         // unsigned addressing mode with 0x8000 as (global) base address
-                                        0x0000 + TILE_BYTES * tile_number
+                                        0x0000 + TILE_BYTES * bwf.tile_number
                                         :
                                         // signed addressing mode with 0x9000 as (global) base address
-                                        0x1000 + TILE_BYTES * static_cast<int8_t>(tile_number);
+                                        0x1000 + TILE_BYTES * static_cast<int8_t>(bwf.tile_number);
 
     uint8_t tile_y = mod<TILE_HEIGHT>(w.wly);
 
@@ -2565,6 +2556,14 @@ inline void Ppu::setup_win_pixel_slice_fetcher_tile_data_address() {
     ASSERT(tile_y < 8);
 
     psf.tile_data_vram_address = vram_tile_addr + TILE_ROW_BYTES * tile_y;
+}
+
+inline void Ppu::read_bgwin_tile_number_and_attributes() {
+    bwf.tile_number = vram.read<0>(bwf.tilemap_tile_vram_addr);
+
+#ifdef ENABLE_CGB
+    bwf.attributes = operating_mode.is_cgb_mode() ? vram.read<1>(bwf.tilemap_tile_vram_addr) : 0;
+#endif
 }
 
 inline void Ppu::read_bgwin_tile_data_low() {
@@ -2885,6 +2884,7 @@ void Ppu::save_state(Parcel& parcel) const {
 
     PARCEL_WRITE_UINT8(parcel, bwf.lx);
     PARCEL_WRITE_UINT8(parcel, bwf.tilemap_tile_vram_addr);
+    PARCEL_WRITE_UINT8(parcel, bwf.tile_number);
 #ifdef ENABLE_CGB
     PARCEL_WRITE_UINT8(parcel, bwf.attributes);
     PARCEL_WRITE_UINT8(parcel, bwf.scy);
@@ -3062,6 +3062,7 @@ void Ppu::load_state(Parcel& parcel) {
 
     bwf.lx = parcel.read_uint8();
     bwf.tilemap_tile_vram_addr = parcel.read_uint8();
+    bwf.tile_number = parcel.read_uint8();
 #ifdef ENABLE_CGB
     bwf.attributes = parcel.read_uint8();
     bwf.scy = parcel.read_uint8();
@@ -3279,6 +3280,7 @@ void Ppu::reset() {
     bwf.lx = if_bootrom_else(0, 168);
     bwf.tilemap_tile_vram_addr = if_bootrom_else(0, 52);
 
+    bwf.tile_number = 0;
 #ifdef ENABLE_CGB
     bwf.attributes = 0;
     bwf.scy = 0;

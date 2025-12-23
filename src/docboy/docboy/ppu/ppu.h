@@ -303,6 +303,8 @@ private:
     void setup_win_pixel_slice_fetcher_tilemap_tile_address();
     void setup_win_pixel_slice_fetcher_tile_data_address();
 
+    void read_bgwin_tile_number_and_attributes();
+
     void read_bgwin_tile_data_low();
     void read_bgwin_tile_data_high();
     void read_obj_tile_data_low();
@@ -441,6 +443,7 @@ private:
         uint8_t lx {}; // [0, 256), advances 8 by 8
         uint16_t tilemap_tile_vram_addr {};
 
+        uint8_t tile_number {}; // [0, 256)
 #ifdef ENABLE_CGB
         uint8_t attributes {};
         uint8_t scy {};
