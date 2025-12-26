@@ -11768,32 +11768,32 @@
             "framebuffer": "docboy/ppu/change_win_tile_data_glitch_window_nops30.png"
         },
         {
-            "rom": "docboy/ppu/visual/change_wx_activation_timing_wx6_nops16.gbc",
-            "framebuffer": "docboy/ppu/change_wx_activation_timing_wx6_nops16.png"
+            "rom": "docboy/ppu/visual/change_wx_glitch_wx6_nops16.gbc",
+            "framebuffer": "docboy/ppu/change_wx_glitch_wx6_nops16.png"
         },
         {
-            "rom": "docboy/ppu/visual/change_wx_activation_timing_wx6_nops17.gbc",
-            "framebuffer": "docboy/ppu/change_wx_activation_timing_wx6_nops17.png"
+            "rom": "docboy/ppu/visual/change_wx_glitch_wx6_nops17.gbc",
+            "framebuffer": "docboy/ppu/change_wx_glitch_wx6_nops17.png"
         },
         {
-            "rom": "docboy/ppu/visual/change_wx_activation_timing_wx7_nops17.gbc",
-            "framebuffer": "docboy/ppu/change_wx_activation_timing_wx7_nops17.png"
+            "rom": "docboy/ppu/visual/change_wx_glitch_wx7_nops17.gbc",
+            "framebuffer": "docboy/ppu/change_wx_glitch_wx7_nops17.png"
         },
         {
-            "rom": "docboy/ppu/visual/change_wx_activation_timing_wx7_nops18.gbc",
-            "framebuffer": "docboy/ppu/change_wx_activation_timing_wx7_nops18.png"
+            "rom": "docboy/ppu/visual/change_wx_glitch_wx7_nops18.gbc",
+            "framebuffer": "docboy/ppu/change_wx_glitch_wx7_nops18.png"
         },
         {
-            "rom": "docboy/ppu/visual/change_wx_activation_timing_wx8_nops17.gbc",
-            "framebuffer": "docboy/ppu/change_wx_activation_timing_wx8_nops17.png"
+            "rom": "docboy/ppu/visual/change_wx_glitch_wx8_nops17.gbc",
+            "framebuffer": "docboy/ppu/change_wx_glitch_wx8_nops17.png"
         },
         {
-            "rom": "docboy/ppu/visual/change_wx_activation_timing_wx8_nops18.gbc",
-            "framebuffer": "docboy/ppu/change_wx_activation_timing_wx8_nops18.png"
+            "rom": "docboy/ppu/visual/change_wx_glitch_wx8_nops18.gbc",
+            "framebuffer": "docboy/ppu/change_wx_glitch_wx8_nops18.png"
         },
         {
-            "rom": "docboy/ppu/visual/change_wx_activation_timing_wx8_nops18_alt.gbc",
-            "framebuffer": "docboy/ppu/change_wx_activation_timing_wx8_nops18_alt.png"
+            "rom": "docboy/ppu/visual/change_wx_glitch_wx8_nops18_alt.gbc",
+            "framebuffer": "docboy/ppu/change_wx_glitch_wx8_nops18_alt.png"
         },
         {
             "rom": "docboy/ppu/visual/change_wx_glitch.gbc",
