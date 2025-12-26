@@ -60,6 +60,7 @@ public:
 #ifdef ENABLE_CGB
     void write_scy(uint8_t value);
     void write_scx(uint8_t value);
+    void write_wx(uint8_t value);
 #endif
 
     void write_dma(uint8_t value);
@@ -316,6 +317,7 @@ private:
     void handle_win_tile_data_sel_change_low_glitch();
     void handle_win_tile_data_sel_change_high_glitch();
 #endif
+
     void cache_bg_win_fetch();
     void restore_bg_win_fetch();
 
@@ -369,6 +371,7 @@ private:
         PendingWrite lcdc {};
         PendingWrite scy {};
         PendingWrite scx {};
+        PendingWrite wx {};
 #endif
 
 #ifndef ENABLE_CGB

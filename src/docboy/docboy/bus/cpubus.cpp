@@ -191,7 +191,11 @@ CpuBus::CpuBus(Hram& hram, Joypad& joypad, Serial& serial, Timers& timers, Inter
     /* FF48 */ memory_accessors[Specs::Registers::Video::OBP0] = &ppu.obp0;
     /* FF49 */ memory_accessors[Specs::Registers::Video::OBP1] = &ppu.obp1;
     /* FF4A */ memory_accessors[Specs::Registers::Video::WY] = &ppu.wy;
+#ifdef ENABLE_CGB
+    /* FF4B */ memory_accessors[Specs::Registers::Video::WX] = {&ppu.wx, NonTrivial<&Ppu::write_wx> {&ppu}};
+#else
     /* FF4B */ memory_accessors[Specs::Registers::Video::WX] = &ppu.wx;
+#endif
 #ifdef ENABLE_CGB
 #ifdef ENABLE_BOOTROM
     /* FF4C */ memory_accessors[Specs::Registers::OperatingMode::KEY0] = {

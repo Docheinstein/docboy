@@ -694,6 +694,9 @@ inline void Ppu::tick_pending_write() {
     if (pending_write.scx.countdown && --pending_write.scx.countdown == 0) {
         scx = pending_write.scx.value;
     }
+    if (pending_write.wx.countdown && --pending_write.wx.countdown == 0) {
+        wx = pending_write.wx.value;
+    }
 #endif
 
 #ifndef ENABLE_CGB
@@ -820,7 +823,7 @@ inline void Ppu::tick_window() {
     // Note that this does not mean that window will always be rendered:
     // the WX == LX condition will be checked again during pixel transfer
     // (on the other hand WY is not checked again).
-    w.active_for_frame |= lcdc.win_enable && ly == wy;
+    w.active_for_frame = w.active_for_frame || (lcdc.win_enable && ly == wy);
 }
 
 // ------- PPU states ------
@@ -1766,12 +1769,14 @@ inline void Ppu::check_window_activation() {
     // This happens if LCDC.WIN_ENABLE was off and is turned on while LX == WX + 1.
     // [mealybug/m3_lcdc_win_en_change_multiple_wx]
     // Verified: this glitch does not happen on CGB.
+    // TODO: mealybug/m3_lcdc_win_en_change_multiple_wx in DMG mode.
     if (w.active_for_frame && !w.active && lcdc.win_enable &&
-        (lx == last_wx /* standard case */
-#ifndef ENABLE_CGB
-         || (lx == last_wx + 1 && !last_lcdc.win_enable /* DMG glitch: window late by 1 dot case */)
+#ifdef ENABLE_CGB
+        lx == wx
+#else
+        (lx == last_wx || (lx == last_wx + 1 && !last_lcdc.win_enable /* DMG glitch: window late by 1 dot case */))
 #endif
-             )) {
+    ) {
         setup_fetcher_for_window();
     }
 }
@@ -2066,14 +2071,23 @@ void Ppu::win_prefetcher_get_tile_0() {
         // [mealybug/m3_lcdc_win_map_change].
         setup_win_pixel_slice_fetcher_tilemap_tile_address();
 
-        // Read the tile number (and the attributes, in CGB mode) from VRAM.
-        read_bgwin_tile_number_and_attributes();
+        // On CGB there's a glitch that is triggered if the condition LX == WX
+        // is ever met (i.e. WX has been changed since window activation).
+        // If this happens at GetTile0 phase, the tile number is not read,
+        // instead the tile of the last fetch is used instead.
+        // [mealybug/m3_wx_4_change (DMG mode)]
+#ifdef ENABLE_CGB
+        if (lx != wx)
+#endif
+        {
+            // Read the tile number (and the attributes, in CGB mode) from VRAM.
+            read_bgwin_tile_number_and_attributes();
+        }
 
         fetcher_tick_selector = &Ppu::win_prefetcher_get_tile_1;
     }
 
     if (w.just_activated) {
-        // TODO: does this happen also on CGB?
         // The window activation shifts back the BG prefetcher by one tile.
         // Note that this happens here (not when the window is triggered),
         // therefore there is a 1 t-cycle window opportunity to show
@@ -2113,8 +2127,20 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_low_0() {
     // [mealybug/m3_lcdc_tile_sel_win_change]
     setup_win_pixel_slice_fetcher_tile_data_address();
 
-    // Read tile data from VRAM.
-    read_bgwin_tile_data_low();
+#ifdef ENABLE_CGB
+    // On CGB there's a glitch that is triggered if the condition LX == WX
+    // is ever met (i.e. WX has been changed since window activation).
+    // If this happens at GetTileLow0 phase, the high data from
+    // the last fetch is used instead.
+    // [mealybug/m3_wx_4_change (DMG mode)]
+    if (lx == wx) {
+        psf.tile_data_low = psf.tile_data_high;
+    } else
+#endif
+    {
+        // Read tile data from VRAM (standard case).
+        read_bgwin_tile_data_low();
+    }
 
     fetcher_tick_selector = &Ppu::win_pixel_slice_fetcher_get_tile_data_low_1;
 }
@@ -2155,8 +2181,20 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_0() {
     // [mealybug/m3_lcdc_tile_sel_win_change]
     setup_win_pixel_slice_fetcher_tile_data_address();
 
-    // Read tile data from VRAM.
-    read_bgwin_tile_data_high();
+#ifdef ENABLE_CGB
+    // On CGB there's a glitch that is triggered if the condition LX == WX
+    // is ever met (i.e. WX has been changed since window activation).
+    // If this happens at GetTileHigh0 phase, the low data from
+    // the last fetch is used instead.
+    // [mealybug/m3_wx_4_change (DMG mode)]
+    if (lx == wx) {
+        psf.tile_data_high = psf.tile_data_low;
+    } else
+#endif
+    {
+        // Read tile data from VRAM (standard case).
+        read_bgwin_tile_data_high();
+    }
 
     fetcher_tick_selector = &Ppu::win_pixel_slice_fetcher_get_tile_data_high_1;
 }
@@ -2214,32 +2252,38 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
     /*
      * As far as I'm understanding, there are 4 possible cases:
      *
-     * [canPushToBgFifo] | [isObjReadyToBeFetched]
+     * [can_push_to_bg_fifo] | [is_obj_ready_to_be_fetched]
      * ---------------------------------------------------------
-     * bgFifo.IsEmpty()  | oamEntries[LX].isNotEmpty() &&
-     *                   | test_bit<OBJ_ENABLE>(video.LCDC)
+     * bg_fifo.IsEmpty()     | oam_entries[lx].is_not_empty() &&
+     *                       | lcdc.obj_enable
      * ---------------------------------------------------------
-     *        0         |           0              | wait (nop)
-     *        0         |           1              | cache bg fetch and start obj prefetcher (tick now)
-     *        1         |           0              | push to bg fifo and prepare for bg/win prefetcher (tick next dot)
-     *        1         |           1              | push to bg fifo and start obj prefetcher (tick now)
+     *        0              |           0              | wait (nop)
+     *        0              |           1              | cache bg fetch and start obj prefetcher (tick now)
+     *        1              |           0              | push to bg fifo and prepare for bg/win prefetcher (tick next
+     * dot) 1              |           1              | push to bg fifo and start obj prefetcher (tick now)
      */
 
     // The pixels can be pushed only if the bg fifo is empty,
     // otherwise wait in push state until bg fifo is emptied
     const bool can_push_to_bg_fifo = bg_fifo.is_empty();
     if (can_push_to_bg_fifo) {
-#ifndef ENABLE_CGB
         // If window activation conditions were met in the frame, then a
         // glitch can occur: if this push stage happens when LX == WX,
-        // than a 00 pixel is pushed into the bg fifo instead of the fetched tile.
-        // Therefore, the push of the tile that was about to happen is postponed by 1 dot
-        // TODO: verify this for CGB.
-        if (w.active_for_frame && lx == last_wx && lx > 8 /* TODO: not sure about this */) {
+        // then a 00 pixel is pushed into the bg fifo instead of the fetched tile.
+        // Therefore, the push of the tile that was about to happen is postponed by 1 dot.
+        // The first window tile after the window activation seem to be an exception.
+        // Verified: this happens also on CGB, although the conditions that make
+        // this happen are a slightly different. In particular, on CGB the glitch seem to
+        // happen only if we are fetching a window tile right now.
+        if (w.active_for_frame && lx == wx && !w.just_activated
+#ifdef ENABLE_CGB
+            && w.active
+#endif
+        ) {
+
             bg_fifo.push_back(BgPixel {0});
             return;
         }
-#endif
 
         // Push pixels into bg fifo
 #ifdef ENABLE_CGB
@@ -2833,6 +2877,8 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, pending_write.scy.value);
     PARCEL_WRITE_UINT8(parcel, pending_write.scx.countdown);
     PARCEL_WRITE_UINT8(parcel, pending_write.scx.value);
+    PARCEL_WRITE_UINT8(parcel, pending_write.wx.countdown);
+    PARCEL_WRITE_UINT8(parcel, pending_write.wx.value);
 #endif
 
 #ifndef ENABLE_CGB
@@ -3008,6 +3054,8 @@ void Ppu::load_state(Parcel& parcel) {
     pending_write.scy.value = parcel.read_uint8();
     pending_write.scx.countdown = parcel.read_uint8();
     pending_write.scx.value = parcel.read_uint8();
+    pending_write.wx.countdown = parcel.read_uint8();
+    pending_write.wx.value = parcel.read_uint8();
 #endif
 
 #ifndef ENABLE_CGB
@@ -3221,6 +3269,8 @@ void Ppu::reset() {
     pending_write.scy.value = 0;
     pending_write.scx.countdown = 0;
     pending_write.scx.value = 0;
+    pending_write.wx.countdown = 0;
+    pending_write.wx.value = 0;
 #endif
 
 #ifndef ENABLE_CGB
@@ -3417,6 +3467,12 @@ void Ppu::write_scx(uint8_t value) {
     // [mealybug/m3_scx_high_5_bits (DMG mode)]
     pending_write.scx.countdown = 2;
     pending_write.scx.value = value;
+}
+
+void Ppu::write_wx(uint8_t value) {
+    // On CGB PPU sees updates to WX with a delay of 2 T-Cycles.
+    pending_write.wx.countdown = 2;
+    pending_write.wx.value = value;
 }
 #endif
 
