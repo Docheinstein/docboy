@@ -26,6 +26,8 @@ private:
 
     void redraw_overlay();
 
+    void render_game_texture();
+
     bool is_in_menu() const;
 
     void on_scaling_filter_changed(UiController::ScalingFilter filter) const;

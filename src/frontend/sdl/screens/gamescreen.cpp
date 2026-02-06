@@ -94,7 +94,7 @@ void GameScreen::redraw() {
 void GameScreen::render() {
     if (is_in_menu()) {
         // Draw game framebuffer even in menu: it will be shown underneath the semi-transparent menu
-        SDL_RenderTexture(renderer, game_texture1, nullptr, nullptr);
+        render_game_texture();
         menu.screen_stack.top->render();
         return;
     }
@@ -133,16 +133,7 @@ void GameScreen::render() {
         redraw_overlay();
     }
 
-    SDL_FRect dest_rect {0, 0, static_cast<float>(Specs::Display::WIDTH * ui.get_scaling()),
-                         static_cast<float>(Specs::Display::HEIGHT * ui.get_scaling())};
-
-    SDL_RenderTexture(renderer, game_texture1, nullptr, &dest_rect);
-#ifdef ENABLE_TWO_PLAYERS_MODE
-    if (game_texture2) {
-        dest_rect.x += static_cast<float>(Specs::Display::WIDTH * ui.get_scaling());
-        SDL_RenderTexture(renderer, game_texture2, nullptr, &dest_rect);
-    }
-#endif
+    render_game_texture();
 
     SDL_RenderTexture(renderer, game_overlay_texture, nullptr, nullptr);
 }
@@ -280,7 +271,7 @@ void GameScreen::handle_event(const SDL_Event& event) {
 #else
             Screen::Controllers controllers {runner, ui, menu.nav_controller, main};
 #endif
-            menu.screen_stack.push(std::make_unique<GameMainScreen>(Context {controllers, {0xE0}}));
+            menu.screen_stack.push(std::make_unique<GameMainScreen>(Context {controllers, {0xF0}}));
             redraw();
         }
         default:
@@ -351,6 +342,19 @@ void GameScreen::redraw_overlay() {
     }
 
     unlock_texture(game_overlay_texture);
+}
+
+void GameScreen::render_game_texture() {
+    SDL_FRect dest_rect {0, 0, static_cast<float>(Specs::Display::WIDTH * ui.get_scaling()),
+                         static_cast<float>(Specs::Display::HEIGHT * ui.get_scaling())};
+
+    SDL_RenderTexture(renderer, game_texture1, nullptr, &dest_rect);
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (game_texture2) {
+        dest_rect.x += static_cast<float>(Specs::Display::WIDTH * ui.get_scaling());
+        SDL_RenderTexture(renderer, game_texture2, nullptr, &dest_rect);
+    }
+#endif
 }
 
 bool GameScreen::is_in_menu() const {
