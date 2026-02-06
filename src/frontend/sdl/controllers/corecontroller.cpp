@@ -22,15 +22,18 @@ void CoreController::load_boot_rom(const std::string& boot_rom_path) {
         exit(1);
     }
 
-    boot_rom.path = Path {boot_rom_path};
-    boot_rom.is_loaded = true;
+    boot_rom = Path {boot_rom_path};
 
     core.load_boot_rom(boot_rom_path);
+}
+
+bool CoreController::is_boot_rom_loaded() const {
+    return !boot_rom.is_empty();
 }
 #endif
 
 void CoreController::load_rom(const std::string& rom_path) {
-    if (rom.is_loaded) {
+    if (is_rom_loaded()) {
         // Eventually save current RAM state if a ROM is already loaded
         write_save();
     }
@@ -40,8 +43,7 @@ void CoreController::load_rom(const std::string& rom_path) {
         exit(1);
     }
 
-    rom.path = Path {rom_path};
-    rom.is_loaded = true;
+    rom = Path {rom_path};
 
     // Actually load ROM
     core.load_rom(rom_path);
@@ -59,11 +61,11 @@ void CoreController::load_rom(const std::string& rom_path) {
 }
 
 bool CoreController::is_rom_loaded() const {
-    return rom.is_loaded;
+    return !rom.is_empty();
 }
 
 Path CoreController::get_rom() const {
-    return rom.path;
+    return rom;
 }
 
 bool CoreController::write_save() const {
@@ -164,17 +166,18 @@ bool CoreController::attach_debugger(const std::function<void()>& on_pulling_com
 
     // Eventually load symbols from .sym file(s), if available in the same folder of the ROM(s)
 #ifdef ENABLE_BOOTROM
-    if (boot_rom.is_loaded) {
-        if (std::string sym_path = Path {boot_rom.path}.with_extension("sym").string(); file_exists(sym_path)) {
-            debugger.backend->load_symbols(sym_path);
-        }
+    if (is_boot_rom_loaded()) {
+        load_symbols_from_path(Path {boot_rom}.with_extension("sym"));
     }
 #endif
 
-    if (rom.is_loaded) {
-        if (std::string sym_path = Path {rom.path}.with_extension("sym").string(); file_exists(sym_path)) {
-            debugger.backend->load_symbols(sym_path);
-        }
+    if (is_rom_loaded()) {
+        load_symbols_from_path(Path {rom}.with_extension("sym"));
+    }
+
+    // Eventually load symbols from explicit file.
+    if (!symbols.is_empty()) {
+        load_symbols_from_path(symbols);
     }
 
     if (proceed_execution) {
@@ -195,6 +198,13 @@ bool CoreController::detach_debugger() {
     core.detach_debugger();
 
     return true;
+}
+
+void CoreController::load_symbols(const std::string& symbols_path) {
+    symbols = Path {symbols_path};
+    if (is_debugger_attached()) {
+        load_symbols_from_path(symbols);
+    }
 }
 #endif
 
@@ -218,13 +228,21 @@ void CoreController::set_key_mapping(SDL_Keycode keycode, Joypad::Key joypad_key
 
 std::string CoreController::get_save_path() const {
     ASSERT(is_rom_loaded());
-    return Path {rom.path}.with_extension("sav").string();
+    return Path {rom}.with_extension("sav").string();
 }
 
 std::string CoreController::get_state_path() const {
     ASSERT(is_rom_loaded());
-    return Path {rom.path}.with_extension("state").string();
+    return Path {rom}.with_extension("state").string();
 }
+
+#ifdef ENABLE_DEBUGGER
+void CoreController::load_symbols_from_path(const Path& symbols_path) const {
+    if (const std::string syms = symbols_path.string(); file_exists(syms)) {
+        debugger.backend->load_symbols(syms);
+    }
+}
+#endif
 
 #ifdef ENABLE_TWO_PLAYERS_MODE
 void CoreController::attach_serial_link(ISerialEndpoint& endpoint) {

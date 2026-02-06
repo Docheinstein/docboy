@@ -21,6 +21,7 @@ public:
 
 #ifdef ENABLE_BOOTROM
     void load_boot_rom(const std::string& rom_path);
+    bool is_boot_rom_loaded() const;
 #endif
 
     // Rom
@@ -43,6 +44,9 @@ public:
                          const std::function<bool(const std::string&)>& on_command_pulled = {},
                          bool proceed_execution = false);
     bool detach_debugger();
+
+    // Symbols
+    void load_symbols(const std::string& symbols_path);
 #endif
 
     // Video
@@ -88,19 +92,18 @@ private:
     std::string get_save_path() const;
     std::string get_state_path() const;
 
+#ifdef ENABLE_DEBUGGER
+    void load_symbols_from_path(const Path& symbols_path) const;
+#endif
+
     Core& core;
 
 #ifdef ENABLE_BOOTROM
-    struct {
-        Path path {};
-        bool is_loaded {};
-    } boot_rom;
+    Path boot_rom {};
 #endif
 
-    struct {
-        Path path {};
-        bool is_loaded {};
-    } rom;
+    Path rom {};
+    Path symbols {};
 
     std::map<SDL_Keycode, Joypad::Key> keycode_map;
     std::map<Joypad::Key, SDL_Keycode> joypad_map;

@@ -17,12 +17,8 @@ Path::Path(const std::string& path) {
     is_absolute = path[0] == SEP;
 }
 
-std::string Path::string() const {
-    std::string s = join(parts, SEP);
-    if (is_absolute) {
-        return SEP + s;
-    }
-    return s;
+std::string Path::filename() const {
+    return parts.back();
 }
 
 Path& Path::with_extension(const std::string& extension) {
@@ -36,6 +32,18 @@ Path& Path::with_extension(const std::string& extension) {
     }
 
     return *this;
+}
+
+std::string Path::string() const {
+    std::string s = join(parts, SEP);
+    if (is_absolute) {
+        return SEP + s;
+    }
+    return s;
+}
+
+bool Path::is_empty() const {
+    return parts.empty();
 }
 
 Path& Path::operator/(const std::string& part) {
@@ -52,10 +60,6 @@ Path& Path::operator/(const Path& part) {
 std::ostream& operator<<(std::ostream& os, const Path& path) {
     os << path.filename();
     return os;
-}
-
-std::string Path::filename() const {
-    return parts.back();
 }
 
 Path operator/(const Path& p1, const Path& p2) {

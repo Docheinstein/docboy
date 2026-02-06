@@ -53,7 +53,7 @@ void Serial::tick() {
                     input_bit = true;
                 }
 
-                // Retrieve the next bit to sent from SB.
+                // Retrieve the next bit to send from SB.
                 const bool output_bit = serial_read_bit();
 
                 // Update SB with the received bit.

@@ -21,8 +21,10 @@ public:
 
     std::string string() const;
 
+    bool is_empty() const;
+
 private:
-    static inline const char SEP = '/';
+    static constexpr char SEP = '/';
 
     std::vector<std::string> parts {};
     bool is_absolute {};

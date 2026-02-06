@@ -166,6 +166,7 @@ int main(int argc, char* argv[]) {
         bool dump_cartridge_info {};
 #ifdef ENABLE_DEBUGGER
         bool attach_debugger {};
+        std::string symbols {};
 #endif
 #ifdef ENABLE_AUDIO
         uint32_t audio_device_id {SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK};
@@ -181,12 +182,14 @@ int main(int argc, char* argv[]) {
 #ifdef ENABLE_TWO_PLAYERS_MODE
     args_parser.add_argument(args.second_rom, "--second-rom", "-2").help("Second player rom");
 #endif
-    args_parser.add_argument(args.config, "--config", "-c").help("Read configuration file");
+    args_parser.add_argument(args.config, "--config", "-c").help("Read configuration from file");
     args_parser.add_argument(args.serial_console, "--serial-console", "-s").help("Display serial console");
     args_parser.add_argument(args.scaling, "--scaling", "-z").help("Scaling factor");
     args_parser.add_argument(args.dump_cartridge_info, "--cartridge-info", "-i").help("Dump cartridge info and quit");
 #ifdef ENABLE_DEBUGGER
     args_parser.add_argument(args.attach_debugger, "--debugger", "-d").help("Attach debugger");
+    args_parser.add_argument(args.symbols, "--symbols", "-S").required(false).help("Load symbols from file");
+
 #endif
 #ifdef ENABLE_AUDIO
     // (mostly for development)
@@ -584,6 +587,13 @@ int main(int argc, char* argv[]) {
 #ifdef ENABLE_TWO_PLAYERS_MODE
     if (args.second_rom && !args.second_rom->empty()) {
         core_controller2->load_rom(*args.second_rom);
+    }
+#endif
+
+#ifdef ENABLE_DEBUGGER
+    // Eventually load symbols from a specific file.
+    if (!args.symbols.empty()) {
+        core_controller1.load_symbols(args.symbols);
     }
 #endif
 
