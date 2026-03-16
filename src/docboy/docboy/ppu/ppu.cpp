@@ -973,6 +973,8 @@ void Ppu::pixel_transfer_discard_lx0() {
     ASSERT(oam.is_acquired_by_this());
     ASSERT(vram.is_acquired_by_this());
 
+    handle_pending_bg_fifo_fill();
+
     // The first SCX % 8 of a background/window tile are simply discarded.
     // Note that LX is not incremented in this case: this let the OBJ align with the BG.
     if (is_bg_fifo_ready_to_be_popped()) {
@@ -985,6 +987,8 @@ void Ppu::pixel_transfer_discard_lx0() {
     }
 
     tick_fetcher();
+
+    handle_pixel_slice_fetcher_push();
 
     ++dots;
 }
@@ -1012,6 +1016,8 @@ void Ppu::pixel_transfer_lx0() {
     ASSERT(oam.is_acquired_by_this());
     ASSERT(vram.is_acquired_by_this());
 
+    handle_pending_bg_fifo_fill();
+
     bool inc_lx = false;
 
     // For LX € [0, 8) just pop the pixels but do not push them to LCD
@@ -1033,6 +1039,8 @@ void Ppu::pixel_transfer_lx0() {
 
     tick_fetcher();
 
+    handle_pixel_slice_fetcher_push();
+
     if (inc_lx) {
         increase_lx();
     }
@@ -1044,6 +1052,8 @@ void Ppu::pixel_transfer_lx8() {
     ASSERT(lx >= 8);
     ASSERT(oam.is_acquired_by_this());
     ASSERT(vram.is_acquired_by_this());
+
+    handle_pending_bg_fifo_fill();
 
     bool inc_lx = false;
 
@@ -1177,6 +1187,8 @@ void Ppu::pixel_transfer_lx8() {
     }
 
     tick_fetcher();
+
+    handle_pixel_slice_fetcher_push();
 
     if (inc_lx) {
         increase_lx();
@@ -1685,13 +1697,18 @@ void Ppu::enter_new_frame() {
 }
 
 inline void Ppu::tick_fetcher() {
-    (this->*(fetcher_tick_selector))();
+    // Fetcher does not proceed if pixel slice fetcher is allowed to push.
+    if (!enable_pixel_slice_fetcher_push) {
+        (this->*(fetcher_tick_selector))();
+    }
 }
 
 void Ppu::reset_fetcher() {
     lx = 0;
     bg_fifo.clear();
     obj_fifo.clear();
+    enable_pixel_slice_fetcher_push = false;
+    pending_bg_fifo_fill = false;
     is_fetching_sprite = false;
     w.active = false;
     w.just_activated = false;
@@ -1758,6 +1775,36 @@ inline bool Ppu::is_obj_ready_to_be_fetched() const {
     return oam_entries[lx].is_not_empty() && lcdc.obj_enable;
 }
 
+void Ppu::handle_pixel_slice_fetcher_push() {
+    if (enable_pixel_slice_fetcher_push) {
+        bgwin_pixel_slice_fetcher_push();
+    }
+}
+
+void Ppu::handle_pending_bg_fifo_fill() {
+    if (pending_bg_fifo_fill) {
+        // Re-fill bg fifo with pixel slice fetcher's data.
+
+        pending_bg_fifo_fill = false;
+        ASSERT(bg_fifo.is_empty());
+
+#ifdef ENABLE_CGB
+        PixelColorIndex pixel_data[8];
+        const uint8_t (*pixels_map_ptr)[8] = test_bit<Specs::Bits::Background::Attributes::X_FLIP>(bwf.attributes)
+                                                 ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
+                                                 : TILE_ROW_DATA_TO_ROW_PIXELS;
+        memcpy(pixel_data, &pixels_map_ptr[concat(psf.tile_data_high, psf.tile_data_low)], 8);
+
+        for (int8_t i = 7; i >= 0; i--) {
+            bg_fifo.emplace_back(pixel_data[i], bwf.attributes);
+        }
+
+#else
+        bg_fifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[concat(psf.tile_data_high, psf.tile_data_low)]);
+#endif
+    }
+}
+
 inline void Ppu::check_window_activation() {
     // The condition for which the window can be triggered are:
     // - at some point in the frame LY was equal to WY
@@ -1803,6 +1850,9 @@ inline void Ppu::setup_fetcher_for_window() {
 
     // Setup the fetcher to fetch a window tile.
     fetcher_tick_selector = &Ppu::win_prefetcher_activating;
+
+    // Do not allow pixel slice fetcher to push to bg fifo.
+    enable_pixel_slice_fetcher_push = false;
 }
 
 void Ppu::reset_oam_scan_entries() {
@@ -1865,12 +1915,7 @@ inline void Ppu::handle_oam_scan_entry() {
                 );
 
 #ifdef ENABLE_DEBUGGER
-                scanline_oam_entries.emplace_back(oam_scan.index, oam_entry_y
-#ifdef ENABLE_ASSERTS
-                                                  ,
-                                                  oam_entry_x
-#endif
-                );
+                scanline_oam_entries.emplace_back(oam_scan.index, oam_entry_y, oam_entry_x);
 #endif
 
 #ifdef ENABLE_ASSERTS
@@ -2219,36 +2264,15 @@ void Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1() {
     // fetcher reaches the push stage (or a sprite aborts it)
     bwf.lx += TILE_WIDTH; // automatically handle mod 8 by overflowing
 
-    // If there is a pending obj hit (and the bg fifo is not empty),
-    // discard the fetched bg pixels and restart the obj prefetcher with the obj hit
-    // note: the first obj prefetcher tick should overlap this tick, not the push one
-    if (is_obj_ready_to_be_fetched() && bg_fifo.is_not_empty()) {
-        // The bg/win tile fetched is not thrown away: instead it is
-        // cached so that the fetcher can start with it after the sprite
-        // has been merged into obj fifo
-        cache_bg_win_fetch();
-
-        is_fetching_sprite = true;
-        of.entry = oam_entries[lx].pull_back();
-        obj_prefetcher_get_tile_0();
-        return;
-    }
-
-    if (w.just_activated) {
-        // The fetcher immediately pushes the window tile if the window
-        // has just been activated (i.e. this is the first window fetch).
-        ASSERT(bg_fifo.is_empty());
-        bgwin_pixel_slice_fetcher_push();
-        w.just_activated = false;
-    } else {
-        // Standard case.
-        fetcher_tick_selector = &Ppu::bgwin_pixel_slice_fetcher_push;
-    }
+    // Allow pixel slice fetcher to push to bg fifo.
+    enable_pixel_slice_fetcher_push = true;
 }
 
 void Ppu::bgwin_pixel_slice_fetcher_push() {
+    ASSERT(enable_pixel_slice_fetcher_push);
     ASSERT(!is_fetching_sprite);
 
+    // clang-format off
     /*
      * As far as I'm understanding, there are 4 possible cases:
      *
@@ -2259,10 +2283,10 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
      * ---------------------------------------------------------
      *        0              |           0              | wait (nop)
      *        0              |           1              | cache bg fetch and start obj prefetcher (tick now)
-     *        1              |           0              | push to bg fifo and prepare for bg/win prefetcher (tick next
-     * dot) 1              |           1              | push to bg fifo and start obj prefetcher (tick now)
+     *        1              |           0              | push to bg fifo and prepare for bg/win prefetcher (tick next dot)
+     *        1              |           1              | push to bg fifo and start obj prefetcher (tick now)
      */
-
+    // clang-format on
     // The pixels can be pushed only if the bg fifo is empty,
     // otherwise wait in push state until bg fifo is emptied
     const bool can_push_to_bg_fifo = bg_fifo.is_empty();
@@ -2285,27 +2309,18 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
             return;
         }
 
-        // Push pixels into bg fifo
-#ifdef ENABLE_CGB
-        ASSERT(bg_fifo.is_empty());
+        // Push pixels into bg fifo.
+        pending_bg_fifo_fill = true;
 
-        PixelColorIndex pixel_data[8];
-        const uint8_t (*pixels_map_ptr)[8] = test_bit<Specs::Bits::Background::Attributes::X_FLIP>(bwf.attributes)
-                                                 ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
-                                                 : TILE_ROW_DATA_TO_ROW_PIXELS;
-        memcpy(pixel_data, &pixels_map_ptr[concat(psf.tile_data_high, psf.tile_data_low)], 8);
-
-        for (int8_t i = 7; i >= 0; i--) {
-            bg_fifo.emplace_back(pixel_data[i], bwf.attributes);
-        }
-#else
-        bg_fifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[concat(psf.tile_data_high, psf.tile_data_low)]);
-#endif
+        // Disable pixel slice fetcher push phase.
+        enable_pixel_slice_fetcher_push = false;
 
         fetcher_tick_selector = &Ppu::bgwin_prefetcher_get_tile_0;
 
         // Sprite fetches are ignored just after a window tile push.
-        if (w.active) {
+        // TODO: w.just_activated or w.active? Test needed!
+        if (w.just_activated) {
+            w.just_activated = false;
             return;
         }
     }
@@ -2320,6 +2335,9 @@ void Ppu::bgwin_pixel_slice_fetcher_push() {
             // has been merged into obj fifo.
             cache_bg_win_fetch();
         }
+
+        // Disable pixel slice fetcher push phase.
+        enable_pixel_slice_fetcher_push = false;
 
         is_fetching_sprite = true;
         of.entry = oam_entries[lx].pull_back();
@@ -2476,21 +2494,21 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
     ASSERT(obj_fifo.is_full());
 
     if (is_obj_ready_to_be_fetched()) {
-        // Still oam entries hit to be served for this x: setup the fetcher
+        // Still oam entries hit to be served for this x: set up the fetcher
         // for another obj fetch
         of.entry = oam_entries[lx].pull_back();
         fetcher_tick_selector = &Ppu::obj_prefetcher_get_tile_0;
     } else {
-        // No more oam entries to serve for this x: setup to fetcher with
+        // No more oam entries to serve for this x: set up to fetcher with
         // the cached tile data that has been interrupted by this obj fetch
         is_fetching_sprite = false;
 
         if (bwf.interrupted_fetch.has_data) {
             restore_bg_win_fetch();
-            fetcher_tick_selector = &Ppu::bgwin_pixel_slice_fetcher_push;
-        } else {
-            fetcher_tick_selector = &Ppu::bgwin_prefetcher_get_tile_0;
         }
+
+        // Allow pixel slice fetcher to push to bg fifo.
+        enable_pixel_slice_fetcher_push = true;
     }
 }
 
@@ -2900,6 +2918,8 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, oam_entries_not_served_count);
 #endif
 
+    PARCEL_WRITE_BOOL(parcel, enable_pixel_slice_fetcher_push);
+    PARCEL_WRITE_BOOL(parcel, pending_bg_fifo_fill);
     PARCEL_WRITE_BOOL(parcel, is_fetching_sprite);
 
     PARCEL_WRITE_BOOL(parcel, is_glitched_line_0);
@@ -3077,6 +3097,8 @@ void Ppu::load_state(Parcel& parcel) {
     oam_entries_not_served_count = parcel.read_uint8();
 #endif
 
+    enable_pixel_slice_fetcher_push = parcel.read_bool();
+    pending_bg_fifo_fill = parcel.read_bool();
     is_fetching_sprite = parcel.read_bool();
 
     is_glitched_line_0 = parcel.read_bool();
@@ -3293,6 +3315,9 @@ void Ppu::reset() {
 #ifdef ENABLE_DEBUGGER
     scanline_oam_entries.clear();
 #endif
+
+    enable_pixel_slice_fetcher_push = false;
+    pending_bg_fifo_fill = false;
 
     is_fetching_sprite = false;
 

@@ -261,6 +261,9 @@ private:
     bool is_bg_fifo_ready_to_be_popped() const;
     bool is_obj_ready_to_be_fetched() const;
 
+    void handle_pixel_slice_fetcher_push();
+    void handle_pending_bg_fifo_fill();
+
     void check_window_activation();
     void setup_fetcher_for_window();
 
@@ -288,6 +291,7 @@ private:
     void win_pixel_slice_fetcher_get_tile_data_high_1();
 
     void bgwin_pixel_slice_fetcher_get_tile_data_high_1();
+
     void bgwin_pixel_slice_fetcher_push();
 
     void obj_prefetcher_get_tile_0();
@@ -390,6 +394,9 @@ private:
 #ifdef ENABLE_DEBUGGER
     Vector<OamScanEntry, 10> scanline_oam_entries {}; // not cleared after oam scan
 #endif
+
+    bool enable_pixel_slice_fetcher_push {};
+    bool pending_bg_fifo_fill {};
 
     bool is_fetching_sprite {};
 
