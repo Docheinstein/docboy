@@ -66,31 +66,33 @@ jobs:
     needs: [build-dmg-docboy-sdl-linux, build-dmg-docboy-sdl-windows, build-cgb-docboy-sdl-linux, build-cgb-docboy-sdl-windows]
     runs-on: ubuntu-latest
     steps:
-      # Download Linux build.
+      # Download DMG Linux build.
       - name: Download docboy-dmg-sdl-linux
         uses: actions/download-artifact@v8
         with:
           name: docboy-dmg-sdl-linux
           path: docboy-dmg-sdl-linux
 
-      # Download Windows build.
+      # Download DMG Windows build.
       - name: Download docboy-dmg-sdl-windows
         uses: actions/download-artifact@v8
         with:
           name: docboy-dmg-sdl-windows
           path: docboy-dmg-sdl-windows
 
-      # Package Linux build.
-      - name: Package docboy-cgb-sdl-linux
-        run: |
-          cd docboy-cgb-sdl-linux
-          zip -r ../docboy-cgb-sdl-linux.zip .
+      # Download CGB Linux build.
+      - name: Download docboy-dmg-sdl-linux
+        uses: actions/download-artifact@v8
+        with:
+          name: docboy-cgb-sdl-linux
+          path: docboy-cgb-sdl-linux
 
-      # Package Windows build.
-      - name: Package docboy-cgb-sdl-windows
-        run: |
-          cd docboy-cgb-sdl-windows
-          zip -r ../docboy-cgb-sdl-windows.zip .
+      # Download CGB Windows build.
+      - name: Download docboy-dmg-sdl-windows
+        uses: actions/download-artifact@v8
+        with:
+          name: docboy-cgb-sdl-windows
+          path: docboy-cgb-sdl-windows
 
       - name: Display structure of downloaded files
         run: ls -laR
