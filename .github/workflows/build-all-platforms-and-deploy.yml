@@ -23,7 +23,7 @@ jobs:
       enable_cgb: false
       upload_artifact: true
       artifact_name: docboy-dmg-sdl-linux
-      artifact_path: build/docboy-dmg-sdl
+      artifact_path: build/docboy-sdl
 
   build-dmg-docboy-sdl-windows:
     uses: ./.github/workflows/apply-to-single-platform.yml
@@ -35,7 +35,7 @@ jobs:
       enable_cgb: false
       upload_artifact: true
       artifact_name: docboy-dmg-sdl-windows
-      artifact_path: build\Release\docboy-dmg-sdl.exe
+      artifact_path: build\Release\docboy-sdl.exe
 
   build-cgb-docboy-sdl-linux:
     uses: ./.github/workflows/apply-to-single-platform.yml
@@ -47,7 +47,7 @@ jobs:
       enable_cgb: true
       upload_artifact: true
       artifact_name: docboy-cgb-sdl-linux
-      artifact_path: build/docboy-cgb-sdl
+      artifact_path: build/docboy-sdl
 
   build-cgb-docboy-sdl-windows:
     uses: ./.github/workflows/apply-to-single-platform.yml
@@ -59,7 +59,7 @@ jobs:
       enable_cgb: true
       upload_artifact: true
       artifact_name: docboy-cgb-sdl-windows
-      artifact_path: build\Release\docboy-cgb-sdl.exe
+      artifact_path: build\Release\docboy-sdl.exe
 
   # Wait for all the builds, then bundle them and create a new release.
   deploy:
