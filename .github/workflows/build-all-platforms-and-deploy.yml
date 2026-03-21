@@ -78,7 +78,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: docboy-dmg-sdl-windows
-          path: docboy-dmg-sdl-windows.exe
+          path: docboy-dmg-sdl-windows
 
       # Download CGB Linux build.
       - name: Download docboy-dmg-sdl-linux
@@ -92,17 +92,45 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: docboy-cgb-sdl-windows
-          path: docboy-cgb-sdl-windows.exe
+          path: docboy-cgb-sdl-windows
 
       - name: Display structure of downloaded files
         run: ls -laR
 
+      # Download DMG Linux build.
+      - name: Package docboy-dmg-sdl-linux
+        run: |
+          cd docboy-dmg-sdl-linux
+          zip -r ../docboy-dmg-sdl-linux.zip .
+
+      # Download DMG Windows build.
+      - name: Package docboy-dmg-sdl-windows
+        run: |
+          cd docboy-dmg-sdl-windows
+          zip -r ../docboy-dmg-sdl-windows.zip .
+
+      # Download CGB Linux build.
+      - name: Package docboy-cgb-sdl-linux
+        run: |
+          cd docboy-cgb-sdl-linux
+          zip -r ../docboy-cgb-sdl-linux.zip .
+
+      # Download CGB Windows build.
+      - name: Package docboy-cgb-sdl-windows
+        run: |
+          cd docboy-cgb-sdl-windows
+          zip -r ../docboy-cgb-sdl-windows.zip .
+
+      - name: Display structure of packaged files
+        run: ls -laR
+
+      # Create the release, gathering all the artifacts.
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version }}
           files: |
-            docboy-dmg-sdl-linux
-            docboy-dmg-sdl-windows.exe
-            docboy-cgb-sdl-linux
-            docboy-cgb-sdl-windows.exe
+            docboy-dmg-sdl-linux.zip
+            docboy-dmg-sdl-windows.zip
+            docboy-cgb-sdl-linux.zip
+            docboy-cgb-sdl-windows.zip
