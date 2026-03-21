@@ -68,14 +68,14 @@ jobs:
     steps:
       # Download Linux build.
       - name: Download docboy-dmg-sdl-linux
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docboy-dmg-sdl-linux
           path: docboy-dmg-sdl-linux
 
       # Download Windows build.
       - name: Download docboy-dmg-sdl-windows
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docboy-dmg-sdl-windows
           path: docboy-dmg-sdl-windows
