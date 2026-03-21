@@ -78,7 +78,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: docboy-dmg-sdl-windows
-          path: docboy-dmg-sdl-windows
+          path: docboy-dmg-sdl-windows.exe
 
       # Download CGB Linux build.
       - name: Download docboy-dmg-sdl-linux
@@ -92,18 +92,17 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: docboy-cgb-sdl-windows
-          path: docboy-cgb-sdl-windows
+          path: docboy-cgb-sdl-windows.exe
 
       - name: Display structure of downloaded files
         run: ls -laR
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          automatic_release_tag: ${{ inputs.version }}
+          tag_name: ${{ inputs.version }}
           files: |
-            docboy-dmg-sdl-windows.zip
-            docboy-dmg-sdl-linux.zip
-            docboy-cgb-sdl-windows.zip
-            docboy-cgb-sdl-linux.zip
+            docboy-dmg-sdl-linux
+            docboy-dmg-sdl-windows.exe
+            docboy-cgb-sdl-linux
+            docboy-cgb-sdl-windows.exe
