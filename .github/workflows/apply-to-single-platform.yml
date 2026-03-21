@@ -60,7 +60,7 @@ jobs:
 
       # Build project.
       - name: Build
-        run: cmake --build ${{ github.workspace }}/build --config ${{ inputs.build_type }}
+        run: cmake --build ${{ github.workspace }}/build --config ${{ inputs.build_type }} --parallel
 
       # Run unit tests [optional]
       - name: Run Unit Tests
