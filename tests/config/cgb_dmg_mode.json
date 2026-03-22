@@ -23,6 +23,14 @@
     ],
     "boot": [
         {
+            "rom": "mooneye/boot_div-cgbABCDE.gb",
+            "framebuffer": "mooneye/boot_div-cgbABCDE.png"
+        },
+        {
+            "rom": "mooneye/boot_regs-cgb.gb",
+            "framebuffer": "mooneye/boot_regs-cgb.png"
+        },
+        {
             "rom": "docboy/boot/boot_hram.gb",
             "memory": [
                 {

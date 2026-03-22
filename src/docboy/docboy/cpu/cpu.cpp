@@ -868,7 +868,10 @@ void Cpu::reset() {
         hl = 0x000D;
     } else {
         // In DMG mode the values of BC, DE and HL depend on the title checksum.
-        const uint8_t cksum = CartridgeHeaderHelpers::title_checksum(header);
+        // Note that the checksum is computed only if the game is a Nintendo licensed game,
+        // otherwise that memory region (D000) remains $00, and thus B register.
+        const bool is_cksum_computed = CartridgeHeaderHelpers::is_nintendo_game(header);
+        const uint8_t cksum = is_cksum_computed ? CartridgeHeaderHelpers::title_checksum(header) : 0x00;
         const bool is_copy_logo_cksum = CartridgeHeaderHelpers::is_copy_logo_title_checksum(cksum);
 
         bc = cksum << 8 | 0x00;

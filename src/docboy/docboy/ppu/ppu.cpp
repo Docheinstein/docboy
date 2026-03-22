@@ -366,14 +366,9 @@ void load_dmg_mode_palettes_from_header(const CartridgeHeader& header, uint8_t* 
     DmgModePalettes palettes = DMG_MODE_DEFAULT_PALETTES;
 
     // Compute the DMG mode palettes (BGP0, OBJP0, OBJP1).
-    // Note that the DMG mode palette selection is run only if either:
-    // 1) The old licensee code is 0x01 (Nintendo)
-    // 2) The old licensee code is 0x33 (use new licensee) and new licensee code is "01" (Nintendo)
-    // Otherwise, the default palette is used instead.
-    if (header.old_licensee_code == Specs::Cartridge::Header::OldLicensee::NINTENDO ||
-        (header.old_licensee_code == Specs::Cartridge::Header::OldLicensee::USE_NEW_LICENSEE &&
-         memcmp(header.new_licensee_code, Specs::Cartridge::Header::NewLicensee::NINTENDO,
-                sizeof(header.new_licensee_code)) == 0)) {
+    // Note that the DMG mode palette selection is run only if the game is a Nintendo
+    // licensed game, otherwise, the default palette is used instead.
+    if (CartridgeHeaderHelpers::is_nintendo_game(header)) {
         palettes = compute_dmg_mode_palettes_from_header(header);
     }
 
