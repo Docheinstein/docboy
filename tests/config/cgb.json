@@ -11870,6 +11870,10 @@
             "force_check": true
         },
         {
+            "rom": "docboy/ppu/visual/win_activation_ly_bug.gbc",
+            "framebuffer": "docboy/ppu/win_activation_ly_bug.png"
+        },
+        {
             "rom": "docboy/ppu/visual/win_attr_bank.gbc",
             "framebuffer": "docboy/ppu/win_attr_bank.png"
         },

@@ -588,6 +588,9 @@ void Ppu::turn_off() {
     dots = 0;
     ly = 0;
     last_ly = 0;
+#ifdef ENABLE_CGB
+    real_ly = 0;
+#endif
 
     lcd.rewind();
     lcd.clear();
@@ -789,7 +792,7 @@ inline void Ppu::begin_increase_ly() {
 
 inline void Ppu::end_increase_ly() {
 #ifdef ENABLE_CGB
-    ly = next_ly;
+    ly = real_ly = next_ly;
 #else
     ++ly;
 #endif
@@ -818,7 +821,13 @@ inline void Ppu::tick_window() {
     // Note that this does not mean that window will always be rendered:
     // the WX == LX condition will be checked again during pixel transfer
     // (on the other hand WY is not checked again).
-    w.active_for_frame = w.active_for_frame || (lcdc.win_enable && ly == wy);
+#ifdef ENABLE_CGB
+    // Note: we want to consider to "real" LY, i.e. not affected by CGB's LY bug.
+    const uint8_t ly_ = real_ly;
+#else
+    const uint8_t ly_ = ly;
+#endif
+    w.active_for_frame = w.active_for_frame || (lcdc.win_enable && ly_ == wy);
 }
 
 // ------- PPU states ------
@@ -1429,7 +1438,7 @@ void Ppu::vblank_last_line_3() {
 #ifdef ENABLE_CGB
     // Contrarily to DMG, on CGB LY is reset to 0 later.
     // TODO: from tests LY could be reset to 0 either here or one dot later.
-    ly = 0;
+    ly = real_ly = 0;
 #endif
 
     dots = 4;
@@ -1803,7 +1812,7 @@ void Ppu::handle_pending_bg_fifo_fill() {
 inline void Ppu::check_window_activation() {
     // The condition for which the window can be triggered are:
     // - at some point in the frame LY was equal to WY
-    // - window should is enabled LCDC
+    // - window is enabled in LCDC
     // - pixel transfer LX matches WX
     // Furthermore, on DMG there's a glitch that cause window to be
     // triggered even late by 1 dot (i.e. a BG/OBJ pixel is pushed instead and
@@ -2922,8 +2931,10 @@ void Ppu::save_state(Parcel& parcel) const {
 #ifndef ENABLE_CGB
     PARCEL_WRITE_BOOL(parcel, vblank_last_line_stat_mode_hblank_glitch);
 #endif
+#ifdef ENABLE_CGB
+    PARCEL_WRITE_UINT8(parcel, real_ly);
     PARCEL_WRITE_UINT8(parcel, next_ly);
-
+#endif
     PARCEL_WRITE_UINT8(parcel, registers.oam.a);
     PARCEL_WRITE_UINT8(parcel, registers.oam.b);
 
@@ -3101,7 +3112,10 @@ void Ppu::load_state(Parcel& parcel) {
 #ifndef ENABLE_CGB
     vblank_last_line_stat_mode_hblank_glitch = parcel.read_bool();
 #endif
+#ifdef ENABLE_CGB
+    real_ly = parcel.read_uint8();
     next_ly = parcel.read_uint8();
+#endif
 
     registers.oam.a = parcel.read_uint8();
     registers.oam.b = parcel.read_uint8();
@@ -3322,7 +3336,10 @@ void Ppu::reset() {
     vblank_last_line_stat_mode_hblank_glitch = false;
 #endif
 
+#ifdef ENABLE_CGB
+    real_ly = ly;
     next_ly = 0;
+#endif
 
 #ifdef ENABLE_DEBUGGER
     timings.oam_scan = 0;

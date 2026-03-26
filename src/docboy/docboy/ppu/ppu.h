@@ -407,7 +407,10 @@ private:
     bool vblank_last_line_stat_mode_hblank_glitch {};
 #endif
 
+#ifdef ENABLE_CGB
+    uint8_t real_ly {};
     uint8_t next_ly {};
+#endif
 
 #ifdef ENABLE_DEBUGGER
     struct {
