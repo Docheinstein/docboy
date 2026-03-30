@@ -6,6 +6,10 @@
 
 #include "catch2/catch_test_macros.hpp"
 
+// Tip: use the CHECK macro to see ALL the failing roms.
+// #define VERIFY CHECK
+#define VERIFY REQUIRE
+
 namespace {
 Joypad::KeyState parse_joypad_key_state(const std::string_view state) {
     if (state == "pressed") {
@@ -239,7 +243,7 @@ void run_test_roms_from_params(const std::string& roms_folder, const std::string
 
     RunnerAdapter adapter {roms_folder, results_folder};
     for (const auto& params : all_params) {
-        REQUIRE(adapter.run(params));
+        VERIFY(adapter.run(params));
     }
 }
 
@@ -261,7 +265,7 @@ void run_test_roms_from_json(const std::string& roms_folder, const std::string& 
 
         SECTION(name) {
             for (const auto& test_params : tests_params) {
-                REQUIRE(adapter.run(test_params));
+                VERIFY(adapter.run(test_params));
             }
         }
     }
@@ -277,7 +281,7 @@ void run_framebuffer_test_roms_from_folder(const std::string& roms_folder, const
         for (const auto& entry : iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
                 if (test_name_filter.empty() || contains(entry.path, test_name_filter)) {
-                    REQUIRE(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
+                    VERIFY(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
                 }
             }
         }
@@ -294,7 +298,7 @@ void run_framebuffer_test_roms_from_folder_recursive(const std::string& roms_fol
         for (const auto& entry : recursive_iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
                 if (test_name_filter.empty() || contains(entry.path, test_name_filter)) {
-                    REQUIRE(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
+                    VERIFY(adapter.run(FramebufferRunnerParams {entry.path.c_str(), std::string {result}}));
                 }
             }
         }
@@ -309,7 +313,7 @@ void run_memory_test_roms_from_folder(const std::string& roms_folder, const Memo
         for (const auto& entry : iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
                 if (test_name_filter.empty() || contains(entry.path, test_name_filter)) {
-                    REQUIRE(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
+                    VERIFY(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
                 }
             }
         }
@@ -325,7 +329,7 @@ void run_memory_test_roms_from_folder_recursive(const std::string& roms_folder, 
         for (const auto& entry : recursive_iterate_directory(roms_folder)) {
             if (entry.type == DirectoryIteratorEntry::FileType::File) {
                 if (test_name_filter.empty() || contains(entry.path, test_name_filter)) {
-                    REQUIRE(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
+                    VERIFY(adapter.run(MemoryRunnerParams {entry.path.c_str(), {expectation}}));
                 }
             }
         }

@@ -3727,6 +3727,86 @@
             ]
         },
         {
+            "rom": "docboy/hdma/hdma_halt_resume_with_timer_interrupt_halt_at_hblank_wake_at_hblank.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/hdma/hdma_halt_resume_with_timer_interrupt_halt_at_hblank_wake_at_hblank_wait_oam_scan_to_turn_off.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/hdma/hdma_halt_resume_with_timer_interrupt_halt_at_hblank_wake_at_pixel_transfer.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/hdma/hdma_halt_resume_with_timer_interrupt_halt_at_hblank_wake_at_pixel_transfer_wait_hblank_to_turn_off.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/hdma/hdma_halt_resume_with_timer_interrupt_halt_at_pixel_transfer_wake_at_hblank.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/hdma/hdma_halt_resume_with_timer_interrupt_halt_at_pixel_transfer_wake_at_hblank_wait_oam_scan_to_turn_off.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/hdma/hdma_halt_resume_with_timer_interrupt_halt_at_pixel_transfer_wake_at_pixel_transfer.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/hdma/hdma_halt_resume_with_timer_interrupt_halt_at_pixel_transfer_wake_at_pixel_transfer_wait_hblank_to_turn_off.gbc",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
             "rom": "docboy/hdma/hdma_hblank_timing_scx0_round1.gbc",
             "memory": [
                 {

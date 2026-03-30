@@ -19,7 +19,7 @@ class Hdma {
 public:
     Hdma(MmuView<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
          OamBus::View<Device::Hdma> oam_bus, const UInt8& stat_mode, const bool& fetching, const bool& halted,
-         const bool& stopped, SpeedSwitchController& speed_switch_controller);
+         const SpeedSwitchController& speed_switch_controller);
 
     void write_hdma1(uint8_t value);
     void write_hdma2(uint8_t value);
@@ -87,10 +87,9 @@ private:
     const UInt8& stat_mode;
     const bool& fetching;
     const bool& halted;
-    const bool& stopped;
 
     // TODO: bad: shouldn't know speed_switch_controller?
-    SpeedSwitchController& speed_switch_controller;
+    const SpeedSwitchController& speed_switch_controller;
 
     UInt8 hdma1 {make_uint8(Specs::Registers::Hdma::HDMA1)};
     UInt8 hdma2 {make_uint8(Specs::Registers::Hdma::HDMA2)};

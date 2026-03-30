@@ -240,15 +240,7 @@ public:
     WramBankController wram_bank_controller {wram_bus};
 
     // HDMA
-    Hdma hdma {mmu,
-               ext_bus,
-               vram_bus,
-               oam_bus,
-               ppu.stat.mode,
-               cpu.fetching,
-               cpu.halted,
-               stop_controller.stopped,
-               speed_switch_controller};
+    Hdma hdma {mmu, ext_bus, vram_bus, oam_bus, ppu.stat.mode, cpu.fetching, cpu.halted, speed_switch_controller};
 
     // Operating mode
 #ifdef ENABLE_BOOTROM

@@ -4,7 +4,7 @@
 
 Hdma::Hdma(Mmu::View<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, VramBus::View<Device::Hdma> vram_bus,
            OamBus::View<Device::Hdma> oam_bus, const UInt8& stat_mode, const bool& fetching, const bool& halted,
-           const bool& stopped, SpeedSwitchController& speed_switch_controller) :
+           const SpeedSwitchController& speed_switch_controller) :
     mmu {mmu},
     ext_bus {ext_bus},
     vram {vram_bus},
@@ -12,7 +12,6 @@ Hdma::Hdma(Mmu::View<Device::Hdma> mmu, ExtBus::View<Device::Hdma> ext_bus, Vram
     stat_mode {stat_mode},
     fetching {fetching},
     halted {halted},
-    stopped {stopped},
     speed_switch_controller {speed_switch_controller} {
     reset();
 }
@@ -226,22 +225,24 @@ void Hdma::tick_odd() {
 
 void Hdma::tick_state() {
     if (state == TransferState::Paused) {
-        // Check STAT change.
-        // Request is ignored if GB is either halted or stopped.
+        // HBlank HDMA resumes if STAT changes from non HBlank to HBlank.
+        // Request is ignored if GB is halted (or stopped).
         // It seems that HDMA sees the HALT state with a delay of 1 T-Cycle.
-        // Whereas STOP timing seems to be non deterministic.
-        // TODO: further investigations.
-        if (last_stat_mode != Specs::Ppu::Modes::HBLANK && stat_mode == Specs::Ppu::Modes::HBLANK && !last_halted &&
-            !stopped) {
-            // Schedule the transfer of the next chunk
+        // Whereas timing of resuming from STOP seems to be non-deterministic.
+        if (last_stat_mode != Specs::Ppu::Modes::HBLANK && stat_mode == Specs::Ppu::Modes::HBLANK && !last_halted) {
             state = TransferState::Requested;
         }
     }
 
-    last_stat_mode = stat_mode;
+    if (!last_halted) {
+        // The last STAT mode HDMA is aware of is the one that happened while we were not in HALT state.
+        // This means, for example, that HDMA does not resume if CPU is HALTed while in HBlank and wakes up from it in
+        // HBlank, while it resumes if it is HALTed in Pixel Transfer and wakes up in HBlank. Note: this condition
+        // covers also the speed-switch case, as HDMA can't resume during speed switch.
+        last_stat_mode = stat_mode;
+    }
 
-    // It seems that there is window of 1 T-Cycle that HDMA HBlank can start before GB is actually halted.
-    last_halted = halted && !speed_switch_controller.is_switching_speed();
+    last_halted = halted;
 }
 
 void Hdma::tick_request() {

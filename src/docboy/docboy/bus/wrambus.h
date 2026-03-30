@@ -30,4 +30,5 @@ private:
     uint8_t read_wram2(uint16_t address) const;
     void write_wram2(uint16_t address, uint8_t value);
 };
-#endif // CPUBUS_H
+
+#endif // WRAMBUS_H
