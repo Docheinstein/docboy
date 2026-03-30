@@ -15,6 +15,7 @@ public:
 
     static uint8_t read_memory(const Mmu& mmu, uint16_t address);
     static uint8_t read_memory_raw(const GameBoy& gb, uint16_t address);
+    static uint8_t read_memory_raw(const GameBoy& gb, uint16_t address, uint8_t bank);
 };
 
 #endif // DEBUGGERHELPERS_H

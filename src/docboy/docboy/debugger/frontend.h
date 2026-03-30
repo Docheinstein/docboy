@@ -38,6 +38,7 @@ private:
             MemoryOutputFormat format {};
             std::optional<uint8_t> format_arg {};
             uint16_t address {};
+            std::optional<uint8_t> bank {};
             size_t length {};
             bool raw {};
         };
@@ -53,8 +54,8 @@ private:
     std::string instruction_to_string(const DisassembledInstructionReference& instr) const;
     std::string get_debug_symbol(uint16_t address, uint8_t max_length = 0);
 
-    std::string dump_memory(uint16_t from, uint32_t n, MemoryOutputFormat fmt, std::optional<uint8_t> fmt_arg,
-                            bool raw) const;
+    std::string dump_memory(uint16_t from, std::optional<uint8_t> bank, uint32_t n, MemoryOutputFormat fmt,
+                            std::optional<uint8_t> fmt_arg, bool raw) const;
     std::string dump_display_entry(const DisplayEntry& d) const;
 
     void flush_trace_buffer();

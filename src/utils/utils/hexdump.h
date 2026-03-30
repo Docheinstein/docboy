@@ -3,27 +3,26 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
 #include "utils/algo.h"
 #include "utils/formatters.h"
 
-template <typename T = uint8_t>
-std::string hexdump(const T* data, uint32_t length, uint32_t base_addr = 0, bool show_addresses = true,
+template <typename DataType = uint8_t, typename AddressType = uint32_t>
+std::string hexdump(const DataType* data, AddressType length, AddressType base_addr = 0, bool show_addresses = true,
                     bool show_ascii = false, uint32_t columns = 32) {
     std::stringstream ss;
     std::string asciistr;
 
     size_t i;
     uint32_t line_cursor = 0;
-    uint32_t until = divide_and_round_up(length, columns) * columns;
+    uint32_t until = divide_and_round_up(static_cast<uint32_t>(length), columns) * columns;
 
     for (i = 0; i < until; i++) {
         if (show_addresses && i % columns == 0) {
-            ss << hex<uint32_t>(base_addr + i) << " | ";
+            ss << hex<AddressType>(base_addr + i) << " | ";
         }
 
-        T c;
+        DataType c;
         if (i < length) {
             c = data[i];
             hex(c, ss);
@@ -57,7 +56,7 @@ std::string hexdump(const T* data, uint32_t length, uint32_t base_addr = 0, bool
     return ss.str();
 }
 
-template <typename T = uint8_t>
+template <typename DataType = uint8_t, typename AddressType = uint32_t>
 class Hexdump {
 public:
     Hexdump() = default;
@@ -72,7 +71,7 @@ public:
         return *this;
     }
 
-    Hexdump& base_address(uint32_t addr) {
+    Hexdump& base_address(AddressType addr) {
         base_address_ = addr;
         return *this;
     }
@@ -82,12 +81,12 @@ public:
         return *this;
     }
 
-    std::string hexdump(const T* data, uint32_t length) const {
+    std::string hexdump(const DataType* data, AddressType length) const {
         return ::hexdump(data, length, base_address_, show_addresses_, show_ascii_, num_columns_);
     }
 
 private:
-    uint32_t base_address_ {};
+    AddressType base_address_ {};
     bool show_addresses_ {};
     bool show_ascii_ {};
     uint8_t num_columns_ {32};

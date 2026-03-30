@@ -68,6 +68,7 @@ struct FrontendExamineCommand {
     std::optional<uint8_t> format_arg {};
     uint32_t length {};
     uint16_t address {};
+    std::optional<uint8_t> bank {};
     bool raw {};
 };
 
@@ -84,6 +85,7 @@ struct FrontendDisplayCommand {
     std::optional<uint8_t> format_arg {};
     uint32_t length {};
     uint16_t address {};
+    std::optional<uint8_t> bank {};
     bool raw {};
 };
 
@@ -179,9 +181,10 @@ enum TraceFlag : uint32_t {
     TraceFlagMemory = 1 << 7,
     TraceFlagPpu = 1 << 8,
     TraceFlagSerial = 1 << 9,
-    TraceFlagHash = 1 << 10,
-    TraceFlagMCycle = 1 << 11,
-    TraceFlagTCycle = 1 << 12,
+    TraceFlagJoypad = 1 << 10,
+    TraceFlagHash = 1 << 11,
+    TraceFlagMCycle = 1 << 12,
+    TraceFlagTCycle = 1 << 13,
     TraceFlagMax = TraceFlagTCycle,
 };
 
@@ -321,8 +324,9 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          cmd.next = !n.empty() ? std::stoi(n) : 10;
          return cmd;
      }},
-    {std::regex(R"(x(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "x[x][/<length><format>] <addr>",
-     "Display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)",
+    {std::regex(R"(x(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(?:(\d+):)?(\w+))"),
+     "x[x][/<length><format>] [<bank>:]<addr>",
+     "Display memory at [<bank>:]<addr> (x: raw) (<format>: x, h[<cols>], b, d, i)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          FrontendExamineCommand cmd {};
          bool ok {true};
@@ -330,12 +334,16 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          const std::string& length = groups[1];
          const std::string& format = groups[2];
          const std::string& format_arg = groups[3];
-         const std::string& address = groups[4];
+         const std::string& bank = groups[4];
+         const std::string& address = groups[5];
          cmd.raw = !raw.empty();
          cmd.length = length.empty() ? 1 : std::stoi(length);
          cmd.format = MemoryOutputFormat(format.empty() ? 'x' : format[0]);
          if (!format_arg.empty()) {
-             cmd.format_arg = stoi(format_arg);
+             cmd.format_arg = std::stoi(format_arg);
+         }
+         if (!bank.empty()) {
+             cmd.bank = std::stoi(bank);
          }
          cmd.address = address_str_to_addr(address, &ok);
          return ok ? std::optional(cmd) : std::nullopt;
@@ -356,8 +364,9 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          cmd.instruction = parse_hex_str(bytes, &ok);
          return ok ? std::optional(cmd) : std::nullopt;
      }},
-    {std::regex(R"(display(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(\w+))"), "display[x][/<length><format>] <addr>",
-     "Automatically display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)",
+    {std::regex(R"(display(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(?:(\d+):)?(\w+))"),
+     "display[x][/<length><format>] [<bank>:]<addr>",
+     "Automatically display memory at [<bank>:]<addr> (x: raw) (<format>: x, h[<cols>], b, d, i)",
      [](const std::vector<std::string>& groups) -> std::optional<FrontendCommand> {
          FrontendDisplayCommand cmd {};
          bool ok {true};
@@ -365,12 +374,16 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          const std::string& length = groups[1];
          const std::string& format = groups[2];
          const std::string& format_arg = groups[3];
-         const std::string& address = groups[4];
+         const std::string& bank = groups[4];
+         const std::string& address = groups[5];
          cmd.raw = !raw.empty();
          cmd.length = length.empty() ? 1 : std::stoi(length);
          cmd.format = MemoryOutputFormat(format.empty() ? 'x' : format[0]);
          if (!format_arg.empty()) {
-             cmd.format_arg = stoi(format_arg);
+             cmd.format_arg = std::stoi(format_arg);
+         }
+         if (!bank.empty()) {
+             cmd.bank = std::stoi(bank);
          }
          cmd.address = address_str_to_addr(address, &ok);
          return ok ? std::optional(cmd) : std::nullopt;
@@ -665,7 +678,7 @@ DebuggerFrontend::handle_command<FrontendAutoDisassembleCommand>(const FrontendA
 // Examine
 template <>
 std::optional<Command> DebuggerFrontend::handle_command<FrontendExamineCommand>(const FrontendExamineCommand& cmd) {
-    std::cout << dump_memory(cmd.address, cmd.length, cmd.format, cmd.format_arg, cmd.raw) << std::endl;
+    std::cout << dump_memory(cmd.address, cmd.bank, cmd.length, cmd.format, cmd.format_arg, cmd.raw) << std::endl;
     return std::nullopt;
 }
 
@@ -707,8 +720,8 @@ DebuggerFrontend::handle_command<FrontendSearchInstructionsCommand>(const Fronte
 // Display
 template <>
 std::optional<Command> DebuggerFrontend::handle_command<FrontendDisplayCommand>(const FrontendDisplayCommand& cmd) {
-    DisplayEntry d = {static_cast<uint32_t>(display_entries.size()),
-                      DisplayEntry::Examine {cmd.format, cmd.format_arg, cmd.address, cmd.length, cmd.raw}};
+    DisplayEntry d {static_cast<uint32_t>(display_entries.size()),
+                    DisplayEntry::Examine {cmd.format, cmd.format_arg, cmd.address, cmd.bank, cmd.length, cmd.raw}};
     display_entries.push_back(d);
     std::cout << dump_display_entry(d);
     reprint_ui = true;
@@ -824,11 +837,13 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendTraceCommand>(co
               << ((static_cast<bool>(trace & TraceFlagPpu) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
     std::cout << "(9) Serial       : "
               << ((static_cast<bool>(trace & TraceFlagSerial) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
-    std::cout << "(10) Hash        : "
+    std::cout << "(10) Joypad      : "
+              << ((static_cast<bool>(trace & TraceFlagJoypad) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
+    std::cout << "(11) Hash        : "
               << ((static_cast<bool>(trace & TraceFlagHash) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
-    std::cout << "(11) M-Cycles    : "
+    std::cout << "(12) M-Cycles    : "
               << ((static_cast<bool>(trace & TraceFlagMCycle) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
-    std::cout << "(12) T-Cycles    : "
+    std::cout << "(13) T-Cycles    : "
               << ((static_cast<bool>(trace & TraceFlagTCycle) ? green("ON ") : darkgray("OFF")).str()) << std::endl;
 
     if (trace) {
@@ -1101,6 +1116,10 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
             ss << "SB:" << hex((uint8_t)gb.serial.sb)
                << " SC:" << hex(backend.read_memory(Specs::Registers::Serial::SC))
                << " Progress:" << +gb.serial.progress << " ";
+        }
+
+        if (trace & TraceFlagJoypad) {
+            ss << "Joypad:" << hex(gb.joypad.read_keys()) << " ";
         }
 
         if (trace & TraceFlagPpu) {
@@ -3871,23 +3890,27 @@ std::string DebuggerFrontend::get_debug_symbol(uint16_t address, uint8_t max_len
     return sym_name;
 }
 
-std::string DebuggerFrontend::dump_memory(uint16_t from, uint32_t n, MemoryOutputFormat fmt,
-                                          std::optional<uint8_t> fmt_arg, bool raw) const {
+std::string DebuggerFrontend::dump_memory(uint16_t from, std::optional<uint8_t> bank, uint32_t n,
+                                          MemoryOutputFormat fmt, std::optional<uint8_t> fmt_arg, bool raw) const {
     std::string s;
 
-    const auto read_memory_func = raw ? &DebuggerBackend::read_memory_raw : &DebuggerBackend::read_memory;
+    const auto read_memory = [this, bank, raw](uint16_t address) {
+        return bank  ? backend.read_memory_raw(address, *bank)
+               : raw ? backend.read_memory_raw(address)
+                     : backend.read_memory(address);
+    };
 
     if (fmt == MemoryOutputFormat::Hexadecimal) {
         for (uint32_t i = 0; i < n; i++) {
-            s += hex((backend.*read_memory_func)(from + i)) + " ";
+            s += hex(read_memory(from + i)) + " ";
         }
     } else if (fmt == MemoryOutputFormat::Binary) {
         for (uint32_t i = 0; i < n; i++) {
-            s += bin((backend.*read_memory_func)(from + i)) + " ";
+            s += bin(read_memory(from + i)) + " ";
         }
     } else if (fmt == MemoryOutputFormat::Decimal) {
         for (uint32_t i = 0; i < n; i++) {
-            s += std::to_string((backend.*read_memory_func)(from + i)) + " ";
+            s += std::to_string(read_memory(from + i)) + " ";
         }
     } else if (fmt == MemoryOutputFormat::Instruction) {
         backend.disassemble_multi(from, n, true);
@@ -3905,11 +3928,15 @@ std::string DebuggerFrontend::dump_memory(uint16_t from, uint32_t n, MemoryOutpu
     } else if (fmt == MemoryOutputFormat::Hexdump) {
         std::vector<uint8_t> data;
         for (uint32_t i = 0; i < n; i++) {
-            data.push_back((backend.*read_memory_func)(from + i));
+            data.push_back(read_memory(from + i));
         }
         uint8_t cols = fmt_arg ? *fmt_arg : 16;
-        s += Hexdump().base_address(from).show_addresses(true).show_ascii(false).num_columns(cols).hexdump(data.data(),
-                                                                                                           data.size());
+        s += Hexdump<uint8_t, uint16_t>()
+                 .base_address(from)
+                 .show_addresses(true)
+                 .show_ascii(false)
+                 .num_columns(cols)
+                 .hexdump(data.data(), data.size());
     }
     return s;
 }
@@ -3920,8 +3947,9 @@ std::string DebuggerFrontend::dump_display_entry(const DebuggerFrontend::Display
         DisplayEntry::Examine dx = std::get<DisplayEntry::Examine>(d.expression);
         ss << d.id << ": "
            << "x" << (dx.raw ? "x" : "") << "/" << dx.length << static_cast<char>(dx.format)
-           << (dx.format_arg ? std::to_string(*dx.format_arg) : "") << " " << hex(dx.address) << std::endl;
-        ss << dump_memory(dx.address, dx.length, dx.format, dx.format_arg, dx.raw);
+           << (dx.format_arg ? std::to_string(*dx.format_arg) : "") << " "
+           << (dx.bank ? (std::to_string(*dx.bank) + ":") : "") << hex(dx.address) << std::endl;
+        ss << dump_memory(dx.address, dx.bank, dx.length, dx.format, dx.format_arg, dx.raw);
     }
     return ss.str();
 }

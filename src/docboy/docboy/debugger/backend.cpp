@@ -376,6 +376,8 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
                 }
             }
 
+            // TODO: we should consider also banking (MBC mostly, but also WRAM, ...) while disassembling,
+            //       otherwise code from different banks using the same address will be overwritten.
             // Disassemble the current instruction
             last_instruction = disassemble(cpu.instruction.address, true);
 
@@ -729,6 +731,13 @@ uint8_t DebuggerBackend::read_memory(uint16_t addr) {
 uint8_t DebuggerBackend::read_memory_raw(uint16_t addr) {
     allow_memory_callbacks = false;
     uint8_t value = DebuggerHelpers::read_memory_raw(core.gb, addr);
+    allow_memory_callbacks = true;
+    return value;
+}
+
+uint8_t DebuggerBackend::read_memory_raw(uint16_t addr, uint8_t bank) {
+    allow_memory_callbacks = false;
+    uint8_t value = DebuggerHelpers::read_memory_raw(core.gb, addr, bank);
     allow_memory_callbacks = true;
     return value;
 }

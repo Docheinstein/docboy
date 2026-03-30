@@ -111,3 +111,93 @@ uint8_t DebuggerHelpers::read_memory_raw(const GameBoy& gb, uint16_t address) {
     /* 0xFFFF */
     return gb.cpu_bus.read_bus(address);
 }
+
+uint8_t DebuggerHelpers::read_memory_raw(const GameBoy& gb, uint16_t address, uint8_t bank) {
+    // TODO: implementing banked memory access read for all MBC types!
+    /* 0x0000 - 0x7FFF */
+    if (address <= Specs::MemoryLayout::ROM1::END) {
+        return gb.ext_bus.read_bus(address);
+    }
+
+    /* 0x8000 - 0x9FFF */
+    if (address <= Specs::MemoryLayout::VRAM::END) {
+        if (bank == 0) {
+            return gb.vram0[address - Specs::MemoryLayout::VRAM::START];
+        }
+#ifdef ENABLE_CGB
+        if (bank == 1) {
+            return gb.vram1[address - Specs::MemoryLayout::VRAM::START];
+        }
+#endif
+        // Invalid bank number.
+        return 0xFF;
+    }
+
+    /* 0xA000 - 0xBFFF */
+    if (address <= Specs::MemoryLayout::RAM::END) {
+        return gb.ext_bus.read_bus(address);
+    }
+
+#ifdef ENABLE_CGB
+    /* 0xC000 - 0xCFFF */
+    if (address <= Specs::MemoryLayout::WRAM1::END) {
+        return gb.wram_bus.read_bus(address);
+    }
+#else
+    /* 0xC000 - 0xCFFF */
+    if (address <= Specs::MemoryLayout::WRAM1::END) {
+        return gb.ext_bus.read_bus(address);
+    }
+#endif
+
+#ifdef ENABLE_CGB
+    /* 0xD000 - 0xDFFF */
+    if (address <= Specs::MemoryLayout::WRAM2::END) {
+        if (bank < 7) {
+            return gb.wram2[bank][address - Specs::MemoryLayout::WRAM2::START];
+        }
+        // Invalid bank number.
+        return 0xFF;
+    }
+#else
+    /* 0xD000 - 0xDFFF */
+    if (address <= Specs::MemoryLayout::WRAM2::END) {
+        return gb.ext_bus.read_bus(address);
+    }
+#endif
+
+#ifdef ENABLE_CGB
+    /* 0xE000 - 0xFDFF */
+    if (address <= Specs::MemoryLayout::ECHO_RAM::END) {
+        return gb.wram_bus.read_bus(address);
+    }
+#else
+    /* 0xE000 - 0xFDFF */
+    if (address <= Specs::MemoryLayout::ECHO_RAM::END) {
+        return gb.ext_bus.read_bus(address);
+    }
+#endif
+
+    /* 0xFE00 - 0xFE9F */
+    if (address <= Specs::MemoryLayout::OAM::END) {
+        return gb.oam[address - Specs::MemoryLayout::OAM::START];
+    }
+
+    /* 0xFEA0 - 0xFEFF */
+    if (address <= Specs::MemoryLayout::NOT_USABLE::END) {
+        return gb.oam_bus.read_bus(address);
+    }
+
+    /* 0xFF00 - 0xFFFF */
+    if (address <= Specs::MemoryLayout::IO::END) {
+        return gb.cpu_bus.read_bus(address);
+    }
+
+    /* 0xFF80 - 0xFFFE */
+    if (address <= Specs::MemoryLayout::HRAM::END) {
+        return gb.cpu_bus.read_bus(address);
+    }
+
+    /* 0xFFFF */
+    return gb.cpu_bus.read_bus(address);
+}

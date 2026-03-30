@@ -93,6 +93,7 @@ public:
 
     uint8_t read_memory(uint16_t addr);
     uint8_t read_memory_raw(uint16_t addr);
+    uint8_t read_memory_raw(uint16_t addr, uint8_t bank);
 
     void proceed();
     void interrupt();
