@@ -3,26 +3,40 @@
 
 # DocBoy
 
-DocBoy is an open source, accuracy-focused, GameBoy (DMG) emulator, written in C++17.
+DocBoy is an open source, accuracy-focused, GameBoy emulator, written in C++17.
+
+It supports emulation of both the original DMG (GameBoy) or CGB (GameBoy Color).
 
 Can be used either with the standalone SDL frontend or as a libretro core (e.g. with RetroArch).
+
 
 ---
 
 ## Features
 
 ### GameBoy features
+
+#### Core
+
 * CPU: M-cycle accurate
 * PPU: T-cycle accurate (implements Pixel FIFO)
 * APU (audio)
-* Colors (CGB)
-* Cartridges: NoMBC, MBC1, MBC2, MBC3, MBC5
+* Cartridges: NoMBC, MBC1, MBC2, MBC3, MBC5, HUC1, HUC3
 * Real Time Clock (RTC) emulation
 * Memory buses (EXT, CPU, OAM, VRAM) and MMU (for accurately handle read/write conflicts)
 * Timers
 * Interrupts
 * DMA
 * JoyPad
+* STOP instruction
+* Serial Transfer (bitwise, as happens with the Serial Link)
+
+#### CGB Only
+* HDMA
+* Speed Switch and Double Speed Mode
+* VRAM/WRAM bank switch
+* DMG compatibility mode (with proper palette selection)
+* PPU: CGB only features (CGB palettes, BG attributes, VRAM banks, ...)
 
 ### Frontend features
 * CLI debugger (in GDB style): supports disassemble, breakpoints, watchpoints, step by step execution, rewind, memory viewer, interrupts viewer, IO viewer
@@ -176,6 +190,25 @@ If you're on a desktop environment, you can also load the core from command line
 
 ---
 
+## Tests
+
+The road to perfect emulation is ~~impossible~~ still far away, nevertheless DocBoy aims to be a fairly accurate emulator, eventually at the cost of sacrificing a bit of performance.
+
+Practically all the features are covered by the tests under the `tests/roms` folder, most of which come either from [docboy-test-suite](https://github.com/Docheinstein/docboy-test-suite) or [other public test suites](https://github.com/c-sp/game-boy-test-roms).
+
+DocBoy is part of the [GBEmulatorShootout](https://gbdev.io/GBEmulatorShootout/) comparison as well, which contains the tests results of the most popular emulators.
+
+To run the tests locally, build with the CMake option `BUILD_TESTS` enabled:
+
+```
+mkdir build
+cd build
+cmake .. --DBUILD_TESTS=ON
+make -j 8
+```
+
+Then run the `docboy-tests` executable (run with `--help` or see [Catch2](https://github.com/catchorg/Catch2) for allowed options).
+
 ## Debugging
 
 DocBoy offers a CLI debugger (in GDB style) that's really useful to see what's going on under the hood.
@@ -195,35 +228,37 @@ Use the `-d` option to run with the debugger already attached from the beginning
 
 With `help` you can list the commands:
 ```
-b <addr>                             : Set breakpoint at <addr>
-w[/r|a] <start>,<end> [<cond>]       : Set watchpoint from <start> to <end>
-w[/r|a] <addr> [<cond>]              : Set watchpoint at <addr>
-del <num>                            : Delete breakpoint or watchpoint <num>
-ad <past> <next>                     : Automatically disassemble past <past> and next <next> instructions
-ad <num>                             : Automatically disassemble next <num> instructions (default = 10)
-x[x][/<length><format>] <addr>       : Display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)
-/b <bytes>                           : Search for <bytes>
-/i <bytes>                           : Search for instructions matching <bytes>
-display[x][/<length><format>] <addr> : Automatically display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)
-undisplay                            : Undisplay expressions set with display
-key <press|release> <key>            : Send 'press' or 'release' event for <key> (<key>: a, b, start, select, up, down, left, right)
-t [<count>]                          : Continue running for <count> clock ticks (default = 1)
-. [<count>]                          : Continue running for <count> PPU dots (default = 1)
-s [<count>]                          : Continue running for <count> instructions (default = 1)
-si [<count>]                         : Continue running for <count> micro-operations (default = 1)
-n [<count>]                          : Continue running for <count> instructions at the same stack level (default = 1)
-ni [<count>]                         : Continue running for <count> micro-operations at the same stack level (default = 1)
-f [<count>]                          : Continue running for <count> frames (default = 1)
-fb [<count>]                         : Step back by <count> frames (default = 1, max = 600)
-l [<count>]                          : Continue running for <count> lines (default = 1)
-c [<address>]                        : Continue (optionally stop at <address>)
-trace [<level>]                      : Set the trace level or toggle it (output on stderr)
-d                                    : Dump the disassemble (output on stderr)
-r                                    : Reset the emulator to its initial state
-save [<path>]                        : Save state to <path>
-load [<path>]                        : Load state from <path>
-h                                    : Display help
-q                                    : Quit
+h
+b <addr>                                      : Set breakpoint at <addr>
+w[/r|a] <start>,<end> [<cond>]                : Set watchpoint from <start> to <end>
+w[/r|a] <addr> [<cond>]                       : Set watchpoint at <addr>
+del <num>                                     : Delete breakpoint or watchpoint <num>
+ad <past> <next>                              : Automatically disassemble past <past> and next <next> instructions
+ad <num>                                      : Automatically disassemble next <num> instructions (default = 10)
+x[x][/<length><format>] [<bank>:]<addr>       : Display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)
+/b <bytes>                                    : Search for <bytes>
+/i <bytes>                                    : Search for instructions matching <bytes>
+display[x][/<length><format>] [<bank>:]<addr> : Automatically display memory at <addr> (x: raw) (<format>: x, h[<cols>], b, d, i)
+undisplay                                     : Undisplay expressions set with display
+key <press|release> <key>                     : Send 'press' or 'release' event for <key> (<key>: a, b, start, select, up, down, left, right)
+t [<count>]                                   : Continue running for <count> clock ticks (default = 1)
+. [<count>]                                   : Continue running for <count> PPU dots (default = 1)
+s [<count>]                                   : Continue running for <count> instructions (default = 1)
+si [<count>]                                  : Continue running for <count> micro-operations (default = 1)
+n [<count>]                                   : Continue running for <count> instructions at the same stack level (default = 1)
+ni [<count>]                                  : Continue running for <count> micro-operations at the same stack level (default = 1)
+f [<count>]                                   : Continue running for <count> frames (default = 1)
+fb [<count>]                                  : Step back by <count> frames (default = 1, max = 600)
+l [<count>]                                   : Continue running for <count> lines (default = 1)
+c [<address>]                                 : Continue (optionally stop at <address>)
+trace [<flag1>] [<flagN>]                     : Set the trace modes (output on stderr)
+d                                             : Dump the disassemble (output on stderr)
+symbols                                       : Show the symbols (if .sym is available)
+r                                             : Reset the emulator to its initial state
+save [<path>]                                 : Save state to <path>
+load [<path>]                                 : Load state from <path>
+h                                             : Display help
+q                                             : Quit
 ```
 
 Here's the debugger!
@@ -252,3 +287,10 @@ Here's the debugger!
 ![Launcher Screen](images/launcher-screen.png)
 ![Launcher Screen](images/main-menu.png)
 
+---
+
+## Contributing
+
+Contributions are welcome!
+
+If you encounter a bug, a failing test ROM, or would like to propose a new feature, please open an issue and/or submit a PR.
