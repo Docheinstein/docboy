@@ -291,21 +291,33 @@ void DebuggerBackend::load_symbols(const std::string& path) {
     // TODO: handle prefix of address (<BANK> or BOOT)
     auto symbol_list = DebugSymbolsParser::parse_sym_file(path);
 
-    for (auto& symbol : symbol_list) {
-        symbols.emplace(symbol.address, std::move(symbol));
+    for (const auto& symbol : symbol_list) {
+        symbols.by_address.emplace(symbol.address, symbol);
+        symbols.by_name.emplace(symbol.name, symbol);
     }
 }
 
 std::optional<DebugSymbol> DebuggerBackend::get_symbol(uint16_t addr) const {
-    if (symbols.find(addr) != symbols.end()) {
-        return symbols.at(addr);
+    if (const auto sym = symbols.by_address.find(addr); sym != symbols.by_address.end()) {
+        return sym->second;
+    }
+
+    return std::nullopt;
+}
+std::optional<DebugSymbol> DebuggerBackend::get_symbol(std::string name) const {
+    if (const auto sym = symbols.by_name.find(name); sym != symbols.by_name.end()) {
+        return sym->second;
     }
 
     return std::nullopt;
 }
 
-const std::map<uint16_t, DebugSymbol>& DebuggerBackend::get_symbols() const {
-    return symbols;
+const std::map<uint16_t, DebugSymbol>& DebuggerBackend::get_symbols_by_address() const {
+    return symbols.by_address;
+}
+
+const std::map<std::string, DebugSymbol>& DebuggerBackend::get_symbols_by_name() const {
+    return symbols.by_name;
 }
 
 void DebuggerBackend::notify_tick(uint64_t tick) {
