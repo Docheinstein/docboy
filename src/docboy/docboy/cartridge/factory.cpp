@@ -48,7 +48,7 @@ namespace Info {
     namespace Mbc3 {
         constexpr uint16_t Rom =
             bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1, Rom::MB_2>();
-        constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_2, Ram::KB_8, Ram::KB_32>();
+        constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_2, Ram::KB_8, Ram::KB_32, Ram::KB_64>();
     } // namespace Mbc3
     namespace Mbc5 {
         constexpr uint16_t Rom = bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1,
