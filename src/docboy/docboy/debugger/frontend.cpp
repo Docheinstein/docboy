@@ -15,6 +15,7 @@
 #include "docboy/cartridge/mbc3/mbc3.h"
 #include "docboy/cartridge/mbc5/mbc5.h"
 #include "docboy/cartridge/nombc/nombc.h"
+#include "docboy/common/units.h"
 #include "docboy/core/core.h"
 #include "docboy/debugger/ansi.h"
 #include "docboy/debugger/backend.h"
@@ -1435,8 +1436,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
     // MBC
     const auto make_cartridge_block = [&](uint32_t width) {
         using namespace Specs::Cartridge::Header;
-        constexpr uint32_t KB = 1 << 10;
-        constexpr uint32_t MB = 1 << 20;
 
         const auto& cartridge = *gb.cartridge_slot.cartridge;
 

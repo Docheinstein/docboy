@@ -47,6 +47,7 @@ target_sources(docboy PRIVATE
         docboy/cartridge/slot.h
         docboy/common/macros.h
         docboy/common/specs.h
+        docboy/common/units.h
         docboy/core/core.cpp
         docboy/core/core.h
         docboy/cpu/cpu.cpp

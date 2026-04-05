@@ -11,6 +11,7 @@
 #include "docboy/cartridge/nombc/nombc.h"
 #include "docboy/cartridge/romram/romram.h"
 #include "docboy/common/specs.h"
+#include "docboy/common/units.h"
 
 #include "utils/exceptions.h"
 #include "utils/formatters.h"
@@ -25,9 +26,6 @@ constexpr bool NoTimer = false;
 
 constexpr bool Rumble = true;
 constexpr bool NoRumble = false;
-
-constexpr uint32_t KB = 1 << 10;
-constexpr uint32_t MB = 1 << 20;
 
 using namespace Specs::Cartridge::Header;
 

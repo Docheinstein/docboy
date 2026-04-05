@@ -1,5 +1,7 @@
 #include <cstring>
 
+#include "docboy/common/units.h"
+
 #include "utils/algo.h"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
@@ -66,9 +68,11 @@ template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 uint8_t Mbc3<RomSize, RamSize, Battery, Timer>::read_ram(uint16_t address) const {
     ASSERT(address >= 0xA000 && address < 0xC000);
 
+    static constexpr uint8_t MaxRamBankSelector = RamSize < (64 * KB) ? 0x04 : 0x08;
+
     // 0xA000 - 0xBFFF
     if (ram_enabled) {
-        if (ram_bank_selector_rtc_register_selector < 0x08) {
+        if (ram_bank_selector_rtc_register_selector < MaxRamBankSelector) {
             if constexpr (Ram) {
                 uint32_t ram_address = (ram_bank_selector_rtc_register_selector << 13) | keep_bits<13>(address);
                 ram_address = mask_by_pow2<RamSize>(ram_address);
@@ -102,9 +106,11 @@ template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::write_ram(uint16_t address, uint8_t value) {
     ASSERT(address >= 0xA000 && address < 0xC000);
 
+    static constexpr uint8_t MaxRamBankSelector = RamSize < (64 * KB) ? 0x04 : 0x08;
+
     // 0xA000 - 0xBFFF
     if (ram_enabled) {
-        if (ram_bank_selector_rtc_register_selector < 0x08) {
+        if (ram_bank_selector_rtc_register_selector < MaxRamBankSelector) {
             if constexpr (Ram) {
                 uint32_t ram_address = (ram_bank_selector_rtc_register_selector << 13) | keep_bits<13>(address);
                 ram_address = mask_by_pow2<RamSize>(ram_address);
