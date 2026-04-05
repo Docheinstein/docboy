@@ -68,7 +68,7 @@ uint8_t Mbc3<RomSize, RamSize, Battery, Timer>::read_ram(uint16_t address) const
 
     // 0xA000 - 0xBFFF
     if (ram_enabled) {
-        if (ram_bank_selector_rtc_register_selector < 0x4) {
+        if (ram_bank_selector_rtc_register_selector < 0x08) {
             if constexpr (Ram) {
                 uint32_t ram_address = (ram_bank_selector_rtc_register_selector << 13) | keep_bits<13>(address);
                 ram_address = mask_by_pow2<RamSize>(ram_address);
@@ -104,7 +104,7 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::write_ram(uint16_t address, uint8_t
 
     // 0xA000 - 0xBFFF
     if (ram_enabled) {
-        if (ram_bank_selector_rtc_register_selector < 0x4) {
+        if (ram_bank_selector_rtc_register_selector < 0x08) {
             if constexpr (Ram) {
                 uint32_t ram_address = (ram_bank_selector_rtc_register_selector << 13) | keep_bits<13>(address);
                 ram_address = mask_by_pow2<RamSize>(ram_address);
