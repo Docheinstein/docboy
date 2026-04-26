@@ -11885,9 +11885,7 @@
         },
         {
             "rom": "docboy/ppu/visual/halt_ppu_off.gbc",
-            "framebuffer": "docboy/ppu/halt_ppu_off.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/ppu/halt_ppu_off.png"
         },
         {
             "rom": "docboy/ppu/visual/lcdc_bit_0.gbc",
@@ -11915,39 +11913,122 @@
         },
         {
             "rom": "docboy/ppu/visual/stop_during_hblank.gbc",
-            "framebuffer": "docboy/ppu/stop_during_hblank.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/ppu/stop_during_hblank.png"
         },
         {
             "rom": "docboy/ppu/visual/stop_during_oam_scan.gbc",
-            "framebuffer": "docboy/ppu/stop_during_oam_scan.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/ppu/stop_during_oam_scan.png"
         },
         {
             "rom": "docboy/ppu/visual/stop_during_pixel_transfer.gbc",
-            "framebuffer": "docboy/ppu/stop_during_pixel_transfer.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/ppu/stop_during_pixel_transfer.png"
         },
         {
             "rom": "docboy/ppu/visual/stop_during_pixel_transfer_alt.gbc",
-            "framebuffer": "docboy/ppu/stop_during_pixel_transfer.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/ppu/stop_during_pixel_transfer.png"
         },
         {
             "rom": "docboy/ppu/visual/stop_during_vblank.gbc",
-            "framebuffer": "docboy/ppu/stop_during_vblank.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/ppu/stop_during_vblank.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/stop_ly42_during_hblank.gbc",
+            "framebuffer": "docboy/ppu/stop_ly42_during_hblank_a.png",
+            "check_at_ticks": 4739304
+        },
+        {
+            "rom": "docboy/ppu/visual/stop_ly42_during_hblank.gbc",
+            "framebuffer": "docboy/ppu/stop_ly42_during_hblank_b.png",
+            "check_at_ticks": 4809528
         },
         {
             "rom": "docboy/ppu/visual/stop_ppu_off.gbc",
-            "framebuffer": "docboy/ppu/stop_ppu_off.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/ppu/stop_ppu_off.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y148_round1.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y148_round1_a.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y148_round1.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y148_round1_b.png",
+            "stop_at_instruction": 73
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y148_round2.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y148_round2_a.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y148_round2.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y148_round2_b.png",
+            "stop_at_instruction": 73
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y52_wait144.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y52_wait144_a.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y52_wait144.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y52_wait144_b.png",
+            "stop_at_instruction": 73
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y52_wait150.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y52_wait150_a.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y52_wait150.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y52_wait150_b.png",
+            "stop_at_instruction": 73
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y42_turn_on_off_y52_wait150.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y42_turn_on_off_y52_wait150_b.png",
+            "stop_at_instruction": 73
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y50_skip_y16_stall_nops50.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y50_skip_y16_stall_nops50.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y50_skip_y16_stall_nops51.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y50_skip_y16_stall_nops51.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y50_skip_y16_stall_nops99.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y50_skip_y16_stall_nops99.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y50_skip_y16_stall_nops100.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y50_skip_y16_stall_nops100.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y48_skip_y16_stall_nops50.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y48_skip_y16_stall_nops50.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y48_skip_y16_stall_nops51.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y48_skip_y16_stall_nops51.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y50_stall_nops50.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y50_stall_nops50.png",
+            "stop_at_instruction": 64
+        },
+        {
+            "rom": "docboy/ppu/visual/turn_off_y50_stall_nops51.gbc",
+            "framebuffer": "docboy/ppu/turn_off_y50_stall_nops51.png",
+            "stop_at_instruction": 64
         },
         {
             "rom": "docboy/ppu/visual/win_activation_ly_bug.gbc",
@@ -69202,33 +69283,23 @@
     "double_speed/visual": [
         {
             "rom": "docboy/double_speed/visual/speed_switch_to_double_stop_during_hblank.gbc",
-            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_during_hblank.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_during_hblank.png"
         },
         {
             "rom": "docboy/double_speed/visual/speed_switch_to_double_stop_during_oam_scan.gbc",
-            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_during_oam_scan.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_during_oam_scan.png"
         },
         {
             "rom": "docboy/double_speed/visual/speed_switch_to_double_stop_during_pixel_transfer.gbc",
-            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_during_pixel_transfer.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_during_pixel_transfer.png"
         },
         {
             "rom": "docboy/double_speed/visual/speed_switch_to_double_stop_during_vblank.gbc",
-            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_during_vblank.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_during_vblank.png"
         },
         {
             "rom": "docboy/double_speed/visual/speed_switch_to_double_stop_ppu_off.gbc",
-            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_ppu_off.png",
-            "check_interval_ticks": 30000000,
-            "force_check": true
+            "framebuffer": "docboy/double_speed/speed_switch_to_double_stop_ppu_off.png"
         }
     ]
 }

@@ -2,7 +2,6 @@
 #define LCD_H
 
 #include <array>
-#include <cstring>
 
 #include "docboy/common/macros.h"
 #include "docboy/common/specs.h"
@@ -29,17 +28,28 @@ public:
 
     Lcd();
 
+    void tick();
+
+    void turn_on_ppu();
+    void turn_off_ppu();
+
+    void new_frame();
+
     void set_appearance(const Appearance& a);
 
     void push_pixel(Pixel pixel) {
         ASSERT(pixel < Appearance::NUM_COLORS);
-        pixels[cursor] = appearance.palette[pixel];
-        if (++cursor == PIXEL_COUNT) {
-            cursor = 0;
+        ASSERT(row_cursor < Specs::Display::WIDTH);
+#ifdef ENABLE_DIRECT_LCD_RENDERING
+        // Although this rendering mode could be more efficient, it is meant to be used for debug purpose mainly,
+        // as Game Boy does not render pixels directly. Instead, the PPU pushes the pixels a temporary buffer
+        // and then the entire row is copied to the real LCD framebuffer atomically.
+        // Therefore, do not expect the emulator to pass all the tricky test roms in this mode.
+        if (row < Specs::Display::HEIGHT) {
+            pixels[row * Specs::Display::WIDTH + row_cursor++] = appearance.palette[pixel];
         }
-#ifdef ENABLE_DEBUGGER
-        x = (x + 1) % Specs::Display::WIDTH;
-        y = (y + (x == 0)) % Specs::Display::HEIGHT;
+#else
+        row_pixels[row_cursor++] = appearance.palette[pixel];
 #endif
     }
 
@@ -47,28 +57,30 @@ public:
         return pixels;
     }
 
+    void reset_row_cursor() {
+        row_cursor = 0;
+    }
+
+#ifndef ENABLE_CGB
     void clear() {
-        // Fills the LCD with the default color
+        // Fills all the LCD pixels with the default color.
         for (uint32_t i = 0; i < array_size(pixels); ++i) {
             pixels[i] = appearance.default_color;
         }
     }
-
-    void rewind() {
-        // Reset the LCD position
-        cursor = 0;
-#ifdef ENABLE_DEBUGGER
-        x = 0;
-        y = 0;
 #endif
-    }
 
 #ifdef ENABLE_DEBUGGER
     PixelRgb565* get_pixels() {
         return pixels;
     }
+
     uint16_t get_cursor() const {
-        return cursor;
+#ifdef ENABLE_DIRECT_LCD_RENDERING
+        return row * Specs::Display::WIDTH + row_cursor;
+#else
+        return row * Specs::Display::WIDTH;
+#endif
     }
 #endif
 
@@ -78,15 +90,27 @@ public:
     void reset();
 
 private:
+    void render_row();
+    void clear_row();
+
     Appearance appearance {};
 
     PixelRgb565 pixels[PIXEL_COUNT] {};
-    uint16_t cursor {};
-
-#ifdef ENABLE_DEBUGGER
-    uint8_t x {};
-    uint8_t y {};
+#ifndef ENABLE_DIRECT_LCD_RENDERING
+    PixelRgb565 row_pixels[Specs::Display::WIDTH] {};
 #endif
+
+    uint8_t row {};
+    uint8_t row_cursor {};
+
+    uint16_t row_ticks {};
+    uint32_t frame_ticks {};
+
+    bool ppu_on {};
+
+    bool rendering_enabled {};
+    bool row_increment_enabled {};
+    bool wait_new_frame {};
 };
 
 #endif // LCD_H

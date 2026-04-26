@@ -26,14 +26,21 @@ void StopController::stopped_tick() {
 
     // STOP mode behaves differently while in DMG and CGB.
 #ifdef ENABLE_CGB
-    // In CGB, PPU is ticked even while stopped (it continues to render).
+    // In CGB, PPU (and LCD) are ticked even while stopped.
+    // This is shown by the fact that:
+    // - LCD continues to render (black pixels)
+    // - PPU is in an arbitrary position when STOP mode is exited,
+    //   that depends on the joypad timing (whereas in DMG the time
+    //   it remains stalled is well known and defined).
     ppu.tick();
+    lcd.tick();
 #else
-    // In DMG, PPU is ticked for a while and then LCD is turned off.
+    // In DMG, PPU (and LCD) are ticked for a while before being turned off.
     // Note that in this case PPU retains its state and resumes from there
     // when stop mode is exited.
     if (ppu_shutdown_countdown > 0) {
         ppu.tick();
+        lcd.tick();
         if (--ppu_shutdown_countdown == 0) {
             // LCD is cleared, but PPU retains its state (it's not reset).
             lcd.clear();
@@ -91,6 +98,8 @@ void StopController::enter_stop_mode() {
     // In CGB, PPU will push black pixels during the STOP mode
     // if the STOP has been triggered while PPU is on and not
     // in Pixel Transfer mode.
+    // Note: they are truly "active" black pixels, not just the
+    // default "clearing" LCD color.
     if (ppu.lcdc.enable) {
         if (ppu.stat.mode != Specs::Ppu::Modes::PIXEL_TRANSFER) {
             ppu.disable_color_resolver();

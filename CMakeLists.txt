@@ -30,6 +30,8 @@ option(ENABLE_ASSERTS "Enable asserts" OFF)
 
 option(ENABLE_STATE_DEBUG_SYMBOLS "Add debug symbols to state files" OFF)
 
+option(ENABLE_DIRECT_LCD_RENDERING "Enable rendering directly to LCD framebuffer" OFF)
+
 # Build in Release mode by default
 if (CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE Release)

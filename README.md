@@ -116,22 +116,23 @@ _Note_: use just `make` instead of `make -j`; the latter does not work with NDK 
 
 These are all the supported CMake options.
 
-| CMake option                | Description                            | Default Value |
-|-----------------------------|----------------------------------------|---------------|
-| BUILD_TESTS                 | Build tests                            | OFF           |
-| BUILD_DEVTOOLS              | Build devtools                         | OFF           |
-| BUILD_NOGUI_FRONTEND        | Build NoGUI frontend                   | OFF           |
-| BUILD_SDL_FRONTEND          | Build SDL frontend                     | ON            |
-| BUILD_LIBRETRO_CORE         | Build libretro core                    | OFF           |
-| BUILD_LIBRETRO_CORE_ANDROID | Build libretro core for Android        | OFF           |
-| NDK_PATH                    | NDK path for Android build             |               |
-| ENABLE_DEBUGGER             | Enable debugger                        | OFF           |
-| ENABLE_BOOTROM              | Enable boot rom                        | OFF           |
-| ENABLE_AUDIO                | Enable audio                           | ON            |
-| ENABLE_CGB                  | Enable GameBoy Color                   | ON            |
-| ENABLE_TWO_PLAYERS_MODE     | Enable two players mode (serial link)  | ON            |
-| ENABLE_ASSERTS              | Enable asserts                         | OFF           |
-| ENABLE_STATE_DEBUG_SYMBOLS  | Add source code symbols to state files | OFF           |
+| CMake option                | Description                                  | Default Value |
+|-----------------------------|----------------------------------------------|---------------|
+| BUILD_TESTS                 | Build tests                                  | OFF           |
+| BUILD_DEVTOOLS              | Build devtools                               | OFF           |
+| BUILD_NOGUI_FRONTEND        | Build NoGUI frontend                         | OFF           |
+| BUILD_SDL_FRONTEND          | Build SDL frontend                           | ON            |
+| BUILD_LIBRETRO_CORE         | Build libretro core                          | OFF           |
+| BUILD_LIBRETRO_CORE_ANDROID | Build libretro core for Android              | OFF           |
+| NDK_PATH                    | NDK path for Android build                   |               |
+| ENABLE_DEBUGGER             | Enable debugger                              | OFF           |
+| ENABLE_BOOTROM              | Enable boot rom                              | OFF           |
+| ENABLE_AUDIO                | Enable audio                                 | ON            |
+| ENABLE_CGB                  | Enable GameBoy Color                         | ON            |
+| ENABLE_TWO_PLAYERS_MODE     | Enable two players mode (serial link)        | ON            |
+| ENABLE_ASSERTS              | Enable asserts                               | OFF           |
+| ENABLE_STATE_DEBUG_SYMBOLS  | Add source code symbols to state files       | OFF           |
+| ENABLE_DIRECT_LCD_RENDERING | Enable rendering directly to LCD framebuffer | OFF           |
 
 ---
 

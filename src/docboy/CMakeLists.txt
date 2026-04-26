@@ -170,6 +170,10 @@ if (ENABLE_TWO_PLAYERS_MODE)
     target_compile_definitions(docboy PUBLIC ENABLE_TWO_PLAYERS_MODE)
 endif ()
 
+if (ENABLE_DIRECT_LCD_RENDERING)
+    target_compile_definitions(docboy PUBLIC ENABLE_DIRECT_LCD_RENDERING)
+endif ()
+
 target_link_libraries(docboy PRIVATE utils)
 
 target_include_directories(docboy PUBLIC .)

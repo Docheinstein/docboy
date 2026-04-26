@@ -2596,6 +2596,35 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         return b;
     };
 
+    // LCD
+    const auto make_lcd_header = [&](uint32_t width) {
+        auto b {make_block(width)};
+        b << subheader("lcd", width) << endl;
+        return b;
+    };
+
+    const auto make_lcd_block_1 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << yellow("Rendering") << "         :  " << (gb.lcd.rendering_enabled ? green("ON") : darkgray("OFF"))
+          << endl;
+        b << yellow("X") << "                 :  " << gb.lcd.row_cursor << endl;
+        b << yellow("Y") << "                 :  " << gb.lcd.row << endl;
+
+        return b;
+    };
+
+    const auto make_lcd_block_2 = [&](uint32_t width) {
+        auto b {make_block(width)};
+
+        b << yellow("Row Ticks") << "         :  " << gb.lcd.row_ticks << endl;
+        b << yellow("Frame Ticks") << "       :  " << gb.lcd.frame_ticks << endl;
+        b << yellow("Waiting Frame") << "     :  " << gb.lcd.wait_new_frame << endl;
+
+        return b;
+    };
+
+    // PPU
     const auto make_ppu_block_1 = [&](uint32_t width) {
         auto b {make_block(width)};
 
@@ -2613,23 +2642,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
               << bg_palette(i, 2) << " " << bg_palette(i, 3) << endl;
         }
 #endif
-
-        // LCD
-        const auto pixel_color = [this](PixelRgb565 lcd_color) {
-            return color(hex(lcd_color), RGB565_TO_ANSI_COLORS[lcd_color]);
-        };
-
-        b << subheader("lcd", width) << endl;
-        b << yellow("X") << "                 :  " << gb.lcd.x << endl;
-        b << yellow("Y") << "                 :  " << gb.lcd.y << endl;
-        b << yellow("Last Pixels") << "       :  ";
-        for (int32_t i = 0; i < 4; i++) {
-            int32_t idx = gb.lcd.cursor - 4 + i;
-            if (idx >= 0) {
-                b << pixel_color(gb.lcd.pixels[idx]) << " ";
-            }
-        }
-        b << endl;
 
         // BG Fifo
         b << subheader("bg fifo", width) << endl;
@@ -2672,21 +2684,62 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         b << yellow("OBJ Fifo Attrs.") << "   :  " << hex(obj_attrs, gb.ppu.obj_fifo.size()) << endl;
         b << yellow("OBJ Fifo X") << "        :  " << hex(obj_xs, gb.ppu.obj_fifo.size()) << endl;
 
-        // Window
-        b << subheader("window", width) << endl;
-        b << yellow("Active for frame") << "  :  " << (gb.ppu.w.active_for_frame ? green("ON") : darkgray("OFF"))
-          << endl;
-        b << yellow("WLY") << "               :  " << (gb.ppu.w.wly != UINT8_MAX ? gb.ppu.w.wly : darkgray("None"))
-          << endl;
-        b << yellow("Active") << "            :  " << (gb.ppu.w.active ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("WX Triggers") << "       :  ";
-        for (uint8_t i = 0; i < gb.ppu.w.line_triggers.size(); i++) {
-            b << Text {gb.ppu.w.line_triggers[i]};
-            if (i < gb.ppu.w.line_triggers.size() - 1) {
-                b << " | ";
+        // OAM Scanline entries
+        const auto& oam_entries = gb.ppu.scanline_oam_entries;
+        b << subheader("oam scanline entries", width) << endl;
+
+        const auto oam_entries_info = [](const auto& v, uint8_t from, uint8_t to,
+                                         uint8_t (*fn)(const Ppu::OamScanEntry&)) {
+            Text t {};
+            for (uint8_t i = from; i < v.size() && i < to; i++) {
+                t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
+            }
+            return t;
+        };
+
+        const auto oam_entries_section = [&b, &oam_entries_info](const auto& v, uint8_t from, uint8_t to) {
+            b << yellow("OAM Number") << "          :  "
+              << oam_entries_info(v, from, to,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.number;
+                                  })
+              << endl;
+            b << yellow("OAM X") << "               :  "
+              << oam_entries_info(v, from, to,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.x;
+                                  })
+              << endl;
+            b << yellow("OAM Y") << "               :  "
+              << oam_entries_info(v, from, to,
+                                  [](const Ppu::OamScanEntry& e) {
+                                      return e.y;
+                                  })
+              << endl;
+        };
+
+        oam_entries_section(oam_entries, 0, 5);
+        if (oam_entries.size() > 5) {
+            b << hr(width) << endl;
+            oam_entries_section(oam_entries, 5, 10);
+        }
+
+        if (gb.ppu.lx < array_size(gb.ppu.oam_entries)) {
+            const auto& oam_entries_hit = gb.ppu.oam_entries[gb.ppu.lx];
+            // OAM Hit
+            b << subheader("oam hit", width) << endl;
+
+            oam_entries_section(oam_entries_hit, 0, 5);
+            if (oam_entries_hit.size() > 5) {
+                b << hr(width) << endl;
+                oam_entries_section(oam_entries_hit, 5, 10);
             }
         }
-        b << endl;
+
+        // OAM Registers
+        b << subheader("oam registers", width) << endl;
+        b << yellow("OAM A") << "               :  " << hex(gb.ppu.registers.oam.a) << endl;
+        b << yellow("OAM B") << "               :  " << hex(gb.ppu.registers.oam.b) << endl;
 
         // Pixel Transfer
         b << subheader("pixel transfer", width) << endl;
@@ -2794,62 +2847,21 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
 #endif
 
-        // OAM Registers
-        b << subheader("oam registers", width) << endl;
-        b << yellow("OAM A") << "               :  " << hex(gb.ppu.registers.oam.a) << endl;
-        b << yellow("OAM B") << "               :  " << hex(gb.ppu.registers.oam.b) << endl;
-
-        // OAM Scanline entries
-        const auto& oam_entries = gb.ppu.scanline_oam_entries;
-        b << subheader("oam scanline entries", width) << endl;
-
-        const auto oam_entries_info = [](const auto& v, uint8_t from, uint8_t to,
-                                         uint8_t (*fn)(const Ppu::OamScanEntry&)) {
-            Text t {};
-            for (uint8_t i = from; i < v.size() && i < to; i++) {
-                t += Text {fn(v[i])}.rpad(Text::Length {3}) + (i < v.size() - 1 ? " " : "");
-            }
-            return t;
-        };
-
-        const auto oam_entries_section = [&b, &oam_entries_info](const auto& v, uint8_t from, uint8_t to) {
-            b << yellow("OAM Number") << "          :  "
-              << oam_entries_info(v, from, to,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.number;
-                                  })
-              << endl;
-            b << yellow("OAM X") << "               :  "
-              << oam_entries_info(v, from, to,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.x;
-                                  })
-              << endl;
-            b << yellow("OAM Y") << "               :  "
-              << oam_entries_info(v, from, to,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.y;
-                                  })
-              << endl;
-        };
-
-        oam_entries_section(oam_entries, 0, 5);
-        if (oam_entries.size() > 5) {
-            b << hr(width) << endl;
-            oam_entries_section(oam_entries, 5, 10);
-        }
-
-        if (gb.ppu.lx < array_size(gb.ppu.oam_entries)) {
-            const auto& oam_entries_hit = gb.ppu.oam_entries[gb.ppu.lx];
-            // OAM Hit
-            b << subheader("oam hit", width) << endl;
-
-            oam_entries_section(oam_entries_hit, 0, 5);
-            if (oam_entries_hit.size() > 5) {
-                b << hr(width) << endl;
-                oam_entries_section(oam_entries_hit, 5, 10);
+        // Window
+        b << subheader("window", width) << endl;
+        b << yellow("Active for frame") << "  :  " << (gb.ppu.w.active_for_frame ? green("ON") : darkgray("OFF"))
+          << endl;
+        b << yellow("WLY") << "               :  " << (gb.ppu.w.wly != UINT8_MAX ? gb.ppu.w.wly : darkgray("None"))
+          << endl;
+        b << yellow("Active") << "            :  " << (gb.ppu.w.active ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("WX Triggers") << "       :  ";
+        for (uint8_t i = 0; i < gb.ppu.w.line_triggers.size(); i++) {
+            b << Text {gb.ppu.w.line_triggers[i]};
+            if (i < gb.ppu.w.line_triggers.size() - 1) {
+                b << " | ";
             }
         }
+        b << endl;
 
         // BG/WIN Prefetcher
         b << subheader("bg/win prefetcher", width) << endl;
@@ -3762,60 +3774,67 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
     c2->add_node(make_hdma_block(COLUMN_2_WIDTH));
 #endif
 
-    static constexpr uint32_t COLUMN_3_ROW_1_2_PART_1_WIDTH = 45;
-    static constexpr uint32_t COLUMN_3_ROW_1_2_PART_2_WIDTH = 52;
-    static constexpr uint32_t COLUMN_3_ROW_1_2_WIDTH =
-        COLUMN_3_ROW_1_2_PART_1_WIDTH + COLUMN_3_ROW_1_2_PART_2_WIDTH + 1;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_3_PART_1_WIDTH = 47;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_3_PART_2_WIDTH = 50;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_3_WIDTH =
+        COLUMN_3_ROW_1_2_3_PART_1_WIDTH + COLUMN_3_ROW_1_2_3_PART_2_WIDTH + 1;
 
     auto c3r1 {make_horizontal_layout()};
-    c3r1->add_node(make_ppu_general_block_1(COLUMN_3_ROW_1_2_PART_1_WIDTH));
+    c3r1->add_node(make_ppu_general_block_1(COLUMN_3_ROW_1_2_3_PART_1_WIDTH));
     c3r1->add_node(make_space_divider());
-    c3r1->add_node(make_ppu_general_block_2(COLUMN_3_ROW_1_2_PART_2_WIDTH));
+    c3r1->add_node(make_ppu_general_block_2(COLUMN_3_ROW_1_2_3_PART_2_WIDTH));
 
     auto c3r2 {make_horizontal_layout()};
-    c3r2->add_node(make_ppu_block_1(COLUMN_3_ROW_1_2_PART_1_WIDTH));
+    c3r2->add_node(make_lcd_block_1(COLUMN_3_ROW_1_2_3_PART_1_WIDTH));
     c3r2->add_node(make_space_divider());
-    c3r2->add_node(make_ppu_block_2(COLUMN_3_ROW_1_2_PART_2_WIDTH));
-
-    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_1_WIDTH = 23;
-    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_2_WIDTH = 23;
-    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_3_WIDTH = 26;
-    static constexpr uint32_t COLUMN_3_ROW_3_4_PART_4_WIDTH = 23;
-
-    static constexpr uint32_t COLUMN_3_ROW_3_4_WIDTH = COLUMN_3_ROW_3_4_PART_1_WIDTH + COLUMN_3_ROW_3_4_PART_2_WIDTH +
-                                                       COLUMN_3_ROW_3_4_PART_3_WIDTH + COLUMN_3_ROW_3_4_PART_4_WIDTH +
-                                                       3;
-
-    static_assert(COLUMN_3_ROW_1_2_WIDTH == COLUMN_3_ROW_3_4_WIDTH);
-
-    static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_ROW_1_2_WIDTH;
+    c3r2->add_node(make_lcd_block_2(COLUMN_3_ROW_1_2_3_PART_2_WIDTH));
 
     auto c3r3 {make_horizontal_layout()};
-    c3r3->add_node(make_apu_general_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));
+    c3r3->add_node(make_ppu_block_1(COLUMN_3_ROW_1_2_3_PART_1_WIDTH));
     c3r3->add_node(make_space_divider());
-    c3r3->add_node(make_apu_general_block_2(COLUMN_3_ROW_3_4_PART_2_WIDTH));
-    c3r3->add_node(make_space_divider());
-    c3r3->add_node(make_apu_general_block_3(COLUMN_3_ROW_3_4_PART_3_WIDTH));
-    c3r3->add_node(make_space_divider());
-    c3r3->add_node(make_apu_general_block_4(COLUMN_3_ROW_3_4_PART_4_WIDTH));
+    c3r3->add_node(make_ppu_block_2(COLUMN_3_ROW_1_2_3_PART_2_WIDTH));
+
+    static constexpr uint32_t COLUMN_3_ROW_4_5_PART_1_WIDTH = 23;
+    static constexpr uint32_t COLUMN_3_ROW_4_5_PART_2_WIDTH = 23;
+    static constexpr uint32_t COLUMN_3_ROW_4_5_PART_3_WIDTH = 26;
+    static constexpr uint32_t COLUMN_3_ROW_4_5_PART_4_WIDTH = 23;
+
+    static constexpr uint32_t COLUMN_3_ROW_4_5_WIDTH = COLUMN_3_ROW_4_5_PART_1_WIDTH + COLUMN_3_ROW_4_5_PART_2_WIDTH +
+                                                       COLUMN_3_ROW_4_5_PART_3_WIDTH + COLUMN_3_ROW_4_5_PART_4_WIDTH +
+                                                       3;
+
+    static_assert(COLUMN_3_ROW_1_2_3_WIDTH == COLUMN_3_ROW_4_5_WIDTH);
+
+    static constexpr uint32_t COLUMN_3_WIDTH = COLUMN_3_ROW_1_2_3_WIDTH;
 
     auto c3r4 {make_horizontal_layout()};
-    c3r4->add_node(make_apu_block_1(COLUMN_3_ROW_3_4_PART_1_WIDTH));
+    c3r4->add_node(make_apu_general_block_1(COLUMN_3_ROW_4_5_PART_1_WIDTH));
     c3r4->add_node(make_space_divider());
-    c3r4->add_node(make_apu_block_2(COLUMN_3_ROW_3_4_PART_2_WIDTH));
+    c3r4->add_node(make_apu_general_block_2(COLUMN_3_ROW_4_5_PART_2_WIDTH));
     c3r4->add_node(make_space_divider());
-    c3r4->add_node(make_apu_block_3(COLUMN_3_ROW_3_4_PART_3_WIDTH));
+    c3r4->add_node(make_apu_general_block_3(COLUMN_3_ROW_4_5_PART_3_WIDTH));
     c3r4->add_node(make_space_divider());
-    c3r4->add_node(make_apu_block_4(COLUMN_3_ROW_3_4_PART_4_WIDTH));
+    c3r4->add_node(make_apu_general_block_4(COLUMN_3_ROW_4_5_PART_4_WIDTH));
+
+    auto c3r5 {make_horizontal_layout()};
+    c3r5->add_node(make_apu_block_1(COLUMN_3_ROW_4_5_PART_1_WIDTH));
+    c3r5->add_node(make_space_divider());
+    c3r5->add_node(make_apu_block_2(COLUMN_3_ROW_4_5_PART_2_WIDTH));
+    c3r5->add_node(make_space_divider());
+    c3r5->add_node(make_apu_block_3(COLUMN_3_ROW_4_5_PART_3_WIDTH));
+    c3r5->add_node(make_space_divider());
+    c3r5->add_node(make_apu_block_4(COLUMN_3_ROW_4_5_PART_4_WIDTH));
 
     auto c3 {make_vertical_layout()};
     c3->add_node(make_ppu_header(COLUMN_3_WIDTH));
     c3->add_node(std::move(c3r1));
+    c3->add_node(make_lcd_header(COLUMN_3_WIDTH));
     c3->add_node(std::move(c3r2));
+    c3->add_node(std::move(c3r3));
     c3->add_node(make_space_divider());
     c3->add_node(make_apu_header(COLUMN_3_WIDTH));
-    c3->add_node(std::move(c3r3));
     c3->add_node(std::move(c3r4));
+    c3->add_node(std::move(c3r5));
 
     static constexpr uint32_t COLUMN_4_WIDTH = 66;
     auto c4 {make_vertical_layout()};

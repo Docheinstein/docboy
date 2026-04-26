@@ -582,6 +582,8 @@ void Ppu::turn_on() {
         dots = 1;
     }
 #endif
+
+    lcd.turn_on_ppu();
 }
 
 void Ppu::turn_off() {
@@ -591,9 +593,6 @@ void Ppu::turn_off() {
 #ifdef ENABLE_CGB
     real_ly = 0;
 #endif
-
-    lcd.rewind();
-    lcd.clear();
 
     // Clear oam entries eventually still there
     for (uint32_t i = 0; i < array_size(oam_entries); i++) {
@@ -625,6 +624,8 @@ void Ppu::turn_off() {
 
     vram.release();
     oam.release();
+
+    lcd.turn_off_ppu();
 }
 
 inline bool Ppu::is_lyc_eq_ly() const {
@@ -1555,6 +1556,8 @@ void Ppu::enter_pixel_transfer() {
 
     vram.acquire();
     oam.acquire();
+
+    lcd.reset_row_cursor();
 }
 
 inline void Ppu::enter_hblank() {
@@ -1698,6 +1701,8 @@ void Ppu::enter_new_frame() {
 
     // Eventually raise OAM interrupt
     update_stat_irq_for_oam_mode();
+
+    lcd.new_frame();
 }
 
 inline void Ppu::tick_fetcher() {

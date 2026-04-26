@@ -66,6 +66,8 @@ inline void Core::tick_t0() const {
     gb.ppu.tick();
 #endif
 
+    gb.lcd.tick();
+
 #ifdef ENABLE_CGB
     gb.hdma.tick_t0();
 #endif
@@ -116,6 +118,8 @@ inline void Core::tick_t1() const {
     gb.ppu.tick();
 #endif
 
+    gb.lcd.tick();
+
 #ifdef ENABLE_CGB
     gb.hdma.tick_t1();
 #endif
@@ -160,6 +164,8 @@ inline void Core::tick_t2() const {
 #else
     gb.ppu.tick();
 #endif
+
+    gb.lcd.tick();
 
 #ifdef ENABLE_CGB
     gb.hdma.tick_t2();
@@ -213,6 +219,8 @@ inline void Core::tick_t3() const {
 #else
     gb.ppu.tick();
 #endif
+
+    gb.lcd.tick();
 
     // TODO: why HDMA/DMA reversed here?
 #ifdef ENABLE_CGB

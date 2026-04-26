@@ -66,6 +66,11 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
     auto parse_base_params = [](auto object, auto& params) {
         params.rom = object["rom"].get_string().value();
 
+        if (auto check_at_ticks_element = object["check_at_ticks"];
+            check_at_ticks_element.error() == simdjson::SUCCESS) {
+            params.check_at_ticks = check_at_ticks_element.get_uint64();
+        }
+
         if (auto check_interval_ticks_element = object["check_interval_ticks"];
             check_interval_ticks_element.error() == simdjson::SUCCESS) {
             params.check_interval_ticks = check_interval_ticks_element.get_uint64();
@@ -78,10 +83,6 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
         if (auto stop_at_instruction_element = object["stop_at_instruction"];
             stop_at_instruction_element.error() == simdjson::SUCCESS) {
             params.stop_at_instruction = stop_at_instruction_element.get_uint64();
-        }
-
-        if (auto force_check_element = object["force_check"]; force_check_element.error() == simdjson::SUCCESS) {
-            params.force_check = force_check_element.get_bool();
         }
 
         if (auto limit_speed_element = object["limit_speed"]; limit_speed_element.error() == simdjson::SUCCESS) {

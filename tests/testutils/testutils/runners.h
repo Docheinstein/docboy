@@ -32,24 +32,14 @@ struct ColorTolerance {
     uint8_t green {};
     uint8_t blue {};
 };
-struct CheckIntervalTicks {
-    uint64_t value {};
-};
-struct MaxTicks {
-    uint64_t value {};
-};
-struct StopAtInstruction {
-    uint8_t instruction {};
-};
 struct MemoryExpectation {
     uint16_t address {};
     uint8_t success_value {};
     std::optional<uint8_t> fail_value {};
 };
-struct ForceCheck {};
 
-constexpr uint64_t DEFAULT_CHECK_INTERVAL = 100'000;
-constexpr uint64_t DEFAULT_MAX_DURATION = 100'000'000;
+constexpr uint64_t DEFAULT_CHECK_INTERVAL = 100'000;   // ~0.02 seconds,    1.4  frame
+constexpr uint64_t DEFAULT_MAX_DURATION = 100'000'000; // ~23    seconds, 1424    frame
 
 #ifdef ENABLE_CGB
 constexpr ColorTolerance COLOR_TOLERANCE_LOW {5, 5, 5};
@@ -112,6 +102,11 @@ public:
         return static_cast<RunnerImpl&>(*this);
     }
 
+    RunnerImpl& check_at_ticks(uint64_t ticks) {
+        check_at_ticks_ = ticks / 4 * 4; // should be a multiple of 4
+        return static_cast<RunnerImpl&>(*this);
+    }
+
     RunnerImpl& check_interval_ticks(uint64_t ticks) {
         check_interval_ticks_ = ticks / 4 * 4; // should be a multiple of 4
         return static_cast<RunnerImpl&>(*this);
@@ -119,11 +114,6 @@ public:
 
     RunnerImpl& stop_at_instruction(std::optional<uint8_t> instr) {
         stop_at_instruction_ = instr;
-        return static_cast<RunnerImpl&>(*this);
-    }
-
-    RunnerImpl& force_check(bool force) {
-        force_check_ = force;
         return static_cast<RunnerImpl&>(*this);
     }
 
@@ -219,9 +209,9 @@ protected:
     std::string rom_name;
     uint64_t tick {};
     uint64_t max_ticks_ {UINT64_MAX};
+    std::optional<uint64_t> check_at_ticks_ {};
     uint64_t check_interval_ticks_ {UINT64_MAX};
     std::optional<uint8_t> stop_at_instruction_ {};
-    bool force_check_ {};
     bool limit_speed_ {};
 
     std::vector<JoypadInput> inputs_ {};
@@ -251,7 +241,7 @@ public:
 
     ExpectationResult check_expectation() {
         ASSERT_NO_ENTRY();
-        return ExpectationResult::Fail;
+        return ExpectationResult::Fatal;
     }
 
     void on_expectation_failed() {
@@ -297,14 +287,19 @@ public:
                 can_run = false;
                 return true;
             }
+
+            // Otherwise do not check.
+            return false;
         }
 
-        // Schedule a check for the next VBlank if we have passed the check interval
-        if (tick > 0 && tick % check_interval_ticks_ == 0) {
-            if (force_check_) {
-                // Force check even if outside VBlank.
+        if (tick > 0) {
+            if (tick == *check_at_ticks_) {
+                // Force check at this tick (even outside VBlank)
                 return true;
-            } else {
+            }
+
+            if (tick % check_interval_ticks_ == 0) {
+                // Schedule a check for the next VBlank if we have passed the check interval
                 pending_check_next_vblank = true;
             }
         }
@@ -331,7 +326,10 @@ public:
                                                       color_tolerance_.green, color_tolerance_.blue);
         }
 
-        return framebuffer_match ? ExpectationResult::Success : ExpectationResult::Fail;
+        bool fatal = (tick == *check_at_ticks_);
+
+        return framebuffer_match ? ExpectationResult::Success
+                                 : (fatal ? ExpectationResult::Fatal : ExpectationResult::Fail);
     }
 
     void on_expectation_failed() {
@@ -409,12 +407,16 @@ public:
     }
 
     bool should_check_expectation() {
-        return tick > 0 && tick % check_interval_ticks_ == 0;
+        return tick > 0 && ((tick % check_interval_ticks_ == 0) || (tick == *check_at_ticks_));
     }
 
     ExpectationResult check_expectation() {
         last_output = serial_buffer.buffer;
-        return serial_buffer.buffer == expected_output ? ExpectationResult::Success : ExpectationResult::Fail;
+
+        bool fatal = (tick == *check_at_ticks_);
+
+        return serial_buffer.buffer == expected_output ? ExpectationResult::Success
+                                                       : (fatal ? ExpectationResult::Fatal : ExpectationResult::Fail);
     }
 
     void on_expectation_failed() {
@@ -451,7 +453,7 @@ public:
     }
 
     bool should_check_expectation() {
-        return tick > 0 && tick % check_interval_ticks_ == 0;
+        return tick > 0 && ((tick % check_interval_ticks_ == 0) || (tick == *check_at_ticks_));
     }
 
     ExpectationResult check_expectation() {
@@ -466,6 +468,8 @@ public:
             success = success && (real_value == success_value);
             last_output.emplace_back(address, real_value);
         }
+
+        fatal = fatal || (tick == *check_at_ticks_);
 
         return success ? ExpectationResult::Success : (fatal ? ExpectationResult::Fatal : ExpectationResult::Fail);
     }
@@ -556,9 +560,16 @@ public:
     }
 
     bool should_check_expectation() {
-        // Schedule a check for the next VBlank if we have passed the check interval
-        if (tick > 0 && tick % check_interval_ticks_ == 0) {
-            pending_check_next_vblank = true;
+        if (tick > 0) {
+            if (tick == *check_at_ticks_) {
+                // Force check at this tick (even outside VBlank)
+                return true;
+            }
+
+            if (tick % check_interval_ticks_ == 0) {
+                // Schedule a check for the next VBlank if we have passed the check interval
+                pending_check_next_vblank = true;
+            }
         }
 
         // Check if we are in VBlank with a pending check
@@ -587,7 +598,10 @@ public:
                                                       color_tolerance_.green, color_tolerance_.blue);
         }
 
-        return framebuffer_match ? ExpectationResult::Success : ExpectationResult::Fail;
+        bool fatal = (tick == *check_at_ticks_);
+
+        return framebuffer_match ? ExpectationResult::Success
+                                 : (fatal ? ExpectationResult::Fatal : ExpectationResult::Fail);
     }
 
     void on_expectation_failed() {
@@ -672,10 +686,10 @@ using Inputs = std::vector<JoypadInput>;
 
 struct BaseRunnerParams {
     std::string rom {};
+    std::optional<uint64_t> check_at_ticks {};
     uint64_t check_interval_ticks {DEFAULT_CHECK_INTERVAL};
     uint64_t max_ticks {DEFAULT_MAX_DURATION};
     std::optional<uint8_t> stop_at_instruction {};
-    bool force_check {};
     bool limit_speed {};
     std::vector<JoypadInput> inputs {};
 };
@@ -747,7 +761,6 @@ struct RunnerAdapter {
                 .check_interval_ticks(pf.check_interval_ticks)
                 .max_ticks(pf.max_ticks)
                 .stop_at_instruction(pf.stop_at_instruction)
-                .force_check(pf.force_check)
                 .limit_speed(pf.limit_speed)
                 .schedule_inputs(pf.inputs)
                 .run();
@@ -762,7 +775,6 @@ struct RunnerAdapter {
                 .check_interval_ticks(ps.check_interval_ticks)
                 .max_ticks(ps.max_ticks)
                 .stop_at_instruction(ps.stop_at_instruction)
-                .force_check(ps.force_check)
                 .limit_speed(ps.limit_speed)
                 .schedule_inputs(ps.inputs)
                 .run();
@@ -777,7 +789,6 @@ struct RunnerAdapter {
                 .check_interval_ticks(pm.check_interval_ticks)
                 .max_ticks(pm.max_ticks)
                 .stop_at_instruction(pm.stop_at_instruction)
-                .force_check(pm.force_check)
                 .limit_speed(pm.limit_speed)
                 .schedule_inputs(pm.inputs)
                 .run();
@@ -796,7 +807,6 @@ struct RunnerAdapter {
                 .check_interval_ticks(pf2p.check_interval_ticks)
                 .max_ticks(pf2p.max_ticks)
                 .stop_at_instruction(pf2p.stop_at_instruction)
-                .force_check(pf2p.force_check)
                 .limit_speed(pf2p.limit_speed)
                 .schedule_inputs(pf2p.inputs)
                 .run();
