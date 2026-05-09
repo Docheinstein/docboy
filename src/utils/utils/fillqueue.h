@@ -22,6 +22,8 @@ template <typename T, uint8_t N>
 struct FillQueue {
     static_assert(std::is_trivially_copyable_v<T>);
 
+    static constexpr uint8_t Size = N;
+
     bool is_empty() const {
         return cursor == N;
     }
@@ -40,6 +42,11 @@ struct FillQueue {
 
     uint8_t size() const {
         return N - cursor;
+    }
+
+    void set_size(const uint8_t n) {
+        ASSERT(n <= N);
+        cursor = N - n;
     }
 
     void fill(const void* src) {
@@ -67,6 +74,13 @@ struct FillQueue {
         data[--cursor] = T {std::forward<Args>(args)...};
     }
 
+    template <typename... Args>
+    void emplace(uint8_t index, Args&&... args) {
+        ASSERT(index < N);
+        ASSERT(index < size());
+        data[cursor + index] = T {std::forward<Args>(args)...};
+    }
+
     T pop_front() {
         ASSERT(is_not_empty());
         return data[cursor++];
@@ -79,13 +93,13 @@ struct FillQueue {
     const T& operator[](uint8_t index) const {
         ASSERT(index < N);
         ASSERT(index < size());
-        return data[index];
+        return data[cursor + index];
     }
 
     T& operator[](uint8_t index) {
         ASSERT(index < N);
         ASSERT(index < size());
-        return data[index];
+        return data[cursor + index];
     }
 
     T data[N] {};

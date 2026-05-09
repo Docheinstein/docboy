@@ -399,7 +399,7 @@ const Ppu::TickSelector Ppu::TICK_SELECTORS[] = {
     &Ppu::oam_scan_after_turn_on_79,
     &Ppu::pixel_transfer_dummy_lx0,
     &Ppu::pixel_transfer_discard_lx0,
-    &Ppu::pixel_transfer_discard_lx0_wx0_scx7,
+    &Ppu::pixel_transfer_discard_lx0_wx0_scx,
     &Ppu::pixel_transfer_lx0,
     &Ppu::pixel_transfer_lx8,
     &Ppu::hblank,
@@ -442,13 +442,14 @@ const Ppu::FetcherTickSelector Ppu::FETCHER_TICK_SELECTORS[] = {
     &Ppu::win_pixel_slice_fetcher_get_tile_data_high_0,
     &Ppu::win_pixel_slice_fetcher_get_tile_data_high_1,
     &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1,
-    &Ppu::bgwin_pixel_slice_fetcher_push,
     &Ppu::obj_prefetcher_get_tile_0,
     &Ppu::obj_prefetcher_get_tile_1,
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_low_0,
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_low_1,
     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_0,
-    &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo};
+    &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo,
+    &Ppu::pixel_slice_fetcher_idle,
+};
 
 #ifdef ENABLE_CGB
 #ifdef ENABLE_BOOTROM
@@ -942,7 +943,7 @@ void Ppu::pixel_transfer_dummy_lx0() {
     ASSERT(vram.is_acquired_by_this());
 
     if (++dots == 83) {
-        // The first tile fetch is used only for make the initial SCX % 8
+        // The first tile fetch is used only to make the initial SCX % 8
         // alignment possible, but this data will be thrown away in any case.
         // So filling this with junk is not a problem (even for window with WX=0).
         bg_fifo.fill();
@@ -959,12 +960,8 @@ void Ppu::pixel_transfer_dummy_lx0() {
             // When SCX % 8 is > 0, window can be activated immediately before BG.
             check_window_activation();
 
-            // When WX=0 and SCX=7, the pixel transfer timing seems to be
-            // expected one with SCX=7, but the initial shifting applied
-            // to the window is 6, not 7.
-            tick_selector = w.active && pixel_transfer.initial_scx.to_discard == 7
-                                ? &Ppu::pixel_transfer_discard_lx0_wx0_scx7
-                                : &Ppu::pixel_transfer_discard_lx0;
+            // TODO: check WX == 0 activation timing for CGB as well.
+            tick_selector = w.activating ? &Ppu::pixel_transfer_discard_lx0_wx0_scx : &Ppu::pixel_transfer_discard_lx0;
         } else {
             tick_selector = &Ppu::pixel_transfer_lx0;
         }
@@ -973,6 +970,7 @@ void Ppu::pixel_transfer_dummy_lx0() {
 
 void Ppu::pixel_transfer_discard_lx0() {
     ASSERT(lx == 0);
+    ASSERT(!w.activating);
     ASSERT(pixel_transfer.initial_scx.to_discard < 8);
     ASSERT(pixel_transfer.initial_scx.discarded < pixel_transfer.initial_scx.to_discard);
     ASSERT(oam.is_acquired_by_this());
@@ -981,7 +979,7 @@ void Ppu::pixel_transfer_discard_lx0() {
     handle_pending_bg_fifo_fill();
 
     // The first SCX % 8 of a background/window tile are simply discarded.
-    // Note that LX is not incremented in this case: this let the OBJ align with the BG.
+    // Note that LX is not incremented in this case: this lets the OBJ align with the BG.
     if (is_bg_fifo_ready_to_be_popped()) {
         bg_fifo.pop_front();
 
@@ -998,20 +996,20 @@ void Ppu::pixel_transfer_discard_lx0() {
     ++dots;
 }
 
-void Ppu::pixel_transfer_discard_lx0_wx0_scx7() {
-    ASSERT(pixel_transfer.initial_scx.to_discard == 7);
-    ASSERT(w.active);
+void Ppu::pixel_transfer_discard_lx0_wx0_scx() {
+    ASSERT(lx == 0);
+    ASSERT(pixel_transfer.initial_scx.to_discard);
+    ASSERT(w.activating);
 
-    pixel_transfer_discard_lx0();
+    handle_pending_window_activation();
 
-    if (pixel_transfer.initial_scx.discarded == 1) {
-        // When WX=0 and SCX=7, the pixel transfer timing seems to be
-        // expected one with SCX=7, but the initial shifting applied
-        // to the window is 6, not 7, therefore we just push a dummy pixel once
-        // to fix this and proceed with the standard pixel_transfer_discard_lx0 state.
-        bg_fifo.push_back();
-        tick_selector = &Ppu::pixel_transfer_discard_lx0;
-    }
+    // Window activation seems late by 1 T-cycle when window is activated at WX == 0.
+    // Therefore, we skip the first fetcher tick.
+    // TODO: check WX == 0 activation timing for CGB as well.
+
+    tick_selector = &Ppu::pixel_transfer_discard_lx0;
+
+    ++dots;
 }
 
 void Ppu::pixel_transfer_lx0() {
@@ -1020,6 +1018,8 @@ void Ppu::pixel_transfer_lx0() {
            pixel_transfer.initial_scx.discarded == pixel_transfer.initial_scx.to_discard);
     ASSERT(oam.is_acquired_by_this());
     ASSERT(vram.is_acquired_by_this());
+
+    handle_pending_window_activation();
 
     handle_pending_bg_fifo_fill();
 
@@ -1044,6 +1044,10 @@ void Ppu::pixel_transfer_lx0() {
 
     tick_fetcher();
 
+#ifdef ENABLE_CGB
+    handle_win_disabled_while_activating_glitch();
+#endif
+
     handle_pixel_slice_fetcher_push();
 
     if (inc_lx) {
@@ -1057,6 +1061,8 @@ void Ppu::pixel_transfer_lx8() {
     ASSERT(lx >= 8);
     ASSERT(oam.is_acquired_by_this());
     ASSERT(vram.is_acquired_by_this());
+
+    handle_pending_window_activation();
 
     handle_pending_bg_fifo_fill();
 
@@ -1192,6 +1198,10 @@ void Ppu::pixel_transfer_lx8() {
     }
 
     tick_fetcher();
+
+#ifdef ENABLE_CGB
+    handle_win_disabled_while_activating_glitch();
+#endif
 
     handle_pixel_slice_fetcher_push();
 
@@ -1598,7 +1608,14 @@ inline void Ppu::enter_hblank() {
         lb += pixel_transfer.initial_scx.to_discard;
 
         // 5) Window triggers
-        lb += 6 * w.line_triggers.size();
+        uint8_t window_triggers_timing = 6 * w.line_triggers.size();
+
+#ifndef ENABLE_CGB
+        // Consider the window activations as part of the LB only on DMG,
+        // as in CGB window can be aborted and fetcher restarted if it is
+        // disabled during the first fetch: the lower bound can't be guaranteed.
+        lb += window_triggers_timing;
+#endif
 
         // 6) WX = 0 and SCX > 0
         bool window_triggered_at_wx0 = false;
@@ -1621,6 +1638,12 @@ inline void Ppu::enter_hblank() {
         // I'll let test roms verify this precisely.
         // 7) Sprite fetch
         ub += (11 - 6 /* already considered in LB */) * oam_entries_count /* use total count for UB */;
+
+#ifdef ENABLE_CGB
+        // As explained above, window activations timing can't be considered for the LB on CGB,
+        // but we can still consider it as part of the UB.
+        ub += window_triggers_timing;
+#endif
 
         ASSERT(dots >= lb);
         ASSERT(dots <= ub);
@@ -1706,27 +1729,45 @@ void Ppu::enter_new_frame() {
 }
 
 inline void Ppu::tick_fetcher() {
-    // Fetcher does not proceed if pixel slice fetcher is allowed to push.
-    if (!enable_pixel_slice_fetcher_push) {
-        (this->*(fetcher_tick_selector))();
+#ifdef ENABLE_CGB
+    // Keep track of memory reads timing: necessary for CGB glitches.
+    // [mealybug/m3_lcdc_win_en_change_multiple_wx (DMG mode)].
+    if (psf.last_fetch.decay) {
+        --psf.last_fetch.decay;
     }
+#endif
+
+    (this->*(fetcher_tick_selector))();
 }
 
 void Ppu::reset_fetcher() {
     lx = 0;
     bg_fifo.clear();
     obj_fifo.clear();
-    enable_pixel_slice_fetcher_push = false;
+    pixel_slice_fetcher_push_enabled = false;
     pending_bg_fifo_fill = false;
+#ifdef ENABLE_CGB
+    pending_bg_fifo_partial_fill.pending = false;
+#endif
     is_fetching_sprite = false;
+    w.activating = false;
     w.active = false;
     w.just_activated = false;
+#ifdef ENABLE_CGB
+    w.disabled_while_activating = false;
+#endif
 #if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
     w.line_triggers.clear();
 #endif
     bwf.lx = 0;
+#ifdef ENABLE_CGB
+    bwf.lx_increment_countdown = 2;
+#endif
     bwf.interrupted_fetch.has_data = false;
     wf.tilemap_x = 0;
+#ifdef ENABLE_CGB
+    psf.last_fetch.decay = 0;
+#endif
     fetcher_tick_selector = &Ppu::bgwin_prefetcher_get_tile_0;
 }
 
@@ -1784,48 +1825,216 @@ inline bool Ppu::is_obj_ready_to_be_fetched() const {
     return oam_entries[lx].is_not_empty() && lcdc.obj_enable;
 }
 
+inline void Ppu::fill_bg_fifo() {
+#ifdef ENABLE_CGB
+    PixelColorIndex pixel_data[8];
+    const uint8_t (*pixels_map_ptr)[8] = test_bit<Specs::Bits::Background::Attributes::X_FLIP>(bwf.attributes)
+                                             ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
+                                             : TILE_ROW_DATA_TO_ROW_PIXELS;
+    memcpy(pixel_data, &pixels_map_ptr[concat(psf.tile_data_high, psf.tile_data_low)], 8);
+
+    for (uint8_t i = 0; i < bg_fifo.size(); ++i) {
+        bg_fifo.emplace(i, pixel_data[i], bwf.attributes);
+    }
+#else
+    bg_fifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[concat(psf.tile_data_high, psf.tile_data_low)]);
+#endif
+}
+
 void Ppu::handle_pixel_slice_fetcher_push() {
-    if (enable_pixel_slice_fetcher_push) {
-        bgwin_pixel_slice_fetcher_push();
+    // Push can't happen while we're fetching sprites.
+    if (pixel_slice_fetcher_push_enabled && !is_fetching_sprite) {
+#ifdef ENABLE_CGB
+        // The rules for increasing the bg tile seem a bit different in CGB compared to DMG.
+        // In particular, evidence shows that bg tile is increased only if the fetcher remains
+        // in push state for two consecutive T-cycles. Overall, this seems reasonable to me,
+        // as it handles the first window tile fetch exactly as DMG, where all the bg/win fetches
+        // increase the bg tile number, with the exclusion of the first window tile (that's because
+        // the window tile is directly pushed to bg fifo the first T-cycle push is enabled, since bg
+        // fifo is cleared after window activation).
+        // TODO: is DMG really different from CGB, or somehow the two can ba gathered?
+        if (bwf.lx_increment_countdown) {
+            if (--bwf.lx_increment_countdown == 0) {
+                bwf.lx += TILE_WIDTH;
+            }
+        }
+#endif
+
+        // clang-format off
+        /*
+         * As far as I understand, there are 4 possible cases:
+         *
+         * [can_push_to_bg_fifo] | [is_obj_ready_to_be_fetched]
+         * ---------------------------------------------------------
+         * bg_fifo.is_empty()    | oam_entries[lx].is_not_empty() &&
+         *                       | lcdc.obj_enable
+         * ---------------------------------------------------------
+         *        0              |           0              | wait (nop)
+         *        0              |           1              | cache bg fetch and start obj prefetcher (tick now)
+         *        1              |           0              | push to bg fifo and prepare for bg/win prefetcher (tick next dot)
+         *        1              |           1              | push to bg fifo and start obj prefetcher (tick now)
+         */
+        // clang-format on
+        // The pixels can be pushed only if the bg fifo is empty,
+        // otherwise wait in push state until bg fifo is emptied
+        const bool can_push_to_bg_fifo = bg_fifo.is_empty();
+        if (can_push_to_bg_fifo) {
+            // If window activation conditions were met in the frame, then a
+            // glitch can occur: if this push stage happens when LX == WX,
+            // then a 00 pixel is pushed into the bg fifo instead of the fetched tile.
+            // Therefore, the push of the tile that was about to happen is postponed by 1 dot.
+            // The first window tile after the window activation seems to be an exception.
+            // Verified: this happens also on CGB, although the conditions that make
+            // this happen are slightly different. In particular, on CGB the glitch seems to
+            // happen only if we are fetching a window tile right now.
+            if (w.active_for_frame && lx == wx && !w.just_activated
+#ifdef ENABLE_CGB
+                && w.active
+#endif
+            ) {
+
+                bg_fifo.push_back(BgPixel {0});
+                return;
+            }
+
+            // Push pixels into bg fifo.
+            pending_bg_fifo_fill = true;
+
+            // Disable pixel slice fetcher push phase.
+            disable_pixel_slice_fetcher_push();
+
+            fetcher_tick_selector = &Ppu::bgwin_prefetcher_get_tile_0;
+
+            // Sprite fetches are ignored just after a window tile push.
+            // TODO: w.just_activated or w.active? Test needed!
+            if (w.just_activated) {
+                w.just_activated = false;
+                return;
+            }
+        }
+
+        // If there is a pending obj hit, discard the fetched bg pixels
+        // and restart the obj prefetcher with the obj hit.
+        // Note: the first obj prefetcher tick overlaps this tick.
+        if (is_obj_ready_to_be_fetched()) {
+            if (!can_push_to_bg_fifo) {
+                // The bg/win tile fetched is not thrown away: instead, it is
+                // cached so that the fetcher can start with it after the sprite
+                // has been merged into obj fifo.
+                cache_bg_win_fetch();
+            }
+
+            // Now fetching sprite.
+            // Implicitly prevent pixel slice fetcher to push to bg fifo.
+            is_fetching_sprite = true;
+
+            of.entry = oam_entries[lx].pull_back();
+            obj_prefetcher_get_tile_0();
+        }
     }
 }
 
 void Ppu::handle_pending_bg_fifo_fill() {
     if (pending_bg_fifo_fill) {
-        // Re-fill bg fifo with pixel slice fetcher's data.
-
-        pending_bg_fifo_fill = false;
+        // Re-fill the entire bg fifo with pixel slice fetcher's data.
         ASSERT(bg_fifo.is_empty());
-
+        pending_bg_fifo_fill = false;
+        bg_fifo.set_size(8);
+        fill_bg_fifo();
+    }
 #ifdef ENABLE_CGB
-        PixelColorIndex pixel_data[8];
-        const uint8_t (*pixels_map_ptr)[8] = test_bit<Specs::Bits::Background::Attributes::X_FLIP>(bwf.attributes)
-                                                 ? TILE_ROW_DATA_TO_ROW_PIXELS_FLIPPED
-                                                 : TILE_ROW_DATA_TO_ROW_PIXELS;
-        memcpy(pixel_data, &pixels_map_ptr[concat(psf.tile_data_high, psf.tile_data_low)], 8);
+    else if (pending_bg_fifo_partial_fill.pending) {
+        // Glitch: window disabled while activating (CGB only).
+        // The BG fifo remaining pixels are overwritten with whatever
+        // is currently in High | Low.
+        // [mealybug/m3_lcdc_win_en_change_multiple_wx (DMG mode)].
+        pending_bg_fifo_partial_fill.pending = false;
+        bg_fifo.set_size(pending_bg_fifo_partial_fill.size);
+        fill_bg_fifo();
+    }
+#endif
+}
 
-        for (int8_t i = 7; i >= 0; i--) {
-            bg_fifo.emplace_back(pixel_data[i], bwf.attributes);
+inline void Ppu::handle_pending_window_activation() {
+    if (w.activating) {
+#ifdef ENABLE_CGB
+        // Glitch: window disabled while activating (CGB only).
+        // If window is disabled exactly the same T-Cycles it has been activated,
+        // the following happens:
+        // - Fetcher continues from BG/WIN Tile 0.
+        // - BG fifo gets filled with whatever data is currently in High | Low.
+        //   The refill happens only for the remaining pixel of the fifo: this means that
+        //   fifo can be indeed refilled partially.
+        // [mealybug/m3_lcdc_win_en_change_multiple_wx (DMG mode)].
+        if (!lcdc.win_enable) {
+            // There's a case that is even odder.
+            // If all the above happens while BG fifo is already empty, the BG fifo is refilled twice, both
+            // in this T-Cycles and in the next. Visually, one pixel is pushed from the first refill,
+            // then the successive 8 pixels from the other refill.
+            pending_bg_fifo_partial_fill.pending = true;
+            pending_bg_fifo_partial_fill.size = bg_fifo.is_empty() ? 8 : bg_fifo.size();
+
+            w.disabled_while_activating = false;
+        } else
+#endif
+        {
+            // Standard case: actually activate window.
+            activate_window();
         }
 
-#else
-        bg_fifo.fill(&TILE_ROW_DATA_TO_ROW_PIXELS[concat(psf.tile_data_high, psf.tile_data_low)]);
-#endif
+        w.activating = false;
+
+        fetcher_tick_selector = &Ppu::bgwin_prefetcher_get_tile_0;
     }
 }
 
+inline void Ppu::activate_window() {
+    // Throw away the pixels in the BG fifo.
+    bg_fifo.clear();
+
+    // Activate window.
+    w.active = true;
+    w.just_activated = true;
+
+#if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
+    w.line_triggers.push_back(last_wx);
+#endif
+
+    // Reset the window tile counter.
+    wf.tilemap_x = 0;
+}
+
+#ifdef ENABLE_CGB
+inline void Ppu::handle_win_disabled_while_activating_glitch() {
+    // On CGB nasty glitches happen if window is going to be disabled
+    // during the first window tile fetch. It seems that pixel slice
+    // fetcher is instantly allowed to push to bg fifo, as it gets
+    // refilled instantly and fetcher restart from BG/WIN Tile 0.
+    // Also, bwf LX countdown continues, allowing LX to eventually increase.
+    // [mealybug/m3_lcdc_win_en_change_multiple_wx (DMG mode)].
+    if ((w.activating || w.just_activated) && is_disabling_window()) {
+        enable_pixel_slice_fetcher_push();
+    }
+}
+#endif
+
+#ifdef ENABLE_CGB
+inline bool Ppu::is_disabling_window() const {
+    return pending_write.lcdc.countdown == 1 && !test_bit<WIN_ENABLE>(pending_write.lcdc.value);
+}
+#endif
+
 inline void Ppu::check_window_activation() {
-    // The condition for which the window can be triggered are:
+    // The conditions for which the window can be triggered are:
     // - at some point in the frame LY was equal to WY
     // - window is enabled in LCDC
     // - pixel transfer LX matches WX
-    // Furthermore, on DMG there's a glitch that cause window to be
+    // Furthermore, on DMG there's a glitch that causes window to be
     // triggered even late by 1 dot (i.e. a BG/OBJ pixel is pushed instead and
     // all the window pixels are shifted right by 1 pixel).
     // This happens if LCDC.WIN_ENABLE was off and is turned on while LX == WX + 1.
     // [mealybug/m3_lcdc_win_en_change_multiple_wx]
     // Verified: this glitch does not happen on CGB.
-    // TODO: mealybug/m3_lcdc_win_en_change_multiple_wx in DMG mode.
     if (w.active_for_frame && !w.active && lcdc.win_enable &&
 #ifdef ENABLE_CGB
         lx == wx
@@ -1840,28 +2049,27 @@ inline void Ppu::check_window_activation() {
 inline void Ppu::setup_fetcher_for_window() {
     ASSERT(!w.active);
 
-    // Activate window.
-    w.active = true;
-    w.just_activated = true;
+    w.activating = true;
 
     // Increase the window line counter.
     ++w.wly;
 
-#if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
-    w.line_triggers.push_back(last_wx);
+    // Do not allow pixel slice fetcher to push to bg fifo.
+    disable_pixel_slice_fetcher_push();
+
+#ifdef ENABLE_CGB
+    if (is_disabling_window()) {
+        // Glitch: window disabled while activating.
+        // Bad things will happen (instant partial refill using whatever
+        // is currently in High | Low registers).
+        // [mealybug/m3_lcdc_win_en_change_multiple_wx (DMG mode)].
+        w.disabled_while_activating = true;
+        return;
+    }
 #endif
 
-    // Reset the window tile counter.
-    wf.tilemap_x = 0;
-
-    // Throw away the pixels in the BG fifo.
-    bg_fifo.clear();
-
-    // Setup the fetcher to fetch a window tile.
-    fetcher_tick_selector = &Ppu::win_prefetcher_activating;
-
-    // Do not allow pixel slice fetcher to push to bg fifo.
-    enable_pixel_slice_fetcher_push = false;
+    // The next fetcher tick is skipped.
+    fetcher_tick_selector = &Ppu::pixel_slice_fetcher_idle;
 }
 
 void Ppu::reset_oam_scan_entries() {
@@ -1969,8 +2177,19 @@ void Ppu::bg_prefetcher_get_tile_0() {
     // [mealybug/m3_lcdc_bg_map_change].
     setup_bg_pixel_slice_fetcher_tilemap_tile_address();
 
-    // Read the tile number (and the attributes, in CGB mode) from VRAM.
-    read_bgwin_tile_number_and_attributes();
+#ifdef ENABLE_CGB
+    // Glitch: window disabled while activating (CGB only).
+    // Instead of fetching the tile number from VRAM,
+    // the fetcher will use the last fetched data.
+    // [mealybug/m3_lcdc_win_en_change_multiple_wx (DMG mode)].
+    if (w.disabled_while_activating || psf.last_fetch.decay == 1) {
+        bwf.tile_number = psf.last_fetch.data;
+    } else
+#endif
+    {
+        // Read the tile number (and the attributes, in CGB mode) from VRAM.
+        read_bgwin_tile_number_and_attributes();
+    }
 
 #ifdef ENABLE_CGB
     // Differently from DMG, on CGB there's no way to create a bitplane desync effect
@@ -2001,7 +2220,18 @@ void Ppu::bg_pixel_slice_fetcher_get_tile_data_low_0() {
     setup_bg_pixel_slice_fetcher_tile_data_address();
 
     // Read tile data from VRAM.
-    read_bgwin_tile_data_low();
+#ifdef ENABLE_CGB
+    // Glitch: window disabled while activating (CGB only).
+    // Instead of fetching the tile low data from VRAM,
+    // the fetcher will use the last fetched data.
+    // [mealybug/m3_lcdc_win_en_change_multiple_wx (DMG mode)].
+    if (w.disabled_while_activating) {
+        psf.tile_data_low = psf.last_fetch.data;
+    } else
+#endif
+    {
+        read_bgwin_tile_data_low();
+    }
 
     fetcher_tick_selector = &Ppu::bg_pixel_slice_fetcher_get_tile_data_low_1;
 }
@@ -2030,8 +2260,19 @@ void Ppu::bg_pixel_slice_fetcher_get_tile_data_high_0() {
     // [mealybug/m3_scy_change, mealybug/m3_lcdc_tile_sel_change]
     setup_bg_pixel_slice_fetcher_tile_data_address();
 
-    // Read tile data from VRAM.
-    read_bgwin_tile_data_high();
+#ifdef ENABLE_CGB
+    // Glitch: window disabled while activating (CGB only).
+    // Instead of fetching the tile low data from VRAM,
+    // the fetcher will use the last fetched data.
+    // [mealybug/m3_lcdc_win_en_change_multiple_wx (DMG mode)].
+    if (w.disabled_while_activating) {
+        psf.tile_data_high = psf.last_fetch.data;
+    } else
+#endif
+    {
+        // Read tile data from VRAM.
+        read_bgwin_tile_data_high();
+    }
 
     fetcher_tick_selector = &Ppu::bg_pixel_slice_fetcher_get_tile_data_high_1;
 }
@@ -2119,35 +2360,28 @@ void Ppu::win_prefetcher_get_tile_0() {
     // If the window is turned off, the fetcher switches back to the BG fetcher.
     if (!lcdc.win_enable) {
         bg_prefetcher_get_tile_0();
-    } else {
-        // The prefetcher computes at this phase only the tile base address.
-        // based on the tilemap X and Y coordinate and the tile map to use.
-        // [mealybug/m3_lcdc_win_map_change].
-        setup_win_pixel_slice_fetcher_tilemap_tile_address();
+        return;
+    }
 
-        // On CGB there's a glitch that is triggered if the condition LX == WX
-        // is ever met (i.e. WX has been changed since window activation).
-        // If this happens at GetTile0 phase, the tile number is not read,
-        // instead the tile of the last fetch is used instead.
-        // [mealybug/m3_wx_4_change (DMG mode)]
+    // The prefetcher computes at this phase only the tile base address.
+    // based on the tilemap X and Y coordinate and the tile map to use.
+    // [mealybug/m3_lcdc_win_map_change].
+    setup_win_pixel_slice_fetcher_tilemap_tile_address();
+
+    // On CGB there's a glitch that is triggered if the condition LX == WX
+    // is ever met (i.e. WX has been changed since window activation).
+    // If this happens at GetTile0 phase, the tile number is not read,
+    // instead the tile of the last fetch is used instead.
+    // [mealybug/m3_wx_4_change (DMG mode)]
 #ifdef ENABLE_CGB
-        if (lx != wx)
+    if (lx != wx)
 #endif
-        {
-            // Read the tile number (and the attributes, in CGB mode) from VRAM.
-            read_bgwin_tile_number_and_attributes();
-        }
-
-        fetcher_tick_selector = &Ppu::win_prefetcher_get_tile_1;
+    {
+        // Read the tile number (and the attributes, in CGB mode) from VRAM.
+        read_bgwin_tile_number_and_attributes();
     }
 
-    if (w.just_activated) {
-        // The window activation shifts back the BG prefetcher by one tile.
-        // Note that this happens here (not when the window is triggered),
-        // therefore there is a 1 t-cycle window opportunity to show
-        // the same tile twice if window is disabled just after it is activated.
-        bwf.lx -= TILE_WIDTH;
-    }
+    fetcher_tick_selector = &Ppu::win_prefetcher_get_tile_1;
 }
 
 void Ppu::win_prefetcher_get_tile_1() {
@@ -2185,10 +2419,10 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_low_0() {
     // On CGB there's a glitch that is triggered if the condition LX == WX
     // is ever met (i.e. WX has been changed since window activation).
     // If this happens at GetTileLow0 phase, the high data from
-    // the last fetch is used instead.
+    // the last (high data) fetch is used instead.
     // [mealybug/m3_wx_4_change (DMG mode)]
     if (lx == wx) {
-        psf.tile_data_low = psf.tile_data_high;
+        psf.tile_data_low = psf.last_tile_data_high;
     } else
 #endif
     {
@@ -2239,10 +2473,10 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_0() {
     // On CGB there's a glitch that is triggered if the condition LX == WX
     // is ever met (i.e. WX has been changed since window activation).
     // If this happens at GetTileHigh0 phase, the low data from
-    // the last fetch is used instead.
+    // the last (low data) fetch is used instead.
     // [mealybug/m3_wx_4_change (DMG mode)]
     if (lx == wx) {
-        psf.tile_data_high = psf.tile_data_low;
+        psf.tile_data_high = psf.last_tile_data_low;
     } else
 #endif
     {
@@ -2267,91 +2501,20 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_1() {
 void Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1() {
     ASSERT(!is_fetching_sprite);
 
-    // The bg/win fetcher tile is increased only at this step, not before or after.
+#ifndef ENABLE_CGB
+    // The bg/win fetcher tile is increased only at this step.
     // Therefore, if the window aborts a bg fetch before this step,
     // the bg tile does not increment: it increments only if the
-    // fetcher reaches the push stage (or a sprite aborts it)
-    bwf.lx += TILE_WIDTH; // automatically handle mod 8 by overflowing
+    // fetcher reaches the push stage (or a sprite aborts it).
+    // The first window fetch does not increase the bg tile.
+    if (!w.just_activated) {
+        bwf.lx += TILE_WIDTH;
+    }
+#endif
 
     // Allow pixel slice fetcher to push to bg fifo.
-    enable_pixel_slice_fetcher_push = true;
-}
-
-void Ppu::bgwin_pixel_slice_fetcher_push() {
-    ASSERT(enable_pixel_slice_fetcher_push);
-    ASSERT(!is_fetching_sprite);
-
-    // clang-format off
-    /*
-     * As far as I'm understanding, there are 4 possible cases:
-     *
-     * [can_push_to_bg_fifo] | [is_obj_ready_to_be_fetched]
-     * ---------------------------------------------------------
-     * bg_fifo.IsEmpty()     | oam_entries[lx].is_not_empty() &&
-     *                       | lcdc.obj_enable
-     * ---------------------------------------------------------
-     *        0              |           0              | wait (nop)
-     *        0              |           1              | cache bg fetch and start obj prefetcher (tick now)
-     *        1              |           0              | push to bg fifo and prepare for bg/win prefetcher (tick next dot)
-     *        1              |           1              | push to bg fifo and start obj prefetcher (tick now)
-     */
-    // clang-format on
-    // The pixels can be pushed only if the bg fifo is empty,
-    // otherwise wait in push state until bg fifo is emptied
-    const bool can_push_to_bg_fifo = bg_fifo.is_empty();
-    if (can_push_to_bg_fifo) {
-        // If window activation conditions were met in the frame, then a
-        // glitch can occur: if this push stage happens when LX == WX,
-        // then a 00 pixel is pushed into the bg fifo instead of the fetched tile.
-        // Therefore, the push of the tile that was about to happen is postponed by 1 dot.
-        // The first window tile after the window activation seem to be an exception.
-        // Verified: this happens also on CGB, although the conditions that make
-        // this happen are a slightly different. In particular, on CGB the glitch seem to
-        // happen only if we are fetching a window tile right now.
-        if (w.active_for_frame && lx == wx && !w.just_activated
-#ifdef ENABLE_CGB
-            && w.active
-#endif
-        ) {
-
-            bg_fifo.push_back(BgPixel {0});
-            return;
-        }
-
-        // Push pixels into bg fifo.
-        pending_bg_fifo_fill = true;
-
-        // Disable pixel slice fetcher push phase.
-        enable_pixel_slice_fetcher_push = false;
-
-        fetcher_tick_selector = &Ppu::bgwin_prefetcher_get_tile_0;
-
-        // Sprite fetches are ignored just after a window tile push.
-        // TODO: w.just_activated or w.active? Test needed!
-        if (w.just_activated) {
-            w.just_activated = false;
-            return;
-        }
-    }
-
-    // If there is a pending obj hit, discard the fetched bg pixels
-    // and restart the obj prefetcher with the obj hit.
-    // Note: the first obj prefetcher tick overlap this tick.
-    if (is_obj_ready_to_be_fetched()) {
-        if (!can_push_to_bg_fifo) {
-            // The bg/win tile fetched is not thrown away: instead it is
-            // cached so that the fetcher can start with it after the sprite
-            // has been merged into obj fifo.
-            cache_bg_win_fetch();
-        }
-
-        // Disable pixel slice fetcher push phase.
-        enable_pixel_slice_fetcher_push = false;
-
-        is_fetching_sprite = true;
-        of.entry = oam_entries[lx].pull_back();
-        obj_prefetcher_get_tile_0();
-    }
+    fetcher_tick_selector = &Ppu::pixel_slice_fetcher_idle;
+    enable_pixel_slice_fetcher_push();
 }
 
 // ------------- obj ---------------
@@ -2509,16 +2672,21 @@ void Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo()
         fetcher_tick_selector = &Ppu::obj_prefetcher_get_tile_0;
     } else {
         // No more oam entries to serve for this x: set up to fetcher with
-        // the cached tile data that has been interrupted by this obj fetch
-        is_fetching_sprite = false;
-
+        // the cached tile data that has been interrupted by this obj fetch.
         if (bwf.interrupted_fetch.has_data) {
             restore_bg_win_fetch();
         }
 
-        // Allow pixel slice fetcher to push to bg fifo.
-        enable_pixel_slice_fetcher_push = true;
+        // Not fetching sprite anymore.
+        // Implicitly allow pixel slice fetcher to push to bg fifo as well.
+        is_fetching_sprite = false;
+
+        fetcher_tick_selector = &Ppu::pixel_slice_fetcher_idle;
     }
+}
+
+inline void Ppu::pixel_slice_fetcher_idle() {
+    // Nop.
 }
 
 // ------- Fetcher states helpers ---------
@@ -2633,6 +2801,16 @@ inline void Ppu::read_bgwin_tile_number_and_attributes() {
     bwf.tile_number = vram.read<0>(bwf.tilemap_tile_vram_addr);
 
 #ifdef ENABLE_CGB
+    // On CGB, tile number and high data registers seem to be shared.
+    // This hypothesis rises from the win_en_change_multiple_wx, as the glitched bg fifo re-fill,
+    // that happens when window is disabled while it's either activating or just activated
+    // for the first window tile, may use the tile number as high data.
+    psf.tile_data_high = bwf.tile_number;
+
+    // Cache as last fetch, as we may need for window disabling while activating glitch.
+    psf.last_fetch.data = bwf.tile_number;
+    psf.last_fetch.decay = 2;
+
     bwf.attributes = operating_mode.is_cgb_mode() ? vram.read<1>(bwf.tilemap_tile_vram_addr) : 0;
 #endif
 }
@@ -2646,10 +2824,18 @@ inline void Ppu::read_bgwin_tile_data_low() {
         psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
     }
 
+    // Cache as last low data fetch, as we may need for window WX change glitch.
+    psf.last_tile_data_low = psf.tile_data_low;
+
     // Cache the last fetch of unsigned addressing mode, as we may need for BG_WIN_TILE_DATA_SEL change glitch.
     if (lcdc.bg_win_tile_data) {
         psf.last_unsigned_fetch_data = psf.tile_data_low;
     }
+
+    // Cache as last fetch, as we may need for window disabling while activating glitch.
+    psf.last_fetch.data = psf.tile_data_low;
+    psf.last_fetch.decay = 2;
+
 #else
     psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
 #endif
@@ -2664,10 +2850,18 @@ inline void Ppu::read_bgwin_tile_data_high() {
         psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
     }
 
+    // Cache as last high data fetch, as we may need for window WX change glitch.
+    psf.last_tile_data_high = psf.tile_data_high;
+
     // Cache the last fetch of unsigned addressing mode, as we may need for BG_WIN_TILE_DATA_SEL change glitch.
     if (lcdc.bg_win_tile_data) {
         psf.last_unsigned_fetch_data = psf.tile_data_high;
     }
+
+    // Cache as last fetch, as we may need for window disabling while activating glitch.
+    psf.last_fetch.data = psf.tile_data_high;
+    psf.last_fetch.decay = 2;
+
 #else
     psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
 #endif
@@ -2682,8 +2876,15 @@ inline void Ppu::read_obj_tile_data_low() {
         psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
     }
 
+    // Cache as last low data fetch, as we may need for window WX change glitch.
+    psf.last_tile_data_low = psf.tile_data_low;
+
     // Cache the last fetch of unsigned addressing mode, as we may need for BG_WIN_TILE_DATA_SEL change glitch.
     psf.last_unsigned_fetch_data = psf.tile_data_low;
+
+    // TODO: added for consistency with bg/win tile data read, but no test actually proves that this is necessary.
+    psf.last_fetch.data = psf.tile_data_low;
+    psf.last_fetch.decay = 2;
 #else
     psf.tile_data_low = vram.read<0>(psf.tile_data_vram_address);
 #endif
@@ -2698,8 +2899,15 @@ inline void Ppu::read_obj_tile_data_high() {
         psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
     }
 
+    // Cache as last high data fetch, as we may need for window WX change glitch.
+    psf.last_tile_data_high = psf.tile_data_high;
+
     // Cache the last fetch of unsigned addressing mode, as we may need for BG_WIN_TILE_DATA_SEL change glitch.
     psf.last_unsigned_fetch_data = psf.tile_data_high;
+
+    // TODO: added for consistency with bg/win tile data read, but no test actually proves that this is necessary.
+    psf.last_fetch.data = psf.tile_data_high;
+    psf.last_fetch.decay = 2;
 #else
     psf.tile_data_high = vram.read<0>(psf.tile_data_vram_address + 1);
 #endif
@@ -2798,6 +3006,17 @@ inline void Ppu::handle_win_tile_data_sel_change_high_glitch() {
     }
 }
 #endif
+
+inline void Ppu::enable_pixel_slice_fetcher_push() {
+    pixel_slice_fetcher_push_enabled = true;
+}
+
+inline void Ppu::disable_pixel_slice_fetcher_push() {
+    pixel_slice_fetcher_push_enabled = false;
+#ifdef ENABLE_CGB
+    bwf.lx_increment_countdown = 2;
+#endif
+}
 
 inline void Ppu::cache_bg_win_fetch() {
     bwf.interrupted_fetch.tile_data_low = psf.tile_data_low;
@@ -2927,8 +3146,14 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, oam_entries_not_served_count);
 #endif
 
-    PARCEL_WRITE_BOOL(parcel, enable_pixel_slice_fetcher_push);
+    PARCEL_WRITE_BOOL(parcel, pixel_slice_fetcher_push_enabled);
     PARCEL_WRITE_BOOL(parcel, pending_bg_fifo_fill);
+
+#ifdef ENABLE_CGB
+    PARCEL_WRITE_BOOL(parcel, pending_bg_fifo_partial_fill.pending);
+    PARCEL_WRITE_UINT8(parcel, pending_bg_fifo_partial_fill.size);
+#endif
+
     PARCEL_WRITE_BOOL(parcel, is_fetching_sprite);
 
     PARCEL_WRITE_BOOL(parcel, is_glitched_line_0);
@@ -2949,9 +3174,16 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, pixel_transfer.initial_scx.to_discard);
     PARCEL_WRITE_UINT8(parcel, pixel_transfer.initial_scx.discarded);
 
+    PARCEL_WRITE_BOOL(parcel, w.active_for_frame);
     PARCEL_WRITE_UINT8(parcel, w.wly);
+
+    PARCEL_WRITE_BOOL(parcel, w.activating);
     PARCEL_WRITE_BOOL(parcel, w.active);
     PARCEL_WRITE_BOOL(parcel, w.just_activated);
+
+#ifdef ENABLE_CGB
+    PARCEL_WRITE_BOOL(parcel, w.disabled_while_activating);
+#endif
 
 #if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
     for (uint8_t i = 0; i < decltype(w.line_triggers)::Size; i++) {
@@ -2971,6 +3203,11 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, bwf.tilemap_y);
     PARCEL_WRITE_UINT8(parcel, bwf.tilemap_vram_addr);
 #endif
+
+#ifdef ENABLE_CGB
+    PARCEL_WRITE_UINT8(parcel, bwf.lx_increment_countdown);
+#endif
+
     PARCEL_WRITE_BOOL(parcel, bwf.interrupted_fetch.has_data);
     PARCEL_WRITE_UINT8(parcel, bwf.interrupted_fetch.tile_data_low);
     PARCEL_WRITE_UINT8(parcel, bwf.interrupted_fetch.tile_data_high);
@@ -2990,7 +3227,13 @@ void Ppu::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, psf.tile_data_high);
 
 #ifdef ENABLE_CGB
+    PARCEL_WRITE_UINT8(parcel, psf.last_tile_data_low);
+    PARCEL_WRITE_UINT8(parcel, psf.last_tile_data_high);
+
     PARCEL_WRITE_UINT8(parcel, psf.last_unsigned_fetch_data);
+
+    PARCEL_WRITE_UINT8(parcel, psf.last_fetch.data);
+    PARCEL_WRITE_UINT8(parcel, psf.last_fetch.decay);
 #endif
 
 #ifdef ENABLE_CGB
@@ -3108,8 +3351,14 @@ void Ppu::load_state(Parcel& parcel) {
     oam_entries_not_served_count = parcel.read_uint8();
 #endif
 
-    enable_pixel_slice_fetcher_push = parcel.read_bool();
+    pixel_slice_fetcher_push_enabled = parcel.read_bool();
     pending_bg_fifo_fill = parcel.read_bool();
+
+#ifdef ENABLE_CGB
+    pending_bg_fifo_partial_fill.pending = parcel.read_bool();
+    pending_bg_fifo_partial_fill.size = parcel.read_uint8();
+#endif
+
     is_fetching_sprite = parcel.read_bool();
 
     is_glitched_line_0 = parcel.read_bool();
@@ -3131,9 +3380,16 @@ void Ppu::load_state(Parcel& parcel) {
     pixel_transfer.initial_scx.to_discard = parcel.read_uint8();
     pixel_transfer.initial_scx.discarded = parcel.read_uint8();
 
+    w.active_for_frame = parcel.read_bool();
     w.wly = parcel.read_uint8();
+
+    w.activating = parcel.read_bool();
     w.active = parcel.read_bool();
     w.just_activated = parcel.read_bool();
+
+#ifdef ENABLE_CGB
+    w.disabled_while_activating = parcel.read_bool();
+#endif
 
 #if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
     w.line_triggers.clear();
@@ -3156,6 +3412,11 @@ void Ppu::load_state(Parcel& parcel) {
     bwf.tilemap_y = parcel.read_uint8();
     bwf.tilemap_vram_addr = parcel.read_uint8();
 #endif
+
+#ifdef ENABLE_CGB
+    bwf.lx_increment_countdown = parcel.read_uint8();
+#endif
+
     bwf.interrupted_fetch.has_data = parcel.read_bool();
     bwf.interrupted_fetch.tile_data_low = parcel.read_uint8();
     bwf.interrupted_fetch.tile_data_high = parcel.read_uint8();
@@ -3173,8 +3434,15 @@ void Ppu::load_state(Parcel& parcel) {
     psf.tile_data_vram_address = parcel.read_uint16();
     psf.tile_data_low = parcel.read_uint8();
     psf.tile_data_high = parcel.read_uint8();
+
 #ifdef ENABLE_CGB
+    psf.last_tile_data_low = parcel.read_uint8();
+    psf.last_tile_data_high = parcel.read_uint8();
+
     psf.last_unsigned_fetch_data = parcel.read_uint8();
+
+    psf.last_fetch.data = parcel.read_uint8();
+    psf.last_fetch.decay = parcel.read_uint8();
 #endif
 
 #ifdef ENABLE_CGB
@@ -3266,7 +3534,8 @@ void Ppu::reset() {
 #else
     tick_selector = if_bootrom_else(&Ppu::oam_scan_after_turn_on, &Ppu::vblank_last_line_7);
 #endif
-    fetcher_tick_selector = if_bootrom_else(&Ppu::bg_prefetcher_get_tile_0, &Ppu::bgwin_pixel_slice_fetcher_push);
+
+    fetcher_tick_selector = if_bootrom_else(&Ppu::bg_prefetcher_get_tile_0, &Ppu::pixel_slice_fetcher_idle);
 
     last_stat_irq = false;
     enable_lyc_eq_ly_irq = true;
@@ -3330,7 +3599,8 @@ void Ppu::reset() {
     scanline_oam_entries.clear();
 #endif
 
-    enable_pixel_slice_fetcher_push = false;
+    pixel_slice_fetcher_push_enabled = if_bootrom_else(false, true);
+
     pending_bg_fifo_fill = false;
 
     is_fetching_sprite = false;
@@ -3363,8 +3633,14 @@ void Ppu::reset() {
 
     w.active_for_frame = false;
     w.wly = UINT8_MAX;
+    w.activating = false;
     w.active = false;
     w.just_activated = false;
+
+#ifdef ENABLE_CGB
+    w.disabled_while_activating = false;
+#endif
+
 #if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
     w.line_triggers.clear();
 #endif
@@ -3384,6 +3660,10 @@ void Ppu::reset() {
     bwf.tilemap_vram_addr = 0;
 #endif
 
+#ifdef ENABLE_CGB
+    bwf.lx_increment_countdown = 0;
+#endif
+
     bwf.interrupted_fetch.has_data = false;
     bwf.interrupted_fetch.tile_data_low = 0;
     bwf.interrupted_fetch.tile_data_high = 0;
@@ -3400,8 +3680,15 @@ void Ppu::reset() {
     psf.tile_data_vram_address = if_bootrom_else(0, 14);
     psf.tile_data_low = 0;
     psf.tile_data_high = 0;
+
 #ifdef ENABLE_CGB
+    psf.last_tile_data_low = 0;
+    psf.last_tile_data_high = 0;
+
     psf.last_unsigned_fetch_data = 0;
+
+    psf.last_fetch.data = 0;
+    psf.last_fetch.decay = 0;
 #endif
 
 #ifdef ENABLE_CGB

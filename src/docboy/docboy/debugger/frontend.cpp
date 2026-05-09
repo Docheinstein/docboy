@@ -2540,18 +2540,18 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                 return "Oam Scan";
             if (gb.ppu.tick_selector == &Ppu::pixel_transfer_dummy_lx0 ||
                 gb.ppu.tick_selector == &Ppu::pixel_transfer_discard_lx0 ||
-                gb.ppu.tick_selector == &Ppu::pixel_transfer_discard_lx0_wx0_scx7 ||
+                gb.ppu.tick_selector == &Ppu::pixel_transfer_discard_lx0_wx0_scx ||
                 gb.ppu.tick_selector == &Ppu::pixel_transfer_lx0 || gb.ppu.tick_selector == &Ppu::pixel_transfer_lx8) {
 
                 Text t {"Pixel Transfer"};
 
                 std::string block_reason;
                 if (gb.ppu.is_fetching_sprite) {
-                    block_reason = "fetching sprite";
+                    block_reason = "sprite fetch";
                 } else if (gb.ppu.oam_entries[gb.ppu.lx].is_not_empty()) {
                     block_reason = "sprite hit";
                 } else if (gb.ppu.bg_fifo.is_empty()) {
-                    block_reason = "empty bg fifo";
+                    block_reason = "empty fifo";
                 }
 
                 if (!block_reason.empty()) {
@@ -2791,9 +2791,6 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                 if (gb.ppu.fetcher_tick_selector == &Ppu::bgwin_pixel_slice_fetcher_get_tile_data_high_1) {
                     return "BG/WIN High1";
                 }
-                if (gb.ppu.fetcher_tick_selector == &Ppu::bgwin_pixel_slice_fetcher_push) {
-                    return "BG/WIN Push";
-                }
                 if (gb.ppu.fetcher_tick_selector == &Ppu::obj_prefetcher_get_tile_0) {
                     return "OBJ Tile0";
                 }
@@ -2813,12 +2810,19 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                     &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo) {
                     return "OBJ High1 & Merge";
                 }
+                if (gb.ppu.fetcher_tick_selector == &Ppu::pixel_slice_fetcher_idle) {
+                    return "Idle";
+                }
 
                 ASSERT_NO_ENTRY();
                 return "Unknown";
             }()
           << endl;
 
+        b << yellow("Push Enabled") << "      :  "
+          << (gb.ppu.pixel_slice_fetcher_push_enabled ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("BG Fifo Re-Fill") << "   :  "
+          << (gb.ppu.pending_bg_fifo_fill ? green("Pending") : darkgray("None")) << endl;
         b << yellow("LX") << "                :  " << gb.ppu.lx << endl;
         b << yellow("SCX % 8 Initial") << "   :  " << gb.ppu.pixel_transfer.initial_scx.to_discard << endl;
         b << yellow("SCX % 8 Discard") << "   :  " << gb.ppu.pixel_transfer.initial_scx.discarded << "/"
@@ -2853,7 +2857,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
           << endl;
         b << yellow("WLY") << "               :  " << (gb.ppu.w.wly != UINT8_MAX ? gb.ppu.w.wly : darkgray("None"))
           << endl;
+        b << yellow("Activating") << "        :  " << (gb.ppu.w.activating ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("Active") << "            :  " << (gb.ppu.w.active ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("First Tile") << "        :  " << (gb.ppu.w.just_activated ? green("ON") : darkgray("OFF")) << endl;
         b << yellow("WX Triggers") << "       :  ";
         for (uint8_t i = 0; i < gb.ppu.w.line_triggers.size(); i++) {
             b << Text {gb.ppu.w.line_triggers[i]};
@@ -2895,11 +2901,13 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         b << yellow("Tile Data") << "           :  "
           << hex<uint16_t>(gb.ppu.psf.tile_data_high << 8 | gb.ppu.psf.tile_data_low) << endl;
         b << yellow("Tile Data Ready") << "     :  " << [this]() {
-            if (gb.ppu.fetcher_tick_selector == &Ppu::bgwin_pixel_slice_fetcher_push)
-                return green("Ready to push");
             if (gb.ppu.fetcher_tick_selector ==
-                &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo)
+                &Ppu::obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo) {
                 return green("Ready to merge");
+            }
+            if (gb.ppu.pixel_slice_fetcher_push_enabled) {
+                return green("Ready to push");
+            }
             return darkgray("Not ready");
         }();
         b << endl;

@@ -210,7 +210,7 @@ private:
 
     void pixel_transfer_dummy_lx0();
     void pixel_transfer_discard_lx0();
-    void pixel_transfer_discard_lx0_wx0_scx7();
+    void pixel_transfer_discard_lx0_wx0_scx();
     void pixel_transfer_lx0();
     void pixel_transfer_lx8();
 
@@ -261,8 +261,19 @@ private:
     bool is_bg_fifo_ready_to_be_popped() const;
     bool is_obj_ready_to_be_fetched() const;
 
+    void fill_bg_fifo();
+
     void handle_pixel_slice_fetcher_push();
     void handle_pending_bg_fifo_fill();
+
+    void handle_pending_window_activation();
+    void activate_window();
+
+#ifdef ENABLE_CGB
+    void handle_win_disabled_while_activating_glitch();
+
+    bool is_disabling_window() const;
+#endif
 
     void check_window_activation();
     void setup_fetcher_for_window();
@@ -292,14 +303,14 @@ private:
 
     void bgwin_pixel_slice_fetcher_get_tile_data_high_1();
 
-    void bgwin_pixel_slice_fetcher_push();
-
     void obj_prefetcher_get_tile_0();
     void obj_prefetcher_get_tile_1();
     void obj_pixel_slice_fetcher_get_tile_data_low_0();
     void obj_pixel_slice_fetcher_get_tile_data_low_1();
     void obj_pixel_slice_fetcher_get_tile_data_high_0();
     void obj_pixel_slice_fetcher_get_tile_data_high_1_and_merge_with_obj_fifo();
+
+    void pixel_slice_fetcher_idle();
 
     // Fetcher states helpers
     void setup_obj_pixel_slice_fetcher_tile_data_address();
@@ -321,6 +332,9 @@ private:
     void handle_win_tile_data_sel_change_low_glitch();
     void handle_win_tile_data_sel_change_high_glitch();
 #endif
+
+    void enable_pixel_slice_fetcher_push();
+    void disable_pixel_slice_fetcher_push();
 
     void cache_bg_win_fetch();
     void restore_bg_win_fetch();
@@ -395,8 +409,15 @@ private:
     Vector<OamScanEntry, 10> scanline_oam_entries {}; // not cleared after oam scan
 #endif
 
-    bool enable_pixel_slice_fetcher_push {};
+    bool pixel_slice_fetcher_push_enabled {};
     bool pending_bg_fifo_fill {};
+
+#ifdef ENABLE_CGB
+    struct {
+        bool pending {};
+        uint8_t size {};
+    } pending_bg_fifo_partial_fill;
+#endif
 
     bool is_fetching_sprite {};
 
@@ -443,8 +464,13 @@ private:
         bool active_for_frame {}; // window activated for the frame
         uint8_t wly {};           // window line counter
 
+        bool activating {};     // window hit but not activated yet
         bool active {};         // currently rendering window
         bool just_activated {}; // first fetch of this window streak
+
+#ifdef ENABLE_CGB
+        bool disabled_while_activating {};
+#endif
 
 #if defined(ENABLE_DEBUGGER) || defined(ENABLE_ASSERTS)
         Vector<uint8_t, 20> line_triggers {};
@@ -466,6 +492,10 @@ private:
         uint8_t tilemap_x {};
         uint8_t tilemap_y {};
         uint8_t tilemap_vram_addr {};
+#endif
+
+#ifdef ENABLE_CGB
+        uint8_t lx_increment_countdown {};
 #endif
 
         struct {
@@ -494,7 +524,15 @@ private:
         uint8_t tile_data_high {};
 
 #ifdef ENABLE_CGB
+        uint8_t last_tile_data_low {};
+        uint8_t last_tile_data_high {};
+
         uint8_t last_unsigned_fetch_data {};
+
+        struct {
+            uint8_t data {};
+            uint8_t decay {};
+        } last_fetch;
 #endif
     } psf;
 

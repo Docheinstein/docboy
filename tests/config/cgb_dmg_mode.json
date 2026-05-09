@@ -566,9 +566,7 @@
         },
         {
             "rom": "mealybug/m3_lcdc_win_en_change_multiple_wx.gb",
-            "framebuffer": "mealybug/m3_lcdc_win_en_change_multiple_wx.png",
-            "enabled": false,
-            "comment": "Different from DMG: SameBoy is wrong as well"
+            "framebuffer": "mealybug/m3_lcdc_win_en_change_multiple_wx.png"
         },
         {
             "rom": "mealybug/m3_lcdc_win_map_change.gb",
@@ -690,6 +688,906 @@
         },
         {
             "rom": "docboy/ppu/hblank_interrupt_turn_off_timing_round2.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x79.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x80.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x81.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x82.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x83.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x84.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x85.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x86.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x87.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly10_sprites_x88.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x79.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x80.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x81.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x82.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x83.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x84.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x85.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x86.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x87.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly32_sprites_x88.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x79.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x80.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x81.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x82.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x83.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x84.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x85.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x86.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x87.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly33_sprites_x88.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x79.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x80.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x81.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x82.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x83.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x84.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x85.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x86.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x87.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly34_sprites_x88.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x79.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x80.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x81.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x82.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x83.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x84.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x85.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x86.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x87.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly35_sprites_x88.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x79.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x80.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x81.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x82.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x83.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x84.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x85.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x86.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x87.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly36_sprites_x88.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x79.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x80.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x81.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x82.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x83.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x84.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x85.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x86.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x87.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly37_sprites_x88.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x79.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x80.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x81.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x82.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x83.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x84.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x85.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x86.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x87.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_ly38_sprites_x88.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly39_sprites_x16.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly40_sprites_x17.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly41_sprites_x18.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly42_sprites_x19.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly43_sprites_x20.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly44_sprites_x21.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly44_sprites_x22.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly44_sprites_x23.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly44_sprites_x22.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_timing_nops6_ly44_sprites_x23.gb",
             "memory": [
                 {
                     "address": 65520,
@@ -1305,6 +2203,222 @@
         {
             "rom": "docboy/ppu/visual/enable_win_during_pixel_transfer_round2.gb",
             "framebuffer": "docboy/ppu/enable_win_during_pixel_transfer_round2.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_0000_win_0000.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_0000_win_0000.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_0000_win_00ff.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_0000_win_00ff.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_0000_win_ff00.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_0000_win_ff00.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_0000_win_ffff.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_0000_win_ffff.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_0000.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_0000.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_00ff.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_00ff.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_afff.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_afff.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ff00.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ff00.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x16.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x16.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x16_sources.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x16_sources.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x17.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x17.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x17_sources.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x17_sources.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x17_sources_b.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x17_sources_b.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x17_sources_c.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x17_sources_c.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x18.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x18.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x18_sources.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x18_sources.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x19.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x19.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x19_sources.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x19_sources.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x19_sources_b.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x19_sources_b.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x19_wly.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x19_wly.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x20.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x20.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x20_sources.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x20_sources.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21_sources.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21_sources.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21_sources_b.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21_sources_b.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21_sources_c.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21_sources_c.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21_sources_d.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x21_sources_d.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x22.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x22.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x22_sources.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x22_sources.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x23.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x23.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x23_sources.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x23_sources.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x24.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_nops6_sprites_x24.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_win_tilenum_02.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_00ff_win_ffff_win_tilenum_02.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_ff00_win_0000.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_ff00_win_0000.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_ff00_win_00ff.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_ff00_win_00ff.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_ff00_win_ff00.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_ff00_win_ff00.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_ff00_win_ffff.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_ff00_win_ffff.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_ffff_win_0000.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_ffff_win_0000.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_ffff_win_00ff.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_ffff_win_00ff.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_ffff_win_ff00.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_ffff_win_ff00.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_bg_ffff_win_ffff.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_bg_ffff_win_ffff.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly10_first_second_tiles_signed_addressing_source.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly10_first_second_tiles_signed_addressing_source.png",
+            "enabled": false,
+            "comment": "If TileDataLow is > $80 glitch is different, probably uses another memory bus"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly10_first_tile_signed_addressing_source.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly10_first_tile_signed_addressing_source.png",
+            "enabled": false,
+            "comment": "If TileDataLow is > $80 glitch is different, probably uses another memory bus"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly10_second_tile_source_both_bytes.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly10_second_tile_source_both_bytes.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly10_second_tile_source.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly10_second_tile_source.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly32_to_40_tilenums.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly32_to_40_tilenums.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_a.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_a.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_b.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_b.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_c.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_c.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_d.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_d.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_e.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_e.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_f.gb",
+            "framebuffer": "docboy/ppu/m3_lcdc_win_en_change_multiple_wx_ly38_lx31_extra_pixel_f.png"
         },
         {
             "rom": "docboy/ppu/visual/oam_attributes_bank.gb",
