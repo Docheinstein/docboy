@@ -12121,6 +12121,110 @@
         {
             "rom": "docboy/ppu/visual/window_bg_reprise_wx25.gbc",
             "framebuffer": "docboy/ppu/window_bg_reprise_wx25.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx0.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx0_fancy_tile0.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx0_fancy_tile0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx1.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx1.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx1_fancy_tile0.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx1_fancy_tile0.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx2.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx2.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx3.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx3.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx4.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx5.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx5.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx6.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx6.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx0_scx7.gbc",
+            "framebuffer": "docboy/ppu/window_wx0_scx7.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx1.gbc",
+            "framebuffer": "docboy/ppu/window_wx1.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx2.gbc",
+            "framebuffer": "docboy/ppu/window_wx2.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx3.gbc",
+            "framebuffer": "docboy/ppu/window_wx3.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx4.gbc",
+            "framebuffer": "docboy/ppu/window_wx4.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx5.gbc",
+            "framebuffer": "docboy/ppu/window_wx5.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx6.gbc",
+            "framebuffer": "docboy/ppu/window_wx6.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx7.gbc",
+            "framebuffer": "docboy/ppu/window_wx7.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx8.gbc",
+            "framebuffer": "docboy/ppu/window_wx8.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx9.gbc",
+            "framebuffer": "docboy/ppu/window_wx9.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx10.gbc",
+            "framebuffer": "docboy/ppu/window_wx10.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx11.gbc",
+            "framebuffer": "docboy/ppu/window_wx11.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx12.gbc",
+            "framebuffer": "docboy/ppu/window_wx12.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx13.gbc",
+            "framebuffer": "docboy/ppu/window_wx13.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx14.gbc",
+            "framebuffer": "docboy/ppu/window_wx14.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx15.gbc",
+            "framebuffer": "docboy/ppu/window_wx15.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_wx16.gbc",
+            "framebuffer": "docboy/ppu/window_wx16.png"
         }
     ],
     "mbc/mbc1": [

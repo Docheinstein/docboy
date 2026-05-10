@@ -960,7 +960,6 @@ void Ppu::pixel_transfer_dummy_lx0() {
             // When SCX % 8 is > 0, window can be activated immediately before BG.
             check_window_activation();
 
-            // TODO: check WX == 0 activation timing for CGB as well.
             tick_selector = w.activating ? &Ppu::pixel_transfer_discard_lx0_wx0_scx : &Ppu::pixel_transfer_discard_lx0;
         } else {
             tick_selector = &Ppu::pixel_transfer_lx0;
@@ -1005,8 +1004,6 @@ void Ppu::pixel_transfer_discard_lx0_wx0_scx() {
 
     // Window activation seems late by 1 T-cycle when window is activated at WX == 0.
     // Therefore, we skip the first fetcher tick.
-    // TODO: check WX == 0 activation timing for CGB as well.
-
     tick_selector = &Ppu::pixel_transfer_discard_lx0;
 
     ++dots;
@@ -1760,6 +1757,7 @@ void Ppu::reset_fetcher() {
     w.line_triggers.clear();
 #endif
     bwf.lx = 0;
+    bwf.tile_number = 0;
 #ifdef ENABLE_CGB
     bwf.lx_increment_countdown = 2;
 #endif
@@ -2372,6 +2370,9 @@ void Ppu::win_prefetcher_get_tile_0() {
     // is ever met (i.e. WX has been changed since window activation).
     // If this happens at GetTile0 phase, the tile number is not read,
     // instead the tile of the last fetch is used instead.
+    // This also happens when WX == LX == 0. Indeed, the first window tile
+    // fetch for WX ==  and SCX > 0 does not read the proper tile data,
+    // instead it reads the tile data from tile number 0.
     // [mealybug/m3_wx_4_change (DMG mode)]
 #ifdef ENABLE_CGB
     if (lx != wx)
@@ -2471,7 +2472,7 @@ void Ppu::win_pixel_slice_fetcher_get_tile_data_high_0() {
 
 #ifdef ENABLE_CGB
     // On CGB there's a glitch that is triggered if the condition LX == WX
-    // is ever met (i.e. WX has been changed since window activation).
+    // is ever met (i.e. WX has been changed since window activation, ).
     // If this happens at GetTileHigh0 phase, the low data from
     // the last (low data) fetch is used instead.
     // [mealybug/m3_wx_4_change (DMG mode)]
