@@ -12045,6 +12045,82 @@
         {
             "rom": "docboy/ppu/visual/win_attrs_lcdc_bit_6.gbc",
             "framebuffer": "docboy/ppu/win_attrs_lcdc_bit_6.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx8.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx8.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx9.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx9.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx10.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx10.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx11.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx11.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx12.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx12.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx13.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx13.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx14.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx14.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx15.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx15.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx16.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx16.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx17.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx17.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx18.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx18.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx19.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx19.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx20.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx20.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx21.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx21.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx22.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx22.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx23.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx23.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx23.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx23.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx24.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx24.png"
+        },
+        {
+            "rom": "docboy/ppu/visual/window_bg_reprise_wx25.gbc",
+            "framebuffer": "docboy/ppu/window_bg_reprise_wx25.png"
         }
     ],
     "mbc/mbc1": [
