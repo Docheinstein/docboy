@@ -72,6 +72,9 @@ bool ends_with(const std::string& heystack, const std::string& needle);
 
 bool contains(const std::string& heystack, const std::string& needle);
 
+std::string to_upper_case(const std::string& s);
+std::string to_lower_case(const std::string& s);
+
 template <uint8_t Precision, typename T>
 std::string to_string_with_precision(const T value) {
     std::stringstream ss;

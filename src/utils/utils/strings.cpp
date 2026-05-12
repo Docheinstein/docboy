@@ -1,5 +1,7 @@
 #include "strings.h"
 
+#include <algorithm>
+
 void ltrim(std::string& s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
                 return !std::isspace(ch);
@@ -46,6 +48,22 @@ bool ends_with(const std::string& heystack, const std::string& needle) {
 
 bool contains(const std::string& heystack, const std::string& needle) {
     return heystack.find(needle) != std::string::npos;
+}
+
+std::string to_upper_case(const std::string& s) {
+    std::string out = s;
+    std::transform(out.begin(), out.end(), out.begin(), [](unsigned char c) {
+        return std::toupper(c);
+    });
+    return out;
+}
+
+std::string to_lower_case(const std::string& s) {
+    std::string out = s;
+    std::transform(out.begin(), out.end(), out.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
+    return out;
 }
 
 std::optional<uint64_t> strtou(const std::string& s, uint8_t base) {

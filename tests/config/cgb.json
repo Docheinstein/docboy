@@ -1123,7 +1123,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -1140,7 +1140,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -8247,7 +8247,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -8264,7 +8264,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 20000,
+                    "trigger_at_tick": 20000,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -8281,7 +8281,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 20000,
+                    "trigger_at_tick": 20000,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -11934,12 +11934,12 @@
         {
             "rom": "docboy/ppu/visual/stop_ly42_during_hblank.gbc",
             "framebuffer": "docboy/ppu/stop_ly42_during_hblank_a.png",
-            "check_at_ticks": 4739304
+            "check_at_tick": 4739304
         },
         {
             "rom": "docboy/ppu/visual/stop_ly42_during_hblank.gbc",
             "framebuffer": "docboy/ppu/stop_ly42_during_hblank_b.png",
-            "check_at_ticks": 4809528
+            "check_at_tick": 4809528
         },
         {
             "rom": "docboy/ppu/visual/stop_ppu_off.gbc",
@@ -11948,87 +11948,87 @@
         {
             "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y148_round1.gbc",
             "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y148_round1_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y148_round1.gbc",
             "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y148_round1_b.png",
-            "stop_at_instruction": 73
+            "check_at_instruction": "ld c,c"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y148_round2.gbc",
             "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y148_round2_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y148_round2.gbc",
             "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y148_round2_b.png",
-            "stop_at_instruction": 73
+            "check_at_instruction": "ld c,c"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y52_wait144.gbc",
             "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y52_wait144_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y52_wait144.gbc",
             "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y52_wait144_b.png",
-            "stop_at_instruction": 73
+            "check_at_instruction": "ld c,c"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y52_wait150.gbc",
             "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y52_wait150_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y42_turn_on_y52_wait150.gbc",
             "framebuffer": "docboy/ppu/turn_off_y42_turn_on_y52_wait150_b.png",
-            "stop_at_instruction": 73
+            "check_at_instruction": "ld c,c"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y42_turn_on_off_y52_wait150.gbc",
             "framebuffer": "docboy/ppu/turn_off_y42_turn_on_off_y52_wait150_b.png",
-            "stop_at_instruction": 73
+            "check_at_instruction": "ld c,c"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y50_skip_y16_stall_nops50.gbc",
             "framebuffer": "docboy/ppu/turn_off_y50_skip_y16_stall_nops50.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y50_skip_y16_stall_nops51.gbc",
             "framebuffer": "docboy/ppu/turn_off_y50_skip_y16_stall_nops51.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y50_skip_y16_stall_nops99.gbc",
             "framebuffer": "docboy/ppu/turn_off_y50_skip_y16_stall_nops99.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y50_skip_y16_stall_nops100.gbc",
             "framebuffer": "docboy/ppu/turn_off_y50_skip_y16_stall_nops100.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y48_skip_y16_stall_nops50.gbc",
             "framebuffer": "docboy/ppu/turn_off_y48_skip_y16_stall_nops50.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y48_skip_y16_stall_nops51.gbc",
             "framebuffer": "docboy/ppu/turn_off_y48_skip_y16_stall_nops51.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y50_stall_nops50.gbc",
             "framebuffer": "docboy/ppu/turn_off_y50_stall_nops50.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/turn_off_y50_stall_nops51.gbc",
             "framebuffer": "docboy/ppu/turn_off_y50_stall_nops51.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/win_activation_ly_bug.gbc",
@@ -62211,7 +62211,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 131072,
+                    "trigger_at_tick": 131072,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -62228,7 +62228,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 131072,
+                    "trigger_at_tick": 131072,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -62245,7 +62245,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 131072,
+                    "trigger_at_tick": 131072,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -62262,7 +62262,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 131072,
+                    "trigger_at_tick": 131072,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -62279,7 +62279,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 8192,
+                    "trigger_at_tick": 8192,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -62296,7 +62296,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 8192,
+                    "trigger_at_tick": 8192,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -62313,7 +62313,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -62330,7 +62330,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -62347,7 +62347,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 8192,
+                    "trigger_at_tick": 8192,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -62364,7 +62364,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 8192,
+                    "trigger_at_tick": 8192,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -62481,7 +62481,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 8192,
+                    "trigger_at_tick": 8192,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -62598,7 +62598,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -62615,7 +62615,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "up",
                     "state": "pressed"
                 }

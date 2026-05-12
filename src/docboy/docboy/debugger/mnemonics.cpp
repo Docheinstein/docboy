@@ -30,8 +30,7 @@ constexpr InstructionInfo INSTRUCTIONS[256] = {
     /* 0D */ {"DEC C", 1, {1, 1}},
     /* 0E */ {"LD C,$%02X", 2, {2, 2}},
     /* 0F */ {"RRCA", 1, {1, 1}},
-    //	/* 10 */ { "STOP", 2, {1, 1} },
-    /* 10 */ {"STOP", 1, {1, 1}}, // TODO: 1 or 2 byte long?
+    /* 10 */ {"STOP", 1, {1, 1}},
     /* 11 */ {"LD DE,$%04X", 3, {3, 3}},
     /* 12 */ {"LD (DE),A", 1, {2, 2}},
     /* 13 */ {"INC DE", 1, {2, 2}},
@@ -295,7 +294,7 @@ constexpr InstructionInfo INSTRUCTIONS_CB[256] = {
     /* 12 */ {"RL D", 2, {2, 2}},
     /* 13 */ {"RL E", 2, {2, 2}},
     /* 14 */ {"RL H", 2, {2, 2}},
-    /* 15 */ {"RL L ", 2, {2, 2}},
+    /* 15 */ {"RL L", 2, {2, 2}},
     /* 16 */ {"RL (HL)", 2, {4, 4}},
     /* 17 */ {"RL A", 2, {2, 2}},
     /* 18 */ {"RR B", 2, {2, 2}},
@@ -676,7 +675,7 @@ std::string instruction_mnemonic(const std::vector<uint8_t>& instruction, uint16
         }
         char buf[32];
         snprintf(buf, sizeof(buf), INSTRUCTIONS[opcode].mnemonic, instruction[1],
-                 address_to_mnemonic(0xFF00 + instruction[1]).c_str());
+                 address_to_memory_mnemonic(0xFF00 + instruction[1]).c_str());
         return buf;
     }
     default:
@@ -684,7 +683,7 @@ std::string instruction_mnemonic(const std::vector<uint8_t>& instruction, uint16
     }
 }
 
-std::string address_to_mnemonic(uint16_t address) {
+std::string address_to_memory_mnemonic(uint16_t address) {
     if (address <= Specs::MemoryLayout::ROM0::END) {
         return "ROM0";
     }
@@ -724,26 +723,9 @@ std::string address_to_mnemonic(uint16_t address) {
     return hex(address);
 }
 
-std::optional<uint16_t> mnemonic_to_address(const std::string& mnemonic) {
+std::optional<uint16_t> memory_mnemonic_to_address(const std::string& mnemonic) {
     if (const auto it = IO_ADDRESSES.find(mnemonic); it != IO_ADDRESSES.end()) {
         return it->second;
     }
     return std::nullopt;
-}
-
-std::string interrupt_service_routine_mnemonic(uint16_t address) {
-    switch (address) {
-    case 0x40:
-        return "VBLANK";
-    case 0x48:
-        return "LCD STAT";
-    case 0x50:
-        return "TIMER";
-    case 0x58:
-        return "SERIAL";
-    case 0x60:
-        return "JOYPAD";
-    default:
-        return "[INVALID]";
-    }
 }

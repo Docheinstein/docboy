@@ -218,7 +218,7 @@ std::vector<uint8_t> parse_hex_str(const std::string& s, bool* ok) {
 }
 
 uint16_t address_str_to_addr(const std::string& s, bool* ok) {
-    if (std::optional<uint16_t> addr = mnemonic_to_address(s)) {
+    if (std::optional<uint16_t> addr = memory_mnemonic_to_address(s)) {
         return *addr;
     }
     return parse_hex<uint16_t>(s, ok);
@@ -3388,7 +3388,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
             const auto io = [](uint16_t address, uint8_t value) {
                 return lightgray(hex(address)) + " " +
-                       red(address_to_mnemonic(address)).rpad(Text::Length {MNEMONIC_MAX_LENGTH}) + "  :  " +
+                       red(address_to_memory_mnemonic(address)).rpad(Text::Length {MNEMONIC_MAX_LENGTH}) + "  :  " +
                        bin(value) + " (" + hex(value) + ")";
             };
 

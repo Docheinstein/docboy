@@ -291,7 +291,7 @@
             "rom": "daid/stop_instr.gb",
             "framebuffer": "daid/stop_instr.png",
             "palette": "grey",
-            "check_at_ticks": 3000000
+            "check_at_tick": 3000000
         },
         {
             "rom": "gbmicrotest/halt/halt_bug.gb",
@@ -372,33 +372,6 @@
             ]
         },
         {
-            "rom": "docboy/cpu/interactive/stop_immediate_exit_joypad_interrupt_press_again.gb",
-            "memory": [
-                {
-                    "address": 65520,
-                    "value": 1,
-                    "fail_value": 2
-                }
-            ],
-            "inputs": [
-                {
-                    "tick": 0,
-                    "key": "a",
-                    "state": "pressed"
-                },
-                {
-                    "tick": 131072,
-                    "key": "a",
-                    "state": "released"
-                },
-                {
-                    "tick": 262144,
-                    "key": "a",
-                    "state": "pressed"
-                }
-            ]
-        },
-        {
             "rom": "docboy/cpu/interactive/stop_joypad0_interrupt0.gb",
             "memory": [
                 {
@@ -409,7 +382,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 8192,
+                    "trigger_at_tick": 8192,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -426,7 +399,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 8192,
+                    "trigger_at_tick": 8192,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -443,7 +416,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -460,7 +433,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -471,17 +444,17 @@
             "framebuffer": "docboy/cpu/stop_immediate_exit.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "a",
                     "state": "pressed"
                 },
                 {
-                    "tick": 131072,
+                    "trigger_at_tick": 131072,
                     "key": "a",
                     "state": "released"
                 },
                 {
-                    "tick": 262144,
+                    "trigger_at_tick": 262144,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -489,15 +462,21 @@
         },
         {
             "rom": "docboy/cpu/interactive_visual/stop_immediate_exit_joypad_interrupt.gb",
-            "framebuffer": "docboy/cpu/stop_immediate_exit_joypad_interrupt.png",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "a",
                     "state": "pressed"
                 },
                 {
-                    "tick": 131072,
+                    "trigger_at_tick": 131072,
                     "key": "a",
                     "state": "released"
                 }
@@ -10604,7 +10583,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10621,7 +10600,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10638,7 +10617,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10655,7 +10634,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10672,7 +10651,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10689,7 +10668,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10706,7 +10685,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10723,7 +10702,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10740,7 +10719,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10757,7 +10736,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10768,7 +10747,7 @@
             "framebuffer": "docboy/ppu/stop_hello_world.png",
             "inputs": [
                 {
-                    "tick": 131072,
+                    "trigger_at_tick": 131072,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -10809,417 +10788,417 @@
         {
             "rom": "docboy/ppu/visual/change_bgp_from_boot.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_boot.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_ppu_reset.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_ppu_reset.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph0_scx0.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph0_scx0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph0_scx1.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph0_scx1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph0_scx2.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph0_scx2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph0_scx3.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph0_scx3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph0_scx4.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph0_scx4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph0_scx5.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph0_scx5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph0_scx6.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph0_scx6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph0_scx7.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph0_scx7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph0_scx8.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph0_scx8.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph1_scx0.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph1_scx0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph1_scx1.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph1_scx1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph1_scx2.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph1_scx2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph1_scx3.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph1_scx3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph1_scx4.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph1_scx4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph1_scx5.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph1_scx5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph1_scx6.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph1_scx6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph1_scx7.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph1_scx7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph1_scx8.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph1_scx8.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph2_scx0.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph2_scx0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph2_scx1.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph2_scx1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph2_scx2.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph2_scx2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph2_scx3.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph2_scx3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph2_scx4.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph2_scx4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph2_scx5.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph2_scx5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph2_scx6.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph2_scx6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph2_scx7.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph2_scx7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph2_scx8.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph2_scx8.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph3_scx0.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph3_scx0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph3_scx1.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph3_scx1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph3_scx2.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph3_scx2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph3_scx3.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph3_scx3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph3_scx4.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph3_scx4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph3_scx5.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph3_scx5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph3_scx6.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph3_scx6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph3_scx7.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph3_scx7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph3_scx8.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph3_scx8.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph4_scx0.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph4_scx0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph4_scx1.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph4_scx1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph4_scx2.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph4_scx2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph4_scx3.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph4_scx3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph4_scx4.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph4_scx4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph4_scx5.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph4_scx5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph4_scx6.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph4_scx6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph4_scx7.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph4_scx7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph4_scx8.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph4_scx8.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph5_scx0.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph5_scx0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph5_scx1.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph5_scx1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph5_scx2.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph5_scx2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph5_scx3.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph5_scx3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph5_scx4.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph5_scx4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph5_scx5.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph5_scx5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph5_scx6.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph5_scx6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph5_scx7.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph5_scx7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph5_scx8.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph5_scx8.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph6_scx0.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph6_scx0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph6_scx1.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph6_scx1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph6_scx2.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph6_scx2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph6_scx3.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph6_scx3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph6_scx4.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph6_scx4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph6_scx5.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph6_scx5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph6_scx6.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph6_scx6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph6_scx7.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph6_scx7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph6_scx8.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph6_scx8.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph7_scx0.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph7_scx0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph7_scx1.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph7_scx1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph7_scx2.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph7_scx2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph7_scx3.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph7_scx3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph7_scx4.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph7_scx4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph7_scx5.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph7_scx5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph7_scx6.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph7_scx6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph7_scx7.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph7_scx7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph7_scx8.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph7_scx8.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph8_scx0.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph8_scx0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph8_scx1.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph8_scx1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph8_scx2.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph8_scx2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph8_scx3.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph8_scx3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph8_scx4.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph8_scx4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph8_scx5.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph8_scx5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph8_scx6.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph8_scx6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph8_scx7.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph8_scx7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_from_read_stat_hblank_mode_ph8_scx8.gb",
             "framebuffer": "docboy/ppu/change_bgp_from_read_stat_hblank_mode_ph8_scx8.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_bgp_or_bug.gb",
@@ -11292,42 +11271,42 @@
         {
             "rom": "docboy/ppu/visual/change_win_map_wx15.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx15.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_win_map_wx16.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx16.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_win_map_wx17.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx17.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_win_map_wx18.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx18.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_win_map_wx19.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx19.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_win_map_wx20.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx20.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_win_map_wx21.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx21.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_win_map_wx22.gb",
             "framebuffer": "docboy/ppu/change_win_map_wx22.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/change_win_tile_data_glitch_window_nops26.gb",
@@ -11364,7 +11343,7 @@
         {
             "rom": "docboy/ppu/visual/halt_ppu_off.gb",
             "framebuffer": "docboy/ppu/halt_ppu_off.png",
-            "check_at_ticks": 30000000
+            "check_at_tick": 30000000
         },
         {
             "rom": "docboy/ppu/visual/obj_priority.gb",
@@ -11377,27 +11356,27 @@
         {
             "rom": "docboy/ppu/visual/stop_during_hblank.gb",
             "framebuffer": "docboy/ppu/stop_during_hblank.png",
-            "check_at_ticks": 30000000
+            "check_at_tick": 30000000
         },
         {
             "rom": "docboy/ppu/visual/stop_during_oam_scan.gb",
             "framebuffer": "docboy/ppu/stop_during_oam_scan.png",
-            "check_at_ticks": 30000000
+            "check_at_tick": 30000000
         },
         {
             "rom": "docboy/ppu/visual/stop_during_pixel_transfer.gb",
             "framebuffer": "docboy/ppu/stop_during_pixel_transfer.png",
-            "check_at_ticks": 30000000
+            "check_at_tick": 30000000
         },
         {
             "rom": "docboy/ppu/visual/stop_during_vblank.gb",
             "framebuffer": "docboy/ppu/stop_during_vblank.png",
-            "check_at_ticks": 30000000
+            "check_at_tick": 30000000
         },
         {
             "rom": "docboy/ppu/visual/stop_ppu_off.gb",
             "framebuffer": "docboy/ppu/stop_ppu_off.png",
-            "check_at_ticks": 30000000
+            "check_at_tick": 30000000
         },
         {
             "rom": "docboy/ppu/visual/window_bg_reprise_wx10.gb",
@@ -12662,162 +12641,162 @@
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops22_sprite_x0.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops22_sprite_x0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops22_sprite_x1.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops22_sprite_x1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops22_sprite_x2.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops22_sprite_x2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops22_sprite_x3.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops22_sprite_x3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops22_sprite_x4.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops22_sprite_x4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops22_sprite_x5.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops22_sprite_x5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops22_sprite_x6.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops22_sprite_x6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops22_sprite_x7.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops22_sprite_x7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops23_sprite_x0.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops23_sprite_x0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops23_sprite_x1.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops23_sprite_x1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops23_sprite_x2.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops23_sprite_x2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops23_sprite_x3.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops23_sprite_x3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops23_sprite_x4.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops23_sprite_x4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops23_sprite_x5.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops23_sprite_x5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops23_sprite_x6.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops23_sprite_x6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops23_sprite_x7.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops23_sprite_x7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops24_sprite_x0.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops24_sprite_x0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops24_sprite_x1.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops24_sprite_x1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops24_sprite_x2.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops24_sprite_x2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops24_sprite_x3.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops24_sprite_x3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops24_sprite_x4.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops24_sprite_x4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops24_sprite_x5.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops24_sprite_x5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops24_sprite_x6.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops24_sprite_x6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops24_sprite_x7.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops24_sprite_x7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops25_sprite_x0.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops25_sprite_x0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops25_sprite_x1.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops25_sprite_x1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops25_sprite_x2.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops25_sprite_x2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops25_sprite_x3.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops25_sprite_x3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops25_sprite_x4.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops25_sprite_x4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops25_sprite_x5.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops25_sprite_x5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops25_sprite_x6.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops25_sprite_x6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_alt_nops25_sprite_x7.gb",
             "framebuffer": "docboy/ppu/window_turn_off_alt_nops25_sprite_x7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_during_oam_scan_turn_on.gb",
@@ -12834,362 +12813,362 @@
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x0.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x0_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x0_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x0_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x0_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x1.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x1_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x1_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x1_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x1_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x2.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x2_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x2_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x2_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x2_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x3.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x3_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x3_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x3_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x3_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x4.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x4_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x4_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x4_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x4_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x5.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x5_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x5_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x5_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x5_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x6.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x6_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x6_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x6_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x6_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x7.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x7_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x7_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops21_sprite_x7_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops21_sprite_x7_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x0.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x0_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x0_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x0_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x0_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x1.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x1_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x1_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x1_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x1_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x2.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x2_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x2_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x2_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x2_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x3.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x3_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x3_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x3_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x3_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x4.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x4_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x4_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x4_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x4_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x5.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x5_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x5_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x5_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x5_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x6.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x6_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x6_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x6_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x6_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x7.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x7_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x7_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops22_sprite_x7_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops22_sprite_x7_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x0.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x0.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x0_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x0_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x0_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x0_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x1.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x1.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x1_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x1_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x1_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x1_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x2.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x2.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x2_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x2_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x2_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x2_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x3.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x3.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x3_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x3_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x3_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x3_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x4.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x4.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x4_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x4_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x4_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x4_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x5.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x5.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x5_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x5_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x5_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x5_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x6.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x6.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x6_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x6_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x6_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x6_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x7.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x7.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x7_variation_a.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x7_variation_a.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_turn_off_nops23_sprite_x7_variation_b.gb",
             "framebuffer": "docboy/ppu/window_turn_off_nops23_sprite_x7_variation_b.png",
-            "stop_at_instruction": 64
+            "check_at_instruction": "ld b,b"
         },
         {
             "rom": "docboy/ppu/visual/window_wx0_scx0.gb",
@@ -18838,7 +18817,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -18855,7 +18834,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -18872,7 +18851,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -21263,7 +21242,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -21280,7 +21259,7 @@
             ],
             "inputs": [
                 {
-                    "tick": 65536,
+                    "trigger_at_tick": 65536,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -22057,6 +22036,135 @@
     ],
     "joypad": [
         {
+            "rom": "docboy/joypad/interactive/joypad_buttons_buttons_interrupt.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "inputs": [
+                {
+                    "trigger_at_instruction": "ld b,b",
+                    "key": "a",
+                    "state": "pressed"
+                }
+            ]
+        },
+        {
+            "rom": "docboy/joypad/interactive/joypad_buttons_dpad_interrupt.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "inputs": [
+                {
+                    "trigger_at_instruction": "ld b,b",
+                    "key": "up",
+                    "state": "pressed"
+                }
+            ]
+        },
+        {
+            "rom": "docboy/joypad/interactive/joypad_buttons_interrupt_release.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "inputs": [
+                {
+                    "trigger_at_instruction": "ld b,b",
+                    "key": "a",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_instruction": "ld c,c",
+                    "key": "a",
+                    "state": "released"
+                }
+            ]
+        },
+        {
+            "rom": "docboy/joypad/interactive/joypad_dpad_buttons_interrupt.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "inputs": [
+                {
+                    "trigger_at_instruction": "ld b,b",
+                    "key": "a",
+                    "state": "pressed"
+                }
+            ]
+        },
+        {
+            "rom": "docboy/joypad/interactive/joypad_dpad_dpad_interrupt.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "inputs": [
+                {
+                    "trigger_at_instruction": "ld b,b",
+                    "key": "up",
+                    "state": "pressed"
+                }
+            ]
+        },
+        {
+            "rom": "docboy/joypad/interactive/joypad_dpad_interrupt_release.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "inputs": [
+                {
+                    "trigger_at_instruction": "ld b,b",
+                    "key": "up",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_instruction": "ld c,c",
+                    "key": "up",
+                    "state": "released"
+                }
+            ]
+        },
+        {
+            "rom": "docboy/joypad/interactive/joypad_keep_pressed_interrupt.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "inputs": [
+                {
+                    "trigger_at_instruction": "ld b,b",
+                    "key": "a",
+                    "state": "pressed"
+                }
+            ]
+        },
+        {
             "rom": "docboy/joypad/interactive_visual/joypad_buttons.gb",
             "framebuffer": "docboy/joypad/joypad_buttons_idle.png"
         },
@@ -22065,7 +22173,7 @@
             "framebuffer": "docboy/joypad/joypad_buttons_a.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -22076,7 +22184,7 @@
             "framebuffer": "docboy/joypad/joypad_buttons_b.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "b",
                     "state": "pressed"
                 }
@@ -22087,7 +22195,7 @@
             "framebuffer": "docboy/joypad/joypad_buttons_select.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "select",
                     "state": "pressed"
                 }
@@ -22098,7 +22206,7 @@
             "framebuffer": "docboy/joypad/joypad_buttons_start.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "start",
                     "state": "pressed"
                 }
@@ -22109,12 +22217,12 @@
             "framebuffer": "docboy/joypad/joypad_buttons_idle.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "a",
                     "state": "pressed"
                 },
                 {
-                    "tick": 4,
+                    "trigger_at_tick": 4,
                     "key": "a",
                     "state": "released"
                 }
@@ -22125,12 +22233,12 @@
             "framebuffer": "docboy/joypad/joypad_buttons_idle.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "b",
                     "state": "pressed"
                 },
                 {
-                    "tick": 4,
+                    "trigger_at_tick": 4,
                     "key": "b",
                     "state": "released"
                 }
@@ -22141,12 +22249,12 @@
             "framebuffer": "docboy/joypad/joypad_buttons_idle.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "select",
                     "state": "pressed"
                 },
                 {
-                    "tick": 4,
+                    "trigger_at_tick": 4,
                     "key": "select",
                     "state": "released"
                 }
@@ -22157,12 +22265,12 @@
             "framebuffer": "docboy/joypad/joypad_buttons_idle.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "start",
                     "state": "pressed"
                 },
                 {
-                    "tick": 4,
+                    "trigger_at_tick": 4,
                     "key": "start",
                     "state": "released"
                 }
@@ -22177,7 +22285,7 @@
             "framebuffer": "docboy/joypad/joypad_buttons_dpad_a.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -22188,7 +22296,7 @@
             "framebuffer": "docboy/joypad/joypad_buttons_dpad_right.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "right",
                     "state": "pressed"
                 }
@@ -22199,12 +22307,12 @@
             "framebuffer": "docboy/joypad/joypad_buttons_dpad_a_right.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "a",
                     "state": "pressed"
                 },
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "right",
                     "state": "pressed"
                 }
@@ -22219,7 +22327,7 @@
             "framebuffer": "docboy/joypad/joypad_dpad_right.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "right",
                     "state": "pressed"
                 }
@@ -22230,7 +22338,7 @@
             "framebuffer": "docboy/joypad/joypad_dpad_left.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "left",
                     "state": "pressed"
                 }
@@ -22241,7 +22349,7 @@
             "framebuffer": "docboy/joypad/joypad_dpad_up.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "up",
                     "state": "pressed"
                 }
@@ -22252,7 +22360,7 @@
             "framebuffer": "docboy/joypad/joypad_dpad_down.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "down",
                     "state": "pressed"
                 }
@@ -22263,12 +22371,12 @@
             "framebuffer": "docboy/joypad/joypad_dpad_idle.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "right",
                     "state": "pressed"
                 },
                 {
-                    "tick": 4,
+                    "trigger_at_tick": 4,
                     "key": "right",
                     "state": "released"
                 }
@@ -22279,12 +22387,12 @@
             "framebuffer": "docboy/joypad/joypad_dpad_idle.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "left",
                     "state": "pressed"
                 },
                 {
-                    "tick": 4,
+                    "trigger_at_tick": 4,
                     "key": "left",
                     "state": "released"
                 }
@@ -22295,12 +22403,12 @@
             "framebuffer": "docboy/joypad/joypad_dpad_idle.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "up",
                     "state": "pressed"
                 },
                 {
-                    "tick": 4,
+                    "trigger_at_tick": 4,
                     "key": "up",
                     "state": "released"
                 }
@@ -22311,12 +22419,12 @@
             "framebuffer": "docboy/joypad/joypad_dpad_idle.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "down",
                     "state": "pressed"
                 },
                 {
-                    "tick": 4,
+                    "trigger_at_tick": 4,
                     "key": "down",
                     "state": "released"
                 }
@@ -22331,7 +22439,7 @@
             "framebuffer": "docboy/joypad/joypad_none_a.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "a",
                     "state": "pressed"
                 }
@@ -22342,7 +22450,7 @@
             "framebuffer": "docboy/joypad/joypad_none_right.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "right",
                     "state": "pressed"
                 }
@@ -22353,12 +22461,12 @@
             "framebuffer": "docboy/joypad/joypad_none_a_right.png",
             "inputs": [
                 {
-                    "tick": 0,
+                    "trigger_at_tick": 0,
                     "key": "a",
                     "state": "pressed"
                 },
                 {
-                    "tick": 4,
+                    "trigger_at_tick": 4,
                     "key": "right",
                     "state": "pressed"
                 }

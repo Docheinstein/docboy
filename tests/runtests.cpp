@@ -5,10 +5,11 @@
 #include "simdjson.h"
 
 #include "catch2/catch_test_macros.hpp"
+#include "testutils/mnemonics.h"
 
 // Tip: use the CHECK macro to see ALL the failing roms.
-// #define VERIFY CHECK
-#define VERIFY REQUIRE
+#define VERIFY CHECK
+// #define VERIFY REQUIRE
 
 namespace {
 Joypad::KeyState parse_joypad_key_state(const std::string_view state) {
@@ -64,11 +65,28 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
     std::string rom {object["rom"].get_string().value()};
 
     auto parse_base_params = [](auto object, auto& params) {
+        auto parse_instruction = [](auto element) -> std::optional<uint8_t> {
+            // Accepted either as opcode or mnemonic.
+            uint64_t instruction_opcode;
+            if (element.get(instruction_opcode) == simdjson::SUCCESS) {
+                ASSERT(instruction_opcode <= 0xFF);
+                return instruction_opcode;
+            }
+
+            std::string_view instruction_mnemonic;
+            if (element.get(instruction_mnemonic) == simdjson::SUCCESS) {
+                auto opcode = instruction_mnemonic_to_opcode(std::string {instruction_mnemonic});
+                ASSERT(opcode);
+                return *opcode;
+            }
+
+            return std::nullopt;
+        };
+
         params.rom = object["rom"].get_string().value();
 
-        if (auto check_at_ticks_element = object["check_at_ticks"];
-            check_at_ticks_element.error() == simdjson::SUCCESS) {
-            params.check_at_ticks = check_at_ticks_element.get_uint64();
+        if (auto check_at_tick_element = object["check_at_tick"]; check_at_tick_element.error() == simdjson::SUCCESS) {
+            params.check_at_tick = check_at_tick_element.get_uint64();
         }
 
         if (auto check_interval_ticks_element = object["check_interval_ticks"];
@@ -80,9 +98,9 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
             params.max_ticks = max_ticks_element.get_uint64();
         }
 
-        if (auto stop_at_instruction_element = object["stop_at_instruction"];
-            stop_at_instruction_element.error() == simdjson::SUCCESS) {
-            params.stop_at_instruction = stop_at_instruction_element.get_uint64();
+        if (auto check_at_instruction_element = object["check_at_instruction"];
+            check_at_instruction_element.error() == simdjson::SUCCESS) {
+            params.check_at_instruction = parse_instruction(check_at_instruction_element);
         }
 
         if (auto limit_speed_element = object["limit_speed"]; limit_speed_element.error() == simdjson::SUCCESS) {
@@ -97,9 +115,17 @@ std::optional<RunnerAdapter::Params> json_to_runner_params(simdjson::ondemand::o
                 auto input_object = input_element.get_object();
 
                 JoypadInput input {};
-                input.tick = input_object["tick"].get_uint64();
                 input.key = parse_joypad_key(input_object["key"].get_string());
                 input.state = parse_joypad_key_state(input_object["state"].get_string());
+
+                if (auto trigger_at_tick_element = input_object["trigger_at_tick"];
+                    trigger_at_tick_element.error() == simdjson::SUCCESS) {
+                    input.trigger_at_tick = trigger_at_tick_element.get_uint64();
+                }
+                if (auto trigger_at_instruction_element = input_object["trigger_at_instruction"];
+                    trigger_at_instruction_element.error() == simdjson::SUCCESS) {
+                    input.trigger_at_instruction = parse_instruction(trigger_at_instruction_element);
+                }
 
                 inputs.push_back(input);
             }

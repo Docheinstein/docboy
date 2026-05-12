@@ -22,16 +22,25 @@ Joypad::Joypad(Interrupts& interrupts) :
     reset();
 }
 
-void Joypad::set_key_state(Key key, KeyState state) {
-    set_bit(keys, static_cast<uint8_t>(key), static_cast<uint8_t>(state));
+void Joypad::set_key_state(Key key_, KeyState state_) {
+    auto state = static_cast<uint8_t>(state_);
+    auto key = static_cast<uint8_t>(key_);
 
-    const bool dpad = test_bit<5>(static_cast<uint8_t>(key));
+    if (test_bit(keys, key) != state) {
+        set_bit(keys, key, state);
 
-    const bool raise_interrupt =
-        (state == KeyState::Pressed) && ((!p1.select_dpad && dpad) || (!p1.select_buttons && !dpad));
+        const bool is_dpad = test_bit<2>(static_cast<uint8_t>(key));
 
-    if (raise_interrupt) {
-        interrupts.raise_interrupt<Interrupts::InterruptType::Joypad>();
+        // Likely interrupt would be raised only on the transition Released -> Pressed,
+        // but due to electrical switch bounce that produces several state transitions,
+        // what effectively happens on real hardware is that interrupt is raised even
+        // when the button is released.
+        // Therefore, we raise interrupt for any transition, regardless of the new input state.
+        const bool raise_interrupt = (!p1.select_dpad && is_dpad) || (!p1.select_buttons && !is_dpad);
+
+        if (raise_interrupt) {
+            interrupts.raise_interrupt<Interrupts::InterruptType::Joypad>();
+        }
     }
 }
 
