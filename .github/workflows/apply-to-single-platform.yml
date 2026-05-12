@@ -1,3 +1,5 @@
+name: Build, Test and Deploy (single platform)
+
 on:
   workflow_call:
     inputs:

@@ -1,4 +1,4 @@
-name: Deploy
+name: Build and Deploy (all platforms)
 
 on:
   workflow_dispatch:
@@ -81,14 +81,14 @@ jobs:
           path: docboy-dmg-sdl-windows
 
       # Download CGB Linux build.
-      - name: Download docboy-dmg-sdl-linux
+      - name: Download docboy-cgb-sdl-linux
         uses: actions/download-artifact@v8
         with:
           name: docboy-cgb-sdl-linux
           path: docboy-cgb-sdl-linux
 
       # Download CGB Windows build.
-      - name: Download docboy-dmg-sdl-windows
+      - name: Download docboy-cgb-sdl-windows
         uses: actions/download-artifact@v8
         with:
           name: docboy-cgb-sdl-windows
