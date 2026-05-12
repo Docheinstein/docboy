@@ -626,16 +626,16 @@ TEST_CASE("parcel", "[parcel][unit]") {
 
         uint8_t B[4] {0x10, 0x42, 0xFF, 0xA4};
 
-        p.write_bool(b);
-        p.write_uint8(u8);
-        p.write_uint16(u16);
-        p.write_uint32(u32);
-        p.write_uint64(u64);
-        p.write_int8(i8);
-        p.write_int16(i16);
-        p.write_int32(i32);
-        p.write_int64(i64);
-        p.write_bytes(B, 4);
+        PARCEL_WRITE_BOOL(p, b);
+        PARCEL_WRITE_UINT8(p, u8);
+        PARCEL_WRITE_UINT16(p, u16);
+        PARCEL_WRITE_UINT32(p, u32);
+        PARCEL_WRITE_UINT64(p, u64);
+        PARCEL_WRITE_INT8(p, i8);
+        PARCEL_WRITE_INT16(p, i16);
+        PARCEL_WRITE_INT32(p, i32);
+        PARCEL_WRITE_INT64(p, i64);
+        PARCEL_WRITE_BYTES(p, B, 4);
 
         REQUIRE(p.read_bool() == b);
         REQUIRE(p.read_uint8() == u8);
