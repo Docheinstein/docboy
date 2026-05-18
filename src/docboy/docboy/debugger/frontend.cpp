@@ -2617,9 +2617,9 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
     const auto make_lcd_block_2 = [&](uint32_t width) {
         auto b {make_block(width)};
 
-        b << yellow("Row Ticks") << "         :  " << gb.lcd.row_ticks << endl;
-        b << yellow("Frame Ticks") << "       :  " << gb.lcd.frame_ticks << endl;
-        b << yellow("Waiting Frame") << "     :  " << gb.lcd.wait_new_frame << endl;
+        b << yellow("Row Ticks") << "           :  " << gb.lcd.row_ticks << endl;
+        b << yellow("Frame Ticks") << "         :  " << gb.lcd.frame_ticks << endl;
+        b << yellow("Waiting Frame") << "       :  " << gb.lcd.wait_new_frame << endl;
 
         return b;
     };
@@ -2698,24 +2698,15 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         };
 
         const auto oam_entries_section = [&b, &oam_entries_info](const auto& v, uint8_t from, uint8_t to) {
-            b << yellow("OAM Number") << "          :  "
-              << oam_entries_info(v, from, to,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.number;
-                                  })
-              << endl;
-            b << yellow("OAM X") << "               :  "
-              << oam_entries_info(v, from, to,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.x;
-                                  })
-              << endl;
-            b << yellow("OAM Y") << "               :  "
-              << oam_entries_info(v, from, to,
-                                  [](const Ppu::OamScanEntry& e) {
-                                      return e.y;
-                                  })
-              << endl;
+            b << yellow("OAM Number") << "        :  " << oam_entries_info(v, from, to, [](const Ppu::OamScanEntry& e) {
+                return e.number;
+            }) << endl;
+            b << yellow("OAM X") << "             :  " << oam_entries_info(v, from, to, [](const Ppu::OamScanEntry& e) {
+                return e.x;
+            }) << endl;
+            b << yellow("OAM Y") << "             :  " << oam_entries_info(v, from, to, [](const Ppu::OamScanEntry& e) {
+                return e.y;
+            }) << endl;
         };
 
         oam_entries_section(oam_entries, 0, 5);
@@ -2738,8 +2729,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
         // OAM Registers
         b << subheader("oam registers", width) << endl;
-        b << yellow("OAM A") << "               :  " << hex(gb.ppu.registers.oam.a) << endl;
-        b << yellow("OAM B") << "               :  " << hex(gb.ppu.registers.oam.b) << endl;
+        b << yellow("OAM A") << "             :  " << hex(gb.ppu.registers.oam.a) << endl;
+        b << yellow("OAM B") << "             :  " << hex(gb.ppu.registers.oam.b) << endl;
 
         // Pixel Transfer
         b << subheader("pixel transfer", width) << endl;
@@ -2821,7 +2812,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
         b << yellow("Push Enabled") << "      :  "
           << (gb.ppu.pixel_slice_fetcher_push_enabled ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("BG Fifo Re-Fill") << "   :  "
+        b << yellow("BG Fifo Refill") << "    :  "
           << (gb.ppu.pending_bg_fifo_fill ? green("Pending") : darkgray("None")) << endl;
         b << yellow("LX") << "                :  " << gb.ppu.lx << endl;
         b << yellow("SCX % 8 Initial") << "   :  " << gb.ppu.pixel_transfer.initial_scx.to_discard << endl;
@@ -2845,7 +2836,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         };
 
         for (uint8_t i = 0; i < 8; i++) {
-            b << yellow("OBJP") << yellow(i) << "              : " << obj_palette(i, 0) << " " << obj_palette(i, 1)
+            b << yellow("OBJP") << yellow(i) << "               : " << obj_palette(i, 0) << " " << obj_palette(i, 1)
               << " " << obj_palette(i, 2) << " " << obj_palette(i, 3) << endl;
         }
 
@@ -2853,14 +2844,15 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
         // Window
         b << subheader("window", width) << endl;
-        b << yellow("Active for frame") << "  :  " << (gb.ppu.w.active_for_frame ? green("ON") : darkgray("OFF"))
+        b << yellow("Active for frame") << "    :  " << (gb.ppu.w.active_for_frame ? green("ON") : darkgray("OFF"))
           << endl;
-        b << yellow("WLY") << "               :  " << (gb.ppu.w.wly != UINT8_MAX ? gb.ppu.w.wly : darkgray("None"))
+        b << yellow("WLY") << "                 :  " << (gb.ppu.w.wly != UINT8_MAX ? gb.ppu.w.wly : darkgray("None"))
           << endl;
-        b << yellow("Activating") << "        :  " << (gb.ppu.w.activating ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("Active") << "            :  " << (gb.ppu.w.active ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("First Tile") << "        :  " << (gb.ppu.w.just_activated ? green("ON") : darkgray("OFF")) << endl;
-        b << yellow("WX Triggers") << "       :  ";
+        b << yellow("Activating") << "          :  " << (gb.ppu.w.activating ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("Active") << "              :  " << (gb.ppu.w.active ? green("ON") : darkgray("OFF")) << endl;
+        b << yellow("First Tile") << "          :  " << (gb.ppu.w.just_activated ? green("ON") : darkgray("OFF"))
+          << endl;
+        b << yellow("WX Triggers") << "         :  ";
         for (uint8_t i = 0; i < gb.ppu.w.line_triggers.size(); i++) {
             b << Text {gb.ppu.w.line_triggers[i]};
             if (i < gb.ppu.w.line_triggers.size() - 1) {
@@ -3783,7 +3775,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 #endif
 
     static constexpr uint32_t COLUMN_3_ROW_1_2_3_PART_1_WIDTH = 47;
-    static constexpr uint32_t COLUMN_3_ROW_1_2_3_PART_2_WIDTH = 50;
+    static constexpr uint32_t COLUMN_3_ROW_1_2_3_PART_2_WIDTH = 52;
     static constexpr uint32_t COLUMN_3_ROW_1_2_3_WIDTH =
         COLUMN_3_ROW_1_2_3_PART_1_WIDTH + COLUMN_3_ROW_1_2_3_PART_2_WIDTH + 1;
 
@@ -3802,8 +3794,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
     c3r3->add_node(make_space_divider());
     c3r3->add_node(make_ppu_block_2(COLUMN_3_ROW_1_2_3_PART_2_WIDTH));
 
-    static constexpr uint32_t COLUMN_3_ROW_4_5_PART_1_WIDTH = 23;
-    static constexpr uint32_t COLUMN_3_ROW_4_5_PART_2_WIDTH = 23;
+    static constexpr uint32_t COLUMN_3_ROW_4_5_PART_1_WIDTH = 24;
+    static constexpr uint32_t COLUMN_3_ROW_4_5_PART_2_WIDTH = 24;
     static constexpr uint32_t COLUMN_3_ROW_4_5_PART_3_WIDTH = 26;
     static constexpr uint32_t COLUMN_3_ROW_4_5_PART_4_WIDTH = 23;
 
