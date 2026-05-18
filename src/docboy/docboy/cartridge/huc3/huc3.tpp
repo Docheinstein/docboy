@@ -289,7 +289,7 @@ void HuC3<RomSize, RamSize>::reset() {
     memset(rtc.memory, 0, sizeof(rtc.memory));
     rtc.clock.minutes = 0;
     rtc.clock.days = 0;
-    rom_bank_selector = 0b1;
+    rom_bank_selector = 0x1;
     ram_bank_selector = 0;
     memset(ram, 0, RamSize);
 }

@@ -185,11 +185,11 @@ void Mbc5<RomSize, RamSize, Battery, Rumble>::load_state(Parcel& parcel) {
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
 void Mbc5<RomSize, RamSize, Battery, Rumble>::reset() {
     ram_enabled = false;
-    rom_bank_selector = 0b1;
+    rom_bank_selector = 0x1;
     ram_bank_selector = 0;
     if constexpr (Rumble) {
         rumble = false;
     }
 
-    memset(ram, 0, RamSize);
+    memset(ram, 0xFF, RamSize);
 }

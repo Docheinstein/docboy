@@ -40,7 +40,7 @@ void HuC1<RomSize, RamSize>::write_rom(uint16_t address, uint8_t value) {
         }
         // 0x2000 - 0x3FFF
         rom_bank_selector = keep_bits<6>(value);
-        rom_bank_selector = rom_bank_selector > 0 ? rom_bank_selector : 0b1;
+        rom_bank_selector = rom_bank_selector > 0 ? rom_bank_selector : 0x1;
         return;
     }
 
@@ -126,7 +126,7 @@ void HuC1<RomSize, RamSize>::load_state(Parcel& parcel) {
 template <uint32_t RomSize, uint32_t RamSize>
 void HuC1<RomSize, RamSize>::reset() {
     ir_enabled = false;
-    rom_bank_selector = 0b1;
+    rom_bank_selector = 0x1;
     ram_bank_selector = 0;
     memset(ram, 0, RamSize);
 }

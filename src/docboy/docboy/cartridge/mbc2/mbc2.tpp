@@ -58,7 +58,7 @@ void Mbc2<RomSize, Battery>::write_rom(uint16_t address, uint8_t value) {
     if (address < 0x4000) {
         if (test_bit<8>(address)) {
             rom_bank_selector = keep_bits<4>(value);
-            rom_bank_selector = rom_bank_selector > 0 ? rom_bank_selector : 0b1;
+            rom_bank_selector = rom_bank_selector > 0 ? rom_bank_selector : 0x1;
         } else {
             ram_enabled = keep_bits<4>(value) == 0xA;
         }
@@ -135,6 +135,6 @@ void Mbc2<RomSize, Battery>::load_state(Parcel& parcel) {
 template <uint32_t RomSize, bool Battery>
 void Mbc2<RomSize, Battery>::reset() {
     ram_enabled = false;
-    rom_bank_selector = 0b1;
-    memset(ram, 0, RamSize);
+    rom_bank_selector = 0x1;
+    memset(ram, 0xFF, RamSize);
 }

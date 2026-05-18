@@ -13419,6 +13419,126 @@
                     "value": 1
                 }
             ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_1mb_rom_bank_mapping_20.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_1mb_rom_bank_mapping_20_bank_mode.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_1mb_rom_bank_mapping_21.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_1mb_rom_bank_mapping_21_bank_mode.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_1mb_rom_bank_mapping_21_lower_selector_only.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_32kb_rom_bank_mapping_00.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_32kb_rom_bank_mapping_10.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_32kb_rom_bank_mapping_e1.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_initial_ram.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_ram_banks.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_ram_banks_bank_mode.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
+        },
+        {
+            "rom": "docboy/mbc/mbc1/mbc1_write_ram_while_disabled.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
         }
     ],
     "mbc/mbc2": [
@@ -22149,6 +22269,23 @@
         },
         {
             "rom": "docboy/joypad/interactive/joypad_keep_pressed_interrupt.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "inputs": [
+                {
+                    "trigger_at_instruction": "ld b,b",
+                    "key": "a",
+                    "state": "pressed"
+                }
+            ]
+        },
+        {
+            "rom": "docboy/joypad/interactive/joypad_press_while_disabled_read_while_enabled.gb",
             "memory": [
                 {
                     "address": 65520,

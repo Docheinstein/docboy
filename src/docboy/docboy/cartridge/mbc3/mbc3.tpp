@@ -44,7 +44,7 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::write_rom(uint16_t address, uint8_t
         }
         // 0x2000 - 0x3FFF
         rom_bank_selector = keep_bits<7>(value);
-        rom_bank_selector = rom_bank_selector > 0 ? rom_bank_selector : 0b1;
+        rom_bank_selector = rom_bank_selector > 0 ? rom_bank_selector : 0x1;
         return;
     }
 
@@ -329,7 +329,7 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::save_state(Parcel& parcel) const {
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::reset() {
     ram_enabled = false;
-    rom_bank_selector = 0b1;
+    rom_bank_selector = 0x1;
     ram_bank_selector_rtc_register_selector = 0;
 
     rtc.cycles_since_last_tick = 0;
@@ -346,5 +346,5 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::reset() {
     rtc.latched.days_high = 0;
     rtc.latch = 0;
 
-    memset(ram, 0, RamSize);
+    memset(ram, 0xFF, RamSize);
 }

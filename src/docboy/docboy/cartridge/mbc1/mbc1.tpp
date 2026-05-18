@@ -56,7 +56,7 @@ uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::read_rom(uint16_t 
 
     if (address < 0x4000) {
         // 0000 - 0x3FFF
-        if (banking_mode == 0b1) {
+        if (banking_mode == 0x1) {
             rom_bank_address = upper_rom_bank_selector_ram_bank_selector << RomBankSelectorBits;
         }
     } else {
@@ -83,7 +83,7 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::write_rom(uint16_t ad
         // 0x2000 - 0x3FFF
         rom_bank_selector = keep_bits<5 /* always 5 bits: not related to RomBankSelectorBits */>(value) > 0
                                 ? keep_bits<RomBankSelectorBits>(value)
-                                : 0b1;
+                                : 0x1;
         return;
     }
 
@@ -92,6 +92,7 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::write_rom(uint16_t ad
         upper_rom_bank_selector_ram_bank_selector = keep_bits<2>(value);
         return;
     }
+
     // 0x6000 - 0x7FFF
     banking_mode = keep_bits<1>(value);
 }
@@ -113,6 +114,7 @@ uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::read_ram(uint16_t 
         }
     }
 
+    // TODO: open bus read is not guaranteed to be 0xFF.
     return 0xFF;
 }
 
@@ -187,8 +189,8 @@ void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::load_state(Parcel& pa
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
 void Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::reset() {
     ram_enabled = false;
-    rom_bank_selector = 0b1;
+    rom_bank_selector = 0x1;
     upper_rom_bank_selector_ram_bank_selector = 0;
     banking_mode = 0;
-    memset(ram, 0, RamSize);
+    memset(ram, 0xFF, RamSize);
 }

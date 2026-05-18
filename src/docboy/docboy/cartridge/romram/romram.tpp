@@ -98,5 +98,5 @@ void RomRam<RomSize, RamSize, Battery>::load_state(Parcel& parcel) {
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 void RomRam<RomSize, RamSize, Battery>::reset() {
-    memset(ram, 0, RamSize);
+    memset(ram, 0xFF, RamSize);
 }

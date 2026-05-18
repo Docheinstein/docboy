@@ -86,5 +86,5 @@ void NoMbc<RamSize>::load_state(Parcel& parcel) {
 
 template <uint32_t RamSize>
 void NoMbc<RamSize>::reset() {
-    memset(ram, 0, RamSize);
+    memset(ram, 0xFF, RamSize);
 }
