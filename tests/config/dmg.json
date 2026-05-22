@@ -13907,6 +13907,16 @@
                 21,
                 34
             ]
+        },
+        {
+            "rom": "docboy/mbc/mbc5/mbc5_8mb_banks.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ]
         }
     ],
     "mbc/huc3": [
