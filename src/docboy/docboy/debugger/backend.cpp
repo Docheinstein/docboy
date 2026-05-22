@@ -568,9 +568,8 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
 #ifdef ENABLE_CGB
             if (title.size() == 16) {
                 // Bit 15 is used for CGB flag instead of title for CGB-era cartridges.
-                uint8_t flag = cgb_flag(header);
-                if (flag == Specs::Cartridge::Header::CgbFlag::DMG_AND_CGB ||
-                    flag == Specs::Cartridge::Header::CgbFlag::CGB_ONLY) {
+                uint8_t flag = header.title[15];
+                if (flag == CgbFlag::DMG_AND_CGB || flag == CgbFlag::CGB_ONLY) {
                     title[15] = '\0';
                 }
             }
