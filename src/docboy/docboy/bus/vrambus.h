@@ -8,6 +8,8 @@ class Vram1;
 
 class VramBus final : public VideoBus<VramBus> {
 public:
+    DEBUGGABLE_CLASS()
+
     template <Device::Type Dev>
     class View : public VideoBus::View<Dev> {
     public:

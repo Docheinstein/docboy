@@ -4,8 +4,10 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <map>
+#include <list>
+#include <memory>
 #include <optional>
+#include <unordered_map>
 
 #include "docboy/debugger/shared.h"
 
@@ -51,15 +53,25 @@ using CommandState = std::variant<TickCommandState, DotCommandState, StepCommand
 
 class DebuggerBackend {
 public:
+    struct BankedAddressMapKey {
+        uint16_t bank {};
+        uint16_t address {};
+
+        bool operator==(const BankedAddressMapKey& other) const;
+
+        struct Hash {
+            std::size_t operator()(const BankedAddressMapKey& key) const noexcept;
+        };
+    };
+
     explicit DebuggerBackend(Core& core);
 
     void attach_frontend(DebuggerFrontend& frontend);
 
     void load_symbols(const std::string& path);
-    std::optional<DebugSymbol> get_symbol(uint16_t addr) const;
-    std::optional<DebugSymbol> get_symbol(std::string name) const;
-    const std::map<uint16_t, DebugSymbol>& get_symbols_by_address() const;
-    const std::map<std::string, DebugSymbol>& get_symbols_by_name() const;
+    const DebugSymbol* get_symbol(uint16_t bank, uint16_t addr) const;
+    const DebugSymbol* get_symbol(const std::string& name) const;
+    const std::vector<DebugSymbol>& get_symbols() const;
 
     void notify_tick(uint64_t tick);
     void notify_memory_read(uint16_t address);
@@ -71,31 +83,33 @@ public:
 
     const CartridgeInfo& get_cartridge_info();
 
-    uint32_t add_breakpoint(uint16_t addr);
-    std::optional<Breakpoint> get_breakpoint(uint16_t addr) const;
-    const std::vector<Breakpoint>& get_breakpoints() const;
+    uint32_t add_breakpoint(std::optional<uint16_t> bank, uint16_t addr);
+    const Breakpoint* get_breakpoint(std::optional<uint16_t> bank, uint16_t addr) const;
+    const std::list<Breakpoint>& get_breakpoints() const;
 
-    uint32_t add_watchpoint(Watchpoint::Type, uint16_t from, uint16_t to, std::optional<Watchpoint::Condition>);
-    std::optional<Watchpoint> get_watchpoint(uint16_t addr) const;
-    const std::vector<Watchpoint>& get_watchpoints() const;
-    bool has_watchpoint(uint16_t addr) const;
+    uint32_t add_watchpoint(Watchpoint::Type, std::optional<uint16_t> bank, uint16_t from, uint16_t to, bool raw,
+                            std::optional<Watchpoint::Condition>);
+    const Watchpoint* get_watchpoint(std::optional<uint16_t> bank, uint16_t addr) const;
+    const std::list<Watchpoint>& get_watchpoints() const;
 
     void remove_point(uint32_t id);
     void clear_points();
 
-    std::optional<DisassembledInstructionReference> disassemble(uint16_t addr, bool cache = false);
-    std::vector<DisassembledInstructionReference> disassemble_multi(uint16_t addr, uint16_t n = 1, bool cache = false);
-    std::vector<DisassembledInstructionReference> disassemble_range(uint16_t from, uint16_t to, bool cache = false);
-    std::optional<DisassembledInstruction> get_disassembled_instruction(uint16_t addr) const;
-    std::vector<DisassembledInstructionReference> get_disassembled_instructions() const;
+    std::optional<DisassembledInstructionRef> disassemble(std::optional<uint16_t> bank, uint16_t addr,
+                                                          bool cache = false);
+    std::vector<DisassembledInstructionRef> disassemble_multi(std::optional<uint16_t> bank, uint16_t addr,
+                                                              uint16_t n = 1, bool cache = false);
+    std::vector<DisassembledInstructionRef> disassemble_range(std::optional<uint16_t> bank, uint16_t from, uint16_t to,
+                                                              bool cache = false);
+    const DisassembledInstruction* get_disassembled_instruction(uint16_t bank, uint16_t addr) const;
+    std::vector<DisassembledInstructionRef> get_disassembled_instructions() const;
 
-    const std::vector<DisassembledInstructionReference>& get_call_stack() const;
+    const std::vector<DisassembledInstructionRef>& get_call_stack() const;
 
     uint32_t state_hash() const;
 
     uint8_t read_memory(uint16_t addr);
-    uint8_t read_memory_raw(uint16_t addr);
-    uint8_t read_memory_raw(uint16_t addr, uint8_t bank);
+    uint8_t read_memory_raw(std::optional<uint16_t> bank, uint16_t addr);
 
     void proceed();
     void interrupt();
@@ -108,11 +122,16 @@ public:
     const Core& get_core() const;
 
 private:
+    static constexpr uint16_t MAX_BANKS = 512; // 8 MB
+
     void clear();
 
     void pull_command(const ExecutionState& state);
 
-    std::optional<DisassembledInstruction> do_disassemble(uint16_t addr);
+    DisassembledInstruction do_disassemble(std::optional<uint16_t> bank, uint16_t addr);
+
+    uint16_t bank_of(std::optional<uint16_t> bank, uint16_t address) const;
+    uint16_t bank_of(uint16_t addr) const;
 
     template <typename CommandType>
     void init_command_state(const CommandType& cmd);
@@ -132,25 +151,33 @@ private:
     std::optional<CartridgeInfo> cartridge_info {};
 
     struct {
-        std::map<uint16_t, DebugSymbol> by_address;
-        std::map<std::string, DebugSymbol> by_name;
+        std::vector<DebugSymbol> list {};
+        std::unordered_map<BankedAddressMapKey, const DebugSymbol*, BankedAddressMapKey::Hash> by_address;
+        std::unordered_map<std::string, const DebugSymbol*> by_name;
     } symbols;
 
-    std::vector<Breakpoint> breakpoints;
-    std::vector<Watchpoint> watchpoints;
-    uint8_t watchpoints_at_address[UINT16_MAX + 1] {};
-    std::optional<DisassembledInstruction> disassembled_instructions[0x10000] {};
+    struct {
+        std::list<Breakpoint> list;
+        std::unordered_map<BankedAddressMapKey, const Breakpoint*, BankedAddressMapKey::Hash> by_address {};
+    } breakpoints;
+
+    struct {
+        std::list<Watchpoint> list;
+        std::unordered_map<BankedAddressMapKey, const Watchpoint*, BankedAddressMapKey::Hash> by_address {};
+    } watchpoints;
 
     std::optional<WatchpointHit> watchpoint_hit;
 
     uint32_t next_point_id {};
 
+    std::unique_ptr<std::array<std::optional<DisassembledInstruction>, 0x10000>> disassembled_instructions[MAX_BANKS];
+
     bool allow_memory_callbacks {true};
 
     std::deque<std::vector<uint8_t>> history;
 
-    std::optional<DisassembledInstructionReference> last_instruction;
-    std::vector<DisassembledInstructionReference> call_stack;
+    std::optional<DisassembledInstructionRef> last_instruction;
+    std::vector<DisassembledInstructionRef> call_stack;
 
     uint32_t memory_hash {};
 

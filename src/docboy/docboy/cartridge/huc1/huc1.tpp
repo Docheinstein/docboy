@@ -105,6 +105,39 @@ template <uint32_t RomSize, uint32_t RamSize>
 uint32_t HuC1<RomSize, RamSize>::get_rom_size() const {
     return RomSize;
 }
+
+template <uint32_t RomSize, uint32_t RamSize>
+uint8_t HuC1<RomSize, RamSize>::read_rom_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address < 0x8000);
+    uint32_t rom_address = mask_by_pow2<RomSize>(bank << 14 | keep_bits<14>(address));
+    return rom[rom_address];
+}
+
+template <uint32_t RomSize, uint32_t RamSize>
+uint16_t HuC1<RomSize, RamSize>::get_rom_bank(uint16_t address) const {
+    ASSERT(address < 0x8000);
+
+    // 0000 - 0x3FFF
+    if (address < 0x4000) {
+        return 0;
+    }
+
+    // 4000 - 0x7FFF
+    return rom_bank_selector;
+}
+
+template <uint32_t RomSize, uint32_t RamSize>
+uint8_t HuC1<RomSize, RamSize>::read_ram_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+    uint32_t ram_address = mask_by_pow2<RamSize>((bank << 13) | keep_bits<13>(address));
+    return ram[ram_address];
+}
+
+template <uint32_t RomSize, uint32_t RamSize>
+uint16_t HuC1<RomSize, RamSize>::get_ram_bank(uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+    return ram_bank_selector;
+}
 #endif
 
 template <uint32_t RomSize, uint32_t RamSize>

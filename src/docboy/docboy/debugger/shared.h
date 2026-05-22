@@ -2,7 +2,9 @@
 #define SHARED_H
 
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -47,8 +49,9 @@ struct LogicExpression {
 };
 
 struct Breakpoint {
-    uint32_t id;
-    uint16_t address;
+    uint32_t id {};
+    uint16_t bank {};
+    uint16_t address {};
 };
 
 struct BreakpointHit {
@@ -59,42 +62,45 @@ struct Watchpoint {
     using Condition = LogicExpression<uint8_t>;
     enum class Type { Read, Write, ReadWrite, Change };
 
-    uint32_t id;
-    Type type;
+    uint32_t id {};
+    Type type {};
+    uint16_t bank {};
     struct {
-        uint16_t from;
-        uint16_t to;
+        uint16_t from {};
+        uint16_t to {};
     } address;
-    struct {
-        bool enabled;
-        Condition condition;
-    } condition; // avoid to use std::optional so that this remains POD
+    bool raw {};
+    std::optional<Condition> condition {};
 };
 
 struct WatchpointHit {
     enum class AccessType { Read, Write };
-    Watchpoint watchpoint;
-    uint16_t address;
-    AccessType access_type;
-    uint8_t old_value;
-    uint8_t new_value;
+    Watchpoint watchpoint {};
+    uint16_t bank {};
+    uint16_t address {};
+    AccessType access_type {};
+    uint8_t old_value {};
+    uint8_t new_value {};
 };
 
 using DisassembledInstruction = std::vector<uint8_t>;
 
-struct DisassembledInstructionReference {
-    DisassembledInstructionReference(uint16_t address, const DisassembledInstruction& instruction) :
+struct DisassembledInstructionRef {
+    DisassembledInstructionRef(const uint16_t bank, const uint16_t address,
+                               const DisassembledInstruction& instruction) :
+        bank {bank},
         address {address},
         instruction {instruction} {
     }
-
-    DisassembledInstructionReference(uint16_t address, DisassembledInstruction&& instruction) :
+    DisassembledInstructionRef(const uint16_t bank, const uint16_t address, DisassembledInstruction&& instruction) :
+        bank {bank},
         address {address},
         instruction {std::move(instruction)} {
     }
 
-    uint16_t address;
-    DisassembledInstruction instruction;
+    uint16_t bank {};
+    uint16_t address {};
+    DisassembledInstruction instruction {};
 };
 
 struct CartridgeInfo {
@@ -120,7 +126,7 @@ using ExecutionState =
 // Entry of a .sym file
 struct DebugSymbol {
     bool boot {};
-    uint32_t bank {};
+    uint16_t bank {};
     uint16_t address {};
     std::string name {};
 };

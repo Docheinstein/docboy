@@ -39,24 +39,24 @@ std::string bin(const std::vector<T>& vec) {
     return bin(vec.data(), vec.size() * sizeof(T));
 }
 
-template <typename T, uint8_t ByteWidth = 2>
+template <typename T, uint8_t Width = sizeof(T) * 2>
 void hex(T value, std::ostream& os) {
-    os << std::uppercase << std::hex << std::setfill('0') << std::setw(ByteWidth * sizeof(T)) << +value;
+    os << std::uppercase << std::hex << std::setfill('0') << std::setw(Width) << +value;
 }
 
-template <typename T, uint8_t ByteWidth = 2>
+template <typename T, uint8_t Width = sizeof(T) * 2>
 std::string hex(T value) {
     std::stringstream ss;
-    hex<T, ByteWidth>(value, ss);
+    hex<T, Width>(value, ss);
     return ss.str();
 }
 
-template <typename T, bool Spacing = true, uint8_t ByteWidth = 2>
+template <typename T, bool Spacing = true, uint8_t Width = sizeof(T) * 2>
 std::string hex(const T* data, size_t length) {
     std::stringstream ss;
 
     for (size_t i = 0; i < length; i++) {
-        hex<T, ByteWidth>(data[i], ss);
+        hex<T, Width>(data[i], ss);
         if constexpr (Spacing) {
             if (i < length - 1)
                 ss << " ";
@@ -65,14 +65,14 @@ std::string hex(const T* data, size_t length) {
     return ss.str();
 }
 
-template <typename T, bool Spacing = true, uint8_t ByteWidth = 2>
+template <typename T, bool Spacing = true, uint8_t Width = sizeof(T) * 2>
 std::string hex(const std::vector<T>& vec) {
-    return hex<T, Spacing, ByteWidth>(vec.data(), vec.size() * sizeof(T));
+    return hex<T, Spacing, Width>(vec.data(), vec.size() * sizeof(T));
 }
 
-template <typename T, std::size_t N, bool Spacing = true, uint8_t ByteWidth = 2>
+template <typename T, std::size_t N, bool Spacing = true, uint8_t Width = sizeof(T) * 2>
 std::string hex(const std::array<T, N>& arr) {
-    return hex<T, Spacing, ByteWidth>(arr.data(), arr.size() * sizeof(T));
+    return hex<T, Spacing, Width>(arr.data(), arr.size() * sizeof(T));
 }
 
 #endif // UTILSFORMATTERS_H

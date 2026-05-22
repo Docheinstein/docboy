@@ -1,7 +1,5 @@
 #include <cstring>
 
-#include "docboy/common/units.h"
-
 #include "utils/algo.h"
 #include "utils/arrays.h"
 #include "utils/asserts.h"
@@ -68,8 +66,6 @@ template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 uint8_t Mbc3<RomSize, RamSize, Battery, Timer>::read_ram(uint16_t address) const {
     ASSERT(address >= 0xA000 && address < 0xC000);
 
-    static constexpr uint8_t MaxRamBankSelector = RamSize < (64 * KB) ? 0x04 : 0x08;
-
     // 0xA000 - 0xBFFF
     if (ram_enabled) {
         if (ram_bank_selector_rtc_register_selector < MaxRamBankSelector) {
@@ -105,8 +101,6 @@ uint8_t Mbc3<RomSize, RamSize, Battery, Timer>::read_ram(uint16_t address) const
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::write_ram(uint16_t address, uint8_t value) {
     ASSERT(address >= 0xA000 && address < 0xC000);
-
-    static constexpr uint8_t MaxRamBankSelector = RamSize < (64 * KB) ? 0x04 : 0x08;
 
     // 0xA000 - 0xBFFF
     if (ram_enabled) {
@@ -277,6 +271,49 @@ uint8_t* Mbc3<RomSize, RamSize, Battery, Timer>::get_rom_data() {
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 uint32_t Mbc3<RomSize, RamSize, Battery, Timer>::get_rom_size() const {
     return RomSize;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+uint8_t Mbc3<RomSize, RamSize, Battery, Timer>::read_rom_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address < 0x8000);
+    uint32_t rom_address = mask_by_pow2<RomSize>(bank << 14 | keep_bits<14>(address));
+    return rom[rom_address];
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+uint16_t Mbc3<RomSize, RamSize, Battery, Timer>::get_rom_bank(uint16_t address) const {
+    ASSERT(address < 0x8000);
+
+    // 0000 - 0x3FFF
+    if (address < 0x4000) {
+        return 0;
+    }
+
+    // 4000 - 0x7FFF
+    return rom_bank_selector;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+uint8_t Mbc3<RomSize, RamSize, Battery, Timer>::read_ram_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+
+    if constexpr (Ram) {
+        uint32_t ram_address = mask_by_pow2<RamSize>((bank << 13) | keep_bits<13>(address));
+        return ram[ram_address];
+    }
+
+    return 0xFF;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+uint16_t Mbc3<RomSize, RamSize, Battery, Timer>::get_ram_bank(uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+
+    if constexpr (Ram) {
+        return ram_bank_selector_rtc_register_selector;
+    }
+
+    return 0;
 }
 #endif
 

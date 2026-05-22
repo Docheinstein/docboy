@@ -39,20 +39,19 @@
 
 namespace {
 struct FrontendBreakpointCommand {
+    std::optional<uint16_t> bank {};
     uint16_t address {};
 };
 
 struct FrontendWatchpointCommand {
     Watchpoint::Type type {};
-    uint16_t length {};
+    std::optional<uint16_t> bank {};
     struct {
         uint16_t from {};
         uint16_t to {};
     } address;
-    struct {
-        bool enabled {};
-        Watchpoint::Condition condition {};
-    } condition;
+    bool raw {};
+    std::optional<Watchpoint::Condition> condition {};
 };
 
 struct FrontendDeleteCommand {
@@ -68,8 +67,8 @@ struct FrontendExamineCommand {
     MemoryOutputFormat format {};
     std::optional<uint8_t> format_arg {};
     uint32_t length {};
+    std::optional<uint16_t> bank {};
     uint16_t address {};
-    std::optional<uint8_t> bank {};
     bool raw {};
 };
 
@@ -85,8 +84,8 @@ struct FrontendDisplayCommand {
     MemoryOutputFormat format {};
     std::optional<uint8_t> format_arg {};
     uint32_t length {};
+    std::optional<uint16_t> bank {};
     uint16_t address {};
-    std::optional<uint8_t> bank {};
     bool raw {};
 };
 
@@ -134,6 +133,7 @@ struct FrontendFrameBackCommand {
 };
 
 struct FrontendContinueCommand {
+    std::optional<uint16_t> bank {};
     std::optional<uint16_t> address {};
 };
 
@@ -224,42 +224,70 @@ uint16_t address_str_to_addr(const std::string& s, bool* ok) {
     return parse_hex<uint16_t>(s, ok);
 }
 
-uint16_t symbol_to_addr(const std::string& s, const DebuggerBackend& backend, bool* ok) {
-    if (const auto sym = backend.get_symbol(s)) {
+uint16_t parse_symbol(const std::string& addr_str, const DebuggerBackend& backend, bool* ok) {
+    if (const auto sym = backend.get_symbol(addr_str)) {
         return sym->address;
     }
 
-    return address_str_to_addr(s, ok);
+    return address_str_to_addr(addr_str, ok);
+}
+
+std::pair<std::optional<uint16_t> /* bank*/, uint16_t /* address */> parse_banked_symbol(const std::string& bank_prefix,
+                                                                                         const std::string& addr_str,
+                                                                                         const DebuggerBackend& backend,
+                                                                                         bool* ok) {
+    if (!bank_prefix.empty()) {
+        return {parse_hex<uint16_t>(bank_prefix, ok), address_str_to_addr(addr_str, ok)};
+    }
+
+    return {std::nullopt, parse_symbol(addr_str, backend, ok)};
 }
 
 FrontendCommandInfo FRONTEND_COMMANDS[] {
-    {std::regex(R"(b\s+(\w+))"), "b <addr>", "Set breakpoint at <addr_or_symbol> (or debug symbol name>",
+    {std::regex(R"(b\s+(?:(\w+):)?(.+))"), "b [<bank>:]<addr>", "Set breakpoint at <addr>",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
          FrontendBreakpointCommand cmd {};
          bool ok {true};
-         cmd.address = symbol_to_addr(groups[0], backend, &ok);
-         return ok ? std::optional(cmd) : std::nullopt;
+         const auto [bank, addr] = parse_banked_symbol(groups[0], groups[1], backend, &ok);
+         cmd.bank = bank;
+         cmd.address = addr;
+         return ok ? std::optional {cmd} : std::nullopt;
      }},
-    {std::regex(R"(w(?:/([ra]))?\s+(\w+),(\w+)\s*(.*)?)"), "w[/r|a] <start>,<end> [<cond>]",
-     "Set watchpoint from <start> to <end>",
+    {std::regex(R"(w(r)?(?:/([rwac]))?\s+(?:(\w+):)?(.+),(.+)\s*(.*)?)"),
+     "w[r][/r|w|a|c] [<bank>:]<start>,<end> [<cond>]", "Set watchpoint from <start> to <end> (r: raw)",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
          FrontendWatchpointCommand cmd {};
          bool ok {true};
-         const std::string& access = groups[0];
-         const std::string& from = groups[1];
-         const std::string& to = groups[2];
-         const std::string& condition = groups[3];
+         const std::string& raw = groups[0];
+         const std::string& access = groups[1];
+         const std::string& bank = groups[2];
+         const std::string& from = groups[3];
+         const std::string& to = groups[4];
+         const std::string& condition = groups[5];
 
          if (access == "r") {
              cmd.type = Watchpoint::Type::Read;
+         } else if (access == "w") {
+             cmd.type = Watchpoint::Type::Write;
          } else if (access == "a") {
              cmd.type = Watchpoint::Type::ReadWrite;
+         } else if (access == "c") {
+             cmd.type = Watchpoint::Type::Change;
          } else {
+             // Default.
              cmd.type = Watchpoint::Type::Change;
          }
 
-         cmd.address.from = symbol_to_addr(from, backend, &ok);
-         cmd.address.to = symbol_to_addr(to, backend, &ok);
+         const auto [from_bank, from_addr] = parse_banked_symbol(bank, from, backend, &ok);
+         const auto [to_bank, to_addr] = parse_banked_symbol(bank, to, backend, &ok);
+
+         ASSERT(from_bank == to_bank);
+
+         cmd.bank = from_bank;
+         cmd.address.from = from_addr;
+         cmd.address.to = to_addr;
+
+         cmd.raw = !raw.empty();
 
          std::vector<std::string> tokens;
          split(condition, std::back_inserter(tokens));
@@ -267,31 +295,45 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
              const auto& operation = tokens[0];
              const auto& operand = tokens[1];
              if (operation == "==") {
-                 cmd.condition.enabled = true;
-                 cmd.condition.condition.operation = Watchpoint::Condition::Operator::Equal;
-                 cmd.condition.condition.operand = symbol_to_addr(operand, backend, &ok);
+                 cmd.condition = Watchpoint::Condition {};
+                 cmd.condition->operation = Watchpoint::Condition::Operator::Equal;
+                 cmd.condition->operand = parse_hex<uint8_t>(operand, &ok);
              }
          }
 
-         return ok ? std::optional(cmd) : std::nullopt;
+         return ok ? std::optional {cmd} : std::nullopt;
      }},
-    {std::regex(R"(w(?:/([ra]))?\s+(\w+)\s*(.*)?)"), "w[/r|a] <addr> [<cond>]", "Set watchpoint at <addr>",
+    {std::regex(R"(w(r)?(?:/([rwac]))?\s+(?:(\w+):)?(.+)\s*(.*)?)"), "w[r][/r|w|a|c] [<bank>:]<addr> [<cond>]",
+     "Set watchpoint at <addr> (r: raw)",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
          FrontendWatchpointCommand cmd {};
          bool ok {true};
-         const std::string& access = groups[0];
-         const std::string& from = groups[1];
-         const std::string& condition = groups[2];
+         const std::string& raw = groups[0];
+         const std::string& access = groups[1];
+         const std::string& bank = groups[2];
+         const std::string& from = groups[3];
+         const std::string& condition = groups[4];
 
          if (access == "r") {
              cmd.type = Watchpoint::Type::Read;
+         } else if (access == "w") {
+             cmd.type = Watchpoint::Type::Write;
          } else if (access == "a") {
              cmd.type = Watchpoint::Type::ReadWrite;
+         } else if (access == "c") {
+             cmd.type = Watchpoint::Type::Change;
          } else {
+             // Default.
              cmd.type = Watchpoint::Type::Change;
          }
 
-         cmd.address.from = cmd.address.to = symbol_to_addr(from, backend, &ok);
+         const auto [the_bank, the_addr] = parse_banked_symbol(bank, from, backend, &ok);
+
+         cmd.bank = the_bank;
+         cmd.address.from = the_addr;
+         cmd.address.to = the_addr;
+
+         cmd.raw = !raw.empty();
 
          std::vector<std::string> tokens;
          split(condition, std::back_inserter(tokens));
@@ -299,13 +341,13 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
              const auto& operation = tokens[0];
              const auto& operand = tokens[1];
              if (operation == "==") {
-                 cmd.condition.enabled = true;
-                 cmd.condition.condition.operation = Watchpoint::Condition::Operator::Equal;
-                 cmd.condition.condition.operand = symbol_to_addr(operand, backend, &ok);
+                 cmd.condition = Watchpoint::Condition {};
+                 cmd.condition->operation = Watchpoint::Condition::Operator::Equal;
+                 cmd.condition->operand = parse_hex<uint8_t>(operand, &ok);
              }
          }
 
-         return ok ? std::optional(cmd) : std::nullopt;
+         return ok ? std::optional {cmd} : std::nullopt;
      }},
     {std::regex(R"(del\s*(\d+)?)"), "del <num>", "Delete breakpoint or watchpoint <num>",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
@@ -333,9 +375,8 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          cmd.next = !n.empty() ? std::stoi(n) : 10;
          return cmd;
      }},
-    {std::regex(R"(x(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(?:(\d+):)?(\w+))"),
-     "x[x][/<length><format>] [<bank>:]<addr>",
-     "Display memory at [<bank>:]<addr> (x: raw) (<format>: x, h[<cols>], b, d, i)",
+    {std::regex(R"(x(r)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(?:(\w+):)?(.+))"),
+     "x[r][/<length><format>] [<bank>:]<addr>", "Display memory at <addr> (r: raw) (<format>: x, h[<cols>], b, d, i)",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
          FrontendExamineCommand cmd {};
          bool ok {true};
@@ -351,11 +392,10 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          if (!format_arg.empty()) {
              cmd.format_arg = std::stoi(format_arg);
          }
-         if (!bank.empty()) {
-             cmd.bank = std::stoi(bank);
-         }
-         cmd.address = symbol_to_addr(address, backend, &ok);
-         return ok ? std::optional(cmd) : std::nullopt;
+         const auto [the_bank, the_addr] = parse_banked_symbol(bank, address, backend, &ok);
+         cmd.bank = the_bank;
+         cmd.address = the_addr;
+         return ok ? std::optional {cmd} : std::nullopt;
      }},
     {std::regex(R"(/b\s+(\w+))"), "/b <bytes>", "Search for <bytes>",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
@@ -363,7 +403,7 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          bool ok {true};
          const std::string& bytes = groups[0];
          cmd.bytes = parse_hex_str(bytes, &ok);
-         return ok ? std::optional(cmd) : std::nullopt;
+         return ok ? std::optional {cmd} : std::nullopt;
      }},
     {std::regex(R"(/i\s+(\w+))"), "/i <bytes>", "Search for instructions matching <bytes>",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
@@ -371,11 +411,11 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          bool ok {true};
          const std::string& bytes = groups[0];
          cmd.instruction = parse_hex_str(bytes, &ok);
-         return ok ? std::optional(cmd) : std::nullopt;
+         return ok ? std::optional {cmd} : std::nullopt;
      }},
-    {std::regex(R"(display(x)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(?:(\d+):)?(\w+))"),
-     "display[x][/<length><format>] [<bank>:]<addr>",
-     "Automatically display memory at [<bank>:]<addr> (x: raw) (<format>: x, h[<cols>], b, d, i)",
+    {std::regex(R"(display(r)?(?:/(\d+)?(?:([xhbdi])(\d+)?)?)?\s+(?:(\w+):)?(.+))"),
+     "display[r][/<length><format>] [<bank>:]<addr>",
+     "Automatically display memory at <addr> (r: raw) (<format>: x, h[<cols>], b, d, i)",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
          FrontendDisplayCommand cmd {};
          bool ok {true};
@@ -391,11 +431,10 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          if (!format_arg.empty()) {
              cmd.format_arg = std::stoi(format_arg);
          }
-         if (!bank.empty()) {
-             cmd.bank = std::stoi(bank);
-         }
-         cmd.address = symbol_to_addr(address, backend, &ok);
-         return ok ? std::optional(cmd) : std::nullopt;
+         const auto [the_bank, the_addr] = parse_banked_symbol(bank, address, backend, &ok);
+         cmd.bank = the_bank;
+         cmd.address = the_addr;
+         return ok ? std::optional {cmd} : std::nullopt;
      }},
     {std::regex(R"(undisplay)"), "undisplay", "Undisplay expressions set with display",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
@@ -497,20 +536,23 @@ FrontendCommandInfo FRONTEND_COMMANDS[] {
          uint64_t n = count.empty() ? 1 : std::stoi(count);
          return FrontendScanlineCommand {n};
      }},
-    {std::regex(R"(c\s*(\w+)?)"), "c [<address>]", "Continue (optionally stop at <address>)",
+    {std::regex(R"(c\s*(?:(\w+):)?(.+)?)"), "c [[<bank>:]<addr>]", "Continue (optionally stop at <addr>)",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
          FrontendContinueCommand cmd {};
-         const std::string& addr = groups[0];
+         const std::string& bank = groups[0];
+         const std::string& addr = groups[1];
+
+         bool ok {true};
+
          if (!addr.empty()) {
-             bool ok {true};
-             cmd.address = symbol_to_addr(groups[0], backend, &ok);
-             if (!ok) {
-                 return std::nullopt;
-             }
+             const auto [the_bank, the_addr] = parse_banked_symbol(bank, addr, backend, &ok);
+             cmd.bank = the_bank;
+             cmd.address = the_addr;
          }
-         return cmd;
+
+         return ok ? std::optional {cmd} : std::nullopt;
      }},
-    {std::regex(R"(trace\s*([\w ]+)?)"), "trace [<flag1>] [<flagN>]", "Set the trace modes (output on stderr)",
+    {std::regex(R"(trace\s*([\w ]+)?)"), "trace [<flag>...]", "Set the trace modes (output on stderr)",
      [](const std::vector<std::string>& groups, const DebuggerBackend& backend) -> std::optional<FrontendCommand> {
          const std::string& modes = groups[0];
          FrontendTraceCommand cmd;
@@ -637,7 +679,7 @@ DebuggerFrontend::~DebuggerFrontend() {
 template <>
 std::optional<Command>
 DebuggerFrontend::handle_command<FrontendBreakpointCommand>(const FrontendBreakpointCommand& cmd) {
-    uint32_t id = backend.add_breakpoint(cmd.address);
+    uint32_t id = backend.add_breakpoint(cmd.bank, cmd.address);
     std::cout << "Breakpoint [" << id << "] at " << hex(cmd.address) << std::endl;
     reprint_ui = true;
     return std::nullopt;
@@ -647,11 +689,7 @@ DebuggerFrontend::handle_command<FrontendBreakpointCommand>(const FrontendBreakp
 template <>
 std::optional<Command>
 DebuggerFrontend::handle_command<FrontendWatchpointCommand>(const FrontendWatchpointCommand& cmd) {
-    std::optional<Watchpoint::Condition> cond;
-    if (cmd.condition.enabled) {
-        cond = cmd.condition.condition;
-    }
-    uint32_t id = backend.add_watchpoint(cmd.type, cmd.address.from, cmd.address.to, cond);
+    uint32_t id = backend.add_watchpoint(cmd.type, cmd.bank, cmd.address.from, cmd.address.to, cmd.raw, cmd.condition);
     if (cmd.address.from == cmd.address.to) {
         std::cout << "Watchpoint [" << id << "] at " << hex(cmd.address.from) << std::endl;
     } else {
@@ -717,10 +755,12 @@ DebuggerFrontend::handle_command<FrontendSearchBytesCommand>(const FrontendSearc
 template <>
 std::optional<Command>
 DebuggerFrontend::handle_command<FrontendSearchInstructionsCommand>(const FrontendSearchInstructionsCommand& cmd) {
-    // find instruction among known disassembled instructions
-    for (const auto& [addr, instr] : backend.get_disassembled_instructions()) {
-        if (mem_find_first(instr.data(), instr.size(), cmd.instruction.data(), cmd.instruction.size())) {
-            std::cout << hex(addr) << "    " << instruction_mnemonic(instr, addr) << std::endl;
+    // Find instruction among known disassembled instructions
+    for (const auto& instr : backend.get_disassembled_instructions()) {
+        if (mem_find_first(instr.instruction.data(), instr.instruction.size(), cmd.instruction.data(),
+                           cmd.instruction.size())) {
+            std::cout << hex<uint16_t, 2>(instr.bank) << ":" << hex(instr.address) << "    "
+                      << instruction_mnemonic(instr.instruction, instr.address) << std::endl;
         }
     }
     return std::nullopt;
@@ -810,7 +850,7 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendScanlineCommand>
 template <>
 std::optional<Command> DebuggerFrontend::handle_command<FrontendContinueCommand>(const FrontendContinueCommand& cmd) {
     if (cmd.address) {
-        temporary_breakpoint = backend.add_breakpoint(*cmd.address);
+        temporary_breakpoint = backend.add_breakpoint(cmd.bank, *cmd.address);
     }
 
     return ContinueCommand();
@@ -869,12 +909,12 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendTraceCommand>(co
 template <>
 std::optional<Command>
 DebuggerFrontend::handle_command<FrontendDumpDisassembleCommand>(const FrontendDumpDisassembleCommand& cmd) {
-    std::vector<DisassembledInstructionReference> disassembled = backend.get_disassembled_instructions();
+    std::vector<DisassembledInstructionRef> disassembled = backend.get_disassembled_instructions();
     for (uint32_t i = 0; i < disassembled.size(); i++) {
         const auto& instr = disassembled[i];
 
         // Eventually print debug symbol.
-        if (std::string sym_name = get_debug_symbol(instr.address); !sym_name.empty()) {
+        if (std::string sym_name = get_debug_symbol(instr.bank, instr.address); !sym_name.empty()) {
             std::cerr << sym_name << ":" << std::endl;
         }
 
@@ -893,10 +933,10 @@ DebuggerFrontend::handle_command<FrontendDumpDisassembleCommand>(const FrontendD
 template <>
 std::optional<Command>
 DebuggerFrontend::handle_command<FrontendShowSymbolsCommand>(const FrontendShowSymbolsCommand& cmd) {
-    const std::map<uint16_t, DebugSymbol>& symbols = backend.get_symbols_by_address();
+    const auto& symbols = backend.get_symbols();
     if (!symbols.empty()) {
-        for (const auto& [_, symbol] : symbols) {
-            std::cout << (symbol.boot ? "BOOT" : hex<uint8_t, 2>(symbol.bank)) << ":" << hex(symbol.address) << " "
+        for (const auto& symbol : symbols) {
+            std::cout << (symbol.boot ? "BOOT" : hex<uint16_t, 2>(symbol.bank)) << ":" << hex(symbol.address) << " "
                       << symbol.name << std::endl;
         }
     } else {
@@ -1079,7 +1119,7 @@ void DebuggerFrontend::notify_tick(uint64_t tick) {
                 if (DebuggerHelpers::is_in_isr(cpu)) {
                     instr_str = "isr " + hex(cpu.instruction.address);
                 } else {
-                    const auto instr = backend.disassemble(cpu.instruction.address);
+                    const auto instr = backend.disassemble(std::nullopt, cpu.instruction.address);
                     if (instr) {
                         instr_str = instruction_mnemonic(instr->instruction, cpu.instruction.address);
                     } else {
@@ -3494,16 +3534,18 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
             b << yellow("ISR") << "   " << lightgray("M" + std::to_string(*isr_phase + 1) + "/5") << endl;
         } else {
 
-            struct DisassembledInstructionEntry : DisassembledInstructionReference {
+            struct DisassembledInstructionEntry : DisassembledInstructionRef {
                 enum class Type { Past, Current, Future, FutureGuess };
 
-                DisassembledInstructionEntry(uint16_t address, const DisassembledInstruction& instruction, Type type) :
-                    DisassembledInstructionReference(address, instruction),
+                DisassembledInstructionEntry(uint16_t bank, uint16_t address,
+                                             const DisassembledInstruction& instruction, Type type) :
+                    DisassembledInstructionRef(bank, address, instruction),
                     type(type) {
                 }
 
-                DisassembledInstructionEntry(uint16_t address, DisassembledInstruction&& instruction, Type type) :
-                    DisassembledInstructionReference(address, std::move(instruction)),
+                DisassembledInstructionEntry(uint16_t bank, uint16_t address, DisassembledInstruction&& instruction,
+                                             Type type) :
+                    DisassembledInstructionRef(bank, address, std::move(instruction)),
                     type(type) {
                 }
 
@@ -3512,7 +3554,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
             std::list<DisassembledInstructionEntry> code_view;
 
-            const auto current_instruction_opt = backend.disassemble(gb.cpu.instruction.address, true);
+            const auto current_instruction_opt = backend.disassemble(std::nullopt, gb.cpu.instruction.address, true);
             ASSERT(current_instruction_opt);
 
             const auto& current_instruction = *current_instruction_opt;
@@ -3522,9 +3564,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                 uint8_t n = 0;
                 for (int32_t addr = current_instruction.address - 1;
                      addr >= 0 && n < auto_disassemble_instructions.past; addr--) {
-                    auto instr = backend.get_disassembled_instruction(addr);
+                    uint16_t bank = DebuggerHelpers::get_bank_for_address(core.gb, addr);
+                    auto instr = backend.get_disassembled_instruction(bank, addr);
                     if (instr) {
-                        code_view.emplace_front(static_cast<uint16_t>(addr), *instr,
+                        code_view.emplace_front(bank, static_cast<uint16_t>(addr), *instr,
                                                 DisassembledInstructionEntry::Type::Past);
                         n++;
                     }
@@ -3532,31 +3575,32 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
             }
 
             // Current instruction
-            code_view.emplace_back(current_instruction.address, current_instruction.instruction,
-                                   DisassembledInstructionEntry::Type::Current);
+            code_view.emplace_back(current_instruction.bank, current_instruction.address,
+                                   current_instruction.instruction, DisassembledInstructionEntry::Type::Current);
 
             // Next instructions
             {
                 uint32_t addr = current_instruction.address + current_instruction.instruction.size();
                 for (uint16_t n = 0; n < auto_disassemble_instructions.next && addr <= 0xFFFF; n++) {
-                    const auto known_instr = backend.get_disassembled_instruction(addr);
-                    auto instr = backend.disassemble(addr);
-                    if (!instr)
+                    uint16_t bank = DebuggerHelpers::get_bank_for_address(core.gb, addr);
+
+                    const auto known_instr = backend.get_disassembled_instruction(bank, addr);
+                    auto instr = backend.disassemble(std::nullopt, addr /*,  no cache */);
+                    if (!instr) {
                         break;
+                    }
                     const bool known = known_instr && *known_instr == instr->instruction;
                     addr = instr->address + instr->instruction.size();
-                    code_view.emplace_back(instr->address, std::move(instr->instruction),
+                    code_view.emplace_back(instr->bank, instr->address, std::move(instr->instruction),
                                            known ? DisassembledInstructionEntry::Type::Future
                                                  : DisassembledInstructionEntry::Type::FutureGuess);
                 }
             }
 
-            bool show_symbols = !backend.get_symbols_by_address().empty();
-
             if (!code_view.empty()) {
-                const auto disassembler_entry = [this, show_symbols, width](const DisassembledInstructionEntry& entry) {
+                const auto disassembler_entry = [this](const DisassembledInstructionEntry& entry) {
                     Text t {};
-                    if (backend.get_breakpoint(entry.address)) {
+                    if (backend.get_breakpoint(entry.bank, entry.address)) {
                         t += red(Text {Token {DOT, 1}});
                     } else {
                         t += " ";
@@ -3597,7 +3641,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                     }
 
                     // Eventually print debug symbol
-                    if (std::string sym_name = get_debug_symbol(entry->address, width - 1); !sym_name.empty()) {
+                    if (std::string sym_name = get_debug_symbol(entry->bank, entry->address, width - 1);
+                        !sym_name.empty()) {
                         b << sym_name << ":" << endl;
                     }
 
@@ -3650,8 +3695,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         b << header("BREAKPOINTS", width) << endl;
 
         const auto breakpoint = [this](const Breakpoint& b) {
-            Text t {"(" + std::to_string(b.id) + ") " + hex(b.address)};
-            const auto instr = backend.get_disassembled_instruction(b.address);
+            Text t {"(" + std::to_string(b.id) + ") " + hex<uint16_t, 2>(b.bank) + ":" + hex(b.address)};
+            const auto instr = backend.get_disassembled_instruction(b.bank, b.address);
             if (instr) {
                 t += "  :  " + rpad(hex(*instr), 9) + "   " + rpad(instruction_mnemonic(*instr, b.address), 23);
             }
@@ -3670,14 +3715,14 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         auto b {make_block(width)};
 
         const auto watchpoint = [](const Watchpoint& w) {
-            Text t {"(" + std::to_string(w.id) + ") " + hex(w.address.from)};
+            Text t {"(" + std::to_string(w.id) + ") " + hex<uint16_t, 2>(w.bank) + ":" + hex(w.address.from)};
 
             if (w.address.from != w.address.to)
                 t += " - " + std::to_string(w.address.to);
 
-            if (w.condition.enabled) {
-                if (w.condition.condition.operation == Watchpoint::Condition::Operator::Equal) {
-                    t += " == " + hex(w.condition.condition.operand);
+            if (w.condition) {
+                if (w.condition->operation == Watchpoint::Condition::Operator::Equal) {
+                    t += " == " + hex(w.condition->operand);
                 }
             }
 
@@ -3694,6 +3739,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                 }
                 return "";
             }();
+
+            if (w.raw) {
+                t += " [raw]";
+            }
 
             return yellow(std::move(t));
         };
@@ -3726,16 +3775,15 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         if (std::holds_alternative<ExecutionBreakpointHit>(execution_state)) {
             b << header("INTERRUPTION", width) << endl;
             auto hit = std::get<ExecutionBreakpointHit>(execution_state).breakpoint_hit;
-            b << "Triggered breakpoint (" << hit.breakpoint.id << ") at address " << hex(hit.breakpoint.address)
-              << endl;
+            b << "Triggered breakpoint (" << hit.breakpoint.id << ") at " << hex(hit.breakpoint.address) << endl;
         } else if (std::holds_alternative<ExecutionWatchpointHit>(execution_state)) {
             b << header("INTERRUPTION", width) << endl;
             const auto hit = std::get<ExecutionWatchpointHit>(execution_state).watchpoint_hit;
-            b << "Triggered watchpoint (" << hit.watchpoint.id << ") at address " << hex(hit.address) << endl;
+            b << "Triggered watchpoint (" << hit.watchpoint.id << ")" << endl;
             if (hit.access_type == WatchpointHit::AccessType::Read) {
-                b << "Read at address " << hex(hit.address) << ": " << hex(hit.new_value) << endl;
+                b << "Read at " << hex(hit.address) << ": " << hex(hit.new_value) << endl;
             } else {
-                b << "Write at address " << hex(hit.address) << endl;
+                b << "Write at " << hex(hit.address) << endl;
                 b << "Old: " << hex(hit.old_value) << endl;
                 b << "New: " << hex(hit.new_value) << endl;
             }
@@ -3863,8 +3911,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
     if (!code_block_width) {
         // Use a CODE block width large enough to accommodate the widest symbol name (up to a limit)
         uint32_t longest_symbol_name = 0;
-        const auto& debug_symbols = backend.get_symbols_by_address();
-        for (const auto& [_, symbol] : debug_symbols) {
+        for (const auto& symbol : backend.get_symbols()) {
             longest_symbol_name = std::max(longest_symbol_name, static_cast<uint32_t>(symbol.name.size()));
         }
 
@@ -3901,17 +3948,18 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
     Presenter(std::cout).present(*root);
 }
 
-std::string DebuggerFrontend::instruction_to_string(const DisassembledInstructionReference& instr) const {
+std::string DebuggerFrontend::instruction_to_string(const DisassembledInstructionRef& instr) const {
     std::stringstream ss;
-    ss << hex(instr.address) << "  :  " << std::left << std::setw(9) << hex(instr.instruction) << "   " << std::left;
+    ss << hex<uint16_t, 2>(instr.bank) << ":" << hex(instr.address) << "  :  " << std::left << std::setw(9)
+       << hex(instr.instruction) << "   " << std::left;
     ss << instruction_mnemonic(instr.instruction, instr.address);
     return ss.str();
 }
 
-std::string DebuggerFrontend::get_debug_symbol(uint16_t address, uint8_t max_length) {
+std::string DebuggerFrontend::get_debug_symbol(uint16_t bank, uint16_t address, uint8_t max_length) {
     std::string sym_name;
 
-    if (auto symbol = backend.get_symbol(address)) {
+    if (auto symbol = backend.get_symbol(bank, address)) {
         sym_name = symbol->name;
         // Truncate the name with ellipsis if it's too long
         if (max_length && sym_name.size() > max_length) {
@@ -3923,14 +3971,12 @@ std::string DebuggerFrontend::get_debug_symbol(uint16_t address, uint8_t max_len
     return sym_name;
 }
 
-std::string DebuggerFrontend::dump_memory(uint16_t from, std::optional<uint8_t> bank, uint32_t n,
+std::string DebuggerFrontend::dump_memory(uint16_t from, std::optional<uint16_t> bank, uint32_t n,
                                           MemoryOutputFormat fmt, std::optional<uint8_t> fmt_arg, bool raw) const {
     std::string s;
 
     const auto read_memory = [this, bank, raw](uint16_t address) {
-        return bank  ? backend.read_memory_raw(address, *bank)
-               : raw ? backend.read_memory_raw(address)
-                     : backend.read_memory(address);
+        return (bank || raw) ? backend.read_memory_raw(bank, address) : backend.read_memory(address);
     };
 
     if (fmt == MemoryOutputFormat::Hexadecimal) {
@@ -3949,11 +3995,14 @@ std::string DebuggerFrontend::dump_memory(uint16_t from, std::optional<uint8_t> 
         backend.disassemble_multi(from, n, true);
         uint32_t i = 0;
         for (uint32_t address = from; address <= 0xFFFF && i < n;) {
-            std::optional<DisassembledInstruction> disas = backend.get_disassembled_instruction(address);
-            if (!disas)
-                FATAL("failed to disassemble at address " + std::to_string(address));
+            uint16_t actual_bank = bank ? *bank : DebuggerHelpers::get_bank_for_address(core.gb, address);
 
-            s += instruction_to_string(DisassembledInstructionReference {static_cast<uint16_t>(address), *disas}) +
+            const DisassembledInstruction* disas = backend.get_disassembled_instruction(actual_bank, address);
+            if (!disas) {
+                FATAL("failed to disassemble at address " + std::to_string(address));
+            }
+            s += instruction_to_string(
+                     DisassembledInstructionRef {actual_bank, static_cast<uint16_t>(address), *disas}) +
                  ((i < n - 1) ? "\n" : "");
             address += disas->size();
             i++;
@@ -3979,7 +4028,7 @@ std::string DebuggerFrontend::dump_display_entry(const DebuggerFrontend::Display
     if (std::holds_alternative<DisplayEntry::Examine>(d.expression)) {
         DisplayEntry::Examine dx = std::get<DisplayEntry::Examine>(d.expression);
         ss << d.id << ": "
-           << "x" << (dx.raw ? "x" : "") << "/" << dx.length << static_cast<char>(dx.format)
+           << "x" << (dx.raw ? "r" : "") << "/" << dx.length << static_cast<char>(dx.format)
            << (dx.format_arg ? std::to_string(*dx.format_arg) : "") << " "
            << (dx.bank ? (std::to_string(*dx.bank) + ":") : "") << hex(dx.address) << std::endl;
         ss << dump_memory(dx.address, dx.bank, dx.length, dx.format, dx.format_arg, dx.raw);

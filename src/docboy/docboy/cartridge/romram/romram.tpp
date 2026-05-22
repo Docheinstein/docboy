@@ -80,6 +80,36 @@ template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 uint32_t RomRam<RomSize, RamSize, Battery>::get_rom_size() const {
     return RomSize;
 }
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint8_t RomRam<RomSize, RamSize, Battery>::read_rom_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address < 0x8000);
+    return rom[address];
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint16_t RomRam<RomSize, RamSize, Battery>::get_rom_bank(uint16_t address) const {
+    ASSERT(address < 0x8000);
+    return 0;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint8_t RomRam<RomSize, RamSize, Battery>::read_ram_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+
+    if constexpr (Ram) {
+        uint32_t ram_address = mask_by_pow2<RamSize>(keep_bits<13>(address));
+        return ram[ram_address];
+    }
+
+    return 0xFF;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint16_t RomRam<RomSize, RamSize, Battery>::get_ram_bank(uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+    return 0;
+}
 #endif
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>

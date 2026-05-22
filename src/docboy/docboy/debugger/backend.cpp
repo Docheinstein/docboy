@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "../../../extra/extra/cartridge/header.h"
 #include "docboy/core/core.h"
 #include "docboy/debugger/frontend.h"
 #include "docboy/debugger/helpers.h"
@@ -89,6 +88,14 @@ uint32_t hash_combine(uint32_t h1, uint32_t h2) {
 
 DebuggerBackend::DebuggerBackend(Core& core_) :
     core {core_} {
+}
+
+bool DebuggerBackend::BankedAddressMapKey::operator==(const BankedAddressMapKey& other) const {
+    return bank == other.bank && address == other.address;
+}
+
+std::size_t DebuggerBackend::BankedAddressMapKey::Hash::operator()(const BankedAddressMapKey& key) const noexcept {
+    return std::hash<uint32_t> {}(key.bank << 16 | key.address);
 }
 
 // ===================== COMMANDS STATE INITIALIZATION =========================
@@ -288,36 +295,32 @@ void DebuggerBackend::attach_frontend(DebuggerFrontend& frontend_) {
 }
 
 void DebuggerBackend::load_symbols(const std::string& path) {
-    // TODO: handle prefix of address (<BANK> or BOOT)
-    auto symbol_list = DebugSymbolsParser::parse_sym_file(path);
+    symbols.list = DebugSymbolsParser::parse_sym_file(path);
 
-    for (const auto& symbol : symbol_list) {
-        symbols.by_address.emplace(symbol.address, symbol);
-        symbols.by_name.emplace(symbol.name, symbol);
+    for (const auto& symbol : symbols.list) {
+        symbols.by_address.emplace(BankedAddressMapKey {symbol.bank, symbol.address}, &symbol);
+        symbols.by_name.emplace(symbol.name, &symbol);
     }
 }
 
-std::optional<DebugSymbol> DebuggerBackend::get_symbol(uint16_t addr) const {
-    if (const auto sym = symbols.by_address.find(addr); sym != symbols.by_address.end()) {
+const DebugSymbol* DebuggerBackend::get_symbol(uint16_t bank, uint16_t addr) const {
+    if (const auto sym = symbols.by_address.find({bank, addr}); sym != symbols.by_address.end()) {
         return sym->second;
     }
 
-    return std::nullopt;
+    return nullptr;
 }
-std::optional<DebugSymbol> DebuggerBackend::get_symbol(std::string name) const {
+
+const DebugSymbol* DebuggerBackend::get_symbol(const std::string& name) const {
     if (const auto sym = symbols.by_name.find(name); sym != symbols.by_name.end()) {
         return sym->second;
     }
 
-    return std::nullopt;
+    return nullptr;
 }
 
-const std::map<uint16_t, DebugSymbol>& DebuggerBackend::get_symbols_by_address() const {
-    return symbols.by_address;
-}
-
-const std::map<std::string, DebugSymbol>& DebuggerBackend::get_symbols_by_name() const {
-    return symbols.by_name;
+const std::vector<DebugSymbol>& DebuggerBackend::get_symbols() const {
+    return symbols.list;
 }
 
 void DebuggerBackend::notify_tick(uint64_t tick) {
@@ -391,10 +394,10 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
             // TODO: we should consider also banking (MBC mostly, but also WRAM, ...) while disassembling,
             //       otherwise code from different banks using the same address will be overwritten.
             // Disassemble the current instruction
-            last_instruction = disassemble(cpu.instruction.address, true);
+            last_instruction = disassemble(std::nullopt, cpu.instruction.address, true);
 
             // Check breakpoints
-            auto b = get_breakpoint(cpu.instruction.address);
+            const Breakpoint* b = get_breakpoint(std::nullopt, cpu.instruction.address);
             if (b) {
                 // A breakpoint has been triggered: pull command again
                 pull_command(ExecutionBreakpointHit {*b});
@@ -406,28 +409,26 @@ void DebuggerBackend::notify_tick(uint64_t tick) {
     // Check watchpoints
     if (watchpoint_hit) {
         // Fill the missing watchpoint info (new value)
-        watchpoint_hit->new_value = read_memory_raw(watchpoint_hit->address);
+        watchpoint_hit->new_value = watchpoint_hit->watchpoint.raw
+                                        ? read_memory_raw(std::nullopt, watchpoint_hit->address)
+                                        : read_memory(watchpoint_hit->address);
 
         // Check if watchpoint's conditions are actually satisfied
         const auto& watchpoint = watchpoint_hit->watchpoint;
 
         if ((watchpoint_hit->access_type == WatchpointHit::AccessType::Read &&
-             (!watchpoint.condition.enabled ||
-              (watchpoint.condition.condition.operation == Watchpoint::Condition::Operator::Equal &&
-               watchpoint_hit->new_value == watchpoint.condition.condition.operand))) ||
+             (!watchpoint.condition || (watchpoint.condition->operation == Watchpoint::Condition::Operator::Equal &&
+                                        watchpoint_hit->new_value == watchpoint.condition->operand))) ||
             (watchpoint_hit->access_type == WatchpointHit::AccessType::Write &&
 
              ((watchpoint.type == Watchpoint::Type::ReadWrite || watchpoint.type == Watchpoint::Type::Write ||
                (watchpoint.type == Watchpoint::Type::Change &&
                 watchpoint_hit->old_value != watchpoint_hit->new_value)) &&
-              (!watchpoint.condition.enabled ||
-               (watchpoint.condition.condition.operation == Watchpoint::Condition::Operator::Equal &&
-                watchpoint_hit->new_value == watchpoint.condition.condition.operand))))) {
+              (!watchpoint.condition || (watchpoint.condition->operation == Watchpoint::Condition::Operator::Equal &&
+                                         watchpoint_hit->new_value == watchpoint.condition->operand))))) {
 
             // A watchpoint has been triggered: pull the command again
-            ExecutionWatchpointHit state {*watchpoint_hit};
-            state.watchpoint_hit.new_value = read_memory_raw(watchpoint_hit->address);
-            pull_command(state);
+            pull_command(ExecutionWatchpointHit {*watchpoint_hit});
         }
 
         // Reset watchpoint anyway
@@ -483,7 +484,9 @@ bool DebuggerBackend::load_state(const std::string& path) {
 }
 
 void DebuggerBackend::notify_memory_read(uint16_t address) {
-    if (!has_watchpoint(address)) {
+    const Watchpoint* w = get_watchpoint(std::nullopt, address);
+
+    if (!w) {
         return;
     }
 
@@ -496,16 +499,12 @@ void DebuggerBackend::notify_memory_read(uint16_t address) {
         return;
     }
 
-    auto w = get_watchpoint(address);
-    ASSERT(w);
-
-    uint8_t current_value = read_memory_raw(address);
     if ((w->type == Watchpoint::Type::Read || w->type == Watchpoint::Type::ReadWrite)) {
         watchpoint_hit = WatchpointHit();
         watchpoint_hit->watchpoint = *w;
         watchpoint_hit->address = address;
         watchpoint_hit->access_type = WatchpointHit::AccessType::Read;
-        watchpoint_hit->old_value = current_value;
+        watchpoint_hit->old_value = w->raw ? read_memory_raw(std::nullopt, address) : read_memory(address);
     }
 }
 
@@ -514,7 +513,9 @@ void DebuggerBackend::notify_memory_write(uint16_t address) {
     // have to recompute it from scratch each time.
     memory_hash = hash_combine(memory_hash, address);
 
-    if (!has_watchpoint(address)) {
+    const Watchpoint* w = get_watchpoint(std::nullopt, address);
+
+    if (!w) {
         return;
     }
 
@@ -527,16 +528,13 @@ void DebuggerBackend::notify_memory_write(uint16_t address) {
         return;
     }
 
-    auto w = get_watchpoint(address);
-    ASSERT(w);
-
     if (((w->type == Watchpoint::Type::ReadWrite || w->type == Watchpoint::Type::Write) ||
          (w->type == Watchpoint::Type::Change))) {
         watchpoint_hit = WatchpointHit();
         watchpoint_hit->watchpoint = *w;
         watchpoint_hit->address = address;
         watchpoint_hit->access_type = WatchpointHit::AccessType::Write;
-        watchpoint_hit->old_value = read_memory_raw(address);
+        watchpoint_hit->old_value = w->raw ? read_memory_raw(std::nullopt, address) : read_memory(address);
     }
 }
 
@@ -564,7 +562,24 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
             FATAL("unexpected rom size");
         }
 
-        cartridge_info->title = CartridgeHeaderHelpers::title_as_string(header);
+        const auto title_as_string = [](const CartridgeHeader& header) {
+            const auto* title_cstr = reinterpret_cast<const char*>(header.title);
+            std::string title {title_cstr, strnlen(title_cstr, sizeof(header.title))};
+#ifdef ENABLE_CGB
+            if (title.size() == 16) {
+                // Bit 15 is used for CGB flag instead of title for CGB-era cartridges.
+                uint8_t flag = cgb_flag(header);
+                if (flag == Specs::Cartridge::Header::CgbFlag::DMG_AND_CGB ||
+                    flag == Specs::Cartridge::Header::CgbFlag::CGB_ONLY) {
+                    title[15] = '\0';
+                }
+            }
+#endif
+
+            return title;
+        };
+
+        cartridge_info->title = title_as_string(header);
         cartridge_info->mbc = header.cartridge_type;
         cartridge_info->rom = header.rom_size;
         cartridge_info->ram = header.ram_size;
@@ -590,146 +605,162 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
     return *cartridge_info;
 }
 
-uint32_t DebuggerBackend::add_breakpoint(uint16_t addr) {
+uint32_t DebuggerBackend::add_breakpoint(std::optional<uint16_t> bank, uint16_t addr) {
+    const uint16_t actual_bank = bank_of(bank, addr);
+
     const uint32_t id = next_point_id++;
-    const Breakpoint b {id, addr};
-    breakpoints.push_back(b);
+    const Breakpoint& breakpoint = breakpoints.list.emplace_back(Breakpoint {id, actual_bank, addr});
+    breakpoints.by_address.emplace(BankedAddressMapKey {actual_bank, addr}, &breakpoint);
     return id;
 }
 
-std::optional<Breakpoint> DebuggerBackend::get_breakpoint(uint16_t addr) const {
-    if (const auto b = std::find_if(breakpoints.begin(), breakpoints.end(),
-                                    [addr](const Breakpoint& b) {
-                                        return b.address == addr;
-                                    });
-        b != breakpoints.end()) {
-        return *b;
+const Breakpoint* DebuggerBackend::get_breakpoint(std::optional<uint16_t> bank, uint16_t addr) const {
+    if (const auto it = breakpoints.by_address.find({bank_of(bank, addr), addr}); it != breakpoints.by_address.end()) {
+        return it->second;
     }
-    return std::nullopt;
+
+    return nullptr;
 }
 
-const std::vector<Breakpoint>& DebuggerBackend::get_breakpoints() const {
-    return breakpoints;
+const std::list<Breakpoint>& DebuggerBackend::get_breakpoints() const {
+    return breakpoints.list;
 }
 
-uint32_t DebuggerBackend::add_watchpoint(Watchpoint::Type type, uint16_t from, uint16_t to,
-                                         std::optional<Watchpoint::Condition> cond) {
+uint32_t DebuggerBackend::add_watchpoint(Watchpoint::Type type, std::optional<uint16_t> bank, uint16_t from,
+                                         uint16_t to, bool raw, std::optional<Watchpoint::Condition> cond) {
+    const uint16_t actual_bank = bank_of(bank, from);
+
     const uint32_t id = next_point_id++;
-    const Watchpoint w {id, type, {from, to}, {static_cast<bool>(cond), cond ? *cond : Watchpoint::Condition()}};
-    watchpoints.push_back(w);
-    for (uint16_t i = from; i <= to; i++) {
-        watchpoints_at_address[i] += 1;
+    const Watchpoint& watchpoint =
+        watchpoints.list.emplace_back(Watchpoint {id, type, actual_bank, {from, to}, raw, cond});
+
+    for (uint16_t addr = from; addr <= to; addr++) {
+        watchpoints.by_address.emplace(BankedAddressMapKey {actual_bank, addr}, &watchpoint);
     }
+
     return id;
 }
 
-std::optional<Watchpoint> DebuggerBackend::get_watchpoint(uint16_t addr) const {
-    if (const auto w = std::find_if(watchpoints.begin(), watchpoints.end(),
-                                    [addr](const Watchpoint& wp) {
-                                        return wp.address.from <= addr && addr <= wp.address.to;
-                                    });
-        w != watchpoints.end()) {
-        ASSERT(has_watchpoint(addr));
-        return *w;
+const Watchpoint* DebuggerBackend::get_watchpoint(std::optional<uint16_t> bank, uint16_t addr) const {
+    if (const auto it = watchpoints.by_address.find({bank_of(bank, addr), addr}); it != watchpoints.by_address.end()) {
+        return it->second;
     }
 
-    ASSERT(!has_watchpoint(addr));
-
-    return std::nullopt;
+    return nullptr;
 }
 
-const std::vector<Watchpoint>& DebuggerBackend::get_watchpoints() const {
-    return watchpoints;
-}
-
-bool DebuggerBackend::has_watchpoint(uint16_t addr) const {
-    // More efficient get_watchpoint.
-    return watchpoints_at_address[addr];
+const std::list<Watchpoint>& DebuggerBackend::get_watchpoints() const {
+    return watchpoints.list;
 }
 
 void DebuggerBackend::remove_point(uint32_t id) {
-    erase_if(breakpoints, [id](const Breakpoint& b) {
+    erase_if(breakpoints.by_address, [id](const std::pair<BankedAddressMapKey, const Breakpoint*>& addr_to_breakpoint) {
+        return addr_to_breakpoint.second->id == id;
+    });
+
+    erase_if(breakpoints.list, [id](const Breakpoint& b) {
         return b.id == id;
     });
-    if (const auto w = std::find_if(watchpoints.begin(), watchpoints.end(),
-                                    [id](const Watchpoint& w) {
-                                        return w.id == id;
-                                    });
-        w != watchpoints.end()) {
-        for (uint16_t i = w->address.from; i <= w->address.to; i++) {
-            watchpoints_at_address[i] -= 1;
-        }
 
-        erase_if(watchpoints, [id](const Watchpoint& w) {
-            return w.id == id;
-        });
-    }
+    erase_if(watchpoints.by_address, [id](const std::pair<BankedAddressMapKey, const Watchpoint*>& addr_to_watchpoint) {
+        return addr_to_watchpoint.second->id == id;
+    });
+
+    erase_if(watchpoints.list, [id](const Watchpoint& w) {
+        return w.id == id;
+    });
 }
 
 void DebuggerBackend::clear_points() {
-    breakpoints.clear();
-    watchpoints.clear();
-    memset(watchpoints_at_address, 0, sizeof(watchpoints_at_address));
+    breakpoints.list.clear();
+    breakpoints.by_address.clear();
+    watchpoints.list.clear();
+    watchpoints.by_address.clear();
 }
 
-std::optional<DisassembledInstructionReference> DebuggerBackend::disassemble(uint16_t addr, bool cache) {
-    auto instrs = disassemble_multi(addr, 1, cache);
-    if (instrs.empty()) {
-        return {};
+std::optional<DisassembledInstructionRef> DebuggerBackend::disassemble(std::optional<uint16_t> bank, uint16_t addr,
+                                                                       bool cache) {
+    if (auto instrs = disassemble_multi(bank, addr, 1, cache); !instrs.empty()) {
+        return instrs[0];
     }
-    return instrs[0];
+
+    return std::nullopt;
 }
 
-std::vector<DisassembledInstructionReference> DebuggerBackend::disassemble_multi(uint16_t addr, uint16_t n,
-                                                                                 bool cache) {
-    std::vector<DisassembledInstructionReference> refs;
+std::vector<DisassembledInstructionRef> DebuggerBackend::disassemble_multi(std::optional<uint16_t> bank, uint16_t addr,
+                                                                           uint16_t n, bool cache) {
+    std::vector<DisassembledInstructionRef> refs;
 
     uint32_t address_cursor = addr;
     for (uint32_t i = 0; i < n && address_cursor <= 0xFFFF; i++) {
-        auto instruction = do_disassemble(address_cursor);
-        if (!instruction) {
-            break;
-        }
+        auto instruction = do_disassemble(bank, address_cursor);
+
+        uint16_t actual_bank = bank_of(bank, address_cursor);
+
         if (cache) {
-            disassembled_instructions[address_cursor] = instruction;
+            if (!disassembled_instructions[actual_bank]) {
+                disassembled_instructions[actual_bank] =
+                    std::make_unique<std::array<std::optional<DisassembledInstruction>, 0x10000>>();
+            }
+            (*disassembled_instructions[actual_bank])[address_cursor] = instruction;
         }
-        refs.emplace_back(address_cursor, *instruction);
-        address_cursor += instruction->size();
+
+        refs.emplace_back(actual_bank, address_cursor, instruction);
+        address_cursor += instruction.size();
     }
 
     return refs;
 }
 
-std::vector<DisassembledInstructionReference> DebuggerBackend::disassemble_range(uint16_t from, uint16_t to,
-                                                                                 bool cache) {
-    std::vector<DisassembledInstructionReference> refs;
+std::vector<DisassembledInstructionRef> DebuggerBackend::disassemble_range(std::optional<uint16_t> bank, uint16_t from,
+                                                                           uint16_t to, bool cache) {
+    std::vector<DisassembledInstructionRef> refs;
 
     for (uint32_t address_cursor = from; address_cursor <= to && address_cursor <= 0xFFFF;) {
-        auto instruction = do_disassemble(address_cursor);
-        if (!instruction) {
-            break;
-        }
+        auto instruction = do_disassemble(bank, address_cursor);
+
+        uint16_t actual_bank = bank_of(bank, address_cursor);
+
         if (cache) {
-            disassembled_instructions[address_cursor] = instruction;
+            if (!disassembled_instructions[actual_bank]) {
+                disassembled_instructions[actual_bank] =
+                    std::make_unique<std::array<std::optional<DisassembledInstruction>, 0x10000>>();
+            }
+            (*disassembled_instructions[actual_bank])[address_cursor] = instruction;
         }
-        refs.emplace_back(address_cursor, *instruction);
-        address_cursor += instruction->size();
+
+        refs.emplace_back(actual_bank, address_cursor, instruction);
+        address_cursor += instruction.size();
     }
 
     return refs;
 }
 
-std::optional<DisassembledInstruction> DebuggerBackend::get_disassembled_instruction(uint16_t addr) const {
-    return disassembled_instructions[addr];
-}
-
-std::vector<DisassembledInstructionReference> DebuggerBackend::get_disassembled_instructions() const {
-    std::vector<DisassembledInstructionReference> refs;
-    for (uint32_t addr = 0; addr < array_size(disassembled_instructions); addr++) {
-        if (disassembled_instructions[addr]) {
-            refs.emplace_back(addr, *disassembled_instructions[addr]);
+const DisassembledInstruction* DebuggerBackend::get_disassembled_instruction(uint16_t bank, uint16_t addr) const {
+    if (const auto& disassembled_instructions_for_bank = disassembled_instructions[bank]) {
+        if (const std::optional<DisassembledInstruction>& instruction = (*disassembled_instructions_for_bank)[addr]) {
+            return &*instruction;
         }
     }
+
+    return nullptr;
+}
+
+std::vector<DisassembledInstructionRef> DebuggerBackend::get_disassembled_instructions() const {
+    std::vector<DisassembledInstructionRef> refs;
+
+    // TODO: avoid copying all the instructions?
+    for (uint32_t bank = 0; bank < array_size(disassembled_instructions); ++bank) {
+        if (const auto& disassembled_instructions_for_bank = disassembled_instructions[bank]) {
+            for (uint32_t addr = 0; addr < disassembled_instructions_for_bank->size(); addr++) {
+                if (const std::optional<DisassembledInstruction>& instruction =
+                        (*disassembled_instructions_for_bank)[addr]) {
+                    refs.emplace_back(bank, addr, *instruction);
+                }
+            }
+        }
+    }
+
     return refs;
 }
 
@@ -740,32 +771,38 @@ uint8_t DebuggerBackend::read_memory(uint16_t addr) {
     return value;
 }
 
-uint8_t DebuggerBackend::read_memory_raw(uint16_t addr) {
+uint8_t DebuggerBackend::read_memory_raw(std::optional<uint16_t> bank, uint16_t addr) {
     allow_memory_callbacks = false;
-    uint8_t value = DebuggerHelpers::read_memory_raw(core.gb, addr);
+    uint8_t value = DebuggerHelpers::read_memory_raw(core.gb, bank_of(bank, addr), addr);
     allow_memory_callbacks = true;
     return value;
 }
 
-uint8_t DebuggerBackend::read_memory_raw(uint16_t addr, uint8_t bank) {
-    allow_memory_callbacks = false;
-    uint8_t value = DebuggerHelpers::read_memory_raw(core.gb, addr, bank);
-    allow_memory_callbacks = true;
-    return value;
-}
+DisassembledInstruction DebuggerBackend::do_disassemble(std::optional<uint16_t> bank, uint16_t addr) {
+    const auto read_memory_func = [this, bank](uint16_t address) {
+        return bank ? read_memory_raw(*bank, address) : read_memory(address);
+    };
 
-std::optional<DisassembledInstruction> DebuggerBackend::do_disassemble(uint16_t addr) {
     uint32_t address_cursor = addr;
-    uint8_t opcode = read_memory(address_cursor++);
+    uint8_t opcode = read_memory_func(address_cursor++);
     DisassembledInstruction instruction {opcode};
 
-    // this works for CB and non CB because all CB instructions have length 2
+    // This works for CB and non-CB because all CB instructions have length 2
     uint8_t length = instruction_length(opcode);
 
-    while (address_cursor < addr + length && address_cursor <= 0xFFFF)
-        instruction.push_back(read_memory(address_cursor++));
+    while (address_cursor < addr + length && address_cursor <= 0xFFFF) {
+        instruction.push_back(read_memory_func(address_cursor++));
+    }
 
     return instruction;
+}
+
+uint16_t DebuggerBackend::bank_of(std::optional<uint16_t> bank, uint16_t address) const {
+    return bank ? *bank : bank_of(address);
+}
+
+uint16_t DebuggerBackend::bank_of(uint16_t addr) const {
+    return DebuggerHelpers::get_bank_for_address(core.gb, addr);
 }
 
 void DebuggerBackend::pull_command(const ExecutionState& state) {
@@ -792,11 +829,12 @@ void DebuggerBackend::clear() {
     run = true;
     interrupted = false;
     cartridge_info = std::nullopt;
-    breakpoints.clear();
-    watchpoints.clear();
-    memset(watchpoints_at_address, 0, sizeof(watchpoints_at_address));
+    breakpoints.list.clear();
+    breakpoints.by_address.clear();
+    watchpoints.list.clear();
+    watchpoints.by_address.clear();
     for (uint32_t i = 0; i < array_size(disassembled_instructions); i++) {
-        disassembled_instructions[i] = std::nullopt;
+        disassembled_instructions[i].reset();
     }
     watchpoint_hit = std::nullopt;
     next_point_id = 0;
@@ -817,7 +855,7 @@ void DebuggerBackend::proceed() {
     init_command_state<ContinueCommand>(std::get<ContinueCommand>(*command));
 }
 
-const std::vector<DisassembledInstructionReference>& DebuggerBackend::get_call_stack() const {
+const std::vector<DisassembledInstructionRef>& DebuggerBackend::get_call_stack() const {
     return call_stack;
 }
 

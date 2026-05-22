@@ -15,6 +15,7 @@ NoMbc<RamSize>::NoMbc(const uint8_t* data, uint32_t length) {
 
 template <uint32_t RamSize>
 uint8_t NoMbc<RamSize>::read_rom(uint16_t address) const {
+    ASSERT(address < 0x8000);
     return rom[address];
 }
 
@@ -28,9 +29,9 @@ uint8_t NoMbc<RamSize>::read_ram(uint16_t address) const {
 
     if constexpr (Ram) {
         return ram[keep_bits<13>(address)];
-    } else {
-        return 0xFF;
     }
+
+    return 0xFF;
 }
 
 template <uint32_t RamSize>
@@ -67,6 +68,34 @@ uint8_t* NoMbc<RamSize>::get_rom_data() {
 template <uint32_t RamSize>
 uint32_t NoMbc<RamSize>::get_rom_size() const {
     return RomSize;
+}
+
+template <uint32_t RamSize>
+uint8_t NoMbc<RamSize>::read_rom_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address < 0x8000);
+    return rom[address];
+}
+
+template <uint32_t RamSize>
+uint16_t NoMbc<RamSize>::get_rom_bank(uint16_t address) const {
+    ASSERT(address < 0x8000);
+    return 0;
+}
+
+template <uint32_t RamSize>
+uint8_t NoMbc<RamSize>::read_ram_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+    if constexpr (Ram) {
+        return ram[keep_bits<13>(address)];
+    }
+
+    return 0xFF;
+}
+
+template <uint32_t RamSize>
+uint16_t NoMbc<RamSize>::get_ram_bank(uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+    return 0;
 }
 #endif
 

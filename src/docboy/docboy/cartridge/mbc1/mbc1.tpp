@@ -162,6 +162,54 @@ template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelec
 uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_rom_size() const {
     return RomSize;
 }
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
+uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::read_rom_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address < 0x8000);
+    uint32_t rom_address = mask_by_pow2<RomSize>((bank << 14) | keep_bits<14>(address));
+    return rom[rom_address];
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
+uint16_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_rom_bank(uint16_t address) const {
+    ASSERT(address < 0x8000);
+
+    if (address < 0x4000) {
+        // 0000 - 0x3FFF
+        if (banking_mode == 0b1) {
+            return upper_rom_bank_selector_ram_bank_selector << RomBankSelectorBits;
+        }
+        return 0;
+    }
+
+    // 4000 - 0x7FFF
+    return upper_rom_bank_selector_ram_bank_selector << RomBankSelectorBits | rom_bank_selector;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
+uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::read_ram_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+
+    if constexpr (Ram) {
+        uint32_t ram_address = mask_by_pow2<RamSize>((bank << 13) | keep_bits<13>(address));
+        return ram[ram_address];
+    }
+
+    return 0xFF;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
+uint16_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_ram_bank(uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+
+    if constexpr (Ram) {
+        if (banking_mode == 0x1) {
+            return upper_rom_bank_selector_ram_bank_selector;
+        }
+    }
+
+    return 0;
+}
 #endif
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>

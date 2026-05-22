@@ -154,6 +154,50 @@ template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
 uint32_t Mbc5<RomSize, RamSize, Battery, Rumble>::get_rom_size() const {
     return RomSize;
 }
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
+uint8_t Mbc5<RomSize, RamSize, Battery, Rumble>::read_rom_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address < 0x8000);
+    uint32_t rom_address = bank << 14 | keep_bits<14>(address);
+    rom_address = mask_by_pow2<RomSize>(rom_address);
+    return rom[rom_address];
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
+uint16_t Mbc5<RomSize, RamSize, Battery, Rumble>::get_rom_bank(uint16_t address) const {
+    ASSERT(address < 0x8000);
+
+    // 0000 - 0x3FFF
+    if (address < 0x4000) {
+        return 0;
+    }
+
+    // 4000 - 0x7FFF
+    return rom_bank_selector;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
+uint8_t Mbc5<RomSize, RamSize, Battery, Rumble>::read_ram_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+
+    if constexpr (Ram) {
+        uint32_t ram_address = mask_by_pow2<RamSize>((bank << 13) | keep_bits<13>(address));
+        return ram[ram_address];
+    }
+
+    return 0xFF;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
+uint16_t Mbc5<RomSize, RamSize, Battery, Rumble>::get_ram_bank(uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+
+    if constexpr (Ram) {
+        return ram_bank_selector;
+    }
+
+    return 0;
+}
 #endif
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>

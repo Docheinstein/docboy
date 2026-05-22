@@ -116,6 +116,40 @@ template <uint32_t RomSize, bool Battery>
 uint32_t Mbc2<RomSize, Battery>::get_rom_size() const {
     return RomSize;
 }
+
+template <uint32_t RomSize, bool Battery>
+uint8_t Mbc2<RomSize, Battery>::read_rom_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address < 0x8000);
+    uint32_t rom_address = mask_by_pow2<RomSize>((bank << 14) | keep_bits<14>(address));
+    return rom[rom_address];
+}
+
+template <uint32_t RomSize, bool Battery>
+uint16_t Mbc2<RomSize, Battery>::get_rom_bank(uint16_t address) const {
+    ASSERT(address < 0x8000);
+
+    if (address < 0x4000) {
+        // 0000 - 0x3FFF
+        return 0;
+    }
+
+    // 4000 - 0x7FFF
+    return rom_bank_selector;
+}
+
+template <uint32_t RomSize, bool Battery>
+uint8_t Mbc2<RomSize, Battery>::read_ram_raw(uint16_t bank, uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+    uint16_t ram_address = keep_bits<9>(address);
+    return 0xF0 | keep_bits<4>(ram[ram_address]);
+}
+
+template <uint32_t RomSize, bool Battery>
+uint16_t Mbc2<RomSize, Battery>::get_ram_bank(uint16_t address) const {
+    ASSERT(address >= 0xA000 && address < 0xC000);
+
+    return 0;
+}
 #endif
 
 template <uint32_t RomSize, bool Battery>

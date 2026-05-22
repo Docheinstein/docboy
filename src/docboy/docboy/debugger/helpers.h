@@ -14,8 +14,9 @@ public:
     static bool is_in_isr(const Cpu& cpu);
 
     static uint8_t read_memory(const Mmu& mmu, uint16_t address);
-    static uint8_t read_memory_raw(const GameBoy& gb, uint16_t address);
-    static uint8_t read_memory_raw(const GameBoy& gb, uint16_t address, uint8_t bank);
+    static uint8_t read_memory_raw(const GameBoy& gb, uint16_t bank, uint16_t address);
+
+    static uint16_t get_bank_for_address(const GameBoy& gb, uint16_t addr);
 };
 
 #endif // DEBUGGERHELPERS_H
