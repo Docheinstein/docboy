@@ -71,6 +71,16 @@ uint32_t NoMbc<RamSize>::get_rom_size() const {
 }
 
 template <uint32_t RamSize>
+uint8_t* NoMbc<RamSize>::get_ram_data() {
+    return ram;
+}
+
+template <uint32_t RamSize>
+uint32_t NoMbc<RamSize>::get_ram_size() const {
+    return RamSize;
+}
+
+template <uint32_t RamSize>
 uint8_t NoMbc<RamSize>::read_rom_raw(uint16_t bank, uint16_t address) const {
     ASSERT(address < 0x8000);
     return rom[address];

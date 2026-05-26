@@ -39,6 +39,9 @@ public:
     virtual uint8_t* get_rom_data() = 0;
     virtual uint32_t get_rom_size() const = 0;
 
+    virtual uint8_t* get_ram_data() = 0;
+    virtual uint32_t get_ram_size() const = 0;
+
     virtual uint8_t read_rom_raw(uint16_t bank, uint16_t address) const = 0;
     virtual uint16_t get_rom_bank(uint16_t address) const = 0;
 

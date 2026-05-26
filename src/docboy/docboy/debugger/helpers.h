@@ -17,6 +17,8 @@ public:
     static uint8_t read_memory_raw(const GameBoy& gb, uint16_t bank, uint16_t address);
 
     static uint16_t get_bank_for_address(const GameBoy& gb, uint16_t addr);
+
+    static bool is_valid_banked_address(const GameBoy& gb, uint16_t bank, uint16_t address);
 };
 
 #endif // DEBUGGERHELPERS_H

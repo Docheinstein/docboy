@@ -107,6 +107,16 @@ uint32_t HuC1<RomSize, RamSize>::get_rom_size() const {
 }
 
 template <uint32_t RomSize, uint32_t RamSize>
+uint8_t* HuC1<RomSize, RamSize>::get_ram_data() {
+    return ram;
+}
+
+template <uint32_t RomSize, uint32_t RamSize>
+uint32_t HuC1<RomSize, RamSize>::get_ram_size() const {
+    return RamSize;
+}
+
+template <uint32_t RomSize, uint32_t RamSize>
 uint8_t HuC1<RomSize, RamSize>::read_rom_raw(uint16_t bank, uint16_t address) const {
     ASSERT(address < 0x8000);
     uint32_t rom_address = mask_by_pow2<RomSize>(bank << 14 | keep_bits<14>(address));

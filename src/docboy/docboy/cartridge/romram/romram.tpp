@@ -82,6 +82,16 @@ uint32_t RomRam<RomSize, RamSize, Battery>::get_rom_size() const {
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint8_t* RomRam<RomSize, RamSize, Battery>::get_ram_data() {
+    return ram;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint32_t RomRam<RomSize, RamSize, Battery>::get_ram_size() const {
+    return RamSize;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 uint8_t RomRam<RomSize, RamSize, Battery>::read_rom_raw(uint16_t bank, uint16_t address) const {
     ASSERT(address < 0x8000);
     return rom[address];

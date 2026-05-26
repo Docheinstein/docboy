@@ -164,6 +164,16 @@ uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_rom_size() co
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
+uint8_t* Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_ram_data() {
+    return ram;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
+uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_ram_size() const {
+    return RamSize;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
 uint8_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::read_rom_raw(uint16_t bank, uint16_t address) const {
     ASSERT(address < 0x8000);
     uint32_t rom_address = mask_by_pow2<RomSize>((bank << 14) | keep_bits<14>(address));

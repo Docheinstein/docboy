@@ -2,6 +2,7 @@
 
 #include <csignal>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <optional>
 #include <regex>
@@ -197,12 +198,16 @@ template <typename T>
 T parse_hex(const std::string& s, bool* ok) {
     const char* cs = s.c_str();
     char* end_ptr;
-    T result = std::strtol(cs, &end_ptr, 16);
+    auto result = std::strtol(cs, &end_ptr, 16);
     if (end_ptr == cs || *end_ptr != '\0') {
         if (ok) {
             *ok = false;
         }
         return 0;
+    }
+
+    if (ok && result > std::numeric_limits<T>::max()) {
+        *ok = false;
     }
 
     return result;
@@ -237,7 +242,14 @@ std::pair<std::optional<uint16_t> /* bank*/, uint16_t /* address */> parse_banke
                                                                                          const DebuggerBackend& backend,
                                                                                          bool* ok) {
     if (!bank_prefix.empty()) {
-        return {parse_hex<uint16_t>(bank_prefix, ok), address_str_to_addr(addr_str, ok)};
+        std::pair<std::optional<uint16_t>, uint16_t> banked_address {parse_hex<uint16_t>(bank_prefix, ok),
+                                                                     address_str_to_addr(addr_str, ok)};
+        if (ok && !DebuggerHelpers::is_valid_banked_address(backend.get_core().gb, *banked_address.first,
+                                                            banked_address.second)) {
+            *ok = false;
+        }
+
+        return banked_address;
     }
 
     return {std::nullopt, parse_symbol(addr_str, backend, ok)};
@@ -733,16 +745,15 @@ std::optional<Command> DebuggerFrontend::handle_command<FrontendExamineCommand>(
 template <>
 std::optional<Command>
 DebuggerFrontend::handle_command<FrontendSearchBytesCommand>(const FrontendSearchBytesCommand& cmd) {
+    // Read all memory
     // TODO: handle bytes in different MBC banks?
-
-    // read all memory
     std::vector<uint8_t> mem {};
     mem.resize(0x10000);
     for (uint32_t addr = 0; addr <= 0xFFFF; addr++) {
         mem[addr] = backend.read_memory(addr);
     }
 
-    // search for bytes in memory
+    // Search for bytes in memory
     std::vector<uint32_t> occurrences = mem_find_all(mem.data(), mem.size(), cmd.bytes.data(), cmd.bytes.size());
     for (const auto& addr : occurrences) {
         std::cout << hex((uint16_t)addr) << std::endl;

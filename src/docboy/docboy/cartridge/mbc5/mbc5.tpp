@@ -156,6 +156,16 @@ uint32_t Mbc5<RomSize, RamSize, Battery, Rumble>::get_rom_size() const {
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
+uint8_t* Mbc5<RomSize, RamSize, Battery, Rumble>::get_ram_data() {
+    return ram;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
+uint32_t Mbc5<RomSize, RamSize, Battery, Rumble>::get_ram_size() const {
+    return RamSize;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
 uint8_t Mbc5<RomSize, RamSize, Battery, Rumble>::read_rom_raw(uint16_t bank, uint16_t address) const {
     ASSERT(address < 0x8000);
     uint32_t rom_address = bank << 14 | keep_bits<14>(address);
