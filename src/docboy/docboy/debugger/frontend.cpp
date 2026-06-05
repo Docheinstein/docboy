@@ -3926,7 +3926,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
     r1->add_node(make_horizontal_line_divider());
     r1->add_node(std::move(c4));
 
-    static constexpr uint32_t MINIMUM_CODE_WIDTH = 56;
+    static constexpr uint32_t MINIMUM_CODE_WIDTH = 60;
     static constexpr uint32_t MINIMUM_DISPLAY_WIDTH = 32;
     static constexpr uint32_t CALL_STACK_WIDTH = 36;
     static constexpr uint32_t BREAKPOINTS_WIDTH = 52;
