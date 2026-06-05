@@ -4019,19 +4019,10 @@ std::string DebuggerFrontend::dump_memory(uint16_t from, std::optional<Bank> ban
             s += std::to_string(read_memory(from + i)) + " ";
         }
     } else if (fmt == MemoryOutputFormat::Instruction) {
-        backend.disassemble_multi(bank, from, n, false);
+        std::vector<DisassembledInstructionRef> instrs = backend.disassemble_multi(bank, from, n, false);
         uint32_t i = 0;
-        for (uint32_t address = from; address <= 0xFFFF && i < n;) {
-            Bank actual_bank = bank ? *bank : DebuggerHelpers::get_bank_for_address(core.gb, address);
-
-            const DisassembledInstruction* disas = backend.get_disassembled_instruction(actual_bank, address);
-            if (!disas) {
-                FATAL("failed to disassemble at address " + std::to_string(address));
-            }
-            s += instruction_to_string(
-                     DisassembledInstructionRef {actual_bank, static_cast<uint16_t>(address), *disas}) +
-                 ((i < n - 1) ? "\n" : "");
-            address += disas->size();
+        for (const auto& instr : instrs) {
+            s += instruction_to_string(instr) + ((i < n - 1) ? "\n" : "");
             i++;
         }
     } else if (fmt == MemoryOutputFormat::Hexdump) {
