@@ -560,17 +560,6 @@ int main(int argc, char* argv[]) {
     });
 #endif
 
-    // Load Boot ROM(s)
-#ifdef ENABLE_BOOTROM
-    core_controller1.load_boot_rom(args.boot_rom);
-
-#ifdef ENABLE_TWO_PLAYERS_MODE
-    if (two_players_mode) {
-        core_controller2->load_boot_rom(args.boot_rom);
-    }
-#endif
-#endif
-
     // Load ROM(s)
     bool all_roms_loaded = false;
 
@@ -588,6 +577,17 @@ int main(int argc, char* argv[]) {
     if (args.second_rom && !args.second_rom->empty()) {
         core_controller2->load_rom(*args.second_rom);
     }
+#endif
+
+    // Load Boot ROM(s)
+#ifdef ENABLE_BOOTROM
+    core_controller1.load_boot_rom(args.boot_rom);
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode) {
+        core_controller2->load_boot_rom(args.boot_rom);
+    }
+#endif
 #endif
 
 #ifdef ENABLE_DEBUGGER

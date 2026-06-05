@@ -54,7 +54,7 @@ using CommandState = std::variant<TickCommandState, DotCommandState, StepCommand
 class DebuggerBackend {
 public:
     struct BankedAddressMapKey {
-        uint16_t bank {};
+        Bank bank {};
         uint16_t address {};
 
         bool operator==(const BankedAddressMapKey& other) const;
@@ -69,7 +69,7 @@ public:
     void attach_frontend(DebuggerFrontend& frontend);
 
     void load_symbols(const std::string& path);
-    const DebugSymbol* get_symbol(uint16_t bank, uint16_t addr) const;
+    const DebugSymbol* get_symbol(Bank bank, uint16_t addr) const;
     const DebugSymbol* get_symbol(const std::string& name) const;
     const std::vector<DebugSymbol>& get_symbols() const;
 
@@ -83,25 +83,24 @@ public:
 
     const CartridgeInfo& get_cartridge_info();
 
-    uint32_t add_breakpoint(std::optional<uint16_t> bank, uint16_t addr);
-    const Breakpoint* get_breakpoint(std::optional<uint16_t> bank, uint16_t addr) const;
+    uint32_t add_breakpoint(std::optional<Bank> bank, uint16_t addr);
+    const Breakpoint* get_breakpoint(std::optional<Bank> bank, uint16_t addr) const;
     const std::list<Breakpoint>& get_breakpoints() const;
 
-    uint32_t add_watchpoint(Watchpoint::Type, std::optional<uint16_t> bank, uint16_t from, uint16_t to, bool raw,
+    uint32_t add_watchpoint(Watchpoint::Type, std::optional<Bank> bank, uint16_t from, uint16_t to, bool raw,
                             std::optional<Watchpoint::Condition>);
-    const Watchpoint* get_watchpoint(std::optional<uint16_t> bank, uint16_t addr) const;
+    const Watchpoint* get_watchpoint(std::optional<Bank> bank, uint16_t addr) const;
     const std::list<Watchpoint>& get_watchpoints() const;
 
     void remove_point(uint32_t id);
     void clear_points();
 
-    std::optional<DisassembledInstructionRef> disassemble(std::optional<uint16_t> bank, uint16_t addr,
-                                                          bool cache = false);
-    std::vector<DisassembledInstructionRef> disassemble_multi(std::optional<uint16_t> bank, uint16_t addr,
-                                                              uint16_t n = 1, bool cache = false);
-    std::vector<DisassembledInstructionRef> disassemble_range(std::optional<uint16_t> bank, uint16_t from, uint16_t to,
+    std::optional<DisassembledInstructionRef> disassemble(std::optional<Bank> bank, uint16_t addr, bool cache = false);
+    std::vector<DisassembledInstructionRef> disassemble_multi(std::optional<Bank> bank, uint16_t addr, uint16_t n = 1,
                                                               bool cache = false);
-    const DisassembledInstruction* get_disassembled_instruction(uint16_t bank, uint16_t addr) const;
+    std::vector<DisassembledInstructionRef> disassemble_range(std::optional<Bank> bank, uint16_t from, uint16_t to,
+                                                              bool cache = false);
+    const DisassembledInstruction* get_disassembled_instruction(Bank bank, uint16_t addr) const;
     std::vector<DisassembledInstructionRef> get_disassembled_instructions() const;
 
     const std::vector<DisassembledInstructionRef>& get_call_stack() const;
@@ -109,7 +108,7 @@ public:
     uint32_t state_hash() const;
 
     uint8_t read_memory(uint16_t addr);
-    uint8_t read_memory_raw(std::optional<uint16_t> bank, uint16_t addr);
+    uint8_t read_memory_raw(std::optional<Bank> bank, uint16_t addr);
 
     void proceed();
     void interrupt();
@@ -122,16 +121,21 @@ public:
     const Core& get_core() const;
 
 private:
-    static constexpr uint16_t MAX_BANKS = 512; // 8 MB
+    static constexpr uint16_t ROM_MAX_BANKS = 512; // 8 MB
+#ifdef ENABLE_BOOTROM
+    static constexpr uint16_t MAX_BANKS = ROM_MAX_BANKS + 1;
+#else
+    static constexpr uint16_t MAX_BANKS = ROM_MAX_BANKS;
+#endif
 
     void clear();
 
     void pull_command(const ExecutionState& state);
 
-    DisassembledInstruction do_disassemble(std::optional<uint16_t> bank, uint16_t addr);
+    DisassembledInstruction do_disassemble(std::optional<Bank> bank, uint16_t addr);
 
-    uint16_t bank_of(std::optional<uint16_t> bank, uint16_t address) const;
-    uint16_t bank_of(uint16_t addr) const;
+    Bank bank_of(std::optional<Bank> bank, uint16_t address) const;
+    Bank bank_of(uint16_t addr) const;
 
     template <typename CommandType>
     void init_command_state(const CommandType& cmd);

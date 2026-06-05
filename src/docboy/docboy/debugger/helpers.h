@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <optional>
 
+#include "docboy/debugger/shared.h"
+
 class GameBoy;
 class Cpu;
 class Mmu;
@@ -14,11 +16,11 @@ public:
     static bool is_in_isr(const Cpu& cpu);
 
     static uint8_t read_memory(const Mmu& mmu, uint16_t address);
-    static uint8_t read_memory_raw(const GameBoy& gb, uint16_t bank, uint16_t address);
+    static uint8_t read_memory_raw(const GameBoy& gb, Bank bank, uint16_t address);
 
-    static uint16_t get_bank_for_address(const GameBoy& gb, uint16_t addr);
+    static Bank get_bank_for_address(const GameBoy& gb, uint16_t addr);
 
-    static bool is_valid_banked_address(const GameBoy& gb, uint16_t bank, uint16_t address);
+    static bool is_valid_banked_address(const GameBoy& gb, Bank bank, uint16_t address);
 };
 
 #endif // DEBUGGERHELPERS_H

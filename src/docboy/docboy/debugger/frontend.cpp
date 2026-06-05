@@ -40,13 +40,13 @@
 
 namespace {
 struct FrontendBreakpointCommand {
-    std::optional<uint16_t> bank {};
+    std::optional<Bank> bank {};
     uint16_t address {};
 };
 
 struct FrontendWatchpointCommand {
     Watchpoint::Type type {};
-    std::optional<uint16_t> bank {};
+    std::optional<Bank> bank {};
     struct {
         uint16_t from {};
         uint16_t to {};
@@ -68,7 +68,7 @@ struct FrontendExamineCommand {
     MemoryOutputFormat format {};
     std::optional<uint8_t> format_arg {};
     uint32_t length {};
-    std::optional<uint16_t> bank {};
+    std::optional<Bank> bank {};
     uint16_t address {};
     bool raw {};
 };
@@ -85,7 +85,7 @@ struct FrontendDisplayCommand {
     MemoryOutputFormat format {};
     std::optional<uint8_t> format_arg {};
     uint32_t length {};
-    std::optional<uint16_t> bank {};
+    std::optional<Bank> bank {};
     uint16_t address {};
     bool raw {};
 };
@@ -134,7 +134,7 @@ struct FrontendFrameBackCommand {
 };
 
 struct FrontendContinueCommand {
-    std::optional<uint16_t> bank {};
+    std::optional<Bank> bank {};
     std::optional<uint16_t> address {};
 };
 
@@ -229,6 +229,15 @@ uint16_t address_str_to_addr(const std::string& s, bool* ok) {
     return parse_hex<uint16_t>(s, ok);
 }
 
+std::string bank_to_str(Bank bank) {
+#ifdef ENABLE_BOOTROM
+    if (bank.boot) {
+        return "BOOT";
+    }
+#endif
+    return hex<uint16_t, 2>(bank.bank);
+}
+
 uint16_t parse_symbol(const std::string& addr_str, const DebuggerBackend& backend, bool* ok) {
     if (const auto sym = backend.get_symbol(addr_str)) {
         return sym->address;
@@ -237,19 +246,27 @@ uint16_t parse_symbol(const std::string& addr_str, const DebuggerBackend& backen
     return address_str_to_addr(addr_str, ok);
 }
 
-std::pair<std::optional<uint16_t> /* bank*/, uint16_t /* address */> parse_banked_symbol(const std::string& bank_prefix,
-                                                                                         const std::string& addr_str,
-                                                                                         const DebuggerBackend& backend,
-                                                                                         bool* ok) {
+std::pair<std::optional<Bank>, uint16_t /* address */> parse_banked_symbol(const std::string& bank_prefix,
+                                                                           const std::string& addr_str,
+                                                                           const DebuggerBackend& backend, bool* ok) {
     if (!bank_prefix.empty()) {
-        std::pair<std::optional<uint16_t>, uint16_t> banked_address {parse_hex<uint16_t>(bank_prefix, ok),
-                                                                     address_str_to_addr(addr_str, ok)};
-        if (ok && !DebuggerHelpers::is_valid_banked_address(backend.get_core().gb, *banked_address.first,
-                                                            banked_address.second)) {
+#ifdef ENABLE_BOOTROM
+        Bank bank;
+        if (equals_ignore_case(bank_prefix, "BOOT")) {
+            bank = BootBank {};
+        } else {
+            bank = NumberedBank {parse_hex<uint16_t>(bank_prefix, ok)};
+        }
+#else
+        NumberedBank bank {parse_hex<uint16_t>(bank_prefix, ok)};
+#endif
+        uint16_t address = address_str_to_addr(addr_str, ok);
+
+        if (ok && !DebuggerHelpers::is_valid_banked_address(backend.get_core().gb, bank, address)) {
             *ok = false;
         }
 
-        return banked_address;
+        return {bank, address};
     }
 
     return {std::nullopt, parse_symbol(addr_str, backend, ok)};
@@ -770,7 +787,7 @@ DebuggerFrontend::handle_command<FrontendSearchInstructionsCommand>(const Fronte
     for (const auto& instr : backend.get_disassembled_instructions()) {
         if (mem_find_first(instr.instruction.data(), instr.instruction.size(), cmd.instruction.data(),
                            cmd.instruction.size())) {
-            std::cout << hex<uint16_t, 2>(instr.bank) << ":" << hex(instr.address) << "    "
+            std::cout << bank_to_str(instr.bank) << ":" << hex(instr.address) << "    "
                       << instruction_mnemonic(instr.instruction, instr.address) << std::endl;
         }
     }
@@ -947,8 +964,7 @@ DebuggerFrontend::handle_command<FrontendShowSymbolsCommand>(const FrontendShowS
     const auto& symbols = backend.get_symbols();
     if (!symbols.empty()) {
         for (const auto& symbol : symbols) {
-            std::cout << (symbol.boot ? "BOOT" : hex<uint16_t, 2>(symbol.bank)) << ":" << hex(symbol.address) << " "
-                      << symbol.name << std::endl;
+            std::cout << bank_to_str(symbol.bank) << ":" << hex(symbol.address) << " " << symbol.name << std::endl;
         }
     } else {
         std::cout << "No symbols loaded" << std::endl;
@@ -3548,13 +3564,13 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
             struct DisassembledInstructionEntry : DisassembledInstructionRef {
                 enum class Type { Past, Current, Future, FutureGuess };
 
-                DisassembledInstructionEntry(uint16_t bank, uint16_t address,
-                                             const DisassembledInstruction& instruction, Type type) :
+                DisassembledInstructionEntry(Bank bank, uint16_t address, const DisassembledInstruction& instruction,
+                                             Type type) :
                     DisassembledInstructionRef(bank, address, instruction),
                     type(type) {
                 }
 
-                DisassembledInstructionEntry(uint16_t bank, uint16_t address, DisassembledInstruction&& instruction,
+                DisassembledInstructionEntry(Bank bank, uint16_t address, DisassembledInstruction&& instruction,
                                              Type type) :
                     DisassembledInstructionRef(bank, address, std::move(instruction)),
                     type(type) {
@@ -3575,7 +3591,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                 uint8_t n = 0;
                 for (int32_t addr = current_instruction.address - 1;
                      addr >= 0 && n < auto_disassemble_instructions.past; addr--) {
-                    uint16_t bank = DebuggerHelpers::get_bank_for_address(core.gb, addr);
+                    Bank bank = DebuggerHelpers::get_bank_for_address(core.gb, addr);
                     auto instr = backend.get_disassembled_instruction(bank, addr);
                     if (instr) {
                         code_view.emplace_front(bank, static_cast<uint16_t>(addr), *instr,
@@ -3593,7 +3609,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
             {
                 uint32_t addr = current_instruction.address + current_instruction.instruction.size();
                 for (uint16_t n = 0; n < auto_disassemble_instructions.next && addr <= 0xFFFF; n++) {
-                    uint16_t bank = DebuggerHelpers::get_bank_for_address(core.gb, addr);
+                    Bank bank = DebuggerHelpers::get_bank_for_address(core.gb, addr);
 
                     const auto known_instr = backend.get_disassembled_instruction(bank, addr);
                     auto instr = backend.disassemble(std::nullopt, addr /*,  no cache */);
@@ -3706,7 +3722,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         b << header("BREAKPOINTS", width) << endl;
 
         const auto breakpoint = [this](const Breakpoint& b) {
-            Text t {"(" + std::to_string(b.id) + ") " + hex<uint16_t, 2>(b.bank) + ":" + hex(b.address)};
+            Text t {"(" + std::to_string(b.id) + ") " + bank_to_str(b.bank) + ":" + hex(b.address)};
             const auto instr = backend.get_disassembled_instruction(b.bank, b.address);
             if (instr) {
                 t += "  :  " + rpad(hex(*instr), 9) + "   " + rpad(instruction_mnemonic(*instr, b.address), 23);
@@ -3726,7 +3742,7 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
         auto b {make_block(width)};
 
         const auto watchpoint = [](const Watchpoint& w) {
-            Text t {"(" + std::to_string(w.id) + ") " + hex<uint16_t, 2>(w.bank) + ":" + hex(w.address.from)};
+            Text t {"(" + std::to_string(w.id) + ") " + bank_to_str(w.bank) + ":" + hex(w.address.from)};
 
             if (w.address.from != w.address.to)
                 t += " - " + std::to_string(w.address.to);
@@ -3961,13 +3977,13 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
 std::string DebuggerFrontend::instruction_to_string(const DisassembledInstructionRef& instr) const {
     std::stringstream ss;
-    ss << hex<uint16_t, 2>(instr.bank) << ":" << hex(instr.address) << "  :  " << std::left << std::setw(9)
+    ss << bank_to_str(instr.bank) << ":" << hex(instr.address) << "  :  " << std::left << std::setw(9)
        << hex(instr.instruction) << "   " << std::left;
     ss << instruction_mnemonic(instr.instruction, instr.address);
     return ss.str();
 }
 
-std::string DebuggerFrontend::get_debug_symbol(uint16_t bank, uint16_t address, uint8_t max_length) {
+std::string DebuggerFrontend::get_debug_symbol(Bank bank, uint16_t address, uint8_t max_length) {
     std::string sym_name;
 
     if (auto symbol = backend.get_symbol(bank, address)) {
@@ -3982,8 +3998,8 @@ std::string DebuggerFrontend::get_debug_symbol(uint16_t bank, uint16_t address, 
     return sym_name;
 }
 
-std::string DebuggerFrontend::dump_memory(uint16_t from, std::optional<uint16_t> bank, uint32_t n,
-                                          MemoryOutputFormat fmt, std::optional<uint8_t> fmt_arg, bool raw) const {
+std::string DebuggerFrontend::dump_memory(uint16_t from, std::optional<Bank> bank, uint32_t n, MemoryOutputFormat fmt,
+                                          std::optional<uint8_t> fmt_arg, bool raw) const {
     std::string s;
 
     const auto read_memory = [this, bank, raw](uint16_t address) {
@@ -4003,10 +4019,10 @@ std::string DebuggerFrontend::dump_memory(uint16_t from, std::optional<uint16_t>
             s += std::to_string(read_memory(from + i)) + " ";
         }
     } else if (fmt == MemoryOutputFormat::Instruction) {
-        backend.disassemble_multi(from, n, true);
+        backend.disassemble_multi(bank, from, n, false);
         uint32_t i = 0;
         for (uint32_t address = from; address <= 0xFFFF && i < n;) {
-            uint16_t actual_bank = bank ? *bank : DebuggerHelpers::get_bank_for_address(core.gb, address);
+            Bank actual_bank = bank ? *bank : DebuggerHelpers::get_bank_for_address(core.gb, address);
 
             const DisassembledInstruction* disas = backend.get_disassembled_instruction(actual_bank, address);
             if (!disas) {
@@ -4041,7 +4057,7 @@ std::string DebuggerFrontend::dump_display_entry(const DebuggerFrontend::Display
         ss << d.id << ": "
            << "x" << (dx.raw ? "r" : "") << "/" << dx.length << static_cast<char>(dx.format)
            << (dx.format_arg ? std::to_string(*dx.format_arg) : "") << " "
-           << (dx.bank ? (std::to_string(*dx.bank) + ":") : "") << hex(dx.address) << std::endl;
+           << (dx.bank ? (bank_to_str(*dx.bank) + ":") : "") << hex(dx.address) << std::endl;
         ss << dump_memory(dx.address, dx.bank, dx.length, dx.format, dx.format_arg, dx.raw);
     }
     return ss.str();

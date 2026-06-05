@@ -8,6 +8,39 @@
 #include <variant>
 #include <vector>
 
+struct Bank {
+    bool operator==(const Bank& other) const {
+        return bank == other.bank
+#ifdef ENABLE_BOOTROM
+               && boot == other.boot
+#endif
+            ;
+    }
+
+#ifdef ENABLE_BOOTROM
+    bool boot {};
+#endif
+    uint16_t bank {};
+};
+
+#ifdef ENABLE_BOOTROM
+struct BootBank : Bank {
+    BootBank() :
+        Bank {true, 0} {
+    }
+};
+#endif
+
+#ifdef ENABLE_BOOTROM
+struct NumberedBank : Bank {
+    explicit NumberedBank(uint16_t bank) :
+        Bank {false, bank} {
+    }
+};
+#else
+using NumberedBank = Bank;
+#endif
+
 struct TickCommand {
     uint64_t count;
 };
@@ -50,7 +83,7 @@ struct LogicExpression {
 
 struct Breakpoint {
     uint32_t id {};
-    uint16_t bank {};
+    Bank bank {};
     uint16_t address {};
 };
 
@@ -64,7 +97,7 @@ struct Watchpoint {
 
     uint32_t id {};
     Type type {};
-    uint16_t bank {};
+    Bank bank {};
     struct {
         uint16_t from {};
         uint16_t to {};
@@ -76,7 +109,6 @@ struct Watchpoint {
 struct WatchpointHit {
     enum class AccessType { Read, Write };
     Watchpoint watchpoint {};
-    uint16_t bank {};
     uint16_t address {};
     AccessType access_type {};
     uint8_t old_value {};
@@ -86,19 +118,18 @@ struct WatchpointHit {
 using DisassembledInstruction = std::vector<uint8_t>;
 
 struct DisassembledInstructionRef {
-    DisassembledInstructionRef(const uint16_t bank, const uint16_t address,
-                               const DisassembledInstruction& instruction) :
+    DisassembledInstructionRef(const Bank bank, const uint16_t address, const DisassembledInstruction& instruction) :
         bank {bank},
         address {address},
         instruction {instruction} {
     }
-    DisassembledInstructionRef(const uint16_t bank, const uint16_t address, DisassembledInstruction&& instruction) :
+    DisassembledInstructionRef(const Bank bank, const uint16_t address, DisassembledInstruction&& instruction) :
         bank {bank},
         address {address},
         instruction {std::move(instruction)} {
     }
 
-    uint16_t bank {};
+    Bank bank {};
     uint16_t address {};
     DisassembledInstruction instruction {};
 };
@@ -125,8 +156,7 @@ using ExecutionState =
 
 // Entry of a .sym file
 struct DebugSymbol {
-    bool boot {};
-    uint16_t bank {};
+    Bank bank {};
     uint16_t address {};
     std::string name {};
 };

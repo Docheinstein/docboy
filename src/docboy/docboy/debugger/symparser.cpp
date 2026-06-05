@@ -50,11 +50,16 @@ std::vector<DebugSymbol> DebugSymbolsParser::parse_sym_file(const std::string& p
 
         DebugSymbol symbol {};
 
-        if (address_specifier_tokens[0] == "BOOT") {
-            symbol.boot = true;
+        if (equals_ignore_case(address_specifier_tokens[0], "BOOT")) {
+#ifdef ENABLE_BOOTROM
+            symbol.bank = BootBank {};
+#else
+            // Invalid
+            continue;
+#endif
         } else {
             if (std::optional<uint64_t> bank = strtou(address_specifier_tokens[0], 16)) {
-                symbol.bank = *bank;
+                symbol.bank = NumberedBank {static_cast<uint16_t>(*bank)};
             } else {
                 // Invalid line
                 continue;

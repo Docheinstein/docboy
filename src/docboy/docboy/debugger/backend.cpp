@@ -15,6 +15,8 @@ namespace {
 constexpr uint32_t MAX_HISTORY_SIZE = 600; // ~10 sec
 constexpr uint32_t MAX_CALLSTACK_SIZE = 8192;
 
+constexpr uint16_t BOOTROM_BANK = 512;
+
 template <typename T>
 struct CommandTraits;
 
@@ -84,6 +86,15 @@ struct CommandTraits<AbortCommand> : MCycleCommandTraits {
 uint32_t hash_combine(uint32_t h1, uint32_t h2) {
     return h1 + h2 * 0xDEECE66D;
 }
+
+uint16_t bank_index(Bank bank) {
+#ifdef ENABLE_BOOTROM
+    if (bank.boot) {
+        return BOOTROM_BANK;
+    }
+#endif
+    return bank.bank;
+}
 } // namespace
 
 DebuggerBackend::DebuggerBackend(Core& core_) :
@@ -95,7 +106,7 @@ bool DebuggerBackend::BankedAddressMapKey::operator==(const BankedAddressMapKey&
 }
 
 std::size_t DebuggerBackend::BankedAddressMapKey::Hash::operator()(const BankedAddressMapKey& key) const noexcept {
-    return std::hash<uint32_t> {}(key.bank << 16 | key.address);
+    return std::hash<uint32_t> {}(bank_index(key.bank) << 16 | key.address);
 }
 
 // ===================== COMMANDS STATE INITIALIZATION =========================
@@ -303,7 +314,7 @@ void DebuggerBackend::load_symbols(const std::string& path) {
     }
 }
 
-const DebugSymbol* DebuggerBackend::get_symbol(uint16_t bank, uint16_t addr) const {
+const DebugSymbol* DebuggerBackend::get_symbol(Bank bank, uint16_t addr) const {
     if (const auto sym = symbols.by_address.find({bank, addr}); sym != symbols.by_address.end()) {
         return sym->second;
     }
@@ -604,8 +615,8 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
     return *cartridge_info;
 }
 
-uint32_t DebuggerBackend::add_breakpoint(std::optional<uint16_t> bank, uint16_t addr) {
-    const uint16_t actual_bank = bank_of(bank, addr);
+uint32_t DebuggerBackend::add_breakpoint(std::optional<Bank> bank, uint16_t addr) {
+    const Bank actual_bank = bank_of(bank, addr);
 
     const uint32_t id = next_point_id++;
     const Breakpoint& breakpoint = breakpoints.list.emplace_back(Breakpoint {id, actual_bank, addr});
@@ -613,7 +624,7 @@ uint32_t DebuggerBackend::add_breakpoint(std::optional<uint16_t> bank, uint16_t 
     return id;
 }
 
-const Breakpoint* DebuggerBackend::get_breakpoint(std::optional<uint16_t> bank, uint16_t addr) const {
+const Breakpoint* DebuggerBackend::get_breakpoint(std::optional<Bank> bank, uint16_t addr) const {
     if (const auto it = breakpoints.by_address.find({bank_of(bank, addr), addr}); it != breakpoints.by_address.end()) {
         return it->second;
     }
@@ -625,9 +636,9 @@ const std::list<Breakpoint>& DebuggerBackend::get_breakpoints() const {
     return breakpoints.list;
 }
 
-uint32_t DebuggerBackend::add_watchpoint(Watchpoint::Type type, std::optional<uint16_t> bank, uint16_t from,
-                                         uint16_t to, bool raw, std::optional<Watchpoint::Condition> cond) {
-    const uint16_t actual_bank = bank_of(bank, from);
+uint32_t DebuggerBackend::add_watchpoint(Watchpoint::Type type, std::optional<Bank> bank, uint16_t from, uint16_t to,
+                                         bool raw, std::optional<Watchpoint::Condition> cond) {
+    const Bank actual_bank = bank_of(bank, from);
 
     const uint32_t id = next_point_id++;
     const Watchpoint& watchpoint =
@@ -640,7 +651,7 @@ uint32_t DebuggerBackend::add_watchpoint(Watchpoint::Type type, std::optional<ui
     return id;
 }
 
-const Watchpoint* DebuggerBackend::get_watchpoint(std::optional<uint16_t> bank, uint16_t addr) const {
+const Watchpoint* DebuggerBackend::get_watchpoint(std::optional<Bank> bank, uint16_t addr) const {
     if (const auto it = watchpoints.by_address.find({bank_of(bank, addr), addr}); it != watchpoints.by_address.end()) {
         return it->second;
     }
@@ -677,7 +688,7 @@ void DebuggerBackend::clear_points() {
     watchpoints.by_address.clear();
 }
 
-std::optional<DisassembledInstructionRef> DebuggerBackend::disassemble(std::optional<uint16_t> bank, uint16_t addr,
+std::optional<DisassembledInstructionRef> DebuggerBackend::disassemble(std::optional<Bank> bank, uint16_t addr,
                                                                        bool cache) {
     if (auto instrs = disassemble_multi(bank, addr, 1, cache); !instrs.empty()) {
         return instrs[0];
@@ -686,7 +697,7 @@ std::optional<DisassembledInstructionRef> DebuggerBackend::disassemble(std::opti
     return std::nullopt;
 }
 
-std::vector<DisassembledInstructionRef> DebuggerBackend::disassemble_multi(std::optional<uint16_t> bank, uint16_t addr,
+std::vector<DisassembledInstructionRef> DebuggerBackend::disassemble_multi(std::optional<Bank> bank, uint16_t addr,
                                                                            uint16_t n, bool cache) {
     std::vector<DisassembledInstructionRef> refs;
 
@@ -694,14 +705,15 @@ std::vector<DisassembledInstructionRef> DebuggerBackend::disassemble_multi(std::
     for (uint32_t i = 0; i < n && address_cursor <= 0xFFFF; i++) {
         auto instruction = do_disassemble(bank, address_cursor);
 
-        uint16_t actual_bank = bank_of(bank, address_cursor);
+        Bank actual_bank = bank_of(bank, address_cursor);
+        uint16_t actual_bank_index = bank_index(actual_bank);
 
         if (cache) {
-            if (!disassembled_instructions[actual_bank]) {
-                disassembled_instructions[actual_bank] =
+            if (!disassembled_instructions[actual_bank_index]) {
+                disassembled_instructions[actual_bank_index] =
                     std::make_unique<std::array<std::optional<DisassembledInstruction>, 0x10000>>();
             }
-            (*disassembled_instructions[actual_bank])[address_cursor] = instruction;
+            (*disassembled_instructions[actual_bank_index])[address_cursor] = instruction;
         }
 
         refs.emplace_back(actual_bank, address_cursor, instruction);
@@ -711,21 +723,22 @@ std::vector<DisassembledInstructionRef> DebuggerBackend::disassemble_multi(std::
     return refs;
 }
 
-std::vector<DisassembledInstructionRef> DebuggerBackend::disassemble_range(std::optional<uint16_t> bank, uint16_t from,
+std::vector<DisassembledInstructionRef> DebuggerBackend::disassemble_range(std::optional<Bank> bank, uint16_t from,
                                                                            uint16_t to, bool cache) {
     std::vector<DisassembledInstructionRef> refs;
 
     for (uint32_t address_cursor = from; address_cursor <= to && address_cursor <= 0xFFFF;) {
         auto instruction = do_disassemble(bank, address_cursor);
 
-        uint16_t actual_bank = bank_of(bank, address_cursor);
+        Bank actual_bank = bank_of(bank, address_cursor);
+        uint16_t actual_bank_index = bank_index(actual_bank);
 
         if (cache) {
-            if (!disassembled_instructions[actual_bank]) {
-                disassembled_instructions[actual_bank] =
+            if (!disassembled_instructions[actual_bank_index]) {
+                disassembled_instructions[actual_bank_index] =
                     std::make_unique<std::array<std::optional<DisassembledInstruction>, 0x10000>>();
             }
-            (*disassembled_instructions[actual_bank])[address_cursor] = instruction;
+            (*disassembled_instructions[actual_bank_index])[address_cursor] = instruction;
         }
 
         refs.emplace_back(actual_bank, address_cursor, instruction);
@@ -735,8 +748,8 @@ std::vector<DisassembledInstructionRef> DebuggerBackend::disassemble_range(std::
     return refs;
 }
 
-const DisassembledInstruction* DebuggerBackend::get_disassembled_instruction(uint16_t bank, uint16_t addr) const {
-    if (const auto& disassembled_instructions_for_bank = disassembled_instructions[bank]) {
+const DisassembledInstruction* DebuggerBackend::get_disassembled_instruction(Bank bank, uint16_t addr) const {
+    if (const auto& disassembled_instructions_for_bank = disassembled_instructions[bank_index(bank)]) {
         if (const std::optional<DisassembledInstruction>& instruction = (*disassembled_instructions_for_bank)[addr]) {
             return &*instruction;
         }
@@ -754,7 +767,16 @@ std::vector<DisassembledInstructionRef> DebuggerBackend::get_disassembled_instru
             for (uint32_t addr = 0; addr < disassembled_instructions_for_bank->size(); addr++) {
                 if (const std::optional<DisassembledInstruction>& instruction =
                         (*disassembled_instructions_for_bank)[addr]) {
-                    refs.emplace_back(bank, addr, *instruction);
+                    Bank b;
+#ifdef ENABLE_BOOTROM
+                    if (bank == BOOTROM_BANK) {
+                        b = BootBank {};
+                    } else
+#endif
+                    {
+                        b = NumberedBank {static_cast<uint16_t>(bank)};
+                    }
+                    refs.emplace_back(b, addr, *instruction);
                 }
             }
         }
@@ -770,14 +792,14 @@ uint8_t DebuggerBackend::read_memory(uint16_t addr) {
     return value;
 }
 
-uint8_t DebuggerBackend::read_memory_raw(std::optional<uint16_t> bank, uint16_t addr) {
+uint8_t DebuggerBackend::read_memory_raw(std::optional<Bank> bank, uint16_t addr) {
     allow_memory_callbacks = false;
     uint8_t value = DebuggerHelpers::read_memory_raw(core.gb, bank_of(bank, addr), addr);
     allow_memory_callbacks = true;
     return value;
 }
 
-DisassembledInstruction DebuggerBackend::do_disassemble(std::optional<uint16_t> bank, uint16_t addr) {
+DisassembledInstruction DebuggerBackend::do_disassemble(std::optional<Bank> bank, uint16_t addr) {
     const auto read_memory_func = [this, bank](uint16_t address) {
         return bank ? read_memory_raw(*bank, address) : read_memory(address);
     };
@@ -796,11 +818,11 @@ DisassembledInstruction DebuggerBackend::do_disassemble(std::optional<uint16_t> 
     return instruction;
 }
 
-uint16_t DebuggerBackend::bank_of(std::optional<uint16_t> bank, uint16_t address) const {
+Bank DebuggerBackend::bank_of(std::optional<Bank> bank, uint16_t address) const {
     return bank ? *bank : bank_of(address);
 }
 
-uint16_t DebuggerBackend::bank_of(uint16_t addr) const {
+Bank DebuggerBackend::bank_of(uint16_t addr) const {
     return DebuggerHelpers::get_bank_for_address(core.gb, addr);
 }
 
