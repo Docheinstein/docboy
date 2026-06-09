@@ -241,12 +241,12 @@ std::unique_ptr<ICartridge> create_mbc7(const std::vector<uint8_t>& data, uint8_
 
     if (cksum == 0x2A /* Command Master (Japan) */) {
         ASSERT(rom == Rom::MB_2);
-        return create<Mbc7, 2 * MB, 512>(data);
+        return std::make_unique<Mbc7<2 * MB, 512>>(data.data(), data.size());
     }
 
     if (cksum == 0xA2 /* Kirby - Tilt 'n' Tumble (USA) */ || cksum == 0x33 /* Kirby - Tilt 'n' Tumble (Japan) */) {
         ASSERT(rom == Rom::MB_1);
-        return create<Mbc7, 1 * MB, 256>(data);
+        return std::make_unique<Mbc7<1 * MB, 256>>(data.data(), data.size());
     }
 
     FATAL("unexpected MBC7 rom");

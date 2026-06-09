@@ -48,6 +48,7 @@ constexpr uint8_t NUMBER_OF_COLORS = 4;
 constexpr uint8_t BITS_PER_PIXEL = 2;
 constexpr uint8_t NUMBER_OF_COLOR_INDEXES = 4;
 
+#ifdef ENABLE_CGB
 constexpr std::array<uint8_t, 153> generate_ly_update_table() {
     constexpr uint8_t LAST_3_BITS[] {
         /* 0x00 */ 0x00,
@@ -82,6 +83,7 @@ constexpr std::array<uint8_t, 153> generate_ly_update_table() {
 
     return table;
 }
+#endif
 
 inline bool is_obj_opaque(const uint8_t color_index) {
     return color_index != OBJ_COLOR_INDEX_TRANSPARENT;
