@@ -67,6 +67,7 @@ Preferences make_default_preferences() {
     prefs.keys.player2.right = SDLK_L;
     prefs.keys.player2.down = SDLK_K;
 #endif
+    prefs.accelerometer_sensitivity = MainController::ACCELEROMETER_SENSITIVITY_DEFAULT;
     prefs.scaling = 2;
     prefs.scaling_filter = UiController::ScalingFilter::NearestNeighbor;
     prefs.x = 200;
@@ -79,9 +80,9 @@ Preferences make_default_preferences() {
     prefs.volume = 100;
     prefs.high_pass_filter = true;
     prefs.dynamic_sample_rate.enabled = true;
-    prefs.dynamic_sample_rate.max_latency = 50;
-    prefs.dynamic_sample_rate.moving_average_factor = 0.005;
-    prefs.dynamic_sample_rate.max_pitch_slack_factor = 0.005;
+    prefs.dynamic_sample_rate.max_latency = MainController::MAX_LATENCY_DEFAULT;
+    prefs.dynamic_sample_rate.moving_average_factor = MainController::MOVING_AVERAGE_FACTOR_DEFAULT;
+    prefs.dynamic_sample_rate.max_pitch_slack_factor = MainController::MAX_PITCH_SLACK_FACTOR_DEFAULT;
 #endif
 #ifdef ENABLE_TWO_PLAYERS_MODE
     prefs.serial_link = true;
@@ -338,6 +339,9 @@ int main(int argc, char* argv[]) {
         core_controller2->set_key_mapping(prefs.keys.player2.down, Joypad::Key::Down);
     }
 #endif
+
+    // Accelerometer preferences
+    main_controller.set_accelerometer_sensitivity(prefs.accelerometer_sensitivity);
 
     // Scaling preferences
     ui_controller.set_scaling(prefs.scaling);
@@ -717,6 +721,8 @@ int main(int argc, char* argv[]) {
         update_preferences_keys_from_joypad_mapping(prefs.keys.player2, core_controller2->get_joypad_map());
     }
 #endif
+
+    prefs.accelerometer_sensitivity = main_controller.get_accelerometer_sensitivity();
 
     Window::Position pos = window.get_position();
     prefs.x = pos.x;

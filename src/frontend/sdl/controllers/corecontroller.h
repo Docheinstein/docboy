@@ -49,6 +49,16 @@ public:
     void load_symbols(const std::string& symbols_path);
 #endif
 
+    // Peripherals
+    const ICartridge::Peripherals& get_peripherals() const {
+        return core.gb.cartridge_slot.cartridge->get_peripherals();
+    }
+
+    // Accelerometer
+    void set_accelerometer(double x, double y) const {
+        core.set_accelerometer(x, y);
+    }
+
     // Video
     const PixelRgb565* get_framebuffer() const;
     void set_appearance(const Appearance& appearance);

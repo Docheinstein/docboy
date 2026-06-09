@@ -294,6 +294,26 @@ void GameScreen::handle_event(const SDL_Event& event) {
 #endif
         break;
     }
+    case SDL_EVENT_MOUSE_MOTION: {
+        // Mouse events are handled if MBC supports accelerometer.
+        if (runner.get_core1().get_peripherals().accelerometer) {
+            // Map mouse coordinates to range [-1, +1] accordingly to window viewport.
+            double x_rel = (2 * event.motion.x / static_cast<double>(context.controllers.ui.get_scaled_width())) - 1.0;
+            double y_rel = (2 * event.motion.y / static_cast<double>(context.controllers.ui.get_scaled_height())) - 1.0;
+
+            ASSERT(std::abs(x_rel) - 1.0 <= 1e-6);
+            ASSERT(std::abs(y_rel) - 1.0 <= 1e-6);
+
+            // Amplify by user sensitivity.
+            double sensitivity = context.controllers.main.get_accelerometer_sensitivity() * 0.1;
+
+            double accel_x = -x_rel * sensitivity;
+            double accel_y = -y_rel * sensitivity;
+
+            runner.get_core1().set_accelerometer(accel_x, accel_y);
+        }
+        break;
+    }
     case SDL_EVENT_DROP_FILE: {
 #ifdef ENABLE_TWO_PLAYERS_MODE
         if (!runner.is_two_players_mode()) {
@@ -345,13 +365,12 @@ void GameScreen::redraw_overlay() {
 }
 
 void GameScreen::render_game_texture() {
-    SDL_FRect dest_rect {0, 0, static_cast<float>(Specs::Display::WIDTH * ui.get_scaling()),
-                         static_cast<float>(Specs::Display::HEIGHT * ui.get_scaling())};
+    SDL_FRect dest_rect {0, 0, static_cast<float>(ui.get_scaled_width()), static_cast<float>(ui.get_scaled_height())};
 
     SDL_RenderTexture(renderer, game_texture1, nullptr, &dest_rect);
 #ifdef ENABLE_TWO_PLAYERS_MODE
     if (game_texture2) {
-        dest_rect.x += static_cast<float>(Specs::Display::WIDTH * ui.get_scaling());
+        dest_rect.x += static_cast<float>(ui.get_scaled_width());
         SDL_RenderTexture(renderer, game_texture2, nullptr, &dest_rect);
     }
 #endif

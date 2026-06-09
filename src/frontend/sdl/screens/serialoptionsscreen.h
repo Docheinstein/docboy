@@ -1,11 +1,7 @@
 #ifndef SERIALOPTIONSSCREEN_H
 #define SERIALOPTIONSSCREEN_H
 
-#include "components/menu/menu.h"
 #include "screens/menuscreen.h"
-#include "screens/screen.h"
-
-#include "docboy/joypad/joypad.h"
 
 class CoreController;
 
@@ -23,4 +19,4 @@ private:
     } items {};
 };
 
-#endif // CONTROLOPTIONSSCREEN_H
+#endif // SERIALOPTIONSSCREEN_H

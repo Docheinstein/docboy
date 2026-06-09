@@ -37,8 +37,6 @@ uint8_t DebuggerHelpers::read_memory(const Mmu& mmu, uint16_t address) {
 }
 
 uint8_t DebuggerHelpers::read_memory_raw(const GameBoy& gb, Bank bank, uint16_t address) {
-    ASSERT(is_valid_banked_address(gb, bank, address));
-
 #ifdef ENABLE_BOOTROM
     if (bank.boot) {
         return gb.boot_rom[address];

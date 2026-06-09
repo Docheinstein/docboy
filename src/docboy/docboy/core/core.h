@@ -51,6 +51,9 @@ public:
     // Rumble
     void set_rumble_callback(std::function<void(bool)>&& rumble_callback) const;
 
+    // Accelerometer
+    void set_accelerometer(double x, double y) const;
+
     // Save/Load RAM/RTC
     void save(void* data) const;
     void load(const void* data) const;

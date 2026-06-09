@@ -23,8 +23,12 @@ target_sources(docboy-sdl PRIVATE
     main.cpp
     preferences/preferences.cpp
     preferences/preferences.h
+    screens/acceloptionsscreen.cpp
+    screens/acceloptionsscreen.h
     screens/controloptionsscreen.cpp
     screens/controloptionsscreen.h
+    screens/keyboardcontroloptionsscreen.cpp
+    screens/keyboardcontroloptionsscreen.h
     screens/gamemainscreen.cpp
     screens/gamemainscreen.h
     screens/gamescreen.cpp

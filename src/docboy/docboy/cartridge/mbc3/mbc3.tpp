@@ -12,7 +12,7 @@ Mbc3<RomSize, RamSize, Battery, Timer>::Mbc3(const uint8_t* data, uint32_t lengt
                                           ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 
-    need_ticks = Timer;
+    peripherals.rtc = Timer;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>

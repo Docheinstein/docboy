@@ -687,6 +687,10 @@ void Core::set_rumble_callback(std::function<void(bool)>&& rumble_callback) cons
     gb.cartridge_slot.cartridge->set_rumble_callback(std::move(rumble_callback));
 }
 
+void Core::set_accelerometer(double x, double y) const {
+    gb.cartridge_slot.cartridge->set_accelerometer(x, y);
+}
+
 #ifdef ENABLE_DEBUGGER
 void Core::attach_debugger(DebuggerBackend& dbg) {
     debugger = &dbg;

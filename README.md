@@ -21,7 +21,7 @@ Can be used either with the standalone SDL frontend or as a libretro core (e.g. 
 * CPU: M-cycle accurate
 * PPU: T-cycle accurate (implements Pixel FIFO)
 * APU (audio)
-* Cartridges: NoMBC, MBC1, MBC2, MBC3, MBC5, HUC1, HUC3
+* Cartridges: NoMBC, MBC1, MBC2, MBC3, MBC5, MBC7, HUC1, HUC3
 * Real Time Clock (RTC) emulation
 * Memory buses (EXT, CPU, OAM, VRAM) and MMU (for accurately handle read/write conflicts)
 * Timers
@@ -30,6 +30,7 @@ Can be used either with the standalone SDL frontend or as a libretro core (e.g. 
 * JoyPad
 * STOP instruction
 * Serial Transfer (bitwise, as happens with the Serial Link)
+* Accelerometer (MBC7)
 
 #### CGB Only
 * HDMA

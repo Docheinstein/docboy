@@ -15,6 +15,7 @@
 #include "docboy/cartridge/mbc2/mbc2.h"
 #include "docboy/cartridge/mbc3/mbc3.h"
 #include "docboy/cartridge/mbc5/mbc5.h"
+#include "docboy/cartridge/mbc7/mbc7.h"
 #include "docboy/cartridge/nombc/nombc.h"
 #include "docboy/common/units.h"
 #include "docboy/core/core.h"
@@ -1544,6 +1545,8 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
             case Mbc::MBC5_RUMBLE_RAM:
             case Mbc::MBC5_RUMBLE_RAM_BATTERY:
                 return "MBC5";
+            case Mbc::MBC7_RUMBLE_RAM_BATTERY:
+                return "MBC7";
             case Mbc::HUC3:
                 return "HuC3";
             case Mbc::HUC1:
@@ -2477,6 +2480,96 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
                         mbc5(static_cast<const Mbc5<8 * MB, 128 * KB, false, true>&>(cartridge));
                     }
                 }
+            }
+        } else if (mbc == Mbc::MBC7_RUMBLE_RAM_BATTERY) {
+            const auto mbc7 = [&b, &subheader, width](auto&& cart) {
+                b << yellow("Primary Ram Enabled") << "          :  " << cart.ram_enabled_primary << endl;
+                b << yellow("Secondary Ram Enabled") << "        :  " << cart.ram_enabled_secondary << endl;
+                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.rom_bank_selector) << endl;
+
+                b << subheader("accelerometer", width) << endl;
+                b << yellow("X") << "                            :  "
+                  << hex<uint16_t>(cart.accelerometer.latch.x.high << 8 | cart.accelerometer.latch.x.low) << endl;
+                b << yellow("Y") << "                            :  "
+                  << hex<uint16_t>(cart.accelerometer.latch.y.high << 8 | cart.accelerometer.latch.y.low) << endl;
+                b << yellow("Latched") << "                      :  " << cart.accelerometer.latched << endl;
+
+                b << subheader("eeprom", width) << endl;
+                b << yellow("CS") << "                           :  " << cart.eeprom.cs << endl;
+                b << yellow("CLK") << "                          :  " << cart.eeprom.clk << endl;
+                b << yellow("DI") << "                           :  " << cart.eeprom.data_in << endl;
+                b << yellow("DO") << "                           :  " << cart.eeprom.data_out << endl;
+                b << yellow("Erase/Write Enabled") << "          :  " << cart.eeprom.erase_write_enabled << endl;
+                b << yellow("State") << "                        :  " << [](const auto state) -> Text {
+                    using Mbc7EepromState = typename std::decay_t<decltype(cart)>::Eeprom::State;
+                    switch (state) {
+                    case Mbc7EepromState::Idle:
+                        return "Idle";
+                    case Mbc7EepromState::Instruction:
+                        return "Instruction";
+                    case Mbc7EepromState::Input:
+                        return "Input";
+                    case Mbc7EepromState::Output:
+                        return "Output";
+                    case Mbc7EepromState::PendingWrite:
+                        return "PendingWrite";
+                    case Mbc7EepromState::Done:
+                        return "Done";
+                    default:
+                        break;
+                    }
+                    return "Unknown";
+                }(cart.eeprom.state) << endl;
+                b << yellow("Command") << "                      :  " << [](const auto command) -> Text {
+                    using Mbc7EepromCommand = typename std::decay_t<decltype(cart)>::Eeprom::Command;
+                    switch (command) {
+                    case Mbc7EepromCommand::EWEN:
+                        return "EWEN";
+                    case Mbc7EepromCommand::EWDS:
+                        return "EWDS";
+                    case Mbc7EepromCommand::READ:
+                        return "READ";
+                    case Mbc7EepromCommand::WRITE:
+                        return "WRITE";
+                    case Mbc7EepromCommand::ERASE:
+                        return "ERASE";
+                    case Mbc7EepromCommand::WRAL:
+                        return "WRAL";
+                    case Mbc7EepromCommand::ERAL:
+                        return "ERAL";
+                    default:
+                        break;
+                    }
+                    return "Unknown";
+                }(cart.eeprom.command) << endl;
+
+                const auto eeprom_reg = [](const auto reg) -> Text {
+                    static constexpr uint8_t Mbc7EepromRegisterSize = std::decay_t<decltype(reg)>::Size;
+
+                    Text t {};
+                    for (int8_t b = Mbc7EepromRegisterSize - 1; b >= 0; b--) {
+                        bool set = test_bit(reg.data, b);
+                        if (b >= reg.cursor) {
+                            t += darkgray(Text {set});
+                        } else {
+                            t += Text {set};
+                        }
+                    }
+                    return t;
+                };
+                b << yellow("Instruction") << "                  :  " << eeprom_reg(cart.eeprom.instruction) << "  ("
+                  << hex(cart.eeprom.instruction.data) << ")" << endl;
+                b << yellow("Input") << "                        :  " << eeprom_reg(cart.eeprom.input) << "  ("
+                  << hex(cart.eeprom.input.data) << ")" << endl;
+                b << yellow("Output") << "                       :  " << eeprom_reg(cart.eeprom.output) << "  ("
+                  << hex(cart.eeprom.output.data) << ")" << endl;
+            };
+
+            if (info.cksum == 0x2A /* Command Master (Japan) */) {
+                mbc7(static_cast<const Mbc7<Rom::MB_2, 512>&>(cartridge));
+            } else if (info.cksum == 0xA2 /* Kirby - Tilt 'n' Tumble (USA) */ ||
+                       info.cksum == 0x33 /* Kirby - Tilt 'n' Tumble (Japan) */) {
+                mbc7(static_cast<const Mbc7<Rom::MB_1, 256>&>(cartridge));
             }
         } else if (mbc == Mbc::HUC3) {
             const auto huc3 = [&b, &subheader, &hr, width](auto&& cart) {

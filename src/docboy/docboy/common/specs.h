@@ -487,6 +487,17 @@ namespace Bits {
         } // namespace DH
     } // namespace Rtc
 
+    namespace Mbc {
+        namespace Mbc7 {
+            namespace Eeprom {
+                constexpr uint8_t CHIP_SELECT = 7;
+                constexpr uint8_t CLOCK = 6;
+                constexpr uint8_t DATA_IN = 1;
+                constexpr uint8_t DATA_OUT = 0;
+            } // namespace Eeprom
+        } // namespace Mbc7
+    } // namespace Mbc
+
 #ifdef ENABLE_CGB
     namespace OperatingMode {
         constexpr BitRange MODE = {3, 2};
@@ -585,6 +596,7 @@ namespace Cartridge {
             constexpr uint32_t MBC5_RUMBLE = 0x1C;
             constexpr uint32_t MBC5_RUMBLE_RAM = 0x1D;
             constexpr uint32_t MBC5_RUMBLE_RAM_BATTERY = 0x1E;
+            constexpr uint32_t MBC7_RUMBLE_RAM_BATTERY = 0x22;
             constexpr uint32_t HUC3 = 0xFE;
             constexpr uint32_t HUC1 = 0xFF;
         } // namespace Mbc

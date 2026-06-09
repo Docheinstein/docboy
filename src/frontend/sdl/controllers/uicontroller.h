@@ -52,6 +52,9 @@ public:
     uint32_t get_width() const;
     uint32_t get_height() const;
 
+    uint32_t get_scaled_width() const;
+    uint32_t get_scaled_height() const;
+
     // Scaling
     void set_scaling(uint32_t scaling);
     uint32_t get_scaling() const;

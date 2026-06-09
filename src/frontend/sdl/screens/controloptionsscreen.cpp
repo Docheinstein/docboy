@@ -1,79 +1,41 @@
 #include "screens/controloptionsscreen.h"
 
-#include "components/menu/items.h"
-#include "controllers/corecontroller.h"
+#include "screens/acceloptionsscreen.h"
+#include "screens/keyboardcontroloptionsscreen.h"
+#include "screens/playerselectscreen.h"
+
+#include "controllers/navcontroller.h"
 #include "controllers/runcontroller.h"
 
-#include "SDL3/SDL.h"
+#include "components/menu/items.h"
 
-ControlOptionsScreen::ControlOptionsScreen(Context context, CoreController& core) :
-    MenuScreen {context},
-    core {core} {
+ControlOptionsScreen::ControlOptionsScreen(Context ctx) :
+    MenuScreen(ctx) {
 
-    items.a = &menu.add_item(Button {"A", [this] {
-                                         on_remap_key(Joypad::Key::A);
-                                     }});
-    items.b = &menu.add_item(Button {"B", [this] {
-                                         on_remap_key(Joypad::Key::B);
-                                     }});
-    items.start = &menu.add_item(Button {"Start", [this] {
-                                             on_remap_key(Joypad::Key::Start);
-                                         }});
-    items.select = &menu.add_item(Button {"Select", [this] {
-                                              on_remap_key(Joypad::Key::Select);
-                                          }});
-    items.left = &menu.add_item(Button {"Left", [this] {
-                                            on_remap_key(Joypad::Key::Left);
-                                        }});
-    items.up = &menu.add_item(Button {"Up", [this] {
-                                          on_remap_key(Joypad::Key::Up);
-                                      }});
-    items.right = &menu.add_item(Button {"Right", [this] {
-                                             on_remap_key(Joypad::Key::Right);
-                                         }});
-    items.down = &menu.add_item(Button {"Down", [this] {
-                                            on_remap_key(Joypad::Key::Down);
-                                        }});
-}
+    menu.add_item(
+        Button {"Keyboard options", [this] {
+#ifdef ENABLE_TWO_PLAYERS_MODE
+                    if (runner.is_two_players_mode()) {
+                        nav.push(std::make_unique<PlayerSelectScreen>(
+                            context,
+                            [this]() {
+                                nav.push(std::make_unique<KeyboardControlOptionsScreen>(context, runner.get_core1()));
+                            },
+                            [this]() {
+                                nav.push(std::make_unique<KeyboardControlOptionsScreen>(context, runner.get_core2()));
+                            }));
+                    } else
+#endif
+                    {
+                        nav.push(std::make_unique<KeyboardControlOptionsScreen>(context, runner.get_core1()));
+                    }
+                }});
 
-void ControlOptionsScreen::redraw() {
-    const auto get_key_name = [this](Joypad::Key joypad_key) -> std::string {
-        static constexpr uint32_t MAX_LENGTH = 10;
-        if (joypad_key_to_remap == joypad_key) {
-            return "<press>";
-        }
-        std::string name = SDL_GetKeyName(core.get_joypad_map().at(joypad_key));
-        if (name.size() > MAX_LENGTH) {
-            return name.substr(0, MAX_LENGTH - 1) + ".";
-        }
-        return name;
-    };
+    menu.add_item(Button {"Accel. options", [this] {
+                              nav.push(std::make_unique<AccelerometerOptionsScreen>(context));
+                          }});
 
-    items.a->text = "A       " + get_key_name(Joypad::Key::A);
-    items.b->text = "B       " + get_key_name(Joypad::Key::B);
-    items.start->text = "Start   " + get_key_name(Joypad::Key::Start);
-    items.select->text = "Select  " + get_key_name(Joypad::Key::Select);
-    items.left->text = "Left    " + get_key_name(Joypad::Key::Left);
-    items.up->text = "Up      " + get_key_name(Joypad::Key::Up);
-    items.right->text = "Right   " + get_key_name(Joypad::Key::Right);
-    items.down->text = "Down    " + get_key_name(Joypad::Key::Down);
-
-    MenuScreen::redraw();
-}
-
-void ControlOptionsScreen::handle_event(const SDL_Event& event) {
-    if (event.type == SDL_EVENT_KEY_DOWN) {
-        if (joypad_key_to_remap) {
-            core.set_key_mapping(event.key.key, *joypad_key_to_remap);
-            joypad_key_to_remap = std::nullopt;
-            redraw();
-        } else {
-            MenuScreen::handle_event(event);
-        }
-    }
-}
-
-void ControlOptionsScreen::on_remap_key(Joypad::Key key) {
-    joypad_key_to_remap = key;
-    redraw();
+    menu.add_item(Button {"Back", [this] {
+                              nav.pop();
+                          }});
 }

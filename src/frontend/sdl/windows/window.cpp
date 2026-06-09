@@ -8,7 +8,9 @@
 Window::Window(int width, int height, int x, int y, uint32_t scaling) :
     width {static_cast<uint32_t>(width)},
     height {static_cast<uint32_t>(height)},
-    scaling {scaling} {
+    scaling {scaling},
+    scaled_width {width * scaling},
+    scaled_height {height * scaling} {
 
     const int win_x = x == POSITION_UNDEFINED ? static_cast<int>(SDL_WINDOWPOS_UNDEFINED) : x;
     const int win_y = y == POSITION_UNDEFINED ? static_cast<int>(SDL_WINDOWPOS_UNDEFINED) : y;
@@ -17,9 +19,8 @@ Window::Window(int width, int height, int x, int y, uint32_t scaling) :
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, "DocBoy");
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, win_x);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, win_y);
-    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, static_cast<float>(width * scaling));
-    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, static_cast<float>(height * scaling));
-
+    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, static_cast<float>(scaled_width));
+    SDL_SetFloatProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, static_cast<float>(scaled_height));
     window = SDL_CreateWindowWithProperties(props);
     if (!window) {
         FATAL("SDL_CreateWindow error: " + SDL_GetError());
@@ -64,19 +65,9 @@ Window::Position Window::get_position() const {
     return pos;
 }
 
-uint32_t Window::get_width() const {
-    return width;
-}
-
-uint32_t Window::get_height() const {
-    return height;
-}
-
 void Window::set_scaling(uint32_t scaling_) {
     scaling = scaling_;
-    SDL_SetWindowSize(window, static_cast<int>(width * scaling), static_cast<int>(height * scaling));
-}
-
-uint32_t Window::get_scaling() const {
-    return scaling;
+    scaled_width = width * scaling;
+    scaled_height = height * scaling;
+    SDL_SetWindowSize(window, static_cast<int>(scaled_width), static_cast<int>(scaled_height));
 }

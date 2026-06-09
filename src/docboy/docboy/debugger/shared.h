@@ -140,6 +140,7 @@ struct CartridgeInfo {
     uint8_t rom {};
     uint8_t ram {};
     bool multicart {};
+    uint8_t cksum {};
 };
 
 struct ExecutionCompleted {};

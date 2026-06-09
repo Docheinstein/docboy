@@ -1,11 +1,7 @@
 #ifndef AUDIOOPTIONSSCREEN
 #define AUDIOOPTIONSSCREEN
 
-#include <optional>
-
-#include "components/menu/menu.h"
 #include "screens/menuscreen.h"
-#include "screens/screen.h"
 
 class AudioOptionsScreen : public MenuScreen {
 public:

@@ -21,6 +21,14 @@ uint32_t UiController::get_height() const {
     return window.get_height();
 }
 
+uint32_t UiController::get_scaled_width() const {
+    return window.get_scaled_width();
+}
+
+uint32_t UiController::get_scaled_height() const {
+    return window.get_scaled_height();
+}
+
 void UiController::set_scaling(uint32_t scaling) {
     window.set_scaling(scaling);
 }

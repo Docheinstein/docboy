@@ -29,6 +29,7 @@ struct Preferences {
         Keys player2 {};
 #endif
     } keys {};
+    uint8_t accelerometer_sensitivity {};
     uint32_t scaling {};
     UiController::ScalingFilter scaling_filter {};
     int x {};

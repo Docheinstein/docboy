@@ -3,13 +3,12 @@
 #include <algorithm>
 
 #include "components/menu/items.h"
-#include "controllers/corecontroller.h"
+
 #include "controllers/maincontroller.h"
+#include "controllers/navcontroller.h"
 #include "controllers/runcontroller.h"
 
 #include "utils/strings.h"
-
-#include "SDL3/SDL.h"
 
 namespace {
 constexpr uint8_t VOLUME_STEP = 5;
@@ -89,6 +88,10 @@ AudioOptionsScreen::AudioOptionsScreen(Context context) :
                                     on_increase_dynamic_sample_rate_control_max_pitch_slack();
                                 },
                                 MenuItem::Justification::Center});
+
+    menu.add_item(Button {"Back", [this] {
+                              nav.pop();
+                          }});
 }
 
 void AudioOptionsScreen::redraw() {

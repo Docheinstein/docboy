@@ -4,7 +4,10 @@
 #include <chrono>
 #include <cstdint>
 
+#include "docboy/common/specs.h"
+
 #include "utils/asserts.h"
+#include "utils/bits.h"
 
 class MainController {
 public:
@@ -15,6 +18,16 @@ public:
 
     static constexpr uint8_t AUDIO_PLAYER_SOURCE_1 = 1;
     static constexpr uint8_t AUDIO_PLAYER_SOURCE_2 = 2;
+
+    static constexpr uint8_t ACCELEROMETER_SENSITIVITY_DEFAULT = 5;
+    static constexpr uint8_t ACCELEROMETER_SENSITIVITY_MIN = 1;
+    static constexpr uint8_t ACCELEROMETER_SENSITIVITY_MAX = 20;
+
+#ifdef ENABLE_AUDIO
+    static constexpr double MAX_LATENCY_DEFAULT = 50;
+    static constexpr double MOVING_AVERAGE_FACTOR_DEFAULT = 0.005;
+    static constexpr double MAX_PITCH_SLACK_FACTOR_DEFAULT = 0.005;
+#endif
 
     void set_speed(int32_t s) {
         speed = s;
@@ -39,6 +52,14 @@ public:
 
     bool should_quit() const {
         return quitting;
+    }
+
+    void set_accelerometer_sensitivity(uint8_t sensitivity) {
+        accelerometer_sensitivity = sensitivity;
+    }
+
+    uint8_t get_accelerometer_sensitivity() const {
+        return accelerometer_sensitivity;
     }
 
 #ifdef ENABLE_AUDIO
@@ -163,6 +184,8 @@ private:
     std::chrono::high_resolution_clock::duration frame_time {DEFAULT_FRAME_TIME};
     bool quitting {};
 
+    uint8_t accelerometer_sensitivity {ACCELEROMETER_SENSITIVITY_DEFAULT};
+
 #ifdef ENABLE_AUDIO
     struct {
         bool enabled {true};
@@ -177,9 +200,9 @@ private:
         std::function<void(bool)> high_pass_filter_enabled_changed_callback {};
         struct {
             bool enabled {true};
-            double max_latency {50};
-            double moving_average_factor {0.005};
-            double max_pitch_slack_factor {0.005};
+            double max_latency {MAX_LATENCY_DEFAULT};
+            double moving_average_factor {MOVING_AVERAGE_FACTOR_DEFAULT};
+            double max_pitch_slack_factor {MAX_PITCH_SLACK_FACTOR_DEFAULT};
         } dynamic_sample_rate_control;
         std::function<void()> dynamic_sample_rate_control_settings_changed {};
     } audio;

@@ -32,6 +32,8 @@ Mbc5<RomSize, RamSize, Battery, Rumble>::Mbc5(const uint8_t* data, uint32_t leng
     ASSERT(length <= array_size(rom), "Mbc5: actual ROM size (" + std::to_string(length) +
                                           ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
+
+    peripherals.rumble = Rumble;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>

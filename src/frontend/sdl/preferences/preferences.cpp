@@ -137,6 +137,7 @@ void read_preferences(const std::string& path, Preferences& p) {
     ini_reader.add_property("p2_right", p.keys.player2.right, parse_keycode);
     ini_reader.add_property("p2_down", p.keys.player2.down, parse_keycode);
 #endif
+    ini_reader.add_property("accelerometer_sensitivity", p.accelerometer_sensitivity, parse_integer<uint8_t>);
     ini_reader.add_property("scaling", p.scaling, parse_integer<uint32_t>);
     ini_reader.add_property("scaling_filter", p.scaling_filter,
                             [](const std::string& s) -> std::optional<UiController::ScalingFilter> {
@@ -211,6 +212,7 @@ void write_preferences(const std::string& path, const Preferences& p) {
     properties.emplace("p2_right", SDL_GetKeyName(p.keys.player2.right));
     properties.emplace("p2_down", SDL_GetKeyName(p.keys.player2.down));
 #endif
+    properties.emplace("accelerometer_sensitivity", std::to_string(p.accelerometer_sensitivity));
     properties.emplace("scaling", std::to_string(p.scaling));
     properties.emplace("scaling_filter", std::to_string(static_cast<uint8_t>(p.scaling_filter)));
     properties.emplace("x", std::to_string(p.x));

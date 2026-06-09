@@ -3,7 +3,6 @@
 
 #include <cstdint>
 
-#include "controllers/navcontroller.h"
 #include "screens/screenstack.h"
 
 class SDL_Window;
@@ -34,11 +33,26 @@ public:
 
     Position get_position() const;
 
-    uint32_t get_width() const;
-    uint32_t get_height() const;
+    uint32_t get_width() const {
+        return width;
+    }
+
+    uint32_t get_height() const {
+        return height;
+    }
 
     void set_scaling(uint32_t scaling);
-    uint32_t get_scaling() const;
+    uint32_t get_scaling() const {
+        return scaling;
+    }
+
+    uint32_t get_scaled_width() const {
+        return scaled_width;
+    }
+
+    uint32_t get_scaled_height() const {
+        return scaled_height;
+    }
 
 private:
     ScreenStack screen_stack;
@@ -49,6 +63,9 @@ private:
     uint32_t width;
     uint32_t height;
     uint32_t scaling;
+
+    uint32_t scaled_width;
+    uint32_t scaled_height;
 };
 
 #endif // WINDOW_H

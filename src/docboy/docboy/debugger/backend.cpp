@@ -593,6 +593,7 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
         cartridge_info->mbc = header.cartridge_type;
         cartridge_info->rom = header.rom_size;
         cartridge_info->ram = header.ram_size;
+        cartridge_info->cksum = header.header_checksum;
         cartridge_info->multicart = false;
 
         // All the known multicart are MBC1 of 1 MB.

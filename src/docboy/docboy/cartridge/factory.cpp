@@ -8,6 +8,7 @@
 #include "docboy/cartridge/mbc2/mbc2.h"
 #include "docboy/cartridge/mbc3/mbc3.h"
 #include "docboy/cartridge/mbc5/mbc5.h"
+#include "docboy/cartridge/mbc7/mbc7.h"
 #include "docboy/cartridge/nombc/nombc.h"
 #include "docboy/cartridge/romram/romram.h"
 #include "docboy/common/specs.h"
@@ -228,6 +229,29 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t rom
     return nullptr;
 }
 
+std::unique_ptr<ICartridge> create_mbc7(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
+    ASSERT(ram == Ram::NONE);
+
+    // There are only 3 games using MBC7.
+    // Unfortunately, they have a different EEPROM (93LC56 vs 93LC66), and there's no neat
+    // way to figure out which type of EEPROM is soldered just from the cartridge type.
+    // Therefore, we are forced to take a look at the header to inference which type of game
+    // this is and use a different EEPROM accordingly.
+    uint8_t cksum = data[MemoryLayout::HEADER_CHECKSUM];
+
+    if (cksum == 0x2A /* Command Master (Japan) */) {
+        ASSERT(rom == Rom::MB_2);
+        return create<Mbc7, 2 * MB, 512>(data);
+    }
+
+    if (cksum == 0xA2 /* Kirby - Tilt 'n' Tumble (USA) */ || cksum == 0x33 /* Kirby - Tilt 'n' Tumble (Japan) */) {
+        ASSERT(rom == Rom::MB_1);
+        return create<Mbc7, 1 * MB, 256>(data);
+    }
+
+    FATAL("unexpected MBC7 rom");
+}
+
 std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc, uint8_t rom, uint8_t ram) {
     switch (mbc) {
     case Mbc::NO_MBC:
@@ -242,9 +266,8 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
     case Mbc::MBC1_RAM_BATTERY:
         if (is_mbc1m(data)) {
             return create<Mbc1M_Battery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
-        } else {
-            return create<Mbc1_Battery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
         }
+        return create<Mbc1_Battery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
     case Mbc::MBC2:
         return create<Mbc2_NoBattery, Info::Mbc2::Rom, Info::Mbc2::Ram>(data, rom, ram);
     case Mbc::MBC2_BATTERY:
@@ -271,6 +294,8 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
         return create<Mbc5_Battery_NoRumble, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
     case Mbc::MBC5_RUMBLE_RAM_BATTERY:
         return create<Mbc5_Battery_Rumble, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
+    case Mbc::MBC7_RUMBLE_RAM_BATTERY:
+        return create_mbc7(data, rom, ram);
     case Mbc::HUC3:
         return create<HuC3, Info::HuC3::Rom, Info::HuC3::Ram>(data, rom, ram);
     case Mbc::HUC1:

@@ -39,6 +39,8 @@ target_sources(docboy PRIVATE
         docboy/cartridge/mbc3/mbc3.tpp
         docboy/cartridge/mbc5/mbc5.h
         docboy/cartridge/mbc5/mbc5.tpp
+        docboy/cartridge/mbc7/mbc7.h
+        docboy/cartridge/mbc7/mbc7.tpp
         docboy/cartridge/nombc/nombc.h
         docboy/cartridge/nombc/nombc.tpp
         docboy/cartridge/romram/romram.h

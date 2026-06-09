@@ -8,6 +8,12 @@ class Parcel;
 
 class ICartridge {
 public:
+    struct Peripherals {
+        bool rtc {};
+        bool rumble {};
+        bool accelerometer {};
+    };
+
     virtual ~ICartridge() = default;
 
     virtual uint8_t read_rom(uint16_t address) const = 0;
@@ -17,12 +23,19 @@ public:
     virtual void write_ram(uint16_t address, uint8_t value) = 0;
 
     void tick() {
-        if (need_ticks) {
+        if (peripherals.rtc) {
             on_tick();
         }
     }
 
+    const Peripherals& get_peripherals() {
+        return peripherals;
+    }
+
     virtual void set_rumble_callback(std::function<void(bool)>&& rumble_callback) {
+    }
+
+    virtual void set_accelerometer(double x, double y) {
     }
 
     virtual void* get_ram_save_data() = 0;
@@ -58,7 +71,7 @@ protected:
     virtual void on_tick() {
     }
 
-    bool need_ticks {};
+    Peripherals peripherals {};
 };
 
 #endif // CARTRIDGE_H

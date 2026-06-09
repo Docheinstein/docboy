@@ -14,7 +14,7 @@ HuC3<RomSize, RamSize>::HuC3(const uint8_t* data, uint32_t length) {
                                           ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 
-    need_ticks = true;
+    peripherals.rtc = true;
 }
 
 template <uint32_t RomSize, uint32_t RamSize>

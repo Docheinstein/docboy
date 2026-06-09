@@ -1,11 +1,13 @@
 #include "screens/optionsscreen.h"
 
 #include "components/menu/items.h"
+
 #include "controllers/navcontroller.h"
 #include "controllers/runcontroller.h"
+
 #include "screens/controloptionsscreen.h"
 #include "screens/graphicsoptionsscreen.h"
-#include "screens/playerselectscreen.h"
+#include "screens/keyboardcontroloptionsscreen.h"
 
 #ifdef ENABLE_TWO_PLAYERS_MODE
 #include "screens/serialoptionsscreen.h"
@@ -27,21 +29,7 @@ OptionsScreen::OptionsScreen(Context ctx) :
                           }});
 #endif
     menu.add_item(Button {"Control options", [this] {
-#ifdef ENABLE_TWO_PLAYERS_MODE
-                              if (runner.is_two_players_mode()) {
-                                  nav.push(std::make_unique<PlayerSelectScreen>(
-                                      context,
-                                      [this]() {
-                                          nav.push(std::make_unique<ControlOptionsScreen>(context, runner.get_core1()));
-                                      },
-                                      [this]() {
-                                          nav.push(std::make_unique<ControlOptionsScreen>(context, runner.get_core2()));
-                                      }));
-                              } else
-#endif
-                              {
-                                  nav.push(std::make_unique<ControlOptionsScreen>(context, runner.get_core1()));
-                              }
+                              nav.push(std::make_unique<ControlOptionsScreen>(context));
                           }});
 #ifdef ENABLE_TWO_PLAYERS_MODE
     if (runner.is_two_players_mode()) {
