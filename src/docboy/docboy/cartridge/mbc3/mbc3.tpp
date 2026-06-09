@@ -41,8 +41,7 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::write_rom(uint16_t address, uint8_t
             return;
         }
         // 0x2000 - 0x3FFF
-        rom_bank_selector = keep_bits<7>(value);
-        rom_bank_selector = rom_bank_selector > 0 ? rom_bank_selector : 0x1;
+        rom_bank_selector = value > 0 ? value : 0x1;
         return;
     }
 

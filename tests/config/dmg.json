@@ -13610,6 +13610,16 @@
             "limit_speed": true
         },
         {
+            "rom": "zoomten/mbc30.gb",
+            "check_at_tick": 19044673,
+            "framebuffer": "zoomten/mbc30_rom.png"
+        },
+        {
+            "rom": "zoomten/mbc30.gb",
+            "check_at_tick": 41257572,
+            "framebuffer": "zoomten/mbc30_ram.png"
+        },
+        {
             "rom": "docboy/mbc/mbc3/mbc3_rtc_initial_values.gb",
             "memory": [
                 {
