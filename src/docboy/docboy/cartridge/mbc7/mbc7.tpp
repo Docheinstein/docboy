@@ -140,8 +140,6 @@ void Mbc7<RomSize, EepromSize>::write_ram(uint16_t address, uint8_t value) {
             }
             break;
         case 0x80: {
-            std::cout << "EEPROM(A080): " << hex(value) << std::endl;
-
             // EEPROM register write.
 
             bool data_in = test_bit<Specs::Bits::Mbc::Mbc7::Eeprom::DATA_IN>(value);
@@ -153,8 +151,6 @@ void Mbc7<RomSize, EepromSize>::write_ram(uint16_t address, uint8_t value) {
 
             if (rising_clock) {
                 if (eeprom.state == Eeprom::State::Idle && data_in && cs) {
-                    std::cout << "new_instruction: " << std::endl;
-
                     // Start a new instruction.
                     eeprom.state = Eeprom::State::Instruction;
                     eeprom.instruction.cursor = 0;
@@ -187,8 +183,6 @@ void Mbc7<RomSize, EepromSize>::write_ram(uint16_t address, uint8_t value) {
                 if (eeprom.state == Eeprom::State::Done || eeprom.state == Eeprom::State::Idle) {
                     // No-op.
                 } else if (eeprom.state == Eeprom::State::PendingWrite) {
-                    std::cout << "handle_eeprom_pending_write: " << uint8_t(eeprom.command) << std::endl;
-
                     // Actually write to EEPROM as soon as CS goes down while there's a pending write/erase.
                     handle_eeprom_pending_write();
                 } else {
