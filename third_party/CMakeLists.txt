@@ -28,6 +28,9 @@ set(PNG_TOOLS OFF CACHE BOOL "Build the libpng tools")
 set(SKIP_INSTALL_ALL ON)
 
 # Add prefix to libpng functions to avoid conflicts with libraries dynamically linking libpng (e.g. GTK, used by NFD).
+# Note that libpng generates pnglibconf.h (honoring the prefix) only if AWK is available, therefore we might end up using
+# the default pnglibconf.h.prebuilt if it's not. However, if it happens, it's likely that we are on Windows, and since
+# NFD does not use GTK there, we don't have to deal with the symbols naming conflict mentioned above.
 set(PNG_PREFIX "docboy_")
 
 # Force libpng to use our zlib for generation of the pnglibconf.h.
