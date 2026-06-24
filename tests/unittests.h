@@ -7,6 +7,7 @@
 
 #include "utils/algo.h"
 #include "utils/memory.h"
+#include "utils/random.h"
 #include "utils/strings.h"
 
 TEST_CASE("bits", "[bits][unit]") {
@@ -753,6 +754,85 @@ TEST_CASE("reset", "[reset][unit]") {
         runner.core.save_state(data2.data());
 
         REQUIRE(memcmp(data1.data(), data2.data(), data1.size()) == 0);
+    }
+}
+
+TEST_CASE("FastUniformRandomNumberGenerator", "[random][unit]") {
+    SECTION("RNG: bounds 1") {
+        static constexpr uint32_t RANGE_MIN = 16;
+        static constexpr uint32_t RANGE_MAX = 32;
+        static constexpr uint32_t NUM_RUNS = 10000;
+
+        uint64_t random_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        FastUniformRandomNumberGenerator<RANGE_MIN, RANGE_MAX> rng {random_seed};
+
+        bool min_hit {};
+        bool max_hit {};
+
+        for (uint32_t run = 0; run < NUM_RUNS; ++run) {
+            uint32_t next = rng.next();
+            REQUIRE(next >= RANGE_MIN);
+            REQUIRE(next <= RANGE_MAX);
+
+            min_hit = min_hit || next == RANGE_MIN;
+            max_hit = max_hit || next == RANGE_MAX;
+        }
+
+        REQUIRE(min_hit);
+        REQUIRE(max_hit);
+    }
+
+    SECTION("RNG: bounds 2") {
+        static constexpr uint32_t RANGE_MIN = 16;
+        static constexpr uint32_t NUM_RUNS = 10000;
+
+        uint64_t random_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        FastUniformRandomNumberGenerator<RANGE_MIN> rng {random_seed};
+
+        for (uint32_t run = 0; run < NUM_RUNS; ++run) {
+            uint32_t next = rng.next();
+            REQUIRE(next >= RANGE_MIN);
+        }
+    }
+
+    SECTION("RNG: bounds 3") {
+        static constexpr uint32_t RANGE_PUNCTUAL_VALUE = 34;
+        static constexpr uint32_t NUM_RUNS = 10000;
+
+        uint64_t random_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        FastUniformRandomNumberGenerator<RANGE_PUNCTUAL_VALUE, RANGE_PUNCTUAL_VALUE> rng {random_seed};
+
+        for (uint32_t run = 0; run < NUM_RUNS; ++run) {
+            REQUIRE(rng.next() == RANGE_PUNCTUAL_VALUE);
+        }
+    }
+
+    SECTION("RNG: distribution mean") {
+        // Very basic statistical test.
+        // Just ensure that the mean of several RNG runs gives the expected average value of a uniform distribution
+        // (range / 2).
+
+        static constexpr uint32_t RANGE_MAX = 144;
+        static constexpr uint32_t NUM_RUNS = 1000000;
+
+        static constexpr double EXPECTED_MEAN = 0.5 * RANGE_MAX;
+        static constexpr double RELATIVE_MEAN_THRESHOLD = 1e-3;
+        static constexpr double MEAN_THRESHOLD = RANGE_MAX * RELATIVE_MEAN_THRESHOLD;
+
+        // Random seed depending on the clock.
+        // Note: this makes this test non-deterministic on purpose!
+        uint64_t random_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        FastUniformRandomNumberGenerator<0, RANGE_MAX> rng {random_seed};
+
+        uint64_t sum = 0;
+        for (uint32_t run = 0; run < NUM_RUNS; ++run) {
+            sum += rng.next();
+        }
+
+        double mean = static_cast<double>(sum) / NUM_RUNS;
+        double mean_deviation = std::abs(mean - EXPECTED_MEAN);
+
+        REQUIRE(mean_deviation < MEAN_THRESHOLD);
     }
 }
 

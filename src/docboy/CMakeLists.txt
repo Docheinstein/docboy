@@ -176,6 +176,10 @@ if (ENABLE_DIRECT_LCD_RENDERING)
     target_compile_definitions(docboy PUBLIC ENABLE_DIRECT_LCD_RENDERING)
 endif ()
 
+if (ENABLE_ACCURATE_INPUT_POLLING)
+    target_compile_definitions(docboy PUBLIC ENABLE_ACCURATE_INPUT_POLLING)
+endif ()
+
 target_link_libraries(docboy PRIVATE utils)
 
 target_include_directories(docboy PUBLIC .)

@@ -32,13 +32,15 @@ public:
     void detach_serial_link() const;
 
     // Input
+    void set_input_polling_callback(std::function<void()>&& input_callback);
+
     void set_key(Joypad::Key key, Joypad::KeyState state) const {
         gb.joypad.set_key_state(key, state);
     }
 
 #ifdef ENABLE_AUDIO
     // Audio
-    void set_audio_sample_callback(std::function<void(const Apu::AudioSample)>&& audio_callback) const;
+    void set_audio_sample_callback(std::function<void(Apu::AudioSample)>&& audio_callback) const;
 
     void set_audio_sample_rate(double sample_rate) const {
         gb.apu.set_sample_rate(sample_rate);
@@ -83,12 +85,22 @@ private:
     void tick_t2() const;
     void tick_t3() const;
 
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+    void handle_input();
+#endif
+
     Parcel parcelize_state() const;
     void unparcelize_state(Parcel&& parcel);
 
     uint64_t ticks {};
 
     uint16_t cycles_of_artificial_vblank {};
+
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+    std::function<void()> input_polling_callback {};
+
+    uint64_t next_input_polling_ticks {};
+#endif
 
 #ifdef ENABLE_DEBUGGER
     DebuggerBackend* debugger {};

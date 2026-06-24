@@ -273,6 +273,7 @@ void GameScreen::handle_event(const SDL_Event& event) {
 #endif
             menu.screen_stack.push(std::make_unique<GameMainScreen>(Context {controllers, {0xF0}}));
             redraw();
+            break;
         }
         default:
             runner.get_core1().send_key(event.key.key, Joypad::KeyState::Pressed);

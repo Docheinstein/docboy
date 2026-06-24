@@ -25,12 +25,10 @@ option(ENABLE_BOOTROM "Enable boot rom" OFF)
 option(ENABLE_AUDIO "Enable audio" ON)
 option(ENABLE_CGB "Enable GameBoy Color" ON)
 option(ENABLE_TWO_PLAYERS_MODE "Enable two players mode (serial link)" ON)
-
 option(ENABLE_ASSERTS "Enable asserts" OFF)
-
 option(ENABLE_STATE_DEBUG_SYMBOLS "Add debug symbols to state files" OFF)
-
 option(ENABLE_DIRECT_LCD_RENDERING "Enable rendering directly to LCD framebuffer" OFF)
+option(ENABLE_ACCURATE_INPUT_POLLING "Enable more accurate and frequent input polling (if supported by the frontend)" ON)
 
 # Build in Release mode by default
 if (CMAKE_BUILD_TYPE STREQUAL "")

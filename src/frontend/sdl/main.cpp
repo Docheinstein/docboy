@@ -365,6 +365,32 @@ int main(int argc, char* argv[]) {
     ui_controller.set_current_appearance(appearance->index);
 #endif
 
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+    const auto create_input_polling_callback = [](const CoreController& core_controller) {
+        // The core will call this polling routing roughly once per scanline.
+        // Here we want to handle only real game input: other SDL events are handled in the main game loop.
+        return [&core_controller] {
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_EVENT_KEY_DOWN) {
+                    core_controller.send_key(event.key.key, Joypad::KeyState::Pressed);
+                } else if (event.type == SDL_EVENT_KEY_UP) {
+                    core_controller.send_key(event.key.key, Joypad::KeyState::Released);
+                }
+            }
+        };
+    };
+
+    // Set input polling callback
+    core.set_input_polling_callback(create_input_polling_callback(core_controller1));
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    if (two_players_mode) {
+        core2->set_input_polling_callback(create_input_polling_callback(*core_controller2));
+    }
+#endif
+#endif
+
     // Eventually attach serial console
     std::unique_ptr<SerialConsole> serial_console;
     if (!two_players_mode && args.serial_console) {

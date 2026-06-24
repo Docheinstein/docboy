@@ -5,6 +5,10 @@
 #include "docboy/cartridge/factory.h"
 #include "docboy/memory/vram0.h"
 
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+#include "utils/random.h"
+#endif
+
 #ifdef ENABLE_BOOTROM
 #include "docboy/bootrom/factory.h"
 #endif
@@ -38,6 +42,11 @@ constexpr uint32_t STATE_SAVE_SIZE_UNKNOWN = UINT32_MAX;
 constexpr uint32_t STATE_WATERMARK = 0xABCDDCBA;
 
 uint32_t rom_state_size = STATE_SAVE_SIZE_UNKNOWN;
+
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+constexpr uint64_t AVERAGE_INPUT_POLLING_PERIOD = 114;
+FastUniformRandomNumberGenerator<1, AVERAGE_INPUT_POLLING_PERIOD * 2> input_delay_rng {};
+#endif
 } // namespace
 
 Core::Core(GameBoy& gb) :
@@ -271,6 +280,10 @@ void Core::frame() {
     if (gb.stop_controller.stopped) {
         // Artificially run for a reasonable amount of cycles while stopped
         for (uint16_t c = 0; c < ARTIFICIAL_VBLANK_CYCLES; c++) {
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+            handle_input();
+#endif
+
             cycle();
 
             if (!gb.stop_controller.stopped) {
@@ -293,6 +306,10 @@ void Core::frame() {
     // Quit if the LCD is still disabled even after that.
     if (!gb.ppu.lcdc.enable) {
         for (uint16_t c = 0; c < ARTIFICIAL_VBLANK_CYCLES; c++) {
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+            handle_input();
+#endif
+
             cycle();
 
             if (gb.stop_controller.stopped) {
@@ -313,6 +330,10 @@ void Core::frame() {
 
     // Eventually go out of current VBlank.
     while (gb.ppu.stat.mode == Specs::Ppu::Modes::VBLANK) {
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+        handle_input();
+#endif
+
         cycle();
 
         if (!gb.ppu.lcdc.enable || gb.stop_controller.stopped) {
@@ -326,6 +347,10 @@ void Core::frame() {
 
     // Proceed until next VBlank.
     while (gb.ppu.stat.mode != Specs::Ppu::Modes::VBLANK) {
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+        handle_input();
+#endif
+
         cycle();
 
         if (!gb.ppu.lcdc.enable || gb.stop_controller.stopped) {
@@ -347,6 +372,10 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
                 cycles_of_artificial_vblank = c;
                 return false;
             }
+
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+            handle_input();
+#endif
 
             cycle();
 
@@ -378,6 +407,10 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
                 return false;
             }
 
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+            handle_input();
+#endif
+
             cycle();
 
             if (gb.stop_controller.stopped) {
@@ -405,6 +438,10 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
             return false;
         }
 
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+        handle_input();
+#endif
+
         cycle();
 
         if (!gb.ppu.lcdc.enable || gb.stop_controller.stopped) {
@@ -422,6 +459,10 @@ bool Core::run_for_cycles(uint32_t cycles_to_run) {
             // No more cycles to run for this burst.
             return false;
         }
+
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+        handle_input();
+#endif
 
         cycle();
 
@@ -456,6 +497,24 @@ void Core::attach_serial_link(ISerialEndpoint& endpoint) const {
 void Core::detach_serial_link() const {
     gb.serial.detach();
 }
+
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+void Core::set_input_polling_callback(std::function<void()>&& input_cb) {
+    input_polling_callback = std::move(input_cb);
+}
+
+void Core::handle_input() {
+    if (ticks == next_input_polling_ticks && input_polling_callback) {
+        input_polling_callback();
+
+        // Schedule the next input event randomly in the future (on average, once per scanline).
+        uint32_t next_input_polling_delta = input_delay_rng.next();
+        next_input_polling_ticks = ticks + 4 * next_input_polling_delta;
+
+        ASSERT(next_input_polling_ticks > ticks);
+    }
+}
+#endif
 
 void Core::save(void* data) const {
     memcpy(data, gb.cartridge_slot.cartridge->get_ram_save_data(), gb.cartridge_slot.cartridge->get_ram_save_size());
@@ -501,6 +560,11 @@ Parcel Core::parcelize_state() const {
 
     PARCEL_WRITE_UINT32(p, STATE_WATERMARK);
     PARCEL_WRITE_UINT64(p, ticks);
+    PARCEL_WRITE_UINT16(p, cycles_of_artificial_vblank);
+
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+    PARCEL_WRITE_UINT64(p, next_input_polling_ticks);
+#endif
 
 #ifdef ENABLE_CGB
     gb.operating_mode.save_state(p);
@@ -558,6 +622,11 @@ void Core::unparcelize_state(Parcel&& p) {
     ASSERT(watermark == STATE_WATERMARK);
 
     ticks = p.read_uint64();
+    cycles_of_artificial_vblank = p.read_uint16();
+
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+    next_input_polling_ticks = p.read_uint64();
+#endif
 
 #ifdef ENABLE_CGB
     gb.operating_mode.load_state(p);

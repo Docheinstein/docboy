@@ -22176,6 +22176,92 @@
     ],
     "joypad": [
         {
+            "rom": "tepples/tellinglys.gb",
+            "framebuffer": "tepples/tellinglys.png",
+            "inputs": [
+                {
+                    "trigger_at_tick": 2621440,
+                    "key": "a",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_tick": 3932160,
+                    "key": "a",
+                    "state": "released"
+                },
+                {
+                    "trigger_at_tick": 6553600,
+                    "key": "b",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_tick": 7864320,
+                    "key": "b",
+                    "state": "released"
+                },
+                {
+                    "trigger_at_tick": 9175040,
+                    "key": "start",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_tick": 10485760,
+                    "key": "start",
+                    "state": "released"
+                },
+                {
+                    "trigger_at_tick": 11796480,
+                    "key": "select",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_tick": 13107200,
+                    "key": "select",
+                    "state": "released"
+                },
+                {
+                    "trigger_at_tick": 14417920,
+                    "key": "left",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_tick": 15728640,
+                    "key": "left",
+                    "state": "released"
+                },
+                {
+                    "trigger_at_tick": 17039360,
+                    "key": "right",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_tick": 19660800,
+                    "key": "right",
+                    "state": "released"
+                },
+                {
+                    "trigger_at_tick": 22282240,
+                    "key": "up",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_tick": 23592960,
+                    "key": "up",
+                    "state": "released"
+                },
+                {
+                    "trigger_at_tick": 24903680,
+                    "key": "down",
+                    "state": "pressed"
+                },
+                {
+                    "trigger_at_tick": 26214400,
+                    "key": "down",
+                    "state": "released"
+                }
+            ]
+        },
+        {
             "rom": "docboy/joypad/interactive/joypad_buttons_buttons_interrupt.gb",
             "memory": [
                 {

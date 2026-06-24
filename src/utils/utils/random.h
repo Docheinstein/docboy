@@ -1,25 +1,36 @@
 #ifndef UTILSRANDOM_H
 #define UTILSRANDOM_H
 
-#include <random>
+#include <cstdint>
+#include <type_traits>
 
-template <typename T, T min = 0, T max = std::numeric_limits<T>::max(),
-          typename = std::enable_if_t<std::is_integral_v<T>>>
-class RandomNumberGenerator {
+// https://rosettacode.org/wiki/Pseudo-random_numbers/Splitmix64
+inline uint64_t splitmix64(uint64_t s) {
+    uint64_t z = s + 0x9e3779b97f4a7c15;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+    return z ^ (z >> 31);
+}
+
+template <uint32_t min = 0, uint32_t max = UINT32_MAX, std::enable_if_t<max >= min>* = nullptr>
+class FastUniformRandomNumberGenerator {
 public:
-    explicit RandomNumberGenerator(uint32_t seed = std::mt19937::default_seed) :
-        device {seed},
-        engine {device()} {
+    explicit FastUniformRandomNumberGenerator(uint64_t seed = 0) :
+        state {splitmix64(seed)} {
     }
 
-    T next() {
-        return distribution(engine);
+    uint32_t next() {
+        uint32_t s = advance_state() >> 32;
+        return min + static_cast<uint32_t>((static_cast<uint64_t>(max - min + 1) * s) >> 32);
     }
 
 private:
-    std::mt19937 device;
-    std::default_random_engine engine;
-    std::uniform_int_distribution<T> distribution {min, max};
+    uint64_t state {};
+
+    uint64_t advance_state() {
+        state = splitmix64(state);
+        return state;
+    }
 };
 
 #endif // UTILSRANDOM_H
