@@ -1,15 +1,17 @@
 #include "docboy/stop/stopcontroller.h"
 
+#include "docboy/cartridge/slot.h"
 #include "docboy/joypad/joypad.h"
 #include "docboy/lcd/lcd.h"
 #include "docboy/ppu/ppu.h"
 #include "docboy/timers/timers.h"
 
-StopController::StopController(Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd) :
+StopController::StopController(Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd, CartridgeSlot& cartridge_slot) :
     joypad {joypad},
     timers {timers},
     ppu {ppu},
-    lcd {lcd} {
+    lcd {lcd},
+    cartridge_slot {cartridge_slot} {
 }
 
 void StopController::stop() {
@@ -47,6 +49,9 @@ void StopController::stopped_tick() {
         }
     }
 #endif
+
+    // RTC goes on even while GB is stopped.
+    cartridge_slot.tick();
 }
 
 void StopController::stopped_tock() {

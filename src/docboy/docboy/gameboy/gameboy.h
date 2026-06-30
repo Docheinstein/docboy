@@ -91,7 +91,7 @@ public:
 #endif
 
     // Power Saving
-    StopController stop_controller {joypad, timers, ppu, lcd};
+    StopController stop_controller {joypad, timers, ppu, lcd, cartridge_slot};
 
     // Boot ROM
 #ifdef ENABLE_BOOTROM

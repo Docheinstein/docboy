@@ -8,10 +8,11 @@ class Timers;
 class Ppu;
 class Lcd;
 class Parcel;
+class CartridgeSlot;
 
 class StopController {
 public:
-    StopController(Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd);
+    StopController(Joypad& joypad, Timers& timers, Ppu& ppu, Lcd& lcd, CartridgeSlot& cartridge);
 
     void stop();
 
@@ -40,6 +41,7 @@ private:
     Timers& timers;
     Ppu& ppu;
     Lcd& lcd;
+    CartridgeSlot& cartridge_slot;
 
 #ifndef ENABLE_CGB
     uint16_t ppu_shutdown_countdown {};

@@ -13752,6 +13752,17 @@
             "limit_speed": true
         },
         {
+            "rom": "docboy/mbc/mbc3/mbc3_rtc_stopped_recover.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
             "rom": "docboy/mbc/mbc3/mbc3_rtc_unmap_tick_then_map.gb",
             "memory": [
                 {
@@ -13824,6 +13835,24 @@
                     "address": 65520,
                     "value": 1,
                     "fail_value": 2
+                }
+            ],
+            "limit_speed": true
+        },
+        {
+            "rom": "docboy/mbc/mbc3/interactive/mbc3_rtc_gb_stopped_recover.gb",
+            "memory": [
+                {
+                    "address": 65520,
+                    "value": 1,
+                    "fail_value": 2
+                }
+            ],
+            "inputs": [
+                {
+                    "trigger_at_tick": 22020188,
+                    "key": "b",
+                    "state": "pressed"
                 }
             ],
             "limit_speed": true

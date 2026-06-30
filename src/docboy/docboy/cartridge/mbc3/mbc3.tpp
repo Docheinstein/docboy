@@ -154,7 +154,7 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::on_tick() {
         // 1) The emulation can be out-of-sync: it might either go slower or faster.
         // 2) We want to keep track of the time elapsed even if the ROM is off
         //    (for instance when a save is loaded).
-        if (++rtc.cycles_since_last_tick == Specs::Frequencies::CPU) {
+        if (++rtc.cycles_since_last_tick >= Specs::Frequencies::CPU) {
             rtc.cycles_since_last_tick = 0;
             int64_t tick_time = std::time(nullptr);
             int64_t delta = tick_time - rtc.last_tick_time;
