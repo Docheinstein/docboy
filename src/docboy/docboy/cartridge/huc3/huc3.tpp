@@ -114,16 +114,22 @@ void HuC3<RomSize, RamSize>::write_ram(uint16_t address, uint8_t value) {
 
 template <uint32_t RomSize, uint32_t RamSize>
 void HuC3<RomSize, RamSize>::on_tick() {
+#ifndef ENABLE_RTC_SYSTEM_TIME
+    // Support for std::time() has been disabled: fake the internal system time by using the emulator's clock
+    // as the source of time. Note that this drops the support for updating RTC while ROM is off.
+    ++rtc.artificial_system_time;
+#endif
+
     // We update the internal RTC clock one time per second, and we do so
     // by using the internal GameBoy clock for an accurate timing.
-    // Despite that, we use the (host system) time() function to actually
-    // keep of track of the "real" elapsed time for two reasons:
+    // Despite that, we use the host system time() function (if system RTC is supported)
+    // to actually keep of track of the "real" elapsed time for two reasons:
     // 1) The emulation can be out-of-sync: it might either go slower or faster.
     // 2) We want to keep track of the time elapsed even if the ROM is off
-    //    (for instance when a save is loaded).
+    //    (for instance, when a save is loaded).
     if (++rtc.cycles_since_last_tick == Specs::Frequencies::CPU) {
         rtc.cycles_since_last_tick = 0;
-        int64_t tick_time = std::time(nullptr);
+        int64_t tick_time = get_time();
         int64_t delta = tick_time - rtc.last_tick_time;
 
         // Increase the RTC once every minute.
@@ -145,6 +151,15 @@ void HuC3<RomSize, RamSize>::tick_rtc(int64_t delta /* minutes */) {
 
     ASSERT(rtc.clock.minutes < 1440);
     ASSERT(rtc.clock.days < 4096);
+}
+
+template <uint32_t RomSize, uint32_t RamSize>
+int64_t HuC3<RomSize, RamSize>::get_time() const {
+#ifdef ENABLE_RTC_SYSTEM_TIME
+    return std::time(nullptr);
+#else
+    return rtc.artificial_system_time / Specs::Frequencies::CPU;
+#endif
 }
 
 template <uint32_t RomSize, uint32_t RamSize>
@@ -228,7 +243,11 @@ uint32_t HuC3<RomSize, RamSize>::get_rtc_save_size() const {
                   offsetof(Rtc, clock));
     static_assert(sizeof(Rtc::clock) == sizeof(Rtc::clock.minutes) + sizeof(Rtc::clock.days));
 
+#ifdef ENABLE_RTC_SYSTEM_TIME
     return sizeof(rtc.last_tick_time) + sizeof(rtc.memory) + sizeof(rtc.clock);
+#else
+    return sizeof(rtc.last_tick_time) + sizeof(rtc.memory) + sizeof(rtc.clock) + sizeof(rtc.artificial_system_time);
+#endif
 }
 
 #ifdef ENABLE_DEBUGGER
@@ -298,6 +317,9 @@ void HuC3<RomSize, RamSize>::save_state(Parcel& parcel) const {
     PARCEL_WRITE_BYTES(parcel, rtc.memory, sizeof(rtc.memory));
     PARCEL_WRITE_UINT16(parcel, rtc.clock.minutes);
     PARCEL_WRITE_UINT16(parcel, rtc.clock.days);
+#ifndef ENABLE_RTC_SYSTEM_TIME
+    PARCEL_WRITE_INT64(parcel, rtc.artificial_system_time);
+#endif
     PARCEL_WRITE_UINT16(parcel, rom_bank_selector);
     PARCEL_WRITE_UINT8(parcel, ram_bank_selector);
     PARCEL_WRITE_BYTES(parcel, ram, RamSize);
@@ -315,6 +337,9 @@ void HuC3<RomSize, RamSize>::load_state(Parcel& parcel) {
     parcel.read_bytes(rtc.memory, sizeof(rtc.memory));
     rtc.clock.minutes = parcel.read_uint16();
     rtc.clock.days = parcel.read_uint16();
+#ifndef ENABLE_RTC_SYSTEM_TIME
+    rtc.artificial_system_time = parcel.read_int64();
+#endif
     rom_bank_selector = parcel.read_uint16();
     ram_bank_selector = parcel.read_uint8();
     parcel.read_bytes(ram, RamSize);
@@ -328,10 +353,13 @@ void HuC3<RomSize, RamSize>::reset() {
     rtc.read = 0;
     rtc.address = 0;
     rtc.cycles_since_last_tick = 0;
-    rtc.last_tick_time = std::time(nullptr);
+    rtc.last_tick_time = get_time();
     memset(rtc.memory, 0, sizeof(rtc.memory));
     rtc.clock.minutes = 0;
     rtc.clock.days = 0;
+#ifndef ENABLE_RTC_SYSTEM_TIME
+    rtc.artificial_system_time = get_time();
+#endif
     rom_bank_selector = 0x1;
     ram_bank_selector = 0;
     memset(ram, 0, RamSize);

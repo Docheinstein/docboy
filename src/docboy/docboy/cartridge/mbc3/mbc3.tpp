@@ -116,7 +116,7 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::write_ram(uint16_t address, uint8_t
                     rtc.clock.seconds = keep_bits<6>(value);
                     // Writing to the seconds register resets the internal counter.
                     rtc.cycles_since_last_tick = 0;
-                    rtc.last_tick_time = std::time(nullptr);
+                    rtc.last_tick_time = get_time();
                     break;
                 case 0x09:
                     rtc.clock.minutes = keep_bits<6>(value);
@@ -142,21 +142,29 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::write_ram(uint16_t address, uint8_t
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void Mbc3<RomSize, RamSize, Battery, Timer>::on_tick() {
     if constexpr (Timer) {
+#ifndef ENABLE_RTC_SYSTEM_TIME
+        // Support for std::time() has been disabled: fake the internal system time by using the emulator's clock
+        // as the source of time. Note that this drops the support for updating RTC while ROM is off.
+        ++rtc.artificial_system_time;
+#endif
+
         if (test_bit<Specs::Bits::Rtc::DH::STOPPED>(rtc.clock.days_high)) {
             // RTC does not tick while it's stopped.
             return;
         }
 
+        ASSERT(rtc.cycles_since_last_tick < Specs::Frequencies::CPU);
+
         // We update the internal RTC clock one time per second, and we do so
         // by using the internal GameBoy clock for an accurate timing.
-        // Despite that, we use the (host system) time() function to actually
-        // keep of track of the "real" elapsed time for two reasons:
+        // Despite that, we use the host system time() function (if system RTC is supported)
+        // to actually keep of track of the "real" elapsed time for two reasons:
         // 1) The emulation can be out-of-sync: it might either go slower or faster.
         // 2) We want to keep track of the time elapsed even if the ROM is off
-        //    (for instance when a save is loaded).
-        if (++rtc.cycles_since_last_tick >= Specs::Frequencies::CPU) {
+        //    (for instance, when a save is loaded).
+        if (++rtc.cycles_since_last_tick == Specs::Frequencies::CPU) {
             rtc.cycles_since_last_tick = 0;
-            int64_t tick_time = std::time(nullptr);
+            int64_t tick_time = get_time();
             int64_t delta = tick_time - rtc.last_tick_time;
             tick_rtc(delta);
             rtc.last_tick_time = tick_time;
@@ -179,7 +187,7 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::tick_rtc(int64_t delta /* seconds *
                     rtc.clock.hours = 0;
                     if (++rtc.clock.days_low == 0) {
                         // Overflow flag is set if the high bit of days is already set and days exceeded 255 another
-                        // time. Note that is it never cleared automatically: it must be reset manually.
+                        // time. Note that it is never cleared automatically: it must be reset manually.
                         if (test_bit<Specs::Bits::Rtc::DH::DAY>(rtc.clock.days_high)) {
                             set_bit<Specs::Bits::Rtc::DH::DAY_OVERFLOW>(rtc.clock.days_high);
                         }
@@ -224,6 +232,15 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::tick_rtc(int64_t delta /* seconds *
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+int64_t Mbc3<RomSize, RamSize, Battery, Timer>::get_time() const {
+#ifdef ENABLE_RTC_SYSTEM_TIME
+    return std::time(nullptr);
+#else
+    return rtc.artificial_system_time / Specs::Frequencies::CPU;
+#endif
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 void* Mbc3<RomSize, RamSize, Battery, Timer>::get_ram_save_data() {
     if constexpr (Ram && Battery) {
         return ram;
@@ -256,7 +273,11 @@ uint32_t Mbc3<RomSize, RamSize, Battery, Timer>::get_rtc_save_size() const {
         // We want to serialize both the realtime clock and the last tick time,
         // so that we can figure out how much (real) time is elapsed when the
         // save will be loaded again.
+#ifdef ENABLE_RTC_SYSTEM_TIME
         return sizeof(rtc.last_tick_time) + sizeof(rtc.clock);
+#else
+        return sizeof(rtc.last_tick_time) + sizeof(rtc.clock) + sizeof(rtc.artificial_system_time);
+#endif
     }
     return 0;
 }
@@ -338,6 +359,9 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::load_state(Parcel& parcel) {
     rtc.clock.hours = parcel.read_uint8();
     rtc.clock.days_low = parcel.read_uint8();
     rtc.clock.days_high = parcel.read_uint8();
+#ifndef ENABLE_RTC_SYSTEM_TIME
+    rtc.artificial_system_time = parcel.read_int64();
+#endif
     rtc.latched.seconds = parcel.read_uint8();
     rtc.latched.minutes = parcel.read_uint8();
     rtc.latched.hours = parcel.read_uint8();
@@ -361,6 +385,9 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, rtc.clock.hours);
     PARCEL_WRITE_UINT8(parcel, rtc.clock.days_low);
     PARCEL_WRITE_UINT8(parcel, rtc.clock.days_high);
+#ifndef ENABLE_RTC_SYSTEM_TIME
+    PARCEL_WRITE_INT64(parcel, rtc.artificial_system_time);
+#endif
     PARCEL_WRITE_UINT8(parcel, rtc.latched.seconds);
     PARCEL_WRITE_UINT8(parcel, rtc.latched.minutes);
     PARCEL_WRITE_UINT8(parcel, rtc.latched.hours);
@@ -379,12 +406,15 @@ void Mbc3<RomSize, RamSize, Battery, Timer>::reset() {
     ram_bank_selector_rtc_register_selector = 0;
 
     rtc.cycles_since_last_tick = 0;
-    rtc.last_tick_time = std::time(nullptr);
+    rtc.last_tick_time = get_time();
     rtc.clock.seconds = 0;
     rtc.clock.minutes = 0;
     rtc.clock.hours = 0;
     rtc.clock.days_low = 0;
     rtc.clock.days_high = 0;
+#ifndef ENABLE_RTC_SYSTEM_TIME
+    rtc.artificial_system_time = get_time();
+#endif
     rtc.latched.seconds = 0;
     rtc.latched.minutes = 0;
     rtc.latched.hours = 0;

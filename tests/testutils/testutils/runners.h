@@ -145,9 +145,11 @@ public:
 
         static constexpr std::chrono::nanoseconds FRAME_TIME {1000000000LLU * Specs::Ppu::DOTS_PER_FRAME /
                                                               Specs::Frequencies::CLOCK};
+#ifdef ENABLE_RTC_SYSTEM_TIME
         std::chrono::high_resolution_clock::time_point next_frame_time =
             std::chrono::high_resolution_clock::now() + FRAME_TIME;
         uint64_t frame_ticks = 0;
+#endif
 
         for (tick = core.ticks; tick <= max_ticks_; tick += 4) {
             // Eventually submit scheduled Joypad input.
@@ -196,6 +198,7 @@ public:
                 // Expectation isn't satisfied yet, but we can keep going on.
             }
 
+#ifdef ENABLE_RTC_SYSTEM_TIME
             if (limit_speed_) {
                 // Eventually run at real speed, not faster (this is useful for RTC tests).
                 if (frame_ticks == Specs::Ppu::DOTS_PER_FRAME) {
@@ -207,6 +210,7 @@ public:
 
                 frame_ticks += 4;
             }
+#endif
         }
 
         if (has_ever_checked) {

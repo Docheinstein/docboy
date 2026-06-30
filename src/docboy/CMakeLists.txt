@@ -180,6 +180,10 @@ if (ENABLE_ACCURATE_INPUT_POLLING)
     target_compile_definitions(docboy PUBLIC ENABLE_ACCURATE_INPUT_POLLING)
 endif ()
 
+if (ENABLE_RTC_SYSTEM_TIME)
+    target_compile_definitions(docboy PUBLIC ENABLE_RTC_SYSTEM_TIME)
+endif ()
+
 target_link_libraries(docboy PRIVATE utils)
 
 target_include_directories(docboy PUBLIC .)

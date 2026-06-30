@@ -58,6 +58,8 @@ private:
 
     void tick_rtc(int64_t delta);
 
+    int64_t get_time() const;
+
     bool ram_enabled {};
     uint8_t rom_bank_selector {};
     uint8_t ram_bank_selector_rtc_register_selector {};
@@ -69,6 +71,9 @@ private:
         // to serialize RTC as a unique consecutive chunk of data.
         int64_t last_tick_time {};
         RtcRegisters clock {};
+#ifndef ENABLE_RTC_SYSTEM_TIME
+        int64_t artificial_system_time {};
+#endif
 #pragma pack(pop)
         RtcRegisters latched {};
         uint8_t latch {};

@@ -71,10 +71,15 @@ private:
             uint16_t minutes {};
             uint16_t days {};
         } clock;
+#ifndef ENABLE_RTC_SYSTEM_TIME
+        int64_t artificial_system_time {};
+#endif
 #pragma pack(pop)
     } rtc {};
 
     void tick_rtc(int64_t delta);
+
+    int64_t get_time() const;
 
     uint16_t rom_bank_selector {};
     uint8_t ram_bank_selector {};

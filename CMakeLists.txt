@@ -29,6 +29,7 @@ option(ENABLE_ASSERTS "Enable asserts" OFF)
 option(ENABLE_STATE_DEBUG_SYMBOLS "Add debug symbols to state files" OFF)
 option(ENABLE_DIRECT_LCD_RENDERING "Enable rendering directly to LCD framebuffer" OFF)
 option(ENABLE_ACCURATE_INPUT_POLLING "Enable more accurate and frequent input polling (if supported by the frontend)" ON)
+option(ENABLE_RTC_SYSTEM_TIME "Use the system time as source for the RTC" ON)
 
 # Build in Release mode by default
 if (CMAKE_BUILD_TYPE STREQUAL "")
