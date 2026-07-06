@@ -3433,6 +3433,10 @@
             ]
         },
         {
+            "rom": "firstwhite/firstwhite.gb",
+            "framebuffer": "firstwhite/firstwhite.png"
+        },
+        {
             "rom": "docboy/ppu/hblank_interrupt_turn_off_timing_round1.gb",
             "memory": [
                 {
