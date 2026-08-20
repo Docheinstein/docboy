@@ -304,6 +304,17 @@ int main(int argc, char* argv[]) {
 #ifdef ENABLE_TWO_PLAYERS_MODE
     CoreController* core_controller2 {two_players_mode ? &run_controller.get_core2() : nullptr};
 #endif
+
+#ifdef ENABLE_TWO_PLAYERS_MODE
+    struct {
+        CoreController& first;
+        CoreController* second;
+    } core_controllers {core_controller1, core_controller2};
+#else
+    struct {
+        CoreController& first;
+    } core_controllers {core_controller1};
+#endif
 #ifdef ENABLE_DEBUGGER
     DebuggerController debugger_controller {window, core, core_controller1};
 #endif
@@ -359,36 +370,49 @@ int main(int argc, char* argv[]) {
     ui_controller.add_appearance(GREY_PALETTE, "Grey", 0xA901);
     const auto* appearance = ui_controller.get_appearance(prefs.dmg_palette);
     if (!appearance) {
-        // No know appearance exists for this configuration: add a new one
+        // No known appearance exists for this configuration: add a new one
         appearance = &ui_controller.add_appearance(prefs.dmg_palette, "User");
     }
     ui_controller.set_current_appearance(appearance->index);
 #endif
 
 #ifdef ENABLE_ACCURATE_INPUT_POLLING
-    const auto create_input_polling_callback = [](const CoreController& core_controller) {
-        // The core will call this polling routing roughly once per scanline.
-        // Here we want to handle only real game input: other SDL events are handled in the main game loop.
-        return [&core_controller] {
-            SDL_Event event;
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_EVENT_KEY_DOWN) {
-                    core_controller.send_key(event.key.key, Joypad::KeyState::Pressed);
-                } else if (event.type == SDL_EVENT_KEY_UP) {
-                    core_controller.send_key(event.key.key, Joypad::KeyState::Released);
+    std::vector<SDL_Event> main_loop_events;
+    main_loop_events.reserve(256);
+
+    const auto input_polling_callback = [&main_loop_events, core_controllers] {
+        // The core will call this polling routine roughly once per scanline.
+        // Here we want to handle only joypad input: other SDL events (Save/Load/Quit/...)
+        // have to be handled in the main game loop, hence we cache them for later.
+
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            bool handled = false;
+
+            if (event.type == SDL_EVENT_KEY_DOWN) {
+                handled = core_controllers.first.send_key(event.key.key, Joypad::KeyState::Pressed);
+#ifdef ENABLE_TWO_PLAYERS_MODE
+                if (core_controllers.second) {
+                    handled = handled || core_controllers.second->send_key(event.key.key, Joypad::KeyState::Pressed);
                 }
+#endif
+            } else if (event.type == SDL_EVENT_KEY_UP) {
+                handled = core_controllers.first.send_key(event.key.key, Joypad::KeyState::Released);
+#ifdef ENABLE_TWO_PLAYERS_MODE
+                if (core_controllers.second) {
+                    handled = handled || core_controllers.second->send_key(event.key.key, Joypad::KeyState::Released);
+                }
+#endif
             }
-        };
+
+            if (!handled) {
+                main_loop_events.push_back(event);
+            }
+        }
     };
 
-    // Set input polling callback
-    core.set_input_polling_callback(create_input_polling_callback(core_controller1));
-
-#ifdef ENABLE_TWO_PLAYERS_MODE
-    if (two_players_mode) {
-        core2->set_input_polling_callback(create_input_polling_callback(*core_controller2));
-    }
-#endif
+    // Set input polling callback.
+    core.set_input_polling_callback(input_polling_callback);
 #endif
 
     // Eventually attach serial console
@@ -558,6 +582,7 @@ int main(int argc, char* argv[]) {
             }
         };
 
+#ifdef ENABLE_TWO_PLAYERS_MODE
         if (two_players_mode) {
             if (main_controller.get_audio_player_source() == MainController::AUDIO_PLAYER_SOURCE_1) {
                 core.set_audio_sample_callback(std::move(audio_sample_callback));
@@ -566,7 +591,9 @@ int main(int argc, char* argv[]) {
                 core.set_audio_sample_callback(nullptr);
                 core2->set_audio_sample_callback(std::move(audio_sample_callback));
             }
-        } else {
+        } else
+#endif
+        {
             core.set_audio_sample_callback(std::move(audio_sample_callback));
         }
     };
@@ -636,6 +663,14 @@ int main(int argc, char* argv[]) {
     }
 
     // Main loop
+    const auto handle_event = [&main_controller, &window](const SDL_Event& event) {
+        if (event.type == SDL_EVENT_QUIT) {
+            main_controller.quit();
+        } else {
+            window.handle_event(event);
+        }
+    };
+
     SDL_Event e;
     std::chrono::high_resolution_clock::time_point next_frame_time = std::chrono::high_resolution_clock::now();
 
@@ -651,14 +686,16 @@ int main(int argc, char* argv[]) {
 
         // Handle events
         while (SDL_PollEvent(&e)) {
-            switch (e.type) {
-            case SDL_EVENT_QUIT:
-                main_controller.quit();
-                break;
-            default:
-                window.handle_event(e);
-            }
+            handle_event(e);
         }
+
+#ifdef ENABLE_ACCURATE_INPUT_POLLING
+        // Handle cached events polled during the frame but not handled yet
+        for (const auto& ev : main_loop_events) {
+            handle_event(ev);
+        }
+        main_loop_events.clear();
+#endif
 
         // Eventually advance emulation by one frame
         if (!run_controller.is_paused()) {

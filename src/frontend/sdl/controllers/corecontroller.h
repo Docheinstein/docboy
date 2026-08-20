@@ -73,10 +73,13 @@ public:
     }
 
     // Input
-    void send_key(SDL_Keycode key, Joypad::KeyState key_state) const {
+    bool send_key(SDL_Keycode key, Joypad::KeyState key_state) const {
         if (const auto it = keycode_map.find(key); it != keycode_map.end()) {
             core.set_key(it->second, key_state);
+            return true;
         }
+
+        return false;
     }
 
     void set_key_mapping(SDL_Keycode keycode, Joypad::Key joypad_key);
