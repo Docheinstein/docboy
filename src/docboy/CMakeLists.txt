@@ -45,6 +45,8 @@ target_sources(docboy PRIVATE
         docboy/cartridge/nombc/nombc.tpp
         docboy/cartridge/romram/romram.h
         docboy/cartridge/romram/romram.tpp
+        docboy/cartridge/wisdomtree/wisdomtree.h
+        docboy/cartridge/wisdomtree/wisdomtree.tpp
         docboy/cartridge/slot.cpp
         docboy/cartridge/slot.h
         docboy/common/macros.h

@@ -11,6 +11,7 @@
 #include "docboy/cartridge/mbc7/mbc7.h"
 #include "docboy/cartridge/nombc/nombc.h"
 #include "docboy/cartridge/romram/romram.h"
+#include "docboy/cartridge/wisdomtree/wisdomtree.h"
 #include "docboy/common/specs.h"
 #include "docboy/common/units.h"
 
@@ -138,6 +139,21 @@ bool is_mbc1m(const std::vector<uint8_t>& data) {
     return num_logo > 1;
 }
 
+bool is_wisdom_tree(const std::vector<uint8_t>& data) {
+    // Wisdom Tree can't trivially be distinguished from a NoMBC cartridge only from the header.
+    //
+    // There are only 5 released Wisdom Tree games:
+    // 1. Exodus - Journey to the Promised Land
+    // 2. Joshua & the Battle of Jericho
+    // 3. King James Bible
+    // 4. NIV Bible & the 20 Lost Levels of Joshua
+    // 5. Spiritual Warfare
+    //
+    // They all have the same header: no MBC, a declared 32 KB ROM, but a bigger actual ROM.
+    ASSERT(data[MemoryLayout::TYPE] == Mbc::NO_MBC);
+    return data[MemoryLayout::ROM_SIZE] == Rom::KB_32 && data.size() > 32 * KB;
+}
+
 template <template <uint32_t, uint32_t> typename T, uint32_t RomSize, uint32_t RamSize>
 std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data) {
     return std::make_unique<T<RomSize, RamSize>>(data.data(), data.size());
@@ -221,7 +237,7 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t rom
             return create<T, 4 * MB, SupportedRamSize>(data, ram);
         }
     }
-    if constexpr (test_bit<SupportedRomSize, Rom::MB_4>()) {
+    if constexpr (test_bit<SupportedRomSize, Rom::MB_8>()) {
         if (rom == Rom::MB_8) {
             return create<T, 8 * MB, SupportedRamSize>(data, ram);
         }
@@ -252,17 +268,43 @@ std::unique_ptr<ICartridge> create_mbc7(const std::vector<uint8_t>& data, uint8_
     FATAL("unexpected MBC7 rom");
 }
 
+std::unique_ptr<ICartridge> create_wisdom_tree(const std::vector<uint8_t>& data) {
+    // The ROM size declared in the header is not reliable for Wisdom Tree games.
+    // Infer it from the actual ROM size instead
+    const auto rom_size = data.size();
+
+    if (rom_size == 128 * KB) {
+        return std::make_unique<WisdomTree<128 * KB>>(data.data(), rom_size);
+    }
+
+    if (rom_size == 256 * KB) {
+        return std::make_unique<WisdomTree<256 * KB>>(data.data(), rom_size);
+    }
+
+    if (rom_size == 1 * MB) {
+        return std::make_unique<WisdomTree<1 * MB>>(data.data(), rom_size);
+    }
+
+    if (rom_size == 2 * MB) {
+        return std::make_unique<WisdomTree<2 * MB>>(data.data(), rom_size);
+    }
+
+    FATAL("unexpected Wisdom Tree rom");
+}
+
 std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc, uint8_t rom, uint8_t ram) {
     switch (mbc) {
     case Mbc::NO_MBC:
+        if (is_wisdom_tree(data)) {
+            return create_wisdom_tree(data);
+        }
         return create<NoMbc_, Info::NoMbc::Rom, Info::NoMbc::Ram>(data, rom, ram);
     case Mbc::MBC1:
     case Mbc::MBC1_RAM:
         if (is_mbc1m(data)) {
             return create<Mbc1M_NoBattery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
-        } else {
-            return create<Mbc1_NoBattery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
         }
+        return create<Mbc1_NoBattery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
     case Mbc::MBC1_RAM_BATTERY:
         if (is_mbc1m(data)) {
             return create<Mbc1M_Battery, Info::Mbc1::Rom, Info::Mbc1::Ram>(data, rom, ram);
