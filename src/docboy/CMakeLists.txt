@@ -30,6 +30,8 @@ target_sources(docboy PRIVATE
         docboy/cartridge/huc1/huc1.tpp
         docboy/cartridge/huc3/huc3.h
         docboy/cartridge/huc3/huc3.tpp
+        docboy/cartridge/m161/m161.h
+        docboy/cartridge/m161/m161.tpp
         docboy/cartridge/mbc1/mbc1.h
         docboy/cartridge/mbc1/mbc1.tpp
         docboy/cartridge/mbc1/mbc1m.h

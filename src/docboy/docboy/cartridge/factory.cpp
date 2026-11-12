@@ -3,6 +3,7 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/cartridge/huc1/huc1.h"
 #include "docboy/cartridge/huc3/huc3.h"
+#include "docboy/cartridge/m161/m161.h"
 #include "docboy/cartridge/mbc1/mbc1.h"
 #include "docboy/cartridge/mbc1/mbc1m.h"
 #include "docboy/cartridge/mbc2/mbc2.h"
@@ -130,6 +131,10 @@ using Mmm01_Battery = Mmm01<RomSize, RamSize, Battery>;
 template <uint32_t RomSize, uint32_t RamSize>
 using Mmm01_NoBattery = Mmm01<RomSize, RamSize, NoBattery>;
 
+bool has_title(const uint8_t* data, const char* title) {
+    return memcmp(data + MemoryLayout::TITLE::START, title, strlen(title)) == 0;
+}
+
 bool is_mbc1m(const std::vector<uint8_t>& data) {
     // MBC1M can't be distinguished from MBC1 only from the header.
     // The heuristic for distinguish it is the presence of (at least two)
@@ -156,17 +161,31 @@ bool is_mmm01(const std::vector<uint8_t>& data) {
     // Therefore, the actual header of the cartridge is the menu's one, located at the
     // beginning of the last 32 KB of the ROM, while the header at the beginning
     // of the ROM belongs to the first game of the collection.
-    // In addition to the MBC check, ensure the header is valid by verifying the presence of the Nintendo Logo.
     if (data.size() < 0x10000) {
         return false;
     }
 
     const uint8_t* mmm01_data = data.data() + data.size() - 0x8000;
 
-    const uint8_t mbc = mmm01_data[MemoryLayout::TYPE];
+    // Ensure the Nintendo Logo is present.
+    if (memcmp(mmm01_data + MemoryLayout::LOGO::START, NINTENDO_LOGO, sizeof(NINTENDO_LOGO)) != 0) {
+        return false;
+    }
 
-    return (mbc == Mbc::MMM01 || mbc == Mbc::MMM01_RAM || mbc == Mbc::MMM01_RAM_BATTERY) &&
-           (memcmp(mmm01_data + MemoryLayout::LOGO::START, NINTENDO_LOGO, sizeof(NINTENDO_LOGO)) == 0);
+    const uint8_t mbc = mmm01_data[MemoryLayout::TYPE];
+    if (mbc == Mbc::MMM01 || mbc == Mbc::MMM01_RAM || mbc == Mbc::MMM01_RAM_BATTERY) {
+        return true;
+    }
+
+    // Some MMM01 cartridges can't be distinguished from the MBC type.
+    // Detect them by the menu's title.
+    return has_title(mmm01_data, "BOUKENJIMA2 SET" /* Mani 4 in 1 (Adventure Island 2, ...) */);
+}
+
+bool is_m161(const std::vector<uint8_t>& data) {
+    // Some M161 cartridges can't be distinguished from the MBC type.
+    // Detect them by the menu's title.
+    return has_title(data.data(), "TETRIS SET" /* Mani 4 in 1 (Tetris, Tennis, Alleyway, Yakuman) */);
 }
 
 bool is_wisdom_tree(const std::vector<uint8_t>& data) {
@@ -179,9 +198,9 @@ bool is_wisdom_tree(const std::vector<uint8_t>& data) {
     // 4. NIV Bible & the 20 Lost Levels of Joshua
     // 5. Spiritual Warfare
     //
-    // They all have the same header: no MBC, a declared 32 KB ROM, but a bigger actual ROM.
-    ASSERT(data[MemoryLayout::TYPE] == Mbc::NO_MBC);
-    return data[MemoryLayout::ROM_SIZE] == Rom::KB_32 && data.size() > 32 * KB;
+    // They all have the same header: No MBC, a declared 32 KB ROM, but a bigger actual ROM.
+    return data[MemoryLayout::TYPE] == Mbc::NO_MBC && data[MemoryLayout::ROM_SIZE] == Rom::KB_32 &&
+           data.size() > 32 * KB;
 }
 
 uint32_t get_header_offset(const std::vector<uint8_t>& data) {
@@ -280,27 +299,18 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t rom
     return nullptr;
 }
 
-std::unique_ptr<ICartridge> create_mbc7(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
-    ASSERT(ram == Ram::NONE);
-
-    // There are only 3 games using MBC7.
-    // Unfortunately, they have a different EEPROM (93LC56 vs 93LC66), and there's no neat
-    // way to figure out which type of EEPROM is soldered just from the cartridge type.
-    // Therefore, we are forced to take a look at the header to inference which type of game
-    // this is and use a different EEPROM accordingly.
-    uint8_t cksum = data[MemoryLayout::HEADER_CHECKSUM];
-
-    if (cksum == 0x2A /* Command Master (Japan) */) {
-        ASSERT(rom == Rom::MB_2);
-        return std::make_unique<Mbc7<2 * MB, 512>>(data.data(), data.size());
+std::unique_ptr<ICartridge> create_mmm01(const std::vector<uint8_t>& data, uint8_t mbc, uint8_t rom, uint8_t ram) {
+    // Note that the MBC declared in the menu's header is not necessarily MMM01 (see is_mmm01()).
+    if (mbc == Mbc::MMM01_RAM_BATTERY) {
+        return create<Mmm01_Battery, Info::Mmm01::Rom, Info::Mmm01::Ram>(data, rom, ram);
     }
+    return create<Mmm01_NoBattery, Info::Mmm01::Rom, Info::Mmm01::Ram>(data, rom, ram);
+}
 
-    if (cksum == 0xA2 /* Kirby - Tilt 'n' Tumble (USA) */ || cksum == 0x33 /* Kirby - Tilt 'n' Tumble (Japan) */) {
-        ASSERT(rom == Rom::MB_1);
-        return std::make_unique<Mbc7<1 * MB, 256>>(data.data(), data.size());
-    }
-
-    FATAL("unexpected MBC7 rom");
+std::unique_ptr<ICartridge> create_m161(const std::vector<uint8_t>& data) {
+    // The header is not reliable for M161: the only known cartridge has a 256 KB ROM.
+    ASSERT(data.size() == 256 * KB);
+    return std::make_unique<M161<256 * KB>>(data.data(), data.size());
 }
 
 std::unique_ptr<ICartridge> create_wisdom_tree(const std::vector<uint8_t>& data) {
@@ -327,12 +337,44 @@ std::unique_ptr<ICartridge> create_wisdom_tree(const std::vector<uint8_t>& data)
     FATAL("unexpected Wisdom Tree rom");
 }
 
+std::unique_ptr<ICartridge> create_mbc7(const std::vector<uint8_t>& data, uint8_t rom, uint8_t ram) {
+    ASSERT(ram == Ram::NONE);
+
+    // There are only 3 games using MBC7.
+    // Unfortunately, they have a different EEPROM (93LC56 vs 93LC66), and there's no neat
+    // way to figure out which type of EEPROM is soldered just from the cartridge type.
+    // Therefore, we are forced to take a look at the header to inference which type of game
+    // this is and use a different EEPROM accordingly.
+    if (has_title(data.data(), "CMASTER") /* Command Master (Japan) */) {
+        ASSERT(rom == Rom::MB_2);
+        return std::make_unique<Mbc7<2 * MB, 512>>(data.data(), data.size());
+    }
+
+    if (has_title(data.data(), "KIRBY TNT") /* Kirby - Tilt 'n' Tumble (USA), Kirby - Tilt 'n' Tumble (Japan) */) {
+        ASSERT(rom == Rom::MB_1);
+        return std::make_unique<Mbc7<1 * MB, 256>>(data.data(), data.size());
+    }
+
+    FATAL("unexpected MBC7 rom");
+}
+
 std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc, uint8_t rom, uint8_t ram) {
+    // Some cartridge mappers can't be (reliably) detected by the MBC declared in the header.
+    // Handle them separately.
+    if (is_mmm01(data)) {
+        return create_mmm01(data, mbc, rom, ram);
+    }
+
+    if (is_m161(data)) {
+        return create_m161(data);
+    }
+
+    if (is_wisdom_tree(data)) {
+        return create_wisdom_tree(data);
+    }
+
     switch (mbc) {
     case Mbc::NO_MBC:
-        if (is_wisdom_tree(data)) {
-            return create_wisdom_tree(data);
-        }
         return create<NoMbc_, Info::NoMbc::Rom, Info::NoMbc::Ram>(data, rom, ram);
     case Mbc::MBC1:
     case Mbc::MBC1_RAM:
@@ -361,11 +403,6 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
         return create<Mbc3_NoBattery_NoTimer, Info::Mbc3::Rom, Info::Mbc3::Ram>(data, rom, ram);
     case Mbc::MBC3_RAM_BATTERY:
         return create<Mbc3_Battery_NoTimer, Info::Mbc3::Rom, Info::Mbc3::Ram>(data, rom, ram);
-    case Mbc::MMM01:
-    case Mbc::MMM01_RAM:
-        return create<Mmm01_NoBattery, Info::Mmm01::Rom, Info::Mmm01::Ram>(data, rom, ram);
-    case Mbc::MMM01_RAM_BATTERY:
-        return create<Mmm01_Battery, Info::Mmm01::Rom, Info::Mmm01::Ram>(data, rom, ram);
     case Mbc::MBC5:
     case Mbc::MBC5_RAM:
         return create<Mbc5_NoBattery_NoRumble, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
@@ -383,7 +420,7 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
     case Mbc::HUC1:
         return create<HuC1, Info::HuC1::Rom, Info::HuC1::Ram>(data, rom, ram);
     default:
-        FATAL("unknown MBC type: 0x" + hex(mbc));
+        return nullptr;
     }
 }
 

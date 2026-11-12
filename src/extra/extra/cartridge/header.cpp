@@ -105,7 +105,6 @@ const std::map<uint8_t, std::string> CARTRIDGE_TYPE_DESCRIPTION_MAP = {
     {0x1E, "MBC5+RUMBLE+RAM+BATTERY"},
     {0x20, "MBC6"},
     {0x22, "MBC7+SENSOR+RUMBLE+RAM+BATTERY"},
-    {0xC0, "WISDOM TREE (unofficial)"},
     {0xFC, "POCKET CAMERA"},
     {0xFD, "BANDAI TAMA5"},
     {0xFE, "HuC3"},
