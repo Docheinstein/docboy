@@ -9,6 +9,7 @@
 #include "docboy/cartridge/mbc3/mbc3.h"
 #include "docboy/cartridge/mbc5/mbc5.h"
 #include "docboy/cartridge/mbc7/mbc7.h"
+#include "docboy/cartridge/mmm01/mmm01.h"
 #include "docboy/cartridge/nombc/nombc.h"
 #include "docboy/cartridge/romram/romram.h"
 #include "docboy/cartridge/wisdomtree/wisdomtree.h"
@@ -68,6 +69,11 @@ namespace Info {
         constexpr uint16_t Rom = bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1>();
         constexpr uint16_t Ram = bits<Ram::KB_32>();
     } // namespace HuC1
+    namespace Mmm01 {
+        constexpr uint16_t Rom =
+            bits<Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1, Rom::MB_2, Rom::MB_4, Rom::MB_8>();
+        constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_8, Ram::KB_32, Ram::KB_128>();
+    } // namespace Mmm01
 } // namespace Info
 
 template <uint32_t RomSize, uint32_t RamSize>
@@ -118,6 +124,12 @@ using RomRam_Battery = RomRam<RomSize, RamSize, Battery>;
 template <uint32_t RomSize, uint32_t RamSize>
 using RomRam_NoBattery = RomRam<RomSize, RamSize, NoBattery>;
 
+template <uint32_t RomSize, uint32_t RamSize>
+using Mmm01_Battery = Mmm01<RomSize, RamSize, Battery>;
+
+template <uint32_t RomSize, uint32_t RamSize>
+using Mmm01_NoBattery = Mmm01<RomSize, RamSize, NoBattery>;
+
 bool is_mbc1m(const std::vector<uint8_t>& data) {
     // MBC1M can't be distinguished from MBC1 only from the header.
     // The heuristic for distinguish it is the presence of (at least two)
@@ -139,6 +151,24 @@ bool is_mbc1m(const std::vector<uint8_t>& data) {
     return num_logo > 1;
 }
 
+bool is_mmm01(const std::vector<uint8_t>& data) {
+    // At startup, MMM01 maps the last 32 KB of the ROM (the menu) to 0x0000 - 0x7FFF.
+    // Therefore, the actual header of the cartridge is the menu's one, located at the
+    // beginning of the last 32 KB of the ROM, while the header at the beginning
+    // of the ROM belongs to the first game of the collection.
+    // In addition to the MBC check, ensure the header is valid by verifying the presence of the Nintendo Logo.
+    if (data.size() < 0x10000) {
+        return false;
+    }
+
+    const uint8_t* mmm01_data = data.data() + data.size() - 0x8000;
+
+    const uint8_t mbc = mmm01_data[MemoryLayout::TYPE];
+
+    return (mbc == Mbc::MMM01 || mbc == Mbc::MMM01_RAM || mbc == Mbc::MMM01_RAM_BATTERY) &&
+           (memcmp(mmm01_data + MemoryLayout::LOGO::START, NINTENDO_LOGO, sizeof(NINTENDO_LOGO)) == 0);
+}
+
 bool is_wisdom_tree(const std::vector<uint8_t>& data) {
     // Wisdom Tree can't trivially be distinguished from a NoMBC cartridge only from the header.
     //
@@ -152,6 +182,11 @@ bool is_wisdom_tree(const std::vector<uint8_t>& data) {
     // They all have the same header: no MBC, a declared 32 KB ROM, but a bigger actual ROM.
     ASSERT(data[MemoryLayout::TYPE] == Mbc::NO_MBC);
     return data[MemoryLayout::ROM_SIZE] == Rom::KB_32 && data.size() > 32 * KB;
+}
+
+uint32_t get_header_offset(const std::vector<uint8_t>& data) {
+    // MMM01 is a special case as it has the header at the end of the ROM instead.
+    return is_mmm01(data) ? data.size() - 0x8000 : 0;
 }
 
 template <template <uint32_t, uint32_t> typename T, uint32_t RomSize, uint32_t RamSize>
@@ -326,6 +361,11 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t mbc
         return create<Mbc3_NoBattery_NoTimer, Info::Mbc3::Rom, Info::Mbc3::Ram>(data, rom, ram);
     case Mbc::MBC3_RAM_BATTERY:
         return create<Mbc3_Battery_NoTimer, Info::Mbc3::Rom, Info::Mbc3::Ram>(data, rom, ram);
+    case Mbc::MMM01:
+    case Mbc::MMM01_RAM:
+        return create<Mmm01_NoBattery, Info::Mmm01::Rom, Info::Mmm01::Ram>(data, rom, ram);
+    case Mbc::MMM01_RAM_BATTERY:
+        return create<Mmm01_Battery, Info::Mmm01::Rom, Info::Mmm01::Ram>(data, rom, ram);
     case Mbc::MBC5:
     case Mbc::MBC5_RAM:
         return create<Mbc5_NoBattery_NoRumble, Info::Mbc5::Rom, Info::Mbc5::Ram>(data, rom, ram);
@@ -366,9 +406,11 @@ std::vector<uint8_t> load_from_file(const std::string& filename) {
 std::pair<std::unique_ptr<ICartridge>, CartridgeHeader> CartridgeFactory::create(const std::string& filename) {
     const std::vector<uint8_t> data = load_from_file(filename);
 
-    const uint8_t mbc = data[MemoryLayout::TYPE];
-    const uint8_t rom = data[MemoryLayout::ROM_SIZE];
-    const uint8_t ram = data[MemoryLayout::RAM_SIZE];
+    const uint8_t* header_data = data.data() + get_header_offset(data);
+
+    const uint8_t mbc = header_data[MemoryLayout::TYPE];
+    const uint8_t rom = header_data[MemoryLayout::ROM_SIZE];
+    const uint8_t ram = header_data[MemoryLayout::RAM_SIZE];
 
     auto cartridge = ::create(data, mbc, rom, ram);
 
@@ -377,7 +419,7 @@ std::pair<std::unique_ptr<ICartridge>, CartridgeHeader> CartridgeFactory::create
     }
 
     CartridgeHeader header {};
-    memcpy(&header, data.data() + MemoryLayout::START, MemoryLayout::SIZE);
+    memcpy(&header, header_data + MemoryLayout::START, MemoryLayout::SIZE);
 
     static_assert(sizeof(CartridgeHeader) == MemoryLayout::SIZE);
 
@@ -387,8 +429,10 @@ std::pair<std::unique_ptr<ICartridge>, CartridgeHeader> CartridgeFactory::create
 CartridgeHeader CartridgeFactory::create_header(const std::string& filename) {
     const std::vector<uint8_t> data = load_from_file(filename);
 
+    const uint8_t* header_data = data.data() + get_header_offset(data);
+
     CartridgeHeader header {};
-    memcpy(&header, data.data() + MemoryLayout::START, MemoryLayout::SIZE);
+    memcpy(&header, header_data + MemoryLayout::START, MemoryLayout::SIZE);
 
     static_assert(sizeof(CartridgeHeader) == MemoryLayout::SIZE);
 

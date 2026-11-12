@@ -1532,6 +1532,10 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
             case Mbc::ROM_RAM:
             case Mbc::ROM_RAM_BATTERY:
                 return "ROMRAM";
+            case Mbc::MMM01:
+            case Mbc::MMM01_RAM:
+            case Mbc::MMM01_RAM_BATTERY:
+                return "MMM01";
             case Mbc::MBC3_TIMER_BATTERY:
             case Mbc::MBC3_TIMER_RAM_BATTERY:
             case Mbc::MBC3:
