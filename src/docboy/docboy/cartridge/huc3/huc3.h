@@ -4,7 +4,10 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-struct HuC3_ : ICartridge {
+class HuC3_ : public ICartridge {
+    DEBUGGABLE_CLASS()
+
+protected:
     enum class RamMapping : uint8_t {
         RamReadOnly = 0x00,
         RamReadWrite = 0x0A,

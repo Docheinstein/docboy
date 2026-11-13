@@ -4,7 +4,10 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-struct HuC1_ : ICartridge {
+class HuC1_ : public ICartridge {
+    DEBUGGABLE_CLASS()
+
+protected:
     bool ir_enabled {};
 
     uint8_t rom_bank_selector {};

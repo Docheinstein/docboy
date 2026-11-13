@@ -4,7 +4,10 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-struct Mbc3_ : ICartridge {
+class Mbc3_ : public ICartridge {
+    DEBUGGABLE_CLASS()
+
+protected:
     struct RtcRegisters {
         uint8_t seconds {};
         uint8_t minutes {};

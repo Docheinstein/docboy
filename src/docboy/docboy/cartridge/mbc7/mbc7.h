@@ -4,7 +4,10 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-struct Mbc7_ : ICartridge {
+class Mbc7_ : public ICartridge {
+    DEBUGGABLE_CLASS()
+
+protected:
     struct Eeprom {
         static constexpr uint16_t MaxEepromSize = 512;
         static constexpr uint16_t MaxAddressSpaceSize = MaxEepromSize / sizeof(uint16_t);

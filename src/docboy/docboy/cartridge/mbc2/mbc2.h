@@ -4,7 +4,10 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-struct Mbc2_ : ICartridge {
+class Mbc2_ : public ICartridge {
+    DEBUGGABLE_CLASS()
+
+protected:
     bool ram_enabled {};
     uint8_t rom_bank_selector {};
 };

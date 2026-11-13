@@ -4,7 +4,10 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-struct MMM01_ : ICartridge {
+class MMM01_ : public ICartridge {
+    DEBUGGABLE_CLASS()
+
+protected:
     bool mapped {};
 
     bool ram_enabled {};

@@ -4,7 +4,10 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-struct WisdomTree_ : ICartridge {
+class WisdomTree_ : public ICartridge {
+    DEBUGGABLE_CLASS()
+
+protected:
     uint8_t rom_bank_selector {};
 };
 
