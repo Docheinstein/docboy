@@ -70,11 +70,11 @@ namespace Info {
         constexpr uint16_t Rom = bits<Rom::KB_32, Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1>();
         constexpr uint16_t Ram = bits<Ram::KB_32>();
     } // namespace HuC1
-    namespace Mmm01 {
+    namespace MMM01 {
         constexpr uint16_t Rom =
             bits<Rom::KB_64, Rom::KB_128, Rom::KB_256, Rom::KB_512, Rom::MB_1, Rom::MB_2, Rom::MB_4, Rom::MB_8>();
         constexpr uint16_t Ram = bits<Ram::NONE, Ram::KB_8, Ram::KB_32, Ram::KB_128>();
-    } // namespace Mmm01
+    } // namespace MMM01
 } // namespace Info
 
 template <uint32_t RomSize, uint32_t RamSize>
@@ -126,10 +126,10 @@ template <uint32_t RomSize, uint32_t RamSize>
 using RomRam_NoBattery = RomRam<RomSize, RamSize, NoBattery>;
 
 template <uint32_t RomSize, uint32_t RamSize>
-using Mmm01_Battery = Mmm01<RomSize, RamSize, Battery>;
+using MMM01_Battery = MMM01<RomSize, RamSize, Battery>;
 
 template <uint32_t RomSize, uint32_t RamSize>
-using Mmm01_NoBattery = Mmm01<RomSize, RamSize, NoBattery>;
+using MMM01_NoBattery = MMM01<RomSize, RamSize, NoBattery>;
 
 bool has_title(const uint8_t* data, const char* title) {
     return memcmp(data + MemoryLayout::TITLE::START, title, strlen(title)) == 0;
@@ -302,9 +302,9 @@ std::unique_ptr<ICartridge> create(const std::vector<uint8_t>& data, uint8_t rom
 std::unique_ptr<ICartridge> create_mmm01(const std::vector<uint8_t>& data, uint8_t mbc, uint8_t rom, uint8_t ram) {
     // Note that the MBC declared in the menu's header is not necessarily MMM01 (see is_mmm01()).
     if (mbc == Mbc::MMM01_RAM_BATTERY) {
-        return create<Mmm01_Battery, Info::Mmm01::Rom, Info::Mmm01::Ram>(data, rom, ram);
+        return create<MMM01_Battery, Info::MMM01::Rom, Info::MMM01::Ram>(data, rom, ram);
     }
-    return create<Mmm01_NoBattery, Info::Mmm01::Rom, Info::Mmm01::Ram>(data, rom, ram);
+    return create<MMM01_NoBattery, Info::MMM01::Rom, Info::MMM01::Ram>(data, rom, ram);
 }
 
 std::unique_ptr<ICartridge> create_m161(const std::vector<uint8_t>& data) {

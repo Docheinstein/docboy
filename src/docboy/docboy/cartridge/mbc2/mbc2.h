@@ -4,8 +4,13 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
+struct Mbc2_ : ICartridge {
+    bool ram_enabled {};
+    uint8_t rom_bank_selector {};
+};
+
 template <uint32_t RomSize, bool Battery>
-class Mbc2 final : public ICartridge {
+class Mbc2 final : public Mbc2_ {
 public:
     DEBUGGABLE_CLASS()
 
@@ -21,6 +26,8 @@ public:
     uint32_t get_ram_save_size() const override;
 
 #ifdef ENABLE_DEBUGGER
+    CartridgeType get_type() const override;
+
     uint8_t* get_rom_data() override;
     uint32_t get_rom_size() const override;
 
@@ -41,9 +48,6 @@ public:
 
 private:
     static constexpr uint16_t RamSize {512};
-
-    bool ram_enabled {};
-    uint8_t rom_bank_selector {};
 
     uint8_t rom[RomSize] {};
     uint8_t ram[RamSize] {};

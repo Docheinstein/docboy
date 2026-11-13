@@ -72,6 +72,11 @@ uint32_t RomRam<RomSize, RamSize, Battery>::get_ram_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+CartridgeType RomRam<RomSize, RamSize, Battery>::get_type() const {
+    return CartridgeType::RomRam;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
 uint8_t* RomRam<RomSize, RamSize, Battery>::get_rom_data() {
     return rom;
 }

@@ -88,6 +88,11 @@ uint32_t M161<RomSize>::get_ram_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize>
+CartridgeType M161<RomSize>::get_type() const {
+    return CartridgeType::M161;
+}
+
+template <uint32_t RomSize>
 uint8_t* M161<RomSize>::get_rom_data() {
     return rom;
 }

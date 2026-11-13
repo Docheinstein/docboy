@@ -85,14 +85,14 @@
  */
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-Mmm01<RomSize, RamSize, Battery>::Mmm01(const uint8_t* data, uint32_t length) {
-    ASSERT(length <= array_size(rom), "Mmm01: actual ROM size (" + std::to_string(length) +
+MMM01<RomSize, RamSize, Battery>::MMM01(const uint8_t* data, uint32_t length) {
+    ASSERT(length <= array_size(rom), "MMM01: actual ROM size (" + std::to_string(length) +
                                           ") exceeds nominal ROM size (" + std::to_string(array_size(rom)) + ")");
     memcpy(rom, data, length);
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint16_t Mmm01<RomSize, RamSize, Battery>::get_rom_bank_0000_3FFF() const {
+uint16_t MMM01<RomSize, RamSize, Battery>::get_rom_bank_0000_3FFF() const {
     ASSERT(mapped);
 
     uint8_t mid = multiplex ? ram_bank_low : rom_bank_mid;
@@ -106,7 +106,7 @@ uint16_t Mmm01<RomSize, RamSize, Battery>::get_rom_bank_0000_3FFF() const {
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint16_t Mmm01<RomSize, RamSize, Battery>::get_rom_bank_4000_7FFF() const {
+uint16_t MMM01<RomSize, RamSize, Battery>::get_rom_bank_4000_7FFF() const {
     ASSERT(mapped);
 
     const uint8_t mid = multiplex ? ram_bank_low : rom_bank_mid;
@@ -121,7 +121,7 @@ uint16_t Mmm01<RomSize, RamSize, Battery>::get_rom_bank_4000_7FFF() const {
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t Mmm01<RomSize, RamSize, Battery>::get_ram_bank_A000_BFFF() const {
+uint8_t MMM01<RomSize, RamSize, Battery>::get_ram_bank_A000_BFFF() const {
     uint8_t low = multiplex ? rom_bank_mid : ram_bank_low;
     if (!multiplex && banking_mode == 0) {
         low &= ram_bank_mask;
@@ -131,7 +131,7 @@ uint8_t Mmm01<RomSize, RamSize, Battery>::get_ram_bank_A000_BFFF() const {
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t Mmm01<RomSize, RamSize, Battery>::read_rom(uint16_t address) const {
+uint8_t MMM01<RomSize, RamSize, Battery>::read_rom(uint16_t address) const {
     ASSERT(address < 0x8000);
 
     if (!mapped) {
@@ -147,7 +147,7 @@ uint8_t Mmm01<RomSize, RamSize, Battery>::read_rom(uint16_t address) const {
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void Mmm01<RomSize, RamSize, Battery>::write_rom(uint16_t address, uint8_t value) {
+void MMM01<RomSize, RamSize, Battery>::write_rom(uint16_t address, uint8_t value) {
     ASSERT(address < 0x8000);
 
     if (address < 0x4000) {
@@ -195,7 +195,7 @@ void Mmm01<RomSize, RamSize, Battery>::write_rom(uint16_t address, uint8_t value
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t Mmm01<RomSize, RamSize, Battery>::read_ram(uint16_t address) const {
+uint8_t MMM01<RomSize, RamSize, Battery>::read_ram(uint16_t address) const {
     ASSERT(address >= 0xA000 && address < 0xC000);
 
     // 0xA000 - 0xBFFF
@@ -212,7 +212,7 @@ uint8_t Mmm01<RomSize, RamSize, Battery>::read_ram(uint16_t address) const {
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void Mmm01<RomSize, RamSize, Battery>::write_ram(uint16_t address, uint8_t value) {
+void MMM01<RomSize, RamSize, Battery>::write_ram(uint16_t address, uint8_t value) {
     ASSERT(address >= 0xA000 && address < 0xC000);
 
     // 0xA000 - 0xBFFF
@@ -226,7 +226,7 @@ void Mmm01<RomSize, RamSize, Battery>::write_ram(uint16_t address, uint8_t value
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void* Mmm01<RomSize, RamSize, Battery>::get_ram_save_data() {
+void* MMM01<RomSize, RamSize, Battery>::get_ram_save_data() {
     if constexpr (Ram && Battery) {
         return ram;
     }
@@ -234,7 +234,7 @@ void* Mmm01<RomSize, RamSize, Battery>::get_ram_save_data() {
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint32_t Mmm01<RomSize, RamSize, Battery>::get_ram_save_size() const {
+uint32_t MMM01<RomSize, RamSize, Battery>::get_ram_save_size() const {
     if constexpr (Ram && Battery) {
         return RamSize;
     }
@@ -243,34 +243,39 @@ uint32_t Mmm01<RomSize, RamSize, Battery>::get_ram_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t* Mmm01<RomSize, RamSize, Battery>::get_rom_data() {
+CartridgeType MMM01<RomSize, RamSize, Battery>::get_type() const {
+    return CartridgeType::MMM01;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery>
+uint8_t* MMM01<RomSize, RamSize, Battery>::get_rom_data() {
     return rom;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint32_t Mmm01<RomSize, RamSize, Battery>::get_rom_size() const {
+uint32_t MMM01<RomSize, RamSize, Battery>::get_rom_size() const {
     return RomSize;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t* Mmm01<RomSize, RamSize, Battery>::get_ram_data() {
+uint8_t* MMM01<RomSize, RamSize, Battery>::get_ram_data() {
     return ram;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint32_t Mmm01<RomSize, RamSize, Battery>::get_ram_size() const {
+uint32_t MMM01<RomSize, RamSize, Battery>::get_ram_size() const {
     return RamSize;
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t Mmm01<RomSize, RamSize, Battery>::read_rom_raw(uint16_t bank, uint16_t address) const {
+uint8_t MMM01<RomSize, RamSize, Battery>::read_rom_raw(uint16_t bank, uint16_t address) const {
     ASSERT(address < 0x8000);
     uint32_t rom_address = mask_by_pow2<RomSize>((bank << 14) | keep_bits<14>(address));
     return rom[rom_address];
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint16_t Mmm01<RomSize, RamSize, Battery>::get_rom_bank(uint16_t address) const {
+uint16_t MMM01<RomSize, RamSize, Battery>::get_rom_bank(uint16_t address) const {
     ASSERT(address < 0x8000);
 
     if (!mapped) {
@@ -281,7 +286,7 @@ uint16_t Mmm01<RomSize, RamSize, Battery>::get_rom_bank(uint16_t address) const 
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint8_t Mmm01<RomSize, RamSize, Battery>::read_ram_raw(uint16_t bank, uint16_t address) const {
+uint8_t MMM01<RomSize, RamSize, Battery>::read_ram_raw(uint16_t bank, uint16_t address) const {
     ASSERT(address >= 0xA000 && address < 0xC000);
 
     if constexpr (Ram) {
@@ -293,63 +298,63 @@ uint8_t Mmm01<RomSize, RamSize, Battery>::read_ram_raw(uint16_t bank, uint16_t a
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-uint16_t Mmm01<RomSize, RamSize, Battery>::get_ram_bank(uint16_t address) const {
+uint16_t MMM01<RomSize, RamSize, Battery>::get_ram_bank(uint16_t address) const {
     ASSERT(address >= 0xA000 && address < 0xC000);
     return get_ram_bank_A000_BFFF();
 }
 #endif
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void Mmm01<RomSize, RamSize, Battery>::save_state(Parcel& parcel) const {
-    PARCEL_WRITE_BOOL(parcel, ram_enabled);
-    PARCEL_WRITE_UINT8(parcel, ram_bank_mask);
+void MMM01<RomSize, RamSize, Battery>::save_state(Parcel& parcel) const {
     PARCEL_WRITE_BOOL(parcel, mapped);
+    PARCEL_WRITE_BOOL(parcel, ram_enabled);
+    PARCEL_WRITE_BOOL(parcel, mode_write_lock);
+    PARCEL_WRITE_BOOL(parcel, multiplex);
+    PARCEL_WRITE_UINT8(parcel, banking_mode);
     PARCEL_WRITE_UINT8(parcel, rom_bank_low);
     PARCEL_WRITE_UINT8(parcel, rom_bank_mid);
+    PARCEL_WRITE_UINT8(parcel, rom_bank_high);
+    PARCEL_WRITE_UINT8(parcel, rom_bank_mask);
     PARCEL_WRITE_UINT8(parcel, ram_bank_low);
     PARCEL_WRITE_UINT8(parcel, ram_bank_high);
-    PARCEL_WRITE_UINT8(parcel, rom_bank_high);
-    PARCEL_WRITE_BOOL(parcel, mode_write_lock);
-    PARCEL_WRITE_UINT8(parcel, banking_mode);
-    PARCEL_WRITE_UINT8(parcel, rom_bank_mask);
-    PARCEL_WRITE_BOOL(parcel, multiplex);
+    PARCEL_WRITE_UINT8(parcel, ram_bank_mask);
     if constexpr (Ram) {
         PARCEL_WRITE_BYTES(parcel, ram, RamSize);
     }
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void Mmm01<RomSize, RamSize, Battery>::load_state(Parcel& parcel) {
-    ram_enabled = parcel.read_bool();
-    ram_bank_mask = parcel.read_uint8();
+void MMM01<RomSize, RamSize, Battery>::load_state(Parcel& parcel) {
     mapped = parcel.read_bool();
+    ram_enabled = parcel.read_bool();
+    mode_write_lock = parcel.read_bool();
+    multiplex = parcel.read_bool();
+    banking_mode = parcel.read_uint8();
     rom_bank_low = parcel.read_uint8();
     rom_bank_mid = parcel.read_uint8();
+    rom_bank_high = parcel.read_uint8();
+    rom_bank_mask = parcel.read_uint8();
     ram_bank_low = parcel.read_uint8();
     ram_bank_high = parcel.read_uint8();
-    rom_bank_high = parcel.read_uint8();
-    mode_write_lock = parcel.read_bool();
-    banking_mode = parcel.read_uint8();
-    rom_bank_mask = parcel.read_uint8();
-    multiplex = parcel.read_bool();
+    ram_bank_mask = parcel.read_uint8();
     if constexpr (Ram) {
         parcel.read_bytes(ram, RamSize);
     }
 }
 
 template <uint32_t RomSize, uint32_t RamSize, bool Battery>
-void Mmm01<RomSize, RamSize, Battery>::reset() {
-    ram_enabled = false;
-    ram_bank_mask = 0;
+void MMM01<RomSize, RamSize, Battery>::reset() {
     mapped = false;
+    ram_enabled = false;
+    mode_write_lock = false;
+    multiplex = false;
+    banking_mode = 0;
     rom_bank_low = 0;
     rom_bank_mid = 0;
+    rom_bank_high = 0;
+    rom_bank_mask = 0;
     ram_bank_low = 0;
     ram_bank_high = 0;
-    rom_bank_high = 0;
-    mode_write_lock = false;
-    banking_mode = 0;
-    rom_bank_mask = 0;
-    multiplex = false;
+    ram_bank_mask = 0;
     memset(ram, 0xFF, RamSize);
 }

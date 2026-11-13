@@ -252,6 +252,11 @@ uint32_t HuC3<RomSize, RamSize>::get_rtc_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize>
+CartridgeType HuC3<RomSize, RamSize>::get_type() const {
+    return CartridgeType::HuC3;
+}
+
+template <uint32_t RomSize, uint32_t RamSize>
 uint8_t* HuC3<RomSize, RamSize>::get_rom_data() {
     return rom;
 }

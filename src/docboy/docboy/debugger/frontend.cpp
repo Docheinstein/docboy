@@ -10,13 +10,16 @@
 
 #include "docboy/cartridge/huc1/huc1.h"
 #include "docboy/cartridge/huc3/huc3.h"
+#include "docboy/cartridge/m161/m161.h"
 #include "docboy/cartridge/mbc1/mbc1.h"
 #include "docboy/cartridge/mbc1/mbc1m.h"
 #include "docboy/cartridge/mbc2/mbc2.h"
 #include "docboy/cartridge/mbc3/mbc3.h"
 #include "docboy/cartridge/mbc5/mbc5.h"
 #include "docboy/cartridge/mbc7/mbc7.h"
+#include "docboy/cartridge/mmm01/mmm01.h"
 #include "docboy/cartridge/nombc/nombc.h"
+#include "docboy/cartridge/wisdomtree/wisdomtree.h"
 #include "docboy/common/units.h"
 #include "docboy/core/core.h"
 #include "docboy/debugger/ansi.h"
@@ -1503,1156 +1506,302 @@ void DebuggerFrontend::print_ui(const ExecutionState& execution_state) {
 
     // MBC
     const auto make_cartridge_block = [&](uint32_t width) {
-        using namespace Specs::Cartridge::Header;
-
         const auto& cartridge = *gb.cartridge_slot.cartridge;
 
         const auto& info = backend.get_cartridge_info();
-        const auto mbc = info.mbc;
-        const auto rom = info.rom;
-        const auto ram = info.ram;
-        const auto multicart = info.multicart;
+
+        const auto cartridge_type = cartridge.get_type();
+
+        const uint32_t rom_size = cartridge.get_rom_size();
+        const uint32_t ram_size = cartridge.get_ram_size();
 
         auto b {make_block(width)};
 
         b << header("CARTRIDGE", width) << endl;
-
         b << yellow("Title") << "                        :  " << info.title << endl;
-        b << yellow("Type") << "                         :  " << [mbc]() -> Text {
-            switch (mbc) {
-            case Mbc::NO_MBC:
+        b << yellow("Type") << "                         :  " << [cartridge_type]() -> Text {
+            switch (cartridge_type) {
+            case CartridgeType::NoMBC:
                 return "No MBC";
-            case Mbc::MBC1:
-            case Mbc::MBC1_RAM:
-            case Mbc::MBC1_RAM_BATTERY:
+            case CartridgeType::MBC1:
                 return "MBC1";
-            case Mbc::MBC2:
-            case Mbc::MBC2_BATTERY:
+            case CartridgeType::MBC2:
                 return "MBC2";
-            case Mbc::ROM_RAM:
-            case Mbc::ROM_RAM_BATTERY:
-                return "ROMRAM";
-            case Mbc::MMM01:
-            case Mbc::MMM01_RAM:
-            case Mbc::MMM01_RAM_BATTERY:
-                return "MMM01";
-            case Mbc::MBC3_TIMER_BATTERY:
-            case Mbc::MBC3_TIMER_RAM_BATTERY:
-            case Mbc::MBC3:
-            case Mbc::MBC3_RAM:
-            case Mbc::MBC3_RAM_BATTERY:
+            case CartridgeType::MBC3:
                 return "MBC3";
-            case Mbc::MBC5:
-            case Mbc::MBC5_RAM:
-            case Mbc::MBC5_RAM_BATTERY:
-            case Mbc::MBC5_RUMBLE:
-            case Mbc::MBC5_RUMBLE_RAM:
-            case Mbc::MBC5_RUMBLE_RAM_BATTERY:
+            case CartridgeType::MBC5:
                 return "MBC5";
-            case Mbc::MBC7_RUMBLE_RAM_BATTERY:
+            case CartridgeType::MBC7:
                 return "MBC7";
-            case Mbc::HUC3:
-                return "HuC3";
-            case Mbc::HUC1:
+            case CartridgeType::RomRam:
+                return "ROMRAM";
+            case CartridgeType::MMM01:
+                return "MMM01";
+            case CartridgeType::M161:
+                return "M161";
+            case CartridgeType::WisdomTree:
+                return "WisdomTree";
+            case CartridgeType::HuC1:
                 return "HuC1";
+            case CartridgeType::HuC3:
+                return "HuC3";
             }
             ASSERT_NO_ENTRY();
             return {};
         }() << endl;
 
-        b << yellow("ROM") << "                          :  " << [rom]() -> Text {
-            switch (rom) {
-            case Rom::KB_32:
+        b << yellow("ROM") << "                          :  " << [rom_size]() -> Text {
+            switch (rom_size) {
+            case 32 * KB:
                 return "32 KB";
-            case Rom::KB_64:
+            case 64 * KB:
                 return "64 KB";
-            case Rom::KB_128:
+            case 128 * KB:
                 return "128 KB";
-            case Rom::KB_256:
+            case 256 * KB:
                 return "256 KB";
-            case Rom::KB_512:
+            case 512 * KB:
                 return "512 KB";
-            case Rom::MB_1:
+            case 1 * MB:
                 return "1 MB";
-            case Rom::MB_2:
+            case 2 * MB:
                 return "2 MB";
-            case Rom::MB_4:
+            case 4 * MB:
                 return "4 MB";
-            case Rom::MB_8:
+            case 8 * MB:
                 return "8 MB";
+            default:
+                return std::to_string(rom_size) + " B";
             }
-            ASSERT_NO_ENTRY();
-            return {};
         }() << endl;
 
-        b << yellow("RAM") << "                          :  " << [ram]() -> Text {
-            switch (ram) {
-            case Ram::NONE:
+        b << yellow("RAM") << "                          :  " << [ram_size]() -> Text {
+            switch (ram_size) {
+            case 0:
                 return "None";
-            case Ram::KB_2:
-                return "2 KB (unofficial)";
-            case Ram::KB_8:
+            case 2 * KB:
+                return "2 KB";
+            case 8 * KB:
                 return "8 KB";
-            case Ram::KB_32:
+            case 32 * KB:
                 return "32 KB";
-            case Ram::KB_128:
-                return "128 KB";
-            case Ram::KB_64:
+            case 64 * KB:
                 return "64 KB";
+            case 128 * KB:
+                return "128 KB";
+            default:
+                return std::to_string(ram_size) + " B";
             }
-            ASSERT_NO_ENTRY();
-            return {};
         }() << endl;
 
-        if (mbc != Mbc::NO_MBC) {
+        if (cartridge_type != CartridgeType::NoMBC) {
             b << subheader("mbc", width) << endl;
         }
 
-        // TODO: more compact version of this bloatware?
-        if (mbc == Mbc::MBC1 || mbc == Mbc::MBC1_RAM || mbc == Mbc::MBC1_RAM_BATTERY) {
-            const auto mbc1 = [&b](auto&& cart) {
-                b << yellow("Banking Mode") << "                 :  " << cart.banking_mode << endl;
-                b << yellow("Ram Enabled") << "                  :  " << cart.ram_enabled << endl;
-                b << yellow("Upper Rom/Ram Bank Selector") << "  :  "
-                  << hex(cart.upper_rom_bank_selector_ram_bank_selector) << endl;
-                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.rom_bank_selector) << endl;
-            };
+        if (cartridge_type == CartridgeType::NoMBC) {
+            // Nothing to show.
+        } else if (cartridge_type == CartridgeType::MBC1) {
+            const auto& mbc1 = static_cast<const Mbc1_&>(cartridge);
 
-            if (mbc == Mbc::MBC1_RAM_BATTERY) {
-                if (rom == Rom::KB_32) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<32 * KB, 0, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<32 * KB, 8 * KB, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<32 * KB, 32 * KB, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_64) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<64 * KB, 0, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<64 * KB, 8 * KB, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<64 * KB, 32 * KB, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_128) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<128 * KB, 0, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<128 * KB, 8 * KB, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<128 * KB, 32 * KB, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_256) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<256 * KB, 0, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<256 * KB, 8 * KB, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<256 * KB, 32 * KB, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_512) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<512 * KB, 0, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<512 * KB, 8 * KB, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<512 * KB, 32 * KB, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_1) {
-                    // All the known MBC1M are 1 MB.
-                    if (multicart) {
-                        if (ram == Ram::NONE) {
-                            mbc1(static_cast<const Mbc1M<1 * MB, 0, true>&>(cartridge));
-                        } else if (ram == Ram::KB_8) {
-                            mbc1(static_cast<const Mbc1M<1 * MB, 8 * KB, true>&>(cartridge));
-                        } else if (ram == Ram::KB_32) {
-                            mbc1(static_cast<const Mbc1M<1 * MB, 32 * KB, true>&>(cartridge));
-                        }
-                    } else {
-                        if (ram == Ram::NONE) {
-                            mbc1(static_cast<const Mbc1<1 * MB, 0, true>&>(cartridge));
-                        } else if (ram == Ram::KB_8) {
-                            mbc1(static_cast<const Mbc1<1 * MB, 8 * KB, true>&>(cartridge));
-                        } else if (ram == Ram::KB_32) {
-                            mbc1(static_cast<const Mbc1<1 * MB, 32 * KB, true>&>(cartridge));
-                        }
-                    }
-                } else if (rom == Rom::MB_2) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<2 * MB, 0, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<2 * MB, 8 * KB, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<2 * MB, 32 * KB, true>&>(cartridge));
-                    }
-                }
-            } else {
-                if (rom == Rom::KB_32) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<32 * KB, 0, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<32 * KB, 8 * KB, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<32 * KB, 32 * KB, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_64) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<64 * KB, 0, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<64 * KB, 8 * KB, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<64 * KB, 32 * KB, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_128) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<128 * KB, 0, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<128 * KB, 8 * KB, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<128 * KB, 32 * KB, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_256) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<256 * KB, 0, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<256 * KB, 8 * KB, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<256 * KB, 32 * KB, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_512) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<512 * KB, 0, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<512 * KB, 8 * KB, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<512 * KB, 32 * KB, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_1) {
-                    // All the known MBC1M are 1 MB.
-                    if (multicart) {
-                        if (ram == Ram::NONE) {
-                            mbc1(static_cast<const Mbc1M<1 * MB, 0, false>&>(cartridge));
-                        } else if (ram == Ram::KB_8) {
-                            mbc1(static_cast<const Mbc1M<1 * MB, 8 * KB, false>&>(cartridge));
-                        } else if (ram == Ram::KB_32) {
-                            mbc1(static_cast<const Mbc1M<1 * MB, 32 * KB, false>&>(cartridge));
-                        }
-                    } else {
-                        if (ram == Ram::NONE) {
-                            mbc1(static_cast<const Mbc1M<1 * MB, 0, false>&>(cartridge));
-                        } else if (ram == Ram::KB_8) {
-                            mbc1(static_cast<const Mbc1<1 * MB, 8 * KB, false>&>(cartridge));
-                        } else if (ram == Ram::KB_32) {
-                            mbc1(static_cast<const Mbc1<1 * MB, 32 * KB, false>&>(cartridge));
-                        }
-                    }
-                } else if (rom == Rom::MB_2) {
-                    if (ram == Ram::NONE) {
-                        mbc1(static_cast<const Mbc1<2 * MB, 0, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc1(static_cast<const Mbc1<2 * MB, 8 * KB, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc1(static_cast<const Mbc1<2 * MB, 32 * KB, false>&>(cartridge));
-                    }
-                }
-            }
-        } else if (mbc == Mbc::MBC2 || mbc == Mbc::MBC2_BATTERY) {
-            const auto mbc2 = [&b](auto&& cart) {
-                b << yellow("Ram Enabled") << "                  :  " << cart.ram_enabled << endl;
-                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.rom_bank_selector) << endl;
-            };
+            b << yellow("Banking Mode") << "                 :  " << mbc1.banking_mode << endl;
+            b << yellow("Ram Enabled") << "                  :  " << mbc1.ram_enabled << endl;
+            b << yellow("Upper Rom/Ram Bank Selector") << "  :  " << hex(mbc1.upper_rom_bank_selector_ram_bank_selector)
+              << endl;
+            b << yellow("Rom Bank Selector") << "            :  " << hex(mbc1.rom_bank_selector) << endl;
+        } else if (cartridge_type == CartridgeType::MBC2) {
+            const auto& mbc2 = static_cast<const Mbc2_&>(cartridge);
 
-            if (mbc == Mbc::MBC2_BATTERY) {
-                if (ram == Ram::NONE) {
-                    if (rom == Rom::KB_32) {
-                        mbc2(static_cast<const Mbc2<32 * KB, true>&>(cartridge));
-                    } else if (rom == Rom::KB_64) {
-                        mbc2(static_cast<const Mbc2<64 * KB, true>&>(cartridge));
-                    } else if (rom == Rom::KB_128) {
-                        mbc2(static_cast<const Mbc2<128 * KB, true>&>(cartridge));
-                    } else if (rom == Rom::KB_256) {
-                        mbc2(static_cast<const Mbc2<256 * KB, true>&>(cartridge));
-                    }
-                }
-            } else {
-                if (ram == Ram::NONE) {
-                    if (rom == Rom::KB_32) {
-                        mbc2(static_cast<const Mbc2<32 * KB, false>&>(cartridge));
-                    } else if (rom == Rom::KB_64) {
-                        mbc2(static_cast<const Mbc2<64 * KB, false>&>(cartridge));
-                    } else if (rom == Rom::KB_128) {
-                        mbc2(static_cast<const Mbc2<128 * KB, false>&>(cartridge));
-                    } else if (rom == Rom::KB_256) {
-                        mbc2(static_cast<const Mbc2<256 * KB, false>&>(cartridge));
-                    }
-                }
-            }
-        } else if (mbc == Mbc::MBC3_TIMER_BATTERY || mbc == Mbc::MBC3_TIMER_RAM_BATTERY || mbc == Mbc::MBC3 ||
-                   mbc == Mbc::MBC3_RAM || mbc == Mbc::MBC3_RAM_BATTERY) {
-            const auto mbc3 = [&b, mbc, subheader, width](auto&& cart) {
-                b << yellow("Ram/RTC Enabled") << "              :  " << cart.ram_enabled << endl;
-                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.rom_bank_selector) << endl;
-                b << yellow("Ram Bank/RTC Reg. Selector") << "   :  "
-                  << hex(cart.ram_bank_selector_rtc_register_selector) << endl;
+            b << yellow("Ram Enabled") << "                  :  " << mbc2.ram_enabled << endl;
+            b << yellow("Rom Bank Selector") << "            :  " << hex(mbc2.rom_bank_selector) << endl;
+        } else if (cartridge_type == CartridgeType::MBC3) {
+            const auto& mbc3 = static_cast<const Mbc3_&>(cartridge);
 
-                if (mbc == Mbc::MBC3_TIMER_BATTERY || mbc == Mbc::MBC3_TIMER_RAM_BATTERY) {
-                    b << subheader("rtc", width) << endl;
-                    b << "                                " << magenta("Latch") << "  |   " << magenta("Clock") << endl;
-                    b << yellow("Seconds") << "                      :   "
-                      << hex((uint8_t)keep_bits<6>(cart.rtc.latched.seconds)) << "    |    "
-                      << hex((uint8_t)keep_bits<6>(cart.rtc.clock.seconds)) << endl;
-                    b << yellow("Minutes") << "                      :   "
-                      << hex((uint8_t)keep_bits<6>(cart.rtc.latched.minutes)) << "    |    "
-                      << hex((uint8_t)keep_bits<6>(cart.rtc.clock.minutes)) << endl;
-                    b << yellow("Hours") << "                        :   "
-                      << hex((uint8_t)keep_bits<5>(cart.rtc.latched.hours)) << "    |    "
-                      << hex((uint8_t)keep_bits<5>(cart.rtc.clock.hours)) << endl;
-                    b << yellow("Days Low") << "                     :   " << hex(cart.rtc.latched.days_low)
-                      << "    |    " << hex(cart.rtc.clock.days_low) << endl;
-                    b << yellow("Days High") << "                    :   "
-                      << hex((uint8_t)get_bits<7, 6, 0>(cart.rtc.latched.days_high)) << "    |    "
-                      << hex((uint8_t)get_bits<7, 6, 0>(cart.rtc.clock.days_high)) << endl;
-                }
-            };
+            b << yellow("Ram/RTC Enabled") << "              :  " << mbc3.ram_enabled << endl;
+            b << yellow("Rom Bank Selector") << "            :  " << hex(mbc3.rom_bank_selector) << endl;
+            b << yellow("Ram Bank/RTC Reg. Selector") << "   :  " << hex(mbc3.ram_bank_selector_rtc_register_selector)
+              << endl;
 
-            if (mbc == Mbc::MBC3_TIMER_BATTERY || mbc == Mbc::MBC3_TIMER_RAM_BATTERY) {
-                if (rom == Rom::KB_32) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 2 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 32 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_64) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 2 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 32 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_128) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 2 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 32 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_256) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 2 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 32 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_512) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 2 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 32 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_1) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 2 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 32 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_2) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 2 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 32 * KB, true, true>&>(cartridge));
-                    }
-                }
-            } else if (mbc == Mbc::MBC3 || mbc == Mbc::MBC3_RAM) {
-                if (rom == Rom::KB_32) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 2 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 32 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_64) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 2 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 32 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_128) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 2 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 32 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_256) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 2 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 32 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_512) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 2 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 32 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_1) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 2 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 32 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_2) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 2 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 32 * KB, false, false>&>(cartridge));
-                    }
-                }
-            } else if (mbc == Mbc::MBC3_RAM_BATTERY) {
-                if (rom == Rom::KB_32) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 2 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<32 * KB, 32 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_64) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 2 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<64 * KB, 32 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_128) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 2 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<128 * KB, 32 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_256) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 2 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<256 * KB, 32 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_512) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 2 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<512 * KB, 32 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_1) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 2 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<1 * MB, 32 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_2) {
-                    if (ram == Ram::NONE) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_2) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 2 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc3(static_cast<const Mbc3<2 * MB, 32 * KB, true, false>&>(cartridge));
-                    }
-                }
-            }
-        } else if (mbc == Mbc::MBC5 || mbc == Mbc::MBC5_RAM || mbc == Mbc::MBC5_RUMBLE || mbc == Mbc::MBC5_RUMBLE_RAM ||
-                   mbc == Mbc::MBC5_RAM_BATTERY || mbc == Mbc::MBC5_RUMBLE_RAM_BATTERY) {
-            const auto mbc5 = [&b](auto&& cart) {
-                b << yellow("Ram Enabled") << "                  :  " << cart.ram_enabled << endl;
-                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.rom_bank_selector) << endl;
-                b << yellow("Ram Bank Selector") << "            :  " << hex(cart.ram_bank_selector) << endl;
-                if (std::decay_t<decltype(cart)>::HasRumble) {
-                    b << yellow("Rumble") << "                       :  " << (cart.rumble ? "ON" : "OFF") << endl;
-                }
-            };
-
-            if (mbc == Mbc::MBC5_RAM_BATTERY) {
-                if (rom == Rom::KB_32) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 32 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 64 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 128 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_64) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 32 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 64 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 128 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_128) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 32 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 64 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 128 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_256) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 32 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 64 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 128 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_512) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 32 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 64 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 128 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_1) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 32 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 64 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 128 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_2) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 32 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 64 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 128 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_4) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 32 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 64 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 128 * KB, true, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_8) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 0, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 8 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 32 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 64 * KB, true, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 128 * KB, true, false>&>(cartridge));
-                    }
-                }
-            } else if (mbc == Mbc::MBC5_RUMBLE_RAM_BATTERY) {
-                if (rom == Rom::KB_32) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 32 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 64 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 128 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_64) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 32 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 64 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 128 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_128) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 32 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 64 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 128 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_256) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 32 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 64 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 128 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_512) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 32 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 64 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 128 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_1) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 32 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 64 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 128 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_2) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 32 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 64 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 128 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_4) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 32 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 64 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 128 * KB, true, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_8) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 0, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 8 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 32 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 64 * KB, true, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 128 * KB, true, true>&>(cartridge));
-                    }
-                }
-            } else if (mbc == Mbc::MBC5 || mbc == Mbc::MBC5_RAM) {
-                if (rom == Rom::KB_32) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 32 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 64 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 128 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_64) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 32 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 64 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 128 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_128) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 32 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 64 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 128 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_256) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 32 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 64 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 128 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_512) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 32 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 64 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 128 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_1) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 32 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 64 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 128 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_2) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 32 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 64 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 128 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_4) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 32 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 64 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 128 * KB, false, false>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_8) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 0, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 8 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 32 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 64 * KB, false, false>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 128 * KB, false, false>&>(cartridge));
-                    }
-                }
-            } else if (mbc == Mbc::MBC5_RUMBLE || mbc == Mbc::MBC5_RUMBLE_RAM) {
-                if (rom == Rom::KB_32) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 0, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 8 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 32 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 64 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<32 * KB, 128 * KB, false, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_64) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 0, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 8 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 32 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 64 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<64 * KB, 128 * KB, false, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_128) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 0, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 8 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 32 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 64 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<128 * KB, 128 * KB, false, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_256) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 0, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 8 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 32 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 64 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<256 * KB, 128 * KB, false, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::KB_512) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 0, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 8 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 32 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 64 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<512 * KB, 128 * KB, false, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_1) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 0, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 8 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 32 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 64 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<1 * MB, 128 * KB, false, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_2) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 0, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 8 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 32 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 64 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<2 * MB, 128 * KB, false, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_4) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 0, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 8 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 32 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 64 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<4 * MB, 128 * KB, false, true>&>(cartridge));
-                    }
-                } else if (rom == Rom::MB_8) {
-                    if (ram == Ram::NONE) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 0, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_8) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 8 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_32) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 32 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_64) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 64 * KB, false, true>&>(cartridge));
-                    } else if (ram == Ram::KB_128) {
-                        mbc5(static_cast<const Mbc5<8 * MB, 128 * KB, false, true>&>(cartridge));
-                    }
-                }
-            }
-        } else if (mbc == Mbc::MBC7_RUMBLE_RAM_BATTERY) {
-            const auto mbc7 = [&b, &subheader, width](auto&& cart) {
-                b << yellow("Primary Ram Enabled") << "          :  " << cart.ram_enabled_primary << endl;
-                b << yellow("Secondary Ram Enabled") << "        :  " << cart.ram_enabled_secondary << endl;
-                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.rom_bank_selector) << endl;
-
-                b << subheader("accelerometer", width) << endl;
-                b << yellow("X") << "                            :  "
-                  << hex<uint16_t>(cart.accelerometer.latch.x.high << 8 | cart.accelerometer.latch.x.low) << endl;
-                b << yellow("Y") << "                            :  "
-                  << hex<uint16_t>(cart.accelerometer.latch.y.high << 8 | cart.accelerometer.latch.y.low) << endl;
-                b << yellow("Latched") << "                      :  " << cart.accelerometer.latched << endl;
-
-                b << subheader("eeprom", width) << endl;
-                b << yellow("CS") << "                           :  " << cart.eeprom.cs << endl;
-                b << yellow("CLK") << "                          :  " << cart.eeprom.clk << endl;
-                b << yellow("DI") << "                           :  " << cart.eeprom.data_in << endl;
-                b << yellow("DO") << "                           :  " << cart.eeprom.data_out << endl;
-                b << yellow("Erase/Write Enabled") << "          :  " << cart.eeprom.erase_write_enabled << endl;
-                b << yellow("State") << "                        :  " << [](const auto state) -> Text {
-                    using Mbc7EepromState = typename std::decay_t<decltype(cart)>::Eeprom::State;
-                    switch (state) {
-                    case Mbc7EepromState::Idle:
-                        return "Idle";
-                    case Mbc7EepromState::Instruction:
-                        return "Instruction";
-                    case Mbc7EepromState::Input:
-                        return "Input";
-                    case Mbc7EepromState::Output:
-                        return "Output";
-                    case Mbc7EepromState::PendingWrite:
-                        return "PendingWrite";
-                    case Mbc7EepromState::Done:
-                        return "Done";
-                    default:
-                        break;
-                    }
-                    return "Unknown";
-                }(cart.eeprom.state) << endl;
-                b << yellow("Command") << "                      :  " << [](const auto command) -> Text {
-                    using Mbc7EepromCommand = typename std::decay_t<decltype(cart)>::Eeprom::Command;
-                    switch (command) {
-                    case Mbc7EepromCommand::EWEN:
-                        return "EWEN";
-                    case Mbc7EepromCommand::EWDS:
-                        return "EWDS";
-                    case Mbc7EepromCommand::READ:
-                        return "READ";
-                    case Mbc7EepromCommand::WRITE:
-                        return "WRITE";
-                    case Mbc7EepromCommand::ERASE:
-                        return "ERASE";
-                    case Mbc7EepromCommand::WRAL:
-                        return "WRAL";
-                    case Mbc7EepromCommand::ERAL:
-                        return "ERAL";
-                    default:
-                        break;
-                    }
-                    return "Unknown";
-                }(cart.eeprom.command) << endl;
-
-                const auto eeprom_reg = [](const auto reg) -> Text {
-                    static constexpr uint8_t Mbc7EepromRegisterSize = std::decay_t<decltype(reg)>::Size;
-
-                    Text t {};
-                    for (int8_t b = Mbc7EepromRegisterSize - 1; b >= 0; b--) {
-                        bool set = test_bit(reg.data, b);
-                        if (b >= reg.cursor) {
-                            t += darkgray(Text {set});
-                        } else {
-                            t += Text {set};
-                        }
-                    }
-                    return t;
-                };
-                b << yellow("Instruction") << "                  :  " << eeprom_reg(cart.eeprom.instruction) << "  ("
-                  << hex(cart.eeprom.instruction.data) << ")" << endl;
-                b << yellow("Input") << "                        :  " << eeprom_reg(cart.eeprom.input) << "  ("
-                  << hex(cart.eeprom.input.data) << ")" << endl;
-                b << yellow("Output") << "                       :  " << eeprom_reg(cart.eeprom.output) << "  ("
-                  << hex(cart.eeprom.output.data) << ")" << endl;
-            };
-
-            if (info.cksum == 0x2A /* Command Master (Japan) */) {
-                mbc7(static_cast<const Mbc7<Rom::MB_2, 512>&>(cartridge));
-            } else if (info.cksum == 0xA2 /* Kirby - Tilt 'n' Tumble (USA) */ ||
-                       info.cksum == 0x33 /* Kirby - Tilt 'n' Tumble (Japan) */) {
-                mbc7(static_cast<const Mbc7<Rom::MB_1, 256>&>(cartridge));
-            }
-        } else if (mbc == Mbc::HUC3) {
-            const auto huc3 = [&b, &subheader, &hr, width](auto&& cart) {
-                using HuC3RamMapping = typename std::decay_t<decltype(cart)>::RamMapping;
-                b << yellow("Ram Mapping") << "                  :  " << hex(static_cast<uint8_t>(cart.ram_mapping))
-                  << " (" << [](HuC3RamMapping mapping) -> Text {
-                    switch (mapping) {
-                    case HuC3RamMapping::RamReadOnly:
-                        return "Ram Read";
-                    case HuC3RamMapping::RamReadWrite:
-                        return "Ram R/W";
-                    case HuC3RamMapping::RtcWrite:
-                        return "RTC Write";
-                    case HuC3RamMapping::RtcRead:
-                        return "RTC Read";
-                    case HuC3RamMapping::RtcSemaphore:
-                        return "RTC Semaphore";
-                    case HuC3RamMapping::IR:
-                        return "IR";
-                    default:
-                        break;
-                    }
-                    return "None";
-                }(cart.ram_mapping) << ")"
-                                    << endl;
-                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.rom_bank_selector) << endl;
-                b << yellow("Ram Bank Selector") << "            :  " << hex(cart.ram_bank_selector) << endl;
-
+            if (mbc3.get_peripherals().rtc) {
                 b << subheader("rtc", width) << endl;
-                b << yellow("Minutes") << "                      :  " << cart.rtc.clock.minutes << endl;
-                b << yellow("Days") << "                         :  " << cart.rtc.clock.days << endl;
-                b << hr(width) << endl;
-                b << yellow("Command") << "                      :  " << hex(cart.rtc.command) << endl;
-                b << yellow("Argument") << "                     :  " << hex(cart.rtc.argument) << endl;
-                b << yellow("Read") << "                         :  " << hex(cart.rtc.read) << endl;
-                b << yellow("Address") << "                      :  " << hex(cart.rtc.address) << endl;
-                b << yellow("Memory[0:5]") << "                  :  " << hex<uint8_t, true, 1>(cart.rtc.memory, 6)
-                  << endl;
-            };
-
-            ASSERT(ram == Ram::KB_32);
-            if (rom == Rom::KB_32) {
-                huc3(static_cast<const HuC3<32 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::KB_64) {
-                huc3(static_cast<const HuC3<64 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::KB_128) {
-                huc3(static_cast<const HuC3<128 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::KB_256) {
-                huc3(static_cast<const HuC3<256 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::KB_512) {
-                huc3(static_cast<const HuC3<512 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::MB_1) {
-                huc3(static_cast<const HuC3<1 * MB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::MB_2) {
-                huc3(static_cast<const HuC3<2 * MB, 32 * KB>&>(cartridge));
+                b << "                                " << magenta("Latch") << "  |   " << magenta("Clock") << endl;
+                b << yellow("Seconds") << "                      :   "
+                  << hex((uint8_t)keep_bits<6>(mbc3.rtc.latched.seconds)) << "    |    "
+                  << hex((uint8_t)keep_bits<6>(mbc3.rtc.clock.seconds)) << endl;
+                b << yellow("Minutes") << "                      :   "
+                  << hex((uint8_t)keep_bits<6>(mbc3.rtc.latched.minutes)) << "    |    "
+                  << hex((uint8_t)keep_bits<6>(mbc3.rtc.clock.minutes)) << endl;
+                b << yellow("Hours") << "                        :   "
+                  << hex((uint8_t)keep_bits<5>(mbc3.rtc.latched.hours)) << "    |    "
+                  << hex((uint8_t)keep_bits<5>(mbc3.rtc.clock.hours)) << endl;
+                b << yellow("Days Low") << "                     :   " << hex(mbc3.rtc.latched.days_low) << "    |    "
+                  << hex(mbc3.rtc.clock.days_low) << endl;
+                b << yellow("Days High") << "                    :   "
+                  << hex((uint8_t)get_bits<7, 6, 0>(mbc3.rtc.latched.days_high)) << "    |    "
+                  << hex((uint8_t)get_bits<7, 6, 0>(mbc3.rtc.clock.days_high)) << endl;
             }
-        } else if (mbc == Mbc::HUC1) {
-            const auto huc1 = [&b](auto&& cart) {
-                b << yellow("Ram Enabled") << "                  :  " << !cart.ir_enabled << endl;
-                b << yellow("IR Enabled") << "                   :  " << cart.ir_enabled << endl;
-                b << yellow("Rom Bank Selector") << "            :  " << hex(cart.rom_bank_selector) << endl;
-                b << yellow("Ram Bank Selector") << "            :  " << hex(cart.ram_bank_selector) << endl;
-            };
+        } else if (cartridge_type == CartridgeType::MBC5) {
+            const auto& mbc5 = static_cast<const Mbc5_&>(cartridge);
 
-            if (rom == Rom::KB_32) {
-                huc1(static_cast<const HuC1<32 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::KB_64) {
-                huc1(static_cast<const HuC1<64 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::KB_128) {
-                huc1(static_cast<const HuC1<128 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::KB_256) {
-                huc1(static_cast<const HuC1<256 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::KB_512) {
-                huc1(static_cast<const HuC1<512 * KB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::MB_1) {
-                huc1(static_cast<const HuC1<1 * MB, 32 * KB>&>(cartridge));
-            } else if (rom == Rom::MB_2) {
-                huc1(static_cast<const HuC1<2 * MB, 32 * KB>&>(cartridge));
+            b << yellow("Ram Enabled") << "                  :  " << mbc5.ram_enabled << endl;
+            b << yellow("Rom Bank Selector") << "            :  " << hex(mbc5.rom_bank_selector) << endl;
+            b << yellow("Ram Bank Selector") << "            :  " << hex(mbc5.ram_bank_selector) << endl;
+            if (mbc5.get_peripherals().rumble) {
+                b << yellow("Rumble") << "                       :  " << (mbc5.rumble ? "ON" : "OFF") << endl;
             }
+        } else if (cartridge_type == CartridgeType::MBC7) {
+            const auto& mbc7 = static_cast<const Mbc7_&>(cartridge);
+
+            b << yellow("Primary Ram Enabled") << "          :  " << mbc7.ram_enabled_primary << endl;
+            b << yellow("Secondary Ram Enabled") << "        :  " << mbc7.ram_enabled_secondary << endl;
+            b << yellow("Rom Bank Selector") << "            :  " << hex(mbc7.rom_bank_selector) << endl;
+
+            b << subheader("accelerometer", width) << endl;
+            b << yellow("X") << "                            :  "
+              << hex<uint16_t>(mbc7.accelerometer.latch.x.high << 8 | mbc7.accelerometer.latch.x.low) << endl;
+            b << yellow("Y") << "                            :  "
+              << hex<uint16_t>(mbc7.accelerometer.latch.y.high << 8 | mbc7.accelerometer.latch.y.low) << endl;
+            b << yellow("Latched") << "                      :  " << mbc7.accelerometer.latched << endl;
+
+            b << subheader("eeprom", width) << endl;
+            b << yellow("CS") << "                           :  " << mbc7.eeprom.cs << endl;
+            b << yellow("CLK") << "                          :  " << mbc7.eeprom.clk << endl;
+            b << yellow("DI") << "                           :  " << mbc7.eeprom.data_in << endl;
+            b << yellow("DO") << "                           :  " << mbc7.eeprom.data_out << endl;
+            b << yellow("Erase/Write Enabled") << "          :  " << mbc7.eeprom.erase_write_enabled << endl;
+            b << yellow("State") << "                        :  " << [](const auto state) -> Text {
+                using Mbc7EepromState = Mbc7_::Eeprom::State;
+                switch (state) {
+                case Mbc7EepromState::Idle:
+                    return "Idle";
+                case Mbc7EepromState::Instruction:
+                    return "Instruction";
+                case Mbc7EepromState::Input:
+                    return "Input";
+                case Mbc7EepromState::Output:
+                    return "Output";
+                case Mbc7EepromState::PendingWrite:
+                    return "PendingWrite";
+                case Mbc7EepromState::Done:
+                    return "Done";
+                default:
+                    break;
+                }
+                return "Unknown";
+            }(mbc7.eeprom.state) << endl;
+            b << yellow("Command") << "                      :  " << [](const auto command) -> Text {
+                using Mbc7EepromCommand = Mbc7_::Eeprom::Command;
+                switch (command) {
+                case Mbc7EepromCommand::EWEN:
+                    return "EWEN";
+                case Mbc7EepromCommand::EWDS:
+                    return "EWDS";
+                case Mbc7EepromCommand::READ:
+                    return "READ";
+                case Mbc7EepromCommand::WRITE:
+                    return "WRITE";
+                case Mbc7EepromCommand::ERASE:
+                    return "ERASE";
+                case Mbc7EepromCommand::WRAL:
+                    return "WRAL";
+                case Mbc7EepromCommand::ERAL:
+                    return "ERAL";
+                default:
+                    break;
+                }
+                return "Unknown";
+            }(mbc7.eeprom.command) << endl;
+
+            const auto eeprom_reg = [](const auto reg) -> Text {
+                static constexpr uint8_t Mbc7EepromRegisterSize = std::decay_t<decltype(reg)>::Size;
+
+                Text t {};
+                for (int8_t b = Mbc7EepromRegisterSize - 1; b >= 0; b--) {
+                    bool set = test_bit(reg.data, b);
+                    if (b >= reg.cursor) {
+                        t += darkgray(Text {set});
+                    } else {
+                        t += Text {set};
+                    }
+                }
+                return t;
+            };
+            b << yellow("Instruction") << "                  :  " << eeprom_reg(mbc7.eeprom.instruction) << "  ("
+              << hex(mbc7.eeprom.instruction.data) << ")" << endl;
+            b << yellow("Input") << "                        :  " << eeprom_reg(mbc7.eeprom.input) << "  ("
+              << hex(mbc7.eeprom.input.data) << ")" << endl;
+            b << yellow("Output") << "                       :  " << eeprom_reg(mbc7.eeprom.output) << "  ("
+              << hex(mbc7.eeprom.output.data) << ")" << endl;
+        } else if (cartridge_type == CartridgeType::RomRam) {
+            // Nothing to show.
+        } else if (cartridge_type == CartridgeType::HuC1) {
+            const auto& huc1 = static_cast<const HuC1_&>(cartridge);
+
+            b << yellow("Ram Enabled") << "                  :  " << !huc1.ir_enabled << endl;
+            b << yellow("IR Enabled") << "                   :  " << huc1.ir_enabled << endl;
+            b << yellow("Rom Bank Selector") << "            :  " << hex(huc1.rom_bank_selector) << endl;
+            b << yellow("Ram Bank Selector") << "            :  " << hex(huc1.ram_bank_selector) << endl;
+        } else if (cartridge_type == CartridgeType::HuC3) {
+            const auto& huc3 = static_cast<const HuC3_&>(cartridge);
+
+            using HuC3RamMapping = typename std::decay_t<decltype(huc3)>::RamMapping;
+            b << yellow("Ram Mapping") << "                  :  " << hex(static_cast<uint8_t>(huc3.ram_mapping)) << " ("
+              << [](HuC3RamMapping mapping) -> Text {
+                switch (mapping) {
+                case HuC3RamMapping::RamReadOnly:
+                    return "Ram Read";
+                case HuC3RamMapping::RamReadWrite:
+                    return "Ram R/W";
+                case HuC3RamMapping::RtcWrite:
+                    return "RTC Write";
+                case HuC3RamMapping::RtcRead:
+                    return "RTC Read";
+                case HuC3RamMapping::RtcSemaphore:
+                    return "RTC Semaphore";
+                case HuC3RamMapping::IR:
+                    return "IR";
+                default:
+                    break;
+                }
+                return "None";
+            }(huc3.ram_mapping) << ")"
+                                << endl;
+            b << yellow("Rom Bank Selector") << "            :  " << hex(huc3.rom_bank_selector) << endl;
+            b << yellow("Ram Bank Selector") << "            :  " << hex(huc3.ram_bank_selector) << endl;
+
+            b << subheader("rtc", width) << endl;
+            b << yellow("Minutes") << "                      :  " << huc3.rtc.clock.minutes << endl;
+            b << yellow("Days") << "                         :  " << huc3.rtc.clock.days << endl;
+            b << hr(width) << endl;
+            b << yellow("Command") << "                      :  " << hex(huc3.rtc.command) << endl;
+            b << yellow("Argument") << "                     :  " << hex(huc3.rtc.argument) << endl;
+            b << yellow("Read") << "                         :  " << hex(huc3.rtc.read) << endl;
+            b << yellow("Address") << "                      :  " << hex(huc3.rtc.address) << endl;
+            b << yellow("Memory[0:5]") << "                  :  " << hex<uint8_t, true, 1>(huc3.rtc.memory, 6) << endl;
+        } else if (cartridge_type == CartridgeType::MMM01) {
+            const auto& mmm01 = static_cast<const MMM01_&>(cartridge);
+
+            b << yellow("Mapped") << "                       :  " << mmm01.mapped << endl;
+            b << yellow("Ram Enabled") << "                  :  " << mmm01.ram_enabled << endl;
+            b << yellow("Mode Write Lock") << "              :  " << mmm01.mode_write_lock << endl;
+            b << yellow("Multiplex") << "                    :  " << mmm01.multiplex << endl;
+
+            b << yellow("Banking Mode") << "                 :  " << hex(mmm01.banking_mode) << endl;
+            b << yellow("Rom Bank Low") << "                 :  " << hex(mmm01.rom_bank_low) << endl;
+            b << yellow("Rom Bank Mid") << "                 :  " << hex(mmm01.rom_bank_mid) << endl;
+            b << yellow("Rom Bank High") << "                :  " << hex(mmm01.rom_bank_high) << endl;
+            b << yellow("Rom Bank Mask") << "                :  " << hex(mmm01.rom_bank_mask) << endl;
+            b << yellow("Ram Bank Low") << "                 :  " << hex(mmm01.ram_bank_low) << endl;
+            b << yellow("Ram Bank High") << "                :  " << hex(mmm01.ram_bank_high) << endl;
+            b << yellow("Ram Bank Mask") << "                :  " << hex(mmm01.ram_bank_mask) << endl;
+        } else if (cartridge_type == CartridgeType::M161) {
+            const auto& m161 = static_cast<const M161_&>(cartridge);
+
+            b << yellow("Rom Bank Selector") << "            :  " << hex(m161.rom_bank_selector) << endl;
+            b << yellow("Locked") << "                       :  " << hex(m161.locked) << endl;
+        } else if (cartridge_type == CartridgeType::WisdomTree) {
+            const auto& wt = static_cast<const WisdomTree_&>(cartridge);
+
+            b << yellow("Rom Bank Selector") << "            :  " << hex(wt.rom_bank_selector) << endl;
         }
 
         return b;

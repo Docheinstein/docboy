@@ -4,8 +4,15 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
+struct HuC1_ : ICartridge {
+    bool ir_enabled {};
+
+    uint8_t rom_bank_selector {};
+    uint8_t ram_bank_selector {};
+};
+
 template <uint32_t RomSize, uint32_t RamSize>
-class HuC1 final : public ICartridge {
+class HuC1 final : public HuC1_ {
 public:
     DEBUGGABLE_CLASS()
 
@@ -21,6 +28,8 @@ public:
     uint32_t get_ram_save_size() const override;
 
 #ifdef ENABLE_DEBUGGER
+    CartridgeType get_type() const override;
+
     uint8_t* get_rom_data() override;
     uint32_t get_rom_size() const override;
 
@@ -40,11 +49,6 @@ public:
     void reset() override;
 
 private:
-    bool ir_enabled {};
-
-    uint8_t rom_bank_selector {};
-    uint8_t ram_bank_selector {};
-
     uint8_t rom[RomSize] {};
     uint8_t ram[RamSize] {};
 };

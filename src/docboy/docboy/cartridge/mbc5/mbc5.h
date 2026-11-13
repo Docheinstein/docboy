@@ -4,8 +4,17 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
+struct Mbc5_ : ICartridge {
+    bool ram_enabled {};
+    uint16_t rom_bank_selector {};
+    uint8_t ram_bank_selector {};
+
+    std::function<void(bool)> rumble_callback {};
+    bool rumble {};
+};
+
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
-class Mbc5 final : public ICartridge {
+class Mbc5 final : public Mbc5_ {
 public:
     DEBUGGABLE_CLASS()
 
@@ -23,6 +32,8 @@ public:
     uint32_t get_ram_save_size() const override;
 
 #ifdef ENABLE_DEBUGGER
+    CartridgeType get_type() const override;
+
     uint8_t* get_rom_data() override;
     uint32_t get_rom_size() const override;
 
@@ -44,13 +55,6 @@ public:
 private:
     static constexpr bool Ram = RamSize > 0;
     static constexpr bool HasRumble = Rumble > 0;
-
-    bool ram_enabled {};
-    uint16_t rom_bank_selector {};
-    uint8_t ram_bank_selector {};
-
-    std::function<void(bool)> rumble_callback {};
-    bool rumble {};
 
     uint8_t rom[RomSize] {};
     uint8_t ram[RamSize] {};

@@ -6,6 +6,10 @@
 
 class Parcel;
 
+#ifdef ENABLE_DEBUGGER
+enum class CartridgeType { NoMBC, MBC1, MBC2, MBC3, MBC5, MBC7, RomRam, HuC1, HuC3, MMM01, M161, WisdomTree };
+#endif
+
 class ICartridge {
 public:
     struct Peripherals {
@@ -28,7 +32,7 @@ public:
         }
     }
 
-    const Peripherals& get_peripherals() {
+    const Peripherals& get_peripherals() const {
         return peripherals;
     }
 
@@ -49,6 +53,8 @@ public:
     }
 
 #ifdef ENABLE_DEBUGGER
+    virtual CartridgeType get_type() const = 0;
+
     virtual uint8_t* get_rom_data() = 0;
     virtual uint32_t get_rom_size() const = 0;
 

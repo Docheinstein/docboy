@@ -4,47 +4,10 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-template <uint32_t RomSize, uint16_t EepromSize>
-class Mbc7 final : public ICartridge {
-public:
-    DEBUGGABLE_CLASS()
-
-    Mbc7(const uint8_t* data, uint32_t length);
-
-    uint8_t read_rom(uint16_t address) const override;
-    void write_rom(uint16_t address, uint8_t value) override;
-
-    uint8_t read_ram(uint16_t address) const override;
-    void write_ram(uint16_t address, uint8_t value) override;
-
-    void* get_ram_save_data() override;
-    uint32_t get_ram_save_size() const override;
-
-    void set_accelerometer(double x, double y) override;
-
-#ifdef ENABLE_DEBUGGER
-    uint8_t* get_rom_data() override;
-    uint32_t get_rom_size() const override;
-
-    uint8_t* get_ram_data() override;
-    uint32_t get_ram_size() const override;
-
-    uint8_t read_rom_raw(uint16_t bank, uint16_t address) const override;
-    uint16_t get_rom_bank(uint16_t address) const override;
-
-    uint8_t read_ram_raw(uint16_t bank, uint16_t address) const override;
-    uint16_t get_ram_bank(uint16_t address) const override;
-#endif
-
-    void save_state(Parcel& parcel) const override;
-    void load_state(Parcel& parcel) override;
-
-    void reset() override;
-
-private:
+struct Mbc7_ : ICartridge {
     struct Eeprom {
-        static constexpr uint16_t AddressSpaceSize = EepromSize / sizeof(uint16_t);
-        static constexpr uint16_t AddressSpaceBits = log_2<AddressSpaceSize>;
+        static constexpr uint16_t MaxEepromSize = 512;
+        static constexpr uint16_t MaxAddressSpaceSize = MaxEepromSize / sizeof(uint16_t);
 
         template <uint8_t DataSize>
         struct Register {
@@ -80,7 +43,7 @@ private:
         Register<16> input {};
         Register<16> output {};
 
-        uint16_t data[AddressSpaceSize] {};
+        uint16_t data[MaxAddressSpaceSize] {};
     };
 
     struct Accelerometer {
@@ -103,12 +66,6 @@ private:
         bool latched {};
     };
 
-    static typename Eeprom::Command parse_eeprom_command(uint16_t value);
-
-    void handle_eeprom_instruction();
-    void handle_eeprom_parametric_instruction();
-    void handle_eeprom_pending_write();
-
     bool ram_enabled_primary {};
     bool ram_enabled_secondary {};
 
@@ -116,6 +73,58 @@ private:
 
     Accelerometer accelerometer {};
     Eeprom eeprom {};
+};
+
+template <uint32_t RomSize, uint16_t EepromSize>
+class Mbc7 final : public Mbc7_ {
+public:
+    DEBUGGABLE_CLASS()
+
+    Mbc7(const uint8_t* data, uint32_t length);
+
+    uint8_t read_rom(uint16_t address) const override;
+    void write_rom(uint16_t address, uint8_t value) override;
+
+    uint8_t read_ram(uint16_t address) const override;
+    void write_ram(uint16_t address, uint8_t value) override;
+
+    void* get_ram_save_data() override;
+    uint32_t get_ram_save_size() const override;
+
+    void set_accelerometer(double x, double y) override;
+
+#ifdef ENABLE_DEBUGGER
+    CartridgeType get_type() const override;
+
+    uint8_t* get_rom_data() override;
+    uint32_t get_rom_size() const override;
+
+    uint8_t* get_ram_data() override;
+    uint32_t get_ram_size() const override;
+
+    uint8_t read_rom_raw(uint16_t bank, uint16_t address) const override;
+    uint16_t get_rom_bank(uint16_t address) const override;
+
+    uint8_t read_ram_raw(uint16_t bank, uint16_t address) const override;
+    uint16_t get_ram_bank(uint16_t address) const override;
+#endif
+
+    void save_state(Parcel& parcel) const override;
+    void load_state(Parcel& parcel) override;
+
+    void reset() override;
+
+private:
+    static_assert(EepromSize <= Eeprom::MaxEepromSize);
+
+    static constexpr uint16_t EepromAddressSpaceSize = EepromSize / sizeof(uint16_t);
+    static constexpr uint16_t EepromAddressSpaceBits = log_2<EepromAddressSpaceSize>;
+
+    static Eeprom::Command parse_eeprom_command(uint16_t value);
+
+    void handle_eeprom_instruction();
+    void handle_eeprom_parametric_instruction();
+    void handle_eeprom_pending_write();
 
     uint8_t rom[RomSize] {};
 };

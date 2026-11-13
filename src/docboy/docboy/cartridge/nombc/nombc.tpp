@@ -61,6 +61,11 @@ uint32_t NoMbc<RamSize>::get_ram_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RamSize>
+CartridgeType NoMbc<RamSize>::get_type() const {
+    return CartridgeType::NoMBC;
+}
+
+template <uint32_t RamSize>
 uint8_t* NoMbc<RamSize>::get_rom_data() {
     return rom;
 }

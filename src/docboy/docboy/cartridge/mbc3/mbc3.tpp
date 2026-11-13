@@ -284,6 +284,11 @@ uint32_t Mbc3<RomSize, RamSize, Battery, Timer>::get_rtc_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
+CartridgeType Mbc3<RomSize, RamSize, Battery, Timer>::get_type() const {
+    return CartridgeType::MBC3;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
 uint8_t* Mbc3<RomSize, RamSize, Battery, Timer>::get_rom_data() {
     return rom;
 }

@@ -7,24 +7,21 @@
 #include "utils/exceptions.h"
 #include "utils/parcel.h"
 
-template <uint32_t RomSize, uint16_t EepromSize>
 template <uint8_t DataSize>
-void Mbc7<RomSize, EepromSize>::Eeprom::Register<DataSize>::set_next_bit(bool b) {
+void Mbc7_::Eeprom::Register<DataSize>::set_next_bit(bool b) {
     set_bit(data, DataSize - 1 - cursor, b);
     ++cursor;
 }
 
-template <uint32_t RomSize, uint16_t EepromSize>
 template <uint8_t DataSize>
-bool Mbc7<RomSize, EepromSize>::Eeprom::Register<DataSize>::get_next_bit() {
+bool Mbc7_::Eeprom::Register<DataSize>::get_next_bit() {
     bool b = get_bit(data, DataSize - 1 - cursor);
     ++cursor;
     return b;
 }
 
-template <uint32_t RomSize, uint16_t EepromSize>
 template <uint8_t DataSize>
-bool Mbc7<RomSize, EepromSize>::Eeprom::Register<DataSize>::is_full() const {
+bool Mbc7_::Eeprom::Register<DataSize>::is_full() const {
     return cursor == DataSize;
 }
 
@@ -217,7 +214,7 @@ void* Mbc7<RomSize, EepromSize>::get_ram_save_data() {
 template <uint32_t RomSize, uint16_t EepromSize>
 uint32_t Mbc7<RomSize, EepromSize>::get_ram_save_size() const {
     // Treat EEPROM as RAM data to save.
-    return sizeof(eeprom.data);
+    return EepromSize;
 }
 
 template <uint32_t RomSize, uint16_t EepromSize>
@@ -227,6 +224,11 @@ void Mbc7<RomSize, EepromSize>::set_accelerometer(double x, double y) {
 }
 
 #ifdef ENABLE_DEBUGGER
+template <uint32_t RomSize, uint16_t EepromSize>
+CartridgeType Mbc7<RomSize, EepromSize>::get_type() const {
+    return CartridgeType::MBC7;
+}
+
 template <uint32_t RomSize, uint16_t EepromSize>
 uint8_t* Mbc7<RomSize, EepromSize>::get_rom_data() {
     return rom;
@@ -328,7 +330,7 @@ void Mbc7<RomSize, EepromSize>::handle_eeprom_instruction() {
     case Eeprom::Command::READ: {
         // READ: Read EEPROM at address (instruction parameter) and emits data (16 bits output)
         eeprom.state = Eeprom::State::Output;
-        uint16_t address = keep_bits_range<Eeprom::AddressSpaceBits - 1, 0>(eeprom.instruction.data);
+        uint16_t address = keep_bits_range<EepromAddressSpaceBits - 1, 0>(eeprom.instruction.data);
         eeprom.output.data = eeprom.data[address];
         eeprom.output.cursor = 0;
         break;
@@ -383,25 +385,25 @@ void Mbc7<RomSize, EepromSize>::handle_eeprom_pending_write() {
         switch (eeprom.command) {
         case Eeprom::Command::WRITE: {
             // WRITE: Write value (16 bits input) to address (instruction parameter)
-            uint16_t address = keep_bits_range<Eeprom::AddressSpaceBits - 1, 0>(eeprom.instruction.data);
+            uint16_t address = keep_bits_range<EepromAddressSpaceBits - 1, 0>(eeprom.instruction.data);
             eeprom.data[address] = eeprom.input.data;
             break;
         }
         case Eeprom::Command::ERASE: {
             // ERASE: Write FFFF to address (instruction parameter)
-            uint16_t address = keep_bits_range<Eeprom::AddressSpaceBits - 1, 0>(eeprom.instruction.data);
+            uint16_t address = keep_bits_range<EepromAddressSpaceBits - 1, 0>(eeprom.instruction.data);
             eeprom.data[address] = 0xFFFF;
             break;
         }
         case Eeprom::Command::WRAL:
             // WRAL: Fill EEPROM with given value (16 bits input)
-            for (uint32_t i = 0; i < array_size(eeprom.data); ++i) {
+            for (uint32_t i = 0; i < EepromAddressSpaceSize; ++i) {
                 eeprom.data[i] = eeprom.input.data;
             }
             break;
         case Eeprom::Command::ERAL:
             // ERAL: Fill EEPROM with FFFF
-            for (uint32_t i = 0; i < array_size(eeprom.data); ++i) {
+            for (uint32_t i = 0; i < EepromAddressSpaceSize; ++i) {
                 eeprom.data[i] = 0xFFFF;
             }
             break;
@@ -423,7 +425,7 @@ template <uint32_t RomSize, uint16_t EepromSize>
 void Mbc7<RomSize, EepromSize>::save_state(Parcel& parcel) const {
     PARCEL_WRITE_BOOL(parcel, ram_enabled_primary);
     PARCEL_WRITE_BOOL(parcel, ram_enabled_secondary);
-    PARCEL_WRITE_UINT16(parcel, rom_bank_selector);
+    PARCEL_WRITE_UINT8(parcel, rom_bank_selector);
 
     PARCEL_WRITE_UINT8(parcel, accelerometer.latch.x.low);
     PARCEL_WRITE_UINT8(parcel, accelerometer.latch.x.high);
@@ -446,14 +448,14 @@ void Mbc7<RomSize, EepromSize>::save_state(Parcel& parcel) const {
     PARCEL_WRITE_UINT8(parcel, eeprom.input.cursor);
     PARCEL_WRITE_UINT16(parcel, eeprom.output.data);
     PARCEL_WRITE_UINT8(parcel, eeprom.output.cursor);
-    PARCEL_WRITE_BYTES(parcel, eeprom.data, sizeof(eeprom.data));
+    PARCEL_WRITE_BYTES(parcel, eeprom.data, EepromSize);
 }
 
 template <uint32_t RomSize, uint16_t EepromSize>
 void Mbc7<RomSize, EepromSize>::load_state(Parcel& parcel) {
     ram_enabled_primary = parcel.read_bool();
     ram_enabled_secondary = parcel.read_bool();
-    rom_bank_selector = parcel.read_uint16();
+    rom_bank_selector = parcel.read_uint8();
 
     accelerometer.latch.x.low = parcel.read_uint8();
     accelerometer.latch.x.high = parcel.read_uint8();
@@ -476,7 +478,7 @@ void Mbc7<RomSize, EepromSize>::load_state(Parcel& parcel) {
     eeprom.input.cursor = parcel.read_uint8();
     eeprom.output.data = parcel.read_uint16();
     eeprom.output.cursor = parcel.read_uint8();
-    parcel.read_bytes(eeprom.data, sizeof(eeprom.data));
+    parcel.read_bytes(eeprom.data, EepromSize);
 }
 
 template <uint32_t RomSize, uint16_t EepromSize>

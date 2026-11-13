@@ -154,6 +154,11 @@ uint32_t Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_ram_save_size
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
+CartridgeType Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_type() const {
+    return CartridgeType::MBC1;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, uint8_t RomBankSelectorBits>
 uint8_t* Mbc1<RomSize, RamSize, Battery, RomBankSelectorBits>::get_rom_data() {
     return rom;
 }

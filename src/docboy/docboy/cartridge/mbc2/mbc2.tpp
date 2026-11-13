@@ -108,6 +108,11 @@ uint32_t Mbc2<RomSize, Battery>::get_ram_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, bool Battery>
+CartridgeType Mbc2<RomSize, Battery>::get_type() const {
+    return CartridgeType::MBC2;
+}
+
+template <uint32_t RomSize, bool Battery>
 uint8_t* Mbc2<RomSize, Battery>::get_rom_data() {
     return rom;
 }

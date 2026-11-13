@@ -4,8 +4,37 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
+struct Mbc3_ : ICartridge {
+    struct RtcRegisters {
+        uint8_t seconds {};
+        uint8_t minutes {};
+        uint8_t hours {};
+        uint8_t days_low {};
+        uint8_t days_high {};
+    };
+
+    bool ram_enabled {};
+    uint8_t rom_bank_selector {};
+    uint8_t ram_bank_selector_rtc_register_selector {};
+
+    struct Rtc {
+        uint32_t cycles_since_last_tick {};
+#pragma pack(push, 1)
+        // These fields must have no padding in between because we need
+        // to serialize RTC as a unique consecutive chunk of data.
+        int64_t last_tick_time {};
+        RtcRegisters clock {};
+#ifndef ENABLE_RTC_SYSTEM_TIME
+        int64_t artificial_system_time {};
+#endif
+#pragma pack(pop)
+        RtcRegisters latched {};
+        uint8_t latch {};
+    } rtc;
+};
+
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Timer>
-class Mbc3 final : public ICartridge {
+class Mbc3 final : public Mbc3_ {
 public:
     DEBUGGABLE_CLASS()
 
@@ -26,6 +55,8 @@ public:
     uint32_t get_rtc_save_size() const override;
 
 #ifdef ENABLE_DEBUGGER
+    CartridgeType get_type() const override;
+
     uint8_t* get_rom_data() override;
     uint32_t get_rom_size() const override;
 
@@ -48,36 +79,9 @@ private:
     static constexpr bool Ram = RamSize > 0;
     static constexpr uint8_t MaxRamBankSelector = RamSize < (64 * 1024) ? 0x04 : 0x08;
 
-    struct RtcRegisters {
-        uint8_t seconds {};
-        uint8_t minutes {};
-        uint8_t hours {};
-        uint8_t days_low {};
-        uint8_t days_high {};
-    };
-
     void tick_rtc(int64_t delta);
 
     int64_t get_time() const;
-
-    bool ram_enabled {};
-    uint8_t rom_bank_selector {};
-    uint8_t ram_bank_selector_rtc_register_selector {};
-
-    struct Rtc {
-        uint32_t cycles_since_last_tick {};
-#pragma pack(push, 1)
-        // These fields must have no padding in between because we need
-        // to serialize RTC as a unique consecutive chunk of data.
-        int64_t last_tick_time {};
-        RtcRegisters clock {};
-#ifndef ENABLE_RTC_SYSTEM_TIME
-        int64_t artificial_system_time {};
-#endif
-#pragma pack(pop)
-        RtcRegisters latched {};
-        uint8_t latch {};
-    } rtc;
 
     uint8_t rom[RomSize] {};
     uint8_t ram[RamSize] {};

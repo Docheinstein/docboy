@@ -564,7 +564,6 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
 
         // Deduce cartridge info.
         const CartridgeHeader& header = core.gb.cartridge_header;
-        const uint8_t* rom_data = core.gb.cartridge_slot.cartridge->get_rom_data();
         const uint32_t rom_size = core.gb.cartridge_slot.cartridge->get_rom_size();
 
         using namespace Specs::Cartridge::Header;
@@ -594,23 +593,6 @@ const CartridgeInfo& DebuggerBackend::get_cartridge_info() {
         cartridge_info->rom = header.rom_size;
         cartridge_info->ram = header.ram_size;
         cartridge_info->cksum = header.header_checksum;
-        cartridge_info->multicart = false;
-
-        // All the known multicart are MBC1 of 1 MB.
-        if (rom_size >= 0x100000 &&
-            (cartridge_info->mbc == Mbc::MBC1 || cartridge_info->mbc == Mbc::MBC1_RAM ||
-             cartridge_info->mbc == Mbc::MBC1_RAM_BATTERY) &&
-            cartridge_info->rom == Rom::MB_1) {
-
-            // Count the occurrences of Nintendo Logo.
-            uint8_t num_logo {};
-            for (uint8_t i = 0; i < 4; i++) {
-                num_logo += memcmp(rom_data + (0x40000 * i) + MemoryLayout::LOGO::START, NINTENDO_LOGO,
-                                   sizeof(NINTENDO_LOGO)) == 0;
-            }
-
-            cartridge_info->multicart = num_logo > 1;
-        }
     }
 
     return *cartridge_info;

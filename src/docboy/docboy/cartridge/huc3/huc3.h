@@ -4,49 +4,7 @@
 #include "docboy/cartridge/cartridge.h"
 #include "docboy/common/macros.h"
 
-template <uint32_t RomSize, uint32_t RamSize>
-class HuC3 final : public ICartridge {
-public:
-    DEBUGGABLE_CLASS()
-
-    HuC3(const uint8_t* data, uint32_t length);
-
-    uint8_t read_rom(uint16_t address) const override;
-    void write_rom(uint16_t address, uint8_t value) override;
-
-    uint8_t read_ram(uint16_t address) const override;
-    void write_ram(uint16_t address, uint8_t value) override;
-
-    void on_tick() override;
-
-    void* get_ram_save_data() override;
-    uint32_t get_ram_save_size() const override;
-
-    void* get_rtc_save_data() override;
-    uint32_t get_rtc_save_size() const override;
-
-#ifdef ENABLE_DEBUGGER
-    uint8_t* get_rom_data() override;
-    uint32_t get_rom_size() const override;
-
-    uint8_t* get_ram_data() override;
-    uint32_t get_ram_size() const override;
-
-    uint8_t read_rom_raw(uint16_t bank, uint16_t address) const override;
-    uint16_t get_rom_bank(uint16_t address) const override;
-
-    uint8_t read_ram_raw(uint16_t bank, uint16_t address) const override;
-    uint16_t get_ram_bank(uint16_t address) const override;
-#endif
-
-    void save_state(Parcel& parcel) const override;
-    void load_state(Parcel& parcel) override;
-
-    void reset() override;
-
-private:
-    void execute_rtc_command();
-
+struct HuC3_ : ICartridge {
     enum class RamMapping : uint8_t {
         RamReadOnly = 0x00,
         RamReadWrite = 0x0A,
@@ -77,12 +35,58 @@ private:
 #pragma pack(pop)
     } rtc {};
 
+    uint16_t rom_bank_selector {};
+    uint8_t ram_bank_selector {};
+};
+
+template <uint32_t RomSize, uint32_t RamSize>
+class HuC3 final : public HuC3_ {
+public:
+    DEBUGGABLE_CLASS()
+
+    HuC3(const uint8_t* data, uint32_t length);
+
+    uint8_t read_rom(uint16_t address) const override;
+    void write_rom(uint16_t address, uint8_t value) override;
+
+    uint8_t read_ram(uint16_t address) const override;
+    void write_ram(uint16_t address, uint8_t value) override;
+
+    void on_tick() override;
+
+    void* get_ram_save_data() override;
+    uint32_t get_ram_save_size() const override;
+
+    void* get_rtc_save_data() override;
+    uint32_t get_rtc_save_size() const override;
+
+#ifdef ENABLE_DEBUGGER
+    CartridgeType get_type() const override;
+
+    uint8_t* get_rom_data() override;
+    uint32_t get_rom_size() const override;
+
+    uint8_t* get_ram_data() override;
+    uint32_t get_ram_size() const override;
+
+    uint8_t read_rom_raw(uint16_t bank, uint16_t address) const override;
+    uint16_t get_rom_bank(uint16_t address) const override;
+
+    uint8_t read_ram_raw(uint16_t bank, uint16_t address) const override;
+    uint16_t get_ram_bank(uint16_t address) const override;
+#endif
+
+    void save_state(Parcel& parcel) const override;
+    void load_state(Parcel& parcel) override;
+
+    void reset() override;
+
+private:
+    void execute_rtc_command();
+
     void tick_rtc(int64_t delta);
 
     int64_t get_time() const;
-
-    uint16_t rom_bank_selector {};
-    uint8_t ram_bank_selector {};
 
     uint8_t rom[RomSize] {};
     uint8_t ram[RamSize] {};

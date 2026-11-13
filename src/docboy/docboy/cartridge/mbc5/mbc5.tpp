@@ -148,6 +148,11 @@ uint32_t Mbc5<RomSize, RamSize, Battery, Rumble>::get_ram_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
+CartridgeType Mbc5<RomSize, RamSize, Battery, Rumble>::get_type() const {
+    return CartridgeType::MBC5;
+}
+
+template <uint32_t RomSize, uint32_t RamSize, bool Battery, bool Rumble>
 uint8_t* Mbc5<RomSize, RamSize, Battery, Rumble>::get_rom_data() {
     return rom;
 }

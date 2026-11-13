@@ -79,6 +79,11 @@ uint32_t WisdomTree<RomSize>::get_ram_save_size() const {
 
 #ifdef ENABLE_DEBUGGER
 template <uint32_t RomSize>
+CartridgeType WisdomTree<RomSize>::get_type() const {
+    return CartridgeType::WisdomTree;
+}
+
+template <uint32_t RomSize>
 uint8_t* WisdomTree<RomSize>::get_rom_data() {
     return rom;
 }
